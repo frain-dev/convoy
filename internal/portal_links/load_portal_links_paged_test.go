@@ -1,13 +1,13 @@
 package portal_links
 
 import (
+	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -15,7 +15,7 @@ func TestLoadPortalLinksPaged_Success_EmptyList(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Load portal links (should be empty)
@@ -38,13 +38,13 @@ func TestLoadPortalLinksPaged_Success_MultiplePortalLinks(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Create multiple portal links
 	var createdPortalLinks []*datastore.PortalLink
 	for i := 0; i < 5; i++ {
-		createRequest := &models.CreatePortalLinkRequest{
+		createRequest := &datastore.CreatePortalLinkRequest{
 			Name:              "Portal Link " + ulid.Make().String(),
 			OwnerID:           ulid.Make().String(),
 			AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -83,12 +83,12 @@ func TestLoadPortalLinksPaged_WithPagination(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Create 15 portal links
 	for i := 0; i < 15; i++ {
-		createRequest := &models.CreatePortalLinkRequest{
+		createRequest := &datastore.CreatePortalLinkRequest{
 			Name:              "Portal Link " + ulid.Make().String(),
 			OwnerID:           ulid.Make().String(),
 			AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -140,7 +140,7 @@ func TestLoadPortalLinksPaged_FilterByEndpoint(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID1 := ulid.Make().String()
@@ -150,7 +150,7 @@ func TestLoadPortalLinksPaged_FilterByEndpoint(t *testing.T) {
 	endpoint2 := seedEndpoint(t, db, project, "")
 
 	// Create portal link with endpoint1
-	createRequest1 := &models.CreatePortalLinkRequest{
+	createRequest1 := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link 1",
 		OwnerID:           ownerID1,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -161,7 +161,7 @@ func TestLoadPortalLinksPaged_FilterByEndpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create portal link with endpoint2
-	createRequest2 := &models.CreatePortalLinkRequest{
+	createRequest2 := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link 2",
 		OwnerID:           ownerID2,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -193,7 +193,7 @@ func TestLoadPortalLinksPaged_FilterByMultipleEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID1 := ulid.Make().String()
@@ -205,7 +205,7 @@ func TestLoadPortalLinksPaged_FilterByMultipleEndpoints(t *testing.T) {
 	endpoint3 := seedEndpoint(t, db, project, "")
 
 	// Create portal links with different endpoints
-	createRequest1 := &models.CreatePortalLinkRequest{
+	createRequest1 := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link 1",
 		OwnerID:           ownerID1,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -215,7 +215,7 @@ func TestLoadPortalLinksPaged_FilterByMultipleEndpoints(t *testing.T) {
 	portalLink1, err := service.CreatePortalLink(ctx, project.UID, createRequest1)
 	require.NoError(t, err)
 
-	createRequest2 := &models.CreatePortalLinkRequest{
+	createRequest2 := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link 2",
 		OwnerID:           ownerID2,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -225,7 +225,7 @@ func TestLoadPortalLinksPaged_FilterByMultipleEndpoints(t *testing.T) {
 	portalLink2, err := service.CreatePortalLink(ctx, project.UID, createRequest2)
 	require.NoError(t, err)
 
-	createRequest3 := &models.CreatePortalLinkRequest{
+	createRequest3 := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link 3",
 		OwnerID:           ownerID3,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -264,11 +264,11 @@ func TestLoadPortalLinksPaged_WithRefreshTokenAuthType_GeneratesAuthTokens(t *te
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Create portal link with RefreshToken auth type
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Refresh Token Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
@@ -279,7 +279,7 @@ func TestLoadPortalLinksPaged_WithRefreshTokenAuthType_GeneratesAuthTokens(t *te
 	require.NoError(t, err)
 
 	// Create portal link with StaticToken auth type
-	createRequest2 := &models.CreatePortalLinkRequest{
+	createRequest2 := &datastore.CreatePortalLinkRequest{
 		Name:              "Static Token Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -326,12 +326,12 @@ func TestLoadPortalLinksPaged_PreviousPage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Create 15 portal links
 	for i := 0; i < 15; i++ {
-		createRequest := &models.CreatePortalLinkRequest{
+		createRequest := &datastore.CreatePortalLinkRequest{
 			Name:              "Portal Link " + ulid.Make().String(),
 			OwnerID:           ulid.Make().String(),
 			AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -386,12 +386,12 @@ func TestLoadPortalLinksPaged_EmptyFilter(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Create portal links
 	for i := 0; i < 3; i++ {
-		createRequest := &models.CreatePortalLinkRequest{
+		createRequest := &datastore.CreatePortalLinkRequest{
 			Name:              "Portal Link " + ulid.Make().String(),
 			OwnerID:           ulid.Make().String(),
 			AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -421,13 +421,13 @@ func TestFindPortalLinksByOwnerID_WithRefreshTokenAuthType_GeneratesAuthTokens(t
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
 
 	// Create portal link with RefreshToken auth type
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Refresh Token Portal Link",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
@@ -438,7 +438,7 @@ func TestFindPortalLinksByOwnerID_WithRefreshTokenAuthType_GeneratesAuthTokens(t
 	require.NoError(t, err)
 
 	// Create portal link with StaticToken auth type (same owner)
-	createRequest2 := &models.CreatePortalLinkRequest{
+	createRequest2 := &datastore.CreatePortalLinkRequest{
 		Name:              "Static Token Portal Link",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),

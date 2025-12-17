@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/frain-dev/convoy/internal/portal_links/models"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -16,7 +16,7 @@ func NewCreatePortalLinkRequestMigration() *CreatePortalLinkRequestMigration {
 }
 
 func (c *CreatePortalLinkRequestMigration) Migrate(b []byte, h http.Header) ([]byte, http.Header, error) {
-	var payload models.CreatePortalLinkRequest
+	var payload datastore.CreatePortalLinkRequest
 	err := json.Unmarshal(b, &payload)
 	if err != nil {
 		return nil, nil, err

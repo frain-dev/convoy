@@ -9,7 +9,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/api_keys/models"
 )
 
 // ============================================================================
@@ -255,7 +254,7 @@ func TestRevokeAPIKeys_SingleKey(t *testing.T) {
 	fetched, err := service.GetAPIKeyByID(ctx, apiKey.UID)
 	require.Error(t, err)
 	require.Nil(t, fetched)
-	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
+	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound)
 }
 
 func TestRevokeAPIKeys_MultipleKeys(t *testing.T) {
@@ -320,10 +319,10 @@ func TestRevokeAPIKeys_MultipleKeys(t *testing.T) {
 
 	// Verify key1 and key2 cannot be fetched
 	_, err = service.GetAPIKeyByID(ctx, key1.UID)
-	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
+	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound)
 
 	_, err = service.GetAPIKeyByID(ctx, key2.UID)
-	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
+	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound)
 
 	// Verify key3 can still be fetched
 	fetched, err := service.GetAPIKeyByID(ctx, key3.UID)
@@ -383,7 +382,7 @@ func TestRevokeAPIKeys_VerifySoftDelete(t *testing.T) {
 
 	// Verify key is not returned by GetAPIKeyByID (filters deleted keys)
 	_, err = service.GetAPIKeyByID(ctx, apiKey.UID)
-	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
+	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound)
 
 	// IMPORTANT: GetAPIKeyByMaskID IS special - it returns revoked keys with DeletedAt populated
 	// This is needed for authentication flow to distinguish "not found" from "revoked"
@@ -394,7 +393,7 @@ func TestRevokeAPIKeys_VerifySoftDelete(t *testing.T) {
 
 	// Verify key is not returned by GetAPIKeyByHash (filters deleted keys)
 	_, err = service.GetAPIKeyByHash(ctx, apiKey.Hash)
-	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
+	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound)
 }
 
 func TestRevokeAPIKeys_NotReturnedInPagination(t *testing.T) {
@@ -428,7 +427,7 @@ func TestRevokeAPIKeys_NotReturnedInPagination(t *testing.T) {
 	}
 
 	// Fetch paginated keys
-	filter := &models.ApiKeyFilter{
+	filter := &datastore.Filter{
 		ProjectID: project.UID,
 	}
 	pageable := datastore.Pageable{

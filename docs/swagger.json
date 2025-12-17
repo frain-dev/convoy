@@ -4203,7 +4203,7 @@
                                                         "content": {
                                                             "type": "array",
                                                             "items": {
-                                                                "$ref": "#/definitions/models.PortalLinkResponse"
+                                                                "$ref": "#/definitions/datastore.PortalLinkResponse"
                                                             }
                                                         }
                                                     }
@@ -4303,7 +4303,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreatePortalLinkRequest"
+                            "$ref": "#/definitions/datastore.CreatePortalLinkRequest"
                         }
                     }
                 ],
@@ -4319,7 +4319,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.PortalLinkResponse"
+                                            "$ref": "#/definitions/datastore.PortalLinkResponse"
                                         }
                                     }
                                 }
@@ -4430,7 +4430,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.PortalLinkResponse"
+                                            "$ref": "#/definitions/datastore.PortalLinkResponse"
                                         }
                                     }
                                 }
@@ -4532,7 +4532,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.UpdatePortalLinkRequest"
+                            "$ref": "#/definitions/datastore.UpdatePortalLinkRequest"
                         }
                     }
                 ],
@@ -4548,7 +4548,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.PortalLinkResponse"
+                                            "$ref": "#/definitions/datastore.PortalLinkResponse"
                                         }
                                     }
                                 }
@@ -7479,6 +7479,33 @@
                 }
             }
         },
+        "datastore.CreatePortalLinkRequest": {
+            "type": "object",
+            "properties": {
+                "auth_type": {
+                    "type": "string"
+                },
+                "can_manage_endpoint": {
+                    "description": "Specify whether endpoint management can be done through the Portal Link UI",
+                    "type": "boolean"
+                },
+                "endpoints": {
+                    "description": "Deprecated\nIDs of endpoints in this portal link",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "Portal Link Name",
+                    "type": "string"
+                },
+                "owner_id": {
+                    "description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
+                    "type": "string"
+                }
+            }
+        },
         "datastore.CustomResponse": {
             "type": "object",
             "properties": {
@@ -8217,6 +8244,62 @@
                 "PortalAuthTypeStaticToken"
             ]
         },
+        "datastore.PortalLinkResponse": {
+            "type": "object",
+            "properties": {
+                "auth_key": {
+                    "type": "string"
+                },
+                "auth_type": {
+                    "$ref": "#/definitions/datastore.PortalAuthType"
+                },
+                "can_manage_endpoint": {
+                    "type": "boolean"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "endpoint_count": {
+                    "type": "integer"
+                },
+                "endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "endpoints_metadata": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/datastore.Endpoint"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.ProviderConfig": {
             "type": "object",
             "properties": {
@@ -8450,6 +8533,33 @@
             "type": "object",
             "properties": {
                 "crc_verified_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.UpdatePortalLinkRequest": {
+            "type": "object",
+            "properties": {
+                "auth_type": {
+                    "type": "string"
+                },
+                "can_manage_endpoint": {
+                    "description": "Specify whether endpoint management can be done through the Portal Link UI",
+                    "type": "boolean"
+                },
+                "endpoints": {
+                    "description": "Deprecated\nIDs of endpoints in this portal link",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "Portal Link Name",
+                    "type": "string"
+                },
+                "owner_id": {
+                    "description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
                     "type": "string"
                 }
             }
@@ -8797,33 +8907,6 @@
                             "$ref": "#/definitions/datastore.M"
                         }
                     ]
-                }
-            }
-        },
-        "models.CreatePortalLinkRequest": {
-            "type": "object",
-            "properties": {
-                "auth_type": {
-                    "type": "string"
-                },
-                "can_manage_endpoint": {
-                    "description": "Specify whether endpoint management can be done through the Portal Link UI",
-                    "type": "boolean"
-                },
-                "endpoints": {
-                    "description": "Deprecated\nIDs of endpoints in this portal link",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "description": "Portal Link Name",
-                    "type": "string"
-                },
-                "owner_id": {
-                    "description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
-                    "type": "string"
                 }
             }
         },
@@ -9684,62 +9767,6 @@
                 }
             }
         },
-        "models.PortalLinkResponse": {
-            "type": "object",
-            "properties": {
-                "auth_key": {
-                    "type": "string"
-                },
-                "auth_type": {
-                    "$ref": "#/definitions/datastore.PortalAuthType"
-                },
-                "can_manage_endpoint": {
-                    "type": "boolean"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "endpoint_count": {
-                    "type": "integer"
-                },
-                "endpoints": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "endpoints_metadata": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/datastore.Endpoint"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "owner_id": {
-                    "type": "string"
-                },
-                "project_id": {
-                    "type": "string"
-                },
-                "token": {
-                    "type": "string"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
         "models.PubSubConfig": {
             "type": "object",
             "properties": {
@@ -10141,33 +10168,6 @@
                 "is_flattened": {
                     "description": "Whether the filter uses flattened JSON paths (optional)",
                     "type": "boolean"
-                }
-            }
-        },
-        "models.UpdatePortalLinkRequest": {
-            "type": "object",
-            "properties": {
-                "auth_type": {
-                    "type": "string"
-                },
-                "can_manage_endpoint": {
-                    "description": "Specify whether endpoint management can be done through the Portal Link UI",
-                    "type": "boolean"
-                },
-                "endpoints": {
-                    "description": "Deprecated\nIDs of endpoints in this portal link",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "description": "Portal Link Name",
-                    "type": "string"
-                },
-                "owner_id": {
-                    "description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
-                    "type": "string"
                 }
             }
         },

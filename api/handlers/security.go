@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
-	api_key_models "github.com/frain-dev/convoy/internal/api_keys/models"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -48,14 +47,14 @@ func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &api_key_models.APIKeyResponse{
-		APIKey: api_key_models.APIKey{
+	resp := &datastore.APIKeyResponse{
+		APIKeyRes: datastore.APIKeyRes{
 			Name: apiKey.Name,
-			Role: api_key_models.Role{
+			Role: datastore.Role{
 				Type:    apiKey.Role.Type,
 				Project: apiKey.Role.Project,
 			},
-			Type:      apiKey.Type,
+			Type:      string(apiKey.Type),
 			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UserID:    apiKey.UserID,
@@ -123,14 +122,14 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp := &api_key_models.APIKeyResponse{
-		APIKey: api_key_models.APIKey{
+	resp := &datastore.APIKeyResponse{
+		APIKeyRes: datastore.APIKeyRes{
 			Name: apiKey.Name,
-			Role: api_key_models.Role{
+			Role: datastore.Role{
 				Type:    apiKey.Role.Type,
 				Project: apiKey.Role.Project,
 			},
-			Type:      apiKey.Type,
+			Type:      string(apiKey.Type),
 			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UID:       apiKey.UID,
@@ -144,8 +143,9 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 
-	f := &api_key_models.ApiKeyFilter{}
+	f := &datastore.Filter{}
 	keyType := datastore.KeyType(r.URL.Query().Get("keyType"))
+
 	if keyType.IsValid() {
 		f.KeyType = keyType
 

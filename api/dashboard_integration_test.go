@@ -28,7 +28,6 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
-	plinkModels "github.com/frain-dev/convoy/internal/portal_links/models"
 )
 
 type pagedResponse struct {
@@ -2687,7 +2686,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var resp plinkModels.PortalLinkResponse
+	var resp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
@@ -2735,7 +2734,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink(
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert
-	var resp plinkModels.PortalLinkResponse
+	var resp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
@@ -2842,7 +2841,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	require.Equal(s.T(), http.StatusAccepted, w.Code)
 
 	// Deep Assert
-	var resp plinkModels.PortalLinkResponse
+	var resp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)

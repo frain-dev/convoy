@@ -17,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
-	orgmodels "github.com/frain-dev/convoy/internal/organisations/models"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -45,7 +44,7 @@ func (h *Handler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully", org, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest fetched successfully", org, http.StatusOK))
 }
 
 func (h *Handler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
@@ -68,7 +67,7 @@ func (h *Handler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
-	var newOrg orgmodels.Organisation
+	var newOrg datastore.OrganisationRequest
 	err := util.ReadJSON(r, &newOrg)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse organisation creation request: %v", err)
@@ -102,11 +101,11 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Organisation created successfully", organisation, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest created successfully", organisation, http.StatusCreated))
 }
 
 func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
-	var orgUpdate orgmodels.Organisation
+	var orgUpdate datastore.OrganisationRequest
 	err := util.ReadJSON(r, &orgUpdate)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse organisation update request: %v", err)
@@ -139,7 +138,7 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Organisation updated successfully", org, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest updated successfully", org, http.StatusAccepted))
 }
 
 func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -162,11 +161,11 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Organisation deleted successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest deleted successfully", nil, http.StatusOK))
 }
 
 func (h *Handler) UpdateOrganisationFeatureFlags(w http.ResponseWriter, r *http.Request) {
-	var featureFlagsUpdate orgmodels.UpdateOrganisationFeatureFlags
+	var featureFlagsUpdate datastore.UpdateOrganisationFeatureFlags
 	err := util.ReadJSON(r, &featureFlagsUpdate)
 	if err != nil {
 		h.A.Logger.WithError(err).Error("Failed to parse feature flags update request")
@@ -447,7 +446,7 @@ func (h *Handler) UpdateOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var overrideRequest orgmodels.UpdateOrganisationOverride
+	var overrideRequest datastore.UpdateOrganisationOverride
 	err := util.ReadJSON(r, &overrideRequest)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -602,7 +601,7 @@ func (h *Handler) UpdateOrganisationCircuitBreakerConfig(w http.ResponseWriter, 
 		return
 	}
 
-	var configRequest orgmodels.UpdateOrganisationCircuitBreakerConfig
+	var configRequest datastore.UpdateOrganisationCircuitBreakerConfig
 	err := util.ReadJSON(r, &configRequest)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -733,7 +732,7 @@ func (h *Handler) UpdateProjectCircuitBreakerConfig(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var configRequest orgmodels.UpdateOrganisationCircuitBreakerConfig
+	var configRequest datastore.UpdateOrganisationCircuitBreakerConfig
 	err := util.ReadJSON(r, &configRequest)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))

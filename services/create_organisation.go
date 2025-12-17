@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	orgmodels "github.com/frain-dev/convoy/internal/organisations/models"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -23,7 +22,7 @@ import (
 type CreateOrganisationService struct {
 	OrgRepo       datastore.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
-	NewOrg        *orgmodels.Organisation
+	NewOrg        *datastore.OrganisationRequest
 	User          *datastore.User
 	Licenser      license.Licenser
 	RoleType      auth.RoleType

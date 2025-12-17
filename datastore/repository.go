@@ -101,6 +101,66 @@ type OrganisationRepository interface {
 	CalculateUsage(ctx context.Context, orgID string, startTime, endTime time.Time) (*OrganisationUsage, error)
 }
 
+// APIKeyRepository defines the interface for API key operations
+type APIKeyRepository interface {
+	// CreateAPIKey creates a new API key
+	CreateAPIKey(ctx context.Context, apiKey *APIKey) error
+
+	// UpdateAPIKey updates an existing API key
+	UpdateAPIKey(ctx context.Context, apiKey *APIKey) error
+
+	// GetAPIKeyByID retrieves an API key by its ID
+	GetAPIKeyByID(ctx context.Context, id string) (*APIKey, error)
+
+	// GetAPIKeyByMaskID retrieves an API key by its mask ID (used for authentication)
+	GetAPIKeyByMaskID(ctx context.Context, maskID string) (*APIKey, error)
+
+	// GetAPIKeyByHash retrieves an API key by its hash
+	GetAPIKeyByHash(ctx context.Context, hash string) (*APIKey, error)
+
+	// GetAPIKeyByProjectID retrieves an API key by its project ID
+	GetAPIKeyByProjectID(ctx context.Context, projectID string) (*APIKey, error)
+
+	// RevokeAPIKeys revokes (soft deletes) multiple API keys
+	RevokeAPIKeys(ctx context.Context, ids []string) error
+
+	// LoadAPIKeysPaged retrieves API keys with pagination and filtering
+	LoadAPIKeysPaged(ctx context.Context, filter *Filter, pageable *Pageable) ([]APIKey, PaginationData, error)
+}
+
+// PortalLinkRepository defines the interface for portal link operations
+type PortalLinkRepository interface {
+	// CreatePortalLink creates a new portal link
+	CreatePortalLink(ctx context.Context, projectId string, request *CreatePortalLinkRequest) (*PortalLink, error)
+
+	// UpdatePortalLink updates an existing portal link
+	UpdatePortalLink(ctx context.Context, projectID string, portalLink *PortalLink, request *UpdatePortalLinkRequest) (*PortalLink, error)
+
+	// GetPortalLink retrieves a portal link by project and portal link ID
+	GetPortalLink(ctx context.Context, projectID, portalLinkID string) (*PortalLink, error)
+
+	// GetPortalLinkByToken retrieves a portal link by its token
+	GetPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
+
+	// GetPortalLinkByOwnerID retrieves a portal link by owner ID
+	GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID string) (*PortalLink, error)
+
+	// RefreshPortalLinkAuthToken refreshes the authentication token for a portal link
+	RefreshPortalLinkAuthToken(ctx context.Context, projectID, portalLinkID string) (*PortalLink, error)
+
+	// RevokePortalLink revokes (soft deletes) a portal link
+	RevokePortalLink(ctx context.Context, projectID, portalLinkID string) error
+
+	// LoadPortalLinksPaged retrieves portal links with pagination and filtering
+	LoadPortalLinksPaged(ctx context.Context, projectID string, filter *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
+
+	// FindPortalLinksByOwnerID finds all portal links for a specific owner
+	FindPortalLinksByOwnerID(ctx context.Context, ownerID string) ([]PortalLink, error)
+
+	// FindPortalLinkByMaskId finds a portal link by its mask ID
+	FindPortalLinkByMaskId(ctx context.Context, maskId string) (*PortalLink, error)
+}
+
 type OrganisationInviteRepository interface {
 	LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus InviteStatus, pageable Pageable) ([]OrganisationInvite, PaginationData, error)
 	CreateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error

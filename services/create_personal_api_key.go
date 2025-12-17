@@ -12,7 +12,6 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -20,7 +19,7 @@ import (
 type CreatePersonalAPIKeyService struct {
 	ProjectRepo datastore.ProjectRepository
 	UserRepo    datastore.UserRepository
-	APIKeyRepo  api_keys.APIKeyRepository
+	APIKeyRepo  datastore.APIKeyRepository
 
 	User      *datastore.User
 	NewApiKey *models.PersonalAPIKey

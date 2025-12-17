@@ -26,7 +26,6 @@ import (
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
-	plinkModels "github.com/frain-dev/convoy/internal/portal_links/models"
 )
 
 type PublicEndpointIntegrationTestSuite struct {
@@ -1384,7 +1383,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var resp plinkModels.PortalLinkResponse
+	var resp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
@@ -1429,7 +1428,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPorta
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert
-	var resp plinkModels.PortalLinkResponse
+	var resp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
@@ -1529,7 +1528,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	require.Equal(s.T(), http.StatusAccepted, w.Code)
 
 	// Deep Assert
-	var resp plinkModels.PortalLinkResponse
+	var resp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
@@ -1586,7 +1585,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpoin
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert - Parse response from w
-	var resp plinkModels.PortalLinkResponse
+	var resp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	// Assert all response fields from create
@@ -1669,7 +1668,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithoutEndp
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert - Parse response from w
-	var resp plinkModels.PortalLinkResponse
+	var resp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	// Assert all response fields from create
@@ -1754,7 +1753,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_ListPortalLinks_WithEndpoint
 	// Assert - Portal link created successfully
 	require.Equal(s.T(), http.StatusCreated, w.Code)
 
-	var createResp plinkModels.PortalLinkResponse
+	var createResp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &createResp)
 	require.Equal(s.T(), 1, createResp.EndpointCount, "Create response should show 1 endpoint")
 
@@ -1776,11 +1775,11 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_ListPortalLinks_WithEndpoint
 	parseResponse(s.T(), listW.Result(), &listResp)
 
 	// Find the portal link we just created in the list
-	var foundPortalLink *plinkModels.PortalLinkResponse
+	var foundPortalLink *datastore.PortalLinkResponse
 	content := listResp.Content.([]interface{})
 	for _, item := range content {
 		itemBytes, _ := json.Marshal(item)
-		var pl plinkModels.PortalLinkResponse
+		var pl datastore.PortalLinkResponse
 		json.Unmarshal(itemBytes, &pl)
 		if pl.UID == createResp.UID {
 			foundPortalLink = &pl
@@ -1894,7 +1893,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpoin
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert
-	var resp plinkModels.PortalLinkResponse
+	var resp datastore.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	// Assert response fields
