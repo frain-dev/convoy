@@ -44,7 +44,7 @@ func (h *Handler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest fetched successfully", org, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully", org, http.StatusOK))
 }
 
 func (h *Handler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged

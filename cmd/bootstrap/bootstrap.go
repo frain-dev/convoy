@@ -85,7 +85,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			co := services.CreateOrganisationService{
 				OrgRepo:       organisations.New(a.Logger, a.DB),
 				OrgMemberRepo: postgres.NewOrgMemberRepo(a.DB),
-				NewOrg:        &datastore.OrganisationRequest{Name: "Default OrganisationRequest"},
+				NewOrg:        &datastore.OrganisationRequest{Name: "Default Organisation"},
 				User:          user,
 			}
 
