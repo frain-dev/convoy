@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
@@ -157,7 +158,7 @@ func (h *Handler) retrieveMembership(r *http.Request) (*datastore.OrganisationMe
 		return &datastore.OrganisationMember{}, err
 	}
 
-	orgMemberRepo := postgres.NewOrgMemberRepo(h.A.DB)
+	orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
 	return orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 }
 

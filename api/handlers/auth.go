@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
@@ -32,7 +33,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	lu := services.LoginUserSSOService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
 		LicenseKey:    configuration.LicenseKey,
@@ -64,7 +65,7 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 	lu := services.LoginUserSSOService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
 		LicenseKey:    configuration.LicenseKey,
@@ -132,7 +133,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	lu := services.LoginUserService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		Cache:         h.A.Cache,
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Data:          &newUser,
@@ -260,7 +261,7 @@ func (h *Handler) GoogleOAuthToken(w http.ResponseWriter, r *http.Request) {
 	googleOAuthService := services.NewGoogleOAuthService(
 		postgres.NewUserRepo(h.A.DB),
 		organisations.New(h.A.Logger, h.A.DB),
-		postgres.NewOrgMemberRepo(h.A.DB),
+		organisation_members.New(h.A.Logger, h.A.DB),
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		postgres.NewConfigRepo(h.A.DB),
 		h.A.Licenser,
@@ -318,7 +319,7 @@ func (h *Handler) GoogleOAuthSetup(w http.ResponseWriter, r *http.Request) {
 	googleOAuthService := services.NewGoogleOAuthService(
 		postgres.NewUserRepo(h.A.DB),
 		organisations.New(h.A.Logger, h.A.DB),
-		postgres.NewOrgMemberRepo(h.A.DB),
+		organisation_members.New(h.A.Logger, h.A.DB),
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		postgres.NewConfigRepo(h.A.DB),
 		h.A.Licenser,

@@ -24,7 +24,7 @@ import (
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -999,7 +999,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
 		po := &policies.OrganisationPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+			OrganisationMemberRepo: organisation_members.New(a.A.Logger, a.A.DB),
 		}
 
 		po.SetRule(string(policies.PermissionManageAll), authz.RuleFunc(po.ManageAll))
@@ -1018,7 +1018,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 			BasePolicy:             authz.NewBasePolicy(),
 			Licenser:               a.A.Licenser,
 			OrganisationRepo:       organisations.New(a.A.Logger, a.A.DB),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+			OrganisationMemberRepo: organisation_members.New(a.A.Logger, a.A.DB),
 		}
 
 		po.SetRule(string(policies.PermissionManage), authz.RuleFunc(po.Manage))
@@ -1034,7 +1034,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
 		bp := &policies.BillingPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+			OrganisationMemberRepo: organisation_members.New(a.A.Logger, a.A.DB),
 		}
 
 		bp.SetRule(string(policies.PermissionManage), authz.RuleFunc(bp.Manage))

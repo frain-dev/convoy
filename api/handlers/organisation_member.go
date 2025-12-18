@@ -9,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/organisation_members"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -17,7 +17,8 @@ import (
 )
 
 func createOrganisationMemberService(h *Handler) *services.OrganisationMemberService {
-	orgMemberRepo := postgres.NewOrgMemberRepo(h.A.DB)
+	// Use new SQLc-based implementation
+	orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
 
 	return services.NewOrganisationMemberService(orgMemberRepo, h.A.Licenser)
 }
@@ -32,7 +33,7 @@ func (h *Handler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request)
 
 	userID := r.URL.Query().Get("userID")
 
-	members, paginationData, err := postgres.NewOrgMemberRepo(h.A.DB).LoadOrganisationMembersPaged(r.Context(), org.UID, userID, pageable)
+	members, paginationData, err := organisation_members.New(h.A.Logger, h.A.DB).LoadOrganisationMembersPaged(r.Context(), org.UID, userID, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch organisation members")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -51,7 +52,7 @@ func (h *Handler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	member, err := postgres.NewOrgMemberRepo(h.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
+	member, err := organisation_members.New(h.A.Logger, h.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -88,7 +89,7 @@ func (h *Handler) UpdateOrganisationMember(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	member, err := postgres.NewOrgMemberRepo(h.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
+	member, err := organisation_members.New(h.A.Logger, h.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -238,7 +239,7 @@ func SeedDefaultOrganisationWithRole(db database.Database, user *datastore.User,
 		UpdatedAt:      time.Now(),
 	}
 
-	orgMemberRepo := postgres.NewOrgMemberRepo(db)
+	orgMemberRepo := organisation_members.New(log.NewLogger(os.Stdout), db)
 	err = orgMemberRepo.CreateOrganisationMember(context.TODO(), member)
 	if err != nil {
 		return nil, err
@@ -258,7 +259,7 @@ func SeedOrganisationMember(db database.Database, org *datastore.Organisation, u
 		UpdatedAt:      time.Now(),
 	}
 
-	orgMemberRepo := postgres.NewOrgMemberRepo(db)
+	orgMemberRepo := organisation_members.New(log.NewLogger(os.Stdout), db)
 	err := orgMemberRepo.CreateOrganisationMember(context.TODO(), member)
 	if err != nil {
 		return nil, err

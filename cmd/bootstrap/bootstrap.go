@@ -12,6 +12,7 @@ import (
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -84,7 +85,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 
 			co := services.CreateOrganisationService{
 				OrgRepo:       organisations.New(a.Logger, a.DB),
-				OrgMemberRepo: postgres.NewOrgMemberRepo(a.DB),
+				OrgMemberRepo: organisation_members.New(a.Logger, a.DB),
 				NewOrg:        &datastore.OrganisationRequest{Name: "Default Organisation"},
 				User:          user,
 			}

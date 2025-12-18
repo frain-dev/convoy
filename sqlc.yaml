@@ -56,3 +56,15 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
+  - schema: ./sql
+    queries: ./internal/organisation_members/queries.sql
+    engine: postgresql
+    database:
+      managed: true
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/organisation_members/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true
