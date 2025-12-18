@@ -11,5 +11,3 @@ package convoy
 //go:generate mockgen --source internal/pkg/memorystore/table.go --destination mocks/table.go -package mocks
 //go:generate mockgen --source internal/pkg/license/license.go --destination mocks/license.go -package mocks
 //go:generate mockgen --source internal/pkg/tracer/tracer.go --destination mocks/tracer.go -package mocks
-//go:generate mockgen --source internal/portal_links/interface.go --destination mocks/portal_links.go -package mocks
-//go:generate mockgen --source internal/api_keys/interface.go --destination mocks/api_keys.go -package mocks

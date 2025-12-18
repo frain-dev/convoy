@@ -13,7 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/util"
 )
@@ -87,7 +87,7 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
 	// Calculate usage from actual Convoy data using repository
-	orgRepo := postgres.NewOrgRepo(h.A.DB)
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	usage, err := orgRepo.CalculateUsage(r.Context(), orgID, startOfMonth, endOfMonth)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("failed to calculate usage: %s", err.Error()), http.StatusInternalServerError))
@@ -145,7 +145,7 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 
 	_, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
 	if err != nil && strings.Contains(err.Error(), "Organisation not found") {
-		orgRepo := postgres.NewOrgRepo(h.A.DB)
+		orgRepo := organisations.New(h.A.Logger, h.A.DB)
 		org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation data", http.StatusInternalServerError))
@@ -499,7 +499,7 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 	// Use the same bootstrap logic as GetSubscription
 	_, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
 	if err != nil && strings.Contains(err.Error(), "Organisation not found") {
-		orgRepo := postgres.NewOrgRepo(h.A.DB)
+		orgRepo := organisations.New(h.A.Logger, h.A.DB)
 		org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation data", http.StatusInternalServerError))

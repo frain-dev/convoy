@@ -11,14 +11,13 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
 type CreateAPIKeyService struct {
 	ProjectRepo datastore.ProjectRepository
-	APIKeyRepo  api_keys.APIKeyRepository
+	APIKeyRepo  datastore.APIKeyRepository
 
 	Member    *datastore.OrganisationMember
 	NewApiKey *datastore.APIKey

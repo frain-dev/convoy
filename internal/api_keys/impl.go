@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	api_key_models "github.com/frain-dev/convoy/internal/api_keys/models"
 	"github.com/frain-dev/convoy/internal/api_keys/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -26,6 +25,9 @@ type Service struct {
 	db       *pgxpool.Pool     // Connection pool
 	legacyDB database.Database // For gradual migration if needed
 }
+
+// Ensure Service implements datastore.APIKeyRepository at compile time
+var _ datastore.APIKeyRepository = (*Service)(nil)
 
 // New creates a new API key Service
 func New(logger log.StdLogger, db database.Database) *Service {
@@ -217,7 +219,7 @@ func (s *Service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIK
 	row, err := s.repo.FindAPIKeyByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, api_key_models.ErrAPIKeyNotFound
+			return nil, datastore.ErrAPIKeyNotFound
 		}
 		s.logger.WithError(err).Error("failed to find api key by id")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -233,7 +235,7 @@ func (s *Service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datast
 	row, err := s.repo.FindAPIKeyByMaskID(ctx, maskID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, api_key_models.ErrAPIKeyNotFound
+			return nil, datastore.ErrAPIKeyNotFound
 		}
 		s.logger.WithError(err).Error("failed to find api key by mask id")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -248,7 +250,7 @@ func (s *Service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.
 	row, err := s.repo.FindAPIKeyByHash(ctx, hash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, api_key_models.ErrAPIKeyNotFound
+			return nil, datastore.ErrAPIKeyNotFound
 		}
 		s.logger.WithError(err).Error("failed to find api key by hash")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -263,7 +265,7 @@ func (s *Service) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*
 	row, err := s.repo.FindAPIKeyByProjectID(ctx, stringToPgTextFilter(projectID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, api_key_models.ErrAPIKeyNotFound
+			return nil, datastore.ErrAPIKeyNotFound
 		}
 		s.logger.WithError(err).Error("failed to find api key by project id")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -289,7 +291,7 @@ func (s *Service) RevokeAPIKeys(ctx context.Context, ids []string) error {
 }
 
 // LoadAPIKeysPaged retrieves API keys with pagination and filtering
-func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *api_key_models.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Filter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	// Determine direction for SQL query
 	direction := "next"
 	if pageable.Direction == datastore.Prev {
@@ -346,7 +348,7 @@ func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *api_key_models.A
 	// Count previous rows for pagination metadata
 	var prevRowCount datastore.PrevRowCount
 	if len(apiKeys) > 0 {
-		count, err := s.repo.CountPrevAPIKeys(ctx, repo.CountPrevAPIKeysParams{
+		count, err2 := s.repo.CountPrevAPIKeys(ctx, repo.CountPrevAPIKeysParams{
 			Cursor:         first.UID,
 			ProjectID:      projectID,
 			EndpointID:     endpointID,
@@ -355,9 +357,9 @@ func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *api_key_models.A
 			HasEndpointIds: hasEndpointIdsFilter,
 			EndpointIds:    filter.EndpointIDs,
 		})
-		if err != nil {
-			s.logger.WithError(err).Error("failed to count prev api keys")
-			return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err)
+		if err2 != nil {
+			s.logger.WithError(err2).Error("failed to count prev api keys")
+			return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err2)
 		}
 		prevRowCount.Count = int(count.Int64)
 	}

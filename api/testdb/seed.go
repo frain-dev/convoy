@@ -21,8 +21,8 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/portal_links"
-	portal_links_models "github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -222,7 +222,8 @@ func SeedDefaultOrganisationWithRole(db database.Database, user *datastore.User,
 	}
 
 	// Seed Data.
-	organisationRepo := postgres.NewOrgRepo(db)
+	logger := log.NewLogger(os.Stdout)
+	organisationRepo := organisations.New(logger, db)
 	err := organisationRepo.CreateOrganisation(context.TODO(), defaultOrg)
 	if err != nil {
 		return &datastore.Organisation{}, err
@@ -431,7 +432,8 @@ func SeedOrganisation(db database.Database, uid, ownerID, name string) (*datasto
 	}
 
 	// Seed Data.
-	orgRepo := postgres.NewOrgRepo(db)
+	logger := log.NewLogger(os.Stdout)
+	orgRepo := organisations.New(logger, db)
 	err := orgRepo.CreateOrganisation(context.TODO(), org)
 	if err != nil {
 		return &datastore.Organisation{}, err
@@ -457,7 +459,8 @@ func SeedMultipleOrganisations(db database.Database, ownerID string, num int) ([
 		orgs = append(orgs, org)
 
 		// Seed Data.
-		orgRepo := postgres.NewOrgRepo(db)
+		logger := log.NewLogger(os.Stdout)
+		orgRepo := organisations.New(logger, db)
 		err := orgRepo.CreateOrganisation(context.TODO(), org)
 		if err != nil {
 			return nil, err
@@ -612,7 +615,7 @@ func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 }
 
 func SeedPortalLink(db database.Database, project *datastore.Project, ownerId string) (*datastore.PortalLink, error) {
-	portalLink := &portal_links_models.CreatePortalLinkRequest{
+	portalLink := &datastore.CreatePortalLinkRequest{
 		Name:              fmt.Sprintf("TestPortalLink-%s", ulid.Make().String()),
 		Endpoints:         []string{}, // Initialize as an empty slice instead of nil
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),

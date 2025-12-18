@@ -1,13 +1,13 @@
 package portal_links
 
 import (
+	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -15,13 +15,13 @@ func TestGetPortalLinkByOwnerID_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
 
 	// Create a portal link
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Test Portal Link",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -46,7 +46,7 @@ func TestGetPortalLinkByOwnerID_WithEndpointsAutoLinked(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -57,7 +57,7 @@ func TestGetPortalLinkByOwnerID_WithEndpointsAutoLinked(t *testing.T) {
 	_ = seedEndpoint(t, db, project, ownerID)
 
 	// Create portal link without specifying endpoints (should auto-link by owner_id)
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -81,7 +81,7 @@ func TestGetPortalLinkByOwnerID_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Try to fetch with non-existent owner ID
@@ -96,13 +96,13 @@ func TestGetPortalLinkByOwnerID_WrongProject(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
 
 	// Create a portal link
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Test Portal Link",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -124,13 +124,13 @@ func TestGetPortalLinkByOwnerID_WithRefreshTokenAuthType_GeneratesAuthToken(t *t
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
 
 	// Create a portal link with refresh token auth type
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link With Refresh Token",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
@@ -157,13 +157,13 @@ func TestGetPortalLinkByOwnerID_WithStaticTokenAuthType_NoAuthKey(t *testing.T) 
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
 
 	// Create a portal link with static token auth type
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link With Static Token",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),

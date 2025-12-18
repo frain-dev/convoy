@@ -1,15 +1,13 @@
-package util
+package datastore
 
 import (
 	"net/http"
 	"strings"
-
-	"github.com/frain-dev/convoy/datastore"
 )
 
 // ConvertDefaultHeaderToCustomHeader converts http.Header to convoy.HttpHeader
-func ConvertDefaultHeaderToCustomHeader(h *http.Header) *datastore.HttpHeader {
-	res := make(datastore.HttpHeader)
+func ConvertDefaultHeaderToCustomHeader(h *http.Header) *HttpHeader {
+	res := make(HttpHeader)
 	for k, v := range *h {
 		res[k] = strings.Join(v, " ")
 	}

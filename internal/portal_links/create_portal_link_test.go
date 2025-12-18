@@ -2,6 +2,7 @@ package portal_links
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -13,8 +14,8 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -22,6 +23,25 @@ import (
 var (
 	testEnv *testenv.Environment
 )
+
+func SeedPortalLink(db database.Database, project *datastore.Project, ownerId string) (*datastore.PortalLink, error) {
+	portalLink := &datastore.CreatePortalLinkRequest{
+		Name:              fmt.Sprintf("TestPortalLink-%s", ulid.Make().String()),
+		Endpoints:         []string{}, // Initialize as an empty slice instead of nil
+		AuthType:          string(datastore.PortalAuthTypeStaticToken),
+		OwnerID:           ownerId,
+		CanManageEndpoint: true,
+	}
+
+	logger := log.NewLogger(os.Stdout)
+	portalLinkRepo := New(logger, db)
+	p, err := portalLinkRepo.CreatePortalLink(context.TODO(), project.UID, portalLink)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
 
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
@@ -95,7 +115,8 @@ func seedTestData(t *testing.T, db database.Database) *datastore.Project {
 	require.NoError(t, err)
 
 	// Create organisation
-	orgRepo := postgres.NewOrgRepo(db)
+	logger := log.NewLogger(os.Stdout)
+	orgRepo := organisations.New(logger, db)
 	org := &datastore.Organisation{
 		UID:     ulid.Make().String(),
 		Name:    "Test Org",
@@ -149,10 +170,10 @@ func TestCreatePortalLink_ValidRequest(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Test Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -178,7 +199,7 @@ func TestCreatePortalLink_WithEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -187,7 +208,7 @@ func TestCreatePortalLink_WithEndpoints(t *testing.T) {
 	endpoint1 := seedEndpoint(t, db, project, "")
 	endpoint2 := seedEndpoint(t, db, project, "")
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link With Endpoints",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -221,7 +242,7 @@ func TestCreatePortalLink_WithEndpoints_AlreadyHaveOwnerID(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -229,7 +250,7 @@ func TestCreatePortalLink_WithEndpoints_AlreadyHaveOwnerID(t *testing.T) {
 	// Seed endpoint that already has the same owner_id
 	endpoint1 := seedEndpoint(t, db, project, ownerID)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link With Existing Owner",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -249,7 +270,7 @@ func TestCreatePortalLink_WithEndpoints_DifferentOwnerID_ShouldFail(t *testing.T
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -258,7 +279,7 @@ func TestCreatePortalLink_WithEndpoints_DifferentOwnerID_ShouldFail(t *testing.T
 	// Seed endpoint that already has a different owner_id
 	endpoint1 := seedEndpoint(t, db, project, differentOwnerID)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link With Different Owner",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -277,7 +298,7 @@ func TestCreatePortalLink_WithOwnerID_NoEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -286,7 +307,7 @@ func TestCreatePortalLink_WithOwnerID_NoEndpoints(t *testing.T) {
 	_ = seedEndpoint(t, db, project, ownerID)
 	_ = seedEndpoint(t, db, project, ownerID)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link With Owner ID",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
@@ -316,10 +337,10 @@ func TestCreatePortalLink_WithRefreshTokenAuthType(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Refresh Token Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
@@ -342,10 +363,10 @@ func TestCreatePortalLink_WithStaticTokenAuthType_NoAuthKey(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Static Token Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -367,10 +388,10 @@ func TestCreatePortalLink_EmptyOwnerID_ShouldFail(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link Auto Owner",
 		OwnerID:           "", // Empty owner_id
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -390,10 +411,10 @@ func TestCreatePortalLink_InvalidRequest_MissingName(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "", // Missing name
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -412,10 +433,10 @@ func TestCreatePortalLink_InvalidRequest_InvalidAuthType(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Invalid Auth Type Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          "invalid_auth_type", // Invalid auth type
@@ -433,10 +454,10 @@ func TestCreatePortalLink_EndpointNotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link With Invalid Endpoint",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -455,7 +476,7 @@ func TestCreatePortalLink_MultipleEndpoints_SomeInvalid(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -463,7 +484,7 @@ func TestCreatePortalLink_MultipleEndpoints_SomeInvalid(t *testing.T) {
 	// Seed one valid endpoint
 	endpoint1 := seedEndpoint(t, db, project, "")
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Portal Link Mixed Endpoints",
 		OwnerID:           ownerID,
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -482,10 +503,10 @@ func TestCreatePortalLink_VerifyTokenGenerated(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Token Verification Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),
@@ -515,10 +536,10 @@ func TestCreatePortalLink_VerifyDatabasePersistence(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
-	request := &models.CreatePortalLinkRequest{
+	request := &datastore.CreatePortalLinkRequest{
 		Name:              "Persistence Test Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeStaticToken),

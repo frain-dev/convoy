@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -45,7 +46,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	rs := services.RegisterUserService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB),
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		Queue:         h.A.Queue,
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),

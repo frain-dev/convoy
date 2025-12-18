@@ -24,6 +24,7 @@ import (
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -218,7 +219,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			KeyGen: keygen.Config{
 				LicenseKey:  cfg.LicenseKey,
-				OrgRepo:     postgres.NewOrgRepo(app.DB),
+				OrgRepo:     organisations.New(lo, app.DB),
 				UserRepo:    postgres.NewUserRepo(app.DB),
 				ProjectRepo: projectRepo,
 			},

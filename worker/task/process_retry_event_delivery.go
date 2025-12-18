@@ -432,8 +432,8 @@ func newSignature(endpoint *datastore.Endpoint, g *datastore.Project, data json.
 }
 
 func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {
-	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
-	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
+	responseHeader := datastore.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
+	requestHeader := datastore.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
 	return datastore.DeliveryAttempt{
 		UID:             ulid.Make().String(),

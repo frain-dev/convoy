@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/util"
@@ -141,7 +142,7 @@ func (h *Handler) retrieveOrganisation(r *http.Request) (*datastore.Organisation
 		orgID = r.URL.Query().Get("orgID")
 	}
 
-	orgRepo := postgres.NewOrgRepo(h.A.DB)
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	return orgRepo.FetchOrganisationByID(r.Context(), orgID)
 }
 

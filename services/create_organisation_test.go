@@ -8,13 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 )
 
-func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *models.Organisation, user *datastore.User) *CreateOrganisationService {
+func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *datastore.OrganisationRequest, user *datastore.User) *CreateOrganisationService {
 	return &CreateOrganisationService{
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
@@ -29,7 +28,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		newOrg *models.Organisation
+		newOrg *datastore.OrganisationRequest
 		user   *datastore.User
 	}
 	tests := []struct {
@@ -44,7 +43,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			name: "should_create_organisation",
 			args: args{
 				ctx:    ctx,
-				newOrg: &models.Organisation{Name: "new_org"},
+				newOrg: &datastore.OrganisationRequest{Name: "new_org"},
 				user:   &datastore.User{UID: "1234"},
 			},
 			want: &datastore.Organisation{Name: "new_org", OwnerID: "1234"},
@@ -66,7 +65,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			name: "should_create_organisation_with_existing_instance_admin",
 			args: args{
 				ctx:    ctx,
-				newOrg: &models.Organisation{Name: "new_org"},
+				newOrg: &datastore.OrganisationRequest{Name: "new_org"},
 				user:   &datastore.User{UID: "1234"},
 			},
 			want: &datastore.Organisation{Name: "new_org", OwnerID: "1234"},
@@ -88,7 +87,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			name: "should_fail_to_validate_organisation",
 			args: args{
 				ctx:    ctx,
-				newOrg: &models.Organisation{Name: ""},
+				newOrg: &datastore.OrganisationRequest{Name: ""},
 				user:   &datastore.User{UID: "1234"},
 			},
 			dbFn: func(os *CreateOrganisationService) {
@@ -102,7 +101,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			name: "should_fail_to_create_organisation",
 			args: args{
 				ctx:    ctx,
-				newOrg: &models.Organisation{Name: "new_org"},
+				newOrg: &datastore.OrganisationRequest{Name: "new_org"},
 				user:   &datastore.User{UID: "1234"},
 			},
 			dbFn: func(os *CreateOrganisationService) {
@@ -120,7 +119,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			name: "should_fail_to_create_organisation_for_license_check",
 			args: args{
 				ctx:    ctx,
-				newOrg: &models.Organisation{Name: "new_org"},
+				newOrg: &datastore.OrganisationRequest{Name: "new_org"},
 				user:   &datastore.User{UID: "1234"},
 			},
 			dbFn: func(os *CreateOrganisationService) {

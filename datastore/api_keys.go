@@ -1,4 +1,4 @@
-package models
+package datastore
 
 import (
 	"errors"
@@ -9,39 +9,30 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 )
 
 var ErrAPIKeyNotFound = errors.New("api key not found")
 
 // CreateAPIKeyRequest represents the request to create an API key
 type CreateAPIKeyRequest struct {
-	Name      string            `json:"name" valid:"required"`
-	Role      auth.Role         `json:"role" valid:"required"`
-	Type      datastore.KeyType `json:"key_type" valid:"required"`
-	UserID    string            `json:"user_id,omitempty"`
-	ExpiresAt null.Time         `json:"expires_at,omitempty"`
+	Name      string    `json:"name" valid:"required"`
+	Role      auth.Role `json:"role" valid:"required"`
+	Type      string    `json:"key_type" valid:"required"`
+	UserID    string    `json:"user_id,omitempty"`
+	ExpiresAt null.Time `json:"expires_at,omitempty"`
 }
 
 // Validate validates the create API key request
 func (r *CreateAPIKeyRequest) Validate() error {
 	err := validation.ValidateStruct(r,
 		validation.Field(&r.Name, validation.Required),
+		validation.Field(&r.Role, validation.Required),
+		validation.Field(&r.Role.Type, validation.Required),
 		validation.Field(&r.Type, validation.Required,
-			validation.In(datastore.PersonalKey, datastore.ProjectKey)),
+			validation.In("project", "app_portal", "cli", "personal_key")),
 	)
 	if err != nil {
 		return err
-	}
-
-	if !r.Type.IsValid() {
-		return errors.New("invalid key type")
-	}
-
-	// Validate role type
-	if util.IsStringEmpty(string(r.Role.Type)) {
-		return errors.New("role type is required")
 	}
 
 	return nil
@@ -55,13 +46,13 @@ type UpdateAPIKeyRequest struct {
 
 // Validate validates the update API key request
 func (r *UpdateAPIKeyRequest) Validate() error {
-	if util.IsStringEmpty(r.Name) {
-		return errors.New("name is required")
-	}
-
-	// Validate role type
-	if util.IsStringEmpty(string(r.Role.Type)) {
-		return errors.New("role type is required")
+	err := validation.ValidateStruct(r,
+		validation.Field(&r.Name, validation.Required),
+		validation.Field(&r.Role, validation.Required),
+		validation.Field(&r.Role.Type, validation.Required),
+	)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -75,8 +66,11 @@ type PersonalAPIKeyRequest struct {
 
 // Validate validates the personal API key request
 func (r *PersonalAPIKeyRequest) Validate() error {
-	if util.IsStringEmpty(r.Name) {
-		return errors.New("name is required")
+	err := validation.ValidateStruct(r,
+		validation.Field(&r.Name, validation.Required),
+	)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -87,14 +81,14 @@ type ApiKeyFilter struct {
 	EndpointID  string
 	EndpointIDs []string
 	UserID      string
-	KeyType     datastore.KeyType
+	KeyType     string
 }
 
-type APIKey struct {
-	Name      string            `json:"name"`
-	Role      Role              `json:"role"`
-	Type      datastore.KeyType `json:"key_type"`
-	ExpiresAt null.Time         `json:"expires_at"`
+type APIKeyRes struct {
+	Name      string    `json:"name"`
+	Role      Role      `json:"role"`
+	Type      string    `json:"key_type"`
+	ExpiresAt null.Time `json:"expires_at"`
 }
 
 type Role struct {
@@ -104,7 +98,7 @@ type Role struct {
 }
 
 type APIKeyResponse struct {
-	APIKey
+	APIKeyRes
 	Key       string    `json:"key"`
 	UID       string    `json:"uid"`
 	UserID    string    `json:"user_id,omitempty"`

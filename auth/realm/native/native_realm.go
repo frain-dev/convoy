@@ -14,19 +14,17 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/api_keys"
-	"github.com/frain-dev/convoy/internal/portal_links"
 )
 
 type NativeRealm struct {
-	apiKeyRepo        api_keys.APIKeyRepository
+	apiKeyRepo        datastore.APIKeyRepository
 	userRepo          datastore.UserRepository
-	portalLinkService portal_links.PortalLinkRepository
+	portalLinkService datastore.PortalLinkRepository
 }
 
-func NewNativeRealm(apiKeyRepo api_keys.APIKeyRepository,
+func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository,
 	userRepo datastore.UserRepository,
-	portalLinkService portal_links.PortalLinkRepository) *NativeRealm {
+	portalLinkService datastore.PortalLinkRepository) *NativeRealm {
 	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo, portalLinkService: portalLinkService}
 }
 

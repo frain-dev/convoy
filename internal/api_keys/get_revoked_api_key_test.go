@@ -10,7 +10,6 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/api_keys/models"
 )
 
 // TestGetAPIKeyByMaskID_RevokedKey verifies that revoked keys are returned with DeletedAt populated
@@ -152,5 +151,5 @@ func TestGetAPIKeyByID_DoesNotReturnRevokedKeys(t *testing.T) {
 	// This should return ErrAPIKeyNotFound because FindAPIKeyByID filters deleted keys
 	_, err = service.GetAPIKeyByID(ctx, apiKey.UID)
 	require.Error(t, err)
-	require.ErrorIs(t, err, models.ErrAPIKeyNotFound, "GetAPIKeyByID should not return revoked keys")
+	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound, "GetAPIKeyByID should not return revoked keys")
 }

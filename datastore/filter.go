@@ -8,6 +8,8 @@ import (
 type Filter struct {
 	Query           string
 	OwnerID         string
+	UserID          string
+	KeyType         KeyType
 	Project         *Project
 	ProjectID       string
 	EndpointID      string

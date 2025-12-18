@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -24,7 +23,7 @@ import (
 type CreateFanoutEventService struct {
 	EndpointRepo   datastore.EndpointRepository
 	EventRepo      datastore.EventRepository
-	PortalLinkRepo portal_links.PortalLinkRepository
+	PortalLinkRepo datastore.PortalLinkRepository
 	Queue          queue.Queuer
 
 	NewMessage *models.FanoutEvent

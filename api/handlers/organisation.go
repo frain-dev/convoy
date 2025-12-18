@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -66,7 +67,7 @@ func (h *Handler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
-	var newOrg models.Organisation
+	var newOrg datastore.OrganisationRequest
 	err := util.ReadJSON(r, &newOrg)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse organisation creation request: %v", err)
@@ -85,8 +86,9 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	co := services.CreateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgRepo:       orgRepo,
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		NewOrg:        &newOrg,
 		User:          user,
@@ -99,11 +101,11 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Organisation created successfully", organisation, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest created successfully", organisation, http.StatusCreated))
 }
 
 func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
-	var orgUpdate models.Organisation
+	var orgUpdate datastore.OrganisationRequest
 	err := util.ReadJSON(r, &orgUpdate)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse organisation update request: %v", err)
@@ -122,8 +124,9 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	us := services.UpdateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgRepo:       orgRepo,
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		Org:           org,
 		Update:        &orgUpdate,
@@ -135,7 +138,7 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Organisation updated successfully", org, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest updated successfully", org, http.StatusAccepted))
 }
 
 func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -150,18 +153,19 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewOrgRepo(h.A.DB).DeleteOrganisation(r.Context(), org.UID)
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	err = orgRepo.DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Organisation deleted successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest deleted successfully", nil, http.StatusOK))
 }
 
 func (h *Handler) UpdateOrganisationFeatureFlags(w http.ResponseWriter, r *http.Request) {
-	var featureFlagsUpdate models.UpdateOrganisationFeatureFlags
+	var featureFlagsUpdate datastore.UpdateOrganisationFeatureFlags
 	err := util.ReadJSON(r, &featureFlagsUpdate)
 	if err != nil {
 		h.A.Logger.WithError(err).Error("Failed to parse feature flags update request")
@@ -367,15 +371,15 @@ func (h *Handler) GetAllOrganisations(w http.ResponseWriter, r *http.Request) {
 	// Get search query parameter
 	search := r.URL.Query().Get("search")
 
-	orgRepo := postgres.NewOrgRepo(h.A.DB)
-	var organisations []datastore.Organisation
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	var orgs []datastore.Organisation
 	var paginationData datastore.PaginationData
 	var err error
 
 	if search != "" {
-		organisations, paginationData, err = orgRepo.LoadOrganisationsPagedWithSearch(r.Context(), pageable, search)
+		orgs, paginationData, err = orgRepo.LoadOrganisationsPagedWithSearch(r.Context(), pageable, search)
 	} else {
-		organisations, paginationData, err = orgRepo.LoadOrganisationsPaged(r.Context(), pageable)
+		orgs, paginationData, err = orgRepo.LoadOrganisationsPaged(r.Context(), pageable)
 	}
 
 	if err != nil {
@@ -384,7 +388,7 @@ func (h *Handler) GetAllOrganisations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
-		models.PagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: &orgs, Pagination: &paginationData}, http.StatusOK))
 }
 
 // GetOrganisationOverrides returns all feature flag overrides for a specific organization (instance admin only)
@@ -442,7 +446,7 @@ func (h *Handler) UpdateOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var overrideRequest models.UpdateOrganisationOverride
+	var overrideRequest datastore.UpdateOrganisationOverride
 	err := util.ReadJSON(r, &overrideRequest)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -597,7 +601,7 @@ func (h *Handler) UpdateOrganisationCircuitBreakerConfig(w http.ResponseWriter, 
 		return
 	}
 
-	var configRequest models.UpdateOrganisationCircuitBreakerConfig
+	var configRequest datastore.UpdateOrganisationCircuitBreakerConfig
 	err := util.ReadJSON(r, &configRequest)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -728,7 +732,7 @@ func (h *Handler) UpdateProjectCircuitBreakerConfig(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var configRequest models.UpdateOrganisationCircuitBreakerConfig
+	var configRequest datastore.UpdateOrganisationCircuitBreakerConfig
 	err := util.ReadJSON(r, &configRequest)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))

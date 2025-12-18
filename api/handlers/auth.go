@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -30,7 +31,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
 	lu := services.LoginUserSSOService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB),
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
@@ -62,7 +63,7 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 
 	lu := services.LoginUserSSOService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB),
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
@@ -258,7 +259,7 @@ func (h *Handler) GoogleOAuthToken(w http.ResponseWriter, r *http.Request) {
 
 	googleOAuthService := services.NewGoogleOAuthService(
 		postgres.NewUserRepo(h.A.DB),
-		postgres.NewOrgRepo(h.A.DB),
+		organisations.New(h.A.Logger, h.A.DB),
 		postgres.NewOrgMemberRepo(h.A.DB),
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		postgres.NewConfigRepo(h.A.DB),
@@ -316,7 +317,7 @@ func (h *Handler) GoogleOAuthSetup(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
 	googleOAuthService := services.NewGoogleOAuthService(
 		postgres.NewUserRepo(h.A.DB),
-		postgres.NewOrgRepo(h.A.DB),
+		organisations.New(h.A.Logger, h.A.DB),
 		postgres.NewOrgMemberRepo(h.A.DB),
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		postgres.NewConfigRepo(h.A.DB),

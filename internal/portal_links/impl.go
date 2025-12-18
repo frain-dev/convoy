@@ -22,7 +22,6 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/internal/portal_links/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -48,6 +47,9 @@ type Service struct {
 	db           *pgxpool.Pool
 	endpointRepo datastore.EndpointRepository
 }
+
+// Ensure Service implements datastore.PortalLinkRepository at compile time
+var _ datastore.PortalLinkRepository = (*Service)(nil)
 
 func New(logger log.StdLogger, db database.Database) *Service {
 	return &Service{
@@ -151,7 +153,7 @@ func (s *Service) updateEndpointOwnerIDs(ctx context.Context, qtx *repo.Queries,
 	return nil
 }
 
-func (s *Service) CreatePortalLink(ctx context.Context, projectId string, request *models.CreatePortalLinkRequest) (*datastore.PortalLink, error) {
+func (s *Service) CreatePortalLink(ctx context.Context, projectId string, request *datastore.CreatePortalLinkRequest) (*datastore.PortalLink, error) {
 	if err := request.Validate(); err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -262,7 +264,7 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 	}, nil
 }
 
-func (s *Service) UpdatePortalLink(ctx context.Context, projectID string, portalLink *datastore.PortalLink, request *models.UpdatePortalLinkRequest) (*datastore.PortalLink, error) {
+func (s *Service) UpdatePortalLink(ctx context.Context, projectID string, portalLink *datastore.PortalLink, request *datastore.UpdatePortalLinkRequest) (*datastore.PortalLink, error) {
 	if err := request.Validate(); err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}

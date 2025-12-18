@@ -13,6 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
@@ -123,7 +124,7 @@ func TestCircuitBreakersUpdate_Integration(t *testing.T) {
 	user := &datastore.User{UID: "cli-user-1", Email: "cli-user-1@test.local"}
 	_ = userRepo.CreateUser(ctx, user)
 
-	orgRepo := postgres.NewOrgRepo(app.Database)
+	orgRepo := organisations.New(app.Logger, app.Database)
 	org := &datastore.Organisation{UID: "cli-org-1", Name: "CLI Org 1", OwnerID: user.UID}
 	_ = orgRepo.CreateOrganisation(ctx, org)
 
@@ -183,7 +184,7 @@ func TestCircuitBreakersUpdate_EdgeCases(t *testing.T) {
 	now := time.Now().UnixNano()
 
 	userRepo := postgres.NewUserRepo(app.Database)
-	orgRepo := postgres.NewOrgRepo(app.Database)
+	orgRepo := organisations.New(app.Logger, app.Database)
 	projectRepo := postgres.NewProjectRepo(app.Database)
 
 	// base seed (unique ids)

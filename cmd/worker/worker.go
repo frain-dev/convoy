@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -285,7 +286,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 					}
 
 					// Send notification emails (support + owner)
-					orgRepo := postgres.NewOrgRepo(a.DB)
+					orgRepo := organisations.New(lo, a.DB)
 					ownerEmail := ""
 					if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
 						if owner, err := postgres.NewUserRepo(a.DB).FindUserByID(ctx, org.OwnerID); err == nil {

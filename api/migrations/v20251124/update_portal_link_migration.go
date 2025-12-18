@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/frain-dev/convoy/internal/portal_links/models"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 type UpdatePortalLinkRequestMigration struct{}
@@ -14,7 +14,7 @@ func NewUpdatePortalLinkRequestMigration() *UpdatePortalLinkRequestMigration {
 }
 
 func (c *UpdatePortalLinkRequestMigration) Migrate(b []byte, h http.Header) ([]byte, http.Header, error) {
-	var payload models.UpdatePortalLinkRequest
+	var payload datastore.UpdatePortalLinkRequest
 	err := json.Unmarshal(b, &payload)
 	if err != nil {
 		return nil, nil, err

@@ -19,7 +19,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/frain-dev/convoy/retrystrategies"
-	"github.com/frain-dev/convoy/util"
 )
 
 var ErrMetaEventDeliveryFailed = errors.New("meta event delivery failed")
@@ -78,8 +77,8 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 		metaEvent.Metadata.NumTrials++
 
 		if resp != nil {
-			responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
-			requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
+			responseHeader := datastore.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
+			requestHeader := datastore.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
 			metaEvent.Attempt = &datastore.MetaEventAttempt{
 				ResponseHeader: *responseHeader,

@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
-	"github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -25,9 +24,9 @@ import (
 //	@Id				CreatePortalLink
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string							true	"Project ID"
-//	@Param			portallink	body		models.CreatePortalLinkRequest	true	"Portal Link Details"
-//	@Success		201			{object}	util.ServerResponse{data=models.PortalLinkResponse}
+//	@Param			projectID	path		string								true	"Project ID"
+//	@Param			portallink	body		datastore.CreatePortalLinkRequest	true	"Portal Link Details"
+//	@Success		201			{object}	util.ServerResponse{data=datastore.PortalLinkResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
@@ -39,7 +38,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newPortalLink models.CreatePortalLinkRequest
+	var newPortalLink datastore.CreatePortalLinkRequest
 	if err = util.ReadJSON(r, &newPortalLink); err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse portal link creation request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -97,7 +96,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID		path		string	true	"Project ID"
 //	@Param			portalLinkID	path		string	true	"portal link id"
-//	@Success		200				{object}	util.ServerResponse{data=models.PortalLinkResponse}
+//	@Success		200				{object}	util.ServerResponse{data=datastore.PortalLinkResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [get]
@@ -142,10 +141,10 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID		path		string							true	"Project ID"
-//	@Param			portalLinkID	path		string							true	"portal link id"
-//	@Param			portallink		body		models.UpdatePortalLinkRequest	true	"Portal Link Details"
-//	@Success		202				{object}	util.ServerResponse{data=models.PortalLinkResponse}
+//	@Param			projectID		path		string								true	"Project ID"
+//	@Param			portalLinkID	path		string								true	"portal link id"
+//	@Param			portallink		body		datastore.UpdatePortalLinkRequest	true	"Portal Link Details"
+//	@Success		202				{object}	util.ServerResponse{data=datastore.PortalLinkResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
@@ -157,7 +156,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var updatePortalLink models.UpdatePortalLinkRequest
+	var updatePortalLink datastore.UpdatePortalLinkRequest
 	err = util.ReadJSON(r, &updatePortalLink)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse portal link update request: %v", err)
@@ -296,7 +295,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string						true	"Project ID"
 //	@Param			request		query		models.QueryListEndpoint	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.PortalLinkResponse}}
+//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]datastore.PortalLinkResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [get]
@@ -324,25 +323,25 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	plResponse := make([]models.PortalLinkResponse, 0, len(portalLinks))
+	plResponse := make([]datastore.PortalLinkResponse, 0, len(portalLinks))
 	for _, portalLink := range portalLinks {
 		pl := portalLinkResponse(&portalLink, baseUrl)
 		plResponse = append(plResponse, pl)
 	}
 
-	resp := apiModels.NewListResponse(plResponse, func(p models.PortalLinkResponse) models.PortalLinkResponse {
+	resp := apiModels.NewListResponse(plResponse, func(p datastore.PortalLinkResponse) datastore.PortalLinkResponse {
 		return p
 	})
 	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", apiModels.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
-func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) models.PortalLinkResponse {
+func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) datastore.PortalLinkResponse {
 	url := fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token)
 	if len(pl.AuthKey) > 0 {
 		url = fmt.Sprintf("%s&auth_token=%s", url, pl.AuthKey)
 	}
 
-	return models.PortalLinkResponse{
+	return datastore.PortalLinkResponse{
 		UID:               pl.UID,
 		ProjectID:         pl.ProjectID,
 		Name:              pl.Name,

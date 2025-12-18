@@ -56,6 +56,29 @@ components:
         source_id:
           type: string
       type: object
+    datastore.CreatePortalLinkRequest:
+      properties:
+        auth_type:
+          type: string
+        can_manage_endpoint:
+          description: Specify whether endpoint management can be done through the
+            Portal Link UI
+          type: boolean
+        endpoints:
+          description: |-
+            Deprecated
+            IDs of endpoints in this portal link
+          items:
+            type: string
+          type: array
+        name:
+          description: Portal Link Name
+          type: string
+        owner_id:
+          description: OwnerID, the portal link will inherit all the endpoints with
+            this owner ID
+          type: string
+      type: object
     datastore.CustomResponse:
       properties:
         body:
@@ -521,6 +544,43 @@ components:
       - refresh_token
       - static_token
       type: string
+    datastore.PortalLinkResponse:
+      properties:
+        auth_key:
+          type: string
+        auth_type:
+          $ref: '#/components/schemas/datastore.PortalAuthType'
+        can_manage_endpoint:
+          type: boolean
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        endpoint_count:
+          type: integer
+        endpoints:
+          items:
+            type: string
+          type: array
+        endpoints_metadata:
+          items:
+            $ref: '#/components/schemas/datastore.Endpoint'
+          type: array
+        name:
+          type: string
+        owner_id:
+          type: string
+        project_id:
+          type: string
+        token:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: string
+        url:
+          type: string
+      type: object
     datastore.ProviderConfig:
       properties:
         twitter:
@@ -661,6 +721,29 @@ components:
     datastore.TwitterProviderConfig:
       properties:
         crc_verified_at:
+          type: string
+      type: object
+    datastore.UpdatePortalLinkRequest:
+      properties:
+        auth_type:
+          type: string
+        can_manage_endpoint:
+          description: Specify whether endpoint management can be done through the
+            Portal Link UI
+          type: boolean
+        endpoints:
+          description: |-
+            Deprecated
+            IDs of endpoints in this portal link
+          items:
+            type: string
+          type: array
+        name:
+          description: Portal Link Name
+          type: string
+        owner_id:
+          description: OwnerID, the portal link will inherit all the endpoints with
+            this owner ID
           type: string
       type: object
     datastore.VerifierConfig:
@@ -917,29 +1000,6 @@ components:
           description: Header matching criteria (optional)
       required:
       - event_type
-      type: object
-    models.CreatePortalLinkRequest:
-      properties:
-        auth_type:
-          type: string
-        can_manage_endpoint:
-          description: Specify whether endpoint management can be done through the
-            Portal Link UI
-          type: boolean
-        endpoints:
-          description: |-
-            Deprecated
-            IDs of endpoints in this portal link
-          items:
-            type: string
-          type: array
-        name:
-          description: Portal Link Name
-          type: string
-        owner_id:
-          description: OwnerID, the portal link will inherit all the endpoints with
-            this owner ID
-          type: string
       type: object
     models.CreateSource:
       properties:
@@ -1537,43 +1597,6 @@ components:
         pagination:
           $ref: '#/components/schemas/datastore.PaginationData'
       type: object
-    models.PortalLinkResponse:
-      properties:
-        auth_key:
-          type: string
-        auth_type:
-          $ref: '#/components/schemas/datastore.PortalAuthType'
-        can_manage_endpoint:
-          type: boolean
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        endpoint_count:
-          type: integer
-        endpoints:
-          items:
-            type: string
-          type: array
-        endpoints_metadata:
-          items:
-            $ref: '#/components/schemas/datastore.Endpoint'
-          type: array
-        name:
-          type: string
-        owner_id:
-          type: string
-        project_id:
-          type: string
-        token:
-          type: string
-        uid:
-          type: string
-        updated_at:
-          type: string
-        url:
-          type: string
-      type: object
     models.PubSubConfig:
       properties:
         amqp:
@@ -1855,29 +1878,6 @@ components:
         is_flattened:
           description: Whether the filter uses flattened JSON paths (optional)
           type: boolean
-      type: object
-    models.UpdatePortalLinkRequest:
-      properties:
-        auth_type:
-          type: string
-        can_manage_endpoint:
-          description: Specify whether endpoint management can be done through the
-            Portal Link UI
-          type: boolean
-        endpoints:
-          description: |-
-            Deprecated
-            IDs of endpoints in this portal link
-          items:
-            type: string
-          type: array
-        name:
-          description: Portal Link Name
-          type: string
-        owner_id:
-          description: OwnerID, the portal link will inherit all the endpoints with
-            this owner ID
-          type: string
       type: object
     models.UpdateSource:
       properties:
@@ -4608,7 +4608,7 @@ paths:
                       - properties:
                           content:
                             items:
-                              $ref: '#/components/schemas/models.PortalLinkResponse'
+                              $ref: '#/components/schemas/datastore.PortalLinkResponse'
                             type: array
                         type: object
                   type: object
@@ -4665,7 +4665,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.CreatePortalLinkRequest'
+              $ref: '#/components/schemas/datastore.CreatePortalLinkRequest'
         description: Portal Link Details
         required: true
         x-originalParamName: portallink
@@ -4678,7 +4678,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/models.PortalLinkResponse'
+                      $ref: '#/components/schemas/datastore.PortalLinkResponse'
                   type: object
           description: Created
         "400":
@@ -4745,7 +4745,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/models.PortalLinkResponse'
+                      $ref: '#/components/schemas/datastore.PortalLinkResponse'
                   type: object
           description: OK
         "400":
@@ -4806,7 +4806,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.UpdatePortalLinkRequest'
+              $ref: '#/components/schemas/datastore.UpdatePortalLinkRequest'
         description: Portal Link Details
         required: true
         x-originalParamName: portallink
@@ -4819,7 +4819,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/models.PortalLinkResponse'
+                      $ref: '#/components/schemas/datastore.PortalLinkResponse'
                   type: object
           description: Accepted
         "400":

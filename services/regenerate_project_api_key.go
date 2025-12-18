@@ -6,14 +6,13 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type RegenerateProjectAPIKeyService struct {
 	ProjectRepo datastore.ProjectRepository
 	UserRepo    datastore.UserRepository
-	APIKeyRepo  api_keys.APIKeyRepository
+	APIKeyRepo  datastore.APIKeyRepository
 
 	Project *datastore.Project
 	Member  *datastore.OrganisationMember

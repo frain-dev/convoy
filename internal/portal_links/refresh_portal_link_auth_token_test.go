@@ -1,6 +1,7 @@
 package portal_links
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -16,11 +16,11 @@ func TestRefreshPortalLinkAuthToken_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Create a portal link
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Test Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
@@ -45,11 +45,11 @@ func TestRefreshPortalLinkAuthToken_MultipleRefreshes(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Create a portal link
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Test Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
@@ -77,11 +77,11 @@ func TestRefreshPortalLinkAuthToken_VerifyExpiryTime(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Create a portal link
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Test Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
@@ -114,7 +114,7 @@ func TestRefreshPortalLinkAuthToken_PortalLinkNotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Try to refresh auth token for non-existent portal link
@@ -129,11 +129,11 @@ func TestRefreshPortalLinkAuthToken_WrongProject(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(nil)
+	logger := log.NewLogger(os.Stdout)
 	service := New(logger, db)
 
 	// Create a portal link
-	createRequest := &models.CreatePortalLinkRequest{
+	createRequest := &datastore.CreatePortalLinkRequest{
 		Name:              "Test Portal Link",
 		OwnerID:           ulid.Make().String(),
 		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
