@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/organisation_invites"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/portal_links"
@@ -286,7 +287,8 @@ func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, e
 		UpdatedAt:      time.Now(),
 	}
 
-	orgInviteRepo := postgres.NewOrgInviteRepo(db)
+	logger := log.NewLogger(os.Stdout)
+	orgInviteRepo := organisation_invites.New(logger, db)
 	err := orgInviteRepo.CreateOrganisationInvite(context.TODO(), iv)
 	if err != nil {
 		return nil, err

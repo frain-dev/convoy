@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisation_invites"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -55,7 +56,7 @@ func (h *Handler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Reques
 
 	inviteService := &services.InviteUserService{
 		Queue:        h.A.Queue,
-		InviteRepo:   postgres.NewOrgInviteRepo(h.A.DB),
+		InviteRepo:   organisation_invites.New(h.A.Logger, h.A.DB),
 		InviteeEmail: newIV.InviteeEmail,
 		Licenser:     h.A.Licenser,
 		Role:         newIV.Role,
@@ -82,7 +83,7 @@ func (h *Handler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.R
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-	invites, paginationData, err := postgres.NewOrgInviteRepo(h.A.DB).LoadOrganisationsInvitesPaged(r.Context(), org.UID, datastore.InviteStatusPending, pageable)
+	invites, paginationData, err := organisation_invites.New(h.A.Logger, h.A.DB).LoadOrganisationsInvitesPaged(r.Context(), org.UID, datastore.InviteStatusPending, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load organisation invites")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -111,7 +112,7 @@ func (h *Handler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http
 
 	prc := services.ProcessInviteService{
 		Queue:         h.A.Queue,
-		InviteRepo:    postgres.NewOrgInviteRepo(h.A.DB),
+		InviteRepo:    organisation_invites.New(h.A.Logger, h.A.DB),
 		UserRepo:      postgres.NewUserRepo(h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
@@ -136,7 +137,7 @@ func (h *Handler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) 
 
 	fub := &services.FindUserByInviteTokenService{
 		Queue:      h.A.Queue,
-		InviteRepo: postgres.NewOrgInviteRepo(h.A.DB),
+		InviteRepo: organisation_invites.New(h.A.Logger, h.A.DB),
 		OrgRepo:    organisations.New(h.A.Logger, h.A.DB),
 		UserRepo:   postgres.NewUserRepo(h.A.DB),
 		Token:      token,
@@ -174,7 +175,7 @@ func (h *Handler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Reques
 
 	rom := &services.ResendOrgMemberService{
 		Queue:        h.A.Queue,
-		InviteRepo:   postgres.NewOrgInviteRepo(h.A.DB),
+		InviteRepo:   organisation_invites.New(h.A.Logger, h.A.DB),
 		InviteID:     chi.URLParam(r, "inviteID"),
 		User:         user,
 		Organisation: org,
@@ -204,7 +205,7 @@ func (h *Handler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Reques
 
 	cancelInvite := services.CancelOrgMemberService{
 		Queue:      h.A.Queue,
-		InviteRepo: postgres.NewOrgInviteRepo(h.A.DB),
+		InviteRepo: organisation_invites.New(h.A.Logger, h.A.DB),
 		InviteID:   chi.URLParam(r, "inviteID"),
 	}
 
