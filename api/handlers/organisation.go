@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -55,7 +56,7 @@ func (h *Handler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	organisations, paginationData, err := postgres.NewOrgMemberRepo(h.A.DB).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
+	organisations, paginationData, err := organisation_members.New(h.A.Logger, h.A.DB).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch user organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -89,7 +90,7 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	co := services.CreateOrganisationService{
 		OrgRepo:       orgRepo,
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		NewOrg:        &newOrg,
 		User:          user,
 		Licenser:      h.A.Licenser,
@@ -127,7 +128,7 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	us := services.UpdateOrganisationService{
 		OrgRepo:       orgRepo,
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		Org:           org,
 		Update:        &orgUpdate,
 	}
@@ -330,7 +331,7 @@ func (h *Handler) isInstanceAdmin(r *http.Request) bool {
 		return false
 	}
 
-	member, err := postgres.NewOrgMemberRepo(h.A.DB).FetchInstanceAdminByUserID(r.Context(), user.UID)
+	member, err := organisation_members.New(h.A.Logger, h.A.DB).FetchInstanceAdminByUserID(r.Context(), user.UID)
 	if err != nil {
 		return false
 	}

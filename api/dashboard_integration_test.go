@@ -25,6 +25,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
@@ -2580,7 +2581,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	orgMemberRepo := postgres.NewOrgMemberRepo(s.ConvoyApp.A.DB)
+	orgMemberRepo := organisation_members.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	_, err = orgMemberRepo.FetchOrganisationMemberByID(context.Background(), member.UID, s.DefaultOrg.UID)
 	require.Equal(s.T(), datastore.ErrOrgMemberNotFound, err)
 }
@@ -2588,7 +2589,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 func (s *OrganisationMemberIntegrationTestSuite) Test_CannotDeleteOrganisationOwner() {
 	expectedStatusCode := http.StatusForbidden
 
-	orgMemberRepo := postgres.NewOrgMemberRepo(s.ConvoyApp.A.DB)
+	orgMemberRepo := organisation_members.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	member, err := orgMemberRepo.FetchOrganisationMemberByUserID(context.Background(), s.DefaultUser.UID, s.DefaultOrg.UID)
 	require.NoError(s.T(), err)
 
