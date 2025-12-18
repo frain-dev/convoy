@@ -69,11 +69,6 @@ func paramsToRole(roleType, roleProject, roleEndpoint string) auth.Role {
 	}
 }
 
-// pgTimestamptzToNullTime converts pgtype.Timestamptz to null.Time
-func pgTimestamptzToNullTime(t pgtype.Timestamptz) null.Time {
-	return null.NewTime(t.Time, t.Valid)
-}
-
 // nullTimeToPgTimestamptz converts null.Time to pgtype.Timestamptz
 func nullTimeToPgTimestamptz(t null.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: t.Time, Valid: t.Valid}
