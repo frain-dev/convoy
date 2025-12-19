@@ -100,5 +100,5 @@ release:
     owner: frain-dev
     name: Convoy
   prerelease: auto
-  draft: true
+  draft: false
   name_template: "{{ .ProjectName }}-v{{ .Version }}"
