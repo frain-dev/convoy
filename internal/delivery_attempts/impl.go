@@ -452,12 +452,12 @@ func rowToDeliveryAttempt(row interface{}) (*datastore.DeliveryAttempt, error) {
 
 	// Parse headers
 	var reqHeader, respHeader datastore.HttpHeader
-	if requestHeader != nil && len(requestHeader) > 0 {
+	if len(requestHeader) > 0 {
 		if err := json.Unmarshal(requestHeader, &reqHeader); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal request headers: %w", err)
 		}
 	}
-	if responseHeader != nil && len(responseHeader) > 0 {
+	if len(responseHeader) > 0 {
 		if err := json.Unmarshal(responseHeader, &respHeader); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal response headers: %w", err)
 		}

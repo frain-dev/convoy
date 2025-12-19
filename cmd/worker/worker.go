@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -151,7 +152,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 	subRepo := postgres.NewSubscriptionRepo(a.DB)
 	configRepo := postgres.NewConfigRepo(a.DB)
-	attemptRepo := postgres.NewDeliveryAttemptRepo(a.DB)
+	attemptRepo := delivery_attempts.New(a.Logger, a.DB)
 	filterRepo := postgres.NewFilterRepo(a.DB)
 	batchRetryRepo := postgres.NewBatchRetryRepo(a.DB)
 
