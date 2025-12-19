@@ -6,8 +6,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -45,8 +45,8 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attemptsRepo := postgres.NewDeliveryAttemptRepo(h.A.DB)
-	deliveryAttempt, err := attemptsRepo.FindDeliveryAttemptById(r.Context(), eventDelivery.UID, deliveryAttemptID)
+	attemptsService := delivery_attempts.New(h.A.Logger, h.A.DB)
+	deliveryAttempt, err := attemptsService.FindDeliveryAttemptById(r.Context(), eventDelivery.UID, deliveryAttemptID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -76,8 +76,8 @@ func (h *Handler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attemptsRepo := postgres.NewDeliveryAttemptRepo(h.A.DB)
-	attempts, err := attemptsRepo.FindDeliveryAttempts(r.Context(), eventDelivery.UID)
+	attemptsService := delivery_attempts.New(h.A.Logger, h.A.DB)
+	attempts, err := attemptsService.FindDeliveryAttempts(r.Context(), eventDelivery.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
