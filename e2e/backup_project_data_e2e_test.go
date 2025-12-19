@@ -156,6 +156,13 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	// Create OnPrem storage configuration
 	_ = createOnPremConfig(t, db, ctx, tmpDir)
 
+	// Verify configuration was created correctly
+	loadedConfig, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err, "should load configuration")
+	require.NotNil(t, loadedConfig, "configuration should not be nil")
+	require.NotNil(t, loadedConfig.RetentionPolicy, "retention policy should not be nil")
+	require.True(t, loadedConfig.RetentionPolicy.IsRetentionPolicyEnabled, "retention policy should be enabled")
+
 	// Seed an endpoint
 	endpoint := &datastore.Endpoint{
 		UID:       ulid.Make().String(),
@@ -172,7 +179,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 		Authentication: &datastore.EndpointAuthentication{},
 	}
 	endpointRepo := postgres.NewEndpointRepo(db)
-	err := endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
+	err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
 	// Create old data (26 hours old - should be exported)

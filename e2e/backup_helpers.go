@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dchest/uniuri"
 	"github.com/minio/minio-go/v7"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
@@ -101,9 +102,44 @@ func findExportFiles(t *testing.T, baseDir, tableName string) []string {
 
 // Data Seeding with Specific Timestamps
 
+// seedSource creates a source for testing
+func seedSource(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project) *datastore.Source {
+	t.Helper()
+
+	sourceRepo := postgres.NewSourceRepo(db)
+
+	source := &datastore.Source{
+		UID:       ulid.Make().String(),
+		ProjectID: project.UID,
+		Name:      "Test Source",
+		MaskID:    uniuri.NewLen(16),
+		Type:      datastore.HTTPSource,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.HMacVerifier,
+			HMac: &datastore.HMac{
+				Header: "X-Test-Signature",
+				Hash:   "SHA512",
+				Secret: "test-secret",
+			},
+			ApiKey:    &datastore.ApiKey{},
+			BasicAuth: &datastore.BasicAuth{},
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err, "failed to create source")
+
+	return source
+}
+
 // seedOldEvent creates an event with a timestamp in the past
 func seedOldEvent(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint, hoursOld int) *datastore.Event {
 	t.Helper()
+
+	// Create a source first (required for events)
+	source := seedSource(t, db, ctx, project)
 
 	eventRepo := postgres.NewEventRepo(db)
 
@@ -111,6 +147,7 @@ func seedOldEvent(t *testing.T, db database.Database, ctx context.Context, proje
 		UID:              ulid.Make().String(),
 		EventType:        datastore.EventType("test.event"),
 		ProjectID:        project.UID,
+		SourceID:         source.UID,
 		Endpoints:        []string{endpoint.UID},
 		Data:             []byte(`{"test": "data"}`),
 		CreatedAt:        time.Now(),
@@ -137,18 +174,57 @@ func seedOldEvent(t *testing.T, db database.Database, ctx context.Context, proje
 	return event
 }
 
+// seedSubscription creates a subscription for testing
+func seedSubscription(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
+	t.Helper()
+
+	subscriptionRepo := postgres.NewSubscriptionRepo(db)
+
+	subscription := &datastore.Subscription{
+		UID:        ulid.Make().String(),
+		ProjectID:  project.UID,
+		Name:       "Test Subscription",
+		Type:       datastore.SubscriptionTypeAPI,
+		EndpointID: endpoint.UID,
+		FilterConfig: &datastore.FilterConfiguration{
+			EventTypes: []string{"*"},
+		},
+		RateLimitConfig: &datastore.RateLimitConfiguration{
+			Count:    100,
+			Duration: 60,
+		},
+		RetryConfig: &datastore.RetryConfiguration{
+			Type:       datastore.LinearStrategyProvider,
+			Duration:   10,
+			RetryCount: 3,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := subscriptionRepo.CreateSubscription(ctx, project.UID, subscription)
+	require.NoError(t, err, "failed to create subscription")
+
+	return subscription
+}
+
 // seedOldEventDelivery creates an event delivery with a timestamp in the past
 func seedOldEventDelivery(t *testing.T, db database.Database, ctx context.Context, event *datastore.Event, endpoint *datastore.Endpoint, hoursOld int) *datastore.EventDelivery {
 	t.Helper()
 
+	// Create a subscription first (required for event deliveries)
+	project := &datastore.Project{UID: event.ProjectID}
+	subscription := seedSubscription(t, db, ctx, project, endpoint)
+
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 
 	eventDelivery := &datastore.EventDelivery{
-		UID:        ulid.Make().String(),
-		ProjectID:  event.ProjectID,
-		EventID:    event.UID,
-		EndpointID: endpoint.UID,
-		Status:     datastore.SuccessEventStatus,
+		UID:            ulid.Make().String(),
+		ProjectID:      event.ProjectID,
+		EventID:        event.UID,
+		EndpointID:     endpoint.UID,
+		SubscriptionID: subscription.UID,
+		Status:         datastore.SuccessEventStatus,
 		Metadata: &datastore.Metadata{
 			Data:            []byte(`{"test": "metadata"}`),
 			Strategy:        datastore.ExponentialStrategyProvider,
@@ -215,64 +291,78 @@ func seedOldDeliveryAttempt(t *testing.T, db database.Database, ctx context.Cont
 
 // Configuration Creation
 
-// createMinIOConfig creates a configuration with MinIO storage settings
+// createMinIOConfig updates the existing configuration with MinIO storage settings
 func createMinIOConfig(t *testing.T, db database.Database, ctx context.Context, endpoint string) *datastore.Configuration {
 	t.Helper()
 
 	configRepo := postgres.NewConfigRepo(db)
 
-	config := &datastore.Configuration{
-		UID:                ulid.Make().String(),
-		IsAnalyticsEnabled: true,
-		StoragePolicy: &datastore.StoragePolicyConfiguration{
-			Type: datastore.S3,
-			S3: &datastore.S3Storage{
-				Bucket:    null.NewString("convoy-test-exports", true),
-				AccessKey: null.NewString("minioadmin", true),
-				SecretKey: null.NewString("minioadmin", true),
-				Region:    null.NewString("us-east-1", true),
-				Endpoint:  null.NewString(endpoint, true),
-			},
-		},
-		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			IsRetentionPolicyEnabled: true,
-			Policy:                   "720h",
-		},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+	// Load existing configuration (created by test setup)
+	config, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err, "failed to load existing configuration")
+
+	// MinIO testcontainer uses HTTP, so prepend http:// to endpoint
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		endpoint = "http://" + endpoint
 	}
 
-	err := configRepo.CreateConfiguration(ctx, config)
-	require.NoError(t, err, "failed to create MinIO configuration")
+	// Update with MinIO storage settings
+	config.StoragePolicy = &datastore.StoragePolicyConfiguration{
+		Type: datastore.S3,
+		S3: &datastore.S3Storage{
+			Prefix:       null.NewString("", false),
+			Bucket:       null.NewString("convoy-test-exports", true),
+			AccessKey:    null.NewString("minioadmin", true),
+			SecretKey:    null.NewString("minioadmin", true),
+			Region:       null.NewString("us-east-1", true),
+			SessionToken: null.NewString("", false),
+			Endpoint:     null.NewString(endpoint, true),
+		},
+	}
+	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
+		IsRetentionPolicyEnabled: true,
+		Policy:                   "720h",
+	}
+
+	err = configRepo.UpdateConfiguration(ctx, config)
+	require.NoError(t, err, "failed to update MinIO configuration")
 
 	return config
 }
 
-// createOnPremConfig creates a configuration with OnPrem storage settings
+// createOnPremConfig updates the existing configuration with OnPrem storage settings
 func createOnPremConfig(t *testing.T, db database.Database, ctx context.Context, exportPath string) *datastore.Configuration {
 	t.Helper()
 
 	configRepo := postgres.NewConfigRepo(db)
 
-	config := &datastore.Configuration{
-		UID:                ulid.Make().String(),
-		IsAnalyticsEnabled: true,
-		StoragePolicy: &datastore.StoragePolicyConfiguration{
-			Type: datastore.OnPrem,
-			OnPrem: &datastore.OnPremStorage{
-				Path: null.NewString(exportPath, true),
-			},
+	// Load existing configuration (created by test setup)
+	config, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err, "failed to load existing configuration")
+
+	// Update with OnPrem storage settings
+	config.StoragePolicy = &datastore.StoragePolicyConfiguration{
+		Type: datastore.OnPrem,
+		S3: &datastore.S3Storage{
+			Prefix:       null.NewString("", false),
+			Bucket:       null.NewString("", false),
+			AccessKey:    null.NewString("", false),
+			SecretKey:    null.NewString("", false),
+			Region:       null.NewString("", false),
+			SessionToken: null.NewString("", false),
+			Endpoint:     null.NewString("", false),
 		},
-		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			IsRetentionPolicyEnabled: true,
-			Policy:                   "720h",
+		OnPrem: &datastore.OnPremStorage{
+			Path: null.NewString(exportPath, true),
 		},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+	}
+	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
+		IsRetentionPolicyEnabled: true,
+		Policy:                   "720h",
 	}
 
-	err := configRepo.CreateConfiguration(ctx, config)
-	require.NoError(t, err, "failed to create OnPrem configuration")
+	err = configRepo.UpdateConfiguration(ctx, config)
+	require.NoError(t, err, "failed to update OnPrem configuration")
 
 	return config
 }
