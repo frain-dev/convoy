@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
@@ -118,7 +119,7 @@ func buildApplication(t *testing.T) *applicationHandler {
 	eventRepo := postgres.NewEventRepo(db)
 	configRepo := postgres.NewConfigRepo(db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
-	deliveryRepo := postgres.NewDeliveryAttemptRepo(db)
+	deliveryRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 
 	app := &applicationHandler{
 		projectRepo:       projectRepo,

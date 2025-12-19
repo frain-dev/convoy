@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -178,7 +179,7 @@ func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
 	configRepo := postgres.NewConfigRepo(d.db)
 	projectRepo := postgres.NewProjectRepo(d.db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(d.db)
-	deliveryAttemptsRepo := postgres.NewDeliveryAttemptRepo(d.db)
+	deliveryAttemptsRepo := delivery_attempts.New(d.logger, d.db)
 
 	c, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
