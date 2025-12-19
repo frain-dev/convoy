@@ -213,11 +213,114 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 }
 
 func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
-	// This method exports delivery attempts using the generic export function
-	// The export functionality is likely implemented at the database level
-	// For now, we'll return an error indicating it needs to be implemented
-	// In the actual implementation, you'd use a query that streams results to the writer
-	return 0, util.NewServiceError(501, errors.New("export functionality not yet implemented in SQLc migration"))
+	// Export delivery attempts to JSON format for backup/archival purposes
+	// This uses batched queries to avoid loading all records into memory at once
+
+	const (
+		countQuery = `
+			SELECT COUNT(*)
+			FROM convoy.delivery_attempts
+			WHERE deleted_at IS NULL
+			  AND project_id = $1
+			  AND created_at < $2
+		`
+
+		exportQuery = `
+			SELECT TO_JSONB(da) - 'id' || JSONB_BUILD_OBJECT('uid', da.id) AS json_output
+			FROM convoy.delivery_attempts AS da
+			WHERE deleted_at IS NULL
+			  AND project_id = $1
+			  AND created_at < $2
+			  AND (id > $3 OR $3 = '')
+			ORDER BY id ASC
+			LIMIT $4
+		`
+	)
+
+	// Get total count
+	var count int64
+	err := s.db.QueryRow(ctx, countQuery, projectID, createdAt).Scan(&count)
+	if err != nil {
+		return 0, util.NewServiceError(500, fmt.Errorf("failed to count records: %w", err))
+	}
+
+	if count == 0 {
+		return 0, nil
+	}
+
+	// Write opening bracket for JSON array
+	if _, err := w.Write([]byte(`[`)); err != nil {
+		return 0, util.NewServiceError(500, fmt.Errorf("failed to write opening bracket: %w", err))
+	}
+
+	var (
+		batchSize  = 3000
+		numDocs    int64
+		lastID     string
+		firstBatch = true
+	)
+
+	// Process in batches
+	for {
+		rows, err := s.db.Query(ctx, exportQuery, projectID, createdAt, lastID, batchSize)
+		if err != nil {
+			return 0, util.NewServiceError(500, fmt.Errorf("failed to query batch: %w", err))
+		}
+
+		batchCount := 0
+		var record []byte
+
+		for rows.Next() {
+			if err := rows.Scan(&record); err != nil {
+				rows.Close()
+				return 0, util.NewServiceError(500, fmt.Errorf("failed to scan record: %w", err))
+			}
+
+			// Add comma before all records except the first
+			if !firstBatch || batchCount > 0 {
+				if _, err := w.Write([]byte(`,`)); err != nil {
+					rows.Close()
+					return 0, util.NewServiceError(500, fmt.Errorf("failed to write comma: %w", err))
+				}
+			}
+
+			if _, err := w.Write(record); err != nil {
+				rows.Close()
+				return 0, util.NewServiceError(500, fmt.Errorf("failed to write record: %w", err))
+			}
+
+			// Extract UID for pagination
+			var recordData map[string]interface{}
+			if err := json.Unmarshal(record, &recordData); err == nil {
+				if uid, ok := recordData["uid"].(string); ok {
+					lastID = uid
+				}
+			}
+
+			batchCount++
+			numDocs++
+		}
+
+		rows.Close()
+
+		if err := rows.Err(); err != nil {
+			return 0, util.NewServiceError(500, fmt.Errorf("error during row iteration: %w", err))
+		}
+
+		// If we got fewer records than batch size, we're done
+		if batchCount < batchSize {
+			break
+		}
+
+		firstBatch = false
+	}
+
+	// Write closing bracket for JSON array
+	if _, err := w.Write([]byte(`]`)); err != nil {
+		return 0, util.NewServiceError(500, fmt.Errorf("failed to write closing bracket: %w", err))
+	}
+
+	return numDocs, nil
 }
 
 func (s *Service) PartitionDeliveryAttemptsTable(ctx context.Context) error {
