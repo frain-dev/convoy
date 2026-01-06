@@ -4081,7 +4081,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 
 	// disable registration
 	configuration.IsSignupEnabled = false
-	configRepo := postgres.NewConfigRepo(u.ConvoyApp.A.DB)
+	configRepo := u.ConvoyApp.A.ConfigRepo
 	require.NoError(u.T(), configRepo.UpdateConfiguration(context.Background(), configuration))
 
 	r := &models.RegisterUser{

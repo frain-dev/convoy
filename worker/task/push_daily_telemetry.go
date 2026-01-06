@@ -12,15 +12,16 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/telemetry"
-	"github.com/frain-dev/convoy/pkg/log"
+	pkglog "github.com/frain-dev/convoy/pkg/log"
 )
 
 const perPage = 50
 
-func PushDailyTelemetry(log *log.Logger, db database.Database, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
 	// Create a pool with go-redis
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
@@ -60,8 +61,8 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, rd *rdb.Redis) fu
 			return err
 		}
 
-		configRepo := postgres.NewConfigRepo(db)
-		configuration, err := configRepo.LoadConfiguration(context.Background())
+		configRepo := configuration.New(log, db)
+		loadConfiguration, err := configRepo.LoadConfiguration(context.Background())
 		if err != nil {
 			return err
 		}
@@ -77,7 +78,7 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, rd *rdb.Redis) fu
 		pb := telemetry.NewposthogBackend()
 		mb := telemetry.NewmixpanelBackend()
 
-		newTelemetry := telemetry.NewTelemetry(log, configuration,
+		newTelemetry := telemetry.NewTelemetry(log, loadConfiguration,
 			telemetry.OptionTracker(totalEventsTracker),
 			telemetry.OptionBackend(pb),
 			telemetry.OptionBackend(mb))

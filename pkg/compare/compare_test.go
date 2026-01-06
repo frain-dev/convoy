@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/nsf/jsondiff"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/nsf/jsondiff"
 )
 
 func TestGenCombos(t *testing.T) {

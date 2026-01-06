@@ -29,6 +29,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
@@ -188,6 +189,7 @@ func buildServer(t *testing.T) *ApplicationHandler {
 			FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(db),
 			EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(db),
 			Rate:                       limiter,
+			ConfigRepo:                 configuration.New(tl.Logger, db),
 			Licenser:                   noopLicenser.NewLicenser(),
 			Cfg:                        cfg,
 		})

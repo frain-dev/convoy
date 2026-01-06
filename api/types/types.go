@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -30,4 +31,5 @@ type APIOptions struct {
 	Licenser                   license.Licenser
 	Cfg                        config.Configuration
 	BillingClient              billing.Client
+	ConfigRepo                 datastore.ConfigurationRepository
 }
