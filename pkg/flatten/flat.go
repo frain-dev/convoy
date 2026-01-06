@@ -224,10 +224,10 @@ func isHomogenousArray(v []interface{}) bool {
 		return true
 	}
 
-	// arrays in json are homogenous, so if the first element of this array is int, float or string
+	// arrays in json are homogenous, so if the first element of this array is int, float, string, or bool
 	// the remaining are the same type.
 	switch v[0].(type) {
-	case int, float64, string:
+	case int, float64, string, bool:
 		return true
 	}
 
