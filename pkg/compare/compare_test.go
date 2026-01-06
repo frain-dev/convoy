@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/nsf/jsondiff"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
+	"github.com/nsf/jsondiff"
 )
 
 func TestGenCombos(t *testing.T) {
@@ -484,6 +484,22 @@ func TestCompare(t *testing.T) {
 						"$exist": true,
 					},
 				},
+			},
+			want: true,
+		},
+		{
+			name: "array operator ($.) - boolean value in nested array",
+			payload: map[string]interface{}{
+				"data": []interface{}{
+					map[string]interface{}{
+						"values": []interface{}{
+							true,
+						},
+					},
+				},
+			},
+			filter: map[string]interface{}{
+				"data.$.values": true,
 			},
 			want: true,
 		},

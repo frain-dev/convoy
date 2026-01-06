@@ -1,3 +1,104 @@
+# 26.1.1
+
+### Enhancements
+
+- refactor: add SQLc for portal links #2511
+- refactor: add SQLc for API keys #2517
+- refactor: add sqlc for organisations #2518
+- refactor: add sqlc for organisation members #2519
+- refactor: add sqlc for organisation invites #2520
+
+### Bug Fixes
+
+- chore: fixed filter bug for boolean values in array #2524
+
+# 25.12.5
+
+### Features
+
+- added new billing module #2325
+
+### Enhancements
+
+- make metrics context timeout configurable #2516
+- Remove unused circuit breaker feature flag check in endpoint handler #2515
+- make billing organization creation asynchronous #2514
+- auto-create billing org on org creation and fix circuit breaker project dropdown #2513
+- use config host instead of org assigned domain for billing #2512
+- Remove pending status from endpoints and related logic #2508
+- Add job id before writing to the queue #2504
+
+### Bug Fixes
+
+- Always assign RoleOrganisationAdmin, clear localStorage on logout, add VAT placeholder examples #2509
+- Correct font paths and exclude Monaco Editor from Open Sauce Sans #2505
+
+# 25.12.4
+
+### Enhancements
+
+- Add action that triggers build when pr gets merged to main #2503
+- Fix missing table alias in event_delivery query filter #2501
+- Portal link endpoints migration #2500
+- Remove PostgreSQL-based rate limiter and update integrations to use test suites #2499
+
+### Bug Fixes
+
+- fix blocking metrics collection when metrics is enabled #2493
+
+# 25.11.3
+
+### Features
+
+- feat: implement OAuth2 client credentials authentication for endpoints #2479
+- feat: add OAuth2 e2e tests #2497
+- feat: implement organization-level feature flags #2495
+
+### Enhancements
+
+- chore: add E2E tests #2496
+- Update dashboard api tests #2492
+- Setup Test Env #2491
+- fix metrics endpoint and prevent loggin event data #2487
+- update prometheus configuration #2490
+- Fix gocritic lint errors #2489
+- Add mise package manager #2488
+- refactor(pubsub): move endpoint validation logic closer to consumption point #2485
+- bump outdated pkgs #2387
+
+# 25.11.2
+
+### Bug Fixes
+
+- Fix `brokerMessageIdFilter` syntax for PostgreSQL headers query #2484
+
+# 25.11.1
+
+### Features
+
+- feat: Add broker message ID tracking across pub/sub infrastructure #2480
+- Add TLS support for Redis connections #2478
+- Add mTLS Client Certificate Support for Endpoints #2468
+- added form-encoded content type support for endpoints #2420
+
+### Enhancements
+
+- refactor: change circuit-breakers update command to use project-id instead of endpoint-id #2482
+- bump pkgs #2475
+- limit dependabot updates to security #2473
+- add lightweight js shim to fix dynamic assets url #2443
+- ch: update release pipeline #2440
+- fix error in dev pipeline commit sha #2439
+- add dev image workflow #2438
+- ft: make root path configurable #2437
+- update sql files #2419
+
+### Bug Fixes
+
+- feat: add license check for mTLS feature #2477
+- fix: circuit breaker email notifications not being sent #2481
+- fix: verify webhook signatures against raw body first, fallback to JSON #2392
+
 # 25.9.1
 
 ### Features
