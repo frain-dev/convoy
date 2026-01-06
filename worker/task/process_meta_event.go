@@ -4,22 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	tracer2 "github.com/frain-dev/convoy/internal/pkg/tracer"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/dedup"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/frain-dev/convoy/util"
+	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	tracer2 "github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/frain-dev/convoy/retrystrategies"
-	"github.com/hibiken/asynq"
 )
 
 var ErrMetaEventDeliveryFailed = errors.New("meta event delivery failed")
@@ -78,8 +77,8 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 		metaEvent.Metadata.NumTrials++
 
 		if resp != nil {
-			responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
-			requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
+			responseHeader := datastore.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
+			requestHeader := datastore.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
 			metaEvent.Attempt = &datastore.MetaEventAttempt{
 				ResponseHeader: *responseHeader,
@@ -104,7 +103,8 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 			}
 
 			if metaEvent.Metadata.NumTrials < metaEvent.Metadata.RetryLimit {
-				log.FromContext(ctx).Info("%s next retry time meta events is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", metaEvent.UID, nextTime.Format(time.ANSIC), metaEvent.Metadata.Strategy, metaEvent.Metadata.IntervalSeconds, metaEvent.Metadata.NumTrials, metaEvent.Metadata.RetryLimit)
+				log.FromContext(ctx).Info("%s next retry time meta events is %s (strategy = %s, delay = %d, attempts = %d/%d)\n",
+					metaEvent.UID, nextTime.Format(time.ANSIC), metaEvent.Metadata.Strategy, metaEvent.Metadata.IntervalSeconds, metaEvent.Metadata.NumTrials, metaEvent.Metadata.RetryLimit)
 				return &EndpointError{Err: ErrMetaEventDeliveryFailed, delay: delayDuration}
 			}
 
@@ -148,7 +148,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 
 	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
 	start := time.Now()
-	resp, err := dispatch.SendWebhook(ctx, url, sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID), httpDuration)
+	resp, err := dispatch.SendWebhook(ctx, url, sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID), httpDuration, "application/json")
 	if err != nil {
 		return nil, err
 	}

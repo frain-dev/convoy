@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { PrivateService } from 'src/app/private/private.service';
+import {Injectable} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
+import {PrivateService} from 'src/app/private/private.service';
 
 @Injectable({
 	providedIn: 'root'

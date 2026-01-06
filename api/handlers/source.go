@@ -7,17 +7,17 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/frain-dev/convoy/pkg/transform"
-
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 // CreateSource
@@ -64,7 +64,7 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -115,7 +115,7 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -192,7 +192,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -292,7 +292,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var org *datastore.Organisation
-	orgRepo := postgres.NewOrgRepo(h.A.DB)
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -316,7 +316,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
-func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
+func fillSourceURL(s *datastore.Source, baseUrl, customDomain string) {
 	url := baseUrl
 	if len(customDomain) > 0 {
 		url = customDomain

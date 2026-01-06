@@ -3,28 +3,25 @@ package main
 import (
 	"os"
 	"time"
-	_ "time/tzdata"
 
-	"github.com/frain-dev/convoy/cmd/ff"
-	"github.com/frain-dev/convoy/cmd/utils"
-
-	"github.com/frain-dev/convoy/cmd/agent"
-	"github.com/frain-dev/convoy/cmd/bootstrap"
-
-	configCmd "github.com/frain-dev/convoy/cmd/config"
-	"github.com/frain-dev/convoy/cmd/hooks"
-	"github.com/frain-dev/convoy/cmd/migrate"
-	"github.com/frain-dev/convoy/cmd/retry"
-	"github.com/frain-dev/convoy/cmd/server"
-	"github.com/frain-dev/convoy/cmd/stream"
-	"github.com/frain-dev/convoy/cmd/version"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/sirupsen/logrus"
 
-	"github.com/frain-dev/convoy/internal/pkg/cli"
+	_ "time/tzdata"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cmd/agent"
+	"github.com/frain-dev/convoy/cmd/bootstrap"
+	configCmd "github.com/frain-dev/convoy/cmd/config"
+	"github.com/frain-dev/convoy/cmd/ff"
+	"github.com/frain-dev/convoy/cmd/hooks"
+	"github.com/frain-dev/convoy/cmd/migrate"
 	"github.com/frain-dev/convoy/cmd/openapi"
+	"github.com/frain-dev/convoy/cmd/retry"
+	"github.com/frain-dev/convoy/cmd/server"
+	"github.com/frain-dev/convoy/cmd/utils"
+	"github.com/frain-dev/convoy/cmd/version"
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 )
 
 func main() {
@@ -85,12 +82,24 @@ func main() {
 
 	var licenseKey string
 	var logLevel string
+	var rootPath string
 
 	var configFile string
+
+	// Billing configuration flags
+	var enableBilling bool
+	var billingURL string
+	var billingAPIKey string
 
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 	c.Flags().StringVar(&licenseKey, "license-key", "", "Convoy license key")
 	c.Flags().StringVar(&logLevel, "log-level", "", "Log level")
+	c.Flags().StringVar(&rootPath, "root-path", "", "Root path for routing behind load balancers (e.g., /convoy)")
+
+	// Billing flags
+	c.Flags().BoolVar(&enableBilling, "enable-billing", false, "Enable billing functionality")
+	c.Flags().StringVar(&billingURL, "billing-url", "", "Billing service URL (required when billing is enabled)")
+	c.Flags().StringVar(&billingAPIKey, "billing-api-key", "", "Billing service API key (required when billing is enabled)")
 
 	// db config
 	c.Flags().StringVar(&dbHost, "db-host", "", "Database Host")
@@ -149,8 +158,7 @@ func main() {
 	c.AddCommand(server.AddServerCommand(app))
 	c.AddCommand(retry.AddRetryCommand(app))
 	c.AddCommand(migrate.AddMigrateCommand(app))
-	c.AddCommand(configCmd.AddConfigCommand(app))
-	c.AddCommand(stream.AddStreamCommand(app))
+	c.AddCommand(configCmd.AddConfigCommand())
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))
 	c.AddCommand(ff.AddFeatureFlagsCommand())

@@ -6,7 +6,6 @@ package convoy
 //go:generate mockgen --source cache/cache.go --destination mocks/cache.go -package mocks
 //go:generate mockgen --source database/database.go --destination mocks/database.go -package mocks
 //go:generate mockgen --source internal/pkg/smtp/smtp.go --destination mocks/smtp.go -package mocks
-//go:generate mockgen --source internal/pkg/socket/socket.go --destination mocks/socket.go -package mocks
 //go:generate mockgen --source internal/pkg/pubsub/pubsub.go --destination mocks/pubsub.go -package mocks
 //go:generate mockgen --source internal/pkg/dedup/dedup.go --destination mocks/dedup.go -package mocks
 //go:generate mockgen --source internal/pkg/memorystore/table.go --destination mocks/table.go -package mocks

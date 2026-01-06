@@ -5,7 +5,7 @@
 # export GOARCH=arm64
 
 buildConvoy() {
-    echo "Building Convoy ..."
+  echo "Building Convoy ..."
 
 	# Build UI.
 	UIDIR="api/ui/build"
@@ -28,6 +28,8 @@ buildConvoy() {
 	# Copy build artifacts
 	cd ../../../
 	mv web/ui/dashboard/dist/* $UIDIR
+
+	echo -n "" > $UIDIR/go_test_stub.txt
 
 	# Build Binary
 	go build -o convoy ./cmd/*.go

@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/frain-dev/convoy"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy"
 )
 
 func Test_EnvironmentTakesPrecedence(t *testing.T) {
@@ -185,10 +186,12 @@ func TestLoadConfig(t *testing.T) {
 					InsecureSkipVerify: false,
 					AllowList:          []string{"0.0.0.0/0", "::/0"},
 					BlockList:          []string{"127.0.0.0/8", "::1/128"},
+					PingMethods:        []string{"HEAD", "GET", "POST"},
+					SkipPingValidation: false,
 				},
 				WorkerExecutionMode: DefaultExecutionMode,
-				InstanceIngestRate:  25,
-				ApiRateLimit:        25,
+				InstanceIngestRate:  1000,
+				ApiRateLimit:        1000,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -280,9 +283,11 @@ func TestLoadConfig(t *testing.T) {
 					InsecureSkipVerify: false,
 					AllowList:          []string{"0.0.0.0/0", "::/0"},
 					BlockList:          []string{"127.0.0.0/8", "::1/128"},
+					PingMethods:        []string{"HEAD", "GET", "POST"},
+					SkipPingValidation: false,
 				},
-				InstanceIngestRate:  25,
-				ApiRateLimit:        25,
+				InstanceIngestRate:  1000,
+				ApiRateLimit:        1000,
 				WorkerExecutionMode: DefaultExecutionMode,
 			},
 			wantErr:    false,
@@ -374,9 +379,11 @@ func TestLoadConfig(t *testing.T) {
 					InsecureSkipVerify: false,
 					AllowList:          []string{"0.0.0.0/0", "::/0"},
 					BlockList:          []string{"127.0.0.0/8", "::1/128"},
+					PingMethods:        []string{"HEAD", "GET", "POST"},
+					SkipPingValidation: false,
 				},
-				InstanceIngestRate:  25,
-				ApiRateLimit:        25,
+				InstanceIngestRate:  1000,
+				ApiRateLimit:        1000,
 				WorkerExecutionMode: DefaultExecutionMode,
 			},
 			wantErr:    false,

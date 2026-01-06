@@ -3,7 +3,7 @@
 		<div class="flex items-center justify-between w-full max-w-[1440px] m-auto px-24px py-12px">
 			<div class="flex items-center">
 				<a routerLink="/" rel="noreferrer">
-					<img src="/assets/img/logo.svg" alt="convoy logo" class="w-100px" />
+					<img src="/assets/img/logo-v2.svg" alt="convoy logo" class="w-[28.256px] h-[30px]" />
 				</a>
 			</div>
 
@@ -11,6 +11,11 @@
 				<a class="flex items-center mr-24px" target="_blank" href="https://docs.getconvoy.io" rel="noreferrer">
 					<img src="/assets/img/doc-icon-primary.svg" class="w-14px" alt="doc icon" />
 					<span class="font-medium text-12 text-primary-100 ml-2">Go to docs</span>
+				</a>
+				<a convoy-button fill="soft" class="py-4px !px-8px mr-24px" routerLink="/admin" *ngIf="isInstanceAdmin">
+					<svg width="18" height="18" class="fill-neutral-10">
+						<use xlink:href="#settings-icon"></use>
+					</svg>
 				</a>
 
 				<div convoy-dropdown size="lg" #organisationDropdown *ngIf="organisations?.length">

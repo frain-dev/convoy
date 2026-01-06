@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -25,7 +24,7 @@ func (ss *RegenerateProjectAPIKeyService) Run(ctx context.Context) (*datastore.A
 		return nil, "", &ServiceError{ErrMsg: "unauthorized to access project"}
 	}
 
-	apiKey, err := ss.APIKeyRepo.FindAPIKeyByProjectID(ctx, ss.Project.UID)
+	apiKey, err := ss.APIKeyRepo.GetAPIKeyByProjectID(ctx, ss.Project.UID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch project api key")
 		return nil, "", &ServiceError{ErrMsg: "failed to fetch api project key", Err: err}
@@ -41,9 +40,9 @@ func (ss *RegenerateProjectAPIKeyService) Run(ctx context.Context) (*datastore.A
 		ProjectRepo: ss.ProjectRepo,
 		APIKeyRepo:  ss.APIKeyRepo,
 		Member:      ss.Member,
-		NewApiKey: &models.APIKey{
+		NewApiKey: &datastore.APIKey{
 			Name: fmt.Sprintf("%s's key", ss.Project.Name),
-			Role: models.Role{
+			Role: auth.Role{
 				Type:    auth.RoleProjectAdmin,
 				Project: ss.Project.UID,
 			},

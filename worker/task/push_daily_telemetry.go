@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/internal/telemetry"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
+
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/telemetry"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 const perPage = 50
@@ -52,7 +54,7 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, rd *rdb.Redis) fu
 			}
 		}()
 
-		orgRepo := postgres.NewOrgRepo(db)
+		orgRepo := organisations.New(log, db)
 		orgs, err := getAllOrganisations(ctx, orgRepo)
 		if err != nil {
 			return err
@@ -72,18 +74,11 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, rd *rdb.Redis) fu
 			ProjectRepo: projectRepo,
 		}
 
-		// totalActiveProjectTracker := &telemetry.TotalActiveProjectTracker{
-		//	Orgs:        orgs,
-		//	EventRepo:   eventRepo,
-		//	ProjectRepo: projectRepo,
-		// }
-
 		pb := telemetry.NewposthogBackend()
 		mb := telemetry.NewmixpanelBackend()
 
 		newTelemetry := telemetry.NewTelemetry(log, configuration,
 			telemetry.OptionTracker(totalEventsTracker),
-			// telemetry.OptionTracker(totalActiveProjectTracker),
 			telemetry.OptionBackend(pb),
 			telemetry.OptionBackend(mb))
 
@@ -116,5 +111,4 @@ func getAllOrganisations(ctx context.Context, orgRepo datastore.OrganisationRepo
 	}
 
 	return orgs, nil
-
 }

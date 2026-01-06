@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+#MISE description="Build Convoy binary"
+#MISE dir="{{ config_root }}"
+#MISE depends=["dashboard:build"]
+#MISE outputs=["bin/convoy"]
+
+set -e
+
+echo "🚧 Building Convoy..."
+
+APP_VERSION=$(cat ./VERSION)
+go build -ldflags="-X main.release=${APP_VERSION}" -o bin/convoy ./cmd/*.go

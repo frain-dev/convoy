@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func provideBatchRetryEventDeliveryService(ctrl *gomock.Controller, f *datastore.Filter) *BatchRetryEventDeliveryService {
@@ -73,7 +73,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 					Return(int64(10), nil)
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{
@@ -110,7 +110,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			wantSuccesses: 1,
@@ -212,7 +212,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 
 				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("failed to queue batch retry job"))
 			},
 		},
@@ -257,7 +257,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 
 				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 	}

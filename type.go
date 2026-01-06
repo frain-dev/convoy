@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+const (
+	AuthUserCtx ContextKey = "authUser"
+	PageableCtx ContextKey = "pageable"
+)
+
+type ContextKey string
+
 type HttpMethod string
 
 type TaskName string

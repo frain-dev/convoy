@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/frain-dev/convoy/config/algo"
-	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -28,7 +28,6 @@ const (
 )
 
 func ComputeJSONHmac(hash, data, secret string, order bool) (string, error) {
-
 	if order {
 		d, err := JsonReMarshalString(data)
 		if err != nil {
@@ -55,7 +54,7 @@ type Signature struct {
 	EncodedData []byte
 }
 
-func GenerateSignatureHeader(replayAttacks bool, hash string, secret string, data json.RawMessage) (*Signature, error) {
+func GenerateSignatureHeader(replayAttacks bool, hash, secret string, data json.RawMessage) (*Signature, error) {
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.SetEscapeHTML(false)

@@ -7,16 +7,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"gopkg.in/guregu/null.v4"
 	"testing"
 	"time"
+
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_CreateEvent(t *testing.T) {

@@ -5,22 +5,22 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/worker/task"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/frain-dev/convoy/pkg/log"
-
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
+	"github.com/frain-dev/convoy/worker/task"
 )
 
 // CreateEndpointEvent
@@ -61,7 +61,6 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		}
 
 		projectID = project.UID
-
 	} else {
 		projectID = chi.URLParam(r, "projectID")
 		if util.IsStringEmpty(projectID) {
@@ -70,9 +69,12 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	id := ulid.Make().String()
+	jobId := queue.JobId{ProjectID: projectID, ResourceID: id}.SingleJobId()
 	e := task.CreateEvent{
+		JobID: jobId,
 		Params: task.CreateEventTaskParams{
-			UID:            ulid.Make().String(),
+			UID:            id,
 			ProjectID:      projectID,
 			EndpointID:     newMessage.EndpointID,
 			EventType:      newMessage.EventType,
@@ -90,11 +92,9 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobId := fmt.Sprintf("single:%s:%s", e.Params.ProjectID, e.Params.UID)
 	job := &queue.Job{
 		ID:      jobId,
 		Payload: eventByte,
-		Delay:   0,
 	}
 
 	err = h.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
@@ -191,7 +191,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	cf := services.CreateFanoutEventService{
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
 		EventRepo:      postgres.NewEventRepo(h.A.DB),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
+		PortalLinkRepo: portal_links.New(h.A.Logger, h.A.DB),
 		Queue:          h.A.Queue,
 		NewMessage:     &newMessage,
 		Project:        project,
@@ -426,7 +426,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	data.Filter.Project = project
 
 	if !h.A.Licenser.AdvancedWebhookFiltering() {
-		data.Filter.Query = "" // event payload search not allowed
+		data.Filter.Query = "" // event payload search is not allowed
 	}
 
 	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)

@@ -4,19 +4,18 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/pkg/transform"
-
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/services"
-
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 // GetSubscriptions
@@ -75,7 +74,6 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 		} else {
 			data.FilterBy.EndpointIDs = endpointIDs
 		}
-
 	}
 
 	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(h.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
@@ -90,7 +88,7 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var org *datastore.Organisation
-	orgRepo := postgres.NewOrgRepo(h.A.DB)
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

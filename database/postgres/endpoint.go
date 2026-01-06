@@ -5,17 +5,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
 	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/constants"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
-	"gopkg.in/guregu/null.v4"
 )
 
 var (
@@ -31,7 +33,8 @@ const (
                 rate_limit, rate_limit_duration, advanced_signatures, slack_webhook_url,
                 support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
                 authentication_type_api_key_header_value,
-                is_encrypted, secrets_cipher, authentication_type_api_key_header_value_cipher
+                is_encrypted, secrets_cipher, authentication_type_api_key_header_value_cipher,
+                mtls_client_cert, mtls_client_cert_cipher, oauth2_config, oauth2_config_cipher, content_type
             )
             VALUES
               (
@@ -40,7 +43,11 @@ const (
                 $14, $15, $16, $17, CASE WHEN $19 THEN '' ELSE $18 END,
                $19,
                CASE WHEN $19 THEN pgp_sym_encrypt($4::TEXT, $20)  END, -- Ciphered values if encrypted
-               CASE WHEN $19 THEN pgp_sym_encrypt($18, $20) END
+               CASE WHEN $19 THEN pgp_sym_encrypt($18, $20) END,
+               CASE WHEN $19 THEN NULL ELSE $21::jsonb END,
+               CASE WHEN $19 THEN pgp_sym_encrypt($21::TEXT, $20) END,
+               CASE WHEN $19 THEN NULL ELSE $22::jsonb END,
+               CASE WHEN $19 THEN pgp_sym_encrypt($22::TEXT, $20) END, $23
               );
             `
 
@@ -60,7 +67,16 @@ const (
 	CASE
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $1)::TEXT
         ELSE e.authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value"
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.mtls_client_cert_cipher::bytea, $1)::jsonb
+        ELSE e.mtls_client_cert
+    END AS mtls_client_cert,
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.oauth2_config_cipher::bytea, $1)::jsonb
+        ELSE e.oauth2_config
+    END AS oauth2_config,
+	e.content_type
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
 	`
@@ -87,7 +103,16 @@ const (
 	CASE
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $3)::TEXT
         ELSE e.authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value"
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.mtls_client_cert_cipher::bytea, $3)::jsonb
+        ELSE e.mtls_client_cert
+    END AS mtls_client_cert,
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.oauth2_config_cipher::bytea, $3)::jsonb
+        ELSE e.oauth2_config
+    END AS oauth2_config,
+	e.content_type
     FROM convoy.endpoints AS e WHERE e.deleted_at IS NULL AND e.url = $1 AND e.project_id = $2;
     `
 
@@ -112,7 +137,21 @@ const (
         WHEN is_encrypted THEN '[]'
         ELSE $17
     END,
-	updated_at = NOW()
+    mtls_client_cert = CASE
+        WHEN is_encrypted THEN NULL
+        ELSE $19::jsonb
+    END,
+	mtls_client_cert_cipher = CASE
+        WHEN is_encrypted THEN pgp_sym_encrypt($19::TEXT, $18)
+    END,
+    oauth2_config = CASE
+        WHEN is_encrypted THEN NULL
+        ELSE $20::jsonb
+    END,
+	oauth2_config_cipher = CASE
+        WHEN is_encrypted THEN pgp_sym_encrypt($20::TEXT, $18)
+    END,
+	updated_at = NOW(), content_type = $21
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
@@ -132,7 +171,16 @@ const (
     CASE
         WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::TEXT
         ELSE authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value";
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(mtls_client_cert_cipher::bytea, $4)::jsonb
+        ELSE mtls_client_cert
+    END AS mtls_client_cert,
+	CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(oauth2_config_cipher::bytea, $4)::jsonb
+        ELSE oauth2_config
+    END AS oauth2_config,
+	content_type;
 	`
 
 	updateEndpointSecrets = `
@@ -160,7 +208,12 @@ const (
     CASE
         WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::TEXT
         ELSE authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value";
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(mtls_client_cert_cipher::bytea, $4)::jsonb
+        ELSE mtls_client_cert
+    END AS mtls_client_cert,
+	content_type;
 	`
 
 	deleteEndpoint = `
@@ -194,7 +247,16 @@ const (
 	CASE
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, :encryption_key)::TEXT
         ELSE e.authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value"
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.mtls_client_cert_cipher::bytea, :encryption_key)::jsonb
+        ELSE e.mtls_client_cert
+    END AS mtls_client_cert,
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.oauth2_config_cipher::bytea, :encryption_key)::jsonb
+        ELSE e.oauth2_config
+    END AS oauth2_config,
+	e.content_type
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
 	AND e.project_id = :project_id
@@ -261,6 +323,21 @@ func checkEncryptionStatus(db database.Database) (bool, error) {
 	return isEncrypted, nil
 }
 
+// validateAndSetContentType validates and sets default content type
+func validateAndSetContentType(contentType string) (string, error) {
+	// Set default content type if empty
+	if contentType == "" {
+		contentType = constants.ContentTypeJSON
+	}
+
+	// Validate content type
+	if !constants.IsValidContentType(contentType) {
+		return "", fmt.Errorf("invalid content type: %s. Must be either '%s' or '%s'", contentType, constants.ContentTypeJSON, constants.ContentTypeFormURLEncoded)
+	}
+
+	return contentType, nil
+}
+
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
 	key, err := e.km.GetCurrentKeyFromCache()
@@ -277,11 +354,24 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
+	// Validate and set content type
+	contentType, err := validateAndSetContentType(endpoint.ContentType)
+	if err != nil {
+		return err
+	}
+
+	// Get OAuth2 config if authentication type is OAuth2
+	var oauth2Config *datastore.OAuth2
+	if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.OAuth2Authentication {
+		oauth2Config = endpoint.Authentication.OAuth2
+	}
+
 	args := []interface{}{
 		endpoint.UID, endpoint.Name, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
 		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, isEncrypted, key,
+		endpoint.MtlsClientCert, oauth2Config, contentType,
 	}
 
 	result, err := e.db.GetDB().ExecContext(ctx, createEndpoint, args...)
@@ -328,6 +418,20 @@ func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID strin
 		return nil, err
 	}
 
+	// Map OAuth2Config to Authentication.OAuth2 if present
+	if endpoint.OAuth2Config != nil {
+		if endpoint.Authentication == nil {
+			endpoint.Authentication = &datastore.EndpointAuthentication{
+				Type: datastore.OAuth2Authentication,
+			}
+		} else {
+			// Ensure Type is set to OAuth2Authentication if OAuth2Config is present
+			endpoint.Authentication.Type = datastore.OAuth2Authentication
+		}
+		endpoint.Authentication.OAuth2 = endpoint.OAuth2Config
+		endpoint.OAuth2Config = nil // Clear the temporary field
+	}
+
 	return endpoint, nil
 }
 
@@ -371,7 +475,7 @@ func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectI
 	return e.scanEndpoints(rows)
 }
 
-func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
+func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID, ownerID string) ([]datastore.Endpoint, error) {
 	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
@@ -396,10 +500,23 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
+	// Validate and set content type
+	contentType, err := validateAndSetContentType(endpoint.ContentType)
+	if err != nil {
+		return err
+	}
+
+	// Get OAuth2 config if authentication type is OAuth2
+	var oauth2Config *datastore.OAuth2
+	if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.OAuth2Authentication {
+		oauth2Config = endpoint.Authentication.OAuth2
+	}
+
 	r, err := e.db.GetReadDB().ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Name, endpoint.Status, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
 		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets, key,
+		endpoint.MtlsClientCert, oauth2Config, contentType,
 	)
 	if err != nil {
 		isEncErr, err2 := e.isEncryptionError(err)
@@ -422,7 +539,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 	return nil
 }
 
-func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID string, endpointID string, status datastore.EndpointStatus) error {
+func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) error {
 	endpoint := datastore.Endpoint{}
 	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
@@ -457,7 +574,9 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deletePortalLinkEndpoints, nil, endpoint.UID)
+	// Delete portal link endpoint relationships
+	deletePortalLinkEndpointsQuery := `DELETE FROM convoy.portal_links_endpoints WHERE portal_link_id = $1 OR endpoint_id = $2`
+	_, err = tx.ExecContext(ctx, deletePortalLinkEndpointsQuery, nil, endpoint.UID)
 	if err != nil {
 		return err
 	}
@@ -482,7 +601,7 @@ func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID stri
 	return count, nil
 }
 
-func (e *endpointRepo) FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*datastore.Endpoint, error) {
+func (e *endpointRepo) FindEndpointByTargetURL(ctx context.Context, projectID, targetURL string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{}
 	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
@@ -619,7 +738,7 @@ func (e *endpointRepo) isEncryptionError(err error) (bool, error) {
 	return false, nil
 }
 
-func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {
+func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID, projectID string, secrets datastore.Secrets) error {
 	endpoint := datastore.Endpoint{}
 	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
@@ -663,6 +782,17 @@ func (e *endpointRepo) scanEndpoints(rows *sqlx.Rows) ([]datastore.Endpoint, err
 		err := rows.StructScan(&endpoint)
 		if err != nil {
 			return nil, err
+		}
+
+		// Map OAuth2Config to Authentication.OAuth2 if present
+		if endpoint.OAuth2Config != nil {
+			if endpoint.Authentication == nil {
+				endpoint.Authentication = &datastore.EndpointAuthentication{
+					Type: datastore.OAuth2Authentication,
+				}
+			}
+			endpoint.Authentication.OAuth2 = endpoint.OAuth2Config
+			endpoint.OAuth2Config = nil // Clear the temporary field
 		}
 
 		endpoints = append(endpoints, endpoint)

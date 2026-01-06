@@ -6,14 +6,13 @@ import (
 	"encoding/base64"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/xdg-go/pbkdf2"
 
-	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
 )
 
 type CreateAPIKeyService struct {
@@ -21,7 +20,7 @@ type CreateAPIKeyService struct {
 	APIKeyRepo  datastore.APIKeyRepository
 
 	Member    *datastore.OrganisationMember
-	NewApiKey *models.APIKey
+	NewApiKey *datastore.APIKey
 }
 
 func (ss *CreateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, string, error) {

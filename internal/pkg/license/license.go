@@ -27,6 +27,7 @@ type Licenser interface {
 	AgentExecutionMode() bool
 	IpRules() bool
 	EnterpriseSSO() bool
+	GoogleOAuth() bool
 	DatadogTracing() bool
 	ReadReplica() bool
 	CredentialEncryption() bool
@@ -37,7 +38,9 @@ type Licenser interface {
 	WebhookAnalytics() bool
 	HADeployment() bool
 	MutualTLS() bool
+	OAuth2EndpointAuth() bool
 	SynchronousWebhooks() bool
+	BillingModule() bool
 	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 
 	RemoveEnabledProject(projectID string)

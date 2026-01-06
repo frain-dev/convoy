@@ -22,7 +22,7 @@ func (ss *RevokePersonalAPIKeyService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "key id is empty"}
 	}
 
-	apiKey, err := ss.APIKeyRepo.FindAPIKeyByID(ctx, ss.UID)
+	apiKey, err := ss.APIKeyRepo.GetAPIKeyByID(ctx, ss.UID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch api key")
 		return &ServiceError{ErrMsg: "failed to fetch api key", Err: err}

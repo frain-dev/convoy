@@ -1,10 +1,12 @@
 package migrator
 
 import (
+	"github.com/jmoiron/sqlx"
+
+	migrate "github.com/rubenv/sql-migrate"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
-	"github.com/jmoiron/sqlx"
-	migrate "github.com/rubenv/sql-migrate"
 )
 
 var (
@@ -34,8 +36,8 @@ func (m *Migrator) Up() error {
 	return nil
 }
 
-func (m *Migrator) Down(max int) error {
-	_, err := migrate.ExecMax(m.dbx.DB, "postgres", m.src, migrate.Down, max)
+func (m *Migrator) Down(maxMigrations int) error {
+	_, err := migrate.ExecMax(m.dbx.DB, "postgres", m.src, migrate.Down, maxMigrations)
 	if err != nil {
 		return err
 	}

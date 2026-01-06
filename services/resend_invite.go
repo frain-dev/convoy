@@ -35,7 +35,7 @@ func (rs *ResendOrgMemberService) Run(ctx context.Context) (*datastore.Organisat
 		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
-	err = sendInviteEmail(context.Background(), iv, rs.User, rs.Organisation, rs.Queue)
+	err = sendInviteEmail(iv, rs.User, rs.Organisation, rs.Queue)
 	if err != nil {
 		return nil, err
 	}

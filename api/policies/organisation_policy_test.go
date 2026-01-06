@@ -6,12 +6,15 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+
 	authz "github.com/Subomi/go-authz"
+
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
 
 func Test_OrganisationPolicy_Manage(t *testing.T) {
@@ -96,7 +99,7 @@ func Test_OrganisationPolicy_Manage(t *testing.T) {
 						tc.storeFn(policy)
 					}
 
-					ctx := context.WithValue(context.Background(), AuthUserCtx, tc.authCtx)
+					ctx := context.WithValue(context.Background(), convoy.AuthUserCtx, tc.authCtx)
 
 					az, _ := authz.NewAuthz(&authz.AuthzOpts{})
 					_ = az.RegisterPolicy(policy)
@@ -171,7 +174,7 @@ func Test_OrganisationPolicy_Add(t *testing.T) {
 						tc.storeFn(policy)
 					}
 
-					ctx := context.WithValue(context.Background(), AuthUserCtx, tc.authCtx)
+					ctx := context.WithValue(context.Background(), convoy.AuthUserCtx, tc.authCtx)
 
 					az, _ := authz.NewAuthz(&authz.AuthzOpts{})
 					_ = az.RegisterPolicy(policy)

@@ -6,21 +6,23 @@ import (
 	"os/signal"
 	"time"
 
-	workerSrv "github.com/frain-dev/convoy/cmd/worker"
-	"github.com/frain-dev/convoy/util"
+	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/api"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	ingestSrv "github.com/frain-dev/convoy/cmd/ingest"
+	workerSrv "github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/server"
+	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/spf13/cobra"
+	"github.com/frain-dev/convoy/util"
 )
 
 func AddAgentCommand(a *cli.App) *cobra.Command {
@@ -57,7 +59,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			if err = config.Override(cliConfig); err != nil {
+			if err := config.Override(cliConfig); err != nil {
 				return err
 			}
 
@@ -69,7 +71,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 			// start sync configuration from the database.
 			go memorystore.DefaultStore.Sync(ctx, interval)
 
-			err = workerSrv.StartWorker(ctx, a, cfg, interval)
+			err = workerSrv.StartWorker(ctx, a, cfg)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane worker component, err: %v", err)
 				return err
@@ -127,10 +129,10 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 	start := time.Now()
 	lo.Info("Starting Convoy data plane")
 
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
+	apiKeyRepo := api_keys.New(a.Logger, a.DB)
 	userRepo := postgres.NewUserRepo(a.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(a.DB)
-	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache)
+	portalLinkRepo := portal_links.New(a.Logger, a.DB)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
 	if err != nil {
 		lo.WithError(err).Fatal("failed to initialize realm chain")
 	}

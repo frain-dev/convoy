@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -12,8 +15,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 // GetEventDelivery
@@ -140,10 +141,14 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 	}
 
 	data.Filter.ProjectID = project.UID
-	ep := datastore.Pageable{}
-	if data.Filter.Pageable == ep {
-		data.Filter.Pageable.PerPage = 1000
+	pp := &datastore.Pageable{
+		PerPage:   10000,
+		Sort:      "DESC",
+		Direction: datastore.Next,
 	}
+	pp.SetCursors()
+
+	data.Filter.Pageable = *pp
 
 	br := services.BatchRetryEventDeliveryService{
 		BatchRetryRepo:    postgres.NewBatchRetryRepo(h.A.DB),
@@ -272,7 +277,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	f := data.Filter
 
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(h.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(h.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType, f.BrokerMessageId)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))

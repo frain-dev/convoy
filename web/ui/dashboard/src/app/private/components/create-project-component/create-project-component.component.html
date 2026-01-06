@@ -268,7 +268,7 @@
 						<hr class="border-neutral-5 mb-24px" />
 
 						<h4 class="text-12 font-semibold mb-24px" [ngClass]="{ 'opacity-60 pointer-events-none': !projectForm.get('config.meta_event.is_enabled')?.value }">Meta Events Configurations</h4>
-						<div class="grid grid-cols-2 gap-24px">
+                <div class="grid grid-cols-2 gap-24px">
 							<convoy-input-field>
 								<label for="url" convoy-label required="true">Webhook URL</label>
 								<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter URL" />
@@ -307,11 +307,87 @@
 
 				<div class="flex justify-center mt-24px">
 					<button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" type="button" (click)="confirmationDialog.showModal()" [disabled]="regeneratingKey">
-						<svg width="16" height="16" class="mr-8px stroke-white-100 scale-90" [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
+						<svg width="16" height="16" class="mr-8px stroke-16px stroke-white-100 scale-90" [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
 							<use xlink:href="#refresh-icon"></use>
 						</svg>
 						Regenerate API Key
 					</button>
+				</div>
+			</ng-container>
+
+			<ng-container *ngIf="activeTab.label === 'circuit breaker'">
+				<h3 class="text-16 font-bold text-neutral-10 mb-24px" *ngIf="action === 'update'">Circuit Breaker Configuration</h3>
+
+				<div class="text-12 text-neutral-11 mb-24px">
+					Circuit breaker settings control how endpoints are automatically disabled when they fail too frequently.
+				</div>
+
+				<div *ngIf="!circuitBreakerFeatureEnabled" class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+					<div class="flex items-center gap-8px mb-6px">
+						<svg width="14" height="14" class="fill-new.primary-400">
+							<use xlink:href="#lock-icon"></use>
+						</svg>
+						<p class="text-10 font-semibold text-neutral-12">Circuit Breaker Feature Flag Disabled</p>
+					</div>
+					<p class="text-10 text-neutral-10">Circuit breaker configuration feature flag is not enabled for your organization.</p>
+				</div>
+
+				<div *ngIf="circuitBreakerFeatureEnabled" class="grid grid-cols-2 gap-24px">
+					<div>
+						<label class="text-12 font-medium text-neutral-11 mb-8px block">Sample Rate (seconds)</label>
+						<div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
+                            <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.sample_rate }}</span>
+						</div>
+						<small class="text-10 text-neutral-9">Time interval for polling data source</small>
+					</div>
+
+					<div>
+						<label class="text-12 font-medium text-neutral-11 mb-8px block">Error Timeout (seconds)</label>
+						<div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
+                            <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.error_timeout }}</span>
+						</div>
+						<small class="text-10 text-neutral-9">Time before circuit breaker resets</small>
+					</div>
+
+					<div>
+						<label class="text-12 font-medium text-neutral-11 mb-8px block">Failure Threshold (%)</label>
+						<div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
+                            <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.failure_threshold }}</span>
+						</div>
+						<small class="text-10 text-neutral-9">Percentage of failures to trigger circuit breaker</small>
+					</div>
+
+					<div>
+						<label class="text-12 font-medium text-neutral-11 mb-8px block">Success Threshold (%)</label>
+						<div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
+                            <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.success_threshold }}</span>
+						</div>
+						<small class="text-10 text-neutral-9">Percentage of successes to close circuit breaker</small>
+					</div>
+
+					<div>
+						<label class="text-12 font-medium text-neutral-11 mb-8px block">Observability Window (minutes)</label>
+						<div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
+                            <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.observability_window }}</span>
+						</div>
+						<small class="text-10 text-neutral-9">Time window for monitoring failures</small>
+					</div>
+
+					<div>
+						<label class="text-12 font-medium text-neutral-11 mb-8px block">Minimum Request Count</label>
+						<div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
+                            <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.minimum_request_count }}</span>
+						</div>
+						<small class="text-10 text-neutral-9">Minimum requests before triggering</small>
+					</div>
+
+					<div>
+						<label class="text-12 font-medium text-neutral-11 mb-8px block">Consecutive Failure Threshold</label>
+						<div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
+                            <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.consecutive_failure_threshold }}</span>
+						</div>
+						<small class="text-10 text-neutral-9">Consecutive failures before disabling endpoint</small>
+					</div>
 				</div>
 			</ng-container>
 
@@ -398,7 +474,7 @@
 		</div>
 	</div>
 
-	<div class="flex justify-end" *ngIf="activeTab.label !== 'signature history' && activeTab.label !== 'endpoints config' && activeTab.label !== 'secrets' && activeTab.label !== 'event types'">
+    <div class="flex justify-end" *ngIf="activeTab.label !== 'signature history' && activeTab.label !== 'endpoints config' && activeTab.label !== 'secrets' && activeTab.label !== 'event types' && activeTab.label !== 'circuit breaker'">
 		<button convoy-button [disabled]="isCreatingProject || projectForm.disabled">
 			{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="action !== 'update'">

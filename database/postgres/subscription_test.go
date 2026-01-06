@@ -10,10 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func generateSubscription(project *datastore.Project, source *datastore.Source, endpoint *datastore.Endpoint, device *datastore.Device) *datastore.Subscription {

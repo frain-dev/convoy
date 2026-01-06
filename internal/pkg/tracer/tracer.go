@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/frain-dev/convoy/config"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var (
@@ -54,7 +54,8 @@ func Init(tCfg config.TracerConfiguration, componentName string, licenser licens
 			return st, ErrInvalidTracerConfiguration
 		}
 
-		return st, st.Init(componentName)
+		err := st.Init(componentName)
+		return st, err
 
 	case config.DatadogTracerProvider:
 		dt := NewDatadogTracer(tCfg.Datadog, licenser)
@@ -66,7 +67,8 @@ func Init(tCfg config.TracerConfiguration, componentName string, licenser licens
 			return dt, ErrInvalidTracerConfiguration
 		}
 
-		return dt, dt.Init(componentName)
+		err := dt.Init(componentName)
+		return dt, err
 
 	case config.OTelTracerProvider:
 		ot := NewOTelTracer(tCfg.OTel)
@@ -74,7 +76,8 @@ func Init(tCfg config.TracerConfiguration, componentName string, licenser licens
 			return ot, ErrInvalidTracerConfiguration
 		}
 
-		return ot, ot.Init(componentName)
+		err := ot.Init(componentName)
+		return ot, err
 	}
 
 	return &NoOpBackend{}, nil

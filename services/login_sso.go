@@ -5,6 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/url"
+	"time"
+
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
@@ -12,11 +19,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
-	"io"
-	"net/http"
-	"net/url"
-	"time"
 )
 
 type LoginUserSSOService struct {
@@ -36,7 +38,6 @@ const ssoRedirectPath = "/ssoready/redirect"
 const ssoTokenPath = "/ssoready/token"
 
 func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
-
 	ssoReq := models.SSORequest{
 		LicenseKey: u.LicenseKey,
 		Host:       u.Host,
@@ -234,7 +235,7 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 		OrgRepo:       u.OrgRepo,
 		OrgMemberRepo: u.OrgMemberRepo,
 		Licenser:      u.Licenser,
-		NewOrg:        &models.Organisation{Name: t.Data.Payload.OrganizationExternalID},
+		NewOrg:        &datastore.OrganisationRequest{Name: t.Data.Payload.OrganizationExternalID},
 		User:          user,
 	}
 
@@ -252,5 +253,4 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 	}
 
 	return user, &token, nil
-
 }

@@ -6,13 +6,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/tidwall/gjson"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/tidwall/gjson"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 type Idempotency interface {
@@ -140,9 +142,6 @@ func (d *DeDuper) extractFromBodyJSON(request *http.Request, parts []string) (in
 	}
 
 	request.Body = io.NopCloser(bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
 
 	var q strings.Builder
 	q.WriteString(parts[0])

@@ -130,6 +130,34 @@
 				</div>
 			</ng-container>
 
+            <div class="flex gap-x-2px" *ngIf="eventOwnerIdString">
+                <div class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Owner ID</div>
+                <div class="border border-new.primary-100 rounded-tr-8px rounded-br-8px px-10px py-6px text-neutral-11 text-12 flex gap-6px items-center">
+                    {{ eventOwnerIdString }}
+
+                    <button convoy-button (click)="clearFilters('ownerId'); toggleFilter('ownerId', false)" fill="text" type="button" class="py-0 px-0 ml-4px">
+                        <svg width="14" height="14" class="fill-neutral-10">
+                            <use xlink:href="#close-icon-2"></use>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <ng-container *ngIf="showFilter('ownerId')">
+                    <form class="border border-new.primary-100 h-36px px-14px py-0 max-w-[200px] w-auto rounded-[10px] flex items-center bg-transparent"
+                          [hidden]="this.projectService.activeProjectDetails?.type === 'incoming'"
+                          (close)="toggleFilter('ownerId', false)"
+                          [ngClass]="{ 'border-new.primary-200': eventOwnerIdString != undefined && eventOwnerIdString != '' }">
+
+                        <img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
+                        <input type="search" placeholder="Search Owner ID" [(ngModel)]="eventOwnerIdString" (change)="searchOwnerId()"
+                               [ngModelOptions]="{ standalone: true }" class="w-full text-neutral-11 outline-none bg-transparent text-12 font-normal" />
+                        <button *ngIf="eventOwnerIdString">
+                            <img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px opacity-75" />
+                        </button>
+                    </form>
+            </ng-container>
+
 			<div class="flex gap-x-2px" *ngIf="eventDeliveriesEndpoint">
 				<div class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Endpoint</div>
 				<div class="border border-new.primary-100 rounded-tr-8px rounded-br-8px px-10px py-6px text-neutral-11 text-12 flex gap-6px items-center">

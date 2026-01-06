@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	v20240401 "github.com/frain-dev/convoy/api/migrations/v20240401"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"gopkg.in/guregu/null.v4"
 )
 
 type oldCreateEndpoint struct {
@@ -25,6 +26,7 @@ type oldCreateEndpoint struct {
 	RateLimit          int                            `json:"rate_limit"`
 	AdvancedSignatures *bool                          `json:"advanced_signatures"`
 	RateLimitDuration  string                         `json:"rate_limit_duration"`
+	ContentType        string                         `json:"content_type"`
 	Authentication     *models.EndpointAuthentication `json:"authentication"`
 	AppID              string
 }
@@ -82,6 +84,7 @@ type oldEndpoint struct {
 	Status      datastore.EndpointStatus `json:"status" db:"status"`
 
 	RateLimitDuration string                            `json:"rate_limit_duration" db:"rate_limit_duration"`
+	ContentType       string                            `json:"content_type" db:"content_type"`
 	Authentication    *datastore.EndpointAuthentication `json:"authentication" db:"authentication"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`

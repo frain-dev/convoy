@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
@@ -46,7 +47,6 @@ type Jwt struct {
 }
 
 func NewJwt(opts *config.JwtRealmOptions, cache cache.Cache) *Jwt {
-
 	j := &Jwt{
 		Secret:        opts.Secret,
 		Expiry:        opts.Expiry,
@@ -125,7 +125,6 @@ func (j *Jwt) isTokenBlacklisted(token string) (bool, error) {
 	}
 
 	return true, nil
-
 }
 
 func (j *Jwt) BlacklistToken(verified *VerifiedToken, token string) error {

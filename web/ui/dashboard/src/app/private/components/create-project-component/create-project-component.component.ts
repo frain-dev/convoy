@@ -1,14 +1,22 @@
-import { Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { PROJECT, VERSIONS } from 'src/app/models/project.model';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { PrivateService } from '../../private.service';
-import { CreateProjectComponentService } from './create-project-component.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { EVENT_TYPE } from 'src/app/models/event.model';
-import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import {Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {
+    AbstractControl,
+    FormArray,
+    FormBuilder,
+    FormGroup,
+    ValidationErrors,
+    ValidatorFn,
+    Validators
+} from '@angular/forms';
+import {ActivatedRoute, Router} from '@angular/router';
+import {PROJECT, VERSIONS} from 'src/app/models/project.model';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {PrivateService} from '../../private.service';
+import {CreateProjectComponentService} from './create-project-component.service';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {EVENT_TYPE} from 'src/app/models/event.model';
+import {SettingsService} from '../../pages/settings/settings.service';
 
 
 interface TAB {
@@ -117,13 +125,16 @@ export class CreateProjectComponent implements OnInit {
 		{ label: 'endpoints config', svg: 'stroke', icon: 'endpoints' },
 		{ label: 'meta events config', svg: 'stroke', icon: 'meta-events' },
 		{ label: 'event types', svg: 'stroke', icon: 'event-type' },
-		{ label: 'secrets', svg: 'stroke', icon: 'secret' }
+		{ label: 'secrets', svg: 'stroke', icon: 'secret' },
+		{ label: 'circuit breaker', svg: 'stroke', icon: 'shield' }
 	];
 	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
 	eventTypes: EVENT_TYPE[] = [];
 	selectedEventType: EVENT_TYPE | null = null;
     rateLimitDeleted = false;
+	circuitBreakerFeatureEnabled = false;
+	organisationId!: string;
 
 	constructor(
 		private formBuilder: FormBuilder,
@@ -132,14 +143,58 @@ export class CreateProjectComponent implements OnInit {
 		private privateService: PrivateService,
 		public router: Router,
 		private route: ActivatedRoute,
-		public licenseService: LicensesService
+		public licenseService: LicensesService,
+		private settingsService: SettingsService
 	) {}
+
+	// Normalized view model for circuit breaker with hard defaults to 0
+	get circuitBreakerView() {
+		const cb = this.projectDetails?.config?.circuit_breaker as
+			| {
+					sample_rate?: number;
+					error_timeout?: number;
+					failure_threshold?: number;
+					success_threshold?: number;
+					observability_window?: number;
+					minimum_request_count?: number;
+					consecutive_failure_threshold?: number;
+			  }
+			| undefined;
+		return {
+			sample_rate: cb?.sample_rate ?? 0,
+			error_timeout: cb?.error_timeout ?? 0,
+			failure_threshold: cb?.failure_threshold ?? 0,
+			success_threshold: cb?.success_threshold ?? 0,
+			observability_window: cb?.observability_window ?? 0,
+			minimum_request_count: cb?.minimum_request_count ?? 0,
+			consecutive_failure_threshold: cb?.consecutive_failure_threshold ?? 0,
+		};
+	}
 
 	async ngOnInit() {
 		this.getEventTypes();
-		if (this.action === 'update') this.getProjectDetails();
+		if (this.action === 'update') {
+			await this.getProjectDetails();
+			await this.checkCircuitBreakerFeatureFlag();
+		}
 		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
 		if (this.action === 'update') this.switchTab(this.tabs.find(tab => tab.label == this.route.snapshot.queryParams?.activePage) ?? this.tabs[0]);
+	}
+
+	async checkCircuitBreakerFeatureFlag() {
+		const org = localStorage.getItem('CONVOY_ORG');
+		if (!org) return;
+		try {
+			const organisationDetails = JSON.parse(org);
+			this.organisationId = organisationDetails.uid;
+			const response = await this.settingsService.getOrganisationFeatureFlags({
+				org_id: this.organisationId
+			});
+			const featureFlags = response.data || {};
+			this.circuitBreakerFeatureEnabled = featureFlags['circuit-breaker'] || false;
+		} catch (error) {
+			this.circuitBreakerFeatureEnabled = false;
+		}
 	}
 
 	get versions(): FormArray {

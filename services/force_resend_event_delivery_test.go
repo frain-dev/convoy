@@ -5,15 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/queue"
-
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/queue"
 )
 
 func provideForceResendEventDeliveriesService(ctrl *gomock.Controller, ids []string, project *datastore.Project) *ForceResendEventDeliveriesService {

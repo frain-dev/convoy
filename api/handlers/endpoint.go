@@ -5,22 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-
-	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 // CreateEndpoint
@@ -42,7 +43,8 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err := h.RM.VersionRequest(r, "CreateEndpoint")
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Version request failed for CreateEndpoint: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
 		return
 	}
 
@@ -50,19 +52,27 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err = util.ReadJSON(r, &e)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to parse endpoint creation request: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
+	}
+
+	// Set default content type if not provided
+	if e.ContentType == "" {
+		e.ContentType = constants.ContentTypeJSON
 	}
 
 	err = e.Validate()
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Endpoint creation validation failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
 
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
 
@@ -77,14 +87,16 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.CreateEndpointService{
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:    postgres.NewProjectRepo(h.A.DB),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
-		Licenser:       h.A.Licenser,
-		E:              e,
-		ProjectID:      project.UID,
-		FeatureFlag:    h.A.FFlag,
-		Logger:         h.A.Logger,
+		EndpointRepo:               postgres.NewEndpointRepo(h.A.DB),
+		ProjectRepo:                postgres.NewProjectRepo(h.A.DB),
+		Licenser:                   h.A.Licenser,
+		E:                          e,
+		ProjectID:                  project.UID,
+		FeatureFlag:                h.A.FFlag,
+		FeatureFlagFetcher:         h.A.FeatureFlagFetcher,
+		EarlyAdopterFeatureFetcher: h.A.EarlyAdopterFeatureFetcher,
+		DB:                         h.A.DB,
+		Logger:                     h.A.Logger,
 	}
 
 	endpoint, err := ce.Run(r.Context())
@@ -130,14 +142,16 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
 
 	endpointID := chi.URLParam(r, "endpointID")
 	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+		h.A.Logger.WithError(err).Errorf("Failed to retrieve endpoint: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 		return
 	}
 
@@ -177,7 +191,8 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
 
@@ -210,11 +225,13 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	endpoints, paginationData, err := postgres.NewEndpointRepo(h.A.DB).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
 	if err != nil {
 		h.A.Logger.WithError(err).Error("failed to load endpoints")
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("Failed to load endpoints", http.StatusBadRequest))
 		return
 	}
 
-	if h.A.FFlag.CanAccessFeature(fflag.CircuitBreaker) && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 {
+	circuitBreakerEnabled := h.A.FFlag.CanAccessOrgFeature(
+		r.Context(), fflag.CircuitBreaker, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, project.OrganisationID)
+	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 {
 		// fetch keys from redis and mutate endpoints slice
 		keys := make([]string, len(endpoints))
 		for i := 0; i < len(endpoints); i++ {
@@ -309,6 +326,12 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set default content type if not provided
+	if e.ContentType == nil || *e.ContentType == "" {
+		defaultContentType := constants.ContentTypeJSON
+		e.ContentType = &defaultContentType
+	}
+
 	err = e.Validate()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -316,15 +339,18 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.UpdateEndpointService{
-		Cache:        h.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(h.A.DB),
-		Licenser:     h.A.Licenser,
-		FeatureFlag:  h.A.FFlag,
-		Logger:       h.A.Logger,
-		E:            e,
-		Endpoint:     endpoint,
-		Project:      project,
+		Cache:                      h.A.Cache,
+		EndpointRepo:               postgres.NewEndpointRepo(h.A.DB),
+		ProjectRepo:                postgres.NewProjectRepo(h.A.DB),
+		Licenser:                   h.A.Licenser,
+		FeatureFlag:                h.A.FFlag,
+		FeatureFlagFetcher:         h.A.FeatureFlagFetcher,
+		EarlyAdopterFeatureFetcher: h.A.EarlyAdopterFeatureFetcher,
+		DB:                         h.A.DB,
+		Logger:                     h.A.Logger,
+		E:                          e,
+		Endpoint:                   endpoint,
+		Project:                    project,
 	}
 
 	endpoint, err = ce.Run(r.Context())
@@ -512,14 +538,9 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/activate [post]
 func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
-	if !h.A.Licenser.CircuitBreaking() || !h.A.FFlag.CanAccessFeature(fflag.CircuitBreaker) {
-		_ = render.Render(w, r, util.NewErrorResponse("feature not enabled", http.StatusBadRequest))
-		return
-	}
-
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -570,6 +591,119 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	util.WriteResponse(w, r, resBytes, http.StatusAccepted)
+}
+
+// TestOAuth2Connection
+//
+//	@Summary		Test OAuth2 connection
+//	@Description	This endpoint tests the OAuth2 connection by attempting to exchange a token
+//	@Tags			Endpoints
+//	@Id				TestOAuth2Connection
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string						true	"Project ID"
+//	@Param			oauth2		body		models.TestOAuth2Request	true	"OAuth2 Configuration"
+//	@Success		200			{object}	util.ServerResponse{data=models.TestOAuth2Response}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/oauth2/test [post]
+func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
+	var testReq models.TestOAuth2Request
+	err := util.ReadJSON(r, &testReq)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to parse OAuth2 test request: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		return
+	}
+
+	err = testReq.Validate()
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("OAuth2 test request validation failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
+		return
+	}
+
+	// Transform API model to datastore model
+	if testReq.OAuth2 == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("OAuth2 configuration is required", http.StatusBadRequest))
+		return
+	}
+	oauth2Config := testReq.OAuth2.Transform()
+	if oauth2Config == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("OAuth2 configuration is required", http.StatusBadRequest))
+		return
+	}
+
+	// Create a temporary endpoint for testing
+	testEndpoint := &datastore.Endpoint{
+		UID: "test",
+		Authentication: &datastore.EndpointAuthentication{
+			Type:   datastore.OAuth2Authentication,
+			OAuth2: oauth2Config,
+		},
+	}
+
+	// Initialize OAuth2 token service
+	oauth2Service := services.NewOAuth2TokenService(h.A.Cache, h.A.Logger)
+
+	// Get authorization header (includes token type)
+	authHeader, err := oauth2Service.GetAuthorizationHeader(r.Context(), testEndpoint)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("OAuth2 token exchange failed: %v", err)
+		_ = render.Render(w, r, util.NewServerResponse(
+			"OAuth2 connection test failed",
+			models.TestOAuth2Response{
+				Success: false,
+				Error:   err.Error(),
+			},
+			http.StatusOK,
+		))
+		return
+	}
+
+	// Parse token type and access token from authorization header
+	// Format: "TokenType access_token" (e.g., "Bearer token123" or "CustomType token123")
+	parts := strings.SplitN(authHeader, " ", 2)
+	tokenType := "Bearer" // Default
+	var accessToken string
+	if len(parts) == 2 {
+		tokenType = parts[0]
+		accessToken = parts[1]
+	} else {
+		// Fallback if format is unexpected
+		accessToken = authHeader
+	}
+
+	// Get the cached token to return full response details (including expires_at)
+	cacheKey := "oauth2_token:test"
+	var cachedToken services.CachedToken
+	err = h.A.Cache.Get(r.Context(), cacheKey, &cachedToken)
+
+	var expiresAt time.Time
+	if err == nil {
+		// Use token type from cache if available (more accurate)
+		if cachedToken.TokenType != "" {
+			tokenType = cachedToken.TokenType
+		}
+		if cachedToken.AccessToken != "" {
+			accessToken = cachedToken.AccessToken
+		}
+		expiresAt = cachedToken.ExpiresAt
+	}
+
+	// Return full response with token details
+	resp := models.TestOAuth2Response{
+		Success:     true,
+		AccessToken: accessToken,
+		TokenType:   tokenType,
+		ExpiresAt:   expiresAt,
+		Message:     "OAuth2 connection successful",
+	}
+
+	// Clean up test cache entry
+	_ = h.A.Cache.Delete(r.Context(), cacheKey)
+
+	_ = render.Render(w, r, util.NewServerResponse("OAuth2 connection test successful", resp, http.StatusOK))
 }
 
 func (h *Handler) retrieveEndpoint(ctx context.Context, endpointID, projectID string) (*datastore.Endpoint, error) {

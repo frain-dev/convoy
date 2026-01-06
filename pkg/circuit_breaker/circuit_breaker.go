@@ -1,9 +1,10 @@
 package circuit_breaker
 
 import (
+	"time"
+
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"time"
 )
 
 // CircuitBreaker represents a circuit breaker
@@ -34,7 +35,7 @@ type CircuitBreaker struct {
 	logger *log.Logger
 }
 
-func NewCircuitBreaker(key string, tenantId string, logger *log.Logger) *CircuitBreaker {
+func NewCircuitBreaker(key, tenantId string, logger *log.Logger) *CircuitBreaker {
 	return &CircuitBreaker{
 		Key:               key,
 		TenantId:          tenantId,
@@ -116,4 +117,9 @@ func (b *CircuitBreaker) Reset(resetTime time.Time) {
 		b.logger.Infof("[circuit breaker] circuit breaker transitioned from half-open to closed")
 		b.logger.Debugf("[circuit breaker] circuit breaker state: %+v", b.asKeyValue())
 	}
+}
+
+// shouldTrip determines if the circuit breaker should trip based on the given configuration
+func (b *CircuitBreaker) shouldTrip(config *CircuitBreakerConfig) bool {
+	return b.Requests >= config.MinimumRequestCount && b.FailureRate >= float64(config.FailureThreshold)
 }

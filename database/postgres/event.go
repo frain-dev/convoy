@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
+	"github.com/jmoiron/sqlx"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -93,7 +93,9 @@ const (
 	AND ev.created_at >= :start_date AND ev.created_at <= :end_date AND ev.deleted_at IS NULL;
 	`
 
+	// if there's no owner_id, we remove the initial CTE
 	baseEventsPaged = `
+	with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id), events as (
 	SELECT ev.id, ev.project_id,
 	ev.id AS event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
@@ -105,7 +107,7 @@ const (
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+	JOIN endpoint_ids e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
@@ -121,13 +123,14 @@ const (
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events_search ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+	JOIN convoy.endpoints e ON e.id = ee.endpoint_id
     WHERE ev.deleted_at IS NULL`
 
 	baseEventsPagedForward = `
-	WITH events AS (
+
         %s %s AND ev.id <= :cursor
+		GROUP BY ev.id, s.id
 	    ORDER BY ev.created_at %s
 	    LIMIT :limit
 	)
@@ -136,8 +139,9 @@ const (
 	`
 
 	baseEventsPagedBackward = `
-	WITH events AS (
+
         %s %s AND ev.id >= :cursor
+		GROUP BY ev.id, s.id
 		ORDER BY ev.created_at %s
 		LIMIT :limit
 	)
@@ -155,6 +159,8 @@ const (
 	sourceFilter = ` AND ev.source_id IN (:source_ids) `
 
 	searchFilter = ` AND search_token @@ websearch_to_tsquery('simple',:query) `
+
+	brokerMessageIdFilter = ` AND headers -> 'x-broker-message-id' ->> 0 = :broker_message_id`
 
 	baseCountPrevEvents = `
 	select exists(
@@ -340,7 +346,7 @@ func (e *eventRepo) UpdateEventStatus(ctx context.Context, event *datastore.Even
 }
 
 // FindEventByID to find events in real time - requires the primary db
-func (e *eventRepo) FindEventByID(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+func (e *eventRepo) FindEventByID(ctx context.Context, projectID, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventById, id, projectID).StructScan(event)
 	if err != nil {
@@ -381,7 +387,7 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	return events, nil
 }
 
-func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]datastore.Event, error) {
+func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) ([]datastore.Event, error) {
 	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, idempotencyKey, projectID)
 	if err != nil {
 		return nil, err
@@ -409,7 +415,7 @@ func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID st
 	return events, nil
 }
 
-func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchFirstEventWithIdempotencyKey, id, projectID).StructScan(event)
 	if err != nil {
@@ -484,15 +490,17 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	}
 
 	arg := map[string]interface{}{
-		"endpoint_ids":    filter.EndpointIDs,
-		"project_id":      projectID,
-		"source_ids":      filter.SourceIDs,
-		"limit":           filter.Pageable.Limit(),
-		"start_date":      startDate,
-		"end_date":        endDate,
-		"query":           filter.Query,
-		"cursor":          filter.Pageable.Cursor(),
-		"idempotency_key": filter.IdempotencyKey,
+		"endpoint_ids":      filter.EndpointIDs,
+		"project_id":        projectID,
+		"source_ids":        filter.SourceIDs,
+		"limit":             filter.Pageable.Limit(),
+		"start_date":        startDate,
+		"end_date":          endDate,
+		"owner_id":          filter.OwnerID,
+		"query":             filter.Query,
+		"cursor":            filter.Pageable.Cursor(),
+		"idempotency_key":   filter.IdempotencyKey,
+		"broker_message_id": filter.BrokerMessageId,
 	}
 
 	base := baseEventsPaged
@@ -511,6 +519,16 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery += endpointFilter
+	}
+
+	if len(filter.BrokerMessageId) > 0 {
+		filterQuery += brokerMessageIdFilter
+	}
+
+	// if there's no owner_id, we remove the initial CTE
+	if len(filter.OwnerID) == 0 {
+		base = strings.Replace(base, "with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id),", "with ", 1)
+		base = strings.Replace(base, "endpoint_ids", "convoy.endpoints", 1)
 	}
 
 	if !util.IsStringEmpty(filter.Query) {

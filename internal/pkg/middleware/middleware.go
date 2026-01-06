@@ -11,48 +11,42 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/riandyrn/otelchi"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/frain-dev/convoy/pkg/log"
-
-	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
-
 	"github.com/felixge/httpsnoop"
-	"github.com/frain-dev/convoy/api/types"
-	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
-	sdktrace "go.opentelemetry.io/otel/trace"
-)
+	"github.com/riandyrn/otelchi"
+	"github.com/sirupsen/logrus"
 
-const (
-	AuthUserCtx types.ContextKey = "authUser"
-	pageableCtx types.ContextKey = "pageable"
+	sdktrace "go.opentelemetry.io/otel/trace"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 )
 
 var (
 	ErrValidLicenseRequired = errors.New("access to this resource requires a valid license")
 
 	// skipLoggingPaths defines paths that should not be logged by the request logger
-	skipLoggingPaths []string
+	skipLoggingPaths = []string{
+		"/billing/organisations/",
+	}
 )
 
 // shouldSkipLogging checks if the given path should be excluded from logging
-func shouldSkipLogging(r map[string]interface{}, w map[string]interface{}) bool {
+func shouldSkipLogging(r, w map[string]interface{}) bool {
+	// Check if this is a path we want to skip
 	for _, skipPath := range skipLoggingPaths {
 		if strings.Contains(r["requestURL"].(string), skipPath) {
 			return true
@@ -198,7 +192,7 @@ func RequireAuth() func(next http.Handler) http.Handler {
 			creds, err := GetAuthFromRequest(r)
 			if err != nil {
 				log.FromContext(r.Context()).WithError(err).Error("failed to get auth from request")
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
 				return
 			}
 
@@ -215,7 +209,7 @@ func RequireAuth() func(next http.Handler) http.Handler {
 				return
 			}
 
-			authCtx := context.WithValue(r.Context(), AuthUserCtx, authUser)
+			authCtx := context.WithValue(r.Context(), convoy.AuthUserCtx, authUser)
 
 			r = r.WithContext(setAuthUserInContext(authCtx, authUser))
 			next.ServeHTTP(w, r)
@@ -369,6 +363,10 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 					"httpResponse": responseFields,
 				}
 
+				if orgID := extractOrganisationID(r); orgID != "" {
+					logFields["organisation_id"] = orgID
+				}
+
 				if shouldSkipLogging(requestFields, responseFields) {
 					return
 				}
@@ -468,7 +466,7 @@ func headerFields(header http.Header) map[string]string {
 	return headerField
 }
 
-func EnsurePeriod(start time.Time, end time.Time) error {
+func EnsurePeriod(start, end time.Time) error {
 	if start.Unix() > end.Unix() {
 		return errors.New("startDate cannot be greater than endDate")
 	}
@@ -477,11 +475,11 @@ func EnsurePeriod(start time.Time, end time.Time) error {
 }
 
 func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {
-	return context.WithValue(ctx, pageableCtx, pageable)
+	return context.WithValue(ctx, convoy.PageableCtx, pageable)
 }
 
 func GetPageableFromContext(ctx context.Context) datastore.Pageable {
-	v := ctx.Value(pageableCtx)
+	v := ctx.Value(convoy.PageableCtx)
 	if v != nil {
 		return v.(datastore.Pageable)
 	}
@@ -489,18 +487,48 @@ func GetPageableFromContext(ctx context.Context) datastore.Pageable {
 }
 
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
-	return context.WithValue(ctx, AuthUserCtx, a)
+	return context.WithValue(ctx, convoy.AuthUserCtx, a)
 }
 
 func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
-	return ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
+	return ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
 }
 
 func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.EnterpriseSSO() {
-				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				log.Warnf("Enterprise SSO access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func extractOrganisationID(r *http.Request) string {
+	if orgID := chi.URLParam(r, "orgID"); orgID != "" {
+		return orgID
+	}
+
+	if orgID := r.URL.Query().Get("orgID"); orgID != "" {
+		return orgID
+	}
+
+	if orgID := r.URL.Query().Get("organisation_id"); orgID != "" {
+		return orgID
+	}
+
+	return ""
+}
+
+func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !l.GoogleOAuth() {
+				log.Warnf("Google OAuth access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -512,7 +540,8 @@ func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.PortalLinks() {
-				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				log.Warnf("Portal links access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
 			next.ServeHTTP(w, r)

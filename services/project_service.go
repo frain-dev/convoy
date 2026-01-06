@@ -7,13 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/auth"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -40,7 +39,7 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 
 var ErrProjectLimit = errors.New("your instance has reached it's project limit, upgrade to create more projects")
 
-func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
+func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *datastore.APIKeyResponse, error) {
 	ok, err := ps.Licenser.CreateProject(ctx)
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -117,9 +116,9 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		log.FromContext(ctx).WithError(err).Error("failed to create default event types")
 	}
 
-	newAPIKey := &models.APIKey{
+	newAPIKey := &datastore.APIKey{
 		Name: fmt.Sprintf("%s's default key", project.Name),
-		Role: models.Role{
+		Role: auth.Role{
 			Type:    auth.RoleProjectAdmin,
 			Project: project.UID,
 		},
@@ -137,14 +136,14 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		return nil, nil, err
 	}
 
-	resp := &models.APIKeyResponse{
-		APIKey: models.APIKey{
+	resp := &datastore.APIKeyResponse{
+		APIKeyRes: datastore.APIKeyRes{
 			Name: apiKey.Name,
-			Role: models.Role{
+			Role: datastore.Role{
 				Type:    apiKey.Role.Type,
 				Project: apiKey.Role.Project,
 			},
-			Type:      apiKey.Type,
+			Type:      string(apiKey.Type),
 			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UID:       apiKey.UID,

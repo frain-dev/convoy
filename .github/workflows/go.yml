@@ -10,8 +10,8 @@ jobs:
         if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
         strategy:
             matrix:
-                go-version: [1.22.x]
-                os: [ubuntu-latest, macos-latest]
+                go-version: [1.24.x]
+                os: [ubuntu-latest]
                 postgres-version: ["15"]
                 redis-version: ["6.2.6"]
 
@@ -40,7 +40,7 @@ jobs:
               run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
 
             - name: Set up Go
-              uses: actions/setup-go@v2
+              uses: actions/setup-go@v6
               with:
                   go-version: ${{ matrix.go-version }}
 
@@ -52,7 +52,7 @@ jobs:
                   restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
 
             - name: Check out code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
 
             - name: Get and verify dependencies
               run: go mod download && go mod verify
@@ -77,9 +77,13 @@ jobs:
                   CONVOY_REDIS_HOST: localhost
                   CONVOY_REDIS_PORT: 6379
 
-            - name: Run integration tests
-              run: make integration_tests
+            - name: Run integration tests (with test containers)
+              run: make test
               env:
+                  TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+                  CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+                  CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
+                  CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
                   TEST_DB_SCHEME: postgres
                   TEST_DB_HOST: localhost
                   TEST_DB_USERNAME: postgres
@@ -91,18 +95,11 @@ jobs:
                   TEST_REDIS_HOST: localhost
                   TEST_REDIS_PORT: 6379
 
-            - name: Run integration tests (with test containers)
-              run: make docker_e2e_tests
+            - name: Run E2E tests (testcontainers)
+              run: make test_e2e
               env:
                   TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
-                  TEST_DB_SCHEME: postgres
-                  TEST_DB_HOST: localhost
-                  TEST_DB_USERNAME: postgres
-                  TEST_DB_PASSWORD: postgres
-                  TEST_DB_DATABASE: convoy
-                  TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
-                  TEST_DB_PORT: 5432
-                  TEST_REDIS_SCHEME: redis
-                  TEST_REDIS_HOST: localhost
-                  TEST_REDIS_PORT: 6379
+                  CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+                  CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
+                  CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
 

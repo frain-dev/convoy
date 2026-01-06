@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
 
 func TestNativeRealm_Authenticate(t *testing.T) {
@@ -63,7 +63,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
-					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
+					GetAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
@@ -112,7 +112,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
-					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
+					GetAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
@@ -169,7 +169,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
-					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
+					GetAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
@@ -212,7 +212,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
-					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
+					GetAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
@@ -253,7 +253,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
-					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
+					GetAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
 					Role: auth.Role{
@@ -282,7 +282,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
-					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
+					GetAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil, errors.New("no documents in result"))
 			},
 			want:       nil,

@@ -1,9 +1,10 @@
 package models
 
 import (
+	"net/http"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
-	"net/http"
 )
 
 type QueryListMetaEvent struct {

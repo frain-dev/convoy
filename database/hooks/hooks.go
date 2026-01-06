@@ -31,7 +31,7 @@ func Init() *Hook {
 	return &Hook{fns: hookMap{}}
 }
 
-func (h *Hook) Fire(ctx context.Context, eventType datastore.HookEventType, data interface{}, changelog interface{}) {
+func (h *Hook) Fire(ctx context.Context, eventType datastore.HookEventType, data, changelog interface{}) {
 	if fn, ok := h.fns[eventType]; ok {
 		fn(ctx, data, changelog)
 	}

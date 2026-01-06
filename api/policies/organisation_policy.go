@@ -3,7 +3,10 @@ package policies
 import (
 	"context"
 	"errors"
+
 	authz "github.com/Subomi/go-authz"
+
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 )
@@ -14,7 +17,7 @@ type OrganisationPolicy struct {
 }
 
 func (op *OrganisationPolicy) ManageAll(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
+	authCtx := ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
 
 	user, ok := authCtx.User.(*datastore.User)
 	if !ok {
@@ -34,7 +37,7 @@ func (op *OrganisationPolicy) ManageAll(ctx context.Context, res interface{}) er
 }
 
 func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
+	authCtx := ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
 
 	user, ok := authCtx.User.(*datastore.User)
 	if !ok {
@@ -43,7 +46,7 @@ func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error
 
 	org, ok := res.(*datastore.Organisation)
 	if !ok {
-		return errors.New("Wrong organisation type")
+		return errors.New("wrong organisation type")
 	}
 
 	member, err := op.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
@@ -64,7 +67,7 @@ func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error
 }
 
 func (op *OrganisationPolicy) Add(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
+	authCtx := ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
 
 	// Allow any authenticated user to create organizations
 	_, ok := authCtx.User.(*datastore.User)

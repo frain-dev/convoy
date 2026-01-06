@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
-	"fmt"
-	"github.com/oklog/ulid/v2"
 	"net/http"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
@@ -27,9 +27,12 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "an error occurred while creating broadcast event - invalid project"}
 	}
 
-	e.BroadcastEvent.EventID = ulid.Make().String()
+	id := ulid.Make().String()
+	jobId := queue.JobId{ProjectID: e.Project.UID, ResourceID: id}.BroadcastJobId()
+
+	e.BroadcastEvent.EventID = id
+	e.BroadcastEvent.JobID = jobId
 	e.BroadcastEvent.ProjectID = e.Project.UID
-	jobId := fmt.Sprintf("broadcast:%s:%s", e.BroadcastEvent.ProjectID, e.BroadcastEvent.EventID)
 	e.BroadcastEvent.AcknowledgedAt = time.Now()
 
 	taskName := convoy.CreateBroadcastEventProcessor
@@ -42,7 +45,6 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 	job := &queue.Job{
 		ID:      jobId,
 		Payload: eventByte,
-		Delay:   0,
 	}
 
 	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)

@@ -49,7 +49,7 @@ func OptionSyncer(s Syncer) func(*Table) {
 type Table struct {
 	Syncer
 
-	sync.RWMutex
+	mu     sync.RWMutex
 	rows   map[Key]*Row
 	syncer Syncer
 }
@@ -65,16 +65,16 @@ func NewTable(opts ...Option) *Table {
 }
 
 func (t *Table) Get(key Key) *Row {
-	t.RLock()
-	defer t.RUnlock()
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 
 	return t.getInternal(key)
 }
 
 // Checks if an item exists in the table.
 func (t *Table) Exists(key Key) bool {
-	t.RLock()
-	defer t.RUnlock()
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 
 	return t.existInternal(key)
 }
@@ -97,8 +97,8 @@ func (t *Table) existInternal(key Key) bool {
 
 // Add a new item if it doesn't exist.
 func (t *Table) Add(key Key, value interface{}) *Row {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	row := t.getInternal(key)
 	if row != nil {
@@ -112,8 +112,8 @@ func (t *Table) Add(key Key, value interface{}) *Row {
 
 // Add a new item if it doesn't exist.
 func (t *Table) Upsert(key Key, value interface{}) *Row {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	row := &Row{key: string(key), value: value}
 	t.rows[key] = row
@@ -122,8 +122,8 @@ func (t *Table) Upsert(key Key, value interface{}) *Row {
 
 // Removes an item from the store.
 func (t *Table) Delete(key Key) {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	t.deleteInternal(key)
 }
@@ -142,8 +142,8 @@ func (t *Table) GetKeys() []Key {
 }
 
 func (t *Table) GetItems(prefix string) []*Row {
-	t.Lock()
-	defer t.Unlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	var rows []*Row
 	for k, row := range t.rows {

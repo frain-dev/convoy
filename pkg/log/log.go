@@ -52,9 +52,12 @@ const (
 	// InfoLevel is used for general informational log messages.
 	InfoLevel
 
-	// DebugLevel is the lowest level of logging.
 	// Debug logs are intended for debugging and development purposes.
 	DebugLevel
+
+	// TraceLevel is the lowest level of logging.
+	// Trace logs are intended for very fine-grained debugging.
+	TraceLevel
 )
 
 // String is part of the fmt.Stringer interface.
@@ -72,6 +75,8 @@ func (l Level) String() string {
 		return "error"
 	case FatalLevel:
 		return "fatal"
+	case TraceLevel:
+		return "trace"
 	default:
 		return "unknown"
 	}
@@ -89,6 +94,8 @@ func (l Level) ToLogrusLevel() (logrus.Level, error) {
 		return logrus.ErrorLevel, nil
 	case FatalLevel:
 		return logrus.FatalLevel, nil
+	case TraceLevel:
+		return logrus.TraceLevel, nil
 	default:
 		return 0, fmt.Errorf("not a valid log Level: %q", l)
 	}
@@ -191,10 +198,6 @@ func (l *Logger) Printf(format string, args ...interface{}) {
 	l.entry.Printf(format, args...)
 }
 
-func (l *Logger) Println(format string, args ...interface{}) {
-	l.entry.Printf(format, args...)
-}
-
 func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.entry.Fatal(fmt.Sprintf(format, args...))
 }
@@ -236,6 +239,8 @@ func ParseLevel(lvl string) (Level, error) {
 		return InfoLevel, nil
 	case "debug":
 		return DebugLevel, nil
+	case "trace":
+		return TraceLevel, nil
 	}
 
 	var l Level

@@ -5,12 +5,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/migrator"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/spf13/cobra"
 )
 
 func AddMigrateCommand(a *cli.App) *cobra.Command {
@@ -61,7 +62,7 @@ func addUpCommand() *cobra.Command {
 }
 
 func addDownCommand() *cobra.Command {
-	var max int
+	var maxMigrations int
 
 	cmd := &cobra.Command{
 		Use:     "down",
@@ -85,14 +86,14 @@ func addDownCommand() *cobra.Command {
 			defer db.Close()
 
 			m := migrator.New(db)
-			err = m.Down(max)
+			err = m.Down(maxMigrations)
 			if err != nil {
 				log.Fatalf("migration down failed with error: %+v", err)
 			}
 		},
 	}
 
-	cmd.Flags().IntVar(&max, "max", 1, "The maximum number of migrations to rollback")
+	cmd.Flags().IntVar(&maxMigrations, "max", 1, "The maximum number of migrations to rollback")
 
 	return cmd
 }

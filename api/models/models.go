@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"gopkg.in/guregu/null.v4"
 )
 
 type PagedResponse struct {
@@ -24,22 +25,9 @@ type OrganisationInvite struct {
 	Role         auth.Role `json:"role" bson:"role"`
 }
 
-type APIKey struct {
-	Name      string            `json:"name"`
-	Role      Role              `json:"role"`
-	Type      datastore.KeyType `json:"key_type"`
-	ExpiresAt null.Time         `json:"expires_at"`
-}
-
 type PersonalAPIKey struct {
 	Name       string `json:"name"`
 	Expiration int    `json:"expiration"`
-}
-
-type Role struct {
-	Type    auth.RoleType `json:"type"`
-	Project string        `json:"project"`
-	App     string        `json:"app,omitempty"`
 }
 
 type UpdateOrganisationMember struct {
@@ -54,23 +42,6 @@ type APIKeyByIDResponse struct {
 	ExpiresAt null.Time         `json:"expires_at,omitempty"`
 	CreatedAt time.Time         `json:"created_at,omitempty"`
 	UpdatedAt time.Time         `json:"updated_at,omitempty"`
-}
-
-type APIKeyResponse struct {
-	APIKey
-	Key       string    `json:"key"`
-	UID       string    `json:"uid"`
-	UserID    string    `json:"user_id,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type PortalAPIKeyResponse struct {
-	Key        string    `json:"key"`
-	Role       auth.Role `json:"role"`
-	Url        string    `json:"url,omitempty"`
-	Type       string    `json:"key_type"`
-	EndpointID string    `json:"endpoint_id,omitempty"`
-	ProjectID  string    `json:"project_id,omitempty"`
 }
 
 type UserInviteTokenResponse struct {
@@ -124,37 +95,6 @@ type CreateEndpointApiKey struct {
 	Expiration int               `json:"expiration"`
 }
 
-type PortalLink struct {
-	// Portal Link Name
-	Name string `json:"name" valid:"required~please provide the name field"`
-
-	// IDs of endpoints in this portal link
-	Endpoints []string `json:"endpoints"`
-
-	// Alternatively specify OwnerID, the portal link will inherit all the endpoints with this owner ID
-	OwnerID string `json:"owner_id"`
-
-	// Specify whether endpoint management can be done through the Portal Link UI
-	CanManageEndpoint bool `json:"can_manage_endpoint"`
-}
-
-type PortalLinkResponse struct {
-	UID               string                     `json:"uid"`
-	Name              string                     `json:"name"`
-	ProjectID         string                     `json:"project_id"`
-	OwnerID           string                     `json:"owner_id"`
-	Endpoints         []string                   `json:"endpoints"`
-	EndpointCount     int                        `json:"endpoint_count"`
-	CanManageEndpoint bool                       `json:"can_manage_endpoint"`
-	Token             string                     `json:"token"`
-	EndpointsMetadata datastore.EndpointMetadata `json:"endpoints_metadata"`
-	URL               string                     `json:"url"`
-	AuthKey           string                     `json:"auth_key"`
-	CreatedAt         time.Time                  `json:"created_at,omitempty"`
-	UpdatedAt         time.Time                  `json:"updated_at,omitempty"`
-	DeletedAt         null.Time                  `json:"deleted_at,omitempty"`
-}
-
 // NewListResponse is a generic function for looping over
 // a slice of type M and returning a slice of type T
 func NewListResponse[T, M any](items []M, fn func(item M) T) []T {
@@ -165,4 +105,42 @@ func NewListResponse[T, M any](items []M, fn func(item M) T) []T {
 	}
 
 	return results
+}
+
+type UpdateOrganisationFeatureFlags struct {
+	FeatureFlags map[string]bool `json:"feature_flags" valid:"required"`
+}
+
+type UpdateOrganisationOverride struct {
+	FeatureKey string `json:"feature_key" valid:"required"`
+	Enabled    bool   `json:"enabled"`
+}
+
+type UpdateOrganisationCircuitBreakerConfig struct {
+	SampleRate                  uint64 `json:"sample_rate" valid:"required,min(1)"`
+	ErrorTimeout                uint64 `json:"error_timeout" valid:"required,min(1)"`
+	FailureThreshold            uint64 `json:"failure_threshold" valid:"required,range(0|100)"`
+	SuccessThreshold            uint64 `json:"success_threshold" valid:"required,range(0|100)"`
+	ObservabilityWindow         uint64 `json:"observability_window" valid:"required,min(1)"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" valid:"required,min(0)"`
+	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" valid:"required,min(0)"`
+}
+
+type UpdateFeatureFlagRequest struct {
+	FeatureKey string `json:"feature_key" valid:"required"`
+	Enabled    *bool  `json:"enabled,omitempty"`
+}
+
+type RetryEventDeliveriesRequest struct {
+	Status    string `json:"status" valid:"required"`
+	Time      string `json:"time" valid:"required"`
+	EventID   string `json:"event_id,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
+}
+
+type EarlyAdopterFeature struct {
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Enabled     bool   `json:"enabled"`
 }

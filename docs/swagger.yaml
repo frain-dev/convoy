@@ -56,6 +56,29 @@ definitions:
       source_id:
         type: string
     type: object
+  datastore.CreatePortalLinkRequest:
+    properties:
+      auth_type:
+        type: string
+      can_manage_endpoint:
+        description: Specify whether endpoint management can be done through the Portal
+          Link UI
+        type: boolean
+      endpoints:
+        description: |-
+          Deprecated
+          IDs of endpoints in this portal link
+        items:
+          type: string
+        type: array
+      name:
+        description: Portal Link Name
+        type: string
+      owner_id:
+        description: OwnerID, the portal link will inherit all the endpoints with
+          this owner ID
+        type: string
+    type: object
   datastore.CustomResponse:
     properties:
       body:
@@ -100,6 +123,14 @@ definitions:
       url:
         type: string
     type: object
+  datastore.DeliveryMode:
+    enum:
+    - at_least_once
+    - at_most_once
+    type: string
+    x-enum-varnames:
+    - AtLeastOnceDeliveryMode
+    - AtMostOnceDeliveryMode
   datastore.Device:
     properties:
       created_at:
@@ -145,6 +176,8 @@ definitions:
         type: boolean
       authentication:
         $ref: '#/definitions/datastore.EndpointAuthentication'
+      content_type:
+        type: string
       created_at:
         type: string
       deleted_at:
@@ -157,6 +190,10 @@ definitions:
         type: number
       http_timeout:
         type: integer
+      mtls_client_cert:
+        allOf:
+        - $ref: '#/definitions/datastore.MtlsClientCert'
+        description: mTLS client certificate configuration
       name:
         type: string
       owner_id:
@@ -188,26 +225,28 @@ definitions:
     properties:
       api_key:
         $ref: '#/definitions/datastore.ApiKey'
+      oauth2:
+        $ref: '#/definitions/datastore.OAuth2'
       type:
         $ref: '#/definitions/datastore.EndpointAuthenticationType'
     type: object
   datastore.EndpointAuthenticationType:
     enum:
     - api_key
+    - oauth2
     type: string
     x-enum-varnames:
     - APIKeyAuthentication
+    - OAuth2Authentication
   datastore.EndpointStatus:
     enum:
     - active
     - inactive
-    - pending
     - paused
     type: string
     x-enum-varnames:
     - ActiveEndpointStatus
     - InactiveEndpointStatus
-    - PendingEndpointStatus
     - PausedEndpointStatus
   datastore.Event:
     properties:
@@ -399,6 +438,127 @@ definitions:
       strategy:
         $ref: '#/definitions/datastore.StrategyProvider'
     type: object
+  datastore.MtlsClientCert:
+    properties:
+      client_cert:
+        description: ClientCert is the client certificate PEM string
+        type: string
+      client_key:
+        description: ClientKey is the client private key PEM string
+        type: string
+    type: object
+  datastore.OAuth2:
+    properties:
+      audience:
+        type: string
+      authentication_type:
+        $ref: '#/definitions/datastore.OAuth2AuthenticationType'
+      client_id:
+        type: string
+      client_secret:
+        description: Encrypted at rest
+        type: string
+      expiry_time_unit:
+        allOf:
+        - $ref: '#/definitions/datastore.OAuth2ExpiryTimeUnit'
+        description: Expiry time unit (seconds, milliseconds, minutes, hours)
+      field_mapping:
+        allOf:
+        - $ref: '#/definitions/datastore.OAuth2FieldMapping'
+        description: Field mapping for flexible token response parsing
+      grant_type:
+        type: string
+      issuer:
+        type: string
+      scope:
+        type: string
+      signing_algorithm:
+        type: string
+      signing_key:
+        allOf:
+        - $ref: '#/definitions/datastore.OAuth2SigningKey'
+        description: Encrypted at rest
+      subject:
+        type: string
+      url:
+        type: string
+    type: object
+  datastore.OAuth2AuthenticationType:
+    enum:
+    - shared_secret
+    - client_assertion
+    type: string
+    x-enum-varnames:
+    - SharedSecretAuth
+    - ClientAssertionAuth
+  datastore.OAuth2ExpiryTimeUnit:
+    enum:
+    - seconds
+    - milliseconds
+    - minutes
+    - hours
+    type: string
+    x-enum-varnames:
+    - ExpiryTimeUnitSeconds
+    - ExpiryTimeUnitMilliseconds
+    - ExpiryTimeUnitMinutes
+    - ExpiryTimeUnitHours
+  datastore.OAuth2FieldMapping:
+    properties:
+      access_token:
+        description: Field name for access token (e.g., "accessToken", "access_token",
+          "token")
+        type: string
+      expires_in:
+        description: Field name for expiry time (e.g., "expiresIn", "expires_in",
+          "expiresAt")
+        type: string
+      token_type:
+        description: Field name for token type (e.g., "tokenType", "token_type")
+        type: string
+    type: object
+  datastore.OAuth2SigningKey:
+    properties:
+      crv:
+        description: EC (Elliptic Curve) key fields
+        type: string
+      d:
+        description: Private key (EC only)
+        type: string
+      dp:
+        description: RSA first factor CRT exponent (RSA private key only)
+        type: string
+      dq:
+        description: RSA second factor CRT exponent (RSA private key only)
+        type: string
+      e:
+        description: RSA public exponent (RSA only)
+        type: string
+      kid:
+        description: Key ID
+        type: string
+      kty:
+        description: 'Key type: "EC" or "RSA"'
+        type: string
+      "n":
+        description: RSA key fields
+        type: string
+      p:
+        description: RSA first prime factor (RSA private key only)
+        type: string
+      q:
+        description: RSA second prime factor (RSA private key only)
+        type: string
+      qi:
+        description: RSA first CRT coefficient (RSA private key only)
+        type: string
+      x:
+        description: X coordinate (EC only)
+        type: string
+      "y":
+        description: Y coordinate (EC only)
+        type: string
+    type: object
   datastore.PageDirection:
     enum:
     - next
@@ -418,6 +578,51 @@ definitions:
       per_page:
         type: integer
       prev_page_cursor:
+        type: string
+    type: object
+  datastore.PortalAuthType:
+    enum:
+    - refresh_token
+    - static_token
+    type: string
+    x-enum-varnames:
+    - PortalAuthTypeRefreshToken
+    - PortalAuthTypeStaticToken
+  datastore.PortalLinkResponse:
+    properties:
+      auth_key:
+        type: string
+      auth_type:
+        $ref: '#/definitions/datastore.PortalAuthType'
+      can_manage_endpoint:
+        type: boolean
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      endpoint_count:
+        type: integer
+      endpoints:
+        items:
+          type: string
+        type: array
+      endpoints_metadata:
+        items:
+          $ref: '#/definitions/datastore.Endpoint'
+        type: array
+      name:
+        type: string
+      owner_id:
+        type: string
+      project_id:
+        type: string
+      token:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+      url:
         type: string
     type: object
   datastore.ProviderConfig:
@@ -582,6 +787,29 @@ definitions:
       crc_verified_at:
         type: string
     type: object
+  datastore.UpdatePortalLinkRequest:
+    properties:
+      auth_type:
+        type: string
+      can_manage_endpoint:
+        description: Specify whether endpoint management can be done through the Portal
+          Link UI
+        type: boolean
+      endpoints:
+        description: |-
+          Deprecated
+          IDs of endpoints in this portal link
+        items:
+          type: string
+        type: array
+      name:
+        description: Portal Link Name
+        type: string
+      owner_id:
+        description: OwnerID, the portal link will inherit all the endpoints with
+          this owner ID
+        type: string
+    type: object
   datastore.VerifierConfig:
     properties:
       api_key:
@@ -716,7 +944,7 @@ definitions:
     properties:
       advanced_signatures:
         description: |-
-          Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+          Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
           -- simple or advanced. If left unspecified, we default to false.
         type: boolean
       appID:
@@ -729,6 +957,10 @@ definitions:
           This is used to define any custom authentication required by the endpoint. This
           shouldn't be needed often because webhook endpoints usually should be exposed to
           the internet.
+      content_type:
+        description: Content type for the endpoint. Defaults to application/json if
+          not specified.
+        type: string
       description:
         description: |-
           Human-readable description of the endpoint. Think of this as metadata describing
@@ -740,6 +972,10 @@ definitions:
       is_disabled:
         description: This is used to manually enable/disable the endpoint.
         type: boolean
+      mtls_client_cert:
+        allOf:
+        - $ref: '#/definitions/models.MtlsClientCert'
+        description: mTLS client certificate configuration for the endpoint
       name:
         description: Endpoint name.
         type: string
@@ -811,7 +1047,9 @@ definitions:
         description: Description is used to describe what the event type does
         type: string
       json_schema:
+        additionalProperties: true
         description: JSONSchema is the JSON structure of the event type
+        type: object
       name:
         description: Name is the event type name. E.g., invoice.created
         type: string
@@ -891,6 +1129,10 @@ definitions:
       app_id:
         description: Deprecated but necessary for backward compatibility
         type: string
+      delivery_mode:
+        allOf:
+        - $ref: '#/definitions/datastore.DeliveryMode'
+        description: Delivery mode configuration
       endpoint_id:
         description: Destination endpoint ID
         type: string
@@ -959,6 +1201,8 @@ definitions:
     properties:
       api_key:
         $ref: '#/definitions/models.ApiKey'
+      oauth2:
+        $ref: '#/definitions/models.OAuth2'
       type:
         $ref: '#/definitions/datastore.EndpointAuthenticationType'
     type: object
@@ -968,6 +1212,8 @@ definitions:
         type: boolean
       authentication:
         $ref: '#/definitions/datastore.EndpointAuthentication'
+      content_type:
+        type: string
       created_at:
         type: string
       deleted_at:
@@ -980,6 +1226,10 @@ definitions:
         type: number
       http_timeout:
         type: integer
+      mtls_client_cert:
+        allOf:
+        - $ref: '#/definitions/datastore.MtlsClientCert'
+        description: mTLS client certificate configuration
       name:
         type: string
       owner_id:
@@ -1017,6 +1267,8 @@ definitions:
         type: string
       deleted_at:
         type: string
+      delivery_mode:
+        $ref: '#/definitions/datastore.DeliveryMode'
       description:
         type: string
       device_id:
@@ -1311,63 +1563,108 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.MtlsClientCert:
+    properties:
+      client_cert:
+        description: ClientCert is the client certificate PEM string
+        type: string
+      client_key:
+        description: ClientKey is the client private key PEM string
+        type: string
+    type: object
+  models.OAuth2:
+    properties:
+      audience:
+        type: string
+      authentication_type:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      expiry_time_unit:
+        description: Expiry time unit (seconds, milliseconds, minutes, hours)
+        type: string
+      field_mapping:
+        allOf:
+        - $ref: '#/definitions/models.OAuth2FieldMapping'
+        description: Field mapping for flexible token response parsing
+      grant_type:
+        type: string
+      issuer:
+        type: string
+      scope:
+        type: string
+      signing_algorithm:
+        type: string
+      signing_key:
+        $ref: '#/definitions/models.OAuth2SigningKey'
+      subject:
+        type: string
+      url:
+        type: string
+    type: object
+  models.OAuth2FieldMapping:
+    properties:
+      access_token:
+        description: Field name for access token (e.g., "accessToken", "access_token",
+          "token")
+        type: string
+      expires_in:
+        description: Field name for expiry time (e.g., "expiresIn", "expires_in",
+          "expiresAt")
+        type: string
+      token_type:
+        description: Field name for token type (e.g., "tokenType", "token_type")
+        type: string
+    type: object
+  models.OAuth2SigningKey:
+    properties:
+      crv:
+        description: EC (Elliptic Curve) key fields
+        type: string
+      d:
+        description: Private key (EC) or private exponent (RSA)
+        type: string
+      dp:
+        description: RSA first factor CRT exponent (RSA private key only)
+        type: string
+      dq:
+        description: RSA second factor CRT exponent (RSA private key only)
+        type: string
+      e:
+        description: RSA public exponent (RSA only)
+        type: string
+      kid:
+        description: Key ID
+        type: string
+      kty:
+        description: 'Key type: "EC" or "RSA"'
+        type: string
+      "n":
+        description: RSA key fields
+        type: string
+      p:
+        description: RSA first prime factor (RSA private key only)
+        type: string
+      q:
+        description: RSA second prime factor (RSA private key only)
+        type: string
+      qi:
+        description: RSA first CRT coefficient (RSA private key only)
+        type: string
+      x:
+        description: X coordinate (EC only)
+        type: string
+      "y":
+        description: Y coordinate (EC only)
+        type: string
+    type: object
   models.PagedResponse:
     properties:
       content: {}
       pagination:
         $ref: '#/definitions/datastore.PaginationData'
-    type: object
-  models.PortalLink:
-    properties:
-      can_manage_endpoint:
-        description: Specify whether endpoint management can be done through the Portal
-          Link UI
-        type: boolean
-      endpoints:
-        description: IDs of endpoints in this portal link
-        items:
-          type: string
-        type: array
-      name:
-        description: Portal Link Name
-        type: string
-      owner_id:
-        description: Alternatively specify OwnerID, the portal link will inherit all
-          the endpoints with this owner ID
-        type: string
-    type: object
-  models.PortalLinkResponse:
-    properties:
-      can_manage_endpoint:
-        type: boolean
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      endpoint_count:
-        type: integer
-      endpoints:
-        items:
-          type: string
-        type: array
-      endpoints_metadata:
-        items:
-          $ref: '#/definitions/datastore.Endpoint'
-        type: array
-      name:
-        type: string
-      owner_id:
-        type: string
-      project_id:
-        type: string
-      token:
-        type: string
-      uid:
-        type: string
-      updated_at:
-        type: string
-      url:
-        type: string
     type: object
   models.PubSubConfig:
     properties:
@@ -1475,6 +1772,8 @@ definitions:
         type: string
       deleted_at:
         type: string
+      delivery_mode:
+        $ref: '#/definitions/datastore.DeliveryMode'
       device_metadata:
         $ref: '#/definitions/datastore.Device'
       endpoint_metadata:
@@ -1524,6 +1823,26 @@ definitions:
         description: Whether the payload matches the filter criteria
         type: boolean
     type: object
+  models.TestOAuth2Request:
+    properties:
+      oauth2:
+        $ref: '#/definitions/models.OAuth2'
+    type: object
+  models.TestOAuth2Response:
+    properties:
+      access_token:
+        type: string
+      error:
+        type: string
+      expires_at:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+      token_type:
+        type: string
+    type: object
   models.UpdateCustomResponse:
     properties:
       body:
@@ -1535,7 +1854,7 @@ definitions:
     properties:
       advanced_signatures:
         description: |-
-          Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+          Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
           -- simple or advanced. If left unspecified, we default to false.
         type: boolean
       authentication:
@@ -1545,6 +1864,10 @@ definitions:
           This is used to define any custom authentication required by the endpoint. This
           shouldn't be needed often because webhook endpoints usually should be exposed to
           the internet.
+      content_type:
+        description: Content type for the endpoint. Defaults to application/json if
+          not specified.
+        type: string
       description:
         description: |-
           Human-readable description of the endpoint. Think of this as metadata describing
@@ -1556,6 +1879,10 @@ definitions:
       is_disabled:
         description: This is used to manually enable/disable the endpoint.
         type: boolean
+      mtls_client_cert:
+        allOf:
+        - $ref: '#/definitions/models.MtlsClientCert'
+        description: mTLS client certificate configuration for the endpoint
       name:
         type: string
       owner_id:
@@ -1600,7 +1927,9 @@ definitions:
         description: Description is used to describe what the event type does
         type: string
       json_schema:
+        additionalProperties: true
         description: JSONSchema is the JSON structure of the event type
+        type: object
     type: object
   models.UpdateFilterRequest:
     properties:
@@ -1683,6 +2012,10 @@ definitions:
       app_id:
         description: Deprecated but necessary for backward compatibility
         type: string
+      delivery_mode:
+        allOf:
+        - $ref: '#/definitions/datastore.DeliveryMode'
+        description: Delivery mode configuration
       endpoint_id:
         description: Destination endpoint ID
         type: string
@@ -2282,6 +2615,69 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Pause endpoint
+      tags:
+      - Endpoints
+  /v1/projects/{projectID}/endpoints/oauth2/test:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint tests the OAuth2 connection by attempting to exchange
+        a token
+      operationId: TestOAuth2Connection
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: OAuth2 Configuration
+        in: body
+        name: oauth2
+        required: true
+        schema:
+          $ref: '#/definitions/models.TestOAuth2Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.TestOAuth2Response'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Test OAuth2 connection
       tags:
       - Endpoints
   /v1/projects/{projectID}/event-types:
@@ -4059,7 +4455,7 @@ paths:
                   - properties:
                       content:
                         items:
-                          $ref: '#/definitions/models.PortalLinkResponse'
+                          $ref: '#/definitions/datastore.PortalLinkResponse'
                         type: array
                     type: object
               type: object
@@ -4111,7 +4507,7 @@ paths:
         name: portallink
         required: true
         schema:
-          $ref: '#/definitions/models.PortalLink'
+          $ref: '#/definitions/datastore.CreatePortalLinkRequest'
       produces:
       - application/json
       responses:
@@ -4122,7 +4518,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.PortalLinkResponse'
+                  $ref: '#/definitions/datastore.PortalLinkResponse'
               type: object
         "400":
           description: Bad Request
@@ -4183,7 +4579,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.PortalLinkResponse'
+                  $ref: '#/definitions/datastore.PortalLinkResponse'
               type: object
         "400":
           description: Bad Request
@@ -4238,7 +4634,7 @@ paths:
         name: portallink
         required: true
         schema:
-          $ref: '#/definitions/models.PortalLink'
+          $ref: '#/definitions/datastore.UpdatePortalLinkRequest'
       produces:
       - application/json
       responses:
@@ -4249,7 +4645,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.PortalLinkResponse'
+                  $ref: '#/definitions/datastore.PortalLinkResponse'
               type: object
         "400":
           description: Bad Request
@@ -4281,6 +4677,67 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update a portal link
+      tags:
+      - Portal Links
+  /v1/projects/{projectID}/portal-links/{portalLinkID}/refresh_token:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint retrieves a portal link auth token
+      operationId: RefreshPortalLinkAuthToken
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: portal link id
+        in: path
+        name: portalLinkID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get a portal link auth token
       tags:
       - Portal Links
   /v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:

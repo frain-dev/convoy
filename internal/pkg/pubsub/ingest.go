@@ -9,53 +9,54 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	"github.com/frain-dev/convoy/pkg/transform"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/oklog/ulid/v2"
 )
 
 type IngestCtxKey string
 
 var ingestCtx IngestCtxKey = "IngestCtx"
 
-const ConvoyMessageTypeHeader = "x-convoy-message-type"
-
 type Ingest struct {
-	ctx         context.Context
-	ticker      *time.Ticker
-	queue       queue.Queuer
-	rateLimiter limiter.RateLimiter
-	sources     map[memorystore.Key]*PubSubSource
-	table       *memorystore.Table
-	log         log.StdLogger
-	instanceId  string
-	licenser    license.Licenser
+	ctx          context.Context
+	ticker       *time.Ticker
+	queue        queue.Queuer
+	rateLimiter  limiter.RateLimiter
+	sources      map[memorystore.Key]*PubSubSource
+	table        *memorystore.Table
+	log          log.StdLogger
+	instanceId   string
+	licenser     license.Licenser
+	endpointRepo datastore.EndpointRepository
 }
 
-func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*Ingest, error) {
+func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger,
+	rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string, endpointRepo datastore.EndpointRepository) (*Ingest, error) {
 	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
-		ctx:         ctx,
-		log:         log,
-		table:       table,
-		queue:       queue,
-		rateLimiter: rateLimiter,
-		instanceId:  instanceId,
-		licenser:    licenser,
-		sources:     make(map[memorystore.Key]*PubSubSource),
-		ticker:      time.NewTicker(time.Duration(1) * time.Second),
+		ctx:          ctx,
+		log:          log,
+		table:        table,
+		queue:        queue,
+		rateLimiter:  rateLimiter,
+		instanceId:   instanceId,
+		licenser:     licenser,
+		sources:      make(map[memorystore.Key]*PubSubSource),
+		ticker:       time.NewTicker(time.Duration(1) * time.Second),
+		endpointRepo: endpointRepo,
 	}
 
 	return i, nil
@@ -86,7 +87,7 @@ func (i *Ingest) Run() {
 }
 
 func (i *Ingest) getSourceKeys() []memorystore.Key {
-	var s []memorystore.Key
+	s := make([]memorystore.Key, 0, len(i.sources))
 	for k := range i.sources {
 		s = append(s, k)
 	}
@@ -133,7 +134,7 @@ func (i *Ingest) run() error {
 	return nil
 }
 
-func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string, metadata []byte) error {
+func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg string, metadata []byte) error {
 	defer handlePanic(source)
 
 	// unmarshal to an interface{} struct
@@ -177,19 +178,19 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	// check the payload structure to be sure it satisfies what convoy can ingest else discard and nack it.
 	if err = decoder.Decode(&convoyEvent); err != nil {
 		log.WithError(err).Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or"+
-			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, payload)
+			" use transform functions to properly format it, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		return err
 	}
 
 	if util.IsStringEmpty(convoyEvent.EventType) {
 		err := fmt.Errorf("the payload for %s with id (%s) doesn't include an event type, please refer to the documentation or"+
-			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
+			" use transform functions to properly format it, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		return err
 	}
 
 	if len(convoyEvent.Data) == 0 {
 		err := fmt.Errorf("the payload for %s with id (%s) doesn't include any data, please refer to the documentation or"+
-			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
+			" use transform functions to properly format it, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		return err
 	}
 
@@ -231,12 +232,15 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		headers = headerMap
 	}
 
-	messageType := headers[ConvoyMessageTypeHeader]
+	messageType := headers[common.ConvoyMessageTypeHeader]
 	switch messageType {
 	case "single":
+		id := ulid.Make().String()
+		jobId := queue.JobId{ProjectID: source.ProjectID, ResourceID: id}.SingleJobId()
 		ce := task.CreateEvent{
+			JobID: jobId,
 			Params: task.CreateEventTaskParams{
-				UID:            ulid.Make().String(),
+				UID:            id,
 				SourceID:       source.UID,
 				ProjectID:      source.ProjectID,
 				EndpointID:     convoyEvent.EndpointID,
@@ -251,7 +255,16 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 
 		if util.IsStringEmpty(ce.Params.EndpointID) {
 			return fmt.Errorf("the payload with message type %s for %s with id (%s) doesn't include an endpoint id, please refer to the documentation or"+
-				" use transfrom functions to properly format it, got: %+v", messageType, source.Name, source.UID, convoyEvent)
+				" use transform functions to properly format it, got: %q (event_type: %q)", messageType, source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
+		}
+
+		// check if the endpoint_id is valid
+		_, err = i.endpointRepo.FindEndpointByID(ctx, ce.Params.EndpointID, ce.Params.ProjectID)
+		if err != nil {
+			if errors.Is(err, datastore.ErrEndpointNotFound) {
+				return fmt.Errorf("the payload for %s with id (%s) includes an invalid endpoint id, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
+			}
+			return err
 		}
 
 		eventByte, err := msgpack.EncodeMsgPack(ce)
@@ -259,7 +272,6 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 
-		jobId := fmt.Sprintf("single:%s:%s", source.ProjectID, ce.Params.UID)
 		job := &queue.Job{
 			ID:      jobId,
 			Payload: eventByte,
@@ -271,9 +283,12 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 	case "fanout":
+		id := ulid.Make().String()
+		jobId := queue.JobId{ProjectID: source.ProjectID, ResourceID: id}.FanOutJobId()
 		ce := task.CreateEvent{
+			JobID: jobId,
 			Params: task.CreateEventTaskParams{
-				UID:            ulid.Make().String(),
+				UID:            id,
 				CustomHeaders:  headers,
 				SourceID:       source.UID,
 				Data:           convoyEvent.Data,
@@ -289,7 +304,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 
 		if util.IsStringEmpty(ce.Params.OwnerID) {
 			return fmt.Errorf("the payload with message type %s for %s with id (%s) doesn't include an owner id, please refer to the documentation or"+
-				" use transfrom functions to properly format it, got: %+v", messageType, source.Name, source.UID, convoyEvent)
+				" use transform functions to properly format it, got: %q (event_type: %q)", messageType, source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		}
 
 		eventByte, err := msgpack.EncodeMsgPack(ce)
@@ -297,7 +312,6 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 
-		jobId := fmt.Sprintf("fanout:%s:%s", source.ProjectID, ce.Params.UID)
 		job := &queue.Job{
 			ID:      jobId,
 			Payload: eventByte,
@@ -310,8 +324,9 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		}
 	case "broadcast":
 		eventId := ulid.Make().String()
-		jobId := fmt.Sprintf("broadcast:%s:%s", source.ProjectID, eventId)
+		jobId := queue.JobId{ProjectID: source.ProjectID, ResourceID: eventId}.BroadcastJobId()
 		broadcastEvent := models.BroadcastEvent{
+			JobID:          jobId,
 			EventID:        eventId,
 			ProjectID:      source.ProjectID,
 			SourceID:       source.UID,
@@ -338,7 +353,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 	default:
-		err := fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single, fanout or broadcast", messageType)
+		err = fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single, fanout or broadcast", messageType)
 		log.Error(err)
 		return err
 	}
@@ -346,7 +361,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	return nil
 }
 
-func mergeHeaders(dest map[string]string, src map[string]string) {
+func mergeHeaders(dest, src map[string]string) {
 	var k, v string
 	// convert all the dest header values to lowercase
 	for k, v = range dest {
@@ -366,10 +381,10 @@ func mergeHeaders(dest map[string]string, src map[string]string) {
 		dest[k] = v
 	}
 
-	_, ok := dest[ConvoyMessageTypeHeader]
+	_, ok := dest[common.ConvoyMessageTypeHeader]
 	if !ok {
 		// the message type header wasn't found, set it to a default value
-		dest[ConvoyMessageTypeHeader] = "single"
+		dest[common.ConvoyMessageTypeHeader] = "single"
 	}
 }
 

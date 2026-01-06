@@ -12,12 +12,12 @@ import (
 
 	"github.com/dchest/uniuri"
 	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/guregu/null.v4"
 )
 
 func Test_FetchProjectByID(t *testing.T) {
@@ -57,6 +57,9 @@ func Test_FetchProjectByID(t *testing.T) {
 		require.NotEmpty(t, version.CreatedAt)
 		version.CreatedAt = time.Time{}
 	}
+
+	// Set expected circuit breaker to match what database returns (defaults when not explicitly set)
+	newProject.Config.CircuitBreaker = &datastore.DefaultCircuitBreakerConfiguration
 
 	require.Equal(t, newProject, dbProject)
 }
@@ -220,6 +223,9 @@ func Test_UpdateProject(t *testing.T) {
 		require.NotEmpty(t, version.CreatedAt)
 		version.CreatedAt = time.Time{}
 	}
+
+	// Set expected circuit breaker to match what database returns (defaults when not explicitly set)
+	updatedProject.Config.CircuitBreaker = &datastore.DefaultCircuitBreakerConfiguration
 
 	require.Equal(t, updatedProject, dbProject)
 }

@@ -2,9 +2,7 @@ package datastore
 
 import (
 	"context"
-
 	"database/sql/driver"
-
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,20 +11,18 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
-
-	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
-
-	"github.com/frain-dev/convoy/pkg/flatten"
-
+	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/guregu/null.v4"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/lib/pq"
 )
 
 type SubscriptionUpdate struct {
@@ -201,6 +197,7 @@ const (
 
 const (
 	APIKeyAuthentication EndpointAuthenticationType = "api_key"
+	OAuth2Authentication EndpointAuthenticationType = "oauth2"
 )
 
 const (
@@ -282,8 +279,9 @@ const (
 )
 
 const (
-	LocalUserType UserAuthType = "local"
-	SSOUserType   UserAuthType = "sso"
+	LocalUserType       UserAuthType = "local"
+	SSOUserType         UserAuthType = "sso"
+	GoogleOAuthUserType UserAuthType = "google_oauth"
 )
 
 var (
@@ -334,13 +332,15 @@ var (
 		IsRetentionPolicyEnabled: false,
 		Policy:                   "720h",
 	}
-
-	DefaultCircuitBreakerConfiguration = CircuitBreakerConfig{
+	// DefaultCircuitBreakerConfiguration holds the non-zero defaults for
+	// project-level circuit breaker settings.
+	DefaultCircuitBreakerConfiguration = CircuitBreakerConfiguration{
 		SampleRate:                  30,
 		ErrorTimeout:                30,
 		FailureThreshold:            70,
 		SuccessThreshold:            5,
 		ObservabilityWindow:         5,
+		MinimumRequestCount:         10,
 		ConsecutiveFailureThreshold: 10,
 	}
 )
@@ -362,7 +362,6 @@ func GetDefaultSignatureConfig() *SignatureConfiguration {
 const (
 	ActiveEndpointStatus   EndpointStatus = "active"
 	InactiveEndpointStatus EndpointStatus = "inactive"
-	PendingEndpointStatus  EndpointStatus = "pending"
 	PausedEndpointStatus   EndpointStatus = "paused"
 )
 
@@ -434,7 +433,14 @@ type Endpoint struct {
 
 	RateLimit         int     `json:"rate_limit" db:"rate_limit"`
 	RateLimitDuration uint64  `json:"rate_limit_duration" db:"rate_limit_duration"`
+	ContentType       string  `json:"content_type" db:"content_type"`
 	FailureRate       float64 `json:"failure_rate" db:"-"`
+
+	// mTLS client certificate configuration
+	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty" db:"mtls_client_cert"`
+
+	// OAuth2 configuration (scanned from oauth2_config column)
+	OAuth2Config *OAuth2 `json:"-" db:"oauth2_config"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -488,8 +494,47 @@ type Secret struct {
 }
 
 type EndpointAuthentication struct {
-	Type   EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key)~unsupported authentication type"`
-	ApiKey *ApiKey                    `json:"api_key" db:"api_key"`
+	Type   EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key|oauth2)~unsupported authentication type"`
+	ApiKey *ApiKey                    `json:"api_key,omitempty" db:"api_key"`
+	OAuth2 *OAuth2                    `json:"oauth2,omitempty" db:"oauth2"`
+}
+
+// MtlsClientCert holds the client certificate and key configuration for mTLS
+type MtlsClientCert struct {
+	// ClientCert is the client certificate PEM string
+	ClientCert string `json:"client_cert,omitempty" db:"client_cert"`
+	// ClientKey is the client private key PEM string
+	ClientKey string `json:"client_key,omitempty" db:"client_key"`
+}
+
+func (m *MtlsClientCert) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, m)
+}
+
+func (m MtlsClientCert) Value() (driver.Value, error) {
+	if m.ClientCert == "" && m.ClientKey == "" {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 var (
@@ -550,17 +595,18 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize                 uint64                  `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks                 bool                    `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	AddEventIDTraceHeaders        bool                    `json:"add_event_id_trace_headers"`
-	DisableEndpoint               bool                    `json:"disable_endpoint" db:"disable_endpoint"`
-	MultipleEndpointSubscriptions bool                    `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
-	SearchPolicy                  string                  `json:"search_policy" db:"search_policy"`
-	SSL                           *SSLConfiguration       `json:"ssl" db:"ssl"`
-	RateLimit                     *RateLimitConfiguration `json:"ratelimit" db:"ratelimit"`
-	Strategy                      *StrategyConfiguration  `json:"strategy" db:"strategy"`
-	Signature                     *SignatureConfiguration `json:"signature" db:"signature"`
-	MetaEvent                     *MetaEventConfiguration `json:"meta_event" db:"meta_event"`
+	MaxIngestSize                 uint64                       `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                         `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	AddEventIDTraceHeaders        bool                         `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                         `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                         `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	SearchPolicy                  string                       `json:"search_policy" db:"search_policy"`
+	SSL                           *SSLConfiguration            `json:"ssl" db:"ssl"`
+	RateLimit                     *RateLimitConfiguration      `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration       `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration      `json:"signature" db:"signature"`
+	MetaEvent                     *MetaEventConfiguration      `json:"meta_event" db:"meta_event"`
+	CircuitBreaker                *CircuitBreakerConfiguration `json:"circuit_breaker" db:"circuit_breaker"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -599,6 +645,14 @@ func (p *ProjectConfig) GetMetaEventConfig() MetaEventConfiguration {
 	return MetaEventConfiguration{}
 }
 
+func (p *ProjectConfig) GetCircuitBreakerConfig() CircuitBreakerConfiguration {
+	if p.CircuitBreaker != nil {
+		return *p.CircuitBreaker
+	}
+
+	return DefaultCircuitBreakerConfiguration
+}
+
 type RateLimitConfiguration struct {
 	Count    int    `json:"count" db:"count"`
 	Duration uint64 `json:"duration" db:"duration"`
@@ -634,6 +688,16 @@ type MetaEventConfiguration struct {
 
 type SSLConfiguration struct {
 	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints" db:"enforce_secure_endpoints"`
+}
+
+type CircuitBreakerConfiguration struct {
+	SampleRate                  uint64 `json:"sample_rate" db:"sample_rate"`
+	ErrorTimeout                uint64 `json:"error_timeout" db:"error_timeout"`
+	FailureThreshold            uint64 `json:"failure_threshold" db:"failure_threshold"`
+	SuccessThreshold            uint64 `json:"success_threshold" db:"success_threshold"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" db:"minimum_request_count"`
+	ObservabilityWindow         uint64 `json:"observability_window" db:"observability_window"`
+	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
 type RetentionPolicyConfiguration struct {
@@ -680,7 +744,6 @@ var (
 	ErrSourceNotFound                = errors.New("source not found")
 	ErrEventNotFound                 = errors.New("event not found")
 	ErrProjectNotFound               = errors.New("project not found")
-	ErrAPIKeyNotFound                = errors.New("api key not found")
 	ErrEndpointNotFound              = errors.New("endpoint not found")
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
@@ -1089,7 +1152,6 @@ type Subscription struct {
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
-// For DB access
 func (s *Subscription) GetAlertConfig() AlertConfiguration {
 	if s.AlertConfig != nil {
 		return *s.AlertConfig
@@ -1368,6 +1430,134 @@ type ApiKey struct {
 	HeaderName  string `json:"header_name" db:"header_name" valid:"required"`
 }
 
+// OAuth2AuthenticationType represents the type of OAuth2 authentication
+type OAuth2AuthenticationType string
+
+const (
+	SharedSecretAuth    OAuth2AuthenticationType = "shared_secret"
+	ClientAssertionAuth OAuth2AuthenticationType = "client_assertion"
+)
+
+// OAuth2SigningKey represents a JWK-formatted signing key for client assertion
+// Supports both EC (Elliptic Curve) and RSA key types
+type OAuth2SigningKey struct {
+	Kty string `json:"kty"` // Key type: "EC" or "RSA"
+
+	// EC (Elliptic Curve) key fields
+	Crv string `json:"crv,omitempty"` // Curve: "P-256", "P-384", "P-521"
+	X   string `json:"x,omitempty"`   // X coordinate (EC only)
+	Y   string `json:"y,omitempty"`   // Y coordinate (EC only)
+	D   string `json:"d,omitempty"`   // Private key (EC only)
+
+	// RSA key fields
+	N  string `json:"n,omitempty"`  // RSA modulus (RSA only)
+	E  string `json:"e,omitempty"`  // RSA public exponent (RSA only)
+	P  string `json:"p,omitempty"`  // RSA first prime factor (RSA private key only)
+	Q  string `json:"q,omitempty"`  // RSA second prime factor (RSA private key only)
+	Dp string `json:"dp,omitempty"` // RSA first factor CRT exponent (RSA private key only)
+	Dq string `json:"dq,omitempty"` // RSA second factor CRT exponent (RSA private key only)
+	Qi string `json:"qi,omitempty"` // RSA first CRT coefficient (RSA private key only)
+
+	Kid string `json:"kid"` // Key ID
+}
+
+// OAuth2ExpiryTimeUnit represents the unit for expiry time
+type OAuth2ExpiryTimeUnit string
+
+const (
+	ExpiryTimeUnitSeconds      OAuth2ExpiryTimeUnit = "seconds"
+	ExpiryTimeUnitMilliseconds OAuth2ExpiryTimeUnit = "milliseconds"
+	ExpiryTimeUnitMinutes      OAuth2ExpiryTimeUnit = "minutes"
+	ExpiryTimeUnitHours        OAuth2ExpiryTimeUnit = "hours"
+)
+
+// OAuth2FieldMapping allows custom field name mappings for token response
+type OAuth2FieldMapping struct {
+	AccessToken string `json:"access_token,omitempty"` // Field name for access token (e.g., "accessToken", "access_token", "token")
+	TokenType   string `json:"token_type,omitempty"`   // Field name for token type (e.g., "tokenType", "token_type")
+	ExpiresIn   string `json:"expires_in,omitempty"`   // Field name for expiry time (e.g., "expiresIn", "expires_in", "expiresAt")
+}
+
+// OAuth2 holds OAuth2 authentication configuration
+type OAuth2 struct {
+	URL                string                   `json:"url" db:"url" valid:"required"`
+	ClientID           string                   `json:"client_id" db:"client_id" valid:"required"`
+	GrantType          string                   `json:"grant_type,omitempty" db:"grant_type"`
+	Scope              string                   `json:"scope,omitempty" db:"scope"`
+	Audience           string                   `json:"audience,omitempty" db:"audience"`
+	AuthenticationType OAuth2AuthenticationType `json:"authentication_type" db:"authentication_type" valid:"required,in(shared_secret|client_assertion)~unsupported authentication type"`
+	ClientSecret       string                   `json:"client_secret,omitempty" db:"client_secret"` // Encrypted at rest
+	SigningKey         *OAuth2SigningKey        `json:"signing_key,omitempty" db:"signing_key"`     // Encrypted at rest
+	SigningAlgorithm   string                   `json:"signing_algorithm,omitempty" db:"signing_algorithm"`
+	Issuer             string                   `json:"issuer,omitempty" db:"issuer"`
+	Subject            string                   `json:"subject,omitempty" db:"subject"`
+	// Field mapping for flexible token response parsing
+	FieldMapping *OAuth2FieldMapping `json:"field_mapping,omitempty" db:"field_mapping"`
+	// Expiry time unit (seconds, milliseconds, minutes, hours)
+	ExpiryTimeUnit OAuth2ExpiryTimeUnit `json:"expiry_time_unit,omitempty" db:"expiry_time_unit"`
+}
+
+func (o *OAuth2) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, o)
+}
+
+func (o OAuth2) Value() (driver.Value, error) {
+	if o.URL == "" && o.ClientID == "" {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(o)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+type FeatureFlag struct {
+	UID        string    `json:"uid" db:"id"`
+	FeatureKey string    `json:"feature_key" db:"feature_key"`
+	Enabled    bool      `json:"enabled" db:"enabled"`
+	CreatedAt  time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt  time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+}
+
+type FeatureFlagOverride struct {
+	UID           string      `json:"uid" db:"id"`
+	FeatureFlagID string      `json:"feature_flag_id" db:"feature_flag_id"`
+	OwnerType     string      `json:"owner_type" db:"owner_type"`
+	OwnerID       string      `json:"owner_id" db:"owner_id"`
+	Enabled       bool        `json:"enabled" db:"enabled"`
+	EnabledAt     null.Time   `json:"enabled_at,omitempty" db:"enabled_at" swaggertype:"string"`
+	EnabledBy     null.String `json:"enabled_by,omitempty" db:"enabled_by"`
+	CreatedAt     time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt     time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+}
+
+type EarlyAdopterFeature struct {
+	UID            string      `json:"uid" db:"id"`
+	OrganisationID string      `json:"organisation_id" db:"organisation_id"`
+	FeatureKey     string      `json:"feature_key" db:"feature_key"`
+	Enabled        bool        `json:"enabled" db:"enabled"`
+	EnabledBy      null.String `json:"enabled_by,omitempty" db:"enabled_by"`
+	EnabledAt      null.Time   `json:"enabled_at,omitempty" db:"enabled_at" swaggertype:"string"`
+	CreatedAt      time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+}
+
 type Organisation struct {
 	UID            string      `json:"uid" db:"id"`
 	OwnerID        string      `json:"" db:"owner_id"`
@@ -1379,37 +1569,30 @@ type Organisation struct {
 	DeletedAt      null.Time   `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
+type OrganisationUsage struct {
+	OrganisationID string
+	Period         string
+	Received       UsageMetrics
+	Sent           UsageMetrics
+	CreatedAt      time.Time
+}
+
+type UsageMetrics struct {
+	Volume int64
+	Bytes  int64
+}
+
 type Configuration struct {
 	UID                string `json:"uid" db:"id"`
 	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
 	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
 
-	StoragePolicy        *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
-	RetentionPolicy      *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	CircuitBreakerConfig *CircuitBreakerConfig         `json:"circuit_breaker" db:"circuit_breaker"`
+	StoragePolicy   *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
+	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
-}
-
-func (c *Configuration) GetCircuitBreakerConfig() CircuitBreakerConfig {
-	if c.CircuitBreakerConfig != nil {
-		return *c.CircuitBreakerConfig
-	}
-	return CircuitBreakerConfig{}
-}
-
-func (c *Configuration) ToCircuitBreakerConfig() *cb.CircuitBreakerConfig {
-	return &cb.CircuitBreakerConfig{
-		SampleRate:                  c.CircuitBreakerConfig.SampleRate,
-		BreakerTimeout:              c.CircuitBreakerConfig.ErrorTimeout,
-		FailureThreshold:            c.CircuitBreakerConfig.FailureThreshold,
-		SuccessThreshold:            c.CircuitBreakerConfig.SuccessThreshold,
-		ObservabilityWindow:         c.CircuitBreakerConfig.ObservabilityWindow,
-		MinimumRequestCount:         c.CircuitBreakerConfig.MinimumRequestCount,
-		ConsecutiveFailureThreshold: c.CircuitBreakerConfig.ConsecutiveFailureThreshold,
-	}
 }
 
 func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
@@ -1437,16 +1620,6 @@ type S3Storage struct {
 
 type OnPremStorage struct {
 	Path null.String `json:"path" db:"path"`
-}
-
-type CircuitBreakerConfig struct {
-	SampleRate                  uint64 `json:"sample_rate" db:"sample_rate"`
-	ErrorTimeout                uint64 `json:"error_timeout" db:"error_timeout"`
-	FailureThreshold            uint64 `json:"failure_threshold" db:"failure_threshold"`
-	SuccessThreshold            uint64 `json:"success_threshold" db:"success_threshold"`
-	ObservabilityWindow         uint64 `json:"observability_window" db:"observability_window"`
-	MinimumRequestCount         uint64 `json:"minimum_request_count" db:"minimum_request_count"`
-	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
 type OrganisationMember struct {
@@ -1548,6 +1721,13 @@ type OrganisationInvite struct {
 	DeletedAt        null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
+type PortalAuthType string
+
+const (
+	PortalAuthTypeRefreshToken PortalAuthType = "refresh_token"
+	PortalAuthTypeStaticToken  PortalAuthType = "static_token"
+)
+
 type PortalLink struct {
 	UID               string           `json:"uid" db:"id"`
 	Name              string           `json:"name" db:"name"`
@@ -1559,12 +1739,13 @@ type PortalLink struct {
 	EndpointCount     int              `json:"endpoint_count" db:"endpoint_count"`
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
-	// portal auth token
-	TokenExpiresAt null.Time `json:"token_expires_at" db:"token_expires_at"`
-	TokenMaskId    string    `json:"token_mask_id" db:"token_mask_id"`
-	TokenHash      string    `json:"token_hash" db:"token_hash"`
-	TokenSalt      string    `json:"token_salt" db:"token_salt"`
-	AuthKey        string    `json:"auth_key" db:"-"`
+	// portal auth stuff
+	TokenExpiresAt null.Time      `json:"token_expires_at" db:"token_expires_at"`
+	TokenMaskId    string         `json:"token_mask_id" db:"token_mask_id"`
+	TokenHash      string         `json:"token_hash" db:"token_hash"`
+	TokenSalt      string         `json:"token_salt" db:"token_salt"`
+	AuthKey        string         `json:"auth_key" db:"-"`
+	AuthType       PortalAuthType `json:"auth_type" db:"auth_type"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -1732,4 +1913,178 @@ func (p *Password) Matches() (bool, error) {
 	}
 
 	return true, err
+}
+
+type PortalLinkResponse struct {
+	UID               string           `json:"uid"`
+	Name              string           `json:"name"`
+	ProjectID         string           `json:"project_id"`
+	OwnerID           string           `json:"owner_id"`
+	Endpoints         []string         `json:"endpoints"`
+	EndpointCount     int              `json:"endpoint_count"`
+	CanManageEndpoint bool             `json:"can_manage_endpoint"`
+	Token             string           `json:"token"`
+	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata"`
+	URL               string           `json:"url"`
+	AuthType          PortalAuthType   `json:"auth_type"`
+	AuthKey           string           `json:"auth_key"`
+	CreatedAt         time.Time        `json:"created_at,omitempty"`
+	UpdatedAt         time.Time        `json:"updated_at,omitempty"`
+	DeletedAt         null.Time        `json:"deleted_at,omitempty"`
+}
+
+type UpdatePortalLinkRequest struct {
+	// Portal Link Name
+	Name string `json:"name"`
+
+	// Deprecated
+	// IDs of endpoints in this portal link
+	Endpoints []string `json:"endpoints"`
+
+	AuthType string `json:"auth_type"`
+
+	// OwnerID, the portal link will inherit all the endpoints with this owner ID
+	OwnerID string `json:"owner_id"`
+
+	// Specify whether endpoint management can be done through the Portal Link UI
+	CanManageEndpoint bool `json:"can_manage_endpoint"`
+}
+
+func (p *UpdatePortalLinkRequest) Validate() error {
+	err := validation.ValidateStruct(p,
+		validation.Field(&p.Name, validation.Required),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	validAuthTypes := []PortalAuthType{
+		PortalAuthTypeRefreshToken,
+		PortalAuthTypeStaticToken,
+	}
+
+	// Check if the auth type is valid
+	for _, validType := range validAuthTypes {
+		if validType == PortalAuthType(p.AuthType) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid auth type: %s", p.AuthType)
+}
+
+func (p *UpdatePortalLinkRequest) SetDefaultAuthType() {
+	validAuthTypes := []PortalAuthType{
+		PortalAuthTypeRefreshToken,
+		PortalAuthTypeStaticToken,
+	}
+
+	// Check if the auth type is valid
+	for _, validType := range validAuthTypes {
+		if validType == PortalAuthType(p.AuthType) {
+			return
+		}
+	}
+
+	// Default to refresh token
+	p.AuthType = string(PortalAuthTypeStaticToken)
+}
+
+type CreatePortalLinkRequest struct {
+	// Portal Link Name
+	Name string `json:"name"`
+
+	// Deprecated
+	// IDs of endpoints in this portal link
+	Endpoints []string `json:"endpoints"`
+
+	AuthType string `json:"auth_type"`
+
+	// OwnerID, the portal link will inherit all the endpoints with this owner ID
+	OwnerID string `json:"owner_id"`
+
+	// Specify whether endpoint management can be done through the Portal Link UI
+	CanManageEndpoint bool `json:"can_manage_endpoint"`
+}
+
+func (p *CreatePortalLinkRequest) Validate() error {
+	err := validation.ValidateStruct(p,
+		validation.Field(&p.Name, validation.Required),
+		validation.Field(&p.OwnerID, validation.Required),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	validAuthTypes := []PortalAuthType{
+		PortalAuthTypeRefreshToken,
+		PortalAuthTypeStaticToken,
+	}
+
+	// Check if the auth type is valid
+	for _, validType := range validAuthTypes {
+		if validType == PortalAuthType(p.AuthType) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid auth type: %s", p.AuthType)
+}
+
+func (p *CreatePortalLinkRequest) SetDefaultAuthType() {
+	validAuthTypes := []PortalAuthType{
+		PortalAuthTypeRefreshToken,
+		PortalAuthTypeStaticToken,
+	}
+
+	// Check if the auth type is valid
+	for _, validType := range validAuthTypes {
+		if validType == PortalAuthType(p.AuthType) {
+			return
+		}
+	}
+
+	// Default to static token
+	p.AuthType = string(PortalAuthTypeStaticToken)
+}
+
+// OrganisationRequest represents the request body for creating/updating an organisation
+type OrganisationRequest struct {
+	Name         string `json:"name" bson:"name"`
+	CustomDomain string `json:"custom_domain" bson:"custom_domain"`
+}
+
+// OrganisationInvite represents the request body for inviting a user to an organisation
+type OrganisationInviteRequest struct {
+	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email,email"`
+	Role         auth.Role `json:"role" bson:"role"`
+}
+
+// UpdateOrganisationMember represents the request body for updating an organisation member's role
+type UpdateOrganisationMember struct {
+	Role auth.Role `json:"role" bson:"role"`
+}
+
+// UpdateOrganisationFeatureFlags represents the request body for updating organisation feature flags
+type UpdateOrganisationFeatureFlags struct {
+	FeatureFlags map[string]bool `json:"feature_flags" valid:"required"`
+}
+
+// UpdateOrganisationOverride represents the request body for updating a feature flag override
+type UpdateOrganisationOverride struct {
+	FeatureKey string `json:"feature_key" valid:"required"`
+	Enabled    bool   `json:"enabled"`
+}
+
+// UpdateOrganisationCircuitBreakerConfig represents the request body for updating circuit breaker configuration
+type UpdateOrganisationCircuitBreakerConfig struct {
+	SampleRate                  uint64 `json:"sample_rate" valid:"required,min(1)"`
+	ErrorTimeout                uint64 `json:"error_timeout" valid:"required,min(1)"`
+	FailureThreshold            uint64 `json:"failure_threshold" valid:"required,range(0|100)"`
+	SuccessThreshold            uint64 `json:"success_threshold" valid:"required,range(0|100)"`
+	ObservabilityWindow         uint64 `json:"observability_window" valid:"required,min(1)"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" valid:"required,min(0)"`
+	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" valid:"required,min(0)"`
 }

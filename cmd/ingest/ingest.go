@@ -51,14 +51,14 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, lo, rateLimiter, a.Licenser, host)
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, lo, rateLimiter, a.Licenser, host, endpointRepo)
 	if err != nil {
 		return err
 	}
 
 	go ingest.Run()
 
-	log.Println("Starting Convoy Ingester")
+	log.Printf("Starting Convoy Ingester")
 
 	return nil
 }

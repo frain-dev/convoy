@@ -5,14 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth/realm/jwt"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/auth/realm/jwt"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func provideRegisterUserService(ctrl *gomock.Controller, t *testing.T, baseUrl string, loginUser *models.RegisterUser) *RegisterUserService {
@@ -84,7 +84,6 @@ func TestRegisterUserService_Run(t *testing.T) {
 				us.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				orgRepo.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
-				orgMemberRepo.EXPECT().CountInstanceAdminUsers(gomock.Any()).Times(1).Return(int64(0), nil)
 				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
@@ -176,7 +175,6 @@ func TestRegisterUserService_Run(t *testing.T) {
 				us.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				orgRepo.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
-				orgMemberRepo.EXPECT().CountInstanceAdminUsers(gomock.Any()).Times(1).Return(int64(0), nil)
 				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())

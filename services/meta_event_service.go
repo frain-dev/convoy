@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -35,7 +36,7 @@ func (m *MetaEventService) Run(ctx context.Context, metaEvent *datastore.MetaEve
 		return err
 	}
 
-	jobId := fmt.Sprintf("meta:%s:%s", metaEvent.ProjectID, metaEvent.UID)
+	jobId := queue.JobId{ProjectID: metaEvent.ProjectID, ResourceID: metaEvent.UID}.MetaJobId()
 	err = m.Queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
 		ID:      jobId,
 		Payload: bytes,

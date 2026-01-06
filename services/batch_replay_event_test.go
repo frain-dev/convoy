@@ -5,14 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/frain-dev/convoy"
-
 	"github.com/stretchr/testify/require"
-
-	"github.com/frain-dev/convoy/mocks"
 	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func provideBatchReplayEventService(ctrl *gomock.Controller, f *datastore.Filter) *BatchReplayEventService {

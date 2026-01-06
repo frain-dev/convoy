@@ -5,21 +5,21 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/util"
 	"go.opentelemetry.io/otel"
-	"google.golang.org/grpc/credentials"
-
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/credentials"
+
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/util"
 )
 
 var ErrInvalidCollectorURL = errors.New("invalid OTel Collector URL")
@@ -107,7 +107,7 @@ func (ot *OTelTracer) Type() config.TracerProvider {
 	return config.OTelTracerProvider
 }
 
-func (ot *OTelTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time) {
+func (ot *OTelTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime, endTime time.Time) {
 	_, span := otel.Tracer("").Start(ctx, name,
 		trace.WithTimestamp(startTime))
 

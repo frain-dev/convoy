@@ -1,0 +1,217 @@
+# 💡 TIP
+#
+# If you want to override anything in this file, create an adjacent file called
+# `mise.local.toml`. That file is not checked in to the repository. Using this
+# file, you can specify more tools or different version of listed ones below as
+# well as overriding environment variables.
+[tools]
+go = "1.25.3"
+golangci-lint = "2.4.0"
+nodejs = "24.10.0"
+postgres = "15.1"
+
+"asdf:jonathanmorley/asdf-pre-commit" = "latest"
+"aqua:pvolok/mprocs" = "0.7.2"
+"npm:squawk-cli" = { version = "latest", bin = "squawk" }
+"go:github.com/ogen-go/ogen/cmd/ogen" = "v1.16.0"
+"go:github.com/swaggo/swag/cmd/swag" = "latest"
+"go:go.uber.org/mock/mockgen" = "latest"
+"go:github.com/sqlc-dev/sqlc/cmd/sqlc" = "latest"
+
+# ℹ️ The settings below are sensible defaults for local development. When
+# deploying to production, you will want to configure these more carefully.
+[env]
+#################################
+## Application configuration   ##
+#################################
+## Core application settings
+HOST = "0.0.0.0:5005"
+ENVIRONMENT = "development"
+API_VERSION = "0001-01-01"
+LOG_LEVEL = "debug"
+
+## Convoy-specific settings
+CONVOY_HOST = "http://localhost:5005"
+CONVOY_ENV = "oss"
+CONVOY_API_VERSION = "2024-04-01"
+CONVOY_MAX_RESPONSE_SIZE = 50
+CONVOY_ROOT_PATH = ""
+CONVOY_CONSUMER_POOL_SIZE = 100
+CONVOY_ENABLE_PROFILING = false
+CONVOY_INSTANCE_INGEST_RATE = 1000
+CONVOY_API_RATE_LIMIT = 1000
+CONVOY_WORKER_EXECUTION_MODE = "default"
+CONVOY_MAX_RETRY_SECONDS = 0
+CONVOY_LICENSE_KEY = ""
+CONVOY_CUSTOM_DOMAIN_SUFFIX = ""
+CONVOY_ENABLE_FEATURE_FLAG = ""
+
+############################
+## Database configuration ##
+############################
+CONVOY_DB_TYPE = "postgres"
+CONVOY_DB_SCHEME = "postgres"
+CONVOY_DB_HOST = "localhost"
+CONVOY_DB_USERNAME = "postgres"
+CONVOY_DB_PASSWORD = "postgres"
+CONVOY_DB_DATABASE = "convoy"
+CONVOY_DB_OPTIONS = "sslmode=disable&connect_timeout=30"
+CONVOY_DB_PORT = 5432
+CONVOY_DB_DSN = ""
+CONVOY_DB_MAX_OPEN_CONN = 0
+CONVOY_DB_MAX_IDLE_CONN = 0
+CONVOY_DB_CONN_MAX_LIFETIME = 3600
+CONVOY_DB_READ_REPLICAS = "[]"
+
+#########################
+## Redis configuration ##
+#########################
+CONVOY_REDIS_SCHEME = "redis"
+CONVOY_REDIS_HOST = "localhost"
+CONVOY_REDIS_USERNAME = ""
+CONVOY_REDIS_PASSWORD = ""
+CONVOY_REDIS_DATABASE = ""
+CONVOY_REDIS_PORT = 6379
+CONVOY_REDIS_CLUSTER_ADDRESSES = ""
+CONVOY_REDIS_TLS_SKIP_VERIFY = false
+CONVOY_REDIS_TLS_CERT_FILE = ""
+CONVOY_REDIS_TLS_KEY_FILE = ""
+CONVOY_REDIS_TLS_CA_CERT_FILE = ""
+
+###########################
+## Server configuration  ##
+###########################
+SSL = false
+CONVOY_SSL_CERT_FILE = ""
+CONVOY_SSL_KEY_FILE = ""
+PORT = 5005
+AGENT_PORT = 5008
+INGEST_PORT = 5009
+WORKER_PORT = 5006
+SOCKET_PORT = 0
+DOMAIN_PORT = 0
+HTTP_PROXY = ""
+
+###########################
+## Logger configuration  ##
+###########################
+CONVOY_LOGGER_LEVEL = "error"
+
+###########################
+## Tracer configuration  ##
+###########################
+CONVOY_TRACER_PROVIDER = ""
+CONVOY_OTEL_SAMPLE_RATE = "1.0"
+CONVOY_OTEL_COLLECTOR_URL = ""
+CONVOY_OTEL_INSECURE_SKIP_VERIFY = true
+CONVOY_OTEL_AUTH_HEADER_NAME = ""
+CONVOY_OTEL_AUTH_HEADER_VALUE = ""
+CONVOY_SENTRY_DSN = ""
+CONVOY_SENTRY_SAMPLE_RATE = "0.0"
+CONVOY_DATADOG_AGENT_URL = ""
+
+#########################
+## Auth configuration  ##
+#########################
+CONVOY_SIGNUP_ENABLED = true
+CONVOY_NATIVE_REALM_ENABLED = true
+CONVOY_JWT_REALM_ENABLED = true
+CONVOY_JWT_SECRET = ""
+CONVOY_JWT_EXPIRY = 0
+CONVOY_JWT_REFRESH_SECRET = ""
+CONVOY_JWT_REFRESH_EXPIRY = 0
+CONVOY_PORTAL_REALM_ENABLED = true
+CONVOY_GOOGLE_OAUTH_ENABLED = false
+CONVOY_GOOGLE_OAUTH_CLIENT_ID = ""
+CONVOY_GOOGLE_OAUTH_REDIRECT_URL = ""
+CONVOY_SAML_ENABLED = false
+
+#########################
+## SMTP configuration  ##
+#########################
+CONVOY_SMTP_SSL = false
+CONVOY_SMTP_PROVIDER = ""
+CONVOY_SMTP_URL = ""
+CONVOY_SMTP_PORT = 0
+CONVOY_SMTP_USERNAME = ""
+CONVOY_SMTP_PASSWORD = ""
+CONVOY_SMTP_FROM = ""
+CONVOY_SMTP_REPLY_TO = ""
+
+#####################################
+## Retention Policy configuration  ##
+#####################################
+CONVOY_RETENTION_POLICY = "720h"
+CONVOY_RETENTION_POLICY_ENABLED = false
+
+####################################
+## Circuit Breaker configuration  ##
+####################################
+CONVOY_CIRCUIT_BREAKER_SAMPLE_RATE = 30
+CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT = 30
+CONVOY_CIRCUIT_BREAKER_FAILURE_THRESHOLD = 70
+CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD = 5
+CONVOY_CIRCUIT_BREAKER_MINIMUM_REQUEST_COUNT = 10
+CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW = 5
+CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD = 10
+CONVOY_CIRCUIT_BREAKER_SKIP_SLEEP = false
+
+############################
+## Analytics configuration ##
+############################
+CONVOY_ANALYTICS_ENABLED = true
+
+#################################
+## Storage Policy configuration ##
+#################################
+CONVOY_STORAGE_POLICY_TYPE = "on-prem"
+CONVOY_STORAGE_AWS_PREFIX = ""
+CONVOY_STORAGE_AWS_BUCKET = ""
+CONVOY_STORAGE_AWS_ACCESS_KEY = ""
+CONVOY_STORAGE_AWS_SECRET_KEY = ""
+CONVOY_STORAGE_AWS_REGION = ""
+CONVOY_STORAGE_AWS_SESSION_TOKEN = ""
+CONVOY_STORAGE_AWS_ENDPOINT = ""
+CONVOY_STORAGE_PREM_PATH = "/tmp/convoy"
+
+############################
+## Metrics configuration  ##
+############################
+CONVOY_METRICS_ENABLED = false
+CONVOY_METRICS_BACKEND = "prometheus"
+CONVOY_METRICS_SAMPLE_TIME = 5
+
+##############################
+## Dispatcher configuration ##
+##############################
+CONVOY_DISPATCHER_INSECURE_SKIP_VERIFY = false
+CONVOY_DISPATCHER_ALLOW_LIST = "0.0.0.0/0,::/0"
+CONVOY_DISPATCHER_BLOCK_LIST = "127.0.0.0/8,::1/128"
+CONVOY_DISPATCHER_CACERT_PATH = ""
+CONVOY_DISPATCHER_CACERT_STRING = ""
+CONVOY_DISPATCHER_PING_METHODS = "HEAD,GET,POST"
+CONVOY_DISPATCHER_SKIP_PING_VALIDATION = false
+
+##############################
+## Prometheus configuration ##
+##############################
+CONVOY_PROM_DSN = ""
+
+##############################
+## Pyroscope configuration  ##
+##############################
+CONVOY_ENABLE_PYROSCOPE_PROFILING = false
+CONVOY_PYROSCOPE_URL = ""
+CONVOY_PYROSCOPE_USERNAME = ""
+CONVOY_PYROSCOPE_PASSWORD = ""
+CONVOY_PYROSCOPE_PROFILE_ID = ""
+
+###########################
+## HCP Vault configuration ##
+###########################
+CONVOY_HCP_CLIENT_ID = ""
+CONVOY_HCP_CLIENT_SECRET = ""
+CONVOY_HCP_ORG_ID = ""
+CONVOY_HCP_PROJECT_ID = ""
+CONVOY_HCP_APP_NAME = ""
+CONVOY_HCP_SECRET_NAME = ""

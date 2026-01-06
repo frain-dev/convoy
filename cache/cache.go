@@ -15,7 +15,13 @@ type Cache interface {
 }
 
 func NewCache(cfg config.RedisConfiguration) (Cache, error) {
-	ca, err := rcache.NewRedisCache(cfg.BuildDsn())
+	ca, err := rcache.NewRedisCacheFromConfig(
+		cfg.BuildDsn(),
+		cfg.TLSSkipVerify,
+		cfg.TLSCACertFile,
+		cfg.TLSCertFile,
+		cfg.TLSKeyFile,
+	)
 	if err != nil {
 		return nil, err
 	}

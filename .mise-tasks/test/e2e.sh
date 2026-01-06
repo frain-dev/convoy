@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+#MISE description="Run E2E tests for job ID generation refactor"
+#MISE dir="{{ config_root }}"
+
+set -e
+
+echo "🧪 Running Job ID E2E tests..."
+echo ""
+
+# Array of all job ID tests
+tests=(
+  "TestE2E_DirectEvent_AllSubscriptions"
+  "TestE2E_DirectEvent_MustMatchSubscription"
+  "TestE2E_FanOutEvent_AllSubscriptions"
+  "TestE2E_FanOutEvent_MustMatchSubscription"
+  "TestE2E_FormEndpoint_ContentType"
+  "TestE2E_FormEndpoint_WithCustomHeaders"
+  "TestE2E_OAuth2_SharedSecret"
+  "TestE2E_OAuth2_ClientAssertion"
+  "TestE2E_SingleEvent_JobID_Format"
+  "TestE2E_SingleEvent_JobID_Deduplication"
+  "TestE2E_FanoutEvent_JobID_Format"
+  "TestE2E_FanoutEvent_MultipleOwners"
+  "TestE2E_BroadcastEvent_JobID_Format"
+  "TestE2E_BroadcastEvent_AllSubscribers"
+  "TestE2E_DynamicEvent_JobID_Format"
+  "TestE2E_DynamicEvent_MultipleEventTypes"
+  "TestE2E_ReplayEvent_JobID_Format"
+  "TestE2E_ReplayEvent_MultipleReplays"
+)
+
+# Counter for passed tests
+passed=0
+failed=0
+
+# Run each test individually
+for test in "${tests[@]}"; do
+  echo "▶ Running: $test"
+  if go test -v ./e2e/... -run "^${test}$" -timeout 2m; then
+    echo "✅ $test passed"
+    ((passed++))
+  else
+    echo "❌ $test failed"
+    ((failed++))
+  fi
+  echo ""
+done
+
+# Summary
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📊 Test Summary:"
+echo "   Passed: $passed"
+echo "   Failed: $failed"
+echo "   Total:  $((passed + failed))"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if [ $failed -eq 0 ]; then
+  echo "✅ All Job ID E2E tests passed!"
+  exit 0
+else
+  echo "❌ Some tests failed"
+  exit 1
+fi

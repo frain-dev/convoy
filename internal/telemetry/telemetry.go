@@ -99,7 +99,7 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 		return nil
 	}
 
-	var metrics []Metric
+	metrics := make([]Metric, len(t.trackers))
 
 	// generate metrics
 	for _, tr := range t.trackers {

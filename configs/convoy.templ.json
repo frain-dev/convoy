@@ -18,6 +18,23 @@
             "level": "error"
         }
     },
+    "auth": {
+        "is_signup_enabled": true,
+        "native": {
+            "enabled": true
+        },
+        "jwt": {
+            "enabled": true
+        },
+        "portal": {
+            "enabled": true
+        },
+        "google_oauth": {
+            "enabled": false,
+            "client_id": "",
+            "redirect_url": ""
+        }
+    },
     "smtp": {
         "provider": "sendgrid",
         "url": "smtp.sendgrid.net",

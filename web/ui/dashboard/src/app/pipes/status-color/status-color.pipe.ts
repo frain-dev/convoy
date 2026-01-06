@@ -1,5 +1,5 @@
-import { Pipe, PipeTransform } from '@angular/core';
-import { STATUS_COLOR } from '../../models/global.model';
+import {Pipe, PipeTransform} from '@angular/core';
+import {STATUS_COLOR} from '../../models/global.model';
 
 @Pipe({
 	name: 'statuscolor'
@@ -17,13 +17,17 @@ export class StatusColorPipe implements PipeTransform {
 			case 'Success':
 			case 'success':
 			case 'online':
+			case 'Paid':
+			case 'paid':
 				type = 'success';
 				break;
 			case 'Pending':
+			case 'pending':
 				type = 'warning';
 				break;
 			case 'Failed':
 			case 'Failure':
+			case 'failed':
 			case 'disabled':
 				type = 'error';
 				break;

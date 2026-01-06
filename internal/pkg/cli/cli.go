@@ -1,18 +1,18 @@
 package cli
 
 import (
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/redis/go-redis/v9"
+	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	flag "github.com/spf13/pflag"
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/spf13/cobra"
-	flag "github.com/spf13/pflag"
 )
 
 // App is the core dependency of the entire binary.
@@ -27,6 +27,10 @@ type App struct {
 	Licenser license.Licenser
 
 	TracerBackend tracer.Backend
+
+	// JobTracker is an optional field used only in E2E tests
+	// to capture job IDs for verification
+	JobTracker interface{}
 }
 
 type ConvoyCli struct {

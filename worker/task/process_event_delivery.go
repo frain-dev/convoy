@@ -2,40 +2,57 @@ package task
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy/pkg/httpheader"
-
-	"github.com/frain-dev/convoy/pkg/url"
+	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/notifications"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/pkg/url"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
 	"github.com/frain-dev/convoy/util"
-	"github.com/hibiken/asynq"
 )
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+const (
+	errMutualTLSFeatureUnavailable = "mutual TLS feature unavailable, please upgrade your license"
+)
+
+//nolint:cyclop // Large function handling complex event delivery logic with many conditional branches
+type EventDeliveryProcessorDeps struct {
+	EndpointRepo               datastore.EndpointRepository
+	EventDeliveryRepo          datastore.EventDeliveryRepository
+	Licenser                   license.Licenser
+	ProjectRepo                datastore.ProjectRepository
+	Queue                      queue.Queuer
+	RateLimiter                limiter.RateLimiter
+	Dispatcher                 *net.Dispatcher
+	AttemptsRepo               datastore.DeliveryAttemptsRepository
+	CircuitBreakerManager      *circuit_breaker.CircuitBreakerManager
+	FeatureFlag                *fflag.FFlag
+	FeatureFlagFetcher         fflag.FeatureFlagFetcher
+	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	TracerBackend              tracer.Backend
+	OAuth2TokenService         OAuth2TokenService
+}
+
+func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		// Start a new trace span for event delivery
 		traceStartTime := time.Now()
@@ -66,7 +83,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 
 			// write it to the retry queue.
-			deferErr := q.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
+			deferErr := deps.Queue.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
 			if deferErr != nil {
 				log.FromContext(ctx).WithError(deferErr).Error("[asynq]: an error occurred sending event delivery to the retry queue")
 			}
@@ -76,7 +93,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		if err != nil {
 			err = json.Unmarshal(t.Payload(), &data)
 			if err != nil {
-				tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 				return &DeliveryError{Err: err}
 			}
 		}
@@ -86,39 +103,39 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		cfg, err := config.Get()
 		if err != nil {
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 			return &DeliveryError{Err: err}
 		}
 
-		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByIDSlim(ctx, data.ProjectID, data.EventDeliveryID)
+		eventDelivery, err := deps.EventDeliveryRepo.FindEventDeliveryByIDSlim(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 			return &DeliveryError{Err: err}
 		}
 		eventDelivery.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
 
 		delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
-		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
+		project, err := deps.ProjectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 			return &DeliveryError{Err: err}
 		}
 
-		endpoint, err := endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
+		endpoint, err := deps.EndpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
 		if err != nil {
 			if errors.Is(err, datastore.ErrEndpointNotFound) {
 				eventDelivery.Description = datastore.ErrEndpointNotFound.Error()
-				err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
+				err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to discarded")
 				}
 
-				tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 				return nil
 			}
 
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 			return &DeliveryError{Err: err}
 		}
 
@@ -129,31 +146,31 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		switch eventDelivery.Status {
 		case datastore.ProcessingEventStatus,
 			datastore.SuccessEventStatus:
-			tracerBackend.Capture(ctx, "event.delivery.success", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.success", attributes, traceStartTime, time.Now())
 			return nil
 		}
 
-		err = rateLimiter.AllowWithDuration(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
+		err = deps.RateLimiter.AllowWithDuration(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
 		if err != nil {
 			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery_id": data.EventDeliveryID}).
 				WithError(err).
 				Debugf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second)
 
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
-		if featureFlag.CanAccessFeature(fflag.CircuitBreaker) && licenser.CircuitBreaking() {
-			breakerErr := circuitBreakerManager.CanExecute(ctx, endpoint.UID)
+		if deps.FeatureFlag.CanAccessFeature(fflag.CircuitBreaker) && deps.Licenser.CircuitBreaking() {
+			breakerErr := deps.CircuitBreakerManager.CanExecute(ctx, endpoint.UID)
 			if breakerErr != nil {
-				tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 				return &CircuitBreakerError{Err: breakerErr}
 			}
 		}
 
-		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
+		err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
 		if err != nil {
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 			return &DeliveryError{Err: err}
 		}
 
@@ -161,26 +178,26 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		if eventDelivery.Status == datastore.SuccessEventStatus {
 			log.FromContext(ctx).Debugf("endpoint %s already merged with message %s\n", endpoint.Url, eventDelivery.UID)
-			tracerBackend.Capture(ctx, "event.delivery.success", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.success", attributes, traceStartTime, time.Now())
 			return nil
 		}
 
 		if endpoint.Status == datastore.InactiveEndpointStatus {
-			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
+			err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
 			if err != nil {
-				tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 				return &DeliveryError{Err: err}
 			}
 
 			log.FromContext(ctx).Debugf("endpoint %s is inactive, failing to send.", endpoint.Url)
-			tracerBackend.Capture(ctx, "event.delivery.discarded", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.discarded", attributes, traceStartTime, time.Now())
 			return nil
 		}
 
 		sig := newSignature(endpoint, project, json.RawMessage(eventDelivery.Metadata.Raw))
 		header, err := sig.ComputeHeaderValue()
 		if err != nil {
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 			return &DeliveryError{Err: err}
 		}
 
@@ -189,7 +206,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
 			if err != nil {
 				log.FromContext(ctx).WithError(err).Error("failed to concat url query params")
-				tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 				return &DeliveryError{Err: err}
 			}
 		}
@@ -205,13 +222,76 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
 		}
 
+		// Check feature flag for OAuth2 if endpoint uses OAuth2 authentication
+		if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.OAuth2Authentication {
+			oauth2Enabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
+			if !oauth2Enabled {
+				log.FromContext(ctx).Warn("Endpoint has OAuth2 configured but feature flag is disabled, removing OAuth2 authorization header")
+				// Remove OAuth2 authorization header if feature flag is disabled
+				if eventDelivery.Headers != nil {
+					delete(eventDelivery.Headers, "Authorization")
+				}
+			}
+		}
+
 		var httpDuration time.Duration
-		if endpoint.HttpTimeout == 0 || !licenser.AdvancedEndpointMgmt() {
+		if endpoint.HttpTimeout == 0 || !deps.Licenser.AdvancedEndpointMgmt() {
 			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
 		} else {
 			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
 		}
-		resp, err := dispatch.SendWebhook(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration)
+
+		contentType := endpoint.ContentType
+		if contentType == "" {
+			contentType = "application/json"
+		}
+
+		// Load mTLS client certificate if configured
+		var mtlsCert *tls.Certificate
+		if endpoint.MtlsClientCert != nil {
+			// Check license before using mTLS during delivery
+			if !deps.Licenser.MutualTLS() {
+				log.FromContext(ctx).Error(errMutualTLSFeatureUnavailable)
+				eventDelivery.Status = datastore.FailureEventStatus
+				eventDelivery.Description = errMutualTLSFeatureUnavailable
+				err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+				}
+				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+				return nil // Return nil to avoid retrying
+			}
+
+			// Check feature flag for mTLS using project's organisation ID
+			mtlsEnabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
+			if !mtlsEnabled {
+				log.FromContext(ctx).Warn("Endpoint has mTLS configured but feature flag is disabled, continuing without mTLS")
+				// Continue without mTLS if feature flag is disabled
+				mtlsCert = nil
+			} else {
+				// Use cached certificate loading to avoid parsing on every request
+				cert, certErr := config.LoadClientCertificateWithCache(
+					endpoint.UID, // Use endpoint ID as cache key
+					endpoint.MtlsClientCert.ClientCert,
+					endpoint.MtlsClientCert.ClientKey,
+				)
+				if certErr != nil {
+					// Fail fast on certificate errors (invalid or expired cert) to avoid needless retries
+					log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
+					eventDelivery.Status = datastore.FailureEventStatus
+					eventDelivery.Description = fmt.Sprintf("Invalid mTLS certificate: %v", certErr)
+					err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+					if err != nil {
+						log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+					}
+					deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+					return nil // Return nil to avoid retrying
+				}
+				mtlsCert = cert
+			}
+		}
+
+		resp, err := deps.Dispatcher.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)
 
 		status := "-"
 		statusCode := 0
@@ -239,7 +319,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.LatencySeconds = time.Since(eventDelivery.GetLatencyStartTime()).Seconds()
 
 			// register latency
-			mm := metrics.GetDPInstance(licenser)
+			mm := metrics.GetDPInstance(deps.Licenser)
 			mm.RecordEndToEndLatency(eventDelivery)
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
@@ -282,12 +362,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			attributes["response.size_bytes"] = len(resp.Body)
 		}
 
-		// Request failed but statusCode is 200 <= x <= 299
+		// The request failed, but the statusCode is 200 <= x <= 299
 		if err != nil {
 			log.FromContext(ctx).Errorf("%s failed. Reason: %s", eventDelivery.UID, err)
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 		} else {
-			tracerBackend.Capture(ctx, "event.delivery.success", attributes, traceStartTime, time.Now())
+			deps.TracerBackend.Capture(ctx, "event.delivery.success", attributes, traceStartTime, time.Now())
 		}
 
 		attributes["project.id"] = project.UID
@@ -296,34 +376,9 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		attributes["event_delivery.id"] = eventDelivery.UID
 		attributes["event.id"] = eventDelivery.EventID
 
-		tracerBackend.Capture(ctx, "event.delivery.info", attributes, time.Now(), time.Now())
-
-		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
-			endpointStatus := datastore.ActiveEndpointStatus
-			err = endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("Failed to reactivate endpoint after successful retry")
-			}
-
-			if licenser.AdvancedEndpointMgmt() {
-				// send endpoint reactivation notification
-				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, false, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("failed to send notification")
-				}
-			}
-		}
-
-		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
-			endpointStatus := datastore.InactiveEndpointStatus
-			err = endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-			if err != nil {
-				log.FromContext(ctx).Errorf("Failed to reactivate endpoint after successful retry")
-			}
-		}
+		deps.TracerBackend.Capture(ctx, "event.delivery.info", attributes, time.Now(), time.Now())
 
 		attempt := parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
-
 		eventDelivery.Metadata.NumTrials++
 
 		if eventDelivery.Metadata.NumTrials >= eventDelivery.Metadata.RetryLimit {
@@ -338,17 +393,17 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
 
-			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
+			if project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
 				endpointStatus := datastore.InactiveEndpointStatus
 
-				err = endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
+				err = deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
 
-				if licenser.AdvancedEndpointMgmt() {
+				if deps.Licenser.AdvancedEndpointMgmt() {
 					// send endpoint deactivation notification
-					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, true, resp.Error, string(resp.Body), resp.StatusCode)
+					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, deps.Queue, true, resp.Error, string(resp.Body), resp.StatusCode)
 					if err != nil {
 						log.FromContext(ctx).WithError(err).Error("failed to send notification")
 					}
@@ -356,18 +411,18 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 		}
 
-		err = attemptsRepo.CreateDeliveryAttempt(ctx, &attempt)
+		err = deps.AttemptsRepo.CreateDeliveryAttempt(ctx, &attempt)
 		if err != nil {
 			log.FromContext(ctx).
 				WithError(err).
 				Errorf("failed to create delivery attempt for event delivery with id: %s and delivery attempt: %s", eventDelivery.UID, attempt.ResponseData)
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+			return &DeliveryError{Err: fmt.Errorf("%w: %w", ErrDeliveryAttemptFailed, err)}
 		}
 
-		err = eventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
+		err = deps.EventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to update message ", eventDelivery.UID)
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+			return &DeliveryError{Err: fmt.Errorf("%w: %w", ErrDeliveryAttemptFailed, err)}
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
@@ -375,7 +430,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			if err != nil {
 				errS = err.Error()
 			}
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS)}
+			return &DeliveryError{Err: fmt.Errorf("%w: %s", ErrDeliveryAttemptFailed, errS)}
 		}
 
 		return nil

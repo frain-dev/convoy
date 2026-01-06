@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/auth"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -35,7 +34,7 @@ func (ss *UpdateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, erro
 		return nil, &ServiceError{ErrMsg: "invalid project", Err: err}
 	}
 
-	apiKey, err := ss.APIKeyRepo.FindAPIKeyByID(ctx, ss.UID)
+	apiKey, err := ss.APIKeyRepo.GetAPIKeyByID(ctx, ss.UID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch api key")
 		return nil, &ServiceError{ErrMsg: "failed to fetch api key", Err: err}

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+#MISE description="Format Go code with gofmt and gci"
+#MISE dir="{{ config_root }}"
+
+set -e
+
+go list ./... | grep -v '/e2e' | while IFS='' read -r line
+do
+  go test -v -p 1 "$line"
+done

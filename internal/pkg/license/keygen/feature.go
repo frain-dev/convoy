@@ -19,6 +19,7 @@ const (
 	HADeployment               Feature = "HA_DEPLOYMENT"
 	WebhookAnalytics           Feature = "WEBHOOK_ANALYTICS"
 	MutualTLS                  Feature = "MUTUAL_TLS"
+	OAuth2EndpointAuth         Feature = "OAUTH2_ENDPOINT_AUTH"
 	AsynqMonitoring            Feature = "ASYNQ_MONITORING"
 	SynchronousWebhooks        Feature = "SYNCHRONOUS_WEBHOOKS"
 	PortalLinks                Feature = "PORTAL_LINKS"
@@ -30,10 +31,12 @@ const (
 	AgentExecutionMode         Feature = "AGENT_EXECUTION_MODE"
 	IpRules                    Feature = "IP_RULES"
 	EnterpriseSSO              Feature = "ENTERPRISE_SSO"
+	GoogleOAuth                Feature = "GOOGLE_OAUTH"
 	DatadogTracing             Feature = "DATADOG_TRACING"
 	ReadReplica                Feature = "READ_REPLICA"
 	CredentialEncryption       Feature = "CREDENTIAL_ENCRYPTION"
 	CustomCertificateAuthority Feature = "CUSTOM_CERTIFICATE_AUTHORITY"
+	BillingModule              Feature = "BILLING_MODULE"
 )
 
 const (

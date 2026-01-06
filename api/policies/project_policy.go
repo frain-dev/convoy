@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
 	authz "github.com/Subomi/go-authz"
+
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 )
 
 type ProjectPolicy struct {
@@ -33,11 +34,11 @@ func (pp *ProjectPolicy) View(ctx context.Context, res interface{}) error {
 }
 
 func (pp *ProjectPolicy) checkAccess(ctx context.Context, res interface{}, checkMember func(*datastore.OrganisationMember) bool) error {
-	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
+	authCtx := ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
 
 	project, ok := res.(*datastore.Project)
 	if !ok {
-		return errors.New("Wrong project type")
+		return errors.New("wrong project type")
 	}
 
 	org, err := pp.OrganisationRepo.FetchOrganisationByID(ctx, project.OrganisationID)

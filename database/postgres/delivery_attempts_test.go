@@ -5,10 +5,12 @@ package postgres
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/datastore"
+	"testing"
+
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestCreateDeliveryAttempt(t *testing.T) {

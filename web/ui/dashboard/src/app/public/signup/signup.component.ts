@@ -1,13 +1,19 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
-import { LoaderModule } from 'src/app/private/components/loader/loader.module';
-import { HubspotService } from 'src/app/services/hubspot/hubspot.service';
-import { SignupService } from './signup.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import {CommonModule} from '@angular/common';
+import {Component, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {Router} from '@angular/router';
+import {ButtonComponent} from 'src/app/components/button/button.component';
+import {
+    InputDirective,
+    InputErrorComponent,
+    InputFieldDirective,
+    LabelComponent
+} from 'src/app/components/input/input.component';
+import {LoaderModule} from 'src/app/private/components/loader/loader.module';
+import {HubspotService} from 'src/app/services/hubspot/hubspot.service';
+import {SignupService} from './signup.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {ConfigService} from 'src/app/services/config/config.service';
 
 @Component({
 	selector: 'convoy-signup',
@@ -20,6 +26,7 @@ export class SignupComponent implements OnInit {
 	showSignupPassword = false;
 	disableSignupBtn = false;
 	isFetchingConfig = false;
+	isGoogleOAuthEnabled = false;
 	signupForm: FormGroup = this.formBuilder.group({
 		email: ['', Validators.required],
 		first_name: ['', Validators.required],
@@ -28,10 +35,18 @@ export class SignupComponent implements OnInit {
 		org_name: ['', Validators.required]
 	});
 
-	constructor(private formBuilder: FormBuilder, private signupService: SignupService, public router: Router, private hubspotService: HubspotService, private licenseService: LicensesService) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private signupService: SignupService,
+		public router: Router,
+		private hubspotService: HubspotService,
+		private licenseService: LicensesService,
+		private configService: ConfigService
+	) {}
 
 	ngOnInit(): void {
 		this.licenseService.setLicenses();
+		this.checkGoogleOAuthConfig();
 
 		if (!this.licenseService.hasLicense('CREATE_USER')) this.router.navigateByUrl('/login');
 	}
@@ -58,12 +73,21 @@ export class SignupComponent implements OnInit {
 		this.isFetchingConfig = true;
 		try {
 			const response = await this.signupService.getSignupConfig();
-			const isSignupEnabled = response.data;
+			const isSignupEnabled = response.data?.is_signup_enabled ?? false;
 			if (!isSignupEnabled) this.router.navigateByUrl('/login');
 			this.isFetchingConfig = false;
 		} catch (error) {
 			this.isFetchingConfig = false;
 			throw error;
+		}
+	}
+
+	private async checkGoogleOAuthConfig() {
+		try {
+			const config = await this.configService.getConfig();
+			this.isGoogleOAuthEnabled = config.auth?.google_oauth?.enabled || false;
+		} catch (error) {
+			this.isGoogleOAuthEnabled = false;
 		}
 	}
 

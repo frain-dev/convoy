@@ -3,10 +3,11 @@ package email
 import (
 	"testing"
 
-	"github.com/frain-dev/convoy/internal/pkg/smtp"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func Test_Build(t *testing.T) {

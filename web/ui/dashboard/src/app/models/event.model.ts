@@ -1,6 +1,6 @@
-import { DEVICE } from './device.model';
-import { APP, ENDPOINT } from './endpoint.model';
-import { SOURCE } from './source.model';
+import {DEVICE} from './device.model';
+import {APP, ENDPOINT} from './endpoint.model';
+import {SOURCE} from './source.model';
 
 export interface EVENT {
 	created_at: Date;
@@ -85,6 +85,7 @@ export interface FILTER_QUERY_PARAM {
 	name?: string;
 	sort?: string;
 	eventType?: string;
+	ownerId?: string;
 }
 
 

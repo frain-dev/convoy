@@ -1,0 +1,200 @@
+<div class="flex justify-between items-center mb-28px">
+	<div>
+		<h3 class="font-semibold">Circuit Breaker Configuration</h3>
+		<p class="text-12 text-neutral-10">Configure circuit breaker settings for projects. These settings control how endpoints are automatically disabled when they fail too frequently.</p>
+	</div>
+</div>
+
+<!-- Organization Selector -->
+<div class="mb-24px" [formGroup]="organisationForm">
+	<convoy-select
+		[options]="getOrganisationOptions()"
+		name="organisation"
+		formControlName="organisation"
+		label="Select Organisation"
+		placeholder="Select an organisation"
+		[searchable]="true"
+		(selectedOption)="onOrganisationSelected($event)"
+		(searchString)="filterOrganisations($event)"
+	></convoy-select>
+</div>
+
+<!-- Project Selector -->
+<div *ngIf="selectedOrganisation" class="mb-24px" [formGroup]="projectForm">
+	<convoy-select
+		[options]="getProjectOptions()"
+		name="project"
+		formControlName="project"
+		label="Select Project"
+		placeholder="Select a project to configure circuit breaker settings"
+		[searchable]="false"
+		(selectedOption)="onProjectSelected($event)"
+		[disabled]="isLoadingProjects"
+	></convoy-select>
+	<convoy-loader *ngIf="isLoadingProjects" class="mt-8px"></convoy-loader>
+</div>
+
+<!-- Banner when no organization is selected -->
+<div *ngIf="!selectedOrganisation" class="p-24px bg-neutral-a2 rounded-8px text-center mb-24px">
+	<p class="text-14 text-neutral-10">Select an organisation to configure circuit breaker settings</p>
+</div>
+
+<!-- Banner when no project is selected -->
+<div *ngIf="selectedOrganisation && !selectedProject && !isLoadingProjects" class="p-24px bg-neutral-a2 rounded-8px text-center mb-24px">
+	<p class="text-14 text-neutral-10">Select a project to configure circuit breaker settings</p>
+</div>
+
+<!-- Circuit Breaker Configuration Form -->
+<div *ngIf="selectedProject" class="mb-24px">
+	<div convoy-card class="p-24px">
+		<div class="mb-24px">
+			<label convoy-label class="text-12 mb-8px block">{{ selectedProject.name }}</label>
+		</div>
+
+		<convoy-loader *ngIf="isLoadingCircuitBreakerConfig" class="flex items-center justify-center py-40px"></convoy-loader>
+
+		<form [formGroup]="circuitBreakerForm" *ngIf="circuitBreakerForm && !isLoadingCircuitBreakerConfig">
+			<div class="grid grid-cols-2 gap-24px">
+				<!-- Editable fields -->
+				<convoy-input-field>
+					<label for="sample_rate" convoy-label>Sample Rate (seconds)</label>
+					<input 
+						type="number" 
+						id="sample_rate" 
+						convoy-input 
+						formControlName="sample_rate" 
+						placeholder="e.g. 30"
+						min="1"
+					/>
+					<small class="text-10 text-neutral-9">Time interval for polling data source</small>
+					<convoy-input-error *ngIf="circuitBreakerForm.get('sample_rate')?.touched && circuitBreakerForm.get('sample_rate')?.invalid">
+						Sample rate must be greater than 0
+					</convoy-input-error>
+				</convoy-input-field>
+
+				<convoy-input-field>
+					<label for="error_timeout" convoy-label>Error Timeout (seconds)</label>
+					<input 
+						type="number" 
+						id="error_timeout" 
+						convoy-input 
+						formControlName="error_timeout" 
+						placeholder="e.g. 30"
+						min="1"
+					/>
+					<small class="text-10 text-neutral-9">Time before circuit breaker resets</small>
+					<convoy-input-error *ngIf="circuitBreakerForm.get('error_timeout')?.touched && circuitBreakerForm.get('error_timeout')?.invalid">
+						Error timeout must be greater than 0
+					</convoy-input-error>
+				</convoy-input-field>
+				<convoy-input-field>
+					<label for="failure_threshold" convoy-label>Failure Threshold (%)</label>
+					<input 
+						type="number" 
+						id="failure_threshold" 
+						convoy-input 
+						formControlName="failure_threshold" 
+						placeholder="0-100"
+						min="0"
+						max="100"
+					/>
+					<small class="text-10 text-neutral-9">Percentage of failures to trigger circuit breaker</small>
+					<convoy-input-error *ngIf="circuitBreakerForm.get('failure_threshold')?.touched && circuitBreakerForm.get('failure_threshold')?.invalid">
+						Failure threshold must be between 0 and 100
+					</convoy-input-error>
+				</convoy-input-field>
+
+				<convoy-input-field>
+					<label for="success_threshold" convoy-label>Success Threshold (%)</label>
+					<input 
+						type="number" 
+						id="success_threshold" 
+						convoy-input 
+						formControlName="success_threshold" 
+						placeholder="0-100"
+						min="0"
+						max="100"
+					/>
+					<small class="text-10 text-neutral-9">Percentage of successes to close circuit breaker</small>
+					<convoy-input-error *ngIf="circuitBreakerForm.get('success_threshold')?.touched && circuitBreakerForm.get('success_threshold')?.invalid">
+						Success threshold must be between 0 and 100
+					</convoy-input-error>
+				</convoy-input-field>
+
+				<convoy-input-field>
+					<label for="observability_window" convoy-label>Observability Window (minutes)</label>
+					<input 
+						type="number" 
+						id="observability_window" 
+						convoy-input 
+						formControlName="observability_window" 
+						placeholder="e.g. 5"
+						min="1"
+					/>
+					<small class="text-10 text-neutral-9">Time window for monitoring failures</small>
+					<convoy-input-error *ngIf="circuitBreakerForm.get('observability_window')?.touched && circuitBreakerForm.get('observability_window')?.invalid">
+						Observability window must be greater than 0
+					</convoy-input-error>
+				</convoy-input-field>
+
+				<convoy-input-field>
+					<label for="minimum_request_count" convoy-label>Minimum Request Count</label>
+					<input 
+						type="number" 
+						id="minimum_request_count" 
+						convoy-input 
+						formControlName="minimum_request_count" 
+						placeholder="e.g. 10"
+						min="0"
+					/>
+					<small class="text-10 text-neutral-9">Minimum requests before triggering</small>
+					<convoy-input-error *ngIf="circuitBreakerForm.get('minimum_request_count')?.touched && circuitBreakerForm.get('minimum_request_count')?.invalid">
+						Minimum request count must be 0 or greater
+					</convoy-input-error>
+				</convoy-input-field>
+
+				<convoy-input-field>
+					<label for="consecutive_failure_threshold" convoy-label>Consecutive Failure Threshold</label>
+					<input 
+						type="number" 
+						id="consecutive_failure_threshold" 
+						convoy-input 
+						formControlName="consecutive_failure_threshold" 
+						placeholder="e.g. 5"
+						min="0"
+					/>
+					<small class="text-10 text-neutral-9">Consecutive failures before disabling endpoint</small>
+					<convoy-input-error *ngIf="circuitBreakerForm.get('consecutive_failure_threshold')?.touched && circuitBreakerForm.get('consecutive_failure_threshold')?.invalid">
+						Consecutive failure threshold must be 0 or greater
+					</convoy-input-error>
+				</convoy-input-field>
+			</div>
+
+			<div class="flex justify-end gap-12px mt-24px">
+				<button 
+					convoy-button 
+					type="button" 
+					size="sm" 
+					color="neutral" 
+					fill="outline"
+					[disabled]="isSavingCircuitBreakerConfig || !circuitBreakerForm.dirty"
+					(click)="resetCircuitBreakerForm()"
+				>
+					Cancel
+				</button>
+				<button 
+					convoy-button 
+					type="button" 
+					size="sm" 
+					color="primary"
+					fill="solid"
+					[disabled]="isSavingCircuitBreakerConfig || !circuitBreakerForm.valid || !circuitBreakerForm.dirty"
+					(click)="saveCircuitBreakerConfig()"
+				>
+					<span *ngIf="!isSavingCircuitBreakerConfig" class="text-white-100">Save Configuration</span>
+					<span *ngIf="isSavingCircuitBreakerConfig" class="text-white-100">Saving...</span>
+				</button>
+			</div>
+		</form>
+	</div>
+</div>

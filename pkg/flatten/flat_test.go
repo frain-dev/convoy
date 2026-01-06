@@ -1,13 +1,14 @@
 package flatten
 
 import (
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"testing"
 
 	"github.com/nsf/jsondiff"
 	"github.com/stretchr/testify/require"
+
+	_ "embed"
 )
 
 //go:embed gh_event.json

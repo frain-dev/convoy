@@ -1,8 +1,9 @@
 package policies
 
 import (
-	"github.com/frain-dev/convoy/auth"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/auth"
 )
 
 type basetest struct {

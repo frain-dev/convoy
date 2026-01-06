@@ -7,13 +7,13 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/kelseyhightower/envconfig"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
 	DefaultCacheTTL                   = time.Minute * 10
-	DefaultAPIVersion                 = "2024-04-01"
+	DefaultAPIVersion                 = "2025-11-24"
 )
 
 var cfgSingleton atomic.Value
@@ -32,6 +32,8 @@ var DefaultConfiguration = Configuration{
 	Host:            DefaultHost,
 	Environment:     OSSEnvironment,
 	MaxResponseSize: MaxResponseSizeKb,
+
+	RootPath: "",
 
 	Server: ServerConfiguration{
 		HTTP: HTTPServerConfiguration{
@@ -94,6 +96,9 @@ var DefaultConfiguration = Configuration{
 		Portal: PortalRealmOptions{
 			Enabled: true,
 		},
+		GoogleOAuth: GoogleOAuthOptions{
+			Enabled: false,
+		},
 	},
 	ConsumerPoolSize: 100,
 	Tracer: TracerConfiguration{
@@ -114,10 +119,17 @@ var DefaultConfiguration = Configuration{
 		InsecureSkipVerify: false,
 		AllowList:          []string{"0.0.0.0/0", "::/0"},
 		BlockList:          []string{"127.0.0.0/8", "::1/128"},
+		PingMethods:        []string{"HEAD", "GET", "POST"},
+		SkipPingValidation: false,
 	},
-	InstanceIngestRate:  25,
-	ApiRateLimit:        25,
+	InstanceIngestRate:  1000,
+	ApiRateLimit:        1000,
 	WorkerExecutionMode: DefaultExecutionMode,
+	Billing: BillingConfiguration{
+		Enabled: false,
+		URL:     "",
+		APIKey:  "",
+	},
 }
 
 type DatabaseConfiguration struct {
@@ -204,13 +216,17 @@ type PrometheusConfiguration struct {
 }
 
 type RedisConfiguration struct {
-	Scheme    string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
-	Host      string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
-	Username  string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
-	Password  string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
-	Database  string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
-	Port      int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
-	Addresses string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
+	Scheme        string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
+	Host          string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
+	Username      string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
+	Password      string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
+	Database      string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
+	Port          int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+	Addresses     string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
+	TLSSkipVerify bool   `json:"tls_skip_verify" envconfig:"CONVOY_REDIS_TLS_SKIP_VERIFY"`
+	TLSCertFile   string `json:"tls_cert_file" envconfig:"CONVOY_REDIS_TLS_CERT_FILE"`
+	TLSKeyFile    string `json:"tls_key_file" envconfig:"CONVOY_REDIS_TLS_KEY_FILE"`
+	TLSCACertFile string `json:"tls_ca_cert_file" envconfig:"CONVOY_REDIS_TLS_CA_CERT_FILE"`
 }
 
 func (rc RedisConfiguration) BuildDsn() []string {
@@ -235,6 +251,10 @@ func (rc RedisConfiguration) BuildDsn() []string {
 	return []string{fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)}
 }
 
+func (rc RedisConfiguration) HasTLSConfig() bool {
+	return rc.TLSSkipVerify || rc.TLSCACertFile != "" || (rc.TLSCertFile != "" && rc.TLSKeyFile != "")
+}
+
 type FileRealmOption struct {
 	Basic  BasicAuthConfig  `json:"basic" bson:"basic" envconfig:"CONVOY_BASIC_AUTH_CONFIG"`
 	APIKey APIKeyAuthConfig `json:"api_key" envconfig:"CONVOY_API_KEY_CONFIG"`
@@ -245,6 +265,8 @@ type AuthConfiguration struct {
 	Native          NativeRealmOptions `json:"native"`
 	Jwt             JwtRealmOptions    `json:"jwt"`
 	Portal          PortalRealmOptions `json:"portal"`
+	GoogleOAuth     GoogleOAuthOptions `json:"google_oauth"`
+	SAML            SAMLOptions        `json:"saml"`
 	IsSignupEnabled bool               `json:"is_signup_enabled" envconfig:"CONVOY_SIGNUP_ENABLED"`
 }
 
@@ -320,6 +342,7 @@ type CircuitBreakerConfiguration struct {
 	MinimumRequestCount         uint64 `json:"minimum_request_count" envconfig:"CONVOY_CIRCUIT_BREAKER_MINIMUM_REQUEST_COUNT"`
 	ObservabilityWindow         uint64 `json:"observability_window" envconfig:"CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW"`
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD"`
+	SkipSleep                   bool   `json:"skip_sleep" envconfig:"CONVOY_CIRCUIT_BREAKER_SKIP_SLEEP"`
 }
 
 type AnalyticsConfiguration struct {
@@ -357,7 +380,6 @@ type PrometheusMetricsConfiguration struct {
 }
 
 const (
-	envPrefix      string = "convoy"
 	OSSEnvironment string = "oss"
 )
 
@@ -415,6 +437,7 @@ type Configuration struct {
 	Logger              LoggerConfiguration          `json:"logger"`
 	Tracer              TracerConfiguration          `json:"tracer"`
 	Host                string                       `json:"host" envconfig:"CONVOY_HOST"`
+	RootPath            string                       `json:"root_path" envconfig:"CONVOY_ROOT_PATH"`
 	Pyroscope           PyroscopeConfiguration       `json:"pyroscope"`
 	CustomDomainSuffix  string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	EnableFeatureFlag   []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
@@ -432,6 +455,7 @@ type Configuration struct {
 	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
 	Dispatcher          DispatcherConfiguration      `json:"dispatcher"`
 	HCPVault            HCPVaultConfig               `json:"hcp_vault"`
+	Billing             BillingConfiguration         `json:"billing"`
 }
 
 type DispatcherConfiguration struct {
@@ -440,6 +464,8 @@ type DispatcherConfiguration struct {
 	BlockList          []string `json:"block_list" envconfig:"CONVOY_DISPATCHER_BLOCK_LIST"`
 	CACertPath         string   `json:"ca_cert_path" envconfig:"CONVOY_DISPATCHER_CACERT_PATH"`
 	CACertString       string   `json:"ca_cert_string" envconfig:"CONVOY_DISPATCHER_CACERT_STRING"`
+	PingMethods        []string `json:"ping_methods" envconfig:"CONVOY_DISPATCHER_PING_METHODS"`
+	SkipPingValidation bool     `json:"skip_ping_validation" envconfig:"CONVOY_DISPATCHER_SKIP_PING_VALIDATION"`
 }
 
 type PyroscopeConfiguration struct {
@@ -457,6 +483,46 @@ type HCPVaultConfig struct {
 	ProjectID    string `json:"project_id" envconfig:"CONVOY_HCP_PROJECT_ID"`
 	AppName      string `json:"app_name" envconfig:"CONVOY_HCP_APP_NAME"`
 	SecretName   string `json:"secret_name" envconfig:"CONVOY_HCP_SECRET_NAME"`
+}
+
+type BillingConfiguration struct {
+	Enabled         bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
+	URL             string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
+	APIKey          string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
+	PaymentProvider PaymentProviderConfiguration `json:"payment_provider"`
+	Plans           []interface{}                `json:"plans,omitempty"`
+}
+
+type PaymentProviderConfiguration struct {
+	Type           string `json:"type" envconfig:"CONVOY_PAYMENT_PROVIDER_TYPE"`
+	PublishableKey string `json:"publishable_key" envconfig:"CONVOY_PAYMENT_PROVIDER_PUBLISHABLE_KEY"`
+}
+
+// Validate checks if the billing configuration is valid when enabled
+func (b *BillingConfiguration) Validate() error {
+	if !b.Enabled {
+		return nil // No validation needed if disabled
+	}
+
+	if b.URL == "" {
+		return fmt.Errorf("billing URL is required when billing is enabled")
+	}
+
+	if b.APIKey == "" {
+		return fmt.Errorf("billing API key is required when billing is enabled")
+	}
+
+	return nil
+}
+
+type GoogleOAuthOptions struct {
+	Enabled     bool   `json:"enabled" envconfig:"CONVOY_GOOGLE_OAUTH_ENABLED"`
+	ClientID    string `json:"client_id" envconfig:"CONVOY_GOOGLE_OAUTH_CLIENT_ID"`
+	RedirectURL string `json:"redirect_url" envconfig:"CONVOY_GOOGLE_OAUTH_REDIRECT_URL"`
+}
+
+type SAMLOptions struct {
+	Enabled bool `json:"enabled" envconfig:"CONVOY_SAML_ENABLED"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called
@@ -513,9 +579,11 @@ func overrideFields(ov, nv reflect.Value) {
 	}
 }
 
+type ConfigFunc func(c *Configuration) error
+
 // LoadConfig is used to load the configuration from either the json config file
 // or the environment variables.
-func LoadConfig(p string) error {
+func LoadConfig(p string, opts ...ConfigFunc) error {
 	c := DefaultConfiguration
 
 	if _, err := os.Stat(p); err == nil {
@@ -535,12 +603,13 @@ func LoadConfig(p string) error {
 	}
 
 	// override config from environment variables
-	err := envconfig.Process(envPrefix, &c)
-	if err != nil {
-		return err
+	for _, opt := range opts {
+		if err := opt(&c); err != nil {
+			return err
+		}
 	}
 
-	if err = validate(&c); err != nil {
+	if err := validate(&c); err != nil {
 		return err
 	}
 
@@ -586,6 +655,15 @@ func validate(c *Configuration) error {
 		return err
 	}
 
+	if err := ensureRootPath(c); err != nil {
+		return err
+	}
+
+	// Validate billing configuration
+	if err := c.Billing.Validate(); err != nil {
+		return err
+	}
+
 	if c.Metrics.IsEnabled {
 		backend := c.Metrics.Backend
 		switch backend {
@@ -594,6 +672,32 @@ func validate(c *Configuration) error {
 		default:
 			c.Metrics.IsEnabled = false
 		}
+	}
+
+	return nil
+}
+
+var rootPathRegex = regexp.MustCompile(`^[a-zA-Z0-9/_-]+$`)
+
+func ensureRootPath(c *Configuration) error {
+	if c.RootPath == "" {
+		return nil
+	}
+
+	if !strings.HasPrefix(c.RootPath, "/") {
+		return errors.New("root path must start with '/' (e.g., '/convoy')")
+	}
+
+	if strings.HasSuffix(c.RootPath, "/") {
+		return errors.New("root path should not end with '/' (e.g., use '/convoy' not '/convoy/')")
+	}
+
+	if c.RootPath == "/" {
+		return errors.New("root path cannot be '/', use empty string for no prefix")
+	}
+
+	if !rootPathRegex.MatchString(c.RootPath) {
+		return errors.New("root path contains invalid characters, only alphanumeric, hyphens, underscores, and slashes are allowed")
 	}
 
 	return nil

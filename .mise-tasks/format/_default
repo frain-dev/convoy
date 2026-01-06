@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+#MISE description="Format Go code with gofmt and gci"
+#MISE dir="{{ config_root }}"
+
+set -e
+
+echo "Running go fmt and imports"
+gofmt -s -l ./internal ./pkg
+gci write --skip-generated -s standard -s default -s blank -s dot -s alias -s localmodule .

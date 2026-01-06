@@ -2,11 +2,7 @@ package policies
 
 import (
 	"errors"
-
-	"github.com/frain-dev/convoy/api/types"
 )
-
-const AuthUserCtx types.ContextKey = "authUser"
 
 // ErrNotAllowed is returned when the request is not permitted.
 var ErrNotAllowed = errors.New("unauthorized to process request")
@@ -17,6 +13,7 @@ type Permission string
 const (
 	PermissionOrganisationBase Permission = "organisation"
 	PermissionProjectBase      Permission = "project"
+	PermissionBillingBase      Permission = "billing"
 	PermissionManage           Permission = "manage"
 	PermissionAdd              Permission = "add"
 	PermissionView             Permission = "view"
@@ -29,4 +26,5 @@ const (
 	PermissionOrganisationManageAll = PermissionOrganisationBase + "." + PermissionManageAll
 	PermissionProjectManage         = PermissionProjectBase + "." + PermissionManage
 	PermissionProjectView           = PermissionProjectBase + "." + PermissionView
+	PermissionBillingManage         = PermissionBillingBase + "." + PermissionManage
 )

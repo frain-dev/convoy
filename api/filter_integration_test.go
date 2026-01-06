@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package api
 
 import (
@@ -11,18 +8,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth"
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
+	"github.com/frain-dev/convoy/internal/portal_links"
 )
 
 type FilterIntegrationTestSuite struct {
@@ -38,14 +37,12 @@ type FilterIntegrationTestSuite struct {
 }
 
 func (s *FilterIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	// s.DB = getDB()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *FilterIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
-
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
@@ -77,14 +74,14 @@ func (s *FilterIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *FilterIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
+	// testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 

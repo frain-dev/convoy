@@ -6,18 +6,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
 	"github.com/dchest/uniuri"
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/oklog/ulid/v2"
 )
 
 type InviteUserService struct {
@@ -69,7 +69,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
-	err = sendInviteEmail(ctx, iv, iu.User, iu.Organisation, iu.Queue)
+	err = sendInviteEmail(iv, iu.User, iu.Organisation, iu.Queue)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to send email invite")
 	}
@@ -77,19 +77,28 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	return iv, nil
 }
 
-func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user *datastore.User, org *datastore.Organisation, queuer queue.Queuer) error {
+func sendInviteEmail(iv *datastore.OrganisationInvite, user *datastore.User, org *datastore.Organisation, queuer queue.Queuer) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
 	}
 
 	baseURL := cfg.Host
+	rootPath := cfg.RootPath
+
+	var inviteURL string
+	if rootPath != "" {
+		inviteURL = fmt.Sprintf("%s%s/accept-invite?invite-token=%s", baseURL, rootPath, iv.Token)
+	} else {
+		inviteURL = fmt.Sprintf("%s/accept-invite?invite-token=%s", baseURL, iv.Token)
+	}
+
 	em := email.Message{
 		Email:        iv.InviteeEmail,
 		Subject:      "Convoy Organization Invite",
 		TemplateName: email.TemplateOrganisationInvite,
 		Params: map[string]string{
-			"invite_url":        fmt.Sprintf("%s/accept-invite?invite-token=%s", baseURL, iv.Token),
+			"invite_url":        inviteURL,
 			"organisation_name": org.Name,
 			"inviter_name":      fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 			"expires_at":        iv.ExpiresAt.Format(time.RFC1123),
@@ -102,8 +111,8 @@ func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user
 	}
 
 	job := &queue.Job{
+		ID:      iv.UID,
 		Payload: bytes,
-		Delay:   0,
 	}
 
 	err = queuer.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)

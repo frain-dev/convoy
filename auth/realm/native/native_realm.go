@@ -10,21 +10,22 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/pbkdf2"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"golang.org/x/crypto/pbkdf2"
 )
 
 type NativeRealm struct {
-	apiKeyRepo     datastore.APIKeyRepository
-	userRepo       datastore.UserRepository
-	portalLinkRepo datastore.PortalLinkRepository
+	apiKeyRepo        datastore.APIKeyRepository
+	userRepo          datastore.UserRepository
+	portalLinkService datastore.PortalLinkRepository
 }
 
 func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository,
 	userRepo datastore.UserRepository,
-	portalLinkRepo datastore.PortalLinkRepository) *NativeRealm {
-	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo, portalLinkRepo: portalLinkRepo}
+	portalLinkService datastore.PortalLinkRepository) *NativeRealm {
+	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo, portalLinkService: portalLinkService}
 }
 
 func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
@@ -39,7 +40,7 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	}
 
 	maskID := keySplit[1]
-	apiKey, err := n.apiKeyRepo.FindAPIKeyByMaskID(ctx, maskID)
+	apiKey, err := n.apiKeyRepo.GetAPIKeyByMaskID(ctx, maskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash api key: %v", err)
 	}

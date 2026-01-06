@@ -1,13 +1,14 @@
 package utils
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/spf13/cobra"
 )
 
 func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
@@ -16,7 +17,6 @@ func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
 		Short: "Reverts the encryption initialization for the specified table columns with the encryption key fetched from HCP Vaults",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-
 			timeout, err := cmd.Flags().GetInt("timeout")
 			if err != nil {
 				log.WithError(err).Errorln("failed to get timeout")

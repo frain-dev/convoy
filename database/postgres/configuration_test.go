@@ -9,12 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/oklog/ulid/v2"
-
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_CreateConfiguration(t *testing.T) {
@@ -111,14 +110,6 @@ func generateConfig() *datastore.Configuration {
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
 			Policy:                   "720h",
 			IsRetentionPolicyEnabled: true,
-		},
-		CircuitBreakerConfig: &datastore.CircuitBreakerConfig{
-			SampleRate:                  30,
-			ErrorTimeout:                30,
-			FailureThreshold:            10,
-			SuccessThreshold:            5,
-			ObservabilityWindow:         5,
-			ConsecutiveFailureThreshold: 10,
 		},
 	}
 }

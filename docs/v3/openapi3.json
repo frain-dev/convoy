@@ -88,6 +88,33 @@
 				},
 				"type": "object"
 			},
+			"datastore.CreatePortalLinkRequest": {
+				"properties": {
+					"auth_type": {
+						"type": "string"
+					},
+					"can_manage_endpoint": {
+						"description": "Specify whether endpoint management can be done through the Portal Link UI",
+						"type": "boolean"
+					},
+					"endpoints": {
+						"description": "Deprecated\nIDs of endpoints in this portal link",
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"name": {
+						"description": "Portal Link Name",
+						"type": "string"
+					},
+					"owner_id": {
+						"description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.CustomResponse": {
 				"properties": {
 					"body": {
@@ -155,6 +182,13 @@
 				},
 				"type": "object"
 			},
+			"datastore.DeliveryMode": {
+				"enum": [
+					"at_least_once",
+					"at_most_once"
+				],
+				"type": "string"
+			},
 			"datastore.Device": {
 				"properties": {
 					"created_at": {
@@ -210,6 +244,9 @@
 					"authentication": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
 					},
+					"content_type": {
+						"type": "string"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -227,6 +264,14 @@
 					},
 					"http_timeout": {
 						"type": "integer"
+					},
+					"mtls_client_cert": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.MtlsClientCert"
+							}
+						],
+						"description": "mTLS client certificate configuration"
 					},
 					"name": {
 						"type": "string"
@@ -275,6 +320,9 @@
 					"api_key": {
 						"$ref": "#/components/schemas/datastore.ApiKey"
 					},
+					"oauth2": {
+						"$ref": "#/components/schemas/datastore.OAuth2"
+					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthenticationType"
 					}
@@ -283,7 +331,8 @@
 			},
 			"datastore.EndpointAuthenticationType": {
 				"enum": [
-					"api_key"
+					"api_key",
+					"oauth2"
 				],
 				"type": "string"
 			},
@@ -291,7 +340,6 @@
 				"enum": [
 					"active",
 					"inactive",
-					"pending",
 					"paused"
 				],
 				"type": "string"
@@ -553,6 +601,169 @@
 				},
 				"type": "object"
 			},
+			"datastore.MtlsClientCert": {
+				"properties": {
+					"client_cert": {
+						"description": "ClientCert is the client certificate PEM string",
+						"type": "string"
+					},
+					"client_key": {
+						"description": "ClientKey is the client private key PEM string",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.OAuth2": {
+				"properties": {
+					"audience": {
+						"type": "string"
+					},
+					"authentication_type": {
+						"$ref": "#/components/schemas/datastore.OAuth2AuthenticationType"
+					},
+					"client_id": {
+						"type": "string"
+					},
+					"client_secret": {
+						"description": "Encrypted at rest",
+						"type": "string"
+					},
+					"expiry_time_unit": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.OAuth2ExpiryTimeUnit"
+							}
+						],
+						"description": "Expiry time unit (seconds, milliseconds, minutes, hours)"
+					},
+					"field_mapping": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.OAuth2FieldMapping"
+							}
+						],
+						"description": "Field mapping for flexible token response parsing"
+					},
+					"grant_type": {
+						"type": "string"
+					},
+					"issuer": {
+						"type": "string"
+					},
+					"scope": {
+						"type": "string"
+					},
+					"signing_algorithm": {
+						"type": "string"
+					},
+					"signing_key": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.OAuth2SigningKey"
+							}
+						],
+						"description": "Encrypted at rest"
+					},
+					"subject": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.OAuth2AuthenticationType": {
+				"enum": [
+					"shared_secret",
+					"client_assertion"
+				],
+				"type": "string"
+			},
+			"datastore.OAuth2ExpiryTimeUnit": {
+				"enum": [
+					"seconds",
+					"milliseconds",
+					"minutes",
+					"hours"
+				],
+				"type": "string"
+			},
+			"datastore.OAuth2FieldMapping": {
+				"properties": {
+					"access_token": {
+						"description": "Field name for access token (e.g., \"accessToken\", \"access_token\", \"token\")",
+						"type": "string"
+					},
+					"expires_in": {
+						"description": "Field name for expiry time (e.g., \"expiresIn\", \"expires_in\", \"expiresAt\")",
+						"type": "string"
+					},
+					"token_type": {
+						"description": "Field name for token type (e.g., \"tokenType\", \"token_type\")",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.OAuth2SigningKey": {
+				"properties": {
+					"crv": {
+						"description": "EC (Elliptic Curve) key fields",
+						"type": "string"
+					},
+					"d": {
+						"description": "Private key (EC only)",
+						"type": "string"
+					},
+					"dp": {
+						"description": "RSA first factor CRT exponent (RSA private key only)",
+						"type": "string"
+					},
+					"dq": {
+						"description": "RSA second factor CRT exponent (RSA private key only)",
+						"type": "string"
+					},
+					"e": {
+						"description": "RSA public exponent (RSA only)",
+						"type": "string"
+					},
+					"kid": {
+						"description": "Key ID",
+						"type": "string"
+					},
+					"kty": {
+						"description": "Key type: \"EC\" or \"RSA\"",
+						"type": "string"
+					},
+					"n": {
+						"description": "RSA key fields",
+						"type": "string"
+					},
+					"p": {
+						"description": "RSA first prime factor (RSA private key only)",
+						"type": "string"
+					},
+					"q": {
+						"description": "RSA second prime factor (RSA private key only)",
+						"type": "string"
+					},
+					"qi": {
+						"description": "RSA first CRT coefficient (RSA private key only)",
+						"type": "string"
+					},
+					"x": {
+						"description": "X coordinate (EC only)",
+						"type": "string"
+					},
+					"y": {
+						"description": "Y coordinate (EC only)",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.PageDirection": {
 				"enum": [
 					"next",
@@ -575,6 +786,69 @@
 						"type": "integer"
 					},
 					"prev_page_cursor": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.PortalAuthType": {
+				"enum": [
+					"refresh_token",
+					"static_token"
+				],
+				"type": "string"
+			},
+			"datastore.PortalLinkResponse": {
+				"properties": {
+					"auth_key": {
+						"type": "string"
+					},
+					"auth_type": {
+						"$ref": "#/components/schemas/datastore.PortalAuthType"
+					},
+					"can_manage_endpoint": {
+						"type": "boolean"
+					},
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"endpoint_count": {
+						"type": "integer"
+					},
+					"endpoints": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"endpoints_metadata": {
+						"items": {
+							"$ref": "#/components/schemas/datastore.Endpoint"
+						},
+						"type": "array"
+					},
+					"name": {
+						"type": "string"
+					},
+					"owner_id": {
+						"type": "string"
+					},
+					"project_id": {
+						"type": "string"
+					},
+					"token": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					},
+					"url": {
 						"type": "string"
 					}
 				},
@@ -792,6 +1066,33 @@
 				},
 				"type": "object"
 			},
+			"datastore.UpdatePortalLinkRequest": {
+				"properties": {
+					"auth_type": {
+						"type": "string"
+					},
+					"can_manage_endpoint": {
+						"description": "Specify whether endpoint management can be done through the Portal Link UI",
+						"type": "boolean"
+					},
+					"endpoints": {
+						"description": "Deprecated\nIDs of endpoints in this portal link",
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"name": {
+						"description": "Portal Link Name",
+						"type": "string"
+					},
+					"owner_id": {
+						"description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.VerifierConfig": {
 				"properties": {
 					"api_key": {
@@ -976,7 +1277,7 @@
 			"models.CreateEndpoint": {
 				"properties": {
 					"advanced_signatures": {
-						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
 						"type": "boolean"
 					},
 					"appID": {
@@ -991,6 +1292,10 @@
 						],
 						"description": "This is used to define any custom authentication required by the endpoint. This\nshouldn't be needed often because webhook endpoints usually should be exposed to\nthe internet."
 					},
+					"content_type": {
+						"description": "Content type for the endpoint. Defaults to application/json if not specified.",
+						"type": "string"
+					},
 					"description": {
 						"description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
 						"type": "string"
@@ -1002,6 +1307,14 @@
 					"is_disabled": {
 						"description": "This is used to manually enable/disable the endpoint.",
 						"type": "boolean"
+					},
+					"mtls_client_cert": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.MtlsClientCert"
+							}
+						],
+						"description": "mTLS client certificate configuration for the endpoint"
 					},
 					"name": {
 						"description": "Endpoint name.",
@@ -1081,7 +1394,9 @@
 						"type": "string"
 					},
 					"json_schema": {
-						"description": "JSONSchema is the JSON structure of the event type"
+						"additionalProperties": true,
+						"description": "JSONSchema is the JSON structure of the event type",
+						"type": "object"
 					},
 					"name": {
 						"description": "Name is the event type name. E.g., invoice.created",
@@ -1196,6 +1511,14 @@
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
 					},
+					"delivery_mode": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.DeliveryMode"
+							}
+						],
+						"description": "Delivery mode configuration"
+					},
 					"endpoint_id": {
 						"description": "Destination endpoint ID",
 						"type": "string"
@@ -1286,6 +1609,9 @@
 					"api_key": {
 						"$ref": "#/components/schemas/models.ApiKey"
 					},
+					"oauth2": {
+						"$ref": "#/components/schemas/models.OAuth2"
+					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthenticationType"
 					}
@@ -1299,6 +1625,9 @@
 					},
 					"authentication": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+					},
+					"content_type": {
+						"type": "string"
 					},
 					"created_at": {
 						"type": "string"
@@ -1317,6 +1646,14 @@
 					},
 					"http_timeout": {
 						"type": "integer"
+					},
+					"mtls_client_cert": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.MtlsClientCert"
+							}
+						],
+						"description": "mTLS client certificate configuration"
 					},
 					"name": {
 						"type": "string"
@@ -1373,6 +1710,9 @@
 					},
 					"deleted_at": {
 						"type": "string"
+					},
+					"delivery_mode": {
+						"$ref": "#/components/schemas/datastore.DeliveryMode"
 					},
 					"description": {
 						"type": "string"
@@ -1804,85 +2144,148 @@
 				},
 				"type": "object"
 			},
+			"models.MtlsClientCert": {
+				"properties": {
+					"client_cert": {
+						"description": "ClientCert is the client certificate PEM string",
+						"type": "string"
+					},
+					"client_key": {
+						"description": "ClientKey is the client private key PEM string",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.OAuth2": {
+				"properties": {
+					"audience": {
+						"type": "string"
+					},
+					"authentication_type": {
+						"type": "string"
+					},
+					"client_id": {
+						"type": "string"
+					},
+					"client_secret": {
+						"type": "string"
+					},
+					"expiry_time_unit": {
+						"description": "Expiry time unit (seconds, milliseconds, minutes, hours)",
+						"type": "string"
+					},
+					"field_mapping": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.OAuth2FieldMapping"
+							}
+						],
+						"description": "Field mapping for flexible token response parsing"
+					},
+					"grant_type": {
+						"type": "string"
+					},
+					"issuer": {
+						"type": "string"
+					},
+					"scope": {
+						"type": "string"
+					},
+					"signing_algorithm": {
+						"type": "string"
+					},
+					"signing_key": {
+						"$ref": "#/components/schemas/models.OAuth2SigningKey"
+					},
+					"subject": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.OAuth2FieldMapping": {
+				"properties": {
+					"access_token": {
+						"description": "Field name for access token (e.g., \"accessToken\", \"access_token\", \"token\")",
+						"type": "string"
+					},
+					"expires_in": {
+						"description": "Field name for expiry time (e.g., \"expiresIn\", \"expires_in\", \"expiresAt\")",
+						"type": "string"
+					},
+					"token_type": {
+						"description": "Field name for token type (e.g., \"tokenType\", \"token_type\")",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.OAuth2SigningKey": {
+				"properties": {
+					"crv": {
+						"description": "EC (Elliptic Curve) key fields",
+						"type": "string"
+					},
+					"d": {
+						"description": "Private key (EC) or private exponent (RSA)",
+						"type": "string"
+					},
+					"dp": {
+						"description": "RSA first factor CRT exponent (RSA private key only)",
+						"type": "string"
+					},
+					"dq": {
+						"description": "RSA second factor CRT exponent (RSA private key only)",
+						"type": "string"
+					},
+					"e": {
+						"description": "RSA public exponent (RSA only)",
+						"type": "string"
+					},
+					"kid": {
+						"description": "Key ID",
+						"type": "string"
+					},
+					"kty": {
+						"description": "Key type: \"EC\" or \"RSA\"",
+						"type": "string"
+					},
+					"n": {
+						"description": "RSA key fields",
+						"type": "string"
+					},
+					"p": {
+						"description": "RSA first prime factor (RSA private key only)",
+						"type": "string"
+					},
+					"q": {
+						"description": "RSA second prime factor (RSA private key only)",
+						"type": "string"
+					},
+					"qi": {
+						"description": "RSA first CRT coefficient (RSA private key only)",
+						"type": "string"
+					},
+					"x": {
+						"description": "X coordinate (EC only)",
+						"type": "string"
+					},
+					"y": {
+						"description": "Y coordinate (EC only)",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.PagedResponse": {
 				"properties": {
 					"content": {},
 					"pagination": {
 						"$ref": "#/components/schemas/datastore.PaginationData"
-					}
-				},
-				"type": "object"
-			},
-			"models.PortalLink": {
-				"properties": {
-					"can_manage_endpoint": {
-						"description": "Specify whether endpoint management can be done through the Portal Link UI",
-						"type": "boolean"
-					},
-					"endpoints": {
-						"description": "IDs of endpoints in this portal link",
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
-					"name": {
-						"description": "Portal Link Name",
-						"type": "string"
-					},
-					"owner_id": {
-						"description": "Alternatively specify OwnerID, the portal link will inherit all the endpoints with this owner ID",
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"models.PortalLinkResponse": {
-				"properties": {
-					"can_manage_endpoint": {
-						"type": "boolean"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"endpoint_count": {
-						"type": "integer"
-					},
-					"endpoints": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
-					"endpoints_metadata": {
-						"items": {
-							"$ref": "#/components/schemas/datastore.Endpoint"
-						},
-						"type": "array"
-					},
-					"name": {
-						"type": "string"
-					},
-					"owner_id": {
-						"type": "string"
-					},
-					"project_id": {
-						"type": "string"
-					},
-					"token": {
-						"type": "string"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					},
-					"url": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -2047,6 +2450,9 @@
 					"deleted_at": {
 						"type": "string"
 					},
+					"delivery_mode": {
+						"$ref": "#/components/schemas/datastore.DeliveryMode"
+					},
 					"device_metadata": {
 						"$ref": "#/components/schemas/datastore.Device"
 					},
@@ -2127,6 +2533,37 @@
 				},
 				"type": "object"
 			},
+			"models.TestOAuth2Request": {
+				"properties": {
+					"oauth2": {
+						"$ref": "#/components/schemas/models.OAuth2"
+					}
+				},
+				"type": "object"
+			},
+			"models.TestOAuth2Response": {
+				"properties": {
+					"access_token": {
+						"type": "string"
+					},
+					"error": {
+						"type": "string"
+					},
+					"expires_at": {
+						"type": "string"
+					},
+					"message": {
+						"type": "string"
+					},
+					"success": {
+						"type": "boolean"
+					},
+					"token_type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.UpdateCustomResponse": {
 				"properties": {
 					"body": {
@@ -2141,7 +2578,7 @@
 			"models.UpdateEndpoint": {
 				"properties": {
 					"advanced_signatures": {
-						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
 						"type": "boolean"
 					},
 					"authentication": {
@@ -2151,6 +2588,10 @@
 							}
 						],
 						"description": "This is used to define any custom authentication required by the endpoint. This\nshouldn't be needed often because webhook endpoints usually should be exposed to\nthe internet."
+					},
+					"content_type": {
+						"description": "Content type for the endpoint. Defaults to application/json if not specified.",
+						"type": "string"
 					},
 					"description": {
 						"description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
@@ -2163,6 +2604,14 @@
 					"is_disabled": {
 						"description": "This is used to manually enable/disable the endpoint.",
 						"type": "boolean"
+					},
+					"mtls_client_cert": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.MtlsClientCert"
+							}
+						],
+						"description": "mTLS client certificate configuration for the endpoint"
 					},
 					"name": {
 						"type": "string"
@@ -2209,7 +2658,9 @@
 						"type": "string"
 					},
 					"json_schema": {
-						"description": "JSONSchema is the JSON structure of the event type"
+						"additionalProperties": true,
+						"description": "JSONSchema is the JSON structure of the event type",
+						"type": "object"
 					}
 				},
 				"type": "object"
@@ -2323,6 +2774,14 @@
 					"app_id": {
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
+					},
+					"delivery_mode": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.DeliveryMode"
+							}
+						],
+						"description": "Delivery mode configuration"
 					},
 					"endpoint_id": {
 						"description": "Destination endpoint ID",
@@ -2739,6 +3198,134 @@
 					}
 				],
 				"summary": "Create an endpoint",
+				"tags": [
+					"Endpoints"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/endpoints/oauth2/test": {
+			"post": {
+				"description": "This endpoint tests the OAuth2 connection by attempting to exchange a token",
+				"operationId": "TestOAuth2Connection",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.TestOAuth2Request"
+							}
+						}
+					},
+					"description": "OAuth2 Configuration",
+					"required": true,
+					"x-originalParamName": "oauth2"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.TestOAuth2Response"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Test OAuth2 connection",
 				"tags": [
 					"Endpoints"
 				]
@@ -7003,7 +7590,7 @@
 															"properties": {
 																"content": {
 																	"items": {
-																		"$ref": "#/components/schemas/models.PortalLinkResponse"
+																		"$ref": "#/components/schemas/datastore.PortalLinkResponse"
 																	},
 																	"type": "array"
 																}
@@ -7116,7 +7703,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.PortalLink"
+								"$ref": "#/components/schemas/datastore.CreatePortalLinkRequest"
 							}
 						}
 					},
@@ -7136,7 +7723,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.PortalLinkResponse"
+													"$ref": "#/components/schemas/datastore.PortalLinkResponse"
 												}
 											},
 											"type": "object"
@@ -7261,7 +7848,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.PortalLinkResponse"
+													"$ref": "#/components/schemas/datastore.PortalLinkResponse"
 												}
 											},
 											"type": "object"
@@ -7376,7 +7963,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.PortalLink"
+								"$ref": "#/components/schemas/datastore.UpdatePortalLinkRequest"
 							}
 						}
 					},
@@ -7396,7 +7983,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.PortalLinkResponse"
+													"$ref": "#/components/schemas/datastore.PortalLinkResponse"
 												}
 											},
 											"type": "object"
@@ -7480,6 +8067,131 @@
 					}
 				],
 				"summary": "Update a portal link",
+				"tags": [
+					"Portal Links"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/portal-links/{portalLinkID}/refresh_token": {
+			"get": {
+				"description": "This endpoint retrieves a portal link auth token",
+				"operationId": "RefreshPortalLinkAuthToken",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "portal link id",
+						"in": "path",
+						"name": "portalLinkID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"type": "string"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get a portal link auth token",
 				"tags": [
 					"Portal Links"
 				]

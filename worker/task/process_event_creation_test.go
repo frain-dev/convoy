@@ -3,49 +3,46 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"github.com/oklog/ulid/v2"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
 
 type testArgs struct {
-	endpointRepo      datastore.EndpointRepository
-	eventRepo         datastore.EventRepository
-	projectRepo       datastore.ProjectRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	db                database.Database
-	cache             cache.Cache
-	eventQueue        queue.Queuer
-	subRepo           datastore.SubscriptionRepository
-	filterRepo        datastore.FilterRepository
-	deviceRepo        datastore.DeviceRepository
-	subTable          memorystore.ITable
-	licenser          license.Licenser
-	tracer            tracer.Backend
+	endpointRepo       datastore.EndpointRepository
+	eventRepo          datastore.EventRepository
+	projectRepo        datastore.ProjectRepository
+	eventDeliveryRepo  datastore.EventDeliveryRepository
+	db                 database.Database
+	cache              cache.Cache
+	eventQueue         queue.Queuer
+	subRepo            datastore.SubscriptionRepository
+	filterRepo         datastore.FilterRepository
+	subTable           memorystore.ITable
+	licenser           license.Licenser
+	tracer             tracer.Backend
+	oauth2TokenService OAuth2TokenService
 }
 
 func provideArgs(ctrl *gomock.Controller) *testArgs {
 	mockCache := mocks.NewMockCache(ctrl)
 	mockQueuer := mocks.NewMockQueuer(ctrl)
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
-	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
@@ -55,21 +52,32 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 	filterRepo := mocks.NewMockFilterRepository(ctrl)
 	mockTracer := mocks.NewMockBackend(ctrl)
 
+	// Create a simple mock OAuth2TokenService that returns empty token (no-op for tests)
+	mockOAuth2TokenService := &mockOAuth2TokenService{}
+
 	return &testArgs{
-		endpointRepo:      endpointRepo,
-		deviceRepo:        deviceRepo,
-		eventRepo:         eventRepo,
-		projectRepo:       projectRepo,
-		db:                db,
-		eventDeliveryRepo: eventDeliveryRepo,
-		cache:             mockCache,
-		eventQueue:        mockQueuer,
-		subRepo:           subRepo,
-		subTable:          subTable,
-		filterRepo:        filterRepo,
-		licenser:          mocks.NewMockLicenser(ctrl),
-		tracer:            mockTracer,
+		endpointRepo:       endpointRepo,
+		eventRepo:          eventRepo,
+		projectRepo:        projectRepo,
+		db:                 db,
+		eventDeliveryRepo:  eventDeliveryRepo,
+		cache:              mockCache,
+		eventQueue:         mockQueuer,
+		subRepo:            subRepo,
+		subTable:           subTable,
+		filterRepo:         filterRepo,
+		licenser:           mocks.NewMockLicenser(ctrl),
+		tracer:             mockTracer,
+		oauth2TokenService: mockOAuth2TokenService,
 	}
+}
+
+// mockOAuth2TokenService is a simple no-op implementation for tests
+type mockOAuth2TokenService struct{}
+
+func (m *mockOAuth2TokenService) GetAuthorizationHeader(ctx context.Context, endpoint *datastore.Endpoint) (string, error) {
+	// Return empty token for tests - OAuth2 functionality is tested separately
+	return "", nil
 }
 
 func TestProcessEventCreated(t *testing.T) {
@@ -84,7 +92,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_event_for_outgoing_project",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Params: CreateEventTaskParams{
 					UID:            "01JMJ3WTZGP411PY39KSY8AFQF",
 					ProjectID:      "project-id-1",
@@ -137,7 +145,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_event_for_outgoing_project_without_subscription",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Event: &datastore.Event{
 					UID:            ulid.Make().String(),
 					EventType:      "*",
@@ -186,7 +194,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_event_for_incoming_project_api_event",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Event: &datastore.Event{
 					UID:            ulid.Make().String(),
 					EventType:      "*",
@@ -234,7 +242,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_event_for_incoming_project_cli_event",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Event: &datastore.Event{
 					UID:            ulid.Make().String(),
 					EventType:      "*",
@@ -282,7 +290,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_replayed_event",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Event: &datastore.Event{
 					UID:            ulid.Make().String(),
 					EventType:      "*",
@@ -346,9 +354,18 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo,
-				args.projectRepo, args.eventQueue, args.subRepo,
-				args.filterRepo, args.licenser, args.tracer)
+			deps := EventProcessorDeps{
+				EndpointRepo:       args.endpointRepo,
+				EventRepo:          args.eventRepo,
+				ProjectRepo:        args.projectRepo,
+				EventQueue:         args.eventQueue,
+				SubRepo:            args.subRepo,
+				FilterRepo:         args.filterRepo,
+				Licenser:           args.licenser,
+				TracerBackend:      args.tracer,
+				OAuth2TokenService: args.oauth2TokenService,
+			}
+			fn := ProcessEventCreation(deps)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

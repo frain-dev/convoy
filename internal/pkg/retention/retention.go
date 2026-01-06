@@ -3,13 +3,15 @@ package retention
 import (
 	"context"
 	"errors"
+	"os"
+	"time"
+
+	partman "github.com/jirevwe/go_partman"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	partman "github.com/jirevwe/go_partman"
-	"os"
-	"time"
 )
 
 type Retentioner interface {

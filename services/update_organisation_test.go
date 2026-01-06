@@ -5,15 +5,15 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"gopkg.in/guregu/null.v4"
+
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
-func provideUpdateOrganisationService(ctrl *gomock.Controller, org *datastore.Organisation, update *models.Organisation) *UpdateOrganisationService {
+func provideUpdateOrganisationService(ctrl *gomock.Controller, org *datastore.Organisation, update *datastore.OrganisationRequest) *UpdateOrganisationService {
 	return &UpdateOrganisationService{
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
@@ -28,7 +28,7 @@ func TestUpdateOrganisationService_Run(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		org    *datastore.Organisation
-		update *models.Organisation
+		update *datastore.OrganisationRequest
 	}
 	tests := []struct {
 		name       string
@@ -43,7 +43,7 @@ func TestUpdateOrganisationService_Run(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				org:    &datastore.Organisation{UID: "abc", Name: "test_org"},
-				update: &models.Organisation{Name: "test_update_org"},
+				update: &datastore.OrganisationRequest{Name: "test_update_org"},
 			},
 			dbFn: func(os *UpdateOrganisationService) {
 				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)
@@ -58,7 +58,7 @@ func TestUpdateOrganisationService_Run(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				org:    &datastore.Organisation{UID: "abc", Name: "test_org"},
-				update: &models.Organisation{CustomDomain: "http://abc.com"},
+				update: &datastore.OrganisationRequest{CustomDomain: "http://abc.com"},
 			},
 			dbFn: func(os *UpdateOrganisationService) {
 				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)
@@ -82,7 +82,7 @@ func TestUpdateOrganisationService_Run(t *testing.T) {
 			args: args{
 				ctx:    ctx,
 				org:    &datastore.Organisation{UID: "123"},
-				update: &models.Organisation{Name: "test_update_org"},
+				update: &datastore.OrganisationRequest{Name: "test_update_org"},
 			},
 			dbFn: func(os *UpdateOrganisationService) {
 				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)

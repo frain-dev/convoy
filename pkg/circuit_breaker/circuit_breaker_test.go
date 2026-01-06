@@ -1,13 +1,15 @@
 package circuit_breaker
 
 import (
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
 func TestCircuitBreaker_String(t *testing.T) {
@@ -214,4 +216,114 @@ func TestNewCircuitBreakerFromStore(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCircuitBreaker_ProjectSpecificBehavior(t *testing.T) {
+	// Test that individual circuit breakers behave differently based on their project config
+	t.Run("Custom Project Configuration", func(t *testing.T) {
+		// Create a circuit breaker with custom project config
+		customConfig := &CircuitBreakerConfig{
+			SampleRate:                  15, // Lower than default (30)
+			BreakerTimeout:              45, // Higher than default (30)
+			FailureThreshold:            50, // Lower than default (70)
+			SuccessThreshold:            8,  // Higher than default (5)
+			ObservabilityWindow:         8,  // Higher than default (5)
+			MinimumRequestCount:         15, // Higher than default (10)
+			ConsecutiveFailureThreshold: 8,  // Lower than default (10)
+		}
+
+		cb := &CircuitBreaker{
+			Key:      "custom-project-breaker",
+			TenantId: "custom-project",
+		}
+
+		// Test that the circuit breaker respects custom thresholds
+		// With custom config: FailureThreshold = 50, MinimumRequestCount = 15
+		cb.Requests = 20           // Above minimum request count
+		cb.TotalFailures = 25      // 25/20 = 125% failure rate
+		cb.FailureRate = 125.0     // Above 50% threshold
+		cb.ConsecutiveFailures = 5 // Below 8 consecutive failure threshold
+
+		// Should trip because failure rate > 50% AND requests >= minimum
+		shouldTrip := cb.shouldTrip(customConfig)
+		require.True(t, shouldTrip, "Circuit breaker should trip with custom config")
+
+		// Test reset behavior with custom timeout
+		cb.trip(time.Now().Add(time.Duration(customConfig.BreakerTimeout) * time.Second))
+		require.Equal(t, StateOpen, cb.State)
+		require.Equal(t, uint64(6), cb.ConsecutiveFailures) // 5 + 1 (trip increments it)
+	})
+
+	t.Run("Default Project Configuration", func(t *testing.T) {
+		// Create a circuit breaker with default project config
+		defaultConfig := &CircuitBreakerConfig{
+			SampleRate:                  30, // Default
+			BreakerTimeout:              30, // Default
+			FailureThreshold:            70, // Default
+			SuccessThreshold:            5,  // Default
+			ObservabilityWindow:         5,  // Default
+			MinimumRequestCount:         10, // Default
+			ConsecutiveFailureThreshold: 10, // Default
+		}
+
+		cb := &CircuitBreaker{
+			Key:      "default-project-breaker",
+			TenantId: "default-project",
+		}
+
+		// Test that the circuit breaker respects default thresholds
+		// With default config: FailureThreshold = 70, MinimumRequestCount = 10
+		cb.Requests = 15           // Above minimum request count
+		cb.TotalFailures = 8       // 8/15 = 53.3% failure rate
+		cb.FailureRate = 53.3      // Below 70% threshold
+		cb.ConsecutiveFailures = 5 // Below 10 consecutive failure threshold
+
+		// Should NOT trip because failure rate < 70% AND consecutive failures < 10
+		shouldTrip := cb.shouldTrip(defaultConfig)
+		require.False(t, shouldTrip, "Circuit breaker should not trip with default config")
+
+		// Test that it trips when thresholds are exceeded
+		cb.TotalFailures = 12       // 12/15 = 80% failure rate
+		cb.FailureRate = 80.0       // Above 70% threshold
+		cb.ConsecutiveFailures = 12 // Above 10 consecutive failure threshold
+
+		shouldTrip = cb.shouldTrip(defaultConfig)
+		require.True(t, shouldTrip, "Circuit breaker should trip when default thresholds exceeded")
+	})
+
+	t.Run("Mixed Project Configuration", func(t *testing.T) {
+		// Create a circuit breaker with mixed project config
+		mixedConfig := &CircuitBreakerConfig{
+			SampleRate:                  25, // Between custom and default
+			BreakerTimeout:              35, // Between custom and default
+			FailureThreshold:            60, // Between custom and default
+			SuccessThreshold:            6,  // Between custom and default
+			ObservabilityWindow:         6,  // Between custom and default
+			MinimumRequestCount:         12, // Between custom and default
+			ConsecutiveFailureThreshold: 7,  // Between custom and default
+		}
+
+		cb := &CircuitBreaker{
+			Key:      "mixed-project-breaker",
+			TenantId: "mixed-project",
+		}
+
+		// Test edge case behavior
+		cb.Requests = 12           // Exactly at minimum request count
+		cb.TotalFailures = 7       // 7/12 = 58.3% failure rate
+		cb.FailureRate = 58.3      // Below 60% threshold
+		cb.ConsecutiveFailures = 7 // Exactly at consecutive failure threshold
+
+		// Should NOT trip because failure rate < 60% (consecutive failures at threshold is not enough alone)
+		shouldTrip := cb.shouldTrip(mixedConfig)
+		require.False(t, shouldTrip, "Circuit breaker should not trip with mixed config at edge case")
+
+		// Test that it trips when both thresholds are exceeded
+		cb.TotalFailures = 8       // 8/12 = 66.7% failure rate
+		cb.FailureRate = 66.7      // Above 60% threshold
+		cb.ConsecutiveFailures = 8 // Above 7 consecutive failure threshold
+
+		shouldTrip = cb.shouldTrip(mixedConfig)
+		require.True(t, shouldTrip, "Circuit breaker should trip when both mixed thresholds exceeded")
+	})
 }

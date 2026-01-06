@@ -18,6 +18,7 @@ import {ButtonComponent} from 'src/app/components/button/button.component';
 import {SkeletonLoaderComponent} from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import {OrganisationSettingsComponent} from './organisation-settings/organisation-settings.component';
 import {ConfigurationsComponent} from './configurations/configurations.component';
+import {EarlyAdopterFeaturesComponent} from './early-adopter-features/early-adopter-features.component';
 import {RouterModule, Routes} from '@angular/router';
 import {StatusColorModule} from 'src/app/pipes/status-color/status-color.module';
 import {TagComponent} from 'src/app/components/tag/tag.component';
@@ -28,12 +29,14 @@ import {DialogDirective} from 'src/app/components/dialog/dialog.directive';
 import {TeamsModule} from './teams/teams.module';
 import {ConfigButtonComponent} from '../../components/config-button/config-button.component';
 import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
-import { PermissionDirective } from '../../components/permission/permission.directive';
+import {PermissionDirective} from '../../components/permission/permission.directive';
+import {BillingModule} from './billing/billing.module';
+import {LoaderModule} from '../../components/loader/loader.module';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
 @NgModule({
-	declarations: [SettingsComponent, OrganisationSettingsComponent, ConfigurationsComponent],
+	declarations: [SettingsComponent, OrganisationSettingsComponent, ConfigurationsComponent, EarlyAdopterFeaturesComponent],
 	imports: [
 		CommonModule,
 		RouterModule.forChild(routes),
@@ -60,7 +63,9 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		DialogDirective,
 		TeamsModule,
 		TooltipComponent,
-		PermissionDirective
+		PermissionDirective,
+		BillingModule,
+		LoaderModule
 	]
 })
 export class SettingsModule {}

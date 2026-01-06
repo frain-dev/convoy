@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -42,18 +43,32 @@ func (r *batchRetryRepo) CreateBatchRetry(ctx context.Context, batchRetry *datas
 }
 
 func (r *batchRetryRepo) UpdateBatchRetry(ctx context.Context, batchRetry *datastore.BatchRetry) error {
-	_, err := r.db.GetDB().NamedExecContext(ctx, updateBatchRetry, map[string]interface{}{
+	result, err := r.db.GetDB().NamedExecContext(ctx, updateBatchRetry, map[string]interface{}{
 		"id":               batchRetry.ID,
 		"project_id":       batchRetry.ProjectID,
 		"status":           batchRetry.Status,
+		"total_events":     batchRetry.TotalEvents,
 		"processed_events": batchRetry.ProcessedEvents,
 		"failed_events":    batchRetry.FailedEvents,
+		"filter":           batchRetry.Filter,
 		"updated_at":       batchRetry.UpdatedAt,
 		"completed_at":     batchRetry.CompletedAt.Time,
 		"error":            batchRetry.Error,
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	rowCount, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowCount < 1 {
+		return fmt.Errorf("no rows affected")
+	}
+
+	return nil
 }
 
 func (r *batchRetryRepo) FindBatchRetryByID(ctx context.Context, id string) (*datastore.BatchRetry, error) {
@@ -108,6 +123,8 @@ const (
 		processed_events = :processed_events,
 		failed_events = :failed_events,
 		updated_at = :updated_at,
+		filter = :filter,
+		total_events = :total_events,
 		completed_at = :completed_at,
 		error = :error
 	WHERE id = :id and project_id = :project_id`

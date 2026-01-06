@@ -1,0 +1,448 @@
+<app-billing-overview 
+  [refreshTrigger]="refreshOverviewTrigger"
+  (openPaymentDetails)="openPaymentDetails()"
+  (openManagePlan)="openManagePlan()">
+</app-billing-overview>
+<app-billing-usage></app-billing-usage>
+<app-billing-invoices></app-billing-invoices>
+
+<dialog #paymentDetailsDialog convoy-dialog>
+  <div convoy-dialog-header (closeDialog)="closePaymentDetails()">
+    <h2 class="font-semibold text-14">Update payment details</h2>
+  </div>
+
+  <div class="h-full w-full">
+    <div class="p-20px">
+      <div class="mb-32px">
+        <div class="flex items-center justify-between mb-16px">
+          <h3 class="billing-section-title">Payment method</h3>
+          <button 
+            *ngIf="!isEditingPaymentMethod" 
+            class="text-primary-600 hover:text-primary-700"
+            (click)="startEditingPaymentMethod()">
+            <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Payment Methods List -->
+        <div *ngIf="!isEditingPaymentMethod && !isLoadingPaymentMethod && paymentMethods.length > 0" class="mb-16px">
+          <div class="flex flex-col gap-12px">
+            <div *ngFor="let pm of paymentMethods" data-payment-method-card class="border border-neutral-4 rounded-8px p-12px">
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-12px cursor-pointer flex-1">
+                  <input 
+                    type="radio" 
+                    name="defaultPaymentMethod" 
+                    [checked]="isDefaultPaymentMethod(pm)"
+                    [disabled]="isDefaultPaymentMethod(pm)"
+                    class="w-16px h-16px text-primary-600 focus:ring-primary-500 focus:ring-2"
+                    (change)="setDefaultPaymentMethod(pm.id)">
+                  <div [innerHTML]="getCardIconForMethod(pm)"></div>
+                  <div>
+                    <div class="flex items-center gap-8px">
+                      <span class="text-14 font-medium">{{ pm.card_type | titlecase }} •••• {{ pm.last4 }}</span>
+                      <span *ngIf="isDefaultPaymentMethod(pm)" class="text-10 px-6px py-2px bg-primary-100 text-white-100 rounded-4px font-medium">Default</span>
+                    </div>
+                    <div class="text-12 text-neutral-11">Expires {{ pm.exp_month }}/{{ pm.exp_year }}</div>
+                  </div>
+                </label>
+                <button 
+                  *ngIf="!isDefaultPaymentMethod(pm)"
+                  type="button"
+                  class="p-8px text-neutral-10 hover:text-error-600 hover:bg-error-50 rounded-4px transition-colors"
+                  (click)="deletePaymentMethod(pm.id)"
+                  title="Delete payment method">
+                  <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+              
+              <!-- Confirmation UI for Set Default -->
+              <div *ngIf="confirmingDefaultFor === pm.id" class="confirmation-ui mt-12px p-12px border border-neutral-4 rounded-8px bg-neutral-1" (click)="$event.stopPropagation()">
+                <div class="text-12 text-neutral-11 mb-8px">Set this payment method as your default?</div>
+                <div class="flex items-center gap-8px justify-end">
+                  <button type="button" convoy-button variant="outline" size="sm" (click)="cancelSetDefault()">Cancel</button>
+                  <button type="button" convoy-button fill="outline" size="sm" (click)="confirmSetDefault()">Confirm</button>
+                </div>
+              </div>
+
+              <!-- Confirmation UI for Delete -->
+              <div *ngIf="confirmingDeleteFor === pm.id" class="confirmation-ui mt-12px p-12px border border-neutral-4 rounded-8px bg-neutral-1" (click)="$event.stopPropagation()">
+                <div class="text-12 text-neutral-11 mb-8px">Are you sure you want to delete this payment method?</div>
+                <div class="flex items-center gap-8px justify-end">
+                  <button type="button" convoy-button variant="outline" size="sm" (click)="cancelDelete()">Cancel</button>
+                  <button type="button" convoy-button variant="error" fill="outline" size="sm" (click)="confirmDelete()">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!isEditingPaymentMethod && !isLoadingPaymentMethod && paymentMethods.length === 0" class="billing-details-display">
+          <div class="text-12 text-neutral-11">No payment method set</div>
+        </div>
+
+        <div *ngIf="isLoadingPaymentMethod" class="billing-details-display">
+          <div class="animate-pulse">
+            <div class="h-20px bg-neutral-8 rounded mb-8px"></div>
+            <div class="h-12px bg-neutral-8 rounded w-1/2"></div>
+          </div>
+        </div>
+
+        <!-- Payment Provider Elements form -->
+        <div *ngIf="isEditingPaymentMethod" class="mb-16px">
+          <div *ngIf="isPaymentProviderLoading" class="text-center py-20px">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+            <p class="text-14 text-neutral-11 mt-8px">Loading payment form...</p>
+          </div>
+          
+          <div *ngIf="!isPaymentProviderLoading && setupIntentSecret">
+            <div class="mb-4">
+              <app-stripe-elements 
+                #stripeElements
+                [publishableKey]="paymentProviderPublishableKey"
+                [clientSecret]="setupIntentSecret"
+                [organisationId]="internalOrganisationId"
+                (paymentMethodCreated)="onPaymentMethodCreated()"
+                (error)="onPaymentProviderError($event)">
+              </app-stripe-elements>
+            </div>
+            
+            <div class="flex gap-12px justify-end pt-24px">
+              <button type="button" convoy-button variant="secondary" (click)="cancelEditingPaymentMethod()" [disabled]="isSavingPaymentMethod">
+                Cancel
+              </button>
+              <button type="button" convoy-button fill="outline" (click)="onUpdatePaymentMethodWithProvider(stripeElements, $event)" [disabled]="isSavingPaymentMethod">
+                <span *ngIf="!isSavingPaymentMethod">Update payment method</span>
+                <span *ngIf="isSavingPaymentMethod" class="flex items-center gap-8px">
+                  <div class="animate-spin rounded-full h-12px w-12px border-2 border-current border-t-transparent"></div>
+                  Saving...
+                </span>
+              </button>
+            </div>
+          </div>
+          
+          <div *ngIf="!isPaymentProviderLoading && !setupIntentSecret" class="text-center py-20px">
+            <p class="text-14 text-neutral-11">Failed to initialize payment form.</p>
+            <div class="flex gap-12px justify-center mt-16px">
+              <button type="button" convoy-button variant="secondary" (click)="cancelEditingPaymentMethod()">
+                Cancel
+              </button>
+              <button type="button" convoy-button fill="outline" (click)="getSetupIntent()">
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-b border-neutral-4"></div>
+
+    <div class="p-20px">
+      <div class="mb-32px">
+        <div class="flex items-center justify-between mb-16px">
+          <h3 class="billing-section-title">Billing address</h3>
+          <button 
+            *ngIf="!isEditingBillingAddress" 
+            class="text-primary-600 hover:text-primary-700"
+            (click)="startEditingBillingAddress()">
+            <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && billingAddressDetails && hasBillingAddress()" class="billing-details-display">
+          <div class="text-14 font-medium mb-8px">{{ billingAddressDetails.name }}</div>
+          <div class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine1 }}</div>
+          <div *ngIf="billingAddressDetails.addressLine2" class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine2 }}</div>
+          <div class="text-12 text-neutral-11">{{ billingAddressDetails.city }}, {{ billingAddressDetails.zipCode }}, {{ getCountryName(billingAddressDetails.country) }}</div>
+        </div>
+
+        <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && (!billingAddressDetails || !hasBillingAddress())" class="billing-details-display">
+          <div class="text-12 text-neutral-11">No billing address set</div>
+        </div>
+
+        <div *ngIf="isLoadingBillingAddress" class="billing-details-display">
+          <div class="animate-pulse">
+            <div class="h-14px bg-neutral-8 rounded mb-8px"></div>
+            <div class="h-12px bg-neutral-8 rounded mb-4px"></div>
+            <div class="h-12px bg-neutral-8 rounded w-2/3"></div>
+          </div>
+        </div>
+
+        <form *ngIf="isEditingBillingAddress" [formGroup]="billingAddressForm" class="mb-16px">
+          <convoy-input-field>
+            <label for="billingName" convoy-label required="true">Name</label>
+            <input type="text" id="billingName" convoy-input formControlName="name" placeholder="Enter full name" />
+            <convoy-input-error *ngIf="billingAddressForm.get('name')?.touched && billingAddressForm.get('name')?.invalid">
+              <span *ngIf="billingAddressForm.get('name')?.errors?.['required']">Please enter full name</span>
+              <span *ngIf="billingAddressForm.get('name')?.errors?.['minlength']">Name must be at least 2 characters</span>
+              <span *ngIf="billingAddressForm.get('name')?.errors?.['maxlength']">Name must be less than 100 characters</span>
+            </convoy-input-error>
+          </convoy-input-field>
+
+          <convoy-input-field>
+            <label for="addressLine1" convoy-label required="true">Address line 1</label>
+            <input type="text" id="addressLine1" convoy-input formControlName="addressLine1" placeholder="Enter address" />
+            <convoy-input-error *ngIf="billingAddressForm.get('addressLine1')?.touched && billingAddressForm.get('addressLine1')?.invalid">
+              <span *ngIf="billingAddressForm.get('addressLine1')?.errors?.['required']">Please enter address</span>
+              <span *ngIf="billingAddressForm.get('addressLine1')?.errors?.['minlength']">Address must be at least 5 characters</span>
+              <span *ngIf="billingAddressForm.get('addressLine1')?.errors?.['maxlength']">Address must be less than 200 characters</span>
+            </convoy-input-error>
+          </convoy-input-field>
+
+          <convoy-input-field>
+            <label for="addressLine2" convoy-label>Address line 2</label>
+            <input type="text" id="addressLine2" convoy-input formControlName="addressLine2" placeholder="Apartment, suite, etc. (optional)" />
+          </convoy-input-field>
+
+          <div class="flex gap-12px">
+            <convoy-input-field>
+              <label for="country" convoy-label required="true">Country</label>
+              <select id="country" convoy-input formControlName="country" [disabled]="isLoadingCountries">
+                <option value="">{{ isLoadingCountries ? 'Loading countries...' : (countries.length === 0 ? 'No countries available' : 'Select country') }}</option>
+                <option *ngFor="let country of countries" [value]="country.code">{{ country.name }}</option>
+              </select>
+              <convoy-input-error *ngIf="billingAddressForm.get('country')?.touched && billingAddressForm.get('country')?.invalid">Please select country</convoy-input-error>
+            </convoy-input-field>
+
+            <convoy-input-field>
+              <label for="city" convoy-label required="true">City</label>
+              <select id="city" convoy-input formControlName="city" [disabled]="isLoadingCities">
+                <option value="">{{ isLoadingCities ? 'Loading cities...' : (cities.length === 0 ? 'Select country first' : 'Select city') }}</option>
+                <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
+              </select>
+              <convoy-input-error *ngIf="billingAddressForm.get('city')?.touched && billingAddressForm.get('city')?.invalid">Please select city</convoy-input-error>
+            </convoy-input-field>
+
+            <convoy-input-field>
+              <label for="zipCode" convoy-label required="true">Zip Code</label>
+              <input type="text" id="zipCode" convoy-input formControlName="zipCode" placeholder="Enter zip code" />
+              <convoy-input-error *ngIf="billingAddressForm.get('zipCode')?.touched && billingAddressForm.get('zipCode')?.invalid">
+              <span *ngIf="billingAddressForm.get('zipCode')?.errors?.['required']">Please enter zip code</span>
+              <span *ngIf="billingAddressForm.get('zipCode')?.errors?.['minlength']">Zip code must be at least 3 characters</span>
+              <span *ngIf="billingAddressForm.get('zipCode')?.errors?.['maxlength']">Zip code must be less than 20 characters</span>
+              <span *ngIf="billingAddressForm.get('zipCode')?.errors?.['invalidZipCode']">Please enter a valid zip code format</span>
+            </convoy-input-error>
+            </convoy-input-field>
+          </div>
+
+          <div class="flex gap-12px justify-end pt-24px">
+            <button type="button" convoy-button variant="secondary" (click)="cancelEditingBillingAddress()" [disabled]="isSavingBillingAddress">
+              Cancel
+            </button>
+            <button convoy-button fill="outline" [disabled]="!billingAddressForm.valid || isSavingBillingAddress" (click)="onUpdateBillingAddress()">
+              <span *ngIf="!isSavingBillingAddress">Update</span>
+              <span *ngIf="isSavingBillingAddress" class="flex items-center gap-8px">
+                <div class="animate-spin rounded-full h-12px w-12px border-2 border-current border-t-transparent"></div>
+                Saving...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="border-b border-neutral-4"></div>
+
+    <div class="p-20px">
+      <div class="mb-32px">
+        <div class="flex items-center justify-between mb-16px">
+          <h3 class="billing-section-title">VAT</h3>
+          <button 
+            *ngIf="!isEditingVat" 
+            class="text-primary-600 hover:text-primary-700"
+            (click)="startEditingVat()">
+            <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div *ngIf="!isEditingVat && !isLoadingVat && vatInfoDetails && hasVatInfo()" class="billing-details-display">
+          <div class="text-14 font-medium mb-8px">{{ vatInfoDetails.businessName }}</div>
+          <div class="text-12 text-neutral-11 mb-4px">{{ getCountryName(vatInfoDetails.country) }}</div>
+          <div class="text-12 text-neutral-11">{{ vatInfoDetails.vatNumber }}</div>
+        </div>
+
+        <div *ngIf="!isEditingVat && !isLoadingVat && (!vatInfoDetails || !hasVatInfo())" class="billing-details-display">
+          <div class="text-12 text-neutral-11">No VAT information set</div>
+        </div>
+
+        <div *ngIf="isLoadingVat" class="billing-details-display">
+          <div class="animate-pulse">
+            <div class="h-14px bg-neutral-8 rounded mb-8px"></div>
+            <div class="h-12px bg-neutral-8 rounded mb-4px"></div>
+            <div class="h-12px bg-neutral-8 rounded w-1/2"></div>
+          </div>
+        </div>
+
+        <form *ngIf="isEditingVat" [formGroup]="vatForm">
+          <convoy-input-field>
+            <label for="businessName" convoy-label required="true">Business name</label>
+            <input type="text" id="businessName" convoy-input formControlName="businessName" placeholder="Enter business name" />
+            <convoy-input-error *ngIf="vatForm.get('businessName')?.touched && vatForm.get('businessName')?.invalid">
+              <span *ngIf="vatForm.get('businessName')?.errors?.['required']">Please enter business name</span>
+              <span *ngIf="vatForm.get('businessName')?.errors?.['minlength']">Business name must be at least 2 characters</span>
+              <span *ngIf="vatForm.get('businessName')?.errors?.['maxlength']">Business name must be less than 200 characters</span>
+            </convoy-input-error>
+          </convoy-input-field>
+
+          <div class="flex gap-12px">
+            <convoy-input-field>
+              <label for="country" convoy-label required="true">Select country</label>
+              <select id="country" convoy-input formControlName="country" [disabled]="isLoadingVatCountries">
+                <option value="">{{ isLoadingVatCountries ? 'Loading countries...' : (vatCountries.length === 0 ? 'No countries available' : 'Select country') }}</option>
+                <option *ngFor="let country of vatCountries" [value]="country.code">{{ country.name }}</option>
+              </select>
+              <convoy-input-error *ngIf="vatForm.get('country')?.touched && vatForm.get('country')?.invalid">Please select country</convoy-input-error>
+            </convoy-input-field>
+
+            <convoy-input-field>
+              <label for="vatNumber" convoy-label required="true">VAT number</label>
+              <input type="text" id="vatNumber" convoy-input formControlName="vatNumber" [placeholder]="vatPlaceholder" />
+              <convoy-input-error *ngIf="vatForm.get('vatNumber')?.touched && vatForm.get('vatNumber')?.invalid">
+              <span *ngIf="vatForm.get('vatNumber')?.errors?.['required']">Please enter VAT number</span>
+              <span *ngIf="vatForm.get('vatNumber')?.errors?.['invalidVatNumber']">Please enter a valid VAT number format</span>
+            </convoy-input-error>
+            </convoy-input-field>
+          </div>
+
+          <div class="flex gap-12px justify-end pt-24px pb-40px">
+            <button type="button" convoy-button variant="secondary" (click)="cancelEditingVat()">
+              Cancel
+            </button>
+            <button convoy-button fill="outline" [disabled]="!vatForm.valid" (click)="onUpdateVatInfo()">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<dialog #managePlanDialog convoy-dialog position="center" size="lg">
+  <div convoy-dialog-header (closeDialog)="closeManagePlan()">
+    <h2 class="font-semibold text-14">Plan</h2>
+  </div>
+
+  <div class="manage-plan-content">
+    <h3 class="text-20 font-medium mb-24px">Manage your plan</h3>
+    
+    <!-- Plan Cards -->
+    <div class="flex gap-16px mb-40px" *ngIf="!isLoadingPlans">
+      <div 
+        class="plan-card flex-1" 
+        [class.plan-card-selected]="selectedPlan === plan.id" 
+        (click)="selectPlan(plan.id)"
+        *ngFor="let plan of plans">
+        <div class="plan-card-header">
+          <h4 class="plan-card-title">{{ plan.name }}</h4>
+          <svg *ngIf="selectedPlan === plan.id" class="plan-card-check" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="10" cy="10" r="10" fill="#2780F1"/>
+            <path d="M14 7L8.5 12.5L6 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <ul class="plan-card-features" *ngIf="plan.features && plan.features.length > 0">
+          <li *ngFor="let feature of plan.features.slice(0, 3)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13.3332 4L5.99984 11.3333L2.6665 8" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>{{ feature.name }}</span>
+          </li>
+        </ul>
+        <button 
+          type="button" 
+          convoy-button 
+          [fill]="plan.id === 'enterprise' ? 'solid' : 'outline'" 
+          [color]="plan.id === 'enterprise' ? 'primary' : 'neutral'" 
+          class="plan-card-button" 
+          (click)="plan.id === 'enterprise' ? onUpgradePlan() : onCancelPlan(); $event.stopPropagation()">
+          {{ plan.id === 'enterprise' ? 'Upgrade' : 'Cancel' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="flex gap-16px mb-40px" *ngIf="isLoadingPlans">
+      <div class="plan-card flex-1">
+        <convoy-skeleton-loader className="w-full h-48"></convoy-skeleton-loader>
+      </div>
+      <div class="plan-card flex-1">
+        <convoy-skeleton-loader className="w-full h-48"></convoy-skeleton-loader>
+      </div>
+    </div>
+
+
+    <!-- Compare Plans Section -->
+    <div class="compare-plans-section" *ngIf="!isLoadingPlans">
+      <h4 class="compare-plans-title">Compare plans</h4>
+      
+      <!-- Comparison Table -->
+      <div class="comparison-table">
+        <!-- Table Header -->
+        <div class="comparison-table-header">
+          <div class="comparison-table-cell header-category"></div>
+          <div class="comparison-table-cell header-plan" *ngFor="let plan of plans">{{ plan.name }}</div>
+        </div>
+
+        <!-- Core Capabilities Section -->
+        <div class="comparison-section" *ngIf="getFeaturesByCategory('core').length > 0">
+          <div class="comparison-section-title">Core Capabilities</div>
+          
+          <div class="comparison-table-row" *ngFor="let feature of getFeaturesByCategory('core')">
+            <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
+            <div class="comparison-table-cell feature-value" *ngFor="let plan of plans">
+                <span class="status-badge"
+                      [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
+                      [class.status-unsupported]="getFeatureValueType(plan.id, feature.name) === 'unsupported'"
+                      [class.status-plain]="getFeatureValueType(plan.id, feature.name) === 'plain'">
+                  {{ getFeatureValue(plan.id, feature.name) }}
+                </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security & Compliance Section -->
+        <div class="comparison-section" *ngIf="getFeaturesByCategory('security').length > 0">
+          <div class="comparison-section-title">Security & Compliance</div>
+          
+          <div class="comparison-table-row" *ngFor="let feature of getFeaturesByCategory('security')">
+            <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
+            <div class="comparison-table-cell feature-value" *ngFor="let plan of plans">
+                <span class="status-badge"
+                      [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
+                      [class.status-unsupported]="getFeatureValueType(plan.id, feature.name) === 'unsupported'"
+                      [class.status-plain]="getFeatureValueType(plan.id, feature.name) === 'plain'">
+                  {{ getFeatureValue(plan.id, feature.name) }}
+                </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Support Section -->
+        <div class="comparison-section" *ngIf="getFeaturesByCategory('support').length > 0">
+          <div class="comparison-section-title">Support</div>
+          
+          <div class="comparison-table-row" *ngFor="let feature of getFeaturesByCategory('support')">
+            <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
+            <div class="comparison-table-cell feature-value" *ngFor="let plan of plans">
+                <span class="status-badge"
+                      [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
+                      [class.status-unsupported]="getFeatureValueType(plan.id, feature.name) === 'unsupported'"
+                      [class.status-plain]="getFeatureValueType(plan.id, feature.name) === 'plain'">
+                  {{ getFeatureValue(plan.id, feature.name) }}
+                </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</dialog>

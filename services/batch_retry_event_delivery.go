@@ -3,14 +3,15 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/oklog/ulid/v2"
 )
 
 type BatchRetryEventDeliveryService struct {
@@ -40,15 +41,15 @@ func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "failed to count events", Err: err}
 	}
 
-	// Create batch retry record
+	// Create a batch retry record
 	batchRetry := &datastore.BatchRetry{
 		ID:              ulid.Make().String(),
 		ProjectID:       e.ProjectID,
 		Status:          datastore.BatchRetryStatusPending,
 		TotalEvents:     int(count),
+		Filter:          datastore.FromFilterStruct(*e.Filter),
 		ProcessedEvents: 0,
 		FailedEvents:    0,
-		Filter:          e.Filter,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}
@@ -71,7 +72,7 @@ func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) error {
 		Delay:   0,
 	}
 
-	err = e.Queue.Write(convoy.BatchRetryProcessor, convoy.BatchRetryQueue, job)
+	err = e.Queue.WriteWithoutTimeout(convoy.BatchRetryProcessor, convoy.BatchRetryQueue, job)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to queue batch retry job")
 		return &ServiceError{ErrMsg: "failed to queue batch retry job", Err: err}

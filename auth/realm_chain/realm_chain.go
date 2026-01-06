@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/auth/realm/portal"
 	"sync/atomic"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/auth/realm/native"
+	"github.com/frain-dev/convoy/auth/realm/portal"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type chainMap map[string]auth.Realm
@@ -43,8 +44,8 @@ func Get() (*RealmChain, error) {
 func Init(authConfig *config.AuthConfiguration,
 	apiKeyRepo datastore.APIKeyRepository,
 	userRepo datastore.UserRepository,
-	portalLinkRepo datastore.PortalLinkRepository,
-	cache cache.Cache) error {
+	portalLinkService datastore.PortalLinkRepository,
+	cache cache.Cache, logger log.StdLogger) error {
 	rc := newRealmChain()
 
 	// validate authentication realms
@@ -59,7 +60,7 @@ func Init(authConfig *config.AuthConfiguration,
 	}
 
 	if authConfig.Native.Enabled {
-		nr := native.NewNativeRealm(apiKeyRepo, userRepo, portalLinkRepo)
+		nr := native.NewNativeRealm(apiKeyRepo, userRepo, portalLinkService)
 		err = rc.RegisterRealm(nr)
 		if err != nil {
 			return errors.New("failed to register native realm in realm chain")
@@ -67,7 +68,7 @@ func Init(authConfig *config.AuthConfiguration,
 	}
 
 	if authConfig.Portal.Enabled {
-		pr := portal.NewPortalRealm(portalLinkRepo)
+		pr := portal.NewPortalRealm(portalLinkService, logger)
 		err = rc.RegisterRealm(pr)
 		if err != nil {
 			return errors.New("failed to register portal realm in realm chain")

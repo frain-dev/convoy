@@ -4,18 +4,18 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/frain-dev/convoy/api/models"
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"gopkg.in/guregu/null.v4"
 )
 
 type UpdateOrganisationService struct {
 	OrgRepo       datastore.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	Org           *datastore.Organisation
-	Update        *models.Organisation
+	Update        *datastore.OrganisationRequest
 }
 
 func (os *UpdateOrganisationService) Run(ctx context.Context) (*datastore.Organisation, error) {

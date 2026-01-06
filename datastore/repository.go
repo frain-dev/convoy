@@ -2,26 +2,13 @@ package datastore
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-
-	"errors"
-
 	"github.com/frain-dev/convoy/pkg/flatten"
 )
-
-type APIKeyRepository interface {
-	CreateAPIKey(context.Context, *APIKey) error
-	UpdateAPIKey(context.Context, *APIKey) error
-	FindAPIKeyByID(context.Context, string) (*APIKey, error)
-	FindAPIKeyByProjectID(context.Context, string) (*APIKey, error)
-	FindAPIKeyByMaskID(context.Context, string) (*APIKey, error)
-	FindAPIKeyByHash(context.Context, string) (*APIKey, error)
-	RevokeAPIKeys(context.Context, []string) error
-	LoadAPIKeysPaged(context.Context, *ApiKeyFilter, *Pageable) ([]APIKey, PaginationData, error)
-}
 
 type EventDeliveryRepository interface {
 	ExportRepository
@@ -39,7 +26,11 @@ type EventDeliveryRepository interface {
 	UpdateEventDeliveryMetadata(ctx context.Context, projectID string, eventDelivery *EventDelivery) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
-	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey, eventType string) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesPaged(
+		ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string,
+		status []EventDeliveryStatus, params SearchParams, pageable Pageable,
+		idempotencyKey, eventType, brokerMessageId string,
+	) ([]EventDelivery, PaginationData, error)
 	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period, ids []string) ([]EventInterval, error)
 	PartitionEventDeliveriesTable(ctx context.Context) error
 	UnPartitionEventDeliveriesTable(ctx context.Context) error
@@ -77,15 +68,97 @@ type ProjectRepository interface {
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 
+// OrganisationRepository defines the interface for organisation operations using SQLc
 type OrganisationRepository interface {
-	LoadOrganisationsPaged(context.Context, Pageable) ([]Organisation, PaginationData, error)
+	// CreateOrganisation creates a new organisation
+	CreateOrganisation(ctx context.Context, org *Organisation) error
+
+	// UpdateOrganisation updates an existing organisation
+	UpdateOrganisation(ctx context.Context, org *Organisation) error
+
+	// DeleteOrganisation soft deletes an organisation by ID
+	DeleteOrganisation(ctx context.Context, id string) error
+
+	// FetchOrganisationByID retrieves an organisation by its ID
+	FetchOrganisationByID(ctx context.Context, id string) (*Organisation, error)
+
+	// FetchOrganisationByCustomDomain retrieves an organisation by its custom domain
+	FetchOrganisationByCustomDomain(ctx context.Context, domain string) (*Organisation, error)
+
+	// FetchOrganisationByAssignedDomain retrieves an organisation by its assigned domain
+	FetchOrganisationByAssignedDomain(ctx context.Context, domain string) (*Organisation, error)
+
+	// LoadOrganisationsPaged retrieves organisations with pagination
+	LoadOrganisationsPaged(ctx context.Context, pageable Pageable) ([]Organisation, PaginationData, error)
+
+	// LoadOrganisationsPagedWithSearch retrieves organisations with pagination and search
+	LoadOrganisationsPagedWithSearch(ctx context.Context, pageable Pageable, search string) ([]Organisation, PaginationData, error)
+
+	// CountOrganisations returns the total count of organisations
 	CountOrganisations(ctx context.Context) (int64, error)
-	CreateOrganisation(context.Context, *Organisation) error
-	UpdateOrganisation(context.Context, *Organisation) error
-	DeleteOrganisation(context.Context, string) error
-	FetchOrganisationByID(context.Context, string) (*Organisation, error)
-	FetchOrganisationByCustomDomain(context.Context, string) (*Organisation, error)
-	FetchOrganisationByAssignedDomain(context.Context, string) (*Organisation, error)
+
+	// CalculateUsage calculates usage metrics for an organisation
+	CalculateUsage(ctx context.Context, orgID string, startTime, endTime time.Time) (*OrganisationUsage, error)
+}
+
+// APIKeyRepository defines the interface for API key operations
+type APIKeyRepository interface {
+	// CreateAPIKey creates a new API key
+	CreateAPIKey(ctx context.Context, apiKey *APIKey) error
+
+	// UpdateAPIKey updates an existing API key
+	UpdateAPIKey(ctx context.Context, apiKey *APIKey) error
+
+	// GetAPIKeyByID retrieves an API key by its ID
+	GetAPIKeyByID(ctx context.Context, id string) (*APIKey, error)
+
+	// GetAPIKeyByMaskID retrieves an API key by its mask ID (used for authentication)
+	GetAPIKeyByMaskID(ctx context.Context, maskID string) (*APIKey, error)
+
+	// GetAPIKeyByHash retrieves an API key by its hash
+	GetAPIKeyByHash(ctx context.Context, hash string) (*APIKey, error)
+
+	// GetAPIKeyByProjectID retrieves an API key by its project ID
+	GetAPIKeyByProjectID(ctx context.Context, projectID string) (*APIKey, error)
+
+	// RevokeAPIKeys revokes (soft deletes) multiple API keys
+	RevokeAPIKeys(ctx context.Context, ids []string) error
+
+	// LoadAPIKeysPaged retrieves API keys with pagination and filtering
+	LoadAPIKeysPaged(ctx context.Context, filter *Filter, pageable *Pageable) ([]APIKey, PaginationData, error)
+}
+
+// PortalLinkRepository defines the interface for portal link operations
+type PortalLinkRepository interface {
+	// CreatePortalLink creates a new portal link
+	CreatePortalLink(ctx context.Context, projectId string, request *CreatePortalLinkRequest) (*PortalLink, error)
+
+	// UpdatePortalLink updates an existing portal link
+	UpdatePortalLink(ctx context.Context, projectID string, portalLink *PortalLink, request *UpdatePortalLinkRequest) (*PortalLink, error)
+
+	// GetPortalLink retrieves a portal link by project and portal link ID
+	GetPortalLink(ctx context.Context, projectID, portalLinkID string) (*PortalLink, error)
+
+	// GetPortalLinkByToken retrieves a portal link by its token
+	GetPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
+
+	// GetPortalLinkByOwnerID retrieves a portal link by owner ID
+	GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID string) (*PortalLink, error)
+
+	// RefreshPortalLinkAuthToken refreshes the authentication token for a portal link
+	RefreshPortalLinkAuthToken(ctx context.Context, projectID, portalLinkID string) (*PortalLink, error)
+
+	// RevokePortalLink revokes (soft deletes) a portal link
+	RevokePortalLink(ctx context.Context, projectID, portalLinkID string) error
+
+	// LoadPortalLinksPaged retrieves portal links with pagination and filtering
+	LoadPortalLinksPaged(ctx context.Context, projectID string, filter *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
+
+	// FindPortalLinksByOwnerID finds all portal links for a specific owner
+	FindPortalLinksByOwnerID(ctx context.Context, ownerID string) ([]PortalLink, error)
+
+	// FindPortalLinkByMaskId finds a portal link by its mask ID
+	FindPortalLinkByMaskId(ctx context.Context, maskId string) (*PortalLink, error)
 }
 
 type OrganisationInviteRepository interface {
@@ -171,16 +244,6 @@ type SourceRepository interface {
 	LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIds []string, pageable Pageable) ([]Source, PaginationData, error)
 }
 
-type DeviceRepository interface {
-	CreateDevice(ctx context.Context, device *Device) error
-	UpdateDevice(ctx context.Context, device *Device, appID, projectID string) error
-	UpdateDeviceLastSeen(ctx context.Context, device *Device, appID, projectID string, status DeviceStatus) error
-	DeleteDevice(ctx context.Context, uid string, appID, projectID string) error
-	FetchDeviceByID(ctx context.Context, uid string, appID, projectID string) (*Device, error)
-	FetchDeviceByHostName(ctx context.Context, hostName string, appID, projectID string) (*Device, error)
-	LoadDevicesPaged(ctx context.Context, projectID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
-}
-
 type JobRepository interface {
 	CreateJob(ctx context.Context, job *Job) error
 	MarkJobAsStarted(ctx context.Context, uid, projectID string) error
@@ -207,19 +270,6 @@ type ConfigurationRepository interface {
 	CreateConfiguration(context.Context, *Configuration) error
 	LoadConfiguration(context.Context) (*Configuration, error)
 	UpdateConfiguration(context.Context, *Configuration) error
-}
-
-type PortalLinkRepository interface {
-	CreatePortalLink(context.Context, *PortalLink) error
-	UpdatePortalLink(ctx context.Context, projectID string, portal *PortalLink) error
-	FindPortalLinkByID(ctx context.Context, projectID string, id string) (*PortalLink, error)
-	FindPortalLinkByOwnerID(ctx context.Context, projectID string, id string) (*PortalLink, error)
-	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
-	LoadPortalLinksPaged(ctx context.Context, projectID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
-	RevokePortalLink(ctx context.Context, projectID string, id string) error
-	FindPortalLinksByOwnerID(ctx context.Context, ownerID string) ([]PortalLink, error)
-	FindPortalLinkByMaskId(ctx context.Context, maskId string) (*PortalLink, error)
-	RefreshPortalLinkAuthToken(ctx context.Context, projectID string, portalLinkId string) (*PortalLink, error)
 }
 
 type MetaEventRepository interface {

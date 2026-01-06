@@ -6,19 +6,19 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
 	"testing"
 	"time"
 
-	"gopkg.in/guregu/null.v4"
-
 	"github.com/jaswdr/faker"
 	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/stretchr/testify/require"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/constants"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func Test_UpdateEndpoint(t *testing.T) {
@@ -53,6 +53,7 @@ func runUpdateEndpointTest(t *testing.T, db database.Database) {
 		RateLimit:          8898,
 		Status:             datastore.ActiveEndpointStatus,
 		RateLimitDuration:  10,
+		ContentType:        constants.ContentTypeJSON, // Set expected content type
 		Authentication: &datastore.EndpointAuthentication{
 			Type: datastore.APIKeyAuthentication,
 			ApiKey: &datastore.ApiKey{
@@ -726,6 +727,7 @@ func generateEndpoint(project *datastore.Project) *datastore.Endpoint {
 		RateLimit:          300,
 		Status:             datastore.ActiveEndpointStatus,
 		RateLimitDuration:  10,
+		ContentType:        constants.ContentTypeJSON, // Set default content type for tests
 		Secrets: []datastore.Secret{
 			{
 				UID:       ulid.Make().String(),
@@ -752,4 +754,388 @@ func seedEndpoint(t *testing.T, db database.Database) *datastore.Endpoint {
 	require.NoError(t, err)
 
 	return endpoint
+}
+
+func Test_CreateEndpoint_WithMtls(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	runCreateEndpointWithMtlsTest(t, db)
+}
+
+func Test_CreateEndpoint_WithMtls_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	runCreateEndpointWithMtlsTest(t, db)
+
+	assertAndInitEncryption(t, db)
+
+	runCreateEndpointWithMtlsTest(t, db)
+}
+
+func runCreateEndpointWithMtlsTest(t *testing.T, db database.Database) {
+	projectRepo := NewProjectRepo(db)
+	endpointRepo := NewEndpointRepo(db)
+
+	project := &datastore.Project{
+		UID:            ulid.Make().String(),
+		Name:           "Project with mTLS",
+		LogoURL:        "s3.com/logo",
+		OrganisationID: seedOrg(t, db).UID,
+		Type:           datastore.OutgoingProject,
+		Config:         &datastore.DefaultProjectConfig,
+	}
+
+	require.NoError(t, projectRepo.CreateProject(context.Background(), project))
+
+	// Create endpoint with mTLS certificate
+	endpoint := &datastore.Endpoint{
+		UID:                ulid.Make().String(),
+		ProjectID:          project.UID,
+		OwnerID:            ulid.Make().String(),
+		Url:                "https://secure.example.com",
+		Name:               "mTLS Test Endpoint",
+		AdvancedSignatures: true,
+		Description:        "endpoint with mTLS",
+		HttpTimeout:        30,
+		RateLimit:          300,
+		Status:             datastore.ActiveEndpointStatus,
+		RateLimitDuration:  10,
+		Secrets: []datastore.Secret{
+			{
+				UID:       ulid.Make().String(),
+				Value:     "secret-value",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		},
+		MtlsClientCert: &datastore.MtlsClientCert{
+			ClientCert: "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----",
+			ClientKey:  "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----",
+		},
+	}
+
+	// Create the endpoint
+	err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Fetch it back and verify mTLS configuration
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(t, err)
+
+	// Verify mTLS certificate was stored and retrieved correctly
+	require.NotNil(t, dbEndpoint.MtlsClientCert)
+	require.Equal(t, "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----", dbEndpoint.MtlsClientCert.ClientCert)
+	require.Equal(t, "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----", dbEndpoint.MtlsClientCert.ClientKey)
+
+	// Update the endpoint with different mTLS config
+	endpoint.MtlsClientCert = &datastore.MtlsClientCert{
+		ClientCert: "-----BEGIN CERTIFICATE-----\nupdated-cert\n-----END CERTIFICATE-----",
+		ClientKey:  "-----BEGIN PRIVATE KEY-----\nupdated-key\n-----END PRIVATE KEY-----",
+	}
+
+	err = endpointRepo.UpdateEndpoint(context.Background(), endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Verify update worked
+	dbEndpoint, err = endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(t, err)
+	require.NotNil(t, dbEndpoint.MtlsClientCert)
+	require.Equal(t, "-----BEGIN CERTIFICATE-----\nupdated-cert\n-----END CERTIFICATE-----", dbEndpoint.MtlsClientCert.ClientCert)
+	require.Equal(t, "-----BEGIN PRIVATE KEY-----\nupdated-key\n-----END PRIVATE KEY-----", dbEndpoint.MtlsClientCert.ClientKey)
+}
+
+func Test_CreateEndpoint_WithOAuth2_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	runCreateEndpointWithOAuth2SharedSecretTest(t, db)
+	runCreateEndpointWithOAuth2ClientAssertionECTest(t, db)
+	runCreateEndpointWithOAuth2ClientAssertionRSATest(t, db)
+
+	assertAndInitEncryption(t, db)
+
+	runCreateEndpointWithOAuth2SharedSecretTest(t, db)
+	runCreateEndpointWithOAuth2ClientAssertionECTest(t, db)
+	runCreateEndpointWithOAuth2ClientAssertionRSATest(t, db)
+}
+
+func runCreateEndpointWithOAuth2SharedSecretTest(t *testing.T, db database.Database) {
+	projectRepo := NewProjectRepo(db)
+	endpointRepo := NewEndpointRepo(db)
+
+	project := &datastore.Project{
+		UID:            ulid.Make().String(),
+		Name:           "Project with OAuth2 Shared Secret",
+		LogoURL:        "s3.com/logo",
+		OrganisationID: seedOrg(t, db).UID,
+		Type:           datastore.OutgoingProject,
+		Config:         &datastore.DefaultProjectConfig,
+	}
+
+	require.NoError(t, projectRepo.CreateProject(context.Background(), project))
+
+	// Create endpoint with OAuth2 shared secret
+	endpoint := &datastore.Endpoint{
+		UID:                ulid.Make().String(),
+		ProjectID:          project.UID,
+		OwnerID:            ulid.Make().String(),
+		Url:                "https://oauth.example.com",
+		Name:               "OAuth2 Shared Secret Test Endpoint",
+		AdvancedSignatures: true,
+		Description:        "endpoint with OAuth2 shared secret",
+		HttpTimeout:        30,
+		RateLimit:          300,
+		Status:             datastore.ActiveEndpointStatus,
+		RateLimitDuration:  10,
+		Secrets: []datastore.Secret{
+			{
+				UID:       ulid.Make().String(),
+				Value:     "secret-value",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		},
+		Authentication: &datastore.EndpointAuthentication{
+			Type: datastore.OAuth2Authentication,
+			OAuth2: &datastore.OAuth2{
+				URL:                "https://oauth.example.com/token",
+				ClientID:           "test-client-id",
+				ClientSecret:       "test-client-secret-12345",
+				GrantType:          "client_credentials",
+				Scope:              "read write",
+				AuthenticationType: datastore.SharedSecretAuth,
+			},
+		},
+	}
+
+	// Create the endpoint
+	err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Fetch it back and verify OAuth2 configuration
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(t, err)
+
+	// Verify OAuth2 config was stored and retrieved correctly
+	require.NotNil(t, dbEndpoint.Authentication)
+	require.Equal(t, datastore.OAuth2Authentication, dbEndpoint.Authentication.Type)
+	require.NotNil(t, dbEndpoint.Authentication.OAuth2)
+	require.Equal(t, "https://oauth.example.com/token", dbEndpoint.Authentication.OAuth2.URL)
+	require.Equal(t, "test-client-id", dbEndpoint.Authentication.OAuth2.ClientID)
+	require.Equal(t, "test-client-secret-12345", dbEndpoint.Authentication.OAuth2.ClientSecret)
+	require.Equal(t, "client_credentials", dbEndpoint.Authentication.OAuth2.GrantType)
+	require.Equal(t, "read write", dbEndpoint.Authentication.OAuth2.Scope)
+	require.Equal(t, datastore.SharedSecretAuth, dbEndpoint.Authentication.OAuth2.AuthenticationType)
+
+	// Update the endpoint with different OAuth2 config
+	endpoint.Authentication.OAuth2.ClientSecret = "updated-client-secret-67890"
+	endpoint.Authentication.OAuth2.Scope = "read write admin"
+
+	err = endpointRepo.UpdateEndpoint(context.Background(), endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Verify update worked
+	dbEndpoint, err = endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(t, err)
+	require.NotNil(t, dbEndpoint.Authentication.OAuth2)
+	require.Equal(t, "updated-client-secret-67890", dbEndpoint.Authentication.OAuth2.ClientSecret)
+	require.Equal(t, "read write admin", dbEndpoint.Authentication.OAuth2.Scope)
+}
+
+func runCreateEndpointWithOAuth2ClientAssertionECTest(t *testing.T, db database.Database) {
+	projectRepo := NewProjectRepo(db)
+	endpointRepo := NewEndpointRepo(db)
+
+	project := &datastore.Project{
+		UID:            ulid.Make().String(),
+		Name:           "Project with OAuth2 Client Assertion EC",
+		LogoURL:        "s3.com/logo",
+		OrganisationID: seedOrg(t, db).UID,
+		Type:           datastore.OutgoingProject,
+		Config:         &datastore.DefaultProjectConfig,
+	}
+
+	require.NoError(t, projectRepo.CreateProject(context.Background(), project))
+
+	// Create endpoint with OAuth2 client assertion (EC key)
+	endpoint := &datastore.Endpoint{
+		UID:                ulid.Make().String(),
+		ProjectID:          project.UID,
+		OwnerID:            ulid.Make().String(),
+		Url:                "https://oauth.example.com",
+		Name:               "OAuth2 Client Assertion EC Test Endpoint",
+		AdvancedSignatures: true,
+		Description:        "endpoint with OAuth2 client assertion EC",
+		HttpTimeout:        30,
+		RateLimit:          300,
+		Status:             datastore.ActiveEndpointStatus,
+		RateLimitDuration:  10,
+		Secrets: []datastore.Secret{
+			{
+				UID:       ulid.Make().String(),
+				Value:     "secret-value",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		},
+		Authentication: &datastore.EndpointAuthentication{
+			Type: datastore.OAuth2Authentication,
+			OAuth2: &datastore.OAuth2{
+				URL:                "https://oauth.example.com/token",
+				ClientID:           "test-client-id",
+				GrantType:          "client_credentials",
+				Scope:              "read write",
+				AuthenticationType: datastore.ClientAssertionAuth,
+				SigningAlgorithm:   "ES256",
+				Issuer:             "test-client-id",
+				Subject:            "test-client-id",
+				SigningKey: &datastore.OAuth2SigningKey{
+					Kty: "EC",
+					Crv: "P-256",
+					X:   "test-x-coordinate-base64url",
+					Y:   "test-y-coordinate-base64url",
+					D:   "test-private-key-base64url",
+					Kid: "test-ec-key-id",
+				},
+			},
+		},
+	}
+
+	// Create the endpoint
+	err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Fetch it back and verify OAuth2 configuration
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(t, err)
+
+	// Verify OAuth2 config was stored and retrieved correctly
+	require.NotNil(t, dbEndpoint.Authentication)
+	require.Equal(t, datastore.OAuth2Authentication, dbEndpoint.Authentication.Type)
+	require.NotNil(t, dbEndpoint.Authentication.OAuth2)
+	require.Equal(t, "https://oauth.example.com/token", dbEndpoint.Authentication.OAuth2.URL)
+	require.Equal(t, "test-client-id", dbEndpoint.Authentication.OAuth2.ClientID)
+	require.Equal(t, datastore.ClientAssertionAuth, dbEndpoint.Authentication.OAuth2.AuthenticationType)
+	require.Equal(t, "ES256", dbEndpoint.Authentication.OAuth2.SigningAlgorithm)
+	require.Equal(t, "test-client-id", dbEndpoint.Authentication.OAuth2.Issuer)
+	require.Equal(t, "test-client-id", dbEndpoint.Authentication.OAuth2.Subject)
+
+	require.NotNil(t, dbEndpoint.Authentication.OAuth2.SigningKey)
+	require.Equal(t, "EC", dbEndpoint.Authentication.OAuth2.SigningKey.Kty)
+	require.Equal(t, "P-256", dbEndpoint.Authentication.OAuth2.SigningKey.Crv)
+	require.Equal(t, "test-x-coordinate-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.X)
+	require.Equal(t, "test-y-coordinate-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.Y)
+	require.Equal(t, "test-private-key-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.D)
+	require.Equal(t, "test-ec-key-id", dbEndpoint.Authentication.OAuth2.SigningKey.Kid)
+
+	// Verify RSA fields are empty for EC keys
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.N)
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.E)
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.P)
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.Q)
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.Dp)
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.Dq)
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.Qi)
+}
+
+func runCreateEndpointWithOAuth2ClientAssertionRSATest(t *testing.T, db database.Database) {
+	projectRepo := NewProjectRepo(db)
+	endpointRepo := NewEndpointRepo(db)
+
+	project := &datastore.Project{
+		UID:            ulid.Make().String(),
+		Name:           "Project with OAuth2 Client Assertion RSA",
+		LogoURL:        "s3.com/logo",
+		OrganisationID: seedOrg(t, db).UID,
+		Type:           datastore.OutgoingProject,
+		Config:         &datastore.DefaultProjectConfig,
+	}
+
+	require.NoError(t, projectRepo.CreateProject(context.Background(), project))
+
+	// Create endpoint with OAuth2 client assertion (RSA key)
+	endpoint := &datastore.Endpoint{
+		UID:                ulid.Make().String(),
+		ProjectID:          project.UID,
+		OwnerID:            ulid.Make().String(),
+		Url:                "https://oauth.example.com",
+		Name:               "OAuth2 Client Assertion RSA Test Endpoint",
+		AdvancedSignatures: true,
+		Description:        "endpoint with OAuth2 client assertion RSA",
+		HttpTimeout:        30,
+		RateLimit:          300,
+		Status:             datastore.ActiveEndpointStatus,
+		RateLimitDuration:  10,
+		Secrets: []datastore.Secret{
+			{
+				UID:       ulid.Make().String(),
+				Value:     "secret-value",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		},
+		Authentication: &datastore.EndpointAuthentication{
+			Type: datastore.OAuth2Authentication,
+			OAuth2: &datastore.OAuth2{
+				URL:                "https://oauth.example.com/token",
+				ClientID:           "test-client-id",
+				GrantType:          "client_credentials",
+				Scope:              "read write",
+				AuthenticationType: datastore.ClientAssertionAuth,
+				SigningAlgorithm:   "RS256",
+				Issuer:             "test-client-id",
+				Subject:            "test-client-id",
+				SigningKey: &datastore.OAuth2SigningKey{
+					Kty: "RSA",
+					N:   "test-rsa-n-base64url",
+					E:   "test-rsa-e-base64url",
+					D:   "test-rsa-d-base64url",
+					P:   "test-rsa-p-base64url",
+					Q:   "test-rsa-q-base64url",
+					Dp:  "test-rsa-dp-base64url",
+					Dq:  "test-rsa-dq-base64url",
+					Qi:  "test-rsa-qi-base64url",
+					Kid: "test-rsa-key-id",
+				},
+			},
+		},
+	}
+
+	// Create the endpoint
+	err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Fetch it back and verify OAuth2 configuration
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(t, err)
+
+	// Verify OAuth2 config was stored and retrieved correctly
+	require.NotNil(t, dbEndpoint.Authentication)
+	require.Equal(t, datastore.OAuth2Authentication, dbEndpoint.Authentication.Type)
+	require.NotNil(t, dbEndpoint.Authentication.OAuth2)
+	require.Equal(t, "https://oauth.example.com/token", dbEndpoint.Authentication.OAuth2.URL)
+	require.Equal(t, "test-client-id", dbEndpoint.Authentication.OAuth2.ClientID)
+	require.Equal(t, datastore.ClientAssertionAuth, dbEndpoint.Authentication.OAuth2.AuthenticationType)
+	require.Equal(t, "RS256", dbEndpoint.Authentication.OAuth2.SigningAlgorithm)
+	require.Equal(t, "test-client-id", dbEndpoint.Authentication.OAuth2.Issuer)
+	require.Equal(t, "test-client-id", dbEndpoint.Authentication.OAuth2.Subject)
+
+	require.NotNil(t, dbEndpoint.Authentication.OAuth2.SigningKey)
+	require.Equal(t, "RSA", dbEndpoint.Authentication.OAuth2.SigningKey.Kty)
+	require.Equal(t, "test-rsa-n-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.N)
+	require.Equal(t, "test-rsa-e-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.E)
+	require.Equal(t, "test-rsa-d-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.D)
+	require.Equal(t, "test-rsa-p-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.P)
+	require.Equal(t, "test-rsa-q-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.Q)
+	require.Equal(t, "test-rsa-dp-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.Dp)
+	require.Equal(t, "test-rsa-dq-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.Dq)
+	require.Equal(t, "test-rsa-qi-base64url", dbEndpoint.Authentication.OAuth2.SigningKey.Qi)
+	require.Equal(t, "test-rsa-key-id", dbEndpoint.Authentication.OAuth2.SigningKey.Kid)
+
+	// Verify EC fields are empty for RSA keys
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.Crv)
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.X)
+	require.Empty(t, dbEndpoint.Authentication.OAuth2.SigningKey.Y)
 }

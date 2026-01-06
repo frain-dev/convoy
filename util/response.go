@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/go-chi/render"
+
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type Response struct {
@@ -20,11 +21,9 @@ func (res Response) Render(w http.ResponseWriter, r *http.Request) error {
 
 func NewErrorResponse(msg string, statusCode int) ServerResponse {
 	return ServerResponse{
-		Status:  false,
-		Message: msg,
-		Response: Response{
-			StatusCode: statusCode,
-		},
+		Status:   false,
+		Message:  msg,
+		Response: Response{StatusCode: statusCode},
 	}
 }
 
@@ -57,11 +56,9 @@ func NewServiceErrResponse(err error) ServerResponse {
 	}
 
 	return ServerResponse{
-		Status:  false,
-		Message: msg,
-		Response: Response{
-			StatusCode: statusCode,
-		},
+		Status:   false,
+		Message:  msg,
+		Response: Response{StatusCode: statusCode},
 	}
 }
 

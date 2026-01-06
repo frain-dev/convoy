@@ -9,6 +9,9 @@ import (
 
 	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/nsf/jsondiff"
+	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/pkg/flatten"
 )
 
 func TestGenCombos(t *testing.T) {

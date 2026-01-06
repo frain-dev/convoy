@@ -7,13 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/queue"
 )
 
 func TestProcessNotifications(t *testing.T) {
@@ -109,6 +110,55 @@ func TestProcessNotifications(t *testing.T) {
 				}
 			},
 			clientFn:      nil,
+			expectedError: nil,
+		},
+		{
+			name: "should_pass_when_email_payload_is_valid_but_type_is_missing",
+			payload: `
+				{
+					"notification_type": "",
+					"payload": {
+						"email": "user@default.com",
+						"subject": "Endpoint Disabled - Circuit Breaker Triggered",
+						"template_name": "endpoint.update",
+						"params": {
+							"name": "test-endpoint",
+							"target_url": "https://example.com",
+							"failure_msg": "Circuit breaker threshold exceeded",
+							"endpoint_status": "inactive"
+						}
+					}
+				}
+			`,
+			clientFn: func(sc *mocks.MockSmtpClient) {
+				// Should be called once when fix is applied
+				sc.EXPECT().
+					SendEmail(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "should_pass_when_raw_email_message_is_sent",
+			payload: `
+				{
+					"email": "user@default.com",
+					"subject": "Endpoint Disabled - Circuit Breaker Triggered",
+					"template_name": "endpoint.update",
+					"params": {
+						"name": "test-endpoint",
+						"target_url": "https://example.com",
+						"failure_msg": "Circuit breaker threshold exceeded",
+						"endpoint_status": "inactive"
+					}
+				}
+			`,
+			clientFn: func(sc *mocks.MockSmtpClient) {
+				// Should be called once when fix is applied
+				sc.EXPECT().
+					SendEmail(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+			},
 			expectedError: nil,
 		},
 	}

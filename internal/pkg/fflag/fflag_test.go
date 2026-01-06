@@ -1,9 +1,10 @@
 package fflag
 
 import (
-	"github.com/frain-dev/convoy/config"
 	"reflect"
 	"testing"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 func TestFFlag_CanAccessFeature(t *testing.T) {
@@ -198,6 +199,8 @@ func TestNewFFlag(t *testing.T) {
 					RetentionPolicy:      disabled,
 					ReadReplicas:         disabled,
 					CredentialEncryption: disabled,
+					MTLS:                 disabled,
+					OAuthTokenExchange:   disabled,
 				},
 			},
 			wantErr: false,
@@ -218,6 +221,8 @@ func TestNewFFlag(t *testing.T) {
 					RetentionPolicy:      disabled,
 					ReadReplicas:         disabled,
 					CredentialEncryption: disabled,
+					MTLS:                 disabled,
+					OAuthTokenExchange:   disabled,
 				},
 			},
 			wantErr: false,
@@ -236,6 +241,8 @@ func TestNewFFlag(t *testing.T) {
 					RetentionPolicy:      disabled,
 					ReadReplicas:         disabled,
 					CredentialEncryption: disabled,
+					MTLS:                 disabled,
+					OAuthTokenExchange:   disabled,
 				},
 			},
 			wantErr: false,

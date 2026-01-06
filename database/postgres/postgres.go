@@ -5,18 +5,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/exaring/otelpgx"
-	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
 	"io"
 	"math/rand"
 	"time"
 
+	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/jmoiron/sqlx"
 )
 
 const pkgName = "postgres"
@@ -32,6 +33,7 @@ var ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, p
 type Postgres struct {
 	id       int
 	dbx      *sqlx.DB
+	conn     *pgxpool.Pool
 	hook     *hooks.Hook
 	pool     *pgxpool.Pool
 	replicas []*Postgres
@@ -71,6 +73,12 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	return primary, err
 }
 
+func NewFromConnection(pool *pgxpool.Pool) *Postgres {
+	sqlDB := stdlib.OpenDBFromPool(pool)
+	db := sqlx.NewDb(sqlDB, "pgx")
+	return &Postgres{dbx: db, pool: pool, conn: pool}
+}
+
 func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postgres, error) {
 	pgxCfg, err := pgxpool.ParseConfig(dbConfig.BuildDsn())
 	if err != nil {
@@ -92,11 +100,15 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 	sqlDB := stdlib.OpenDBFromPool(pool)
 	db := sqlx.NewDb(sqlDB, "pgx")
 
-	return &Postgres{dbx: db, pool: pool}, nil
+	return &Postgres{dbx: db, pool: pool, conn: pool}, nil
 }
 
 func (p *Postgres) GetDB() *sqlx.DB {
 	return p.dbx
+}
+
+func (p *Postgres) GetConn() *pgxpool.Pool {
+	return p.conn
 }
 
 func (p *Postgres) GetReadDB() *sqlx.DB {

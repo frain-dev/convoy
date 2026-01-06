@@ -1,10 +1,10 @@
-import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
+import {Injectable} from '@angular/core';
+import {environment} from 'src/environments/environment';
 import axios from 'axios';
-import { ActivatedRoute, Router } from '@angular/router';
-import { GeneralService } from '../general/general.service';
-import { ProjectService } from 'src/app/private/pages/project/project.service';
-import { HTTP_RESPONSE } from 'src/app/models/global.model';
+import {ActivatedRoute, Router} from '@angular/router';
+import {GeneralService} from '../general/general.service';
+import {ProjectService} from 'src/app/private/pages/project/project.service';
+import {HTTP_RESPONSE} from 'src/app/models/global.model';
 
 @Injectable({
 	providedIn: 'root'
@@ -12,10 +12,15 @@ import { HTTP_RESPONSE } from 'src/app/models/global.model';
 export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
-	token = this.route.snapshot.queryParams?.token;
-	ownerId = this.route.snapshot.queryParams?.owner_id;
+	token: string | undefined;
+	ownerId: string | undefined;
 
-	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute, private projectService: ProjectService) {}
+	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute, private projectService: ProjectService) {
+		this.route.queryParams.subscribe(it => {
+			if (it.token) this.token = it.token;
+			if (it.owner_id) this.ownerId = it.owner_id;
+		});
+	}
 
 	authDetails(): { access_token?: string; refresh_token?: string; authState: boolean } {
 		const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
@@ -119,23 +124,44 @@ export class HttpService {
 		// Format query string if we have any query params
 		const queryString = Object.keys(query).length > 0 ? '?' + this.buildRequestQuery(query) : '';
 
+		const baseElement = document.querySelector('base');
+		const baseHref = baseElement?.getAttribute('href') || '/';
+		const rootPath = baseHref.replace(/\/$/, ''); // Remove trailing slash
+
+		const insertRootPath = (url: string) => {
+			if (rootPath === '/') return url;
+			const urlObj = new URL(url);
+			urlObj.pathname = rootPath + urlObj.pathname;
+			return urlObj.toString();
+		};
+
 		// When token or ownerId is present, use the Portal API URL regardless of other parameters
-		if (this.token || this.ownerId) {
-			return `${this.APP_PORTAL_APIURL}${requestDetails.url}${queryString}`;
+		if (requestDetails.isPortal) {
+			return `${insertRootPath(this.APP_PORTAL_APIURL)}${requestDetails.url}${queryString}`;
 		}
 
 		// Handle regular UI paths
 		if (!requestDetails.level) {
-			return `${this.APIURL}${requestDetails.url}${queryString}`;
+			return `${insertRootPath(this.APIURL)}${requestDetails.url}${queryString}`;
 		}
 
 		const requestPath = this.buildRequestPath(requestDetails.level);
 		if (requestPath === 'error') return 'error';
 
-		return `${this.APIURL}${requestPath}${requestDetails.url}${queryString}`;
+		return `${insertRootPath(this.APIURL)}${requestPath}${requestDetails.url}${queryString}`;
 	}
 
-	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
+	async request(requestDetails: {
+		url: string;
+		body?: any;
+		method: 'get' | 'post' | 'delete' | 'put';
+		isPortal?: boolean;
+		hideNotification?: boolean;
+		query?: { [param: string]: any };
+		level?: 'org' | 'org_project';
+		isOut?: boolean;
+		returnFullError?: boolean;
+	}): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
 
 		return new Promise(async (resolve, reject) => {
@@ -143,9 +169,16 @@ export class HttpService {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
 				// Use token for authorization if available, otherwise use ownerId or access_token
-				let authToken = this.getPortalLinkAuthToken() || this.token || this.ownerId
+				let authToken = this.getPortalLinkAuthToken() || this.token || this.ownerId;
+
+				if (authToken !== undefined && authToken !== null) {
+					requestDetails.isPortal = true;
+				}
+
+				// not a portal link innit?
 				if (!(this.token || this.ownerId)) {
 					authToken = this.authDetails()?.access_token;
+					requestDetails.isPortal = false;
 				}
 
 				const requestHeader = {
@@ -153,20 +186,35 @@ export class HttpService {
 					'X-Convoy-Version': '2024-04-01'
 				};
 
+				if (requestDetails.url === '/projects/undefined') {
+					return;
+				}
+
 				// process URL
 				const url = this.buildURL(requestDetails);
 				if (url === 'error') return;
 
-				// make request
-				const { data } = await http.request({ method: requestDetails.method, headers: requestHeader, url, data: requestDetails.body });
-				resolve(data);
-			} catch (error) {
-				if (axios.isAxiosError(error)) {
-					const msg = error.response?.data?.message;
-					if ('project not found' === msg) {
-						localStorage.removeItem('CONVOY_PROJECT');
-					}
-					return reject(error);
+                // make request
+				const { data } = await http.request({
+                    method: requestDetails.method,
+                    headers: requestHeader,
+                    url,
+                    data: requestDetails.body
+                });
+                resolve(data);
+            } catch (error) {
+                if (axios.isAxiosError(error)) {
+                    const msg = error.response?.data?.message;
+                    if ('project not found' === msg) {
+                        localStorage.removeItem('CONVOY_PROJECT');
+                    }
+                    if (requestDetails.returnFullError) {
+                        return reject(error);
+                    } else {
+                        // Return the API error message if available, otherwise fall back to error.message
+                        const errorMessage = msg || error.message || 'An unexpected error occurred';
+                        return reject(errorMessage);
+                    }
 				} else {
 					console.log('unexpected error: ', error);
 					return reject('An unexpected error occurred');

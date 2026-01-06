@@ -6,19 +6,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/internal/email"
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/queue"
-
 	"github.com/oklog/ulid/v2"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/email"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/queue"
 )
 
 type RegisterUserService struct {
@@ -90,7 +88,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 		OrgRepo:       u.OrgRepo,
 		OrgMemberRepo: u.OrgMemberRepo,
 		Licenser:      u.Licenser,
-		NewOrg:        &models.Organisation{Name: u.Data.OrganisationName},
+		NewOrg:        &datastore.OrganisationRequest{Name: u.Data.OrganisationName},
 		User:          user,
 	}
 
@@ -139,8 +137,8 @@ func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer) error {
 	}
 
 	job := &queue.Job{
+		ID:      ulid.Make().String(),
 		Payload: bytes,
-		Delay:   0,
 	}
 
 	err = q.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)

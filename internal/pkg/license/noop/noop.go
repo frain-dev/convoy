@@ -1,5 +1,3 @@
-//go:build integration
-
 package noop
 
 import (
@@ -75,6 +73,10 @@ func (Licenser) MutualTLS() bool {
 	return true
 }
 
+func (Licenser) OAuth2EndpointAuth() bool {
+	return true
+}
+
 func (Licenser) SynchronousWebhooks() bool {
 	return true
 }
@@ -123,15 +125,26 @@ func (Licenser) EnterpriseSSO() bool {
 	return true
 }
 
+func (Licenser) GoogleOAuth() bool {
+	return true
+}
+
 func (k *Licenser) DatadogTracing() bool {
 	return true
 }
+
 func (k *Licenser) ReadReplica() bool {
 	return true
 }
+
 func (k *Licenser) CredentialEncryption() bool {
 	return true
 }
+
 func (k *Licenser) CustomCertificateAuthority() bool {
+	return true
+}
+
+func (k Licenser) BillingModule() bool {
 	return true
 }

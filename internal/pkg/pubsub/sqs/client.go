@@ -7,20 +7,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy/util"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/util"
 )
 
 var ErrInvalidCredentials = errors.New("your sqs credentials are invalid. please verify you're providing the correct credentials")
@@ -104,19 +104,16 @@ func (s *Sqs) consume() {
 
 	if url == nil {
 		log.Errorf("pubsub url for source with id %s is nil", s.source.UID)
-		log.Errorf("url: %+v\n", url)
 		return
 	}
 
 	if url.QueueUrl == nil {
 		log.Errorf("pubsub queue url for source with id %s is nil", s.source.UID)
-		log.Errorf("url: %+v\n", url)
 		return
 	}
 
 	if util.IsStringEmpty(*url.QueueUrl) {
 		log.Errorf("pubsub queue url for source with id %s is empty", s.source.UID)
-		log.Errorf("url: %+v\n", url)
 		return
 	}
 
@@ -164,6 +161,13 @@ func (s *Sqs) consume() {
 					defer s.handleError()
 
 					var d Attrs = m.MessageAttributes
+
+					if d == nil {
+						d = Attrs{}
+					}
+
+					// Add message_id to attributes
+					d[common.BrokerMessageHeader] = &sqs.MessageAttributeValue{StringValue: m.MessageId, DataType: aws.String("String")}
 
 					attributes, err := msgpack.EncodeMsgPack(d.Map())
 					if err != nil {

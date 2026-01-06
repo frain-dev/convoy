@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/log"
-
-	"github.com/frain-dev/convoy/internal/email"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/email"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
 )
 
 type GeneratePasswordResetTokenService struct {
@@ -52,7 +51,7 @@ func (u *GeneratePasswordResetTokenService) Run(ctx context.Context) error {
 	return nil
 }
 
-func (u *GeneratePasswordResetTokenService) sendPasswordResetEmail(ctx context.Context, baseURL string, token string, user *datastore.User) error {
+func (u *GeneratePasswordResetTokenService) sendPasswordResetEmail(ctx context.Context, baseURL, token string, user *datastore.User) error {
 	em := email.Message{
 		Email:        user.Email,
 		Subject:      "Convoy Password Reset",

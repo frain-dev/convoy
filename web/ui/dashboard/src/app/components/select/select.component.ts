@@ -1,17 +1,26 @@
-import { CommonModule } from '@angular/common';
-import { Component, ElementRef, EventEmitter, forwardRef, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
-import { fromEvent } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
-import { ButtonComponent } from '../button/button.component';
-import { DropdownComponent, DropdownOptionDirective } from '../dropdown/dropdown.component';
-import { TooltipComponent } from '../tooltip/tooltip.component';
-import { InputDirective, LabelComponent } from '../input/input.component';
+import {CommonModule} from '@angular/common';
+import {
+    AfterViewChecked,
+    Component,
+    ElementRef,
+    EventEmitter,
+    forwardRef,
+    Input,
+    OnInit,
+    Output,
+    ViewChild
+} from '@angular/core';
+import {ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule} from '@angular/forms';
+import {fromEvent} from 'rxjs';
+import {debounceTime, distinctUntilChanged, map, startWith} from 'rxjs/operators';
+import {ButtonComponent} from '../button/button.component';
+import {DropdownComponent, DropdownOptionDirective} from '../dropdown/dropdown.component';
+import {InputDirective, LabelComponent} from '../input/input.component';
 
 @Component({
 	selector: 'convoy-select',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, TooltipComponent, DropdownComponent, ButtonComponent, DropdownOptionDirective, LabelComponent, InputDirective],
+    imports: [CommonModule, ReactiveFormsModule, DropdownComponent, ButtonComponent, DropdownOptionDirective, LabelComponent, InputDirective],
 	templateUrl: './select.component.html',
 	styleUrls: ['./select.component.scss'],
 	providers: [
@@ -22,8 +31,19 @@ import { InputDirective, LabelComponent } from '../input/input.component';
 		}
 	]
 })
-export class SelectComponent implements OnInit, ControlValueAccessor {
-	@Input('options') options?: Array<any> = [];
+export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAccessor {
+	private _options?: Array<any> = [];
+	@Input('options')
+	set options(value: Array<any> | undefined) {
+		this._options = value;
+		// When options are set, try to initialize selectedValue if control has a value
+		if (this.control?.value && this._options?.length) {
+			this.initializeSelectedValue();
+		}
+	}
+	get options(): Array<any> | undefined {
+		return this._options;
+	}
 	@Input('name') name!: string;
 	@Input('errorMessage') errorMessage!: string;
 	@Input('label') label!: string;
@@ -41,6 +61,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Output('selectedOption') selectedOption = new EventEmitter<any>();
 	@Output('searchString') searchString = new EventEmitter<any>();
 	@ViewChild('searchFilter', { static: false }) searchFilter!: ElementRef;
+	@ViewChild('dropdownRef', { static: false }) dropdownRef!: DropdownComponent;
 	selectedValue: any;
 	selectedOptions: any = [];
 
@@ -49,7 +70,28 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	constructor(private controlContainer: ControlContainer) {}
 
 	ngOnInit(): void {
-		if (this.controlContainer.control?.get(this.formControlName)) this.control = this.controlContainer.control.get(this.formControlName);
+		if (this.controlContainer.control?.get(this.formControlName)) {
+			this.control = this.controlContainer.control.get(this.formControlName);
+			this.initializeSelectedValue();
+		}
+	}
+
+	ngAfterViewChecked(): void {
+		// Check if we need to initialize the selected value
+		// This handles cases where the component becomes visible after being hidden
+		if (this.control?.value && this.options?.length && !this.selectedValue) {
+			this.initializeSelectedValue();
+		}
+	}
+
+	private initializeSelectedValue(): void {
+		const currentValue = this.control?.value;
+		if (currentValue && this.options?.length) {
+			const found = this.options.find(option => option.uid === currentValue || option === currentValue);
+			if (found) {
+				this.selectedValue = found;
+			}
+		}
 	}
 
 	selectOption(option?: any) {
@@ -65,6 +107,14 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 		} else {
 			this.selectedValue = option;
 			this.selectedOption.emit(option?.uid || option);
+			// Update form control value
+			if (this.control) {
+				this.control.setValue(option?.uid || option);
+			}
+			// Close dropdown
+			if (this.dropdownRef) {
+				this.dropdownRef.show = false;
+			}
 		}
 	}
 
@@ -74,16 +124,28 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	updateSelectedOptions() {
-		if (!this.selectedOptions?.length) return;
+		if (!this.selectedOptions?.length) {
+			// Clear form control if no options selected
+			if (this.control) {
+				this.control.setValue([], { emitEvent: true });
+			}
+			return;
+		}
+		
+		// Update form control with full option objects (not just IDs)
+		// This allows the parent component to access both uid and name
+		if (this.control) {
+			this.control.setValue(this.selectedOptions, { emitEvent: true });
+		}
+		
+		// Also emit the IDs for backward compatibility
 		let selectedIds: any = [];
-
 		this.selectedOptions.forEach((option: any) => {
 			if (typeof option !== 'string') {
 				if (this.selectionType === 'default') selectedIds.push(option.uid);
 				else selectedIds.push(option.name);
 			} else selectedIds.push(option);
 		});
-
 		this.selectedOption.emit(selectedIds);
 	}
 
@@ -95,7 +157,17 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 
 	registerOnTouched() {}
 
-	writeValue(value: string | Array<any>) {
+	writeValue(value: string | Array<any> | null | undefined) {
+		if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
+			// Clear selected value when value is null, undefined, or empty array
+			if (!this.multiple) {
+				this.selectedValue = null;
+			} else {
+				this.selectedOptions = [];
+			}
+			return;
+		}
+		
 		if (value) {
 			if (this.options?.length && typeof this.options[0] !== 'string' && !this.multiple) return (this.selectedValue = this.options?.find(option => option.uid === value));
 			if (this.multiple && typeof value !== 'string' && this.selectedValues?.length) this.selectedOptions = this.selectedValues;
