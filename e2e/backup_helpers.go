@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 // MinIO Operations
