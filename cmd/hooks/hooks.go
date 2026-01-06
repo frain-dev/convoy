@@ -24,6 +24,7 @@ import (
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -165,7 +166,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		projectRepo := postgres.NewProjectRepo(postgresDB)
 
 		metaEventRepo := postgres.NewMetaEventRepo(postgresDB)
-		attemptsRepo := postgres.NewDeliveryAttemptRepo(postgresDB)
+		attemptsRepo := delivery_attempts.New(lo, postgresDB)
 		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
 		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo, attemptsRepo)
 

@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -344,7 +345,7 @@ func seedDeliveryAttempt(db database.Database, delivery *datastore.EventDelivery
 		UpdatedAt:        filter.CreatedAt,
 	}
 
-	daRepo := postgres.NewDeliveryAttemptRepo(db)
+	daRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 	err := daRepo.CreateDeliveryAttempt(context.TODO(), deliveryAttempt)
 	if err != nil {
 		return nil, err
