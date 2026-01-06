@@ -29,7 +29,7 @@ func listMinIOObjects(t *testing.T, client *minio.Client, bucket, prefix string)
 	t.Helper()
 
 	ctx := context.Background()
-	var objects []minio.ObjectInfo
+	objects := make([]minio.ObjectInfo, 0)
 
 	objectCh := client.ListObjects(ctx, bucket, minio.ListObjectsOptions{
 		Prefix:    prefix,
@@ -255,7 +255,7 @@ func seedOldEventDelivery(t *testing.T, db database.Database, ctx context.Contex
 }
 
 // seedOldDeliveryAttempt creates a delivery attempt with a timestamp in the past
-func seedOldDeliveryAttempt(t *testing.T, db database.Database, ctx context.Context, delivery *datastore.EventDelivery, endpoint *datastore.Endpoint, hoursOld int) *datastore.DeliveryAttempt {
+func seedOldDeliveryAttempt(t *testing.T, db database.Database, ctx context.Context, delivery *datastore.EventDelivery, endpoint *datastore.Endpoint, hoursOld int) {
 	t.Helper()
 
 	attempt := &datastore.DeliveryAttempt{
@@ -285,8 +285,6 @@ func seedOldDeliveryAttempt(t *testing.T, db database.Database, ctx context.Cont
 		"UPDATE convoy.delivery_attempts SET created_at=$1, updated_at=$1 WHERE id=$2",
 		targetTime, attempt.UID)
 	require.NoError(t, err, "failed to update delivery attempt timestamp")
-
-	return attempt
 }
 
 // Configuration Creation
@@ -370,10 +368,10 @@ func createOnPremConfig(t *testing.T, db database.Database, ctx context.Context,
 // Verification Functions
 
 // verifyTimeFiltering verifies that all records in the data are older than the specified cutoff hours
-func verifyTimeFiltering(t *testing.T, data []byte, cutoffHours int) {
+func verifyTimeFiltering(t *testing.T, data []byte) {
 	t.Helper()
 
-	cutoffTime := time.Now().Add(-time.Duration(cutoffHours) * time.Hour)
+	cutoffTime := time.Now().Add(-time.Duration(24) * time.Hour)
 
 	// Try to unmarshal as a slice of maps to handle generic JSON
 	var records []map[string]interface{}
@@ -381,7 +379,7 @@ func verifyTimeFiltering(t *testing.T, data []byte, cutoffHours int) {
 	require.NoError(t, err, "failed to unmarshal records for time filtering verification")
 
 	for i, record := range records {
-		// Check for created_at field
+		// Check for the created_at field
 		createdAtStr, ok := record["created_at"].(string)
 		require.True(t, ok, "record %d missing or invalid created_at field", i)
 
@@ -414,7 +412,7 @@ func verifyProjectIsolation(t *testing.T, data []byte, projectID string) {
 }
 
 // verifyJSONStructure verifies that the data is valid JSON and has the expected structure
-func verifyJSONStructure(t *testing.T, data []byte, expectedCount int) []map[string]interface{} {
+func verifyJSONStructure(t *testing.T, data []byte, expectedCount int) {
 	t.Helper()
 
 	var records []map[string]interface{}
@@ -431,8 +429,6 @@ func verifyJSONStructure(t *testing.T, data []byte, expectedCount int) []map[str
 		require.Contains(t, record, "created_at", "record %d missing created_at field", i)
 		require.Contains(t, record, "project_id", "record %d missing project_id field", i)
 	}
-
-	return records
 }
 
 // getExportPath constructs the expected export path for a table

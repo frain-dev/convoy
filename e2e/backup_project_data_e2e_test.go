@@ -66,12 +66,12 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	// Create old data (26 hours old - should be exported)
 	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 26)
 	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 26)
-	_ = seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
+	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
 
 	// Create recent data (12 hours old - should NOT be exported)
 	recentEvent := seedOldEvent(t, db, ctx, project, endpoint, 12)
 	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 12)
-	_ = seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
+	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
 	// Invoke BackupProjectData task
 	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
@@ -104,7 +104,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	require.Equal(t, oldEvent.UID, events[0]["uid"], "exported event should be the old one")
 
 	// Verify time filtering and project isolation for events
-	verifyTimeFiltering(t, eventsData, 24)
+	verifyTimeFiltering(t, eventsData)
 	verifyProjectIsolation(t, eventsData, project.UID)
 
 	// Find and verify event deliveries export
@@ -118,7 +118,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	require.Len(t, deliveries, 1, "should have 1 old event delivery exported")
 	require.Equal(t, oldDelivery.UID, deliveries[0]["uid"], "exported delivery should be the old one")
 
-	verifyTimeFiltering(t, deliveriesData, 24)
+	verifyTimeFiltering(t, deliveriesData)
 	verifyProjectIsolation(t, deliveriesData, project.UID)
 
 	// Find and verify delivery attempts export
@@ -131,7 +131,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, attempts, 1, "should have 1 old delivery attempt exported")
 
-	verifyTimeFiltering(t, attemptsData, 24)
+	verifyTimeFiltering(t, attemptsData)
 	verifyProjectIsolation(t, attemptsData, project.UID)
 }
 
@@ -185,12 +185,12 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	// Create old data (26 hours old - should be exported)
 	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 26)
 	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 26)
-	_ = seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
+	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
 
 	// Create recent data (12 hours old - should NOT be exported)
 	recentEvent := seedOldEvent(t, db, ctx, project, endpoint, 12)
 	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 12)
-	_ = seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
+	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
 	// Invoke BackupProjectData task
 	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
@@ -225,7 +225,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	require.Equal(t, oldEvent.UID, events[0]["uid"], "exported event should be the old one")
 
 	// Verify time filtering - all events should be older than 24 hours
-	verifyTimeFiltering(t, eventsData, 24)
+	verifyTimeFiltering(t, eventsData)
 	verifyProjectIsolation(t, eventsData, project.UID)
 
 	// Verify event deliveries export content
@@ -236,7 +236,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	require.Len(t, deliveries, 1, "should have 1 old event delivery exported")
 	require.Equal(t, oldDelivery.UID, deliveries[0]["uid"], "exported delivery should be the old one")
 
-	verifyTimeFiltering(t, deliveriesData, 24)
+	verifyTimeFiltering(t, deliveriesData)
 	verifyProjectIsolation(t, deliveriesData, project.UID)
 
 	// Verify delivery attempts export content
@@ -246,7 +246,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, attempts, 1, "should have 1 old delivery attempt exported")
 
-	verifyTimeFiltering(t, attemptsData, 24)
+	verifyTimeFiltering(t, attemptsData)
 	verifyProjectIsolation(t, attemptsData, project.UID)
 }
 
@@ -337,14 +337,14 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		oldEvent := seedOldEvent(t, db, ctx, project1, endpoint1, 26)
 		oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint1, 26)
-		_ = seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint1, 26)
+		seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint1, 26)
 	}
 
 	// Create old data for project2 (2 records)
 	for i := 0; i < 2; i++ {
 		oldEvent := seedOldEvent(t, db, ctx, project2, endpoint2, 26)
 		oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint2, 26)
-		_ = seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint2, 26)
+		seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint2, 26)
 	}
 
 	// Invoke BackupProjectData task
@@ -430,22 +430,22 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	// 1. Very old (26 hours) - should be exported
 	event26h := seedOldEvent(t, db, ctx, project, endpoint, 26)
 	delivery26h := seedOldEventDelivery(t, db, ctx, event26h, endpoint, 26)
-	_ = seedOldDeliveryAttempt(t, db, ctx, delivery26h, endpoint, 26)
+	seedOldDeliveryAttempt(t, db, ctx, delivery26h, endpoint, 26)
 
 	// 2. Just past cutoff (25 hours) - should be exported
 	event25h := seedOldEvent(t, db, ctx, project, endpoint, 25)
 	delivery25h := seedOldEventDelivery(t, db, ctx, event25h, endpoint, 25)
-	_ = seedOldDeliveryAttempt(t, db, ctx, delivery25h, endpoint, 25)
+	seedOldDeliveryAttempt(t, db, ctx, delivery25h, endpoint, 25)
 
 	// 3. Recent (12 hours) - should NOT be exported
 	event12h := seedOldEvent(t, db, ctx, project, endpoint, 12)
 	delivery12h := seedOldEventDelivery(t, db, ctx, event12h, endpoint, 12)
-	_ = seedOldDeliveryAttempt(t, db, ctx, delivery12h, endpoint, 12)
+	seedOldDeliveryAttempt(t, db, ctx, delivery12h, endpoint, 12)
 
 	// 4. Very recent (1 hour) - should NOT be exported
 	event1h := seedOldEvent(t, db, ctx, project, endpoint, 1)
 	delivery1h := seedOldEventDelivery(t, db, ctx, event1h, endpoint, 1)
-	_ = seedOldDeliveryAttempt(t, db, ctx, delivery1h, endpoint, 1)
+	seedOldDeliveryAttempt(t, db, ctx, delivery1h, endpoint, 1)
 
 	// Invoke BackupProjectData task
 	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
@@ -472,7 +472,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	require.Len(t, events, 2, "should have exactly 2 old events (26h and 25h)")
 
 	// Verify all exported events are older than 24 hours
-	verifyTimeFiltering(t, eventsData, 24)
+	verifyTimeFiltering(t, eventsData)
 
 	// Verify delivery attempts - should also have exactly 2
 	attemptsFiles := findExportFiles(t, tmpDir, "deliveryattempts")
@@ -484,7 +484,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, attempts, 2, "should have exactly 2 old delivery attempts")
 
-	verifyTimeFiltering(t, attemptsData, 24)
+	verifyTimeFiltering(t, attemptsData)
 }
 
 func TestE2E_BackupProjectData_AllTables(t *testing.T) {
@@ -531,7 +531,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	// Create old data (26 hours old)
 	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 26)
 	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 26)
-	_ = seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
+	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
 
 	// Invoke BackupProjectData task
 	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
