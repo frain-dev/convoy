@@ -71,6 +71,8 @@ func main() {
 	var dataDogAgentUrl string
 	var metricsBackend string
 	var prometheusMetricsSampleTime uint64
+	var prometheusMetricsQueryTimeout uint64
+	var prometheusMetricsMaterializedViewRefreshInterval uint64
 
 	var retentionPolicy string
 	var retentionPolicyEnabled bool
@@ -143,6 +145,8 @@ func main() {
 	// metrics
 	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('prometheus' feature flag required")
 	c.Flags().Uint64Var(&prometheusMetricsSampleTime, "metrics-prometheus-sample-time", 5, "Prometheus metrics sample time")
+	c.Flags().Uint64Var(&prometheusMetricsQueryTimeout, "metrics-prometheus-query-timeout", 30, "Prometheus metrics query timeout in seconds")
+	c.Flags().Uint64Var(&prometheusMetricsMaterializedViewRefreshInterval, "metrics-prometheus-materialized-view-refresh-interval", 2, "Materialized view refresh interval in minutes")
 
 	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "Retention Policy Duration")
 	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Retention Policy Enabled")

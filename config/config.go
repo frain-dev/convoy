@@ -112,7 +112,9 @@ var DefaultConfiguration = Configuration{
 		IsEnabled: false,
 		Backend:   PrometheusMetricsProvider,
 		Prometheus: PrometheusMetricsConfiguration{
-			SampleTime: 5,
+			SampleTime:                      5,
+			QueryTimeout:                    30,
+			MaterializedViewRefreshInterval: 2, // Default: refresh every 2 minutes
 		},
 	},
 	Dispatcher: DispatcherConfiguration{
@@ -376,7 +378,9 @@ type MetricsConfiguration struct {
 }
 
 type PrometheusMetricsConfiguration struct {
-	SampleTime uint64 `json:"sample_time" envconfig:"CONVOY_METRICS_SAMPLE_TIME"`
+	SampleTime                      uint64 `json:"sample_time" envconfig:"CONVOY_METRICS_SAMPLE_TIME"`
+	QueryTimeout                    uint64 `json:"query_timeout" envconfig:"CONVOY_METRICS_QUERY_TIMEOUT"` // Timeout in seconds for metrics collection queries
+	MaterializedViewRefreshInterval uint64 `json:"materialized_view_refresh_interval" envconfig:"CONVOY_METRICS_MATERIALIZED_VIEW_REFRESH_INTERVAL"`
 }
 
 const (

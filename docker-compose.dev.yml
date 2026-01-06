@@ -44,7 +44,7 @@ services:
         build:
             context: ./
             dockerfile: Dockerfile.dev
-        entrypoint: ["./cmd", "agent", "--config", "convoy.json"]
+        entrypoint: ["./cmd", "agent"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure

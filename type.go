@@ -107,6 +107,7 @@ const (
 	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"
 	MatchEventSubscriptionsProcessor TaskName = "MatchEventSubscriptionsProcessor"
 	BatchRetryProcessor              TaskName = "BatchRetryProcessor"
+	RefreshMetricsMaterializedViews  TaskName = "RefreshMetricsMaterializedViews"
 
 	TokenCacheKey CacheKey = "tokens"
 )

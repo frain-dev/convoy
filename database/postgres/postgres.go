@@ -85,9 +85,19 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 		return nil, fmt.Errorf("failed to create %sconnection pool: %w", src, err)
 	}
 
-	if dbConfig.SetMaxOpenConnections > 0 {
-		pgxCfg.MaxConns = int32(dbConfig.SetMaxOpenConnections)
+	// Set MaxConns - use configured value or default to 100 if not set
+	// This prevents unlimited connections when SetMaxOpenConnections is 0
+	maxConns := dbConfig.SetMaxOpenConnections
+	if maxConns <= 0 {
+		maxConns = 100
+		log.Warnf("[%s]: SetMaxOpenConnections not set or 0, using default: %d. Set CONVOY_DB_MAX_OPEN_CONN to override.", pkgName, maxConns)
 	}
+	pgxCfg.MaxConns = int32(maxConns)
+
+	if dbConfig.SetMaxIdleConnections > 0 {
+		pgxCfg.MaxConnIdleTime = time.Minute * 5
+	}
+
 	pgxCfg.MaxConnLifetime = time.Second * time.Duration(dbConfig.SetConnMaxLifetime)
 	pgxCfg.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName())
 
@@ -99,6 +109,18 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 
 	sqlDB := stdlib.OpenDBFromPool(pool)
 	db := sqlx.NewDb(sqlDB, "pgx")
+
+	maxOpenConns := maxConns
+	maxIdleConns := dbConfig.SetMaxIdleConnections
+	if maxIdleConns <= 0 {
+		maxIdleConns = maxOpenConns / 4
+		if maxIdleConns < 2 {
+			maxIdleConns = 2
+		}
+	}
+	db.SetMaxOpenConns(maxOpenConns)
+	db.SetMaxIdleConns(maxIdleConns)
+	db.SetConnMaxLifetime(time.Second * time.Duration(dbConfig.SetConnMaxLifetime))
 
 	return &Postgres{dbx: db, pool: pool, conn: pool}, nil
 }
