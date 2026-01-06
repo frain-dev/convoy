@@ -28,6 +28,11 @@ tests=(
   "TestE2E_DynamicEvent_MultipleEventTypes"
   "TestE2E_ReplayEvent_JobID_Format"
   "TestE2E_ReplayEvent_MultipleReplays"
+  "TestE2E_BackupProjectData_MinIO"
+  "TestE2E_BackupProjectData_OnPrem"
+  "TestE2E_BackupProjectData_MultiTenant"
+  "TestE2E_BackupProjectData_TimeFiltering"
+  "TestE2E_BackupProjectData_AllTables"
 )
 
 # Counter for passed tests

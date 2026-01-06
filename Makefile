@@ -40,6 +40,12 @@ test_e2e:
 	@go test -v ./e2e/... -run TestE2E_DynamicEvent_MultipleEventTypes -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_ReplayEvent_JobID_Format -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_ReplayEvent_MultipleReplays -timeout 2m
+	@echo "Running Backup E2E tests..."
+	@go test -v ./e2e/... -run TestE2E_BackupProjectData_MinIO -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_BackupProjectData_OnPrem -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_BackupProjectData_MultiTenant -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_BackupProjectData_TimeFiltering -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_BackupProjectData_AllTables -timeout 2m
 	@echo "✅ All E2E tests passed!"
 
 # Run all E2E tests together (may be flaky, use test_e2e for CI)
