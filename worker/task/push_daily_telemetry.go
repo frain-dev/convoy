@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -62,8 +61,8 @@ func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis)
 			return err
 		}
 
-		configRepo := configuration.New(pkglog.NewLogger(os.Stdout), db)
-		configuration, err := configRepo.LoadConfiguration(context.Background())
+		configRepo := configuration.New(log, db)
+		loadConfiguration, err := configRepo.LoadConfiguration(context.Background())
 		if err != nil {
 			return err
 		}
@@ -79,7 +78,7 @@ func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis)
 		pb := telemetry.NewposthogBackend()
 		mb := telemetry.NewmixpanelBackend()
 
-		newTelemetry := telemetry.NewTelemetry(log, configuration,
+		newTelemetry := telemetry.NewTelemetry(log, loadConfiguration,
 			telemetry.OptionTracker(totalEventsTracker),
 			telemetry.OptionBackend(pb),
 			telemetry.OptionBackend(mb))
