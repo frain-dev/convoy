@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -375,7 +376,7 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	}
 
 	// Seed Data
-	configRepo := postgres.NewConfigRepo(db)
+	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
 	err := configRepo.CreateConfiguration(context.TODO(), c)
 	if err != nil {
 		return nil, err

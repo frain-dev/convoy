@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
@@ -132,6 +133,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 	apiKeyRepo := api_keys.New(a.Logger, a.DB)
 	userRepo := postgres.NewUserRepo(a.DB)
 	portalLinkRepo := portal_links.New(a.Logger, a.DB)
+	configRepo := configuration.New(a.Logger, a.DB)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
 	if err != nil {
 		lo.WithError(err).Fatal("failed to initialize realm chain")
@@ -144,15 +146,16 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 
 	evHandler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:    flag,
-			DB:       a.DB,
-			Queue:    a.Queue,
-			Logger:   lo,
-			Cache:    a.Cache,
-			Rate:     a.Rate,
-			Redis:    a.Redis,
-			Licenser: a.Licenser,
-			Cfg:      cfg,
+			FFlag:      flag,
+			DB:         a.DB,
+			Queue:      a.Queue,
+			Logger:     lo,
+			Cache:      a.Cache,
+			Rate:       a.Rate,
+			Redis:      a.Redis,
+			Licenser:   a.Licenser,
+			Cfg:        cfg,
+			ConfigRepo: configRepo,
 		})
 	if err != nil {
 		return err

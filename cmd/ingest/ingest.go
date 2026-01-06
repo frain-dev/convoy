@@ -5,6 +5,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
@@ -16,7 +17,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	sourceRepo := postgres.NewSourceRepo(a.DB)
 	projectRepo := postgres.NewProjectRepo(a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
-	configRepo := postgres.NewConfigRepo(a.DB)
+	configRepo := configuration.New(a.Logger, a.DB)
 
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("ingester")

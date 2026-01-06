@@ -51,7 +51,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		Queue:         h.A.Queue,
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
-		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
+		ConfigRepo:    h.A.ConfigRepo,
 		Licenser:      h.A.Licenser,
 
 		BaseURL: baseUrl,
