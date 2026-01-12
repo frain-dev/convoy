@@ -224,3 +224,7 @@ func (h *Handler) CanManageEndpoint() func(next http.Handler) http.Handler {
 		})
 	}
 }
+
+func (h *Handler) isOrganisationDisabled(org *datastore.Organisation) bool {
+	return org.DisabledAt.Valid
+}

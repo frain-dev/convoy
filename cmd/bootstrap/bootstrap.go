@@ -33,7 +33,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ok, err := a.Licenser.CreateUser(context.Background())
+			ok, err := a.Licenser.CheckUserLimit(context.Background())
 			if err != nil {
 				return err
 			}

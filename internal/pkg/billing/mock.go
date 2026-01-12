@@ -2,6 +2,8 @@ package billing
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 )
 
 type MockBillingClient struct{}
@@ -220,9 +222,68 @@ func (m *MockBillingClient) GetInvoice(ctx context.Context, orgID, invoiceID str
 	if orgID == "" || invoiceID == "" {
 		return &Response{Status: false, Message: "invalid invoice request"}, nil
 	}
+	// Return a pdf_link that DownloadInvoice will handle
 	return &Response{
 		Status:  true,
 		Message: "Invoice retrieved successfully",
-		Data:    map[string]interface{}{"id": invoiceID, "status": "paid"},
+		Data:    map[string]interface{}{"id": invoiceID, "status": "paid", "pdf_link": "http://mock-pdf-server/invoice.pdf"},
 	}, nil
+}
+
+func (m *MockBillingClient) DownloadInvoice(ctx context.Context, orgID, invoiceID string) (*http.Response, error) {
+	if orgID == "" || invoiceID == "" {
+		return nil, &Error{Message: "invalid invoice request"}
+	}
+
+	// First get the invoice to extract pdf_link
+	invoiceResp, err := m.GetInvoice(ctx, orgID, invoiceID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !invoiceResp.Status {
+		return nil, &Error{Message: invoiceResp.Message}
+	}
+
+	// Extract pdf_link
+	invoiceData, ok := invoiceResp.Data.(map[string]interface{})
+	if !ok {
+		return nil, &Error{Message: "invalid invoice data"}
+	}
+
+	pdfLink, ok := invoiceData["pdf_link"].(string)
+	if !ok || pdfLink == "" {
+		return nil, &Error{Message: "invoice PDF link not found"}
+	}
+
+	// Create a test server that serves a mock PDF
+	pdfServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/pdf")
+		w.WriteHeader(http.StatusOK)
+		// Write a minimal PDF content (PDF header)
+		w.Write([]byte("%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\nxref\n0 0\ntrailer\n<<\n/Root 1 0 R\n>>\n%%EOF"))
+	}))
+	defer pdfServer.Close()
+
+	// Make request to the test server (ignore the pdfLink URL from GetInvoice)
+	req, err := http.NewRequestWithContext(ctx, "GET", pdfServer.URL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+type Error struct {
+	Message string
+}
+
+func (e *Error) Error() string {
+	return e.Message
 }

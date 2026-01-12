@@ -96,7 +96,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 				},
 				storeFn: func(pp *ProjectPolicy) {
 					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
-					licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+					licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
@@ -129,7 +129,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 				},
 				storeFn: func(pp *ProjectPolicy) {
 					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
-					licenser.EXPECT().MultiPlayerMode().Times(1).Return(false)
+					licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(false, nil)
 					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
@@ -177,7 +177,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 							Endpoint: "",
 						}}, nil)
 					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
-					licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+					licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 
 				},
 			},
@@ -246,7 +246,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 							},
 						}, nil)
 					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
-					licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+					licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 				},
 			},
 		},

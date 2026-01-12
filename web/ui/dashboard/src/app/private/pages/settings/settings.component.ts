@@ -45,10 +45,8 @@ export class SettingsComponent implements OnInit {
 				method: 'get',
 				hideNotification: true
 			});
+			// Billing is now controlled by backend configuration, not entitlements
 			this.billingEnabled = response.data?.enabled || false;
-			if (this.billingEnabled && !this.licenseService.hasLicense('BILLING_MODULE')) {
-				this.billingEnabled = false;
-			}
 			this.updateSettingsMenu();
 		} catch (error) {
 			console.warn('Failed to check billing status:', error);
@@ -93,10 +91,8 @@ export class SettingsComponent implements OnInit {
 	}
 
 	setActivePageWithLicenseCheck(requestedPage: string) {
-		if (requestedPage === 'team' && !this.licenseService.hasLicense('CREATE_USER')) {
-			this.toggleActivePage('organisation settings');
-			return;
-		}
+		// CREATE_USER entitlement removed - user limits handle this now
+		// Team page access is now controlled by user limits on the backend
 
 		if (requestedPage === 'usage and billing' && !this.canAccessBilling) {
 			this.toggleActivePage('organisation settings');

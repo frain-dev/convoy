@@ -474,13 +474,18 @@
 		</div>
 	</div>
 
-    <div class="flex justify-end" *ngIf="activeTab.label !== 'signature history' && activeTab.label !== 'endpoints config' && activeTab.label !== 'secrets' && activeTab.label !== 'event types' && activeTab.label !== 'circuit breaker'">
-		<button convoy-button [disabled]="isCreatingProject || projectForm.disabled">
-			{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
-			<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="action !== 'update'">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-		</button>
+    <div *ngIf="activeTab.label !== 'signature history' && activeTab.label !== 'endpoints config' && activeTab.label !== 'secrets' && activeTab.label !== 'event types' && activeTab.label !== 'circuit breaker'">
+		<div *ngIf="action === 'create' && isDisabled" class="mb-12px text-12 text-error-9 text-right">
+			This action is disabled for this organization. Please contact support or subscribe to a plan.
+		</div>
+		<div class="flex justify-end">
+			<button convoy-button [disabled]="isCreatingProject || projectForm.disabled || (action === 'create' && isDisabled)">
+				{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
+				<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="action !== 'update'">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</button>
+		</div>
 	</div>
 </form>
 

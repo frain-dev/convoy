@@ -331,6 +331,52 @@ func (s *BillingIntegrationTestSuite) Test_GetInvoice() {
 	require.True(s.T(), response["status"].(bool))
 }
 
+func (s *BillingIntegrationTestSuite) Test_DownloadInvoice() {
+	url := fmt.Sprintf("/ui/billing/organisations/%s/invoices/inv-1/download", s.DefaultOrg.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		s.T().Logf("Response body: %s", w.Body.String())
+	}
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	// Verify response headers
+	require.Equal(s.T(), "application/pdf", w.Header().Get("Content-Type"))
+	require.Contains(s.T(), w.Header().Get("Content-Disposition"), "attachment")
+	require.Contains(s.T(), w.Header().Get("Content-Disposition"), "invoice-inv-1.pdf")
+
+	// Verify response body contains PDF content
+	require.Greater(s.T(), len(w.Body.Bytes()), 0)
+	require.Contains(s.T(), string(w.Body.Bytes()[:10]), "%PDF")
+}
+
+func (s *BillingIntegrationTestSuite) Test_DownloadInvoice_NotFound() {
+	// Test with empty invoice ID to trigger validation error
+	url := fmt.Sprintf("/ui/billing/organisations/%s/invoices//download", s.DefaultOrg.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	// Should return a bad request status for missing invoice ID
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(s.T(), err)
+	require.False(s.T(), response["status"].(bool))
+	require.Contains(s.T(), response["message"].(string), "invoice ID")
+}
+
 func (s *BillingIntegrationTestSuite) Test_GetSetupIntent() {
 	url := fmt.Sprintf("/ui/billing/organisations/%s/payment_methods/setup_intent", s.DefaultOrg.UID)
 	req := createRequest(http.MethodGet, url, "", nil)

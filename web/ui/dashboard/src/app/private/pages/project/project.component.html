@@ -56,7 +56,7 @@
 
 					<div class="flex items-center">
 						<div class="w-full relative">
-							<a routerLink="../new" convoy-button size="sm" color="neutral" fill="text" class="py-12px px-12px whitespace-nowrap w-full text-left hover:bg-new.primary-25 flex items-center" convoy-permission="Project Settings|MANAGE">
+							<a [routerLink]="isDisabled ? null : '../new'" convoy-button size="sm" color="neutral" fill="text" class="py-12px px-12px whitespace-nowrap w-full text-left hover:bg-new.primary-25 flex items-center" convoy-permission="Project Settings|MANAGE" [class.pointer-events-none]="isDisabled" [class.opacity-50]="isDisabled">
 								<svg width="16" height="16" class="mr-4px fill-neutral-12 scale-75">
 									<use xlink:href="#plus-icon"></use>
 								</svg>
@@ -68,6 +68,12 @@
 									<use xlink:href="#lock-icon"></use>
 								</svg>
 								Business
+							</div>
+							<div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full" *ngIf="isDisabled && licenseService.hasLicense('CREATE_PROJECT')">
+								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+									<use xlink:href="#lock-icon"></use>
+								</svg>
+								Disabled
 							</div>
 						</div>
 						<div class="h-44px w-2px bg-new.primary-25"></div>

@@ -32,7 +32,7 @@ type InviteUserService struct {
 }
 
 func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationInvite, error) {
-	ok, err := iu.Licenser.CreateUser(ctx)
+	ok, err := iu.Licenser.CheckUserLimit(ctx)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -40,6 +40,10 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	if !ok {
 		return nil, &ServiceError{ErrMsg: ErrUserLimit.Error()}
 	}
+
+	// Check if multi-user mode is enabled (user_limit > 1)
+	// MultiPlayerMode is redundant - user limits handle this
+	// If user_limit is 1, it's single-user mode; otherwise multi-user
 
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -51,10 +55,6 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 		ExpiresAt:      time.Now().Add(time.Hour * 24 * 14), // expires in 2 weeks.
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
-	}
-
-	if !iu.Licenser.MultiPlayerMode() {
-		return nil, ErrMultiPlayerModeUnavailable
 	}
 
 	err = iu.InviteRepo.CreateOrganisationInvite(ctx, iv)

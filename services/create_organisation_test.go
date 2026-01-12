@@ -56,8 +56,8 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr: false,
 		},
@@ -78,8 +78,8 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr: false,
 		},
@@ -92,7 +92,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			},
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "organisation name is required",
@@ -106,7 +106,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			},
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(true, nil)
 
 				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)
 				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).
@@ -124,7 +124,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			},
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(false, nil)
+				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(false, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: ErrOrgLimit.Error(),

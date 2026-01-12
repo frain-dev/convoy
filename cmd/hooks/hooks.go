@@ -30,7 +30,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
+	"github.com/frain-dev/convoy/internal/pkg/license/service"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -218,12 +218,26 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Rate = rateLimiter
 
+		// Create license service client if custom config provided, otherwise licenser will use defaults
+		var licenseClient *service.Client
+		if cfg.LicenseService.Host != "" || cfg.LicenseService.ValidatePath != "" || cfg.LicenseService.Timeout != 0 || cfg.LicenseService.RetryCount != 0 {
+			licenseClient = service.NewClient(service.Config{
+				Host:         cfg.LicenseService.Host,
+				ValidatePath: cfg.LicenseService.ValidatePath,
+				Timeout:      cfg.LicenseService.Timeout,
+				RetryCount:   cfg.LicenseService.RetryCount,
+				Logger:       lo,
+			})
+		}
+
 		app.Licenser, err = license.NewLicenser(&license.Config{
-			KeyGen: keygen.Config{
+			LicenseService: service.LicenserConfig{
 				LicenseKey:  cfg.LicenseKey,
+				Client:      licenseClient,
 				OrgRepo:     organisations.New(lo, app.DB),
 				UserRepo:    postgres.NewUserRepo(app.DB),
 				ProjectRepo: projectRepo,
+				Logger:      lo,
 			},
 		})
 		if err != nil {

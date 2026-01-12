@@ -1,15 +1,18 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/config"
@@ -26,8 +29,8 @@ type BillingHandler struct {
 }
 
 func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Request, orgID string) bool {
-	if !h.A.Licenser.BillingModule() {
-		_ = render.Render(w, r, util.NewErrorResponse("Billing module is not available in your license plan", http.StatusForbidden))
+	if !h.A.Cfg.Billing.Enabled {
+		_ = render.Render(w, r, util.NewErrorResponse("Billing module is not enabled", http.StatusForbidden))
 		return false
 	}
 
@@ -52,7 +55,7 @@ func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Reque
 
 func (h *BillingHandler) GetBillingEnabled(w http.ResponseWriter, r *http.Request) {
 	response := map[string]bool{
-		"enabled": h.A.Cfg.Billing.Enabled && h.A.Licenser.BillingModule(),
+		"enabled": h.A.Cfg.Billing.Enabled,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Billing status retrieved", response, http.StatusOK))
@@ -190,6 +193,8 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return
 	}
+
+	h.updateOrganisationStatus(r.Context(), orgID, resp.Data)
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscription retrieved successfully", resp.Data, http.StatusOK))
 }
@@ -437,6 +442,8 @@ func (h *BillingHandler) CreateSubscription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	h.updateOrganisationStatus(r.Context(), orgID, resp.Data)
+
 	_ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", resp.Data, http.StatusCreated))
 }
 
@@ -481,6 +488,41 @@ func (h *BillingHandler) GetInvoice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Invoice retrieved successfully", resp.Data, http.StatusOK))
+}
+
+func (h *BillingHandler) DownloadInvoice(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	invoiceID := chi.URLParam(r, "invoiceID")
+	if orgID == "" || invoiceID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and invoice ID are required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
+	pdfResp, err := h.BillingClient.DownloadInvoice(r.Context(), orgID, invoiceID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			_ = render.Render(w, r, util.NewErrorResponse("Invoice not found", http.StatusNotFound))
+		} else if strings.Contains(err.Error(), "PDF link not found") {
+			_ = render.Render(w, r, util.NewErrorResponse("Invoice PDF link not available", http.StatusNotFound))
+		} else {
+			_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("Failed to download invoice: %s", err.Error()), http.StatusInternalServerError))
+		}
+		return
+	}
+	defer pdfResp.Body.Close()
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="invoice-%s.pdf"`, invoiceID))
+
+	_, err = io.Copy(w, pdfResp.Body)
+	if err != nil {
+		h.A.Logger.WithError(err).Error("Failed to stream PDF to client")
+		return
+	}
 }
 
 // GetInternalOrganisationID returns the internal organisation ID from billing service
@@ -565,4 +607,53 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Internal organisation ID retrieved successfully", responseData, http.StatusOK))
+}
+
+func (h *BillingHandler) updateOrganisationStatus(ctx context.Context, orgID string, subscriptionData interface{}) {
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to fetch organisation %s for disabled status update", orgID)
+		return
+	}
+
+	isActive := extractSubscriptionStatus(subscriptionData)
+
+	if isActive {
+		if org.DisabledAt.Valid {
+			org.DisabledAt = null.Time{}
+			if err := orgRepo.UpdateOrganisation(ctx, org); err != nil {
+				h.A.Logger.WithError(err).Errorf("Failed to clear organisation %s disabled_at", orgID)
+				return
+			}
+			h.A.Logger.Infof("Cleared organisation %s disabled_at - subscription active", orgID)
+		}
+	} else {
+		if !org.DisabledAt.Valid {
+			org.DisabledAt = null.NewTime(time.Now(), true)
+			if err := orgRepo.UpdateOrganisation(ctx, org); err != nil {
+				h.A.Logger.WithError(err).Errorf("Failed to set organisation %s disabled_at", orgID)
+				return
+			}
+			h.A.Logger.Infof("Set organisation %s disabled_at - subscription not active", orgID)
+		}
+	}
+}
+
+func extractSubscriptionStatus(subscriptionData interface{}) bool {
+	if subscriptionData == nil {
+		return false
+	}
+
+	data, ok := subscriptionData.(map[string]interface{})
+	if !ok {
+		return false
+	}
+
+	status, ok := data["status"].(string)
+	if !ok {
+		return false
+	}
+
+	return status == "active"
 }

@@ -25,12 +25,14 @@ func NewOrganisationMemberService(orgMemberRepo datastore.OrganisationMemberRepo
 }
 
 func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Context, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
-	// Only override to RoleInstanceAdmin if not in multiplayer mode AND role is not already RoleInstanceAdmin
-	if !om.licenser.MultiPlayerMode() && role.Type != auth.RoleInstanceAdmin {
+	// Only override to RoleInstanceAdmin if not in multi-user mode AND role is not already RoleInstanceAdmin
+	// MultiPlayerMode is redundant - user limits handle this
+	isMultiUser, err := om.licenser.IsMultiUserMode(ctx)
+	if err == nil && !isMultiUser && role.Type != auth.RoleInstanceAdmin {
 		role.Type = auth.RoleInstanceAdmin
 	}
 
-	err := role.Validate("organisation member")
+	err = role.Validate("organisation member")
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to validate organisation member role update")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -58,12 +60,14 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 	organisationMember.UpdatedAt = time.Now()
 	organisationMember.Role = *role
 
-	// Only override to RoleInstanceAdmin if not in multiplayer mode AND role is not already RoleInstanceAdmin
-	if !om.licenser.MultiPlayerMode() && role.Type != auth.RoleInstanceAdmin {
+	// Only override to RoleInstanceAdmin if not in multi-user mode AND role is not already RoleInstanceAdmin
+	// MultiPlayerMode is redundant - user limits handle this
+	isMultiUser, err := om.licenser.IsMultiUserMode(ctx)
+	if err == nil && !isMultiUser && organisationMember.Role.Type != auth.RoleInstanceAdmin {
 		organisationMember.Role.Type = auth.RoleInstanceAdmin
 	}
 
-	err := organisationMember.Role.Validate("organisation member")
+	err = organisationMember.Role.Validate("organisation member")
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to validate organisation member role update")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)

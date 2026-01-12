@@ -31,7 +31,7 @@ type CreateOrganisationService struct {
 var ErrOrgLimit = errors.New("your instance has reached it's organisation limit, upgrade to create new organisations")
 
 func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organisation, error) {
-	ok, err := co.Licenser.CreateOrg(ctx)
+	ok, err := co.Licenser.CheckOrgLimit(ctx)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -79,7 +79,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 		log.FromContext(ctx).WithError(err).Error("failed to create super_user member for organisation owner")
 	}
 
-	if cfg.Billing.Enabled && co.Licenser.BillingModule() {
+	if cfg.Billing.Enabled {
 		go func() {
 			billingCtx := context.Background()
 			billingClient := billing.NewClient(cfg.Billing)

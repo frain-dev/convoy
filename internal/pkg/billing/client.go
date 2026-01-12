@@ -30,6 +30,7 @@ type Client interface {
 	GetSetupIntent(ctx context.Context, orgID string) (*Response, error)
 	CreateSetupIntent(ctx context.Context, orgID string, setupIntentData interface{}) (*Response, error)
 	GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response, error)
+	DownloadInvoice(ctx context.Context, orgID, invoiceID string) (*http.Response, error)
 	SetDefaultPaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error)
 	DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error)
 }
@@ -204,6 +205,58 @@ func (c *HTTPClient) CreateSetupIntent(ctx context.Context, orgID string, setupI
 // Invoice methods
 func (c *HTTPClient) GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/invoices/%s", orgID, invoiceID), nil)
+}
+
+func (c *HTTPClient) DownloadInvoice(ctx context.Context, orgID, invoiceID string) (*http.Response, error) {
+	if !c.config.Enabled {
+		return nil, fmt.Errorf("billing is not enabled")
+	}
+
+	// First, get the invoice to extract the pdf_link
+	invoiceResp, err := c.GetInvoice(ctx, orgID, invoiceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get invoice: %w", err)
+	}
+
+	// Extract pdf_link from invoice data
+	var pdfLink string
+	if invoiceResp.Data != nil {
+		if invoiceData, ok := invoiceResp.Data.(map[string]interface{}); ok {
+			if link, exists := invoiceData["pdf_link"]; exists {
+				if linkStr, ok := link.(string); ok && linkStr != "" {
+					pdfLink = linkStr
+				}
+			}
+		}
+	}
+
+	if pdfLink == "" {
+		return nil, fmt.Errorf("invoice PDF link not found")
+	}
+
+	// Download the PDF from the billing service
+	req, err := http.NewRequestWithContext(ctx, "GET", pdfLink, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create PDF download request: %w", err)
+	}
+
+	// Set authorization header if API key is configured
+	if c.config.APIKey != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download PDF from billing service: %w", err)
+	}
+
+	// Check if the response is successful
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		resp.Body.Close()
+		return nil, fmt.Errorf("billing service returned error status: %d", resp.StatusCode)
+	}
+
+	return resp, nil
 }
 
 // Public billing methods

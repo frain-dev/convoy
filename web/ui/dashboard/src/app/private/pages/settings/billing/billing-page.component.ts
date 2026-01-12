@@ -12,6 +12,9 @@ import {CardIconService} from './card-icon.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {CountriesService} from 'src/app/services/countries/countries.service';
 import {Plan, PlanService} from './plan.service';
+import {BillingOverviewService, BillingOverview} from './billing-overview.service';
+import {BillingUsageService, UsageRow} from './billing-usage.service';
+import {HttpService} from 'src/app/services/http/http.service';
 
 @Component({
   selector: 'app-billing-page',
@@ -78,6 +81,11 @@ export class BillingPageComponent implements OnInit {
   confirmingDefaultFor: string | null = null;
   confirmingDeleteFor: string | null = null;
 
+  // Billing data for child components
+  billingOverview: BillingOverview | null = null;
+  usageRows: UsageRow[] = [];
+  isLoadingBillingData = true;
+
   constructor(
     private fb: FormBuilder,
     private billingPaymentDetailsService: BillingPaymentDetailsService,
@@ -85,16 +93,24 @@ export class BillingPageComponent implements OnInit {
     private cardIconService: CardIconService,
     private countriesService: CountriesService,
     private planService: PlanService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private overviewService: BillingOverviewService,
+    private usageService: BillingUsageService,
+    private httpService: HttpService
   ) {
     this.initializeForms();
   }
 
-  ngOnInit() {
+  private bootstrapSubscriptionPromise: Promise<void> | null = null;
+
+  async ngOnInit() {
     this.validateOrganisation();
+    this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
+    this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
+    await this.bootstrapSubscriptionPromise;
+    
     this.loadBillingConfiguration();
     this.loadCountries();
-    // loadExistingData will be called after loadInternalOrganisationId succeeds
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);
@@ -103,6 +119,151 @@ export class BillingPageComponent implements OnInit {
     this.vatForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onVatCountryChange(countryCode);
     });
+  }
+
+  private async bootstrapOrganisation() {
+    try {
+      const orgId = this.getOrganisationId();
+      await this.httpService.request({ 
+        url: `/billing/organisations/${orgId}/subscription`, 
+        method: 'get', 
+        hideNotification: true 
+      });
+      await this.loadBillingData();
+    } catch (error) {
+      console.error('Failed to bootstrap organisation:', error);
+      await this.loadBillingData();
+    }
+  }
+
+  private async loadBillingData() {
+    this.isLoadingBillingData = true;
+    try {
+      const orgId = this.getOrganisationId();
+      const [usageResponse, paymentResponse] = await Promise.all([
+        this.httpService.request({ 
+          url: `/billing/organisations/${orgId}/usage`, 
+          method: 'get', 
+          hideNotification: true 
+        }).catch(() => ({ data: null })),
+        this.httpService.request({ 
+          url: `/billing/organisations/${orgId}/payment_methods`, 
+          method: 'get', 
+          hideNotification: true 
+        }).catch(() => ({ data: null }))
+      ]);
+
+      const subscriptionResponse = await this.httpService.request({ 
+        url: `/billing/organisations/${orgId}/subscription`, 
+        method: 'get', 
+        hideNotification: true 
+      }).catch(() => ({ data: null }));
+
+      const overviewData = {
+        subscription: subscriptionResponse.data,
+        usage: usageResponse.data,
+        payment: paymentResponse.data
+      };
+      
+      if (overviewData) {
+        this.billingOverview = this.overviewService.formatOverviewData(overviewData);
+        
+        if (overviewData.usage) {
+          this.usageRows = this.usageService.formatUsageData(overviewData.usage);
+        } else {
+          this.usageRows = [];
+        }
+        
+        if (overviewData.payment && Array.isArray(overviewData.payment)) {
+          this.paymentMethods = overviewData.payment.sort((a: PaymentMethod, b: PaymentMethod) => a.id.localeCompare(b.id));
+          if (this.paymentMethods.length > 0) {
+            const pm = this.paymentMethods[0];
+            this.paymentMethodDetails = {
+              cardholderName: 'Cardholder Name',
+              last4: pm.last4 || '0000',
+              brand: pm.card_type || 'unknown',
+              expiryMonth: pm.exp_month?.toString() || '',
+              expiryYear: pm.exp_year?.toString() || ''
+            };
+          }
+        } else {
+          this.paymentMethods = [];
+        }
+      } else {
+        this.billingOverview = null;
+        this.usageRows = [];
+        this.paymentMethods = [];
+      }
+      
+      this.isLoadingBillingData = false;
+      await this.loadOrganisationData();
+    } catch (error) {
+      console.error('Failed to load billing data:', error);
+      this.isLoadingBillingData = false;
+    }
+  }
+
+  private async loadOrganisationData() {
+    if (this.bootstrapSubscriptionPromise) {
+      await this.bootstrapSubscriptionPromise;
+    }
+    
+    this.isLoadingBillingAddress = true;
+    this.isLoadingVat = true;
+    try {
+      const orgId = this.getOrganisationId();
+      const response = await this.httpService.request({
+        url: `/billing/organisations/${orgId}`,
+        method: 'get',
+        hideNotification: true
+      }).catch(() => ({ data: null }));
+
+      if (response.data) {
+        // Load billing address
+        if (response.data.billing_address) {
+          this.billingAddressDetails = response.data.billing_address;
+          this.isLoadingBillingAddress = false;
+        } else {
+          // Fallback to organisation API
+          this.billingPaymentDetailsService.getBillingAddress().subscribe({
+            next: (details) => {
+              this.billingAddressDetails = details;
+              this.isLoadingBillingAddress = false;
+            },
+            error: (error) => {
+              console.error('Failed to load billing address:', error);
+              this.billingAddressDetails = null;
+              this.isLoadingBillingAddress = false;
+            }
+          });
+        }
+
+        // Load VAT info
+        if (response.data.vat_info) {
+          this.vatInfoDetails = response.data.vat_info;
+          this.isLoadingVat = false;
+        } else {
+          // Fallback to organisation API
+          this.billingPaymentDetailsService.getVatInfo().subscribe({
+            next: (details) => {
+              this.vatInfoDetails = details;
+              this.isLoadingVat = false;
+            },
+            error: (error) => {
+              console.error('Failed to load VAT info:', error);
+              this.isLoadingVat = false;
+            }
+          });
+        }
+      } else {
+        // Fallback to organisation API if billing service doesn't have data
+        this.loadExistingData();
+      }
+    } catch (error) {
+      console.error('Failed to load organisation data:', error);
+      // Fallback to organisation API
+      this.loadExistingData();
+    }
   }
 
   private validateOrganisation() {

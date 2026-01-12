@@ -1,9 +1,14 @@
 <app-billing-overview 
+  [overview]="billingOverview"
+  [isLoading]="isLoadingBillingData"
   [refreshTrigger]="refreshOverviewTrigger"
   (openPaymentDetails)="openPaymentDetails()"
   (openManagePlan)="openManagePlan()">
 </app-billing-overview>
-<app-billing-usage></app-billing-usage>
+<app-billing-usage 
+  [usageRows]="usageRows"
+  [isFetchingUsage]="isLoadingBillingData">
+</app-billing-usage>
 <app-billing-invoices></app-billing-invoices>
 
 <dialog #paymentDetailsDialog convoy-dialog>

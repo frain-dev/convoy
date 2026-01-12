@@ -50,7 +50,11 @@ export class ProjectComponent implements OnInit {
 	projects: PROJECT[] = [];
 	activeNavTab: any;
 
-	constructor(private privateService: PrivateService, private router: Router, public licenseService:LicensesService) {}
+	constructor(
+		private privateService: PrivateService,
+		private router: Router,
+		public licenseService: LicensesService
+	) {}
 
 	ngOnInit() {
 		Promise.all([this.getProjectDetails(), this.getProjects()]);
@@ -112,6 +116,17 @@ export class ProjectComponent implements OnInit {
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
+		}
+	}
+
+	get isDisabled(): boolean {
+		const org = localStorage.getItem('CONVOY_ORG');
+		if (!org) return false;
+		try {
+			const organisationDetails = JSON.parse(org);
+			return organisationDetails.disabled_at != null && organisationDetails.disabled_at !== undefined;
+		} catch {
+			return false;
 		}
 	}
 }
