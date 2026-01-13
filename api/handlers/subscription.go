@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/services"
@@ -368,7 +369,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	us := services.UpdateSubscriptionService{
 		SubRepo:        postgres.NewSubscriptionRepo(h.A.DB),
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:    postgres.NewProjectRepo(h.A.DB),
+		ProjectRepo:    projects.New(h.A.Logger, h.A.DB),
 		SourceRepo:     postgres.NewSourceRepo(h.A.DB),
 		Licenser:       h.A.Licenser,
 		ProjectId:      project.UID,

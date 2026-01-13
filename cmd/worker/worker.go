@@ -23,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -144,7 +145,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		}
 	}
 
-	projectRepo := postgres.NewProjectRepo(a.DB)
+	projectRepo := projects.New(a.Logger, a.DB)
 	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
 	eventRepo := postgres.NewEventRepo(a.DB)

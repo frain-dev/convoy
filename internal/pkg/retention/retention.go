@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -87,7 +88,7 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 			r.logger.Errorf("failed to import existing partitions: %v", err)
 		}
 
-		projectRepo := postgres.NewProjectRepo(r.db)
+		projectRepo := projects.New(r.logger, r.db)
 
 		for {
 			select {
@@ -177,7 +178,7 @@ type DeleteRetentionPolicy struct {
 func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
 	eventRepo := postgres.NewEventRepo(d.db)
 	configRepo := postgres.NewConfigRepo(d.db)
-	projectRepo := postgres.NewProjectRepo(d.db)
+	projectRepo := projects.New(d.logger, d.db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(d.db)
 	deliveryAttemptsRepo := delivery_attempts.New(d.logger, d.db)
 

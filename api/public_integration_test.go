@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +27,8 @@ import (
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type PublicEndpointIntegrationTestSuite struct {
@@ -2118,7 +2121,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey(
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	projectRepo := postgres.NewProjectRepo(s.ConvoyApp.A.DB)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	_, err = projectRepo.FetchProjectByID(context.Background(), projectID)
 	require.Equal(s.T(), datastore.ErrProjectNotFound, err)
 }

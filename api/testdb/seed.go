@@ -25,6 +25,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -166,7 +167,7 @@ func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastor
 	}
 
 	// Seed Data.
-	projectRepo := postgres.NewProjectRepo(db)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	err := projectRepo.CreateProject(context.TODO(), defaultProject)
 	if err != nil {
 		return &datastore.Project{}, err
@@ -352,7 +353,7 @@ func SeedProject(db database.Database, uid, name, orgID string, projectType data
 	}
 
 	// Seed Data.
-	projectRepo := postgres.NewProjectRepo(db)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	err := projectRepo.CreateProject(context.TODO(), g)
 	if err != nil {
 		return &datastore.Project{}, err

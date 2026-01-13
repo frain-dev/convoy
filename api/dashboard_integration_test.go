@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -29,6 +30,8 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type pagedResponse struct {
@@ -2989,7 +2992,7 @@ func (s *ProjectIntegrationTestSuite) TestDeleteProject() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	projectRepo := postgres.NewProjectRepo(s.ConvoyApp.A.DB)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	_, err = projectRepo.FetchProjectByID(context.Background(), project.UID)
 	require.Equal(s.T(), datastore.ErrProjectNotFound, err)
 }
@@ -3106,7 +3109,7 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	projectRepo := postgres.NewProjectRepo(s.ConvoyApp.A.DB)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	g, err := projectRepo.FetchProjectByID(context.Background(), project.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), "project_1", g.Name)

@@ -18,6 +18,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -158,7 +159,7 @@ func seedOrganisationMember(t *testing.T, db database.Database, orgID, userID st
 func seedProject(t *testing.T, db database.Database, orgID string) *datastore.Project {
 	t.Helper()
 
-	projectRepo := postgres.NewProjectRepo(db)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{

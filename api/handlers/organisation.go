@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -551,7 +552,7 @@ func (h *Handler) GetOrganisationCircuitBreakerConfig(w http.ResponseWriter, r *
 		return
 	}
 
-	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	projectRepo := projects.New(h.A.Logger, h.A.DB)
 	projects, err := projectRepo.LoadProjects(r.Context(), &datastore.ProjectFilter{OrgID: orgID})
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -623,7 +624,7 @@ func (h *Handler) UpdateOrganisationCircuitBreakerConfig(w http.ResponseWriter, 
 		return
 	}
 
-	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	projectRepo := projects.New(h.A.Logger, h.A.DB)
 	projects, err := projectRepo.LoadProjects(r.Context(), &datastore.ProjectFilter{OrgID: orgID})
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -694,7 +695,7 @@ func (h *Handler) GetProjectCircuitBreakerConfig(w http.ResponseWriter, r *http.
 		return
 	}
 
-	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	projectRepo := projects.New(h.A.Logger, h.A.DB)
 	project, err := projectRepo.FetchProjectByID(r.Context(), projectID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrProjectNotFound) {
@@ -753,7 +754,7 @@ func (h *Handler) UpdateProjectCircuitBreakerConfig(w http.ResponseWriter, r *ht
 		return
 	}
 
-	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	projectRepo := projects.New(h.A.Logger, h.A.DB)
 	project, err := projectRepo.FetchProjectByID(r.Context(), projectID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrProjectNotFound) {
