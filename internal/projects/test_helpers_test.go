@@ -316,7 +316,7 @@ func seedSubscription(t *testing.T, db database.Database, project *datastore.Pro
 	return subscription
 }
 
-func seedSource(t *testing.T, db database.Database, project *datastore.Project) *datastore.Source {
+func seedSource(t *testing.T, db database.Database, project *datastore.Project) {
 	t.Helper()
 
 	sourceRepo := postgres.NewSourceRepo(db)
@@ -331,6 +331,4 @@ func seedSource(t *testing.T, db database.Database, project *datastore.Project) 
 
 	err := sourceRepo.CreateSource(context.Background(), source)
 	require.NoError(t, err)
-
-	return source
 }

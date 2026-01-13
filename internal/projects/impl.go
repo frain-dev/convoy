@@ -71,16 +71,6 @@ func stringSliceToJSON(arr []string) []byte {
 	return data
 }
 
-// jsonBytesToStringSlice converts JSON bytes to []string
-func jsonBytesToStringSlice(data []byte) []string {
-	if len(data) == 0 {
-		return []string{}
-	}
-	var result []string
-	json.Unmarshal(data, &result)
-	return result
-}
-
 // pubSubToJSON converts PubSubConfig to JSON bytes
 func pubSubToJSON(config *datastore.PubSubConfig) []byte {
 	if config == nil {

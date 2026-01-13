@@ -80,7 +80,7 @@ func TestFillProjectsStatistics(t *testing.T) {
 			name: "should_return_true_for_sources_when_source_exists",
 			setup: func() *datastore.Project {
 				project := seedProject(t, db, org)
-				_ = seedSource(t, db, project)
+				seedSource(t, db, project)
 				return project
 			},
 			wantSubscriptions: false,
@@ -96,7 +96,7 @@ func TestFillProjectsStatistics(t *testing.T) {
 				endpoint := seedEndpoint(t, db, project, datastore.ActiveEndpointStatus)
 				_ = seedEvent(t, db, project, endpoint)
 				_ = seedSubscription(t, db, project, endpoint)
-				_ = seedSource(t, db, project)
+				seedSource(t, db, project)
 				return project
 			},
 			wantSubscriptions: true,
@@ -154,8 +154,8 @@ func TestFillProjectsStatistics_MultipleResources(t *testing.T) {
 	_ = seedSubscription(t, db, project, endpoint1)
 	_ = seedSubscription(t, db, project, endpoint2)
 
-	_ = seedSource(t, db, project)
-	_ = seedSource(t, db, project)
+	seedSource(t, db, project)
+	seedSource(t, db, project)
 
 	// Fill statistics
 	err := service.FillProjectsStatistics(ctx, project)
