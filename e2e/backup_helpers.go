@@ -20,6 +20,8 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 // MinIO Operations
@@ -293,7 +295,7 @@ func seedOldDeliveryAttempt(t *testing.T, db database.Database, ctx context.Cont
 func createMinIOConfig(t *testing.T, db database.Database, ctx context.Context, endpoint string) *datastore.Configuration {
 	t.Helper()
 
-	configRepo := postgres.NewConfigRepo(db)
+	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
 
 	// Load existing configuration (created by test setup)
 	config, err := configRepo.LoadConfiguration(ctx)
@@ -332,7 +334,7 @@ func createMinIOConfig(t *testing.T, db database.Database, ctx context.Context, 
 func createOnPremConfig(t *testing.T, db database.Database, ctx context.Context, exportPath string) *datastore.Configuration {
 	t.Helper()
 
-	configRepo := postgres.NewConfigRepo(db)
+	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
 
 	// Load existing configuration (created by test setup)
 	config, err := configRepo.LoadConfiguration(ctx)

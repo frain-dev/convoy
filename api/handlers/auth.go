@@ -35,7 +35,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
+		ConfigRepo:    h.A.ConfigRepo,
 		LicenseKey:    configuration.LicenseKey,
 		Host:          configuration.Host,
 		Licenser:      h.A.Licenser,
@@ -67,7 +67,7 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
+		ConfigRepo:    h.A.ConfigRepo,
 		LicenseKey:    configuration.LicenseKey,
 		Licenser:      h.A.Licenser,
 	}
@@ -263,7 +263,7 @@ func (h *Handler) GoogleOAuthToken(w http.ResponseWriter, r *http.Request) {
 		organisations.New(h.A.Logger, h.A.DB),
 		organisation_members.New(h.A.Logger, h.A.DB),
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		postgres.NewConfigRepo(h.A.DB),
+		h.A.ConfigRepo,
 		h.A.Licenser,
 	)
 
@@ -321,7 +321,7 @@ func (h *Handler) GoogleOAuthSetup(w http.ResponseWriter, r *http.Request) {
 		organisations.New(h.A.Logger, h.A.DB),
 		organisation_members.New(h.A.Logger, h.A.DB),
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		postgres.NewConfigRepo(h.A.DB),
+		h.A.ConfigRepo,
 		h.A.Licenser,
 	)
 

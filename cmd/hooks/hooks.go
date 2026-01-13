@@ -24,6 +24,7 @@ import (
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -243,7 +244,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		// update config singleton with the instance id
 		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
-			configRepo := postgres.NewConfigRepo(app.DB)
+			configRepo := configuration.New(app.Logger, app.DB)
 			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
 			if err != nil {
 				lo.WithError(err).Error("Failed to load configuration")
@@ -349,7 +350,7 @@ func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
 }
 
 func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configuration) (*datastore.Configuration, error) {
-	configRepo := postgres.NewConfigRepo(a.DB)
+	configRepo := configuration.New(a.Logger, a.DB)
 
 	s3 := datastore.S3Storage{
 		Prefix:       null.NewString(cfg.StoragePolicy.S3.Prefix, true),

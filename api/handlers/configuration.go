@@ -9,7 +9,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -17,7 +16,7 @@ import (
 )
 
 func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
-	configuration, err := postgres.NewConfigRepo(h.A.DB).LoadConfiguration(r.Context())
+	configuration, err := h.A.ConfigRepo.LoadConfiguration(r.Context())
 	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -59,7 +58,7 @@ func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cc := services.CreateConfigService{
-		ConfigRepo: postgres.NewConfigRepo(h.A.DB),
+		ConfigRepo: h.A.ConfigRepo,
 		NewConfig:  &newConfig,
 	}
 
@@ -92,7 +91,7 @@ func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uc := services.UpdateConfigService{
-		ConfigRepo: postgres.NewConfigRepo(h.A.DB),
+		ConfigRepo: h.A.ConfigRepo,
 		Config:     &newConfig,
 	}
 
