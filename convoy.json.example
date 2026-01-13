@@ -100,7 +100,9 @@
   "metrics": {
         "metrics_backend": "prometheus",
         "prometheus_metrics": {
-            "sample_time": 10
+            "sample_time": 5,
+            "query_timeout": 30,
+            "materialized_view_refresh_interval": 2
         }
   }
 }

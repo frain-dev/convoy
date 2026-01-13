@@ -141,9 +141,8 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 				// Return empty metrics to prevent blocking the endpoint
 				metrics = &Metrics{}
 			}
-		} else {
-			cachedMetrics = metrics
 		}
+		cachedMetrics = metrics
 	}
 
 	// Use unique keys per metric type to prevent collisions
@@ -244,12 +243,16 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 
 // collectMetrics gathers essential metrics from the DB
 func (p *Postgres) collectMetrics() (*Metrics, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(metricsConfig.Prometheus.SampleTime)*time.Second)
+	queryTimeout := time.Duration(metricsConfig.Prometheus.QueryTimeout) * time.Second
+	if queryTimeout == 0 {
+		queryTimeout = 30 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
 	defer cancel()
 
 	metrics := &Metrics{}
 
-	queryEventQueueMetrics := "select distinct project_id, coalesce(source_id, 'http') as source_id, count(*) as total from convoy.events group by project_id, source_id"
+	queryEventQueueMetrics := "SELECT project_id, source_id, total FROM convoy.event_queue_metrics_mv"
 	rows, err := p.GetDB().QueryxContext(ctx, queryEventQueueMetrics)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query event queue metrics: %w", err)
@@ -266,27 +269,7 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueMetrics = eventQueueMetrics
 
-	backlogQM := `WITH a1 AS (
-    SELECT ed.project_id,
-           COALESCE(e.source_id, 'http') AS source_id,
-           EXTRACT(EPOCH FROM (NOW() - MIN(ed.created_at))) AS age_seconds
-    FROM convoy.event_deliveries ed
-             LEFT JOIN convoy.events e ON e.id = ed.event_id
-    WHERE ed.status = 'Processing'
-    GROUP BY ed.project_id, e.source_id
-    LIMIT 1000 -- samples
-    )
-    SELECT * FROM a1
-    UNION ALL
-    SELECT ed.project_id,
-           COALESCE(e.source_id, 'http'),
-           0 AS age_seconds
-    FROM convoy.event_deliveries ed
-             LEFT JOIN convoy.events e ON e.id = ed.event_id
-             LEFT JOIN a1 ON e.source_id = a1.source_id
-    WHERE ed.status = 'Success' AND a1.source_id IS NULL
-    GROUP BY ed.project_id, e.source_id
-    LIMIT 1000; -- samples`
+	backlogQM := "SELECT project_id, source_id, age_seconds FROM convoy.event_queue_backlog_metrics_mv"
 	rows1, err := p.GetDB().QueryxContext(ctx, backlogQM)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query backlog metrics: %w", err)
@@ -303,22 +286,17 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueBacklogMetrics = eventQueueBacklogMetrics
 
-	queryDeliveryQ := `SELECT DISTINCT 
-		ed.project_id, 
-		COALESCE(p.name, '') as project_name,
-		ed.endpoint_id, 
-		ed.status,
-		COALESCE(ed.event_type, '') as event_type,
-		COALESCE(e.source_id, 'http') as source_id,
-		COALESCE(p.organisation_id, '') as organisation_id,
-		COALESCE(o.name, '') as organisation_name,
-		COUNT(*) as total 
-	FROM convoy.event_deliveries ed
-	LEFT JOIN convoy.events e ON ed.event_id = e.id
-	LEFT JOIN convoy.projects p ON ed.project_id = p.id
-	LEFT JOIN convoy.organisations o ON p.organisation_id = o.id
-	WHERE ed.deleted_at IS NULL
-	GROUP BY ed.project_id, p.name, ed.endpoint_id, ed.status, ed.event_type, e.source_id, p.organisation_id, o.name`
+	queryDeliveryQ := `SELECT 
+		project_id, 
+		project_name,
+		endpoint_id, 
+		status,
+		event_type,
+		source_id,
+		organisation_id,
+		organisation_name,
+		total 
+	FROM convoy.event_delivery_queue_metrics_mv`
 	rows2, err := p.GetDB().QueryxContext(ctx, queryDeliveryQ)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query delivery queue metrics: %w", err)
@@ -335,29 +313,7 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventDeliveryQueueMetrics = eventDeliveryQueueMetrics
 
-	backlogEQM := `WITH a1 AS (
-    SELECT ed.project_id,
-           COALESCE(e.source_id, 'http') AS source_id,
-           ed.endpoint_id,
-           EXTRACT(EPOCH FROM (NOW() - MIN(ed.created_at))) AS age_seconds
-    FROM convoy.event_deliveries ed
-    LEFT JOIN convoy.events e ON e.id = ed.event_id
-    WHERE ed.status = 'Processing'
-    GROUP BY ed.project_id, e.source_id, ed.endpoint_id
-    LIMIT 1000 -- samples
-    )
-    SELECT * FROM a1
-    UNION ALL
-    SELECT ed.project_id,
-           COALESCE(e.source_id, 'http'),
-           ed.endpoint_id,
-           0 AS age_seconds
-    FROM convoy.event_deliveries ed
-    LEFT JOIN convoy.events e ON e.id = ed.event_id
-    LEFT JOIN a1 ON ed.endpoint_id = a1.endpoint_id
-    WHERE ed.status = 'Success' AND a1.endpoint_id IS NULL
-    GROUP BY ed.project_id, e.source_id, ed.endpoint_id
-    LIMIT 1000; -- samples`
+	backlogEQM := "SELECT project_id, source_id, endpoint_id, age_seconds FROM convoy.event_endpoint_backlog_metrics_mv"
 	rows3, err := p.GetDB().QueryxContext(ctx, backlogEQM)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query endpoint backlog metrics: %w", err)

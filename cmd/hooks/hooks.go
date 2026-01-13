@@ -718,11 +718,23 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 					return nil, errors.New("metrics-prometheus-sample-time must be non-zero")
 				}
 
+				queryTimeout, err := cmd.Flags().GetUint64("metrics-prometheus-query-timeout")
+				if err != nil {
+					return nil, err
+				}
+
+				materializedViewRefreshInterval, err := cmd.Flags().GetUint64("metrics-prometheus-materialized-view-refresh-interval")
+				if err != nil {
+					return nil, err
+				}
+
 				c.Metrics = config.MetricsConfiguration{
 					IsEnabled: true,
 					Backend:   config.MetricsBackend(metricsBackend),
 					Prometheus: config.PrometheusMetricsConfiguration{
-						SampleTime: sampleTime,
+						SampleTime:                      sampleTime,
+						QueryTimeout:                    queryTimeout,
+						MaterializedViewRefreshInterval: materializedViewRefreshInterval,
 					},
 				}
 			}
