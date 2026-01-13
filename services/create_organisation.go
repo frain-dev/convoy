@@ -88,7 +88,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 				orgData := map[string]interface{}{
 					"name":          org.Name,
 					"external_id":   org.UID,
-					"billing_email": "",
+					"billing_email": "", // user email.org
 					"host":          cfg.Host,
 				}
 

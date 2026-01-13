@@ -283,13 +283,14 @@ func (s *BillingIntegrationTestSuite) Test_UpdateOrganisation() {
 	require.True(s.T(), response["status"].(bool))
 }
 
-func (s *BillingIntegrationTestSuite) Test_CreateSubscription() {
-	subData := map[string]interface{}{
-		"plan_id": "plan-1",
+func (s *BillingIntegrationTestSuite) Test_OnboardSubscription() {
+	onboardData := map[string]interface{}{
+		"plan_id": "plan-uuid-123",
+		"host":    "https://app.getconvoy.io",
 	}
 
-	body, _ := json.Marshal(subData)
-	url := fmt.Sprintf("/ui/billing/organisations/%s/subscriptions", s.DefaultOrg.UID)
+	body, _ := json.Marshal(onboardData)
+	url := fmt.Sprintf("/ui/billing/organisations/%s/subscriptions/onboard", s.DefaultOrg.UID)
 	req := createRequest(http.MethodPost, url, "", bytes.NewBuffer(body))
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -298,14 +299,50 @@ func (s *BillingIntegrationTestSuite) Test_CreateSubscription() {
 
 	s.Router.ServeHTTP(w, req)
 
-	require.Equal(s.T(), http.StatusCreated, w.Code)
+	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	var response map[string]interface{}
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(s.T(), err)
 
-	require.Equal(s.T(), "Subscription created successfully", response["message"])
+	require.Equal(s.T(), "Checkout session created successfully", response["message"])
 	require.True(s.T(), response["status"].(bool))
+	
+	// Verify checkout_url is in response
+	data, ok := response["data"].(map[string]interface{})
+	require.True(s.T(), ok)
+	require.Contains(s.T(), data, "checkout_url")
+}
+
+func (s *BillingIntegrationTestSuite) Test_UpgradeSubscription() {
+	upgradeData := map[string]interface{}{
+		"plan_id": "plan-uuid-456",
+		"host":    "https://app.getconvoy.io",
+	}
+
+	body, _ := json.Marshal(upgradeData)
+	url := fmt.Sprintf("/ui/billing/organisations/%s/subscriptions/sub-123/upgrade", s.DefaultOrg.UID)
+	req := createRequest(http.MethodPut, url, "", bytes.NewBuffer(body))
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(s.T(), err)
+
+	require.Equal(s.T(), "Checkout session created successfully", response["message"])
+	require.True(s.T(), response["status"].(bool))
+	
+	// Verify checkout_url is in response
+	data, ok := response["data"].(map[string]interface{})
+	require.True(s.T(), ok)
+	require.Contains(s.T(), data, "checkout_url")
 }
 
 func (s *BillingIntegrationTestSuite) Test_GetInvoice() {

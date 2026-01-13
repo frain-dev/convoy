@@ -26,7 +26,9 @@ type Client interface {
 	UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData interface{}) (*Response, error)
 	UpdateOrganisationAddress(ctx context.Context, orgID string, addressData interface{}) (*Response, error)
 	GetSubscriptions(ctx context.Context, orgID string) (*Response, error)
-	CreateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error)
+	OnboardSubscription(ctx context.Context, orgID string, planID, host string) (*Response, error)
+	UpgradeSubscription(ctx context.Context, orgID, subscriptionID, planID, host string) (*Response, error)
+	DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response, error)
 	GetSetupIntent(ctx context.Context, orgID string) (*Response, error)
 	CreateSetupIntent(ctx context.Context, orgID string, setupIntentData interface{}) (*Response, error)
 	GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response, error)
@@ -169,16 +171,24 @@ func (c *HTTPClient) GetSubscriptions(ctx context.Context, orgID string) (*Respo
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
 }
 
-func (c *HTTPClient) CreateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error) {
-	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/subscriptions", orgID), subData)
+func (c *HTTPClient) OnboardSubscription(ctx context.Context, orgID string, planID, host string) (*Response, error) {
+	body := map[string]interface{}{
+		"plan_id": planID,
+		"host":    host,
+	}
+	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/subscriptions/onboard", orgID), body)
 }
 
-func (c *HTTPClient) UpdateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error) {
-	return c.makeRequest(ctx, "PUT", fmt.Sprintf("/organisations/%s/subscriptions", orgID), subData)
+func (c *HTTPClient) UpgradeSubscription(ctx context.Context, orgID, subscriptionID, planID, host string) (*Response, error) {
+	body := map[string]interface{}{
+		"plan_id": planID,
+		"host":    host,
+	}
+	return c.makeRequest(ctx, "PUT", fmt.Sprintf("/organisations/%s/subscriptions/%s/upgrade", orgID, subscriptionID), body)
 }
 
-func (c *HTTPClient) DeleteSubscription(ctx context.Context, orgID string) (*Response, error) {
-	return c.makeRequest(ctx, "DELETE", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
+func (c *HTTPClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response, error) {
+	return c.makeRequest(ctx, "DELETE", fmt.Sprintf("/organisations/%s/subscriptions/%s", orgID, subscriptionID), nil)
 }
 
 func (c *HTTPClient) CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*Response, error) {

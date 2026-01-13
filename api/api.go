@@ -685,7 +685,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
 					billingSubRouter.Get("/", billingHandler.GetSubscriptions)
-					billingSubRouter.Post("/", billingHandler.CreateSubscription)
+					billingSubRouter.Post("/onboard", billingHandler.OnboardSubscription)
+					billingSubRouter.Put("/{subscriptionID}/upgrade", billingHandler.UpgradeSubscription)
+					billingSubRouter.Delete("/{subscriptionID}", billingHandler.DeleteSubscription)
 				})
 
 				billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {

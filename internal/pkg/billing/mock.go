@@ -127,33 +127,31 @@ func (m *MockBillingClient) GetSubscriptions(ctx context.Context, orgID string) 
 	}, nil
 }
 
-func (m *MockBillingClient) CreateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error) {
-	data, _ := subData.(map[string]interface{})
-	if orgID == "" || data == nil || data["plan_id"] == nil || data["plan_id"] == "" {
-		return &Response{Status: false, Message: "plan_id is required"}, nil
+func (m *MockBillingClient) OnboardSubscription(ctx context.Context, orgID string, planID, host string) (*Response, error) {
+	if orgID == "" || planID == "" || host == "" {
+		return &Response{Status: false, Message: "organisation ID, plan ID, and host are required"}, nil
 	}
 	return &Response{
 		Status:  true,
-		Message: "Subscription created successfully",
-		Data:    map[string]interface{}{"id": "sub-1", "plan_id": data["plan_id"]},
+		Message: "Checkout session created successfully",
+		Data:    map[string]interface{}{"checkout_url": "https://checkout.maple.com/mock-checkout"},
 	}, nil
 }
 
-func (m *MockBillingClient) UpdateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error) {
-	data, _ := subData.(map[string]interface{})
-	if orgID == "" || data == nil || data["plan_id"] == nil || data["plan_id"] == "" {
-		return &Response{Status: false, Message: "plan_id is required"}, nil
+func (m *MockBillingClient) UpgradeSubscription(ctx context.Context, orgID, subscriptionID, planID, host string) (*Response, error) {
+	if orgID == "" || subscriptionID == "" || planID == "" || host == "" {
+		return &Response{Status: false, Message: "organisation ID, subscription ID, plan ID, and host are required"}, nil
 	}
 	return &Response{
 		Status:  true,
-		Message: "Subscription updated successfully",
-		Data:    map[string]interface{}{"id": "sub-1", "plan_id": data["plan_id"]},
+		Message: "Checkout session created successfully",
+		Data:    map[string]interface{}{"checkout_url": "https://checkout.maple.com/mock-checkout"},
 	}, nil
 }
 
-func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID string) (*Response, error) {
-	if orgID == "" {
-		return &Response{Status: false, Message: "organisation ID is required"}, nil
+func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response, error) {
+	if orgID == "" || subscriptionID == "" {
+		return &Response{Status: false, Message: "organisation ID and subscription ID are required"}, nil
 	}
 	return &Response{
 		Status:  true,

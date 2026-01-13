@@ -262,15 +262,70 @@ func (h *BillingHandler) DeletePaymentMethod(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
-	// Serve plans from configuration if available, otherwise return empty array
-	var plans []interface{}
-	if len(h.A.Cfg.Billing.Plans) > 0 {
-		plans = h.A.Cfg.Billing.Plans
-	} else {
-		plans = []interface{}{}
+	if !h.A.Cfg.Billing.Enabled {
+		_ = render.Render(w, r, util.NewErrorResponse("Billing module is not enabled", http.StatusForbidden))
+		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", plans, http.StatusOK))
+	resp, err := h.BillingClient.GetPlans(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	mergedPlans := h.mergePlansWithFeatures(resp.Data, h.A.Cfg.Billing.Plans)
+
+	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", mergedPlans, http.StatusOK))
+}
+
+func (h *BillingHandler) mergePlansWithFeatures(overwatchPlans interface{}, configPlans []interface{}) []interface{} {
+	overwatchPlansSlice, ok := overwatchPlans.([]interface{})
+	if !ok {
+		return []interface{}{}
+	}
+
+	configPlansMap := make(map[string]interface{})
+	for _, configPlan := range configPlans {
+		if planMap, ok := configPlan.(map[string]interface{}); ok {
+			if name, ok := planMap["name"].(string); ok {
+				configPlansMap[strings.ToLower(name)] = configPlan
+			}
+		}
+	}
+
+	mergedPlans := make([]interface{}, 0, len(overwatchPlansSlice))
+	for _, overwatchPlan := range overwatchPlansSlice {
+		planMap, ok := overwatchPlan.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		planName, ok := planMap["name"].(string)
+		if !ok {
+			continue
+		}
+
+		configPlan, found := configPlansMap[strings.ToLower(planName)]
+		if found {
+			mergedPlan := make(map[string]interface{})
+
+			if configPlanMap, ok := configPlan.(map[string]interface{}); ok {
+				for k, v := range configPlanMap {
+					mergedPlan[k] = v
+				}
+			}
+
+			for k, v := range planMap {
+				mergedPlan[k] = v
+			}
+
+			mergedPlans = append(mergedPlans, mergedPlan)
+		} else {
+			mergedPlans = append(mergedPlans, overwatchPlan)
+		}
+	}
+
+	return mergedPlans
 }
 
 func (h *BillingHandler) GetTaxIDTypes(w http.ResponseWriter, r *http.Request) {
@@ -419,10 +474,50 @@ func (h *BillingHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions retrieved successfully", resp.Data, http.StatusOK))
 }
 
-func (h *BillingHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
+func (h *BillingHandler) OnboardSubscription(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	// Only require billing access, not enabled organisation - allows onboarding even if org is disabled
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
+	var requestData map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
+		return
+	}
+
+	planID, ok := requestData["plan_id"].(string)
+	if !ok || planID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("plan_id is required and must be a valid UUID", http.StatusBadRequest))
+		return
+	}
+
+	host, ok := requestData["host"].(string)
+	if !ok || host == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("host is required", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.OnboardSubscription(r.Context(), orgID, planID, host)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Checkout session created successfully", resp.Data, http.StatusOK))
+}
+
+func (h *BillingHandler) UpgradeSubscription(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	subscriptionID := chi.URLParam(r, "subscriptionID")
+	if orgID == "" || subscriptionID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and subscription ID are required", http.StatusBadRequest))
 		return
 	}
 
@@ -430,21 +525,52 @@ func (h *BillingHandler) CreateSubscription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var subData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&subData); err != nil {
+	var requestData map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
 	}
 
-	resp, err := h.BillingClient.CreateSubscription(r.Context(), orgID, subData)
+	planID, ok := requestData["plan_id"].(string)
+	if !ok || planID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("plan_id is required and must be a valid UUID", http.StatusBadRequest))
+		return
+	}
+
+	host, ok := requestData["host"].(string)
+	if !ok || host == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("host is required", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.UpgradeSubscription(r.Context(), orgID, subscriptionID, planID, host)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return
 	}
 
-	h.updateOrganisationStatus(r.Context(), orgID, resp.Data)
+	_ = render.Render(w, r, util.NewServerResponse("Checkout session created successfully", resp.Data, http.StatusOK))
+}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", resp.Data, http.StatusCreated))
+func (h *BillingHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	subscriptionID := chi.URLParam(r, "subscriptionID")
+	if orgID == "" || subscriptionID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and subscription ID are required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
+	resp, err := h.BillingClient.DeleteSubscription(r.Context(), orgID, subscriptionID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Subscription cancelled successfully", resp.Data, http.StatusOK))
 }
 
 // Payment method handlers

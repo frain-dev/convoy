@@ -61,4 +61,19 @@ export class ProjectsComponent implements OnInit {
 			return false;
 		}
 	}
+
+	getProjectLimitMessage(): string {
+		if (!this.licenseService.hasLicense('project_limit')) {
+			if (!this.licenseService.isLimitAvailable('project_limit')) {
+				return 'Available on Business';
+			}
+			if (this.licenseService.isLimitAvailable('project_limit') && this.licenseService.isLimitReached('project_limit')) {
+				const limitInfo = this.licenseService.getLimitInfo('project_limit');
+				const current = limitInfo?.current ?? 0;
+				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
+				return `Limit reached (${current}/${limit})`;
+			}
+		}
+		return '';
+	}
 }

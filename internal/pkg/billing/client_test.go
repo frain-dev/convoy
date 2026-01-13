@@ -295,29 +295,21 @@ func TestClient_GetSubscriptions_Success(t *testing.T) {
 	assert.Equal(t, "Success", resp.Message)
 }
 
-func TestClient_CreateSubscription_Success(t *testing.T) {
+func TestClient_OnboardSubscription_Success(t *testing.T) {
 	client, server := setupTestClient(t)
 	defer server.Close()
 
-	subData := map[string]interface{}{
-		"plan_id": "plan-1",
-	}
-
-	resp, err := client.CreateSubscription(context.Background(), "test-org", subData)
+	resp, err := client.OnboardSubscription(context.Background(), "test-org", "plan-uuid-123", "https://app.getconvoy.io")
 	require.NoError(t, err)
 	assert.True(t, resp.Status)
 	assert.Equal(t, "Success", resp.Message)
 }
 
-func TestClient_UpdateSubscription_Success(t *testing.T) {
+func TestClient_UpgradeSubscription_Success(t *testing.T) {
 	client, server := setupTestClient(t)
 	defer server.Close()
 
-	subData := map[string]interface{}{
-		"plan_id": "plan-2",
-	}
-
-	resp, err := client.UpdateSubscription(context.Background(), "test-org", subData)
+	resp, err := client.UpgradeSubscription(context.Background(), "test-org", "sub-123", "plan-uuid-456", "https://app.getconvoy.io")
 	require.NoError(t, err)
 	assert.True(t, resp.Status)
 	assert.Equal(t, "Success", resp.Message)
@@ -327,7 +319,7 @@ func TestClient_DeleteSubscription_Success(t *testing.T) {
 	client, server := setupTestClient(t)
 	defer server.Close()
 
-	resp, err := client.DeleteSubscription(context.Background(), "test-org")
+	resp, err := client.DeleteSubscription(context.Background(), "test-org", "test-subscription-id")
 	require.NoError(t, err)
 	assert.True(t, resp.Status)
 	assert.Equal(t, "Success", resp.Message)

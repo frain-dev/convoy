@@ -1,4 +1,5 @@
 import {ChangeDetectorRef, Component, ElementRef, HostListener, OnInit, ViewChild} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
 import {StripeElementsComponent} from './stripe-elements.component';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {
@@ -24,17 +25,20 @@ import {HttpService} from 'src/app/services/http/http.service';
 export class BillingPageComponent implements OnInit {
   @ViewChild('paymentDetailsDialog') paymentDetailsDialog!: ElementRef<HTMLDialogElement>;
   @ViewChild('managePlanDialog') managePlanDialog!: ElementRef<HTMLDialogElement>;
+  @ViewChild('cancelConfirmDialog') cancelConfirmDialog!: ElementRef<HTMLDialogElement>;
 
   isPaymentDetailsOpen = false;
   isManagePlanOpen = false;
+  isCancelConfirmOpen = false;
   refreshOverviewTrigger = 0;
-  selectedPlan: 'pro' | 'enterprise' = 'pro';
+  selectedPlan: 'pro' | 'enterprise' | null = null;
   currentYear = new Date().getFullYear() - 2000; // 2-digit current year
   currentMonth = new Date().getMonth() + 1; // Current month (1-12)
 
-  // Plan data
   plans: Plan[] = [];
   isLoadingPlans = false;
+  currentSubscription: any = null;
+  overwatchPlans: Plan[] = [];
 
   // Existing data
   paymentMethodDetails: PaymentMethodDetails | null = null;
@@ -51,6 +55,7 @@ export class BillingPageComponent implements OnInit {
   isLoadingPaymentMethod = false;
   isLoadingBillingAddress = false;
   isLoadingVat = false;
+  isLoadingCheckout = false;
 
   billingAddressForm!: FormGroup;
   vatForm!: FormGroup;
@@ -96,7 +101,9 @@ export class BillingPageComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private overviewService: BillingOverviewService,
     private usageService: BillingUsageService,
-    private httpService: HttpService
+    private httpService: HttpService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {
     this.initializeForms();
   }
@@ -119,6 +126,7 @@ export class BillingPageComponent implements OnInit {
     this.vatForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onVatCountryChange(countryCode);
     });
+
   }
 
   private async bootstrapOrganisation() {
@@ -164,6 +172,9 @@ export class BillingPageComponent implements OnInit {
         usage: usageResponse.data,
         payment: paymentResponse.data
       };
+      
+      // Store current subscription for plan management
+      this.currentSubscription = subscriptionResponse.data;
       
       if (overviewData) {
         this.billingOverview = this.overviewService.formatOverviewData(overviewData);
@@ -452,6 +463,7 @@ export class BillingPageComponent implements OnInit {
   }
 
   openManagePlan() {
+    this.selectedPlan = null; // Reset selection when opening dialog
     this.loadPlans();
     this.managePlanDialog.nativeElement.showModal();
   }
@@ -459,46 +471,228 @@ export class BillingPageComponent implements OnInit {
   private loadPlans() {
     this.isLoadingPlans = true;
 
-    // Load plans from backend configuration
     this.planService.getPlans().subscribe({
       next: (response) => {
-        // If no plans in config, use default plans
+        const defaultData = this.planService.getDefaultPlanComparison();
+        
         if (!response.data || response.data.length === 0) {
-          const defaultData = this.planService.getDefaultPlanComparison();
           this.plans = defaultData.plans;
+          this.overwatchPlans = [];
         } else {
-          this.plans = response.data;
+          this.overwatchPlans = response.data;
+          
+          const overwatchPlansMap = new Map<string, Plan>();
+          response.data.forEach((plan: Plan) => {
+            overwatchPlansMap.set(plan.name.toLowerCase(), plan);
+          });
+
+          this.plans = defaultData.plans.map((defaultPlan: Plan) => {
+            const overwatchPlan = overwatchPlansMap.get(defaultPlan.name.toLowerCase());
+            
+            if (overwatchPlan) {
+              if (!overwatchPlan.features || overwatchPlan.features.length === 0) {
+                return {
+                  ...overwatchPlan,
+                  features: defaultPlan.features,
+                  description: overwatchPlan.description || defaultPlan.description,
+                  price: overwatchPlan.price || defaultPlan.price,
+                  currency: overwatchPlan.currency || defaultPlan.currency,
+                  interval: overwatchPlan.interval || defaultPlan.interval
+                };
+              }
+              return overwatchPlan;
+            }
+            
+            return defaultPlan;
+          });
         }
         this.isLoadingPlans = false;
       },
       error: (error) => {
         console.warn('Failed to load plans from backend:', error);
-        // Use default data when backend fails
         const defaultData = this.planService.getDefaultPlanComparison();
         this.plans = defaultData.plans;
+        this.overwatchPlans = [];
         this.isLoadingPlans = false;
       }
     });
   }
 
   closeManagePlan() {
+    this.isManagePlanOpen = false;
     this.managePlanDialog.nativeElement.close();
   }
 
+  isCancellingSubscription = false;
+
   onCancelPlan() {
-    const subject = encodeURIComponent('Plan Cancellation Request');
-    const body = encodeURIComponent('Hello,\n\nI would like to cancel my current plan.\n\nThank you.');
-    window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+    if (!this.currentSubscription || !this.currentSubscription.id) {
+      this.generalService.showNotification({
+        message: 'No active subscription found',
+        style: 'error'
+      });
+      return;
+    }
+
+    this.openCancelConfirm();
   }
 
-  onUpgradePlan() {
-    const subject = encodeURIComponent('Plan Upgrade Request');
-    const body = encodeURIComponent('Hello,\n\nI would like to upgrade to the Enterprise plan.\n\nThank you.');
-    window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+  openCancelConfirm() {
+    this.isCancelConfirmOpen = true;
+    this.cancelConfirmDialog.nativeElement.showModal();
+  }
+
+  closeCancelConfirm() {
+    this.isCancelConfirmOpen = false;
+    this.cancelConfirmDialog.nativeElement.close();
+  }
+
+  async confirmCancelSubscription() {
+    this.closeCancelConfirm();
+    
+    this.isCancellingSubscription = true;
+    try {
+      const orgId = this.getOrganisationId();
+      const subscriptionId = this.currentSubscription.id;
+      await this.httpService.request({
+        url: `/billing/organisations/${orgId}/subscriptions/${subscriptionId}`,
+        method: 'delete'
+      });
+
+      this.closeManagePlan();
+
+      this.generalService.showNotification({
+        message: 'Subscription cancelled successfully',
+        style: 'success'
+      });
+
+      await this.loadBillingData();
+    } catch (error: any) {
+      console.error('Failed to cancel subscription:', error);
+      this.generalService.showNotification({
+        message: error?.error?.message || 'Failed to cancel subscription. Please try again.',
+        style: 'error'
+      });
+    } finally {
+      this.isCancellingSubscription = false;
+    }
+  }
+
+  async onUpgradePlan() {
+    if (!this.selectedPlan) {
+      this.generalService.showNotification({
+        message: 'Please select a plan first',
+        style: 'error'
+      });
+      return;
+    }
+
+    const selectedPlanData = this.plans.find(p => p.id === this.selectedPlan);
+    if (!selectedPlanData) {
+      this.generalService.showNotification({
+        message: 'Selected plan not found',
+        style: 'error'
+      });
+      return;
+    }
+
+    const planName = selectedPlanData.name.toLowerCase();
+    const isProOrEnterprise = planName === 'pro' || planName === 'enterprise';
+    const planExistsInOverwatch = this.overwatchPlans.some(p => 
+      p.name.toLowerCase() === planName || p.id === selectedPlanData.id
+    );
+
+    if (isProOrEnterprise && !planExistsInOverwatch) {
+      const subject = encodeURIComponent(`${selectedPlanData.name} Plan Request`);
+      const body = encodeURIComponent(`Hello,\n\nI would like to subscribe to the ${selectedPlanData.name} plan.\n\nThank you.`);
+      window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+      return;
+    }
+
+    this.isLoadingCheckout = true;
+    try {
+      const orgId = this.getOrganisationId();
+      const host = window.location.origin;
+
+      let checkoutUrl: string;
+
+      if (this.currentSubscription && this.currentSubscription.id) {
+        const response = await this.httpService.request({
+          url: `/billing/organisations/${orgId}/subscriptions/${this.currentSubscription.id}/upgrade`,
+          method: 'put',
+          body: {
+            plan_id: selectedPlanData.id,
+            host: host
+          }
+        });
+
+        if (response.data && response.data.checkout_url) {
+          checkoutUrl = response.data.checkout_url;
+        } else {
+          throw new Error('Checkout URL not found in response');
+        }
+      } else {
+        const response = await this.httpService.request({
+          url: `/billing/organisations/${orgId}/subscriptions/onboard`,
+          method: 'post',
+          body: {
+            plan_id: selectedPlanData.id,
+            host: host
+          }
+        });
+
+        if (response.data && response.data.checkout_url) {
+          checkoutUrl = response.data.checkout_url;
+        } else {
+          throw new Error('Checkout URL not found in response');
+        }
+      }
+
+      // Open in same window since callback will redirect back
+      window.location.href = checkoutUrl;
+    } catch (error: any) {
+      this.isLoadingCheckout = false;
+      console.error('Failed to create checkout session:', error);
+      this.generalService.showNotification({
+        message: error?.error?.message || 'Failed to create checkout session. Please try again.',
+        style: 'error'
+      });
+    }
+  }
+
+  isCurrentPlan(planId: string): boolean {
+    if (!this.currentSubscription || !this.currentSubscription.plan) {
+      return false;
+    }
+    // Compare by plan ID or plan name (case-insensitive)
+    const currentPlanId = this.currentSubscription.plan.id;
+    const currentPlanName = this.currentSubscription.plan.name?.toLowerCase();
+    const plan = this.plans.find(p => p.id === planId);
+    
+    if (!plan) return false;
+    
+    return plan.id === currentPlanId || plan.name.toLowerCase() === currentPlanName;
+  }
+
+  getButtonText(planId: string): string {
+    if (this.isLoadingCheckout && this.selectedPlan === planId) {
+      return 'Loading...';
+    }
+    if (this.isCurrentPlan(planId)) {
+      return 'Current Plan';
+    }
+    if (this.selectedPlan === planId) {
+      return this.currentSubscription ? 'Upgrade' : 'Subscribe';
+    }
+    return 'Select';
+  }
+
+  getCancelButtonText(): string {
+    return this.isCancellingSubscription ? 'Cancelling...' : 'Cancel Subscription';
   }
 
   selectPlan(planId: string) {
-    this.selectedPlan = planId as 'pro' | 'enterprise';
+    this.selectedPlan = planId as 'pro' | 'enterprise' | null;
   }
 
   getFeaturesByCategory(category: 'core' | 'security' | 'support'): any[] {
