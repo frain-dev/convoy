@@ -80,6 +80,23 @@ func pubSubToJSON(config *datastore.PubSubConfig) []byte {
 	return data
 }
 
+// pgTextToSlice converts pgtype.Text to []string
+func pgTextToSlice(t pgtype.Text) []string {
+	if !t.Valid {
+		return []string{}
+	}
+	return strings.Split(t.String, ",")
+}
+
+func jsonToSignatureVersions(data []byte) datastore.SignatureVersions {
+	if len(data) == 0 {
+		return datastore.SignatureVersions{}
+	}
+	var result []datastore.SignatureVersion
+	json.Unmarshal(data, &result)
+	return result
+}
+
 // jsonBytesToPubSub converts JSON bytes to PubSubConfig
 func jsonBytesToPubSub(data []byte) *datastore.PubSubConfig {
 	if len(data) == 0 {
@@ -187,6 +204,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		// Config fields - some are strings, some are pgtype.Text per the generated code
 		searchPolicy                                    pgtype.Text
 		strategyType, signatureHeader                   pgtype.Text
+		signatureVersions                               []byte
 		metaEventsType, metaEventsUrl, metaEventsSecret string // These are strings with COALESCE in SQL
 		maxPayloadReadSize                              pgtype.Int4
 		multipleEndpointSubscriptions                   pgtype.Bool
@@ -198,6 +216,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		disableEndpoint                                 pgtype.Bool
 		sslEnforceSecureEndpoints                       pgtype.Bool
 		metaEventsEnabled                               pgtype.Bool
+		metaEventsEventType                             pgtype.Text
 		metaEventsPubSub                                []byte
 		cbSampleRate                                    pgtype.Int4
 		cbErrorTimeout                                  pgtype.Int4
@@ -225,10 +244,12 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		strategyDuration = r.ConfigStrategyDuration
 		strategyRetryCount = r.ConfigStrategyRetryCount
 		signatureHeader = r.ConfigSignatureHeader
+		signatureVersions = r.ConfigSignatureVersions
 		disableEndpoint = r.ConfigDisableEndpoint
 		sslEnforceSecureEndpoints = r.ConfigSslEnforceSecureEndpoints
 		metaEventsEnabled = r.ConfigMetaEventsEnabled
 		metaEventsType = r.ConfigMetaEventsType
+		metaEventsEventType = r.ConfigMetaEventsEventType
 		metaEventsUrl = r.ConfigMetaEventsUrl
 		metaEventsSecret = r.ConfigMetaEventsSecret
 		metaEventsPubSub = r.ConfigMetaEventsPubSub
@@ -255,10 +276,12 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		strategyDuration = r.ConfigStrategyDuration
 		strategyRetryCount = r.ConfigStrategyRetryCount
 		signatureHeader = r.ConfigSignatureHeader
+		signatureVersions = r.ConfigSignatureVersions
 		disableEndpoint = r.ConfigDisableEndpoint
 		sslEnforceSecureEndpoints = r.ConfigSslEnforceSecureEndpoints
 		metaEventsEnabled = r.ConfigMetaEventsEnabled
 		metaEventsType = r.ConfigMetaEventsType
+		metaEventsEventType = r.ConfigMetaEventsEventType
 		metaEventsUrl = r.ConfigMetaEventsUrl
 		metaEventsSecret = r.ConfigMetaEventsSecret
 		metaEventsPubSub = r.ConfigMetaEventsPubSub
@@ -305,7 +328,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		},
 		Signature: &datastore.SignatureConfiguration{
 			Header:   config.SignatureHeaderProvider(signatureHeader.String),
-			Versions: datastore.SignatureVersions{},
+			Versions: jsonToSignatureVersions(signatureVersions),
 		},
 		SSL: &datastore.SSLConfiguration{
 			EnforceSecureEndpoints: sslEnforceSecureEndpoints.Bool,
@@ -313,7 +336,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		MetaEvent: &datastore.MetaEventConfiguration{
 			IsEnabled: metaEventsEnabled.Bool,
 			Type:      datastore.MetaEventType(metaEventsType),
-			EventType: []string{}, // Parse from metaEventsEventType if needed
+			EventType: pgTextToSlice(metaEventsEventType),
 			URL:       metaEventsUrl,
 			Secret:    metaEventsSecret,
 			PubSub:    jsonBytesToPubSub(metaEventsPubSub),
@@ -478,7 +501,7 @@ func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project)
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to update endpoint statuses")
-			// Don't fail the transaction for this
+			return util.NewServiceError(http.StatusInternalServerError, err)
 		}
 	}
 
