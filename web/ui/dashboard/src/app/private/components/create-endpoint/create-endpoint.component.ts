@@ -394,7 +394,7 @@ export class CreateEndpointComponent implements OnInit {
 		const oauth2UrlControl = this.addNewEndpointForm.get('authentication.oauth2.url');
 		const oauth2ClientIdControl = this.addNewEndpointForm.get('authentication.oauth2.client_id');
 		
-		if (authType === 'oauth2' && this.licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH')) {
+		if (authType === 'oauth2' && this.licenseService.hasLicense('OAuth2EndpointAuth')) {
 			// Only require OAuth2 fields when OAuth2 is selected and user has license
 			oauth2UrlControl?.setValidators([Validators.required]);
 			oauth2ClientIdControl?.setValidators([Validators.required]);
@@ -485,7 +485,7 @@ export class CreateEndpointComponent implements OnInit {
 		await this.runEndpointValidation();
 
 		// Check if OAuth2 is selected and test is required (only for new endpoints, not when editing)
-		if (this.selectedAuthType === 'oauth2' && this.licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH') && !this.isUpdateAction && !this.editMode) {
+		if (this.selectedAuthType === 'oauth2' && this.licenseService.hasLicense('OAuth2EndpointAuth') && !this.isUpdateAction && !this.editMode) {
 			if (!this.oauth2TestResult || !this.oauth2TestResult.success) {
 				this.generalService.showNotification({ 
 					message: 'Please test your OAuth2 connection before saving', 

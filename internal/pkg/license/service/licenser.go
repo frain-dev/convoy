@@ -440,35 +440,62 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 	// Build feature list with dynamic limits
 	featureList := make(map[string]interface{})
 
-	// Check dynamic limits using new methods
+	// Check dynamic limits using new methods with enriched information
 	orgAllowed, err := l.CheckOrgLimit(ctx)
 	if err != nil {
 		return nil, err
 	}
-	orgLimit, _ := GetNumberEntitlement(l.entitlements, "org_limit")
+	orgLimit, orgLimitExists := GetNumberEntitlement(l.entitlements, "org_limit")
+	orgCount, err := l.orgRepo.CountOrganisations(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgAvailable := orgLimitExists && (orgLimit > 0 || orgLimit == -1)
+	orgLimitReached := orgAvailable && !orgAllowed
 	featureList["org_limit"] = map[string]interface{}{
-		"limit":   orgLimit,
-		"allowed": orgAllowed,
+		"limit":         orgLimit,
+		"allowed":       orgAllowed,
+		"current":       orgCount,
+		"available":     orgAvailable,
+		"limit_reached": orgLimitReached,
 	}
 
 	userAllowed, err := l.CheckUserLimit(ctx)
 	if err != nil {
 		return nil, err
 	}
-	userLimit, _ := GetNumberEntitlement(l.entitlements, "user_limit")
+	userLimit, userLimitExists := GetNumberEntitlement(l.entitlements, "user_limit")
+	userCount, err := l.userRepo.CountUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	userAvailable := userLimitExists && (userLimit > 0 || userLimit == -1)
+	userLimitReached := userAvailable && !userAllowed
 	featureList["user_limit"] = map[string]interface{}{
-		"limit":   userLimit,
-		"allowed": userAllowed,
+		"limit":         userLimit,
+		"allowed":       userAllowed,
+		"current":       userCount,
+		"available":     userAvailable,
+		"limit_reached": userLimitReached,
 	}
 
 	projectAllowed, err := l.CheckProjectLimit(ctx)
 	if err != nil {
 		return nil, err
 	}
-	projectLimit, _ := GetNumberEntitlement(l.entitlements, "project_limit")
+	projectLimit, projectLimitExists := GetNumberEntitlement(l.entitlements, "project_limit")
+	projectCount, err := l.projectRepo.CountProjects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	projectAvailable := projectLimitExists && (projectLimit > 0 || projectLimit == -1)
+	projectLimitReached := projectAvailable && !projectAllowed
 	featureList["project_limit"] = map[string]interface{}{
-		"limit":   projectLimit,
-		"allowed": projectAllowed,
+		"limit":         projectLimit,
+		"allowed":       projectAllowed,
+		"current":       projectCount,
+		"available":     projectAvailable,
+		"limit_reached": projectLimitReached,
 	}
 
 	// Add boolean features (removed deprecated ones)

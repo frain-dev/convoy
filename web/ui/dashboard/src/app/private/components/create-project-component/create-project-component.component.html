@@ -153,7 +153,7 @@
 										Search Period
 										<convoy-tooltip size="sm" position="top-right" class="ml-4px">This will trigger search re-tokenization and only events within this period will be available for search.</convoy-tooltip>
 									</p>
-									<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_WEBHOOK_FILTERING')">
+									<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('AdvancedWebhookFiltering')">
 										<svg width="10" height="10" class="fill-new.primary-400 scale-150">
 											<use xlink:href="#lock-icon"></use>
 										</svg>
@@ -167,7 +167,7 @@
 								</button>
 							</div>
 
-							<ng-container *ngIf="licenseService.hasLicense('ADVANCED_WEBHOOK_FILTERING')">
+							<ng-container *ngIf="licenseService.hasLicense('AdvancedWebhookFiltering')">
 								<convoy-input-field>
 									<div class="relative">
 										<input type="number" id="search_policy" convoy-input autocomplete="search_policy" formControlName="search_policy" placeholder="e.g. 720" />
@@ -395,7 +395,7 @@
                 <div class="flex items-end justify-between mb-24px">
                     <h3 class="text-16 font-bold" *ngIf="action === 'update'">Event Types</h3>
 
-                    <ng-container *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+                    <ng-container *ngIf="licenseService.hasLicense('AdvancedSubscriptions')">
                         <div class="flex gap-12px">
                             <!-- Import OpenAPI Spec Button -->
                             <button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" type="button" fill="outline"
@@ -451,13 +451,13 @@
 									</td>
 									<td convoy-table-cell>
 										<div class="flex items-center gap-12px">
-											<button convoy-button color="neutral" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" (click)="openEditEventTypeModal(event)">
+											<button convoy-button color="neutral" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('AdvancedSubscriptions')" (click)="openEditEventTypeModal(event)">
 												<svg width="14" height="14" class="fill-transparent stroke-neutral-9 mr-8px">
 													<use xlink:href="#edit-icon"></use>
 												</svg>
 												Edit
 											</button>
-											<button convoy-button color="error" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" (click)="deprecateEventType(event.uid)">
+											<button convoy-button color="error" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('AdvancedSubscriptions')" (click)="deprecateEventType(event.uid)">
 												<svg width="14" height="14" class="fill-transparent stroke-error-9 mr-8px">
 													<use xlink:href="#delete-icon2"></use>
 												</svg>

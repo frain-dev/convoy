@@ -56,11 +56,14 @@
 								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 								Add {{ organisations?.length ? 'another' : 'an' }} Organization
 							</button>
-							<div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full" *ngIf="!licenseService.hasLicense('CREATE_ORG')">
+							<div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full" *ngIf="!licenseService.hasLicense('org_limit')">
 								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
 									<use xlink:href="#lock-icon"></use>
 								</svg>
-								Business
+								<div *ngIf="!licenseService.isLimitAvailable('org_limit')">Business</div>
+								<div *ngIf="licenseService.isLimitAvailable('org_limit') && licenseService.isLimitReached('org_limit')">
+									Limit reached ({{ licenseService.getLimitInfo('org_limit')?.current }}/{{ licenseService.getLimitInfo('org_limit')?.limit === -1 ? '∞' : licenseService.getLimitInfo('org_limit')?.limit }})
+								</div>
 							</div>
 						</li>
 					</ul>

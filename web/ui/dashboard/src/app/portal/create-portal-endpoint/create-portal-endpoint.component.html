@@ -132,13 +132,13 @@
 
                     <div class="mt-16px">
                         <div convoy-tag size="sm" color="primary"
-                             *ngIf="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+                             *ngIf="!licenseService.hasLicense('AdvancedSubscriptions')">
                             <svg width="10" height="10" class="fill-new.primary-400 scale-150">
                                 <use xlink:href="#lock-icon"></use>
                             </svg>
                             Business
                         </div>
-                        <div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+                        <div *ngIf="licenseService.hasLicense('AdvancedSubscriptions')">
                             <div *ngFor="let eventType of validEventTypes(); let i = index"
                                  class="flex items-center justify-between my-12px rounded-6px">
                                 <div class="flex items-center">
@@ -169,7 +169,7 @@
                                             color="primary"
                                             class="flex items-center"
                                             (click)="openFilterDialog(i)"
-                                            [disabled]="action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS') || !selectedEventTypes.includes(eventType.name)">
+                                            [disabled]="action === 'view' || !licenseService.hasLicense('AdvancedSubscriptions') || !selectedEventTypes.includes(eventType.name)">
                                         <span *ngIf="!filtersMap.has(eventType.name)">Add Filter</span>
                                         <span *ngIf="filtersMap.has(eventType.name)">Edit Filter</span>
                                         <svg *ngIf="!filtersMap.has(eventType.name)" width="10" height="10"
@@ -337,7 +337,7 @@
                                 </convoy-tooltip>
                             </p>
                             <div convoy-tag size="sm" color="primary"
-                                 *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+                                 *ngIf="!licenseService.hasLicense('AdvancedEndpointMgmt')">
                                 <svg width="10" height="10" class="fill-new.primary-400 scale-150">
                                     <use xlink:href="#lock-icon"></use>
                                 </svg>
@@ -356,7 +356,7 @@
                         <div class="relative">
                             <input id="http_timeout" type="number" convoy-input formControlName="http_timeout"
                                    placeholder="e.g 60"
-                                   [readonly]="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')"/>
+                                   [readonly]="!licenseService.hasLicense('AdvancedEndpointMgmt')"/>
                             <div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">
                                 sec
                             </div>
@@ -376,7 +376,7 @@
                         <div class="flex items-center gap-12px">
                             <p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
                             <div convoy-tag size="sm" color="primary"
-                                 *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+                                 *ngIf="!licenseService.hasLicense('AdvancedEndpointMgmt')">
                                 <svg width="10" height="10" class="fill-new.primary-400 scale-150">
                                     <use xlink:href="#lock-icon"></use>
                                 </svg>
@@ -392,7 +392,7 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-24px"
-                         *ngIf="licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+                         *ngIf="licenseService.hasLicense('AdvancedEndpointMgmt')">
                         <convoy-input-field className="mb-0">
                             <label for="support-email" convoy-label
                                    tooltip="We use this to send an email notifcation for when a failure happens">Support
