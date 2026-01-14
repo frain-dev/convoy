@@ -307,7 +307,7 @@ func (s *BillingIntegrationTestSuite) Test_OnboardSubscription() {
 
 	require.Equal(s.T(), "Checkout session created successfully", response["message"])
 	require.True(s.T(), response["status"].(bool))
-	
+
 	// Verify checkout_url is in response
 	data, ok := response["data"].(map[string]interface{})
 	require.True(s.T(), ok)
@@ -338,7 +338,7 @@ func (s *BillingIntegrationTestSuite) Test_UpgradeSubscription() {
 
 	require.Equal(s.T(), "Checkout session created successfully", response["message"])
 	require.True(s.T(), response["status"].(bool))
-	
+
 	// Verify checkout_url is in response
 	data, ok := response["data"].(map[string]interface{})
 	require.True(s.T(), ok)

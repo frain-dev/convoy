@@ -4,227 +4,313 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 )
 
-type MockBillingClient struct{}
+type MockBillingClient struct {
+	mu            sync.RWMutex
+	organisations map[string]BillingOrganisation
+}
+
+func (m *MockBillingClient) ensureOrganisation(orgID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.organisations == nil {
+		m.organisations = make(map[string]BillingOrganisation)
+	}
+	if _, exists := m.organisations[orgID]; !exists {
+		m.organisations[orgID] = BillingOrganisation{
+			ID:         orgID,
+			ExternalID: orgID,
+			Name:       "Test Org",
+		}
+	}
+}
 
 func (m *MockBillingClient) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
-func (m *MockBillingClient) GetUsage(ctx context.Context, orgID string) (*Response, error) {
-	return &Response{
+func (m *MockBillingClient) GetUsage(ctx context.Context, orgID string) (*Response[Usage], error) {
+	return &Response[Usage]{
 		Status:  true,
 		Message: "Usage retrieved successfully",
-		Data:    map[string]interface{}{"events": 100, "deliveries": 95},
+		Data: Usage{
+			OrganisationID: orgID,
+			Received:       UsageMetrics{Volume: 100, Bytes: 1000},
+			Sent:           UsageMetrics{Volume: 95, Bytes: 950},
+		},
 	}, nil
 }
 
-func (m *MockBillingClient) GetInvoices(ctx context.Context, orgID string) (*Response, error) {
-	return &Response{
+func (m *MockBillingClient) GetInvoices(ctx context.Context, orgID string) (*Response[[]Invoice], error) {
+	m.ensureOrganisation(orgID)
+
+	return &Response[[]Invoice]{
 		Status:  true,
 		Message: "Invoices retrieved successfully",
-		Data:    []map[string]interface{}{},
+		Data:    []Invoice{},
 	}, nil
 }
 
-func (m *MockBillingClient) GetPaymentMethods(ctx context.Context, orgID string) (*Response, error) {
-	return &Response{
+func (m *MockBillingClient) GetPaymentMethods(ctx context.Context, orgID string) (*Response[[]PaymentMethod], error) {
+	m.ensureOrganisation(orgID)
+
+	return &Response[[]PaymentMethod]{
 		Status:  true,
 		Message: "Payment methods retrieved successfully",
-		Data:    []map[string]interface{}{},
+		Data:    []PaymentMethod{},
 	}, nil
 }
 
-func (m *MockBillingClient) GetSubscription(ctx context.Context, orgID string) (*Response, error) {
-	return &Response{
+func (m *MockBillingClient) GetSubscription(ctx context.Context, orgID string) (*Response[Subscription], error) {
+	m.ensureOrganisation(orgID)
+
+	return &Response[Subscription]{
 		Status:  true,
 		Message: "Subscription retrieved successfully",
-		Data:    map[string]interface{}{},
+		Data:    Subscription{},
 	}, nil
 }
 
-func (m *MockBillingClient) GetPlans(ctx context.Context) (*Response, error) {
-	return &Response{
+func (m *MockBillingClient) GetPlans(ctx context.Context) (*Response[[]Plan], error) {
+	return &Response[[]Plan]{
 		Status:  true,
 		Message: "Plans retrieved successfully",
-		Data:    []map[string]interface{}{},
+		Data:    []Plan{},
 	}, nil
 }
 
-func (m *MockBillingClient) GetTaxIDTypes(ctx context.Context) (*Response, error) {
-	return &Response{
+func (m *MockBillingClient) GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType], error) {
+	return &Response[[]TaxIDType]{
 		Status:  true,
 		Message: "Tax ID types retrieved successfully",
-		Data:    []map[string]interface{}{},
+		Data:    []TaxIDType{},
 	}, nil
 }
 
-func (m *MockBillingClient) CreateOrganisation(ctx context.Context, orgData interface{}) (*Response, error) {
-	data, _ := orgData.(map[string]interface{})
-	if data == nil || data["name"] == nil || data["name"] == "" {
-		return &Response{Status: false, Message: "name is required"}, nil
+func (m *MockBillingClient) CreateOrganisation(ctx context.Context, orgData BillingOrganisation) (*Response[BillingOrganisation], error) {
+	if orgData.Name == "" {
+		return nil, &Error{Message: "name is required"}
 	}
-	return &Response{
+
+	m.mu.Lock()
+	if m.organisations == nil {
+		m.organisations = make(map[string]BillingOrganisation)
+	}
+	createdOrg := BillingOrganisation{
+		ID:           orgData.ExternalID,
+		Name:         orgData.Name,
+		ExternalID:   orgData.ExternalID,
+		BillingEmail: orgData.BillingEmail,
+		Host:         orgData.Host,
+	}
+	m.organisations[orgData.ExternalID] = createdOrg
+	m.mu.Unlock()
+
+	return &Response[BillingOrganisation]{
 		Status:  true,
 		Message: "Organisation created successfully",
-		Data:    map[string]interface{}{"id": "org-1", "name": data["name"]},
+		Data:    createdOrg,
 	}, nil
 }
 
-func (m *MockBillingClient) GetOrganisation(ctx context.Context, orgID string) (*Response, error) {
+func (m *MockBillingClient) GetOrganisation(ctx context.Context, orgID string) (*Response[BillingOrganisation], error) {
 	if orgID == "" {
-		return &Response{Status: false, Message: "organisation ID is required"}, nil
+		return nil, &Error{Message: "organisation ID is required"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	m.mu.RLock()
+	org := m.organisations[orgID]
+	m.mu.RUnlock()
+
+	return &Response[BillingOrganisation]{
 		Status:  true,
 		Message: "Organisation retrieved successfully",
-		Data:    map[string]interface{}{"id": orgID, "name": "Org"},
+		Data:    org,
 	}, nil
 }
 
-func (m *MockBillingClient) UpdateOrganisation(ctx context.Context, orgID string, orgData interface{}) (*Response, error) {
-	data, _ := orgData.(map[string]interface{})
-	if orgID == "" || data == nil || data["name"] == nil || data["name"] == "" {
-		return &Response{Status: false, Message: "invalid organisation update"}, nil
+func (m *MockBillingClient) UpdateOrganisation(ctx context.Context, orgID string, orgData BillingOrganisation) (*Response[BillingOrganisation], error) {
+	if orgID == "" || orgData.Name == "" {
+		return nil, &Error{Message: "invalid organisation update"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	m.mu.Lock()
+	org := m.organisations[orgID]
+	org.Name = orgData.Name
+	if orgData.BillingEmail != "" {
+		org.BillingEmail = orgData.BillingEmail
+	}
+	m.organisations[orgID] = org
+	m.mu.Unlock()
+
+	return &Response[BillingOrganisation]{
 		Status:  true,
 		Message: "Organisation updated successfully",
-		Data:    map[string]interface{}{"id": orgID, "name": data["name"]},
+		Data:    org,
 	}, nil
 }
 
-func (m *MockBillingClient) UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData interface{}) (*Response, error) {
-	data, _ := taxData.(map[string]interface{})
-	if orgID == "" || data == nil || data["tax_id_type"] == nil || data["tax_number"] == nil {
-		return &Response{Status: false, Message: "invalid tax id"}, nil
+func (m *MockBillingClient) UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error) {
+	if orgID == "" || taxData.TaxIDType == "" || taxData.TaxNumber == "" {
+		return nil, &Error{Message: "invalid tax id"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	m.mu.RLock()
+	org := m.organisations[orgID]
+	m.mu.RUnlock()
+
+	return &Response[BillingOrganisation]{
 		Status:  true,
 		Message: "Tax ID updated successfully",
-		Data:    data,
+		Data:    org,
 	}, nil
 }
 
-func (m *MockBillingClient) UpdateOrganisationAddress(ctx context.Context, orgID string, addressData interface{}) (*Response, error) {
-	data, _ := addressData.(map[string]interface{})
-	if orgID == "" || data == nil || data["billing_address"] == nil {
-		return &Response{Status: false, Message: "invalid address"}, nil
+func (m *MockBillingClient) UpdateOrganisationAddress(ctx context.Context, orgID string, addressData UpdateOrganisationAddressRequest) (*Response[BillingOrganisation], error) {
+	if orgID == "" {
+		return nil, &Error{Message: "invalid address"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	m.mu.RLock()
+	org := m.organisations[orgID]
+	m.mu.RUnlock()
+
+	return &Response[BillingOrganisation]{
 		Status:  true,
 		Message: "Address updated successfully",
-		Data:    data,
+		Data:    org,
 	}, nil
 }
 
-func (m *MockBillingClient) GetSubscriptions(ctx context.Context, orgID string) (*Response, error) {
-	return &Response{
+func (m *MockBillingClient) GetSubscriptions(ctx context.Context, orgID string) (*Response[[]Subscription], error) {
+	m.ensureOrganisation(orgID)
+
+	return &Response[[]Subscription]{
 		Status:  true,
 		Message: "Subscriptions retrieved successfully",
-		Data:    []map[string]interface{}{},
+		Data:    []Subscription{},
 	}, nil
 }
 
-func (m *MockBillingClient) OnboardSubscription(ctx context.Context, orgID string, planID, host string) (*Response, error) {
-	if orgID == "" || planID == "" || host == "" {
-		return &Response{Status: false, Message: "organisation ID, plan ID, and host are required"}, nil
+func (m *MockBillingClient) OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error) {
+	if orgID == "" || req.PlanID == "" || req.Host == "" {
+		return nil, &Error{Message: "organisation ID, plan ID, and host are required"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[Checkout]{
 		Status:  true,
 		Message: "Checkout session created successfully",
-		Data:    map[string]interface{}{"checkout_url": "https://checkout.maple.com/mock-checkout"},
+		Data:    Checkout{CheckoutURL: "https://checkout.maple.com/mock-checkout"},
 	}, nil
 }
 
-func (m *MockBillingClient) UpgradeSubscription(ctx context.Context, orgID, subscriptionID, planID, host string) (*Response, error) {
-	if orgID == "" || subscriptionID == "" || planID == "" || host == "" {
-		return &Response{Status: false, Message: "organisation ID, subscription ID, plan ID, and host are required"}, nil
+func (m *MockBillingClient) UpgradeSubscription(ctx context.Context, orgID, subscriptionID string, req UpgradeSubscriptionRequest) (*Response[Checkout], error) {
+	if orgID == "" || subscriptionID == "" || req.PlanID == "" || req.Host == "" {
+		return nil, &Error{Message: "organisation ID, subscription ID, plan ID, and host are required"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[Checkout]{
 		Status:  true,
 		Message: "Checkout session created successfully",
-		Data:    map[string]interface{}{"checkout_url": "https://checkout.maple.com/mock-checkout"},
+		Data:    Checkout{CheckoutURL: "https://checkout.maple.com/mock-checkout"},
 	}, nil
 }
 
-func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response, error) {
+func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error) {
 	if orgID == "" || subscriptionID == "" {
-		return &Response{Status: false, Message: "organisation ID and subscription ID are required"}, nil
+		return nil, &Error{Message: "organisation ID and subscription ID are required"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[interface{}]{
 		Status:  true,
 		Message: "Subscription deleted successfully",
-		Data:    map[string]interface{}{"id": "sub-1", "status": "cancelled"},
+		Data:    nil,
 	}, nil
 }
 
-func (m *MockBillingClient) GetSetupIntent(ctx context.Context, orgID string) (*Response, error) {
+func (m *MockBillingClient) GetSetupIntent(ctx context.Context, orgID string) (*Response[SetupIntent], error) {
 	if orgID == "" {
-		return &Response{Status: false, Message: "organisation ID is required"}, nil
+		return nil, &Error{Message: "organisation ID is required"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[SetupIntent]{
 		Status:  true,
 		Message: "Setup intent retrieved successfully",
-		Data:    map[string]interface{}{"client_secret": "seti_test_secret"},
+		Data:    SetupIntent{IntentSecret: "seti_test_secret"},
 	}, nil
 }
 
-func (m *MockBillingClient) CreateSetupIntent(ctx context.Context, orgID string, setupIntentData interface{}) (*Response, error) {
+func (m *MockBillingClient) CreateSetupIntent(ctx context.Context, orgID string, setupIntentData CreateSetupIntentRequest) (*Response[SetupIntent], error) {
 	if orgID == "" {
-		return &Response{Status: false, Message: "organisation ID is required"}, nil
+		return nil, &Error{Message: "organisation ID is required"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[SetupIntent]{
 		Status:  true,
 		Message: "Setup intent created successfully",
-		Data:    map[string]interface{}{"client_secret": "seti_test_secret"},
+		Data:    SetupIntent{IntentSecret: "seti_test_secret"},
 	}, nil
 }
 
-func (m *MockBillingClient) CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*Response, error) {
-	data, _ := pmData.(map[string]interface{})
-	if orgID == "" || data == nil || data["payment_method_id"] == nil || data["payment_method_id"] == "" {
-		return &Response{Status: false, Message: "payment_method_id is required"}, nil
-	}
-	return &Response{
-		Status:  true,
-		Message: "Payment method created successfully",
-		Data:    map[string]interface{}{"id": "pm-1"},
-	}, nil
-}
-
-func (m *MockBillingClient) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error) {
+func (m *MockBillingClient) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response[interface{}], error) {
 	if orgID == "" || pmID == "" {
-		return &Response{Status: false, Message: "invalid payment method delete"}, nil
+		return nil, &Error{Message: "invalid payment method delete"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[interface{}]{
 		Status:  true,
 		Message: "Payment method deleted successfully",
-		Data:    map[string]interface{}{"id": pmID, "status": "deleted"},
+		Data:    nil,
 	}, nil
 }
 
-func (m *MockBillingClient) SetDefaultPaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error) {
+func (m *MockBillingClient) SetDefaultPaymentMethod(ctx context.Context, orgID, pmID string) (*Response[interface{}], error) {
 	if orgID == "" || pmID == "" {
-		return &Response{Status: false, Message: "invalid payment method set default"}, nil
+		return nil, &Error{Message: "invalid payment method set default"}
 	}
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[interface{}]{
 		Status:  true,
 		Message: "Default payment method set successfully",
-		Data:    map[string]interface{}{"id": pmID, "defaulted_at": "2025-01-01T00:00:00Z"},
+		Data:    nil,
 	}, nil
 }
 
-func (m *MockBillingClient) GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response, error) {
+func (m *MockBillingClient) GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response[Invoice], error) {
 	if orgID == "" || invoiceID == "" {
-		return &Response{Status: false, Message: "invalid invoice request"}, nil
+		return nil, &Error{Message: "invalid invoice request"}
 	}
-	// Return a pdf_link that DownloadInvoice will handle
-	return &Response{
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[Invoice]{
 		Status:  true,
 		Message: "Invoice retrieved successfully",
-		Data:    map[string]interface{}{"id": invoiceID, "status": "paid", "pdf_link": "http://mock-pdf-server/invoice.pdf"},
+		Data:    Invoice{ID: invoiceID, Status: "paid", PDFLink: "http://mock-pdf-server/invoice.pdf"},
 	}, nil
 }
 
@@ -233,7 +319,6 @@ func (m *MockBillingClient) DownloadInvoice(ctx context.Context, orgID, invoiceI
 		return nil, &Error{Message: "invalid invoice request"}
 	}
 
-	// First get the invoice to extract pdf_link
 	invoiceResp, err := m.GetInvoice(ctx, orgID, invoiceID)
 	if err != nil {
 		return nil, err
@@ -243,28 +328,19 @@ func (m *MockBillingClient) DownloadInvoice(ctx context.Context, orgID, invoiceI
 		return nil, &Error{Message: invoiceResp.Message}
 	}
 
-	// Extract pdf_link
-	invoiceData, ok := invoiceResp.Data.(map[string]interface{})
-	if !ok {
-		return nil, &Error{Message: "invalid invoice data"}
-	}
-
-	pdfLink, ok := invoiceData["pdf_link"].(string)
-	if !ok || pdfLink == "" {
+	pdfLink := invoiceResp.Data.PDFLink
+	if pdfLink == "" {
 		return nil, &Error{Message: "invoice PDF link not found"}
 	}
 
-	// Create a test server that serves a mock PDF
 	pdfServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/pdf")
 		w.WriteHeader(http.StatusOK)
-		// Write a minimal PDF content (PDF header)
 		w.Write([]byte("%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\nxref\n0 0\ntrailer\n<<\n/Root 1 0 R\n>>\n%%EOF"))
 	}))
 	defer pdfServer.Close()
 
-	// Make request to the test server (ignore the pdfLink URL from GetInvoice)
-	req, err := http.NewRequestWithContext(ctx, "GET", pdfServer.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", pdfServer.URL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

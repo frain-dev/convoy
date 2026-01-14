@@ -114,11 +114,20 @@ func (c *Client) ValidateLicense(ctx context.Context, licenseKey string) (*Licen
 			continue
 		}
 
-		defer resp.Body.Close()
-
+		// Read and close body immediately to avoid connection pool exhaustion during retries
 		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
 			lastErr = fmt.Errorf("failed to read response: %w", err)
+			continue
+		}
+
+		// Check HTTP status code
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+			if c.logger != nil {
+				c.logger.Warnf("License validation attempt %d returned status %d, retrying...", attempt+1, resp.StatusCode)
+			}
 			continue
 		}
 

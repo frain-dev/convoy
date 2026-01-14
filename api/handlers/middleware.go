@@ -42,8 +42,18 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 			var org *datastore.Organisation
 			var err error
 
-			projectID := chi.URLParam(r, "projectID")
-			if projectID != "" {
+			var project *datastore.Project
+			if cachedProject := r.Context().Value(convoy.ProjectCtx); cachedProject != nil {
+				project = cachedProject.(*datastore.Project)
+			} else if projectID := chi.URLParam(r, "projectID"); projectID != "" {
+				project, err = h.retrieveProject(r)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("failed to retrieve project", http.StatusBadRequest))
+					return
+				}
+			}
+
+			if project != nil {
 				var project *datastore.Project
 
 				if cachedProject := r.Context().Value(convoy.ProjectCtx); cachedProject != nil {

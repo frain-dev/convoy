@@ -70,41 +70,29 @@ func (h *BillingHandler) getOwnerEmail(ctx context.Context, orgID string) string
 	return owner.Email
 }
 
-func (h *BillingHandler) updateBillingEmailIfEmpty(ctx context.Context, orgID string) {
+func (h *BillingHandler) updateBillingEmailIfEmpty(orgID string) {
 	go func() {
-		resp, err := h.BillingClient.GetOrganisation(ctx, orgID)
+		bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		resp, err := h.BillingClient.GetOrganisation(bgCtx, orgID)
 		if err != nil {
 			return
 		}
 
-		if resp.Data == nil {
+		if resp.Data.BillingEmail != "" {
 			return
 		}
 
-		data, ok := resp.Data.(map[string]interface{})
-		if !ok {
-			return
-		}
-
-		billingEmail, exists := data["billing_email"]
-		if !exists {
-			return
-		}
-
-		emailStr, ok := billingEmail.(string)
-		if !ok || emailStr != "" {
-			return
-		}
-
-		ownerEmail := h.getOwnerEmail(ctx, orgID)
+		ownerEmail := h.getOwnerEmail(bgCtx, orgID)
 		if ownerEmail == "" {
 			return
 		}
 
-		updateData := map[string]interface{}{
-			"billing_email": ownerEmail,
+		updateData := billing.BillingOrganisation{
+			BillingEmail: ownerEmail,
 		}
-		_, updateErr := h.BillingClient.UpdateOrganisation(ctx, orgID, updateData)
+		_, updateErr := h.BillingClient.UpdateOrganisation(bgCtx, orgID, updateData)
 		if updateErr != nil {
 			h.A.Logger.WithError(updateErr).Warnf("Failed to update billing_email for organisation %s", orgID)
 		} else {
@@ -232,11 +220,11 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 			h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
 		}
 
-		orgData := map[string]interface{}{
-			"name":          org.Name,
-			"external_id":   orgID,
-			"billing_email": ownerEmail,
-			"host":          cfg.Host,
+		orgData := billing.BillingOrganisation{
+			Name:         org.Name,
+			ExternalID:   orgID,
+			BillingEmail: ownerEmail,
+			Host:         cfg.Host,
 		}
 
 		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
@@ -260,7 +248,7 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 	}
 
 	h.updateOrganisationStatus(r.Context(), orgID, resp.Data)
-	h.updateBillingEmailIfEmpty(r.Context(), orgID)
+	h.updateBillingEmailIfEmpty(orgID)
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscription retrieved successfully", resp.Data, http.StatusOK))
 }
@@ -406,7 +394,7 @@ func (h *BillingHandler) GetTaxIDTypes(w http.ResponseWriter, r *http.Request) {
 
 // Organisation handlers
 func (h *BillingHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
-	var orgData map[string]interface{}
+	var orgData billing.BillingOrganisation
 	if err := json.NewDecoder(r.Body).Decode(&orgData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
@@ -452,7 +440,7 @@ func (h *BillingHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var orgData map[string]interface{}
+	var orgData billing.BillingOrganisation
 	if err := json.NewDecoder(r.Body).Decode(&orgData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
@@ -478,7 +466,7 @@ func (h *BillingHandler) UpdateOrganisationTaxID(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var taxData map[string]interface{}
+	var taxData billing.UpdateOrganisationTaxIDRequest
 	if err := json.NewDecoder(r.Body).Decode(&taxData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
@@ -504,7 +492,7 @@ func (h *BillingHandler) UpdateOrganisationAddress(w http.ResponseWriter, r *htt
 		return
 	}
 
-	var addressData map[string]interface{}
+	var addressData billing.UpdateOrganisationAddressRequest
 	if err := json.NewDecoder(r.Body).Decode(&addressData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
@@ -552,25 +540,23 @@ func (h *BillingHandler) OnboardSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var requestData map[string]interface{}
+	var requestData billing.OnboardSubscriptionRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
 	}
 
-	planID, ok := requestData["plan_id"].(string)
-	if !ok || planID == "" {
+	if requestData.PlanID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("plan_id is required and must be a valid UUID", http.StatusBadRequest))
 		return
 	}
 
-	host, ok := requestData["host"].(string)
-	if !ok || host == "" {
+	if requestData.Host == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("host is required", http.StatusBadRequest))
 		return
 	}
 
-	resp, err := h.BillingClient.OnboardSubscription(r.Context(), orgID, planID, host)
+	resp, err := h.BillingClient.OnboardSubscription(r.Context(), orgID, requestData)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return
@@ -591,25 +577,23 @@ func (h *BillingHandler) UpgradeSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var requestData map[string]interface{}
+	var requestData billing.UpgradeSubscriptionRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
 	}
 
-	planID, ok := requestData["plan_id"].(string)
-	if !ok || planID == "" {
+	if requestData.PlanID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("plan_id is required and must be a valid UUID", http.StatusBadRequest))
 		return
 	}
 
-	host, ok := requestData["host"].(string)
-	if !ok || host == "" {
+	if requestData.Host == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("host is required", http.StatusBadRequest))
 		return
 	}
 
-	resp, err := h.BillingClient.UpgradeSubscription(r.Context(), orgID, subscriptionID, planID, host)
+	resp, err := h.BillingClient.UpgradeSubscription(r.Context(), orgID, subscriptionID, requestData)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return
@@ -759,11 +743,11 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 			h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
 		}
 
-		orgData := map[string]interface{}{
-			"name":          org.Name,
-			"external_id":   orgID,
-			"billing_email": ownerEmail,
-			"host":          cfg.Host,
+		orgData := billing.BillingOrganisation{
+			Name:         org.Name,
+			ExternalID:   orgID,
+			BillingEmail: ownerEmail,
+			Host:         cfg.Host,
 		}
 
 		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
@@ -789,23 +773,10 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Update billing_email if empty (runs in background)
-	h.updateBillingEmailIfEmpty(r.Context(), orgID)
-
-	// Extract just the internal ID from the response
-	var internalID string
-	if resp.Data != nil {
-		if data, ok := resp.Data.(map[string]interface{}); ok {
-			if id, exists := data["id"]; exists {
-				if idStr, ok := id.(string); ok {
-					internalID = idStr
-				}
-			}
-		}
-	}
+	h.updateBillingEmailIfEmpty(orgID)
 
 	responseData := map[string]interface{}{
-		"id": internalID,
+		"id": resp.Data.ID,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Internal organisation ID retrieved successfully", responseData, http.StatusOK))

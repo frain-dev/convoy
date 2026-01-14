@@ -44,6 +44,14 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	// Check if multi-user mode is enabled (user_limit > 1)
 	// MultiPlayerMode is redundant - user limits handle this
 	// If user_limit is 1, it's single-user mode; otherwise multi-user
+	isMultiUser, err := iu.Licenser.IsMultiUserMode(ctx)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
+	if !isMultiUser {
+		return nil, &ServiceError{ErrMsg: "invites are only available in multi-user mode"}
+	}
 
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),

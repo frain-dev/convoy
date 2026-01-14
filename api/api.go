@@ -462,7 +462,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				userSubRouter.Put("/password", handler.UpdatePassword)
 
 				userSubRouter.Route("/security", func(securityRouter chi.Router) {
-					securityRouter.With(handler.RequireEnabledOrganisation()).Post("/personal_api_keys", handler.CreatePersonalAPIKey)
+					securityRouter.Post("/personal_api_keys", handler.CreatePersonalAPIKey)
 					securityRouter.With(middleware.Pagination).Get("/", handler.GetAPIKeys)
 					securityRouter.Put("/{keyID}/revoke", handler.RevokePersonalAPIKey)
 				})
@@ -519,7 +519,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 				orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
 					projectRouter.Get("/", handler.GetProjects)
-					projectRouter.Post("/", handler.CreateProject)
+					projectRouter.With(handler.RequireEnabledOrganisation()).Post("/", handler.CreateProject)
 
 					projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 						projectSubRouter.Get("/", handler.GetProject)

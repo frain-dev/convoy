@@ -237,6 +237,8 @@ func (l *Licenser) hasFeature(key string) bool {
 		return false
 	}
 
+	l.entitlementsMu.RLock()
+	defer l.entitlementsMu.RUnlock()
 	return GetBoolEntitlement(l.entitlements, key)
 }
 
@@ -263,7 +265,9 @@ func (l *Licenser) checkLimit(ctx context.Context, countFunc func(context.Contex
 		return false, err
 	}
 
+	l.entitlementsMu.RLock()
 	limit, exists := GetNumberEntitlement(l.entitlements, limitKey)
+	l.entitlementsMu.RUnlock()
 	if !exists {
 		return false, nil
 	}
@@ -305,7 +309,9 @@ func (l *Licenser) IsMultiUserMode(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
+	l.entitlementsMu.RLock()
 	limit, exists := GetNumberEntitlement(l.entitlements, "user_limit")
+	l.entitlementsMu.RUnlock()
 	if !exists {
 		return false, nil
 	}
@@ -445,7 +451,24 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 	if err != nil {
 		return nil, err
 	}
+
+	userAllowed, err := l.CheckUserLimit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	projectAllowed, err := l.CheckProjectLimit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Acquire read lock for all entitlement accesses
+	l.entitlementsMu.RLock()
 	orgLimit, orgLimitExists := GetNumberEntitlement(l.entitlements, "org_limit")
+	userLimit, userLimitExists := GetNumberEntitlement(l.entitlements, "user_limit")
+	projectLimit, projectLimitExists := GetNumberEntitlement(l.entitlements, "project_limit")
+	l.entitlementsMu.RUnlock()
+
 	orgCount, err := l.orgRepo.CountOrganisations(ctx)
 	if err != nil {
 		return nil, err
@@ -460,11 +483,6 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 		"limit_reached": orgLimitReached,
 	}
 
-	userAllowed, err := l.CheckUserLimit(ctx)
-	if err != nil {
-		return nil, err
-	}
-	userLimit, userLimitExists := GetNumberEntitlement(l.entitlements, "user_limit")
 	userCount, err := l.userRepo.CountUsers(ctx)
 	if err != nil {
 		return nil, err
@@ -479,11 +497,6 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 		"limit_reached": userLimitReached,
 	}
 
-	projectAllowed, err := l.CheckProjectLimit(ctx)
-	if err != nil {
-		return nil, err
-	}
-	projectLimit, projectLimitExists := GetNumberEntitlement(l.entitlements, "project_limit")
 	projectCount, err := l.projectRepo.CountProjects(ctx)
 	if err != nil {
 		return nil, err

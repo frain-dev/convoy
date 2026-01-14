@@ -5,27 +5,34 @@ func HasActiveSubscription(subscriptionData interface{}) bool {
 		return false
 	}
 
-	var subscription map[string]interface{}
+	var subscriptions []Subscription
+
 	switch v := subscriptionData.(type) {
-	case map[string]interface{}:
-		subscription = v
-	case []interface{}:
+	case *Subscription:
+		subscriptions = []Subscription{*v}
+	case Subscription:
+		subscriptions = []Subscription{v}
+	case []Subscription:
+		subscriptions = v
+	case []*Subscription:
 		if len(v) > 0 {
-			if subMap, ok := v[0].(map[string]interface{}); ok {
-				subscription = subMap
+			subscriptions = make([]Subscription, len(v))
+			for i, sub := range v {
+				subscriptions[i] = *sub
 			}
 		}
 	default:
 		return false
 	}
 
-	if subscription == nil {
+	if len(subscriptions) == 0 {
 		return false
 	}
 
-	status, ok := subscription["status"].(string)
-	if ok && status == "active" {
-		return true
+	for _, sub := range subscriptions {
+		if sub.Status == "active" {
+			return true
+		}
 	}
 
 	return false
