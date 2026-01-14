@@ -37,24 +37,26 @@ func addUpCommand() *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			lo := log.NewLogger(os.Stdout)
+			lo.SetLevel(log.DebugLevel)
+
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Fatal("Error fetching the config.")
+				lo.WithError(err).Fatal("Error fetching the config.")
 			}
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
-				log.Fatal(err)
+				lo.Fatal(err)
 			}
 
 			defer db.Close()
 
-			m := migrator.New(db)
+			m := migrator.NewWithLogger(db, lo)
 			err = m.Up()
 			if err != nil {
-				log.Fatalf("migration up failed with error: %+v", err)
+				lo.Fatalf("migration up failed with error: %+v", err)
 			}
-			log.Info("migration up succeeded")
 		},
 	}
 
@@ -73,22 +75,25 @@ func addDownCommand() *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			lo := log.NewLogger(os.Stdout)
+			lo.SetLevel(log.DebugLevel)
+
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Fatal("Error fetching the config.")
+				lo.WithError(err).Fatal("Error fetching the config.")
 			}
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
-				log.Fatal(err)
+				lo.Fatal(err)
 			}
 
 			defer db.Close()
 
-			m := migrator.New(db)
+			m := migrator.NewWithLogger(db, lo)
 			err = m.Down(maxMigrations)
 			if err != nil {
-				log.Fatalf("migration down failed with error: %+v", err)
+				lo.Fatalf("migration down failed with error: %+v", err)
 			}
 		},
 	}
@@ -107,10 +112,13 @@ func addCreateCommand() *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			lo := log.NewLogger(os.Stdout)
+			lo.SetLevel(log.DebugLevel)
+
 			fileName := fmt.Sprintf("sql/%v.sql", time.Now().Unix())
 			f, err := os.Create(fileName)
 			if err != nil {
-				log.Fatal(err)
+				lo.Fatal(err)
 			}
 
 			defer f.Close()
@@ -119,9 +127,11 @@ func addCreateCommand() *cobra.Command {
 			for _, line := range lines {
 				_, err := f.WriteString(line + "\n\n")
 				if err != nil {
-					log.Fatal(err)
+					lo.Fatal(err)
 				}
 			}
+
+			lo.Infof("Created migration: %s", fileName)
 		},
 	}
 
