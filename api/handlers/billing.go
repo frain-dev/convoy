@@ -16,6 +16,7 @@ import (
 
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/util"
@@ -51,6 +52,65 @@ func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Reque
 	}
 
 	return true
+}
+
+func (h *BillingHandler) getOwnerEmail(ctx context.Context, orgID string) string {
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
+	if err != nil {
+		return ""
+	}
+
+	userRepo := postgres.NewUserRepo(h.A.DB)
+	owner, err := userRepo.FindUserByID(ctx, org.OwnerID)
+	if err != nil {
+		return ""
+	}
+
+	return owner.Email
+}
+
+func (h *BillingHandler) updateBillingEmailIfEmpty(ctx context.Context, orgID string) {
+	go func() {
+		resp, err := h.BillingClient.GetOrganisation(ctx, orgID)
+		if err != nil {
+			return
+		}
+
+		if resp.Data == nil {
+			return
+		}
+
+		data, ok := resp.Data.(map[string]interface{})
+		if !ok {
+			return
+		}
+
+		billingEmail, exists := data["billing_email"]
+		if !exists {
+			return
+		}
+
+		emailStr, ok := billingEmail.(string)
+		if !ok || emailStr != "" {
+			return
+		}
+
+		ownerEmail := h.getOwnerEmail(ctx, orgID)
+		if ownerEmail == "" {
+			return
+		}
+
+		updateData := map[string]interface{}{
+			"billing_email": ownerEmail,
+		}
+		_, updateErr := h.BillingClient.UpdateOrganisation(ctx, orgID, updateData)
+		if updateErr != nil {
+			h.A.Logger.WithError(updateErr).Warnf("Failed to update billing_email for organisation %s", orgID)
+		} else {
+			h.A.Logger.Infof("Updated billing_email for organisation %s", orgID)
+		}
+	}()
 }
 
 func (h *BillingHandler) GetBillingEnabled(w http.ResponseWriter, r *http.Request) {
@@ -167,10 +227,15 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
+		ownerEmail := h.getOwnerEmail(r.Context(), orgID)
+		if ownerEmail == "" {
+			h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
+		}
+
 		orgData := map[string]interface{}{
 			"name":          org.Name,
 			"external_id":   orgID,
-			"billing_email": "",
+			"billing_email": ownerEmail,
 			"host":          cfg.Host,
 		}
 
@@ -195,6 +260,7 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 	}
 
 	h.updateOrganisationStatus(r.Context(), orgID, resp.Data)
+	h.updateBillingEmailIfEmpty(r.Context(), orgID)
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscription retrieved successfully", resp.Data, http.StatusOK))
 }
@@ -688,10 +754,15 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 			return
 		}
 
+		ownerEmail := h.getOwnerEmail(r.Context(), orgID)
+		if ownerEmail == "" {
+			h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
+		}
+
 		orgData := map[string]interface{}{
 			"name":          org.Name,
 			"external_id":   orgID,
-			"billing_email": "",
+			"billing_email": ownerEmail,
 			"host":          cfg.Host,
 		}
 
@@ -717,6 +788,9 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return
 	}
+
+	// Update billing_email if empty (runs in background)
+	h.updateBillingEmailIfEmpty(r.Context(), orgID)
 
 	// Extract just the internal ID from the response
 	var internalID string
