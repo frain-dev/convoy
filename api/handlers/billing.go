@@ -327,55 +327,64 @@ func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mergedPlans := h.mergePlansWithFeatures(resp.Data, h.A.Cfg.Billing.Plans)
+	configPlans := make([]billing.Plan, 0, len(h.A.Cfg.Billing.Plans))
+	for _, configPlan := range h.A.Cfg.Billing.Plans {
+		planJSON, err := json.Marshal(configPlan)
+		if err != nil {
+			continue
+		}
+		var plan billing.Plan
+		if err := json.Unmarshal(planJSON, &plan); err != nil {
+			continue
+		}
+		configPlans = append(configPlans, plan)
+	}
+
+	mergedPlans := h.mergePlansWithFeatures(resp.Data, configPlans)
 
 	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", mergedPlans, http.StatusOK))
 }
 
-func (h *BillingHandler) mergePlansWithFeatures(overwatchPlans interface{}, configPlans []interface{}) []interface{} {
-	overwatchPlansSlice, ok := overwatchPlans.([]interface{})
-	if !ok {
-		return []interface{}{}
-	}
-
-	configPlansMap := make(map[string]interface{})
-	for _, configPlan := range configPlans {
-		if planMap, ok := configPlan.(map[string]interface{}); ok {
-			if name, ok := planMap["name"].(string); ok {
-				configPlansMap[strings.ToLower(name)] = configPlan
-			}
+func (h *BillingHandler) mergePlansWithFeatures(plans []billing.Plan, configPlans []billing.Plan) []interface{} {
+	configPlansMap := make(map[string]map[string]interface{})
+	for _, plan := range configPlans {
+		if plan.Name == "" {
+			continue
 		}
+		planJSON, err := json.Marshal(plan)
+		if err != nil {
+			continue
+		}
+		var planMap map[string]interface{}
+		if err := json.Unmarshal(planJSON, &planMap); err != nil {
+			continue
+		}
+		configPlansMap[strings.ToLower(plan.Name)] = planMap
 	}
 
-	mergedPlans := make([]interface{}, 0, len(overwatchPlansSlice))
-	for _, overwatchPlan := range overwatchPlansSlice {
-		planMap, ok := overwatchPlan.(map[string]interface{})
-		if !ok {
+	mergedPlans := make([]interface{}, 0, len(plans))
+	for _, plan := range plans {
+		planJSON, err := json.Marshal(plan)
+		if err != nil {
+			continue
+		}
+		var planMap map[string]interface{}
+		if err := json.Unmarshal(planJSON, &planMap); err != nil {
 			continue
 		}
 
-		planName, ok := planMap["name"].(string)
-		if !ok {
-			continue
-		}
-
-		configPlan, found := configPlansMap[strings.ToLower(planName)]
+		configPlanMap, found := configPlansMap[strings.ToLower(plan.Name)]
 		if found {
 			mergedPlan := make(map[string]interface{})
-
-			if configPlanMap, ok := configPlan.(map[string]interface{}); ok {
-				for k, v := range configPlanMap {
-					mergedPlan[k] = v
-				}
+			for k, v := range configPlanMap {
+				mergedPlan[k] = v
 			}
-
 			for k, v := range planMap {
 				mergedPlan[k] = v
 			}
-
 			mergedPlans = append(mergedPlans, mergedPlan)
 		} else {
-			mergedPlans = append(mergedPlans, overwatchPlan)
+			mergedPlans = append(mergedPlans, planMap)
 		}
 	}
 

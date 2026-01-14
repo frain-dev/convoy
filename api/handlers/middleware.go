@@ -76,6 +76,10 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 						_ = render.Render(w, r, util.NewErrorResponse("Failed to verify organization status", http.StatusInternalServerError))
 						return
 					}
+					if org == nil {
+						_ = render.Render(w, r, util.NewErrorResponse("Organization not found", http.StatusNotFound))
+						return
+					}
 					ctx := context.WithValue(r.Context(), convoy.OrganisationCtx, org)
 					r = r.WithContext(ctx)
 				}
@@ -88,9 +92,18 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 						_ = render.Render(w, r, util.NewServiceErrResponse(err))
 						return
 					}
+					if org == nil {
+						_ = render.Render(w, r, util.NewErrorResponse("Organization not found", http.StatusNotFound))
+						return
+					}
 					ctx := context.WithValue(r.Context(), convoy.OrganisationCtx, org)
 					r = r.WithContext(ctx)
 				}
+			}
+
+			if org == nil {
+				_ = render.Render(w, r, util.NewErrorResponse("Organization not found", http.StatusNotFound))
+				return
 			}
 
 			if h.isOrganisationDisabled(org) {
