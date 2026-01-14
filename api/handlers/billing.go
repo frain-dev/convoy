@@ -345,7 +345,7 @@ func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", mergedPlans, http.StatusOK))
 }
 
-func (h *BillingHandler) mergePlansWithFeatures(plans []billing.Plan, configPlans []billing.Plan) []interface{} {
+func (h *BillingHandler) mergePlansWithFeatures(plans, configPlans []billing.Plan) []interface{} {
 	configPlansMap := make(map[string]map[string]interface{})
 	for _, plan := range configPlans {
 		if plan.Name == "" {
