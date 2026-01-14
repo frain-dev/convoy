@@ -570,6 +570,8 @@ func (h *BillingHandler) DeleteSubscription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	h.updateOrganisationStatus(r.Context(), orgID, resp.Data)
+
 	_ = render.Render(w, r, util.NewServerResponse("Subscription cancelled successfully", resp.Data, http.StatusOK))
 }
 
@@ -743,7 +745,7 @@ func (h *BillingHandler) updateOrganisationStatus(ctx context.Context, orgID str
 		return
 	}
 
-	isActive := extractSubscriptionStatus(subscriptionData)
+	isActive := billing.HasActiveSubscription(subscriptionData)
 
 	if isActive {
 		if org.DisabledAt.Valid {
@@ -764,22 +766,4 @@ func (h *BillingHandler) updateOrganisationStatus(ctx context.Context, orgID str
 			h.A.Logger.Infof("Set organisation %s disabled_at - subscription not active", orgID)
 		}
 	}
-}
-
-func extractSubscriptionStatus(subscriptionData interface{}) bool {
-	if subscriptionData == nil {
-		return false
-	}
-
-	data, ok := subscriptionData.(map[string]interface{})
-	if !ok {
-		return false
-	}
-
-	status, ok := data["status"].(string)
-	if !ok {
-		return false
-	}
-
-	return status == "active"
 }

@@ -109,6 +109,7 @@ const (
 	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"
 	MatchEventSubscriptionsProcessor TaskName = "MatchEventSubscriptionsProcessor"
 	BatchRetryProcessor              TaskName = "BatchRetryProcessor"
+	UpdateOrganisationStatus         TaskName = "UpdateOrganisationStatus"
 
 	TokenCacheKey CacheKey = "tokens"
 )

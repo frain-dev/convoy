@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
@@ -422,6 +423,12 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
+
+	var billingClient billing.Client
+	if cfg.Billing.Enabled {
+		billingClient = billing.NewClient(cfg.Billing)
+		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(a.DB, billingClient, rd, lo), nil)
+	}
 
 	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
 	if err != nil {

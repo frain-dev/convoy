@@ -16,7 +16,6 @@ import {Plan, PlanService} from './plan.service';
 import {BillingOverviewService, BillingOverview} from './billing-overview.service';
 import {BillingUsageService, UsageRow} from './billing-usage.service';
 import {HttpService} from 'src/app/services/http/http.service';
-
 @Component({
   selector: 'app-billing-page',
   templateUrl: './billing-page.component.html',

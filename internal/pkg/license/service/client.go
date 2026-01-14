@@ -14,7 +14,7 @@ import (
 
 const (
 	// DefaultOverwatchHost is the hardcoded Overwatch URL
-	DefaultOverwatchHost = "https://overwatch-production.getconvoy.cloud"
+	DefaultOverwatchHost = "https://overwatch.getconvoy.cloud"
 	// DefaultValidatePath is the default validation endpoint
 	DefaultValidatePath = "/licenses/validate"
 	// DefaultTimeout is the default request timeout
