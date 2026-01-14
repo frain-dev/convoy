@@ -179,7 +179,9 @@ func TestLoadConfig(t *testing.T) {
 					IsEnabled: false,
 					Backend:   "prometheus",
 					Prometheus: PrometheusMetricsConfiguration{
-						SampleTime: 5,
+						SampleTime:                      5,
+						QueryTimeout:                    30,
+						MaterializedViewRefreshInterval: 2,
 					},
 				},
 				Dispatcher: DispatcherConfiguration{
@@ -276,7 +278,9 @@ func TestLoadConfig(t *testing.T) {
 					IsEnabled: false,
 					Backend:   "prometheus",
 					Prometheus: PrometheusMetricsConfiguration{
-						SampleTime: 5,
+						SampleTime:                      5,
+						QueryTimeout:                    30,
+						MaterializedViewRefreshInterval: 2,
 					},
 				},
 				Dispatcher: DispatcherConfiguration{
@@ -372,7 +376,9 @@ func TestLoadConfig(t *testing.T) {
 					IsEnabled: false,
 					Backend:   "prometheus",
 					Prometheus: PrometheusMetricsConfiguration{
-						SampleTime: 5,
+						SampleTime:                      5,
+						QueryTimeout:                    30,
+						MaterializedViewRefreshInterval: 2,
 					},
 				},
 				Dispatcher: DispatcherConfiguration{

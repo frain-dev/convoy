@@ -110,6 +110,7 @@ const (
 	MatchEventSubscriptionsProcessor TaskName = "MatchEventSubscriptionsProcessor"
 	BatchRetryProcessor              TaskName = "BatchRetryProcessor"
 	UpdateOrganisationStatus         TaskName = "UpdateOrganisationStatus"
+	RefreshMetricsMaterializedViews  TaskName = "RefreshMetricsMaterializedViews"
 
 	TokenCacheKey CacheKey = "tokens"
 )
