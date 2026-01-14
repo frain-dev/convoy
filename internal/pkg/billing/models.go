@@ -1,11 +1,21 @@
 package billing
 
 type BillingOrganisation struct {
-	ID           string `json:"id,omitempty"`
-	Name         string `json:"name,omitempty"`
-	ExternalID   string `json:"external_id,omitempty"`
-	BillingEmail string `json:"billing_email,omitempty"`
-	Host         string `json:"host,omitempty"`
+	ID             string `json:"id,omitempty"`
+	Name           string `json:"name,omitempty"`
+	ExternalID     string `json:"external_id,omitempty"`
+	BillingEmail   string `json:"billing_email,omitempty"`
+	Host           string `json:"host,omitempty"`
+	TaxIDType      string `json:"tax_id_type,omitempty"`
+	TaxNumber      string `json:"tax_number,omitempty"`
+	BillingAddress string `json:"billing_address,omitempty"`
+	BillingCity    string `json:"billing_city,omitempty"`
+	BillingState   string `json:"billing_state,omitempty"`
+	BillingZip     string `json:"billing_zip,omitempty"`
+	BillingCountry string `json:"billing_country,omitempty"`
+	CreatedAt      string `json:"created_at,omitempty"`
+	UpdatedAt      string `json:"updated_at,omitempty"`
+	DeletedAt      string `json:"deleted_at,omitempty"`
 }
 
 type UpdateOrganisationTaxIDRequest struct {
@@ -14,12 +24,11 @@ type UpdateOrganisationTaxIDRequest struct {
 }
 
 type UpdateOrganisationAddressRequest struct {
-	AddressLine1 string `json:"address_line1,omitempty"`
-	AddressLine2 string `json:"address_line2,omitempty"`
-	City         string `json:"city,omitempty"`
-	State        string `json:"state,omitempty"`
-	PostalCode   string `json:"postal_code,omitempty"`
-	Country      string `json:"country,omitempty"`
+	BillingAddress string `json:"billing_address,omitempty"`
+	BillingCity    string `json:"billing_city,omitempty"`
+	BillingState   string `json:"billing_state,omitempty"`
+	BillingZip     string `json:"billing_zip,omitempty"`
+	BillingCountry string `json:"billing_country,omitempty"`
 }
 
 type OnboardSubscriptionRequest struct {

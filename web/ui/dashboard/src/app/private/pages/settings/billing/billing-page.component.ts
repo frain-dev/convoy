@@ -109,14 +109,14 @@ export class BillingPageComponent implements OnInit {
 
   private bootstrapSubscriptionPromise: Promise<void> | null = null;
 
-  async ngOnInit() {
+  ngOnInit() {
     this.validateOrganisation();
+    this.loadCountries(); // Load immediately, independent of bootstrap
+    this.loadBillingConfiguration();
+    
+    // Start bootstrap in background - code that needs it will await the promise
     this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
     this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
-    await this.bootstrapSubscriptionPromise;
-    
-    this.loadBillingConfiguration();
-    this.loadCountries();
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);

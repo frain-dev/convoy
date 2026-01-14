@@ -287,11 +287,11 @@ func TestClient_UpdateOrganisationAddress_Success(t *testing.T) {
 	defer server.Close()
 
 	addressData := UpdateOrganisationAddressRequest{
-		AddressLine1: "123 Main St",
-		City:         "New York",
-		State:        "NY",
-		PostalCode:   "10001",
-		Country:      "US",
+		BillingAddress: "123 Main St",
+		BillingCity:    "New York",
+		BillingState:   "NY",
+		BillingZip:     "10001",
+		BillingCountry: "US",
 	}
 
 	resp, err := client.UpdateOrganisationAddress(context.Background(), "test-org", addressData)
