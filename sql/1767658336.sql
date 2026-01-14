@@ -131,11 +131,11 @@ LIMIT 1000; -- samples
 CREATE UNIQUE INDEX IF NOT EXISTS idx_event_endpoint_backlog_metrics_mv_unique 
 ON convoy.event_endpoint_backlog_metrics_mv(project_id, source_id, endpoint_id);
 
--- Initial refresh of all materialized views
-REFRESH MATERIALIZED VIEW convoy.event_queue_metrics_mv;
-REFRESH MATERIALIZED VIEW convoy.event_delivery_queue_metrics_mv;
-REFRESH MATERIALIZED VIEW convoy.event_queue_backlog_metrics_mv;
-REFRESH MATERIALIZED VIEW convoy.event_endpoint_backlog_metrics_mv;
+
+REFRESH MATERIALIZED VIEW CONCURRENTLY convoy.event_queue_metrics_mv;
+REFRESH MATERIALIZED VIEW CONCURRENTLY convoy.event_delivery_queue_metrics_mv;
+REFRESH MATERIALIZED VIEW CONCURRENTLY convoy.event_queue_backlog_metrics_mv;
+REFRESH MATERIALIZED VIEW CONCURRENTLY convoy.event_endpoint_backlog_metrics_mv;
 
 -- +migrate Down
 
