@@ -82,19 +82,41 @@ func pubSubToJSON(config *datastore.PubSubConfig) []byte {
 
 // pgTextToSlice converts pgtype.Text to []string
 func pgTextToSlice(t pgtype.Text) []string {
-	if !t.Valid {
+	if !t.Valid || t.String == "" {
 		return []string{}
 	}
 	return strings.Split(t.String, ",")
 }
 
+// sliceToPgText converts []string to pgtype.Text (comma-separated)
+func sliceToPgText(arr []string) pgtype.Text {
+	if len(arr) == 0 {
+		return pgtype.Text{String: "", Valid: false}
+	}
+	return pgtype.Text{String: strings.Join(arr, ","), Valid: true}
+}
+
 func jsonToSignatureVersions(data []byte) datastore.SignatureVersions {
 	if len(data) == 0 {
-		return datastore.SignatureVersions{}
+		return getDefaultSignatureVersions()
 	}
 	var result []datastore.SignatureVersion
-	json.Unmarshal(data, &result)
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return getDefaultSignatureVersions()
+	}
 	return result
+}
+
+// getDefaultSignatureVersions returns default signature configuration
+func getDefaultSignatureVersions() datastore.SignatureVersions {
+	return []datastore.SignatureVersion{
+		{
+			UID:      ulid.Make().String(),
+			Hash:     "SHA256",
+			Encoding: datastore.HexEncoding,
+		},
+	}
 }
 
 // jsonBytesToPubSub converts JSON bytes to PubSubConfig
@@ -103,17 +125,23 @@ func jsonBytesToPubSub(data []byte) *datastore.PubSubConfig {
 		return &datastore.PubSubConfig{}
 	}
 	var result datastore.PubSubConfig
-	json.Unmarshal(data, &result)
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return &datastore.PubSubConfig{}
+	}
 	return &result
 }
 
-// signatureVersionsToStringSlice converts SignatureVersions to []string
-func signatureVersionsToStringSlice(versions datastore.SignatureVersions) []string {
-	result := make([]string, 0, len(versions))
-	for _, v := range versions {
-		result = append(result, v.UID)
+// signatureVersionsToJSON converts SignatureVersions to JSON bytes
+func signatureVersionsToJSON(versions datastore.SignatureVersions) []byte {
+	if len(versions) == 0 {
+		return []byte("[]")
 	}
-	return result
+	data, err := json.Marshal(versions)
+	if err != nil {
+		return []byte("[]")
+	}
+	return data
 }
 
 // projectConfigToCreateParams converts ProjectConfig to CreateProjectConfigurationParams
@@ -136,11 +164,11 @@ func projectConfigToCreateParams(id string, config *datastore.ProjectConfig) rep
 		StrategyDuration:               int32(sc.Duration),
 		StrategyRetryCount:             int32(sc.RetryCount),
 		SignatureHeader:                string(sgc.Header),
-		SignatureVersions:              stringSliceToJSON(signatureVersionsToStringSlice(sgc.Versions)),
+		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
 		DisableEndpoint:                config.DisableEndpoint,
 		MetaEventsEnabled:              me.IsEnabled,
 		MetaEventsType:                 stringToPgText(string(me.Type)),
-		MetaEventsEventType:            stringToPgText(""), // Handle slice conversion
+		MetaEventsEventType:            sliceToPgText(me.EventType),
 		MetaEventsUrl:                  stringToPgText(me.URL),
 		MetaEventsSecret:               stringToPgText(me.Secret),
 		MetaEventsPubSub:               pubSubToJSON(me.PubSub),
@@ -174,11 +202,11 @@ func projectConfigToUpdateParams(id string, config *datastore.ProjectConfig) rep
 		StrategyDuration:               int32(sc.Duration),
 		StrategyRetryCount:             int32(sc.RetryCount),
 		SignatureHeader:                string(sgc.Header),
-		SignatureVersions:              stringSliceToJSON(signatureVersionsToStringSlice(sgc.Versions)),
+		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
 		DisableEndpoint:                config.DisableEndpoint,
 		MetaEventsEnabled:              me.IsEnabled,
 		MetaEventsType:                 stringToPgText(string(me.Type)),
-		MetaEventsEventType:            stringToPgText(""),
+		MetaEventsEventType:            sliceToPgText(me.EventType),
 		MetaEventsUrl:                  stringToPgText(me.URL),
 		MetaEventsSecret:               stringToPgText(me.Secret),
 		MetaEventsPubSub:               pubSubToJSON(me.PubSub),
