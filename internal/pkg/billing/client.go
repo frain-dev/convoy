@@ -17,7 +17,7 @@ type Client interface {
 	GetUsage(ctx context.Context, orgID string) (*Response[Usage], error)
 	GetInvoices(ctx context.Context, orgID string) (*Response[[]Invoice], error)
 	GetPaymentMethods(ctx context.Context, orgID string) (*Response[[]PaymentMethod], error)
-	GetSubscription(ctx context.Context, orgID string) (*Response[Subscription], error)
+	GetSubscription(ctx context.Context, orgID string) (*Response[BillingSubscription], error)
 	GetPlans(ctx context.Context) (*Response[[]Plan], error)
 	GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType], error)
 	CreateOrganisation(ctx context.Context, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
@@ -25,7 +25,7 @@ type Client interface {
 	UpdateOrganisation(ctx context.Context, orgID string, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
 	UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error)
 	UpdateOrganisationAddress(ctx context.Context, orgID string, addressData UpdateOrganisationAddressRequest) (*Response[BillingOrganisation], error)
-	GetSubscriptions(ctx context.Context, orgID string) (*Response[[]Subscription], error)
+	GetSubscriptions(ctx context.Context, orgID string) (*Response[[]BillingSubscription], error)
 	OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error)
 	UpgradeSubscription(ctx context.Context, orgID, subscriptionID string, req UpgradeSubscriptionRequest) (*Response[Checkout], error)
 	DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error)
@@ -101,8 +101,8 @@ func (c *HTTPClient) GetPaymentMethods(ctx context.Context, orgID string) (*Resp
 	return makeRequest[[]PaymentMethod](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/payment_methods", orgID), nil)
 }
 
-func (c *HTTPClient) GetSubscription(ctx context.Context, orgID string) (*Response[Subscription], error) {
-	return makeRequest[Subscription](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
+func (c *HTTPClient) GetSubscription(ctx context.Context, orgID string) (*Response[BillingSubscription], error) {
+	return makeRequest[BillingSubscription](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
 }
 
 func (c *HTTPClient) GetPlans(ctx context.Context) (*Response[[]Plan], error) {
@@ -163,8 +163,8 @@ func (c *HTTPClient) UpdateOrganisationAddress(ctx context.Context, orgID string
 	return makeRequest[BillingOrganisation](ctx, c.httpClient, c.config, "PUT", fmt.Sprintf("/organisations/%s/billing_address", orgID), addressData)
 }
 
-func (c *HTTPClient) GetSubscriptions(ctx context.Context, orgID string) (*Response[[]Subscription], error) {
-	return makeRequest[[]Subscription](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
+func (c *HTTPClient) GetSubscriptions(ctx context.Context, orgID string) (*Response[[]BillingSubscription], error) {
+	return makeRequest[[]BillingSubscription](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
 }
 
 func (c *HTTPClient) OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error) {

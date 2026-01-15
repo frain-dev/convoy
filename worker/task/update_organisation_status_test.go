@@ -45,25 +45,25 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) SetupTest() {
 
 type testBillingClient struct {
 	*billing.MockBillingClient
-	subscriptions map[string]billing.Subscription
+	subscriptions map[string]billing.BillingSubscription
 	errors        map[string]error
 }
 
 func newTestBillingClient() *testBillingClient {
 	return &testBillingClient{
 		MockBillingClient: &billing.MockBillingClient{},
-		subscriptions:     make(map[string]billing.Subscription),
+		subscriptions:     make(map[string]billing.BillingSubscription),
 		errors:            make(map[string]error),
 	}
 }
 
-func (m *testBillingClient) GetSubscription(ctx context.Context, orgID string) (*billing.Response[billing.Subscription], error) {
+func (m *testBillingClient) GetSubscription(ctx context.Context, orgID string) (*billing.Response[billing.BillingSubscription], error) {
 	if err, ok := m.errors[orgID]; ok {
 		return nil, err
 	}
 
 	if sub, ok := m.subscriptions[orgID]; ok {
-		return &billing.Response[billing.Subscription]{
+		return &billing.Response[billing.BillingSubscription]{
 			Status:  true,
 			Message: "Subscription retrieved successfully",
 			Data:    sub,
@@ -86,13 +86,13 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 
 	testClient := newTestBillingClient()
-	testClient.subscriptions[u.DefaultOrg.UID] = billing.Subscription{
+	testClient.subscriptions[u.DefaultOrg.UID] = billing.BillingSubscription{
 		Status: "active",
 	}
-	testClient.subscriptions[org1.UID] = billing.Subscription{
+	testClient.subscriptions[org1.UID] = billing.BillingSubscription{
 		Status: "active",
 	}
-	testClient.subscriptions[org2.UID] = billing.Subscription{
+	testClient.subscriptions[org2.UID] = billing.BillingSubscription{
 		Status: "inactive",
 	}
 
@@ -136,10 +136,10 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 
 	testClient := newTestBillingClient()
-	testClient.subscriptions[u.DefaultOrg.UID] = billing.Subscription{
+	testClient.subscriptions[u.DefaultOrg.UID] = billing.BillingSubscription{
 		Status: "active",
 	}
-	testClient.subscriptions[org.UID] = billing.Subscription{
+	testClient.subscriptions[org.UID] = billing.BillingSubscription{
 		Status: "active",
 	}
 
@@ -176,10 +176,10 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	orgRepo := organisations.New(log.NewLogger(os.Stdout), u.ConvoyApp.database)
 
 	testClient := newTestBillingClient()
-	testClient.subscriptions[u.DefaultOrg.UID] = billing.Subscription{
+	testClient.subscriptions[u.DefaultOrg.UID] = billing.BillingSubscription{
 		Status: "active",
 	}
-	testClient.subscriptions[org.UID] = billing.Subscription{
+	testClient.subscriptions[org.UID] = billing.BillingSubscription{
 		Status: "inactive",
 	}
 
@@ -241,11 +241,11 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 
 	testClient := newTestBillingClient()
-	testClient.subscriptions[u.DefaultOrg.UID] = billing.Subscription{
+	testClient.subscriptions[u.DefaultOrg.UID] = billing.BillingSubscription{
 		Status: "active",
 	}
 	testClient.errors[org1.UID] = errors.New("billing service error")
-	testClient.subscriptions[org2.UID] = billing.Subscription{
+	testClient.subscriptions[org2.UID] = billing.BillingSubscription{
 		Status: "active",
 	}
 

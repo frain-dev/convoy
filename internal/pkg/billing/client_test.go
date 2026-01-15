@@ -182,7 +182,7 @@ func TestClient_GetPaymentMethods_Success(t *testing.T) {
 }
 
 func TestClient_GetSubscription_Success(t *testing.T) {
-	client, server := setupTestClientWithResponse(t, Subscription{})
+	client, server := setupTestClientWithResponse(t, BillingSubscription{})
 	defer server.Close()
 
 	resp, err := client.GetSubscription(context.Background(), "test-org")
@@ -301,7 +301,7 @@ func TestClient_UpdateOrganisationAddress_Success(t *testing.T) {
 }
 
 func TestClient_GetSubscriptions_Success(t *testing.T) {
-	client, server := setupTestClientWithResponse(t, []Subscription{})
+	client, server := setupTestClientWithResponse(t, []BillingSubscription{})
 	defer server.Close()
 
 	resp, err := client.GetSubscriptions(context.Background(), "test-org")

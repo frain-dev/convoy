@@ -63,13 +63,13 @@ func (m *MockBillingClient) GetPaymentMethods(ctx context.Context, orgID string)
 	}, nil
 }
 
-func (m *MockBillingClient) GetSubscription(ctx context.Context, orgID string) (*Response[Subscription], error) {
+func (m *MockBillingClient) GetSubscription(ctx context.Context, orgID string) (*Response[BillingSubscription], error) {
 	m.ensureOrganisation(orgID)
 
-	return &Response[Subscription]{
+	return &Response[BillingSubscription]{
 		Status:  true,
 		Message: "Subscription retrieved successfully",
-		Data:    Subscription{},
+		Data:    BillingSubscription{},
 	}, nil
 }
 
@@ -192,13 +192,13 @@ func (m *MockBillingClient) UpdateOrganisationAddress(ctx context.Context, orgID
 	}, nil
 }
 
-func (m *MockBillingClient) GetSubscriptions(ctx context.Context, orgID string) (*Response[[]Subscription], error) {
+func (m *MockBillingClient) GetSubscriptions(ctx context.Context, orgID string) (*Response[[]BillingSubscription], error) {
 	m.ensureOrganisation(orgID)
 
-	return &Response[[]Subscription]{
+	return &Response[[]BillingSubscription]{
 		Status:  true,
 		Message: "Subscriptions retrieved successfully",
-		Data:    []Subscription{},
+		Data:    []BillingSubscription{},
 	}, nil
 }
 

@@ -5,18 +5,18 @@ func HasActiveSubscription(subscriptionData interface{}) bool {
 		return false
 	}
 
-	var subscriptions []Subscription
+	var subscriptions []BillingSubscription
 
 	switch v := subscriptionData.(type) {
-	case *Subscription:
-		subscriptions = []Subscription{*v}
-	case Subscription:
-		subscriptions = []Subscription{v}
-	case []Subscription:
+	case *BillingSubscription:
+		subscriptions = []BillingSubscription{*v}
+	case BillingSubscription:
+		subscriptions = []BillingSubscription{v}
+	case []BillingSubscription:
 		subscriptions = v
-	case []*Subscription:
+	case []*BillingSubscription:
 		if len(v) > 0 {
-			subscriptions = make([]Subscription, len(v))
+			subscriptions = make([]BillingSubscription, len(v))
 			for i, sub := range v {
 				subscriptions[i] = *sub
 			}

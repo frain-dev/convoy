@@ -46,7 +46,7 @@ type Plan struct {
 	Name string `json:"name,omitempty"`
 }
 
-type Subscription struct {
+type BillingSubscription struct {
 	ID        string `json:"id,omitempty"`
 	Status    string `json:"status,omitempty"`
 	PlanID    string `json:"plan_id,omitempty"`
