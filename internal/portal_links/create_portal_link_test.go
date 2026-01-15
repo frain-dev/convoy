@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -126,7 +127,7 @@ func seedTestData(t *testing.T, db database.Database) *datastore.Project {
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := postgres.NewProjectRepo(db)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),

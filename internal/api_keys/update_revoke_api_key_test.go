@@ -1,14 +1,16 @@
 package api_keys
 
 import (
+	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 // ============================================================================
@@ -126,7 +128,7 @@ func TestUpdateAPIKey_ChangeRoleProject(t *testing.T) {
 	user, org, project1 := seedTestData(t, db)
 
 	// Create a second project
-	projectRepo := postgres.NewProjectRepo(db)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project2 := &datastore.Project{
 		UID:            ulid.Make().String(),

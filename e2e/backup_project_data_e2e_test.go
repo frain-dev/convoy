@@ -18,6 +18,7 @@ import (
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/worker/task"
 )
@@ -32,8 +33,8 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	projectRepo := postgres.NewProjectRepo(db)
 	eventRepo := postgres.NewEventRepo(db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
@@ -145,8 +146,8 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	projectRepo := postgres.NewProjectRepo(db)
 	eventRepo := postgres.NewEventRepo(db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
@@ -260,8 +261,8 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	projectRepo := postgres.NewProjectRepo(db)
 	eventRepo := postgres.NewEventRepo(db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
@@ -396,8 +397,8 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	projectRepo := postgres.NewProjectRepo(db)
 	eventRepo := postgres.NewEventRepo(db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
@@ -497,8 +498,8 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
+	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	projectRepo := postgres.NewProjectRepo(db)
 	eventRepo := postgres.NewEventRepo(db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
