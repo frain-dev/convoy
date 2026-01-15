@@ -40,6 +40,8 @@ func addUpCommand() *cobra.Command {
 			lo := log.NewLogger(os.Stdout)
 			lo.SetLevel(log.DebugLevel)
 
+			lo.Info("Running migrations...")
+
 			cfg, err := config.Get()
 			if err != nil {
 				lo.WithError(err).Fatal("Error fetching the config.")
@@ -49,7 +51,6 @@ func addUpCommand() *cobra.Command {
 			if err != nil {
 				lo.Fatal(err)
 			}
-
 			defer db.Close()
 
 			m := migrator.NewWithLogger(db, lo)
@@ -57,6 +58,10 @@ func addUpCommand() *cobra.Command {
 			if err != nil {
 				lo.Fatalf("migration up failed with error: %+v", err)
 			}
+
+			lo.Info("Migration completed successfully.")
+
+			os.Exit(0)
 		},
 	}
 
@@ -87,7 +92,6 @@ func addDownCommand() *cobra.Command {
 			if err != nil {
 				lo.Fatal(err)
 			}
-
 			defer db.Close()
 
 			m := migrator.NewWithLogger(db, lo)
@@ -95,6 +99,10 @@ func addDownCommand() *cobra.Command {
 			if err != nil {
 				lo.Fatalf("migration down failed with error: %+v", err)
 			}
+
+			lo.Info("Migration completed successfully.")
+
+			os.Exit(0)
 		},
 	}
 
