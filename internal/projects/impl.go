@@ -62,15 +62,6 @@ func boolToPgBool(b bool) pgtype.Bool {
 	return pgtype.Bool{Bool: b, Valid: true}
 }
 
-// stringSliceToJSON converts []string to JSON bytes
-func stringSliceToJSON(arr []string) []byte {
-	if len(arr) == 0 {
-		return []byte("[]")
-	}
-	data, _ := json.Marshal(arr)
-	return data
-}
-
 // pubSubToJSON converts PubSubConfig to JSON bytes
 func pubSubToJSON(config *datastore.PubSubConfig) []byte {
 	if config == nil {
