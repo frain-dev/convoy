@@ -314,10 +314,8 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 	qtx := repo.New(tx)
 
 	// Create verifier if present
-	var sourceVerifierID *string
 	if !util.IsStringEmpty(string(source.Verifier.Type)) && source.Verifier.Type != datastore.NoopVerifier {
 		verifierID := ulid.Make().String()
-		sourceVerifierID = &verifierID
 
 		basicUser, basicPass, apiKeyHeader, apiKeyValue,
 			hmacHash, hmacHeader, hmacSecret, hmacEncoding := extractVerifierParams(source.Verifier)
@@ -530,7 +528,7 @@ func (s *Service) DeleteSourceByID(ctx context.Context, projectID, id, verifierI
 
 	// Cascade delete subscriptions
 	err = qtx.DeleteSourceSubscriptions(ctx, repo.DeleteSourceSubscriptionsParams{
-		SourceID:  id,
+		SourceID:  stringToPgText(id),
 		ProjectID: projectID,
 	})
 	if err != nil {

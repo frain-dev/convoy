@@ -1,6 +1,8 @@
 package e2e
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,8 +15,13 @@ import (
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
+	amqp091 "github.com/rabbitmq/amqp091-go"
+
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 // EventManifest tracks received webhooks for verification
@@ -322,4 +329,405 @@ func containsSubstring(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// AMQP Helper Functions
+
+// CreateAMQPSource creates an AMQP source for testing
+func CreateAMQPSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project,
+	host string, port int, queue string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+	t.Helper()
+
+	vhost := "/"
+	source := &datastore.Source{
+		UID:          ulid.Make().String(),
+		ProjectID:    project.UID,
+		MaskID:       ulid.Make().String(),
+		Name:         fmt.Sprintf("amqp-source-%s", ulid.Make().String()),
+		Type:         datastore.PubSubSource,
+		Provider:     datastore.GithubSourceProvider,
+		IsDisabled:   false,
+		BodyFunction: bodyFunction,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.NoopVerifier,
+		},
+		HeaderFunction: headerFunction,
+		PubSub: &datastore.PubSubConfig{
+			Type:    datastore.AmqpPubSub,
+			Workers: workers,
+			Amqp: &datastore.AmqpPubSubConfig{
+				Schema: "amqp",
+				Host:   host,
+				Port:   fmt.Sprintf("%d", port),
+				Queue:  queue,
+				Auth: &datastore.AmqpCredentials{
+					User:     "guest",
+					Password: "guest",
+				},
+				Vhost: &vhost,
+			},
+		},
+	}
+
+	sourceRepo := postgres.NewSourceRepo(db)
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err)
+
+	return source
+}
+
+// PublishAMQPMessage publishes a message to RabbitMQ with headers
+func PublishAMQPMessage(t *testing.T, host string, port int, queue string, body []byte, headers map[string]interface{}) {
+	t.Helper()
+
+	connStr := fmt.Sprintf("amqp://guest:guest@%s:%d/", host, port)
+	conn, err := amqp091.Dial(connStr)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	require.NoError(t, err)
+	defer ch.Close()
+
+	// Declare queue (idempotent) - must match AMQP consumer settings
+	_, err = ch.QueueDeclare(
+		queue, // name
+		true,  // durable - must match consumer setting
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	require.NoError(t, err)
+
+	// Convert headers to AMQP table
+	amqpHeaders := make(amqp091.Table)
+	for k, v := range headers {
+		amqpHeaders[k] = v
+	}
+
+	err = ch.Publish(
+		"",    // exchange
+		queue, // routing key
+		false, // mandatory
+		false, // immediate
+		amqp091.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+			Headers:     amqpHeaders,
+		},
+	)
+	require.NoError(t, err)
+	t.Logf("Published AMQP message to queue %s", queue)
+}
+
+// PublishSingleAMQPMessage publishes a single-type AMQP message
+func PublishSingleAMQPMessage(t *testing.T, host string, port int, queue, endpointID, eventType string, data map[string]interface{}, customHeaders map[string]string) {
+	t.Helper()
+
+	payload := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	if customHeaders != nil {
+		payload["custom_headers"] = customHeaders
+	}
+
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	headers := map[string]interface{}{
+		"x-convoy-message-type": "single",
+	}
+
+	PublishAMQPMessage(t, host, port, queue, body, headers)
+}
+
+// PublishFanoutAMQPMessage publishes a fanout-type AMQP message
+func PublishFanoutAMQPMessage(t *testing.T, host string, port int, queue, ownerID, eventType string, data map[string]interface{}, customHeaders map[string]string) {
+	t.Helper()
+
+	payload := map[string]interface{}{
+		"owner_id":        ownerID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	if customHeaders != nil {
+		payload["custom_headers"] = customHeaders
+	}
+
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	headers := map[string]interface{}{
+		"x-convoy-message-type": "fanout",
+	}
+
+	PublishAMQPMessage(t, host, port, queue, body, headers)
+}
+
+// PublishBroadcastAMQPMessage publishes a broadcast-type AMQP message
+func PublishBroadcastAMQPMessage(t *testing.T, host string, port int, queue, eventType string, data map[string]interface{}, customHeaders map[string]string) {
+	t.Helper()
+
+	payload := map[string]interface{}{
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	if customHeaders != nil {
+		payload["custom_headers"] = customHeaders
+	}
+
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	headers := map[string]interface{}{
+		"x-convoy-message-type": "broadcast",
+	}
+
+	PublishAMQPMessage(t, host, port, queue, body, headers)
+}
+
+// CreateSubscriptionWithFilter creates a subscription with advanced filtering
+func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx context.Context,
+	project *datastore.Project, endpoint *convoy.EndpointResponse, eventTypes []string,
+	bodyFilter, headerFilter map[string]interface{}, function *string) *datastore.Subscription {
+	t.Helper()
+
+	var nullFunc null.String
+	if function != nil {
+		nullFunc = null.StringFrom(*function)
+	}
+
+	subscription := &datastore.Subscription{
+		UID:        ulid.Make().String(),
+		ProjectID:  project.UID,
+		Name:       fmt.Sprintf("subscription-%s", ulid.Make().String()),
+		Type:       datastore.SubscriptionTypeAPI,
+		EndpointID: endpoint.UID,
+		FilterConfig: &datastore.FilterConfiguration{
+			EventTypes: eventTypes,
+		},
+		Function: nullFunc,
+	}
+
+	// Add advanced filters if provided
+	if bodyFilter != nil || headerFilter != nil {
+		subscription.FilterConfig.Filter = datastore.FilterSchema{
+			Body:    bodyFilter,
+			Headers: headerFilter,
+		}
+	}
+
+	subRepo := postgres.NewSubscriptionRepo(db)
+	err := subRepo.CreateSubscription(ctx, project.UID, subscription)
+	require.NoError(t, err)
+
+	return subscription
+}
+
+// AssertEventCreated verifies that an event was created in the database
+func AssertEventCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventType string) *datastore.Event {
+	t.Helper()
+
+	// Use a short retry loop to account for async processing
+	var event *datastore.Event
+	var err error
+	dbConn := db.GetDB()
+
+	for i := 0; i < 15; i++ {
+		// Query events directly from the events table
+		query := `
+			SELECT id, project_id, event_type, source_id, headers, raw, data,
+				   created_at, updated_at, deleted_at, acknowledged_at,
+				   idempotency_key, url_query_params, is_duplicate_event
+			FROM convoy.events
+			WHERE project_id = $1
+			  AND event_type = $2
+			  AND deleted_at IS NULL
+			  AND created_at >= $3
+			  AND created_at <= $4
+			ORDER BY created_at DESC
+			LIMIT 1
+		`
+
+		startTime := time.Now().Add(-2 * time.Minute)
+		endTime := time.Now().Add(2 * time.Minute)
+
+		var e datastore.Event
+		err = dbConn.QueryRowContext(ctx, query, projectID, eventType, startTime, endTime).Scan(
+			&e.UID,
+			&e.ProjectID,
+			&e.EventType,
+			&e.SourceID,
+			&e.Headers,
+			&e.Raw,
+			&e.Data,
+			&e.CreatedAt,
+			&e.UpdatedAt,
+			&e.DeletedAt,
+			&e.AcknowledgedAt,
+			&e.IdempotencyKey,
+			&e.URLQueryParams,
+			&e.IsDuplicateEvent,
+		)
+
+		if err == nil {
+			t.Logf("✓ Found event: ID=%s, Type=%s, CreatedAt=%s (attempt %d)", e.UID, e.EventType, e.CreatedAt, i+1)
+			event = &e
+			break
+		}
+
+		if err != sql.ErrNoRows {
+			t.Logf("ERROR querying events (attempt %d): %v", i+1, err)
+		} else {
+			t.Logf("No event found yet for project %s with type %s (attempt %d)", projectID, eventType, i+1)
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	require.NoError(t, err)
+	require.NotNil(t, event, "Event with type %s should have been created", eventType)
+	require.Equal(t, eventType, string(event.EventType))
+
+	return event
+}
+
+// AssertEventDeliveryCreated verifies that an event delivery was created
+func AssertEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID, endpointID string) *datastore.EventDelivery {
+	t.Helper()
+
+	// Use a short retry loop to account for async processing
+	var eventDelivery *datastore.EventDelivery
+	var err error
+	dbConn := db.GetDB()
+
+	for i := 0; i < 20; i++ {
+		// Query event deliveries directly from the table
+		query := `
+			SELECT id, project_id, event_id, endpoint_id,
+				   COALESCE(device_id, '') as device_id,
+				   COALESCE(subscription_id, '') as subscription_id,
+				   headers, attempts, status,
+				   COALESCE(metadata::text, '{}')::jsonb as metadata,
+				   COALESCE(cli_metadata::text, '{}')::jsonb as cli_metadata,
+				   COALESCE(description, '') as description,
+				   created_at, updated_at, deleted_at, acknowledged_at
+			FROM convoy.event_deliveries
+			WHERE project_id = $1
+			  AND event_id = $2
+			  AND endpoint_id = $3
+			  AND deleted_at IS NULL
+			  AND created_at >= $4
+			  AND created_at <= $5
+			ORDER BY created_at DESC
+			LIMIT 1
+		`
+
+		startTime := time.Now().Add(-2 * time.Minute)
+		endTime := time.Now().Add(2 * time.Minute)
+
+		var ed datastore.EventDelivery
+		err = dbConn.QueryRowContext(ctx, query, projectID, eventID, endpointID, startTime, endTime).Scan(
+			&ed.UID,
+			&ed.ProjectID,
+			&ed.EventID,
+			&ed.EndpointID,
+			&ed.DeviceID,
+			&ed.SubscriptionID,
+			&ed.Headers,
+			&ed.DeliveryAttempts,
+			&ed.Status,
+			&ed.Metadata,
+			&ed.CLIMetadata,
+			&ed.Description,
+			&ed.CreatedAt,
+			&ed.UpdatedAt,
+			&ed.DeletedAt,
+			&ed.AcknowledgedAt,
+		)
+
+		if err == nil {
+			t.Logf("✓ Found event delivery: ID=%s, EventID=%s, EndpointID=%s, Status=%s (attempt %d)", ed.UID, ed.EventID, ed.EndpointID, ed.Status, i+1)
+			eventDelivery = &ed
+			break
+		}
+
+		if err != sql.ErrNoRows {
+			t.Logf("ERROR querying event deliveries (attempt %d): %v", i+1, err)
+		} else {
+			t.Logf("No event delivery found yet for event %s, endpoint %s (attempt %d)", eventID, endpointID, i+1)
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	require.NoError(t, err)
+	require.NotNil(t, eventDelivery, "Event delivery should have been created")
+	require.Equal(t, eventID, eventDelivery.EventID)
+	require.Equal(t, endpointID, eventDelivery.EndpointID)
+
+	return eventDelivery
+}
+
+// AssertNoEventDeliveryCreated verifies that NO event delivery was created (for negative tests)
+func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID string) {
+	t.Helper()
+
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+
+	// Wait a bit to ensure no delivery is created
+	time.Sleep(2 * time.Second)
+
+	searchParams := datastore.SearchParams{
+		CreatedAtStart: time.Now().Add(-1 * time.Minute).Unix(),
+		CreatedAtEnd:   time.Now().Add(1 * time.Minute).Unix(),
+	}
+	pageable := datastore.Pageable{
+		PerPage:   10,
+		Direction: datastore.Next,
+	}
+
+	deliveries, _, err := eventDeliveryRepo.LoadEventDeliveriesPaged(
+		ctx, projectID, nil, eventID, "",
+		nil, searchParams, pageable, "", "", "",
+	)
+	require.NoError(t, err)
+	require.Empty(t, deliveries, "No event delivery should have been created")
+}
+
+// AssertDeliveryAttemptCreated verifies that a delivery attempt was created
+func AssertDeliveryAttemptCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventDeliveryID string) {
+	t.Helper()
+
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+
+	// Use a short retry loop - fetch the event delivery and check if it has attempts
+	var delivery *datastore.EventDelivery
+	var err error
+	for i := 0; i < 20; i++ {
+		delivery, err = eventDeliveryRepo.FindEventDeliveryByID(ctx, projectID, eventDeliveryID)
+		if err == nil {
+			t.Logf("Event delivery loaded: ID=%s, Status=%s, Attempts=%d (attempt %d)", delivery.UID, delivery.Status, len(delivery.DeliveryAttempts), i+1)
+			if len(delivery.DeliveryAttempts) > 0 {
+				t.Logf("✓ Found delivery attempts: %d", len(delivery.DeliveryAttempts))
+				break
+			}
+		} else {
+			t.Logf("ERROR loading event delivery (attempt %d): %v", i+1, err)
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	require.NoError(t, err)
+	require.NotNil(t, delivery, "Event delivery should exist")
+	require.NotEmpty(t, delivery.DeliveryAttempts, "At least one delivery attempt should have been created")
 }

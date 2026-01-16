@@ -87,17 +87,22 @@ func (k *Amqp) Verify() error {
 }
 
 func (k *Amqp) consume() {
+	fmt.Printf("[AMQP] consume() called for queue: %s\n", k.Cfg.Queue)
 	conn, err := k.dialer()
 	if err != nil {
+		fmt.Printf("[AMQP] ERROR: failed to instantiate a connection: %v\n", err)
 		log.WithError(err).Error("failed to instantiate a connection")
 		return
 	}
+	fmt.Printf("[AMQP] Connection established\n")
 
 	ch, err := conn.Channel()
 	if err != nil {
+		fmt.Printf("[AMQP] ERROR: failed to instantiate a channel: %v\n", err)
 		log.WithError(err).Error("failed to instantiate a channel")
 		return
 	}
+	fmt.Printf("[AMQP] Channel created\n")
 
 	defer conn.Close()
 	defer ch.Close()
@@ -140,14 +145,18 @@ func (k *Amqp) consume() {
 		nil,    // args
 	)
 	if err != nil {
+		fmt.Printf("[AMQP] ERROR: failed to consume messages: %v\n", err)
 		log.WithError(err).Error("failed to consume messages")
 		return
 	}
+	fmt.Printf("[AMQP] ConsumeWithContext() success, waiting for messages on queue: %s\n", q.Name)
 
 	mm := metrics.GetDPInstance(k.licenser)
 	mm.IncrementIngestTotal(k.source.UID, k.source.ProjectID)
 
+	fmt.Printf("[AMQP] Entering message loop\n")
 	for d := range messages {
+		fmt.Printf("[AMQP] Message received! Body length: %d\n", len(d.Body))
 		if d.Headers == nil {
 			d.Headers = amqp.Table{}
 		}
@@ -155,22 +164,29 @@ func (k *Amqp) consume() {
 
 		headers, err := msgpack.EncodeMsgPack(d.Headers)
 		if err != nil {
+			fmt.Printf("[AMQP] ERROR: failed to marshall message headers: %v\n", err)
 			k.log.WithError(err).Error("failed to marshall message headers")
 		}
 
+		fmt.Printf("[AMQP] Calling handler for message, body: %s\n", string(d.Body))
 		if err := k.handler(k.ctx, k.source, string(d.Body), headers); err != nil {
+			fmt.Printf("[AMQP] Handler returned error: %v\n", err)
 			k.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
-			if err := d.Ack(false); err != nil {
-				k.log.WithError(err).Error("failed to ack message")
-				mm.IncrementIngestErrorsTotal(k.source)
-			} else {
-				mm.IncrementIngestConsumedTotal(k.source)
-			}
-		} else {
 			// Reject the message and send it to DLQ
 			if err := d.Nack(false, false); err != nil {
 				k.log.WithError(err).Error("failed to nack message")
 				mm.IncrementIngestErrorsTotal(k.source)
+			}
+		} else {
+			fmt.Printf("[AMQP] Handler succeeded\n")
+			// Acknowledge successful processing
+			if err := d.Ack(false); err != nil {
+				fmt.Printf("[AMQP] ERROR: failed to ack message: %v\n", err)
+				k.log.WithError(err).Error("failed to ack message")
+				mm.IncrementIngestErrorsTotal(k.source)
+			} else {
+				fmt.Printf("[AMQP] Message ACK'd successfully\n")
+				mm.IncrementIngestConsumedTotal(k.source)
 			}
 		}
 	}

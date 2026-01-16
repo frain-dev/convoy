@@ -219,6 +219,7 @@ type SubscriptionRepository interface {
 	LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]Subscription, error)
 	FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []SubscriptionUpdate, pageSize int64) ([]Subscription, error)
 	FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []SubscriptionUpdate, pageSize int64) ([]Subscription, error)
+	FetchNewSubscriptions(ctx context.Context, projectIDs []string, knownSubscriptionIDs []string, lastSyncTime time.Time, pageSize int64) ([]Subscription, error)
 }
 
 type FilterRepository interface {

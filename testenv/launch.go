@@ -13,10 +13,11 @@ import (
 )
 
 type Environment struct {
-	CloneTestDatabase PostgresDBCloneFunc
-	NewRedisClient    RedisClientFunc
-	NewQueueInspector QueueInspectorFunc
-	NewMinIOClient    MinIOClientFunc
+	CloneTestDatabase  PostgresDBCloneFunc
+	NewRedisClient     RedisClientFunc
+	NewQueueInspector  QueueInspectorFunc
+	NewMinIOClient     MinIOClientFunc
+	NewRabbitMQConnect RabbitMQConnectionFunc
 }
 
 func Launch(ctx context.Context) (*Environment, func() error, error) {
@@ -35,6 +36,11 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 		return nil, nil, fmt.Errorf("start minio container: %w", err)
 	}
 
+	rabbitmqcontainer, rmqFactory, err := NewTestRabbitMQ(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("start rabbitmq container: %w", err)
+	}
+
 	// Get Redis address for queue inspector
 	redisAddr, err := rediscontainer.ConnectionString(ctx)
 	if err != nil {
@@ -44,10 +50,11 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 	inspectorFactory := newQueueInspectorFactory(redisAddr)
 
 	res := &Environment{
-		CloneTestDatabase: cloner,
-		NewRedisClient:    rcFactory,
-		NewQueueInspector: inspectorFactory,
-		NewMinIOClient:    minioFactory,
+		CloneTestDatabase:  cloner,
+		NewRedisClient:     rcFactory,
+		NewQueueInspector:  inspectorFactory,
+		NewMinIOClient:     minioFactory,
+		NewRabbitMQConnect: rmqFactory,
 	}
 
 	return res, func() error {
@@ -73,6 +80,14 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 			defer cancel()
 			if err := miniocontainer.Terminate(ctx); err != nil {
 				log.Printf("terminate minio container: %v", err)
+			}
+			return nil
+		})
+		eg.Go(func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err := rabbitmqcontainer.Terminate(ctx); err != nil {
+				log.Printf("terminate rabbitmq container: %v", err)
 			}
 			return nil
 		})

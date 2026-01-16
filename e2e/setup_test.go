@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -27,8 +28,10 @@ import (
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -139,9 +142,16 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	require.NoError(t, err)
 
-	// Flush Redis queue client to ensure no stale jobs from previous tests
-	err = redis.Client().FlushDB(ctx).Err()
-	require.NoError(t, err)
+	// NOTE: Flushing Redis can break Asynq worker state when multiple workers are
+	// starting/stopping. We rely on project isolation instead (each test uses unique project ID).
+	// Only flush Redis for the first test to start with clean state.
+	if portCounter.Load() == 0 {
+		t.Logf("First test - flushing Redis to start with clean state")
+		err = redis.Client().FlushDB(ctx).Err()
+		require.NoError(t, err)
+	} else {
+		t.Logf("Skipping Redis flush to preserve Asynq state between tests")
+	}
 
 	// Create cache
 	cache := rcache.NewRedisCacheFromClient(rd)
@@ -244,27 +254,39 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	go func() {
 		t.Logf("Starting worker for test: %s", t.Name())
 		err := cmdworker.StartWorker(workerCtx, app, cfg)
-		if err != nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			t.Logf("Worker error for test %s: %v", t.Name(), err)
 			logger.WithError(err).Error("Worker error")
 		}
 		t.Logf("Worker stopped for test: %s", t.Name())
 	}()
 
-	// Give worker a moment to start
-	time.Sleep(1 * time.Second)
+	// Give worker more time to fully start and begin processing
+	time.Sleep(2 * time.Second)
 	t.Logf("Test environment ready: %s (port: %d, project: %s)", t.Name(), serverPort, project.UID)
 
 	// Cleanup function
 	t.Cleanup(func() {
 		t.Logf("Cleaning up test: %s", t.Name())
+
+		// Cancel worker and server contexts
 		cancelWorker()
 		cancelServer()
-		// Give servers time to fully shut down - increased to ensure cleanup
-		time.Sleep(2 * time.Second)
+
+		// Wait for worker to finish processing any in-flight jobs and fully shut down
+		// Asynq consumer needs time to gracefully stop all goroutines
+		t.Logf("Waiting for worker to fully shut down...")
+		time.Sleep(5 * time.Second)
+
+		// Note: We don't flush Redis because it wipes out Asynq's internal state
+		// (server info, queue metadata, etc.) which breaks subsequent workers.
+		// Each test uses its own project ID, so data is naturally isolated.
 
 		// Reset memory store to prevent "table already registered" errors in next test
 		memorystore.DefaultStore.Reset()
+
+		// Give extra time for all goroutines to fully exit and resources to be released
+		time.Sleep(2 * time.Second)
 
 		// Unlock mutex to allow next test to run
 		testMutex.Unlock()
@@ -345,9 +367,16 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	require.NoError(t, err)
 
-	// Flush Redis queue client to ensure no stale jobs from previous tests
-	err = redis.Client().FlushDB(ctx).Err()
-	require.NoError(t, err)
+	// NOTE: Flushing Redis can break Asynq worker state when multiple workers are
+	// starting/stopping. We rely on project isolation instead (each test uses unique project ID).
+	// Only flush Redis for the first test to start with clean state.
+	if portCounter.Load() == 0 {
+		t.Logf("First test - flushing Redis to start with clean state")
+		err = redis.Client().FlushDB(ctx).Err()
+		require.NoError(t, err)
+	} else {
+		t.Logf("Skipping Redis flush to preserve Asynq state between tests")
+	}
 
 	// Create cache
 	cache := rcache.NewRedisCacheFromClient(rd)
@@ -497,4 +526,132 @@ func waitForServer(t *testing.T, url string, timeout time.Duration) {
 	}
 
 	t.Fatalf("Server did not start within %v", timeout)
+}
+
+// E2ETestEnvWithAMQP extends E2ETestEnv with AMQP-specific configuration
+type E2ETestEnvWithAMQP struct {
+	*E2ETestEnv
+	RabbitMQHost  string
+	RabbitMQPort  int
+	Ingest        *pubsub.Ingest
+	cancelIngest  context.CancelFunc
+	sourceTable   *memorystore.Table
+	sourceContext context.Context
+}
+
+// SetupE2EWithAMQP initializes the E2E test environment with AMQP/RabbitMQ support
+func SetupE2EWithAMQP(t *testing.T) *E2ETestEnvWithAMQP {
+	t.Helper()
+
+	// First set up the base E2E environment
+	baseEnv := SetupE2E(t)
+
+	// Get RabbitMQ connection details
+	rmqHost, rmqPort, err := infra.NewRabbitMQConnect(t)
+	require.NoError(t, err)
+
+	// Set up repositories needed for source loading
+	sourceRepo := postgres.NewSourceRepo(baseEnv.App.DB)
+	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
+	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
+
+	// Create the source loader and table for pubsub ingest
+	lo := baseEnv.App.Logger.(*log.Logger)
+	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
+	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
+
+	// Register the sources table with the memory store
+	err = memorystore.DefaultStore.Register("sources", sourceTable)
+	if err != nil {
+		// If already registered (from a previous test), that's okay
+		t.Logf("Source table registration: %v", err)
+	}
+
+	// Create the pubsub ingest component
+	ingestComponent, err := pubsub.NewIngest(
+		baseEnv.ctx,
+		sourceTable,
+		baseEnv.App.Queue,
+		baseEnv.App.Logger,
+		baseEnv.App.Rate,
+		baseEnv.App.Licenser,
+		"test-instance",
+		endpointRepo,
+	)
+	require.NoError(t, err)
+
+	// Start the ingest component in a goroutine
+	_, cancelIngest := context.WithCancel(baseEnv.ctx)
+	t.Logf("Starting ingest component in goroutine")
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Logf("PANIC in ingest component: %v", r)
+			}
+		}()
+		t.Logf("Ingest goroutine started, calling Run()")
+		ingestComponent.Run()
+		t.Logf("Ingest Run() returned")
+	}()
+
+	// Give the ingest component time to start and sync the sources
+	t.Logf("Waiting for ingest component to start...")
+	time.Sleep(1 * time.Second)
+	t.Logf("Ingest component should be running now")
+
+	// Add cleanup for ingest component
+	t.Cleanup(func() {
+		t.Logf("Stopping AMQP ingest component for test: %s", t.Name())
+		cancelIngest()
+		// Small delay to allow cleanup
+		time.Sleep(200 * time.Millisecond)
+	})
+
+	amqpEnv := &E2ETestEnvWithAMQP{
+		E2ETestEnv:    baseEnv,
+		RabbitMQHost:  rmqHost,
+		RabbitMQPort:  rmqPort,
+		Ingest:        ingestComponent,
+		cancelIngest:  cancelIngest,
+		sourceTable:   sourceTable,
+		sourceContext: baseEnv.ctx,
+	}
+
+	return amqpEnv
+}
+
+// SyncSources manually triggers a sync of the sources table to pick up new sources
+func (env *E2ETestEnvWithAMQP) SyncSources(t *testing.T) {
+	t.Helper()
+	err := env.sourceTable.Sync(env.sourceContext)
+	if err != nil {
+		t.Logf("Warning: failed to sync sources: %v", err)
+	}
+	// Give the ingest component time to process the new sources
+	time.Sleep(1 * time.Second)
+}
+
+// SyncSubscriptions triggers a manual sync of all memory tables including subscriptions
+// This is needed for broadcast events which use in-memory subscription lookup
+func (env *E2ETestEnvWithAMQP) SyncSubscriptions(t *testing.T) {
+	t.Helper()
+
+	// Sync all tables including subscriptions by calling the sync with a short interval
+	// The Sync() method runs in a loop, so we run it in a goroutine with a context that
+	// will be cancelled when the test ends
+	syncCtx, cancel := context.WithCancel(env.ctx)
+
+	// Start the sync loop in a goroutine (will be cancelled with test context)
+	go memorystore.DefaultStore.Sync(syncCtx, 1) // sync every 1 second
+
+	t.Logf("Started background sync of memory store (including subscriptions table)")
+
+	// Give the first sync cycle time to complete
+	// The sync will continue running in the background for the duration of the test
+	time.Sleep(2 * time.Second)
+
+	// Register cleanup to stop the sync when test ends
+	env.T.Cleanup(func() {
+		cancel()
+	})
 }
