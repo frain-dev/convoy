@@ -39,9 +39,6 @@ WHERE s.deleted_at IS NULL
             ELSE true
         END
     )
-GROUP BY s.id
-ORDER BY s.id DESC
-LIMIT 1
 `
 
 type CountPrevSourcesParams struct {

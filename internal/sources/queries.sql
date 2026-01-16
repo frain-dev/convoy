@@ -322,10 +322,7 @@ WHERE s.deleted_at IS NULL
             WHEN @has_query_filter::boolean THEN s.name ILIKE @query_filter
             ELSE true
         END
-    )
-GROUP BY s.id
-ORDER BY s.id DESC
-LIMIT 1;
+    );
 
 -- name: FetchPubSubSourcesByProjectIDs :many
 -- Fetch PubSub-type sources across multiple projects with pagination
