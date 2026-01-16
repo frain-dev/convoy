@@ -33,6 +33,9 @@ tests=(
   "TestE2E_BackupProjectData_MultiTenant"
   "TestE2E_BackupProjectData_TimeFiltering"
   "TestE2E_BackupProjectData_AllTables"
+  "TestE2E_AMQP_Single_BasicDelivery"
+  "TestE2E_AMQP_Fanout_MultipleEndpoints"
+  "TestE2E_AMQP_Broadcast_AllSubscribers"
 )
 
 # Counter for passed tests
