@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { BillingUsageService, UsageRow } from './billing-usage.service';
+import { Component, Input, OnInit } from '@angular/core';
+import { UsageRow } from './billing-usage.service';
 
 @Component({
   selector: 'app-billing-usage',
@@ -7,21 +7,12 @@ import { BillingUsageService, UsageRow } from './billing-usage.service';
   styleUrls: ['./billing-usage.component.scss']
 })
 export class BillingUsageComponent implements OnInit {
-  isFetchingUsage = false;
-  usageRows: UsageRow[] = [];
+  @Input() usageRows: UsageRow[] = [];
+  @Input() isFetchingUsage: boolean = false;
   tableHead = ['Name', 'Received', 'Sent', 'Total'];
 
-  constructor(private usageService: BillingUsageService) {}
+  constructor() {}
 
   ngOnInit() {
-    this.fetchUsage();
-  }
-
-  fetchUsage() {
-    this.isFetchingUsage = true;
-    this.usageService.getUsage().subscribe(rows => {
-      this.usageRows = rows;
-      this.isFetchingUsage = false;
-    });
   }
 } 

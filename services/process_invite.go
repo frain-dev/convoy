@@ -32,10 +32,9 @@ type ProcessInviteService struct {
 
 var ErrUserLimit = errors.New("your instance has reached it's user limit, upgrade to add new users")
 var ErrUserAlreadyExist = errors.New("user already exist")
-var ErrMultiPlayerModeUnavailable = errors.New("multi player mode not available, upgrade to access this feature")
 
 func (pis *ProcessInviteService) Run(ctx context.Context) error {
-	ok, err := pis.Licenser.CreateUser(ctx)
+	ok, err := pis.Licenser.CheckUserLimit(ctx)
 	if err != nil {
 		return &ServiceError{ErrMsg: err.Error()}
 	}

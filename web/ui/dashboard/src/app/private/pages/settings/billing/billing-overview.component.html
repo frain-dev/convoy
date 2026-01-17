@@ -37,7 +37,7 @@
           <span *ngIf="!isLoading">No payment method</span>
         </div>
       </div>
-      <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">
+      <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()" *ngIf="overview?.plan?.name && overview?.plan?.name !== 'No plan'">
         {{ isLoading ? 'Loading...' : (overview?.payment ? 'Manage' : 'Add payment method') }}
       </a>
     </div>

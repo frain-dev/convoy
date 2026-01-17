@@ -33,7 +33,7 @@ type RegisterUserService struct {
 }
 
 func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
-	ok, err := u.Licenser.CreateUser(ctx)
+	ok, err := u.Licenser.CheckUserLimit(ctx)
 	if err != nil {
 		return nil, nil, &ServiceError{ErrMsg: err.Error()}
 	}

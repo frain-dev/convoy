@@ -63,6 +63,10 @@ func nullStringToPgText(ns null.String) pgtype.Text {
 	return pgtype.Text{String: ns.String, Valid: ns.Valid}
 }
 
+func nullTimeToPgTimestamptz(nt null.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: nt.Time, Valid: nt.Valid}
+}
+
 // pgTimestamptzToNullTime converts pgtype.Timestamptz to null.Time
 func pgTimestamptzToNullTime(t pgtype.Timestamptz) null.Time {
 	return null.NewTime(t.Time, t.Valid)
@@ -74,25 +78,26 @@ func rowToOrganisation(row interface{}) datastore.Organisation {
 		id, ownerID, name               string
 		customDomain, assignedDomain    pgtype.Text
 		createdAt, updatedAt, deletedAt pgtype.Timestamptz
+		disabledAt                      pgtype.Timestamptz
 	)
 
 	switch r := row.(type) {
 	case repo.FetchOrganisationByIDRow:
 		id, ownerID, name = r.ID, r.OwnerID, r.Name
 		customDomain, assignedDomain = r.CustomDomain, r.AssignedDomain
-		createdAt, updatedAt, deletedAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt
+		createdAt, updatedAt, deletedAt, disabledAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.DisabledAt
 	case repo.FetchOrganisationByCustomDomainRow:
 		id, ownerID, name = r.ID, r.OwnerID, r.Name
 		customDomain, assignedDomain = r.CustomDomain, r.AssignedDomain
-		createdAt, updatedAt, deletedAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt
+		createdAt, updatedAt, deletedAt, disabledAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.DisabledAt
 	case repo.FetchOrganisationByAssignedDomainRow:
 		id, ownerID, name = r.ID, r.OwnerID, r.Name
 		customDomain, assignedDomain = r.CustomDomain, r.AssignedDomain
-		createdAt, updatedAt, deletedAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt
+		createdAt, updatedAt, deletedAt, disabledAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.DisabledAt
 	case repo.FetchOrganisationsPaginatedRow:
 		id, ownerID, name = r.ID, r.OwnerID, r.Name
 		customDomain, assignedDomain = r.CustomDomain, r.AssignedDomain
-		createdAt, updatedAt, deletedAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt
+		createdAt, updatedAt, deletedAt, disabledAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.DisabledAt
 	default:
 		return datastore.Organisation{}
 	}
@@ -106,6 +111,7 @@ func rowToOrganisation(row interface{}) datastore.Organisation {
 		CreatedAt:      createdAt.Time,
 		UpdatedAt:      updatedAt.Time,
 		DeletedAt:      pgTimestamptzToNullTime(deletedAt),
+		DisabledAt:     pgTimestamptzToNullTime(disabledAt),
 	}
 }
 
@@ -146,6 +152,7 @@ func (s *Service) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 		Name:           org.Name,
 		CustomDomain:   nullStringToPgText(org.CustomDomain),
 		AssignedDomain: nullStringToPgText(org.AssignedDomain),
+		DisabledAt:     nullTimeToPgTimestamptz(org.DisabledAt),
 	})
 
 	if err != nil {

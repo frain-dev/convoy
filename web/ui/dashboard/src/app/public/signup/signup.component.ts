@@ -48,7 +48,7 @@ export class SignupComponent implements OnInit {
 		this.licenseService.setLicenses();
 		this.checkGoogleOAuthConfig();
 
-		if (!this.licenseService.hasLicense('CREATE_USER')) this.router.navigateByUrl('/login');
+		if (!this.licenseService.hasLicense('user_limit')) this.router.navigateByUrl('/login');
 	}
 
 	async signup() {

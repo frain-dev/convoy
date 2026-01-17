@@ -22,8 +22,11 @@ type LoginUserService struct {
 }
 
 func (u *LoginUserService) isPrimaryInstanceAdmin(ctx context.Context, userID string) (bool, error) {
-	if u.Licenser.MultiPlayerMode() {
-		// If licensed, all users can access
+	// Check if multi-user mode is enabled (user_limit > 1)
+	// MultiPlayerMode is redundant - user limits handle this
+	isMultiUser, err := u.Licenser.IsMultiUserMode(ctx)
+	if err == nil && isMultiUser {
+		// If multi-user mode, all users can access
 		return true, nil
 	}
 

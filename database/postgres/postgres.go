@@ -161,8 +161,23 @@ func (p *Postgres) getRandomReplica() (*Postgres, error) {
 }
 
 func (p *Postgres) Close() error {
-	p.pool.Close()
-	return p.dbx.Close()
+	// Close all replica connections first
+	for _, replica := range p.replicas {
+		if replica != nil {
+			// Close dbx first to return connections to pool
+			replica.dbx.Close()
+			replica.pool.Close()
+		}
+	}
+
+	// Close primary connection - close dbx first to return connections to pool
+	if p.dbx != nil {
+		p.dbx.Close()
+	}
+	if p.pool != nil {
+		p.pool.Close()
+	}
+	return nil
 }
 
 func (p *Postgres) BeginTx(ctx context.Context) (*sqlx.Tx, error) {

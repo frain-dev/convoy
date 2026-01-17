@@ -89,7 +89,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
@@ -166,7 +166,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
@@ -227,7 +227,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
@@ -288,7 +288,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
@@ -364,7 +364,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(false)
 
@@ -426,7 +426,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Times(1).Return(errors.New("failed"))
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 			},
 			wantErr:     true,
@@ -501,7 +501,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Times(1).Return(datastore.ErrDuplicateProjectName)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 			},
 			wantErr:     true,
@@ -533,7 +533,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			},
 			dbFn: func(gs *ProjectService) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(false, nil)
+				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(false, nil)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,

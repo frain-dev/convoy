@@ -41,8 +41,8 @@ func TestInviteUserService(t *testing.T) {
 			organisation: &datastore.Organisation{},
 			mockDep: func(a args) {
 				licenser, _ := a.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 
 				ivRepo, _ := a.inviteRepo.(*mocks.MockOrganisationInviteRepository)
 				ivRepo.EXPECT().CreateOrganisationInvite(
@@ -62,8 +62,8 @@ func TestInviteUserService(t *testing.T) {
 			err:          dbErr,
 			mockDep: func(a args) {
 				licenser, _ := a.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 
 				ivRepo, _ := a.inviteRepo.(*mocks.MockOrganisationInviteRepository)
 				ivRepo.EXPECT().CreateOrganisationInvite(
@@ -80,7 +80,7 @@ func TestInviteUserService(t *testing.T) {
 			err:          ErrUserLimit,
 			mockDep: func(a args) {
 				licenser, _ := a.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(false, nil)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(false, nil)
 			},
 		},
 	}

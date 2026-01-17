@@ -89,9 +89,9 @@ func TestRegisterUserService_Run(t *testing.T) {
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 			},
 		},
 		{
@@ -115,7 +115,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 			},
 			dbFn: func(u *RegisterUserService) {
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(false, nil)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(false, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: ErrUserLimit.Error(),
@@ -136,7 +136,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 			},
 			dbFn: func(u *RegisterUserService) {
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
 
 				configRepo, _ := u.ConfigRepo.(*mocks.MockConfigurationRepository)
 				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, errors.New("failed"))
@@ -180,9 +180,9 @@ func TestRegisterUserService_Run(t *testing.T) {
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 			},
 		},
 		{
@@ -200,7 +200,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 			},
 			dbFn: func(u *RegisterUserService) {
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
 
 				configRepo, _ := u.ConfigRepo.(*mocks.MockConfigurationRepository)
 				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{

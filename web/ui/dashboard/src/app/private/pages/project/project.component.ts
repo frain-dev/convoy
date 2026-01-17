@@ -50,7 +50,11 @@ export class ProjectComponent implements OnInit {
 	projects: PROJECT[] = [];
 	activeNavTab: any;
 
-	constructor(private privateService: PrivateService, private router: Router, public licenseService:LicensesService) {}
+	constructor(
+		private privateService: PrivateService,
+		private router: Router,
+		public licenseService: LicensesService
+	) {}
 
 	ngOnInit() {
 		Promise.all([this.getProjectDetails(), this.getProjects()]);
@@ -113,5 +117,31 @@ export class ProjectComponent implements OnInit {
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
 		}
+	}
+
+	get isDisabled(): boolean {
+		const org = localStorage.getItem('CONVOY_ORG');
+		if (!org) return false;
+		try {
+			const organisationDetails = JSON.parse(org);
+			return organisationDetails.disabled_at != null && organisationDetails.disabled_at !== undefined;
+		} catch {
+			return false;
+		}
+	}
+
+	getProjectLimitMessage(): string {
+		if (!this.licenseService.hasLicense('project_limit')) {
+			if (!this.licenseService.isLimitAvailable('project_limit')) {
+				return 'Business';
+			}
+			if (this.licenseService.isLimitAvailable('project_limit') && this.licenseService.isLimitReached('project_limit')) {
+				const limitInfo = this.licenseService.getLimitInfo('project_limit');
+				const current = limitInfo?.current ?? 0;
+				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
+				return `Limit reached (${current}/${limit})`;
+			}
+		}
+		return '';
 	}
 }

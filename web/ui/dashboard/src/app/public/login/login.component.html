@@ -43,7 +43,7 @@
 			</button>
 		</form>
 
-		<button *ngIf="isSignupEnabled && licenseService.hasLicense('CREATE_USER')" convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
+		<button *ngIf="isSignupEnabled && licenseService.hasLicense('user_limit')" convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
 	</section>
 </div>
 

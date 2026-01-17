@@ -550,4 +550,15 @@ export class CreateProjectComponent implements OnInit {
         };
         reader.readAsText(file);
     }
+
+    get isDisabled(): boolean {
+        const org = localStorage.getItem('CONVOY_ORG');
+        if (!org) return false;
+        try {
+            const organisationDetails = JSON.parse(org);
+            return organisationDetails.disabled_at != null && organisationDetails.disabled_at !== undefined;
+        } catch {
+            return false;
+        }
+    }
 }

@@ -1,4 +1,5 @@
 import {ChangeDetectorRef, Component, ElementRef, HostListener, OnInit, ViewChild} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
 import {StripeElementsComponent} from './stripe-elements.component';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {
@@ -12,7 +13,9 @@ import {CardIconService} from './card-icon.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {CountriesService} from 'src/app/services/countries/countries.service';
 import {Plan, PlanService} from './plan.service';
-
+import {BillingOverviewService, BillingOverview} from './billing-overview.service';
+import {BillingUsageService, UsageRow} from './billing-usage.service';
+import {HttpService} from 'src/app/services/http/http.service';
 @Component({
   selector: 'app-billing-page',
   templateUrl: './billing-page.component.html',
@@ -21,17 +24,20 @@ import {Plan, PlanService} from './plan.service';
 export class BillingPageComponent implements OnInit {
   @ViewChild('paymentDetailsDialog') paymentDetailsDialog!: ElementRef<HTMLDialogElement>;
   @ViewChild('managePlanDialog') managePlanDialog!: ElementRef<HTMLDialogElement>;
+  @ViewChild('cancelConfirmDialog') cancelConfirmDialog!: ElementRef<HTMLDialogElement>;
 
   isPaymentDetailsOpen = false;
   isManagePlanOpen = false;
+  isCancelConfirmOpen = false;
   refreshOverviewTrigger = 0;
-  selectedPlan: 'pro' | 'enterprise' = 'pro';
+  selectedPlan: 'pro' | 'enterprise' | null = null;
   currentYear = new Date().getFullYear() - 2000; // 2-digit current year
   currentMonth = new Date().getMonth() + 1; // Current month (1-12)
 
-  // Plan data
   plans: Plan[] = [];
   isLoadingPlans = false;
+  currentSubscription: any = null;
+  overwatchPlans: Plan[] = [];
 
   // Existing data
   paymentMethodDetails: PaymentMethodDetails | null = null;
@@ -48,6 +54,7 @@ export class BillingPageComponent implements OnInit {
   isLoadingPaymentMethod = false;
   isLoadingBillingAddress = false;
   isLoadingVat = false;
+  isLoadingCheckout = false;
 
   billingAddressForm!: FormGroup;
   vatForm!: FormGroup;
@@ -78,6 +85,11 @@ export class BillingPageComponent implements OnInit {
   confirmingDefaultFor: string | null = null;
   confirmingDeleteFor: string | null = null;
 
+  // Billing data for child components
+  billingOverview: BillingOverview | null = null;
+  usageRows: UsageRow[] = [];
+  isLoadingBillingData = true;
+
   constructor(
     private fb: FormBuilder,
     private billingPaymentDetailsService: BillingPaymentDetailsService,
@@ -85,16 +97,26 @@ export class BillingPageComponent implements OnInit {
     private cardIconService: CardIconService,
     private countriesService: CountriesService,
     private planService: PlanService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private overviewService: BillingOverviewService,
+    private usageService: BillingUsageService,
+    private httpService: HttpService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {
     this.initializeForms();
   }
 
+  private bootstrapSubscriptionPromise: Promise<void> | null = null;
+
   ngOnInit() {
     this.validateOrganisation();
+    this.loadCountries(); // Load immediately, independent of bootstrap
     this.loadBillingConfiguration();
-    this.loadCountries();
-    // loadExistingData will be called after loadInternalOrganisationId succeeds
+    
+    // Start bootstrap in background - code that needs it will await the promise
+    this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
+    this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);
@@ -103,6 +125,155 @@ export class BillingPageComponent implements OnInit {
     this.vatForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onVatCountryChange(countryCode);
     });
+
+  }
+
+  private async bootstrapOrganisation() {
+    try {
+      const orgId = this.getOrganisationId();
+      await this.httpService.request({ 
+        url: `/billing/organisations/${orgId}/subscription`, 
+        method: 'get', 
+        hideNotification: true 
+      });
+      await this.loadBillingData();
+    } catch (error) {
+      console.error('Failed to bootstrap organisation:', error);
+      await this.loadBillingData();
+    }
+  }
+
+  private async loadBillingData() {
+    this.isLoadingBillingData = true;
+    try {
+      const orgId = this.getOrganisationId();
+      const [usageResponse, paymentResponse] = await Promise.all([
+        this.httpService.request({ 
+          url: `/billing/organisations/${orgId}/usage`, 
+          method: 'get', 
+          hideNotification: true 
+        }).catch(() => ({ data: null })),
+        this.httpService.request({ 
+          url: `/billing/organisations/${orgId}/payment_methods`, 
+          method: 'get', 
+          hideNotification: true 
+        }).catch(() => ({ data: null }))
+      ]);
+
+      const subscriptionResponse = await this.httpService.request({ 
+        url: `/billing/organisations/${orgId}/subscription`, 
+        method: 'get', 
+        hideNotification: true 
+      }).catch(() => ({ data: null }));
+
+      const overviewData = {
+        subscription: subscriptionResponse.data,
+        usage: usageResponse.data,
+        payment: paymentResponse.data
+      };
+      
+      // Store current subscription for plan management
+      this.currentSubscription = subscriptionResponse.data;
+      
+      if (overviewData) {
+        this.billingOverview = this.overviewService.formatOverviewData(overviewData);
+        
+        if (overviewData.usage) {
+          this.usageRows = this.usageService.formatUsageData(overviewData.usage);
+        } else {
+          this.usageRows = [];
+        }
+        
+        if (overviewData.payment && Array.isArray(overviewData.payment)) {
+          this.paymentMethods = overviewData.payment.sort((a: PaymentMethod, b: PaymentMethod) => a.id.localeCompare(b.id));
+          if (this.paymentMethods.length > 0) {
+            const pm = this.paymentMethods[0];
+            this.paymentMethodDetails = {
+              cardholderName: 'Cardholder Name',
+              last4: pm.last4 || '0000',
+              brand: pm.card_type || 'unknown',
+              expiryMonth: pm.exp_month?.toString() || '',
+              expiryYear: pm.exp_year?.toString() || ''
+            };
+          }
+        } else {
+          this.paymentMethods = [];
+        }
+      } else {
+        this.billingOverview = null;
+        this.usageRows = [];
+        this.paymentMethods = [];
+      }
+      
+      this.isLoadingBillingData = false;
+      await this.loadOrganisationData();
+    } catch (error) {
+      console.error('Failed to load billing data:', error);
+      this.isLoadingBillingData = false;
+    }
+  }
+
+  private async loadOrganisationData() {
+    if (this.bootstrapSubscriptionPromise) {
+      await this.bootstrapSubscriptionPromise;
+    }
+    
+    this.isLoadingBillingAddress = true;
+    this.isLoadingVat = true;
+    try {
+      const orgId = this.getOrganisationId();
+      const response = await this.httpService.request({
+        url: `/billing/organisations/${orgId}`,
+        method: 'get',
+        hideNotification: true
+      }).catch(() => ({ data: null }));
+
+      if (response.data) {
+        // Load billing address
+        if (response.data.billing_address) {
+          this.billingAddressDetails = response.data.billing_address;
+          this.isLoadingBillingAddress = false;
+        } else {
+          // Fallback to organisation API
+          this.billingPaymentDetailsService.getBillingAddress().subscribe({
+            next: (details) => {
+              this.billingAddressDetails = details;
+              this.isLoadingBillingAddress = false;
+            },
+            error: (error) => {
+              console.error('Failed to load billing address:', error);
+              this.billingAddressDetails = null;
+              this.isLoadingBillingAddress = false;
+            }
+          });
+        }
+
+        // Load VAT info
+        if (response.data.vat_info) {
+          this.vatInfoDetails = response.data.vat_info;
+          this.isLoadingVat = false;
+        } else {
+          // Fallback to organisation API
+          this.billingPaymentDetailsService.getVatInfo().subscribe({
+            next: (details) => {
+              this.vatInfoDetails = details;
+              this.isLoadingVat = false;
+            },
+            error: (error) => {
+              console.error('Failed to load VAT info:', error);
+              this.isLoadingVat = false;
+            }
+          });
+        }
+      } else {
+        // Fallback to organisation API if billing service doesn't have data
+        this.loadExistingData();
+      }
+    } catch (error) {
+      console.error('Failed to load organisation data:', error);
+      // Fallback to organisation API
+      this.loadExistingData();
+    }
   }
 
   private validateOrganisation() {
@@ -291,6 +462,7 @@ export class BillingPageComponent implements OnInit {
   }
 
   openManagePlan() {
+    this.selectedPlan = null; // Reset selection when opening dialog
     this.loadPlans();
     this.managePlanDialog.nativeElement.showModal();
   }
@@ -298,46 +470,228 @@ export class BillingPageComponent implements OnInit {
   private loadPlans() {
     this.isLoadingPlans = true;
 
-    // Load plans from backend configuration
     this.planService.getPlans().subscribe({
       next: (response) => {
-        // If no plans in config, use default plans
+        const defaultData = this.planService.getDefaultPlanComparison();
+        
         if (!response.data || response.data.length === 0) {
-          const defaultData = this.planService.getDefaultPlanComparison();
           this.plans = defaultData.plans;
+          this.overwatchPlans = [];
         } else {
-          this.plans = response.data;
+          this.overwatchPlans = response.data;
+          
+          const overwatchPlansMap = new Map<string, Plan>();
+          response.data.forEach((plan: Plan) => {
+            overwatchPlansMap.set(plan.name.toLowerCase(), plan);
+          });
+
+          this.plans = defaultData.plans.map((defaultPlan: Plan) => {
+            const overwatchPlan = overwatchPlansMap.get(defaultPlan.name.toLowerCase());
+            
+            if (overwatchPlan) {
+              if (!overwatchPlan.features || overwatchPlan.features.length === 0) {
+                return {
+                  ...overwatchPlan,
+                  features: defaultPlan.features,
+                  description: overwatchPlan.description || defaultPlan.description,
+                  price: overwatchPlan.price || defaultPlan.price,
+                  currency: overwatchPlan.currency || defaultPlan.currency,
+                  interval: overwatchPlan.interval || defaultPlan.interval
+                };
+              }
+              return overwatchPlan;
+            }
+            
+            return defaultPlan;
+          });
         }
         this.isLoadingPlans = false;
       },
       error: (error) => {
         console.warn('Failed to load plans from backend:', error);
-        // Use default data when backend fails
         const defaultData = this.planService.getDefaultPlanComparison();
         this.plans = defaultData.plans;
+        this.overwatchPlans = [];
         this.isLoadingPlans = false;
       }
     });
   }
 
   closeManagePlan() {
+    this.isManagePlanOpen = false;
     this.managePlanDialog.nativeElement.close();
   }
 
+  isCancellingSubscription = false;
+
   onCancelPlan() {
-    const subject = encodeURIComponent('Plan Cancellation Request');
-    const body = encodeURIComponent('Hello,\n\nI would like to cancel my current plan.\n\nThank you.');
-    window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+    if (!this.currentSubscription || !this.currentSubscription.id) {
+      this.generalService.showNotification({
+        message: 'No active subscription found',
+        style: 'error'
+      });
+      return;
+    }
+
+    this.openCancelConfirm();
   }
 
-  onUpgradePlan() {
-    const subject = encodeURIComponent('Plan Upgrade Request');
-    const body = encodeURIComponent('Hello,\n\nI would like to upgrade to the Enterprise plan.\n\nThank you.');
-    window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+  openCancelConfirm() {
+    this.isCancelConfirmOpen = true;
+    this.cancelConfirmDialog.nativeElement.showModal();
+  }
+
+  closeCancelConfirm() {
+    this.isCancelConfirmOpen = false;
+    this.cancelConfirmDialog.nativeElement.close();
+  }
+
+  async confirmCancelSubscription() {
+    this.closeCancelConfirm();
+    
+    this.isCancellingSubscription = true;
+    try {
+      const orgId = this.getOrganisationId();
+      const subscriptionId = this.currentSubscription.id;
+      await this.httpService.request({
+        url: `/billing/organisations/${orgId}/subscriptions/${subscriptionId}`,
+        method: 'delete'
+      });
+
+      this.closeManagePlan();
+
+      this.generalService.showNotification({
+        message: 'Subscription cancelled successfully',
+        style: 'success'
+      });
+
+      await this.loadBillingData();
+    } catch (error: any) {
+      console.error('Failed to cancel subscription:', error);
+      this.generalService.showNotification({
+        message: error?.error?.message || 'Failed to cancel subscription. Please try again.',
+        style: 'error'
+      });
+    } finally {
+      this.isCancellingSubscription = false;
+    }
+  }
+
+  async onUpgradePlan() {
+    if (!this.selectedPlan) {
+      this.generalService.showNotification({
+        message: 'Please select a plan first',
+        style: 'error'
+      });
+      return;
+    }
+
+    const selectedPlanData = this.plans.find(p => p.id === this.selectedPlan);
+    if (!selectedPlanData) {
+      this.generalService.showNotification({
+        message: 'Selected plan not found',
+        style: 'error'
+      });
+      return;
+    }
+
+    const planName = selectedPlanData.name.toLowerCase();
+    const isProOrEnterprise = planName === 'pro' || planName === 'enterprise';
+    const planExistsInOverwatch = this.overwatchPlans.some(p => 
+      p.name.toLowerCase() === planName || p.id === selectedPlanData.id
+    );
+
+    if (isProOrEnterprise && !planExistsInOverwatch) {
+      const subject = encodeURIComponent(`${selectedPlanData.name} Plan Request`);
+      const body = encodeURIComponent(`Hello,\n\nI would like to subscribe to the ${selectedPlanData.name} plan.\n\nThank you.`);
+      window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+      return;
+    }
+
+    this.isLoadingCheckout = true;
+    try {
+      const orgId = this.getOrganisationId();
+      const host = window.location.origin;
+
+      let checkoutUrl: string;
+
+      if (this.currentSubscription && this.currentSubscription.id) {
+        const response = await this.httpService.request({
+          url: `/billing/organisations/${orgId}/subscriptions/${this.currentSubscription.id}/upgrade`,
+          method: 'put',
+          body: {
+            plan_id: selectedPlanData.id,
+            host: host
+          }
+        });
+
+        if (response.data && response.data.checkout_url) {
+          checkoutUrl = response.data.checkout_url;
+        } else {
+          throw new Error('Checkout URL not found in response');
+        }
+      } else {
+        const response = await this.httpService.request({
+          url: `/billing/organisations/${orgId}/subscriptions/onboard`,
+          method: 'post',
+          body: {
+            plan_id: selectedPlanData.id,
+            host: host
+          }
+        });
+
+        if (response.data && response.data.checkout_url) {
+          checkoutUrl = response.data.checkout_url;
+        } else {
+          throw new Error('Checkout URL not found in response');
+        }
+      }
+
+      // Open in same window since callback will redirect back
+      window.location.href = checkoutUrl;
+    } catch (error: any) {
+      this.isLoadingCheckout = false;
+      console.error('Failed to create checkout session:', error);
+      this.generalService.showNotification({
+        message: error?.error?.message || 'Failed to create checkout session. Please try again.',
+        style: 'error'
+      });
+    }
+  }
+
+  isCurrentPlan(planId: string): boolean {
+    if (!this.currentSubscription || !this.currentSubscription.plan) {
+      return false;
+    }
+    // Compare by plan ID or plan name (case-insensitive)
+    const currentPlanId = this.currentSubscription.plan.id;
+    const currentPlanName = this.currentSubscription.plan.name?.toLowerCase();
+    const plan = this.plans.find(p => p.id === planId);
+    
+    if (!plan) return false;
+    
+    return plan.id === currentPlanId || plan.name.toLowerCase() === currentPlanName;
+  }
+
+  getButtonText(planId: string): string {
+    if (this.isLoadingCheckout && this.selectedPlan === planId) {
+      return 'Loading...';
+    }
+    if (this.isCurrentPlan(planId)) {
+      return 'Current Plan';
+    }
+    if (this.selectedPlan === planId) {
+      return this.currentSubscription ? 'Upgrade' : 'Subscribe';
+    }
+    return 'Select';
+  }
+
+  getCancelButtonText(): string {
+    return this.isCancellingSubscription ? 'Cancelling...' : 'Cancel Subscription';
   }
 
   selectPlan(planId: string) {
-    this.selectedPlan = planId as 'pro' | 'enterprise';
+    this.selectedPlan = planId as 'pro' | 'enterprise' | null;
   }
 
   getFeaturesByCategory(category: 'core' | 'security' | 'support'): any[] {

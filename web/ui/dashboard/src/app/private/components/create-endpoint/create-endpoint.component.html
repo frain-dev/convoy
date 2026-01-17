@@ -117,7 +117,7 @@
 					<div class="flex justify-between items-center mb-16px">
 						<div class="flex items-center gap-12px">
 							<p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
-							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('AdvancedEndpointMgmt')">
 								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
 									<use xlink:href="#lock-icon"></use>
 								</svg>
@@ -131,7 +131,7 @@
 						</button>
 					</div>
 
-					<div class="grid grid-cols-2 gap-24px" *ngIf="licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+					<div class="grid grid-cols-2 gap-24px" *ngIf="licenseService.hasLicense('AdvancedEndpointMgmt')">
 						<convoy-input-field className="mb-0">
 							<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
 							<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
@@ -182,7 +182,7 @@
 										(selectedOption)="onAuthTypeChange($event)"
 									></convoy-select>
 								</div>
-								<div convoy-tag size="sm" color="primary" *ngIf="selectedAuthType === 'oauth2' && !licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH')">
+								<div convoy-tag size="sm" color="primary" *ngIf="selectedAuthType === 'oauth2' && !licenseService.hasLicense('OAuth2EndpointAuth')">
 									<svg width="10" height="10" class="fill-new.primary-400 scale-150">
 										<use xlink:href="#lock-icon"></use>
 									</svg>
@@ -210,7 +210,7 @@
 
 						<!-- OAuth2 Authentication -->
 						<ng-container *ngIf="selectedAuthType === 'oauth2'">
-							<div *ngIf="!licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH')" class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+							<div *ngIf="!licenseService.hasLicense('OAuth2EndpointAuth')" class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
 								<div class="flex items-center gap-8px mb-6px">
 									<svg width="14" height="14" class="fill-new.primary-400">
 										<use xlink:href="#lock-icon"></use>
@@ -222,7 +222,7 @@
 								</div>
 								<p class="text-10 text-neutral-10">OAuth2 endpoint authentication is a Business plan feature. Please upgrade your license to use this feature.</p>
 							</div>
-							<div *ngIf="licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH') && !oauth2FeatureEnabled" class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+							<div *ngIf="licenseService.hasLicense('OAuth2EndpointAuth') && !oauth2FeatureEnabled" class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
 								<div class="flex items-center gap-8px mb-6px">
 									<svg width="14" height="14" class="fill-new.primary-400">
 										<use xlink:href="#lock-icon"></use>
@@ -233,7 +233,7 @@
 							</div>
 						</ng-container>
 
-						<ng-container *ngIf="selectedAuthType === 'oauth2' && licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH') && oauth2FeatureEnabled" formGroupName="oauth2">
+						<ng-container *ngIf="selectedAuthType === 'oauth2' && licenseService.hasLicense('OAuth2EndpointAuth') && oauth2FeatureEnabled" formGroupName="oauth2">
 							<div class="grid grid-cols-1 gap-24px mb-24px">
 								<convoy-input-field>
 									<label for="oauth2_url" convoy-label required="true">
@@ -620,7 +620,7 @@
 								Endpoint Timeout
 								<convoy-tooltip size="sm" position="top-right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
 							</p>
-							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('AdvancedEndpointMgmt')">
 								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
 									<use xlink:href="#lock-icon"></use>
 								</svg>
@@ -636,7 +636,7 @@
 					<convoy-input-field>
 						<label for="http_timeout" convoy-label>Timeout Value</label>
 						<div class="relative">
-							<input id="http_timeout" type="number" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" [readonly]="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')" />
+							<input id="http_timeout" type="number" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" [readonly]="!licenseService.hasLicense('AdvancedEndpointMgmt')" />
 							<div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">sec</div>
 						</div>
 						<convoy-input-error *ngIf="addNewEndpointForm.get('http_timeout')?.touched && addNewEndpointForm.get('http_timeout')?.invalid">Timeout value must be a whole number</convoy-input-error>
@@ -652,7 +652,7 @@
 								mTLS Client Certificate
 								<convoy-tooltip size="sm" position="top-right" class="ml-4px">Configure client certificate and private key for mutual TLS authentication. Provide PEM-encoded certificate and key strings.</convoy-tooltip>
 							</p>
-							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('MUTUAL_TLS')">
+							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('MutualTLS')">
 								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
 									<use xlink:href="#lock-icon"></use>
 								</svg>
@@ -666,7 +666,7 @@
 						</button>
 					</div>
 
-					<ng-container *ngIf="licenseService.hasLicense('MUTUAL_TLS')">
+					<ng-container *ngIf="licenseService.hasLicense('MutualTLS')">
 						<ng-container formGroupName="mtls_client_cert">
 							<div class="grid grid-cols-1 gap-24px">
 								<convoy-input-field className="mb-0">

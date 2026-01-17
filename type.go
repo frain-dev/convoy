@@ -6,8 +6,10 @@ import (
 )
 
 const (
-	AuthUserCtx ContextKey = "authUser"
-	PageableCtx ContextKey = "pageable"
+	AuthUserCtx     ContextKey = "authUser"
+	PageableCtx     ContextKey = "pageable"
+	ProjectCtx      ContextKey = "project"
+	OrganisationCtx ContextKey = "organisation"
 )
 
 type ContextKey string
@@ -107,6 +109,7 @@ const (
 	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"
 	MatchEventSubscriptionsProcessor TaskName = "MatchEventSubscriptionsProcessor"
 	BatchRetryProcessor              TaskName = "BatchRetryProcessor"
+	UpdateOrganisationStatus         TaskName = "UpdateOrganisationStatus"
 	RefreshMetricsMaterializedViews  TaskName = "RefreshMetricsMaterializedViews"
 
 	TokenCacheKey CacheKey = "tokens"

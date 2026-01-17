@@ -21,14 +21,18 @@ type ProjectPolicy struct {
 
 func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 	return pp.checkAccess(ctx, res, func(member *datastore.OrganisationMember) bool {
-		adminAllowed := isProjectAdmin(member) && pp.Licenser.MultiPlayerMode()
+		// MultiPlayerMode is redundant - user limits handle this
+		isMultiUser, err := pp.Licenser.IsMultiUserMode(ctx)
+		adminAllowed := isProjectAdmin(member) && (err == nil && isMultiUser)
 		return isOrganisationAdmin(member) || adminAllowed
 	})
 }
 
 func (pp *ProjectPolicy) View(ctx context.Context, res interface{}) error {
 	return pp.checkAccess(ctx, res, func(member *datastore.OrganisationMember) bool {
-		viewerAllowed := isProjectViewer(member) && pp.Licenser.MultiPlayerMode()
+		// MultiPlayerMode is redundant - user limits handle this
+		isMultiUser, err := pp.Licenser.IsMultiUserMode(ctx)
+		viewerAllowed := isProjectViewer(member) && (err == nil && isMultiUser)
 		return isOrganisationAdmin(member) || viewerAllowed
 	})
 }

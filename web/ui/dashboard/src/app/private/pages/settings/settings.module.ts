@@ -32,8 +32,9 @@ import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
 import {PermissionDirective} from '../../components/permission/permission.directive';
 import {BillingModule} from './billing/billing.module';
 import {LoaderModule} from '../../components/loader/loader.module';
+import {checkoutResolver} from './billing/checkout.resolver';
 
-const routes: Routes = [{ path: '', component: SettingsComponent }];
+const routes: Routes = [{ path: '', component: SettingsComponent, resolve: { checkout: checkoutResolver } }];
 
 @NgModule({
 	declarations: [SettingsComponent, OrganisationSettingsComponent, ConfigurationsComponent, EarlyAdopterFeaturesComponent],

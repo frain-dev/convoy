@@ -90,7 +90,7 @@ export class EndpointsComponent implements OnInit {
 			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
 			this.endpointDialog.nativeElement.showModal();
 		}
-		this.endpointsTableHead[4] = this.licenseService.hasLicense('CIRCUIT_BREAKING') ? 'Failure Rate' : '';
+		this.endpointsTableHead[4] = this.licenseService.hasLicense('CircuitBreaking') ? 'Failure Rate' : '';
 
 		this.getEndpoints();
 	}
