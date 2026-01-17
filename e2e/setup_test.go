@@ -143,16 +143,12 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	require.NoError(t, err)
 
-	// NOTE: Flushing Redis can break Asynq worker state when multiple workers are
-	// starting/stopping. We rely on project isolation instead (each test uses unique project ID).
-	// Only flush Redis for the first test to start with clean state.
-	if portCounter.Load() == 0 {
-		t.Logf("First test - flushing Redis to start with clean state")
-		err = redis.Client().FlushDB(ctx).Err()
-		require.NoError(t, err)
-	} else {
-		t.Logf("Skipping Redis flush to preserve Asynq state between tests")
-	}
+	// Always flush Redis to ensure complete test isolation.
+	// Each test has its own database clone, so we MUST ensure no jobs from
+	// previous tests leak through the shared Redis queue.
+	t.Logf("Flushing Redis to ensure clean state for test %s", t.Name())
+	err = redis.Client().FlushDB(ctx).Err()
+	require.NoError(t, err)
 
 	// Create cache
 	cache := rcache.NewRedisCacheFromClient(rd)
@@ -255,15 +251,21 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	go func() {
 		t.Logf("Starting worker for test: %s", t.Name())
 		err := cmdworker.StartWorker(workerCtx, app, cfg)
-		if err != nil && !errors.Is(err, context.Canceled) {
-			t.Logf("Worker error for test %s: %v", t.Name(), err)
-			logger.WithError(err).Error("Worker error")
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				t.Logf("Worker error for test %s: %v", t.Name(), err)
+				logger.WithError(err).Error("Worker error")
+			} else {
+				t.Logf("Worker context canceled (expected during cleanup)")
+			}
+		} else {
+			t.Logf("Worker exited with nil error (unexpected!)")
 		}
 		t.Logf("Worker stopped for test: %s", t.Name())
 	}()
 
 	// Give worker more time to fully start and begin processing
-	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
 	t.Logf("Test environment ready: %s (port: %d, project: %s)", t.Name(), serverPort, project.UID)
 
 	// Cleanup function
@@ -275,19 +277,16 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 		cancelServer()
 
 		// Wait for worker to finish processing any in-flight jobs and fully shut down
-		// Asynq consumer needs time to gracefully stop all goroutines
+		// Asynq consumer needs time to gracefully stop all goroutines and release Redis connections
 		t.Logf("Waiting for worker to fully shut down...")
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 
-		// Note: We don't flush Redis because it wipes out Asynq's internal state
-		// (server info, queue metadata, etc.) which breaks subsequent workers.
-		// Each test uses its own project ID, so data is naturally isolated.
+		// Note: Redis is flushed at the START of each test (not in cleanup),
+		// so the next test begins with clean state.
 
 		// Reset memory store to prevent "table already registered" errors in next test
 		memorystore.DefaultStore.Reset()
-
-		// Give extra time for all goroutines to fully exit and resources to be released
-		time.Sleep(2 * time.Second)
+		t.Logf("Memorystore reset complete")
 
 		// Unlock mutex to allow next test to run
 		testMutex.Unlock()
@@ -368,16 +367,12 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	require.NoError(t, err)
 
-	// NOTE: Flushing Redis can break Asynq worker state when multiple workers are
-	// starting/stopping. We rely on project isolation instead (each test uses unique project ID).
-	// Only flush Redis for the first test to start with clean state.
-	if portCounter.Load() == 0 {
-		t.Logf("First test - flushing Redis to start with clean state")
-		err = redis.Client().FlushDB(ctx).Err()
-		require.NoError(t, err)
-	} else {
-		t.Logf("Skipping Redis flush to preserve Asynq state between tests")
-	}
+	// Always flush Redis to ensure complete test isolation.
+	// Each test has its own database clone, so we MUST ensure no jobs from
+	// previous tests leak through the shared Redis queue.
+	t.Logf("Flushing Redis to ensure clean state for test %s", t.Name())
+	err = redis.Client().FlushDB(ctx).Err()
+	require.NoError(t, err)
 
 	// Create cache
 	cache := rcache.NewRedisCacheFromClient(rd)

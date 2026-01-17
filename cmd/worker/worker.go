@@ -439,5 +439,11 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	consumer.Start()
 	lo.Printf("Starting Convoy Consumer Pool")
 
+	// Wait for context to be canceled before returning
+	<-ctx.Done()
+	lo.Printf("Context canceled, stopping Convoy Consumer Pool...")
+	consumer.Stop()
+	lo.Printf("Convoy Consumer Pool stopped")
+
 	return ctx.Err()
 }
