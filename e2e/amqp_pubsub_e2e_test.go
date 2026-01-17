@@ -848,3 +848,538 @@ func TestE2E_AMQP_Broadcast_EventTypeFilter(t *testing.T) {
 	)
 	t.Log("✓ Broadcast correctly filtered by event type")
 }
+
+// Advanced Filtering Tests
+
+func TestE2E_AMQP_Single_BodyFilter_Equal(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18020
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription with body filter: amount == 100
+	eventType := "payment.processed"
+	bodyFilter := map[string]interface{}{
+		"amount": map[string]interface{}{
+			"$eq": 100,
+		},
+	}
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, bodyFilter, nil, nil, nil,
+	)
+	require.NotEmpty(t, subscription.UID)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort, queue, 1, nil, nil,
+	)
+	require.NotEmpty(t, source.UID)
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+
+	// Test 1: Publish message with amount = 100 (should match)
+	t.Log("Test 1: Publishing message with amount = 100 (should match)")
+	counter.Store(1)
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	data1 := map[string]interface{}{
+		"payment_id": "payment-" + ulid.Make().String(),
+		"amount":     100,
+		"currency":   "USD",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data1, nil,
+	)
+
+	// Wait for webhook
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	// Verify event and delivery were created
+	event1 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event1)
+
+	eventDelivery1 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID, endpoint.UID,
+	)
+	require.NotNil(t, eventDelivery1)
+	t.Log("✓ Body filter matched: amount = 100")
+
+	// Test 2: Publish message with amount = 200 (should NOT match)
+	t.Log("Test 2: Publishing message with amount = 200 (should NOT match)")
+	data2 := map[string]interface{}{
+		"payment_id": "payment-" + ulid.Make().String(),
+		"amount":     200,
+		"currency":   "USD",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data2, nil,
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify event was created
+	event2 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event2)
+
+	// Verify NO delivery was created (filter didn't match)
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID,
+	)
+	t.Log("✓ Body filter correctly rejected: amount = 200")
+}
+
+func TestE2E_AMQP_Single_BodyFilter_GreaterThan(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18021
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription with body filter: amount > 100
+	eventType := "order.created"
+	bodyFilter := map[string]interface{}{
+		"amount": map[string]interface{}{
+			"$gt": 100,
+		},
+	}
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, bodyFilter, nil, nil, nil,
+	)
+	require.NotEmpty(t, subscription.UID)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort, queue, 1, nil, nil,
+	)
+	require.NotEmpty(t, source.UID)
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+
+	// Test 1: Publish message with amount = 50 (should NOT match)
+	t.Log("Test 1: Publishing message with amount = 50 (should NOT match)")
+	counter.Store(0)
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	data1 := map[string]interface{}{
+		"order_id": "order-" + ulid.Make().String(),
+		"amount":   50,
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data1, nil,
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify event was created but NO delivery
+	event1 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event1)
+
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID,
+	)
+	t.Log("✓ Body filter correctly rejected: amount = 50 (not > 100)")
+
+	// Test 2: Publish message with amount = 150 (should match)
+	t.Log("Test 2: Publishing message with amount = 150 (should match)")
+	counter.Store(1)
+
+	data2 := map[string]interface{}{
+		"order_id": "order-" + ulid.Make().String(),
+		"amount":   150,
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data2, nil,
+	)
+
+	// Wait for webhook
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	// Verify event and delivery were created
+	event2 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event2)
+
+	eventDelivery2 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID, endpoint.UID,
+	)
+	require.NotNil(t, eventDelivery2)
+	t.Log("✓ Body filter matched: amount = 150 (> 100)")
+}
+
+func TestE2E_AMQP_Single_BodyFilter_In(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18022
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription with body filter: status in ["pending", "processing"]
+	eventType := "order.updated"
+	bodyFilter := map[string]interface{}{
+		"status": map[string]interface{}{
+			"$in": []interface{}{"pending", "processing"},
+		},
+	}
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, bodyFilter, nil, nil, nil,
+	)
+	require.NotEmpty(t, subscription.UID)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort, queue, 1, nil, nil,
+	)
+	require.NotEmpty(t, source.UID)
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+	counter.Store(2) // Expecting 2 webhooks
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Test 1: Publish message with status = "pending" (should match)
+	t.Log("Test 1: Publishing message with status = 'pending' (should match)")
+	data1 := map[string]interface{}{
+		"order_id": "order-" + ulid.Make().String(),
+		"status":   "pending",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data1, nil,
+	)
+
+	// Test 2: Publish message with status = "processing" (should match)
+	t.Log("Test 2: Publishing message with status = 'processing' (should match)")
+	data2 := map[string]interface{}{
+		"order_id": "order-" + ulid.Make().String(),
+		"status":   "processing",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data2, nil,
+	)
+
+	// Wait for both webhooks
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	t.Log("✓ Body filter matched both: status in ['pending', 'processing']")
+
+	// Test 3: Publish message with status = "completed" (should NOT match)
+	t.Log("Test 3: Publishing message with status = 'completed' (should NOT match)")
+	data3 := map[string]interface{}{
+		"order_id": "order-" + ulid.Make().String(),
+		"status":   "completed",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data3, nil,
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify event was created
+	event3 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event3)
+
+	// Verify NO delivery was created for "completed" status
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event3.UID,
+	)
+	t.Log("✓ Body filter correctly rejected: status = 'completed'")
+}
+
+func TestE2E_AMQP_Single_HeaderFilter(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18023
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription with header filter: x-tenant = "acme"
+	eventType := "webhook.received"
+	headerFilter := map[string]interface{}{
+		"x-tenant": map[string]interface{}{
+			"$eq": "acme",
+		},
+	}
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, nil, headerFilter, nil, nil,
+	)
+	require.NotEmpty(t, subscription.UID)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort, queue, 1, nil, nil,
+	)
+	require.NotEmpty(t, source.UID)
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+
+	// Test 1: Publish message with x-tenant = "acme" (should match)
+	t.Log("Test 1: Publishing message with header x-tenant = 'acme' (should match)")
+	counter.Store(1)
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	data1 := map[string]interface{}{
+		"webhook_id": "webhook-" + ulid.Make().String(),
+	}
+	customHeaders1 := map[string]string{
+		"x-tenant": "acme",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data1, customHeaders1,
+	)
+
+	// Wait for webhook
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	// Verify event and delivery were created
+	event1 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event1)
+
+	eventDelivery1 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID, endpoint.UID,
+	)
+	require.NotNil(t, eventDelivery1)
+	t.Log("✓ Header filter matched: x-tenant = 'acme'")
+
+	// Test 2: Publish message with x-tenant = "other" (should NOT match)
+	t.Log("Test 2: Publishing message with header x-tenant = 'other' (should NOT match)")
+	data2 := map[string]interface{}{
+		"webhook_id": "webhook-" + ulid.Make().String(),
+	}
+	customHeaders2 := map[string]string{
+		"x-tenant": "other",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data2, customHeaders2,
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify event was created
+	event2 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event2)
+
+	// Verify NO delivery was created (filter didn't match)
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID,
+	)
+	t.Log("✓ Header filter correctly rejected: x-tenant = 'other'")
+}
+
+func TestE2E_AMQP_Single_CombinedFilters(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18024
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription with combined filters:
+	// - Event type: "transaction.processed"
+	// - Body: amount > 50
+	// - Header: x-priority = "high"
+	eventType := "transaction.processed"
+	bodyFilter := map[string]interface{}{
+		"amount": map[string]interface{}{
+			"$gt": 50,
+		},
+	}
+	headerFilter := map[string]interface{}{
+		"x-priority": map[string]interface{}{
+			"$eq": "high",
+		},
+	}
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, bodyFilter, headerFilter, nil, nil,
+	)
+	require.NotEmpty(t, subscription.UID)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort, queue, 1, nil, nil,
+	)
+	require.NotEmpty(t, source.UID)
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+
+	// Test 1: All filters match (should deliver)
+	t.Log("Test 1: All filters match (should deliver)")
+	counter.Store(1)
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	data1 := map[string]interface{}{
+		"transaction_id": "txn-" + ulid.Make().String(),
+		"amount":         100,
+	}
+	headers1 := map[string]string{
+		"x-priority": "high",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data1, headers1,
+	)
+
+	// Wait for webhook
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	// Verify event and delivery were created
+	event1 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event1)
+
+	eventDelivery1 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID, endpoint.UID,
+	)
+	require.NotNil(t, eventDelivery1)
+	t.Log("✓ Combined filters matched: amount > 50 AND x-priority = 'high'")
+
+	// Test 2: Body filter fails (amount = 30, should NOT deliver)
+	t.Log("Test 2: Body filter fails (amount = 30, should NOT deliver)")
+	data2 := map[string]interface{}{
+		"transaction_id": "txn-" + ulid.Make().String(),
+		"amount":         30,
+	}
+	headers2 := map[string]string{
+		"x-priority": "high",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data2, headers2,
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify event was created but NO delivery
+	event2 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event2)
+
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID,
+	)
+	t.Log("✓ Combined filters rejected: amount = 30 (not > 50)")
+
+	// Test 3: Header filter fails (x-priority = "low", should NOT deliver)
+	t.Log("Test 3: Header filter fails (x-priority = 'low', should NOT deliver)")
+	data3 := map[string]interface{}{
+		"transaction_id": "txn-" + ulid.Make().String(),
+		"amount":         100,
+	}
+	headers3 := map[string]string{
+		"x-priority": "low",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data3, headers3,
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify event was created but NO delivery
+	event3 := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event3)
+
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event3.UID,
+	)
+	t.Log("✓ Combined filters rejected: x-priority = 'low' (not 'high')")
+}

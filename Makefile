@@ -57,6 +57,11 @@ test_e2e:
 	@go test -v ./e2e/... -run TestE2E_AMQP_Single_WildcardEventType -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_AMQP_Fanout_EventTypeFilter -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_AMQP_Broadcast_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_BodyFilter_Equal -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_BodyFilter_GreaterThan -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_BodyFilter_In -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_HeaderFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_CombinedFilters -timeout 2m
 	@echo "✅ All E2E tests passed!"
 
 # Run all E2E tests together (may be flaky, use test_e2e for CI)
