@@ -11,9 +11,9 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/services"
@@ -53,7 +53,7 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cs := services.CreateSourceService{
-		SourceRepo: postgres.NewSourceRepo(h.A.DB),
+		SourceRepo: sources.New(h.A.Logger, h.A.DB),
 		NewSource:  &newSource,
 		Project:    project,
 	}
@@ -104,7 +104,7 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(h.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := sources.New(h.A.Logger, h.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -168,7 +168,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(h.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := sources.New(h.A.Logger, h.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -180,7 +180,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	us := services.UpdateSourceService{
-		SourceRepo:   postgres.NewSourceRepo(h.A.DB),
+		SourceRepo:   sources.New(h.A.Logger, h.A.DB),
 		Project:      project,
 		SourceUpdate: &sourceUpdate,
 		Source:       source,
@@ -232,7 +232,7 @@ func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sourceRepo := postgres.NewSourceRepo(h.A.DB)
+	sourceRepo := sources.New(h.A.Logger, h.A.DB)
 
 	source, err := sourceRepo.FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
@@ -278,7 +278,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListSource
 
 	data := q.Transform(r)
-	sources, paginationData, err := postgres.NewSourceRepo(h.A.DB).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
+	sourcesData, paginationData, err := sources.New(h.A.Logger, h.A.DB).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching sources")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusBadRequest))
@@ -306,11 +306,11 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 		customDomain = org.CustomDomain.ValueOrZero()
 	}
 
-	for i := range sources {
-		fillSourceURL(&sources[i], baseUrl, customDomain)
+	for i := range sourcesData {
+		fillSourceURL(&sourcesData[i], baseUrl, customDomain)
 	}
 
-	resp := models.NewListResponse(sources, func(source datastore.Source) models.SourceResponse {
+	resp := models.NewListResponse(sourcesData, func(source datastore.Source) models.SourceResponse {
 		return models.SourceResponse{Source: &source}
 	})
 	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))

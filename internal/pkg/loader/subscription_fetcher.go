@@ -2,6 +2,7 @@ package loader
 
 import (
 	"context"
+	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -13,6 +14,7 @@ type subscriptionFetcher struct {
 	projectExtractor       *ProjectIDExtractor
 	batchSize              int64
 	subscriptionCollection *SubscriptionCollection
+	lastSyncTime           time.Time
 	log                    log.StdLogger
 }
 
@@ -76,6 +78,44 @@ func (sf *subscriptionFetcher) FetchUpdatedSubscriptions(ctx context.Context) ([
 	}
 
 	return subscriptions, nil
+}
+
+// FetchNewSubscriptions fetches newly created subscriptions since last sync
+func (sf *subscriptionFetcher) FetchNewSubscriptions(ctx context.Context) ([]datastore.Subscription, error) {
+	projectIDs, err := sf.projectExtractor.ExtractProjectIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(projectIDs) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
+	// Get known subscription IDs from the collection
+	knownSubs := sf.subscriptionCollection.GetAll()
+	knownIDs := make([]string, len(knownSubs))
+	for i, sub := range knownSubs {
+		knownIDs[i] = sub.UID
+	}
+
+	subscriptions, err := sf.subRepo.FetchNewSubscriptions(
+		ctx,
+		projectIDs,
+		knownIDs,
+		sf.lastSyncTime,
+		sf.batchSize,
+	)
+	if err != nil {
+		sf.log.WithError(err).Error("failed to load new subscriptions of all projects")
+		return nil, err
+	}
+
+	return subscriptions, nil
+}
+
+// SetLastSyncTime updates the last sync time for fetching new subscriptions
+func (sf *subscriptionFetcher) SetLastSyncTime(t time.Time) {
+	sf.lastSyncTime = t
 }
 
 // FetchDeletedSubscriptions fetches deleted subscriptions based on the current collection

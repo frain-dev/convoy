@@ -1,5 +1,13 @@
 package postgres
 
+// DEPRECATED: This package is deprecated and will be removed in a future version.
+// Use github.com/frain-dev/convoy/internal/sources instead.
+//
+// This legacy implementation uses manual SQL query building with sqlx.
+// The new implementation uses SQLc for type-safe database access.
+//
+// Migration guide: Replace postgres.NewSourceRepo(db) with sources.New(logger, db)
+
 import (
 	"context"
 	"database/sql"

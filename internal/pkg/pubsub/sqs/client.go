@@ -60,10 +60,18 @@ func (s *Sqs) Start(ctx context.Context) {
 
 // Verify ensures the sqs credentials are correct
 func (s *Sqs) Verify() error {
-	sess, err := session.NewSession(&aws.Config{
+	awsCfg := &aws.Config{
 		Region:      aws.String(s.Cfg.DefaultRegion),
 		Credentials: credentials.NewStaticCredentials(s.Cfg.AccessKeyID, s.Cfg.SecretKey, ""),
-	})
+	}
+
+	// Support custom endpoint for LocalStack testing
+	if s.Cfg.Endpoint != "" {
+		awsCfg.Endpoint = aws.String(s.Cfg.Endpoint)
+		awsCfg.DisableSSL = aws.Bool(true)
+	}
+
+	sess, err := session.NewSession(awsCfg)
 	if err != nil {
 		log.WithError(err).Error("failed to create new session - sqs")
 		return ErrInvalidCredentials
@@ -83,10 +91,18 @@ func (s *Sqs) Verify() error {
 }
 
 func (s *Sqs) consume() {
-	sess, err := session.NewSession(&aws.Config{
+	awsCfg := &aws.Config{
 		Region:      aws.String(s.Cfg.DefaultRegion),
 		Credentials: credentials.NewStaticCredentials(s.Cfg.AccessKeyID, s.Cfg.SecretKey, ""),
-	})
+	}
+
+	// Support custom endpoint for LocalStack testing
+	if s.Cfg.Endpoint != "" {
+		awsCfg.Endpoint = aws.String(s.Cfg.Endpoint)
+		awsCfg.DisableSSL = aws.Bool(true)
+	}
+
+	sess, err := session.NewSession(awsCfg)
 
 	defer s.handleError()
 

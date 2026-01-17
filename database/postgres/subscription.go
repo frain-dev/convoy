@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
@@ -200,6 +201,22 @@ const (
 	UNION ALL
 	SELECT * FROM new_subscriptions
 	ORDER BY id LIMIT :limit
+	`
+
+	fetchNewSubscriptions = `
+	SELECT s.name, s.id, s.type, s.project_id, s.endpoint_id, s.function, s.updated_at,
+	s.filter_config_event_types AS "filter_config.event_types",
+	s.filter_config_filter_headers AS "filter_config.filter.headers",
+	s.filter_config_filter_body AS "filter_config.filter.body",
+	s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
+	s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+	s.filter_config_filter_raw_body AS "filter_config.filter.raw_body"
+	FROM convoy.subscriptions s
+	WHERE s.created_at > :last_sync_time
+	AND s.id NOT IN (:known_subscription_ids)
+	AND s.project_id IN (:project_ids)
+	AND s.deleted_at IS NULL
+	ORDER BY s.id LIMIT :limit
 	`
 
 	fetchDeletedSubscriptions = `
@@ -519,6 +536,120 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 
 	subs := make([]datastore.Subscription, 0)
 	// using func to avoid calling defer in a loop, that can easily fill up function stack and cause a crash
+	defer closeWithError(rows)
+	for rows.Next() {
+		sub := datastore.Subscription{}
+		if err := rows.StructScan(&sub); err != nil {
+			return nil, err
+		}
+
+		nullifyEmptyConfig(&sub)
+		subs = append(subs, sub)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return subs, nil
+}
+
+func (s *subscriptionRepo) FetchNewSubscriptions(ctx context.Context, projectIDs []string, knownSubscriptionIDs []string, lastSyncTime time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
+	// If no known subscriptions and lastSyncTime is zero, return empty
+	// (this means initial load hasn't happened yet)
+	if len(knownSubscriptionIDs) == 0 && lastSyncTime.IsZero() {
+		return []datastore.Subscription{}, nil
+	}
+
+	// If no known subscriptions but we have a sync time, fetch all subscriptions created after that time
+	if len(knownSubscriptionIDs) == 0 {
+		query := `
+		SELECT s.name, s.id, s.type, s.project_id, s.endpoint_id, s.function, s.updated_at,
+		s.filter_config_event_types AS "filter_config.event_types",
+		s.filter_config_filter_headers AS "filter_config.filter.headers",
+		s.filter_config_filter_body AS "filter_config.filter.body",
+		s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
+		s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+		s.filter_config_filter_raw_body AS "filter_config.filter.raw_body"
+		FROM convoy.subscriptions s
+		WHERE s.created_at > :last_sync_time
+		AND s.project_id IN (:project_ids)
+		AND s.deleted_at IS NULL
+		ORDER BY s.id LIMIT :limit
+		`
+
+		args := map[string]interface{}{
+			"last_sync_time": lastSyncTime,
+			"project_ids":    projectIDs,
+			"limit":          pageSize,
+		}
+
+		query, finalArgs, err := sqlx.Named(query, args)
+		if err != nil {
+			return nil, err
+		}
+
+		query, finalArgs, err = sqlx.In(query, finalArgs...)
+		if err != nil {
+			return nil, err
+		}
+
+		query = s.db.GetReadDB().Rebind(query)
+
+		rows, err := s.db.GetReadDB().QueryxContext(ctx, query, finalArgs...)
+		if err != nil {
+			return nil, err
+		}
+
+		subs := make([]datastore.Subscription, 0)
+		defer closeWithError(rows)
+		for rows.Next() {
+			sub := datastore.Subscription{}
+			if err := rows.StructScan(&sub); err != nil {
+				return nil, err
+			}
+
+			nullifyEmptyConfig(&sub)
+			subs = append(subs, sub)
+		}
+
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+
+		return subs, nil
+	}
+
+	// We have known subscriptions, use the full query with NOT IN clause
+	args := map[string]interface{}{
+		"last_sync_time":         lastSyncTime,
+		"known_subscription_ids": knownSubscriptionIDs,
+		"project_ids":            projectIDs,
+		"limit":                  pageSize,
+	}
+
+	query, finalArgs, err := sqlx.Named(fetchNewSubscriptions, args)
+	if err != nil {
+		return nil, err
+	}
+
+	query, finalArgs, err = sqlx.In(query, finalArgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	query = s.db.GetReadDB().Rebind(query)
+
+	rows, err := s.db.GetReadDB().QueryxContext(ctx, query, finalArgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	subs := make([]datastore.Subscription, 0)
 	defer closeWithError(rows)
 	for rows.Next() {
 		sub := datastore.Subscription{}

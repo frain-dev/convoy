@@ -15,8 +15,11 @@ ui_install:
 build:
 	scripts/build.sh
 
+.PHONY: test
 test:
-	go test -p 1 $(shell go list ./... | grep -v '/e2e')
+	@for pkg in $$(go list ./... | grep -v '/e2e'); do \
+    		go test -v -p 1 $$pkg; \
+    	done
 
 # E2E Tests - Run individually for reliability and reproducibility
 test_e2e:
@@ -46,6 +49,72 @@ test_e2e:
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_MultiTenant -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_TimeFiltering -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_AllTables -timeout 2m
+	@echo "Running AMQP PubSub E2E tests..."
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_BasicDelivery -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Fanout_MultipleEndpoints -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Broadcast_AllSubscribers -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_WildcardEventType -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Fanout_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Broadcast_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_BodyFilter_Equal -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_BodyFilter_GreaterThan -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_BodyFilter_In -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_HeaderFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_CombinedFilters -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_SourceBodyTransform -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_SourceHeaderTransform -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_NoMatchingSubscription -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_InvalidEndpoint -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_MissingEventType -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_MalformedPayload -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Fanout_MissingOwnerID -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_FilterMismatch -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_MultipleWorkers -timeout 2m
+	@echo "Running SQS PubSub E2E tests..."
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_BasicDelivery -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Fanout_MultipleEndpoints -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Broadcast_AllSubscribers -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_WildcardEventType -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Fanout_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Broadcast_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_BodyFilter_Equal -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_BodyFilter_GreaterThan -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_BodyFilter_In -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_HeaderFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_CombinedFilters -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_SourceBodyTransform -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_SourceHeaderTransform -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_NoMatchingSubscription -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_InvalidEndpoint -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_MissingEventType -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_MalformedPayload -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Fanout_MissingOwnerID -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_FilterMismatch -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SQS_Single_MultipleWorkers -timeout 2m
+	@echo "Running Kafka PubSub E2E tests..."
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_BasicDelivery -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Fanout_MultipleEndpoints -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Broadcast_AllSubscribers -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_WildcardEventType -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Fanout_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Broadcast_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_BodyFilter_Equal -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_BodyFilter_GreaterThan -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_BodyFilter_In -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_HeaderFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_CombinedFilters -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_SourceBodyTransform -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_SourceHeaderTransform -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_NoMatchingSubscription -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_InvalidEndpoint -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_MissingEventType -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_MalformedPayload -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Fanout_MissingOwnerID -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_FilterMismatch -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_Kafka_Single_MultipleWorkers -timeout 2m
 	@echo "✅ All E2E tests passed!"
 
 # Run all E2E tests together (may be flaky, use test_e2e for CI)
