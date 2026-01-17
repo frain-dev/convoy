@@ -19,6 +19,7 @@ type Environment struct {
 	NewMinIOClient       MinIOClientFunc
 	NewRabbitMQConnect   RabbitMQConnectionFunc
 	NewLocalStackConnect LocalStackConnectionFunc
+	NewKafkaConnect      KafkaConnectionFunc
 }
 
 func Launch(ctx context.Context) (*Environment, func() error, error) {
@@ -47,6 +48,11 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 		return nil, nil, fmt.Errorf("start localstack container: %w", err)
 	}
 
+	kafkacontainer, kafkaFactory, err := NewTestKafka(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("start kafka container: %w", err)
+	}
+
 	// Get Redis address for queue inspector
 	redisAddr, err := rediscontainer.ConnectionString(ctx)
 	if err != nil {
@@ -62,6 +68,7 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 		NewMinIOClient:       minioFactory,
 		NewRabbitMQConnect:   rmqFactory,
 		NewLocalStackConnect: localstackFactory,
+		NewKafkaConnect:      kafkaFactory,
 	}
 
 	return res, func() error {
@@ -103,6 +110,14 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 			defer cancel()
 			if err := localstackcontainer.Terminate(ctx); err != nil {
 				log.Printf("terminate localstack container: %v", err)
+			}
+			return nil
+		})
+		eg.Go(func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err := kafkacontainer.Terminate(ctx); err != nil {
+				log.Printf("terminate kafka container: %v", err)
 			}
 			return nil
 		})

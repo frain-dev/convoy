@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -18,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/oklog/ulid/v2"
+	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
 
@@ -943,4 +945,180 @@ func PublishBroadcastSQSMessage(t *testing.T, endpoint string, queueURL string,
 	})
 
 	return err
+}
+
+// Kafka Helper Functions
+
+// CreateKafkaSource creates a Kafka source for E2E testing
+func CreateKafkaSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project,
+	brokers []string, topic string, consumerGroupID string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+	t.Helper()
+
+	source := &datastore.Source{
+		UID:          ulid.Make().String(),
+		ProjectID:    project.UID,
+		MaskID:       ulid.Make().String(),
+		Name:         fmt.Sprintf("kafka-source-%s", ulid.Make().String()),
+		Type:         datastore.PubSubSource,
+		Provider:     datastore.GithubSourceProvider,
+		IsDisabled:   false,
+		BodyFunction: bodyFunction,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.NoopVerifier,
+		},
+		HeaderFunction: headerFunction,
+		PubSub: &datastore.PubSubConfig{
+			Type:    datastore.KafkaPubSub,
+			Workers: workers,
+			Kafka: &datastore.KafkaPubSubConfig{
+				Brokers:         brokers,
+				ConsumerGroupID: consumerGroupID,
+				TopicName:       topic,
+			},
+		},
+	}
+
+	sourceRepo := postgres.NewSourceRepo(db)
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err)
+
+	return source
+}
+
+// CreateKafkaTopic creates a Kafka topic using kafka-go admin client
+func CreateKafkaTopic(t *testing.T, broker string, topic string, numPartitions int, replicationFactor int) {
+	t.Helper()
+
+	conn, err := kafka.Dial("tcp", broker)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	controller, err := conn.Controller()
+	require.NoError(t, err)
+
+	controllerConn, err := kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
+	require.NoError(t, err)
+	defer controllerConn.Close()
+
+	err = controllerConn.CreateTopics(kafka.TopicConfig{
+		Topic:             topic,
+		NumPartitions:     numPartitions,
+		ReplicationFactor: replicationFactor,
+	})
+	require.NoError(t, err)
+
+	t.Logf("Created Kafka topic: %s", topic)
+}
+
+// PublishSingleKafkaMessage publishes a single-type message to Kafka
+func PublishSingleKafkaMessage(t *testing.T, broker string, topic string,
+	endpointID string, eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create Kafka writer
+	writer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{broker},
+		Topic:   topic,
+	})
+	defer writer.Close()
+
+	// Publish message with headers
+	err = writer.WriteMessages(context.Background(), kafka.Message{
+		Value: bodyJSON,
+		Headers: []kafka.Header{
+			{
+				Key:   "x-convoy-message-type",
+				Value: []byte("single"),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	t.Logf("Published single Kafka message to topic %s", topic)
+}
+
+// PublishFanoutKafkaMessage publishes a fanout-type message to Kafka
+func PublishFanoutKafkaMessage(t *testing.T, broker string, topic string,
+	ownerID string, eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"owner_id":        ownerID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create Kafka writer
+	writer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{broker},
+		Topic:   topic,
+	})
+	defer writer.Close()
+
+	// Publish message with headers
+	err = writer.WriteMessages(context.Background(), kafka.Message{
+		Value: bodyJSON,
+		Headers: []kafka.Header{
+			{
+				Key:   "x-convoy-message-type",
+				Value: []byte("fanout"),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	t.Logf("Published fanout Kafka message to topic %s", topic)
+}
+
+// PublishBroadcastKafkaMessage publishes a broadcast-type message to Kafka
+func PublishBroadcastKafkaMessage(t *testing.T, broker string, topic string,
+	eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create Kafka writer
+	writer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{broker},
+		Topic:   topic,
+	})
+	defer writer.Close()
+
+	// Publish message with headers
+	err = writer.WriteMessages(context.Background(), kafka.Message{
+		Value: bodyJSON,
+		Headers: []kafka.Header{
+			{
+				Key:   "x-convoy-message-type",
+				Value: []byte("broadcast"),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	t.Logf("Published broadcast Kafka message to topic %s", topic)
 }
