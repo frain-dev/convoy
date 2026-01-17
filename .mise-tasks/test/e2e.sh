@@ -36,6 +36,10 @@ tests=(
   "TestE2E_AMQP_Single_BasicDelivery"
   "TestE2E_AMQP_Fanout_MultipleEndpoints"
   "TestE2E_AMQP_Broadcast_AllSubscribers"
+  "TestE2E_AMQP_Single_EventTypeFilter"
+  "TestE2E_AMQP_Single_WildcardEventType"
+  "TestE2E_AMQP_Fanout_EventTypeFilter"
+  "TestE2E_AMQP_Broadcast_EventTypeFilter"
 )
 
 # Counter for passed tests

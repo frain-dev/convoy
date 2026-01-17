@@ -15,8 +15,11 @@ ui_install:
 build:
 	scripts/build.sh
 
+.PHONY: test
 test:
-	go test -p 1 $(shell go list ./... | grep -v '/e2e')
+	@for pkg in $$(go list ./... | grep -v '/e2e'); do \
+    		go test -v -p 1 $$pkg; \
+    	done
 
 # E2E Tests - Run individually for reliability and reproducibility
 test_e2e:
@@ -46,6 +49,14 @@ test_e2e:
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_MultiTenant -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_TimeFiltering -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_AllTables -timeout 2m
+	@echo "Running AMQP PubSub E2E tests..."
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_BasicDelivery -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Fanout_MultipleEndpoints -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Broadcast_AllSubscribers -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Single_WildcardEventType -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Fanout_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_AMQP_Broadcast_EventTypeFilter -timeout 2m
 	@echo "✅ All E2E tests passed!"
 
 # Run all E2E tests together (may be flaky, use test_e2e for CI)

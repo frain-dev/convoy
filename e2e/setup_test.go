@@ -27,6 +27,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
+	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -543,6 +544,11 @@ type E2ETestEnvWithAMQP struct {
 func SetupE2EWithAMQP(t *testing.T) *E2ETestEnvWithAMQP {
 	t.Helper()
 
+	// Reset memorystore to ensure test isolation from previous tests
+	// This must be done BEFORE setting up the base environment which starts the worker
+	memorystore.DefaultStore.Reset()
+	t.Logf("Reset memorystore before test setup for isolation")
+
 	// First set up the base E2E environment
 	baseEnv := SetupE2E(t)
 
@@ -566,6 +572,10 @@ func SetupE2EWithAMQP(t *testing.T) *E2ETestEnvWithAMQP {
 		// If already registered (from a previous test), that's okay
 		t.Logf("Source table registration: %v", err)
 	}
+
+	// Note: We DON'T create a separate subscription loader here because the worker
+	// creates its own and exposes it via App.SubscriptionLoader. Creating multiple
+	// loaders causes test isolation issues.
 
 	// Create the pubsub ingest component
 	ingestComponent, err := pubsub.NewIngest(
@@ -631,27 +641,33 @@ func (env *E2ETestEnvWithAMQP) SyncSources(t *testing.T) {
 	time.Sleep(1 * time.Second)
 }
 
-// SyncSubscriptions triggers a manual sync of all memory tables including subscriptions
+// SyncSubscriptions forces an immediate sync of the worker's subscription loader
 // This is needed for broadcast events which use in-memory subscription lookup
 func (env *E2ETestEnvWithAMQP) SyncSubscriptions(t *testing.T) {
 	t.Helper()
 
-	// Sync all tables including subscriptions by calling the sync with a short interval
-	// The Sync() method runs in a loop, so we run it in a goroutine with a context that
-	// will be cancelled when the test ends
-	syncCtx, cancel := context.WithCancel(env.ctx)
+	// Access the worker's subscription loader from the App
+	if env.App.SubscriptionLoader == nil {
+		t.Fatal("SubscriptionLoader not initialized in App - worker may not have started")
+	}
 
-	// Start the sync loop in a goroutine (will be cancelled with test context)
-	go memorystore.DefaultStore.Sync(syncCtx, 1) // sync every 1 second
+	subLoader, ok := env.App.SubscriptionLoader.(*loader.SubscriptionLoader)
+	if !ok {
+		t.Fatal("SubscriptionLoader is not of expected type")
+	}
 
-	t.Logf("Started background sync of memory store (including subscriptions table)")
+	subTable, ok := env.App.SubscriptionTable.(*memorystore.Table)
+	if !ok {
+		t.Fatal("SubscriptionTable is not of expected type")
+	}
 
-	// Give the first sync cycle time to complete
-	// The sync will continue running in the background for the duration of the test
-	time.Sleep(2 * time.Second)
+	// Force an immediate sync of the worker's subscription loader
+	err := subLoader.SyncChanges(env.ctx, subTable)
+	if err != nil {
+		t.Logf("Warning: failed to sync subscriptions: %v", err)
+	}
+	t.Logf("Forced worker subscription loader sync completed")
 
-	// Register cleanup to stop the sync when test ends
-	env.T.Cleanup(func() {
-		cancel()
-	})
+	// Give a small delay for the changes to propagate
+	time.Sleep(500 * time.Millisecond)
 }

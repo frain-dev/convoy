@@ -188,6 +188,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, lo, 0)
 	subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
 
+	// Store subscription loader and table in App for E2E test access
+	a.SubscriptionLoader = subscriptionsLoader
+	a.SubscriptionTable = subscriptionsTable
+
 	err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
 	if err != nil {
 		return err

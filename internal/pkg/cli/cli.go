@@ -31,6 +31,14 @@ type App struct {
 	// JobTracker is an optional field used only in E2E tests
 	// to capture job IDs for verification
 	JobTracker interface{}
+
+	// SubscriptionLoader is an optional field used only in E2E tests
+	// to trigger manual subscription syncs for broadcast tests
+	SubscriptionLoader interface{}
+
+	// SubscriptionTable is an optional field used only in E2E tests
+	// to trigger manual subscription syncs for broadcast tests
+	SubscriptionTable interface{}
 }
 
 type ConvoyCli struct {

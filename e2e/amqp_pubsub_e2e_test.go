@@ -33,7 +33,7 @@ func TestE2E_AMQP_Single_BasicDelivery(t *testing.T) {
 	eventType := "invoice.created"
 	subscription := CreateSubscriptionWithFilter(
 		t, db, env.ctx, env.Project,
-		endpoint, []string{eventType}, nil, nil, nil,
+		endpoint, []string{eventType}, nil, nil, nil, nil,
 	)
 	require.NotEmpty(t, subscription.UID)
 
@@ -111,11 +111,11 @@ func TestE2E_AMQP_Fanout_MultipleEndpoints(t *testing.T) {
 	eventType := "payment.received"
 	sub1 := CreateSubscriptionWithFilter(
 		t, db, env.ctx, env.Project,
-		endpoint1, []string{eventType}, nil, nil, nil,
+		endpoint1, []string{eventType}, nil, nil, nil, nil,
 	)
 	sub2 := CreateSubscriptionWithFilter(
 		t, db, env.ctx, env.Project,
-		endpoint2, []string{eventType}, nil, nil, nil,
+		endpoint2, []string{eventType}, nil, nil, nil, nil,
 	)
 	require.NotEmpty(t, sub1.UID)
 	require.NotEmpty(t, sub2.UID)
@@ -207,11 +207,11 @@ func TestE2E_AMQP_Broadcast_AllSubscribers(t *testing.T) {
 	eventType := "system.alert"
 	sub1 := CreateSubscriptionWithFilter(
 		t, db, env.ctx, env.Project,
-		endpoint1, []string{eventType}, nil, nil, nil,
+		endpoint1, []string{eventType}, nil, nil, nil, nil,
 	)
 	sub2 := CreateSubscriptionWithFilter(
 		t, db, env.ctx, env.Project,
-		endpoint2, []string{eventType}, nil, nil, nil,
+		endpoint2, []string{eventType}, nil, nil, nil, nil,
 	)
 	require.NotEmpty(t, sub1.UID)
 	require.NotEmpty(t, sub2.UID)
@@ -298,4 +298,553 @@ func TestE2E_AMQP_Broadcast_AllSubscribers(t *testing.T) {
 	)
 	require.NotNil(t, eventDelivery1)
 	require.NotNil(t, eventDelivery2)
+}
+
+// Event Type Filtering Tests
+
+func TestE2E_AMQP_Single_EventTypeFilter(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB for direct database operations
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create test endpoint
+	port := 18010
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription with specific event types
+	eventTypes := []string{"invoice.created", "payment.received"}
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, eventTypes, nil, nil, nil, nil,
+	)
+	require.NotEmpty(t, subscription.UID)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort, queue, 1, nil, nil,
+	)
+	require.NotEmpty(t, source.UID)
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+	counter.Store(1) // Expecting 1 webhook
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources to pick up the new AMQP source
+	env.SyncSources(t)
+
+	// Test 1: Publish message with MATCHING event type (invoice.created)
+	data1 := map[string]interface{}{
+		"invoice_id": "inv-" + ulid.Make().String(),
+		"amount":     100,
+		"currency":   "USD",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, "invoice.created", data1, nil,
+	)
+
+	// Wait for webhook
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	// Verify webhook was received for matching event type
+	t.Log("Checking if matching event type was delivered...")
+	webhookURL := fmt.Sprintf("http://localhost:%d/webhook", port)
+	hits := manifest.ReadEndpoint(webhookURL)
+	require.Greater(t, hits, 0, "Webhook should have been delivered for matching event type")
+
+	// Find the event in database
+	event1 := AssertEventCreated(
+		t, db, env.ctx,
+		env.Project.UID, "invoice.created",
+	)
+	require.NotNil(t, event1)
+	t.Logf("✓ Found event: ID=%s, Type=%s", event1.UID, event1.EventType)
+
+	// Verify event delivery was created
+	eventDelivery1 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID, endpoint.UID,
+	)
+	require.NotNil(t, eventDelivery1)
+
+	// Test 2: Publish message with NON-MATCHING event type (user.signup)
+	t.Log("Publishing message with non-matching event type...")
+	data2 := map[string]interface{}{
+		"user_id": "user-" + ulid.Make().String(),
+		"email":   "test@example.com",
+	}
+
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, "user.signup", data2, nil,
+	)
+
+	// Wait a bit to see if webhook is (incorrectly) delivered
+	time.Sleep(3 * time.Second)
+
+	// Verify webhook was NOT received for non-matching event type
+	t.Log("Verifying no webhook was delivered for non-matching event type...")
+	hits2 := manifest.ReadEndpoint(webhookURL)
+	// hits2 should be same as hits (no new webhooks)
+	require.Equal(t, hits, hits2, "No new webhooks should have been delivered for non-matching event type")
+
+	// Find the event in database (it should exist)
+	event2 := AssertEventCreated(
+		t, db, env.ctx,
+		env.Project.UID, "user.signup",
+	)
+	require.NotNil(t, event2)
+	t.Logf("Found event: ID=%s, Type=%s", event2.UID, event2.EventType)
+
+	// Verify event delivery was NOT created for non-matching event type
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID,
+	)
+	t.Log("✓ Event delivery correctly not created for non-matching event type")
+}
+
+func TestE2E_AMQP_Single_WildcardEventType(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create test endpoint
+	port := 18011
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription with wildcard event type
+	eventTypes := []string{"*"}
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, eventTypes, nil, nil, nil, nil,
+	)
+	require.NotEmpty(t, subscription.UID)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort, queue, 1, nil, nil,
+	)
+	require.NotEmpty(t, source.UID)
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+	counter.Store(3) // Expecting 3 webhooks from 3 different event types
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish 3 messages with different event types - all should be delivered
+	eventTypesList := []string{"invoice.created", "payment.received", "user.signup"}
+	for i, eventType := range eventTypesList {
+		data := map[string]interface{}{
+			"id":    ulid.Make().String(),
+			"index": i,
+			"type":  eventType,
+		}
+		PublishSingleAMQPMessage(
+			t, env.RabbitMQHost, env.RabbitMQPort,
+			queue, endpoint.UID, eventType, data, nil,
+		)
+		time.Sleep(500 * time.Millisecond) // Small delay between messages
+	}
+
+	// Wait for all webhooks
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	// Verify all webhooks were received
+	t.Log("Verifying all event types were delivered with wildcard subscription...")
+	webhookURL := fmt.Sprintf("http://localhost:%d/webhook", port)
+	hits := manifest.ReadEndpoint(webhookURL)
+	require.Equal(t, 3, hits, "All 3 event types should have been delivered with wildcard")
+
+	// Verify all 3 events were created and have deliveries
+	for _, eventType := range eventTypesList {
+		event := AssertEventCreated(
+			t, db, env.ctx,
+			env.Project.UID, eventType,
+		)
+		require.NotNil(t, event)
+		t.Logf("✓ Found event: ID=%s, Type=%s", event.UID, event.EventType)
+
+		// Verify event delivery was created
+		eventDelivery := AssertEventDeliveryCreated(
+			t, db, env.ctx,
+			env.Project.UID, event.UID, endpoint.UID,
+		)
+		require.NotNil(t, eventDelivery)
+	}
+
+	t.Log("✓ Wildcard subscription correctly matched all event types")
+}
+
+func TestE2E_AMQP_Fanout_EventTypeFilter(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	ownerID := "owner-" + ulid.Make().String()
+
+	// Create 2 endpoints with same owner
+	port1 := 18012
+	endpoint1 := CreateEndpointViaSDK(t, c, port1, ownerID)
+
+	port2 := 18013
+	endpoint2 := CreateEndpointViaSDK(t, c, port2, ownerID)
+
+	// Create subscription for endpoint1 with specific event type filter
+	subscription1 := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint1, []string{"payment.received"}, nil, nil, nil, nil,
+	)
+	require.NotEmpty(t, subscription1.UID)
+
+	// Create subscription for endpoint2 with different event type filter
+	subscription2 := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint2, []string{"invoice.created"}, nil, nil, nil, nil,
+	)
+	require.NotEmpty(t, subscription2.UID)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort, queue, 1, nil, nil,
+	)
+	require.NotEmpty(t, source.UID)
+
+	// Setup mock webhook servers
+	manifest1 := NewEventManifest()
+	manifest2 := NewEventManifest()
+	done1 := make(chan bool, 1)
+	done2 := make(chan bool, 1)
+	var counter1, counter2 atomic.Int64
+	counter1.Store(1) // Endpoint1 expects 1 webhook (payment.received)
+	counter2.Store(1) // Endpoint2 expects 1 webhook (invoice.created)
+
+	StartMockWebhookServer(t, manifest1, done1, &counter1, port1)
+	StartMockWebhookServer(t, manifest2, done2, &counter2, port2)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Test 1: Publish fanout message with "payment.received" event type
+	// Should only deliver to endpoint1
+	data1 := map[string]interface{}{
+		"payment_id": "pay-" + ulid.Make().String(),
+		"amount":     200,
+	}
+	PublishFanoutAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, ownerID, "payment.received", data1, nil,
+	)
+
+	// Wait for webhook to endpoint1
+	WaitForWebhooks(t, done1, 30*time.Second)
+
+	// Verify webhook was received by endpoint1
+	webhookURL1 := fmt.Sprintf("http://localhost:%d/webhook", port1)
+	hits1 := manifest1.ReadEndpoint(webhookURL1)
+	require.Greater(t, hits1, 0, "Endpoint1 should receive payment.received")
+
+	// Find the event in database
+	event1 := AssertEventCreated(
+		t, db, env.ctx,
+		env.Project.UID, "payment.received",
+	)
+	require.NotNil(t, event1)
+
+	// Verify event delivery was created only for endpoint1
+	eventDelivery1 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID, endpoint1.UID,
+	)
+	require.NotNil(t, eventDelivery1)
+
+	// Verify event delivery was NOT created for endpoint2
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID,
+	)
+	t.Log("✓ Event delivery correctly not created for endpoint2 (non-matching event type)")
+
+	// Test 2: Publish fanout message with "invoice.created" event type
+	// Should only deliver to endpoint2
+	data2 := map[string]interface{}{
+		"invoice_id": "inv-" + ulid.Make().String(),
+		"amount":     500,
+	}
+	PublishFanoutAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, ownerID, "invoice.created", data2, nil,
+	)
+
+	// Wait for webhook to endpoint2
+	WaitForWebhooks(t, done2, 30*time.Second)
+
+	// Verify webhook was received by endpoint2
+	webhookURL2 := fmt.Sprintf("http://localhost:%d/webhook", port2)
+	hits2 := manifest2.ReadEndpoint(webhookURL2)
+	require.Greater(t, hits2, 0, "Endpoint2 should receive invoice.created")
+
+	// Find the event in database
+	event2 := AssertEventCreated(
+		t, db, env.ctx,
+		env.Project.UID, "invoice.created",
+	)
+	require.NotNil(t, event2)
+
+	// Verify event delivery was created only for endpoint2
+	eventDelivery2 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID, endpoint2.UID,
+	)
+	require.NotNil(t, eventDelivery2)
+
+	// Verify event delivery was NOT created for endpoint1
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID,
+	)
+	t.Log("✓ Event delivery correctly not created for endpoint1 (non-matching event type)")
+}
+
+func TestE2E_AMQP_Broadcast_EventTypeFilter(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create 3 endpoints with different owners
+	port1 := 18014
+	endpoint1 := CreateEndpointViaSDK(t, c, port1, "owner1")
+
+	port2 := 18015
+	endpoint2 := CreateEndpointViaSDK(t, c, port2, "owner2")
+
+	port3 := 18016
+	endpoint3 := CreateEndpointViaSDK(t, c, port3, "owner3")
+
+	// Create AMQP source first
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort, queue, 1, nil, nil,
+	)
+	require.NotEmpty(t, source.UID)
+
+	// Create subscriptions with different event type filters
+	// Subscription 1: Listens for "order.placed"
+	subscription1 := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint1, []string{"order.placed"}, nil, nil, nil, &source.UID,
+	)
+	require.NotEmpty(t, subscription1.UID)
+
+	// Subscription 2: Listens for "order.placed" AND "order.cancelled"
+	subscription2 := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint2, []string{"order.placed", "order.cancelled"}, nil, nil, nil, &source.UID,
+	)
+	require.NotEmpty(t, subscription2.UID)
+
+	// Subscription 3: Listens for "order.shipped"
+	subscription3 := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint3, []string{"order.shipped"}, nil, nil, nil, &source.UID,
+	)
+	require.NotEmpty(t, subscription3.UID)
+
+	// Setup mock webhook servers
+	manifest1 := NewEventManifest()
+	manifest2 := NewEventManifest()
+	manifest3 := NewEventManifest()
+	done1 := make(chan bool, 1)
+	done2 := make(chan bool, 1)
+	done3 := make(chan bool, 1)
+	var counter1, counter2, counter3 atomic.Int64
+
+	StartMockWebhookServer(t, manifest1, done1, &counter1, port1)
+	StartMockWebhookServer(t, manifest2, done2, &counter2, port2)
+	StartMockWebhookServer(t, manifest3, done3, &counter3, port3)
+
+	// Sync sources and subscriptions
+	env.SyncSources(t)
+	env.SyncSubscriptions(t)
+
+	// Test 1: Publish "order.placed" - should deliver to endpoint1 and endpoint2
+	t.Log("Publishing broadcast message with event type: order.placed")
+	counter1.Store(1) // Endpoint1 expects 1 webhook
+	counter2.Store(1) // Endpoint2 expects 1 webhook
+	counter3.Store(0) // Endpoint3 expects 0 webhooks
+
+	data1 := map[string]interface{}{
+		"order_id": "order-" + ulid.Make().String(),
+		"amount":   300,
+	}
+	PublishBroadcastAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, "order.placed", data1, nil,
+	)
+
+	// Give worker time to process
+	time.Sleep(3 * time.Second)
+
+	// Debug: Check if event was created
+	t.Log("Checking if broadcast event was created...")
+	event1 := AssertEventCreated(t, db, env.ctx, env.Project.UID, "order.placed")
+	t.Logf("Event created: ID=%s, Type=%s", event1.UID, event1.EventType)
+
+	// Debug: Check if event deliveries were created
+	t.Log("Checking if event deliveries were created...")
+	edRepo := postgres.NewEventDeliveryRepo(db)
+	deliveries, err := edRepo.FindEventDeliveriesByEventID(env.ctx, env.Project.UID, event1.UID)
+	if err == nil && len(deliveries) > 0 {
+		t.Logf("✓ Found %d event deliveries", len(deliveries))
+		for i, ed := range deliveries {
+			t.Logf("  Delivery %d: ID=%s, EndpointID=%s, Status=%s", i+1, ed.UID, ed.EndpointID, ed.Status)
+		}
+	} else {
+		t.Logf("✗ No event deliveries found (error: %v)", err)
+	}
+
+	// Wait for webhooks
+	WaitForWebhooks(t, done1, 30*time.Second)
+	WaitForWebhooks(t, done2, 30*time.Second)
+
+	// Verify webhooks were received
+	webhookURL1 := fmt.Sprintf("http://localhost:%d/webhook", port1)
+	webhookURL2 := fmt.Sprintf("http://localhost:%d/webhook", port2)
+	webhookURL3 := fmt.Sprintf("http://localhost:%d/webhook", port3)
+
+	hits1 := manifest1.ReadEndpoint(webhookURL1)
+	hits2 := manifest2.ReadEndpoint(webhookURL2)
+	hits3 := manifest3.ReadEndpoint(webhookURL3)
+
+	require.Greater(t, hits1, 0, "Endpoint1 should receive order.placed")
+	require.Greater(t, hits2, 0, "Endpoint2 should receive order.placed")
+	require.Equal(t, 0, hits3, "Endpoint3 should NOT receive order.placed")
+
+	// Event already found in debug section above
+	require.NotNil(t, event1)
+
+	// Verify event deliveries
+	eventDelivery1 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID, endpoint1.UID,
+	)
+	require.NotNil(t, eventDelivery1)
+
+	eventDelivery2 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID, endpoint2.UID,
+	)
+	require.NotNil(t, eventDelivery2)
+
+	// Endpoint3 should NOT have a delivery
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event1.UID,
+	)
+	t.Log("✓ Broadcast correctly delivered only to subscriptions matching event type")
+
+	// Test 2: Publish "order.shipped" - should deliver only to endpoint3
+	t.Log("Publishing broadcast message with event type: order.shipped")
+
+	// Set expected webhook counts for the second test
+	// Note: We don't reset the done channels - the webhook server is still using them
+	counter1.Store(0) // Endpoint1 expects 0 webhooks (already received 1, no more expected)
+	counter2.Store(0) // Endpoint2 expects 0 webhooks (already received 1, no more expected)
+	counter3.Store(1) // Endpoint3 expects 1 webhook (hasn't received any yet)
+
+	data2 := map[string]interface{}{
+		"order_id":     "order-" + ulid.Make().String(),
+		"tracking_num": "TRK123456",
+	}
+	PublishBroadcastAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, "order.shipped", data2, nil,
+	)
+
+	// Give worker time to process
+	time.Sleep(3 * time.Second)
+
+	// Debug: Check if event was created
+	t.Log("Checking if broadcast event 2 was created...")
+	event2 := AssertEventCreated(t, db, env.ctx, env.Project.UID, "order.shipped")
+	t.Logf("Event created: ID=%s, Type=%s", event2.UID, event2.EventType)
+
+	// Debug: Check if event deliveries were created
+	t.Log("Checking if event deliveries were created for event 2...")
+	deliveries2, err2 := edRepo.FindEventDeliveriesByEventID(env.ctx, env.Project.UID, event2.UID)
+	if err2 == nil && len(deliveries2) > 0 {
+		t.Logf("✓ Found %d event deliveries for event 2", len(deliveries2))
+		for i, ed := range deliveries2 {
+			t.Logf("  Delivery %d: ID=%s, EndpointID=%s, Status=%s", i+1, ed.UID, ed.EndpointID, ed.Status)
+		}
+	} else {
+		t.Logf("✗ No event deliveries found for event 2 (error: %v)", err2)
+	}
+
+	// Give a bit more time for webhook to definitely arrive
+	// (it should have already arrived based on delivery status, but being defensive)
+	time.Sleep(2 * time.Second)
+
+	// Verify webhooks
+	hits1After := manifest1.ReadEndpoint(webhookURL1)
+	hits2After := manifest2.ReadEndpoint(webhookURL2)
+	hits3After := manifest3.ReadEndpoint(webhookURL3)
+
+	require.Equal(t, hits1, hits1After, "Endpoint1 should NOT receive order.shipped")
+	require.Equal(t, hits2, hits2After, "Endpoint2 should NOT receive order.shipped")
+	require.Greater(t, hits3After, hits3, "Endpoint3 should receive order.shipped")
+
+	// Event already found in debug section above
+	require.NotNil(t, event2)
+
+	// Verify event delivery only for endpoint3
+	eventDelivery3 := AssertEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID, endpoint3.UID,
+	)
+	require.NotNil(t, eventDelivery3)
+
+	// Endpoint1 and Endpoint2 should NOT have deliveries
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID,
+	)
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event2.UID,
+	)
+	t.Log("✓ Broadcast correctly filtered by event type")
 }

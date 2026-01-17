@@ -498,7 +498,7 @@ func PublishBroadcastAMQPMessage(t *testing.T, host string, port int, queue, eve
 // CreateSubscriptionWithFilter creates a subscription with advanced filtering
 func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx context.Context,
 	project *datastore.Project, endpoint *convoy.EndpointResponse, eventTypes []string,
-	bodyFilter, headerFilter map[string]interface{}, function *string) *datastore.Subscription {
+	bodyFilter, headerFilter map[string]interface{}, function *string, sourceID *string) *datastore.Subscription {
 	t.Helper()
 
 	var nullFunc null.String
@@ -516,6 +516,11 @@ func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx conte
 			EventTypes: eventTypes,
 		},
 		Function: nullFunc,
+	}
+
+	// Set source ID if provided (for broadcast messages with source filter)
+	if sourceID != nil {
+		subscription.SourceID = *sourceID
 	}
 
 	// Add advanced filters if provided
