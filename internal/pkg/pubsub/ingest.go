@@ -68,14 +68,11 @@ func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer
 // 3. Cancels deleted sources.
 // 4. Starts new sources.
 func (i *Ingest) Run() {
-	fmt.Printf("[INGEST] Run() started - waiting for ticker\n")
 	i.log.Infof("Ingest.Run() started - waiting for ticker")
 	for {
-		fmt.Printf("[INGEST] Loop iteration - waiting on select\n")
 		select {
 		// retrieve new sources
 		case <-i.ticker.C:
-			fmt.Printf("[INGEST] Ticker fired\n")
 			i.log.Infof("Ingest ticker fired")
 			err := i.run()
 			if err != nil {
@@ -83,7 +80,6 @@ func (i *Ingest) Run() {
 			}
 
 		case <-i.ctx.Done():
-			fmt.Printf("[INGEST] Context cancelled - stopping\n")
 			i.log.Infof("Ingest context cancelled - stopping")
 			// stop ticker.
 			i.ticker.Stop()
@@ -104,9 +100,7 @@ func (i *Ingest) getSourceKeys() []memorystore.Key {
 }
 
 func (i *Ingest) run() error {
-	fmt.Printf("[INGEST] run() called - checking for source changes\n")
 	i.log.Infof("Ingest.run() called - checking for source changes")
-	fmt.Printf("[INGEST] Current sources in table: %d, running sources: %d\n", len(i.table.GetKeys()), len(i.sources))
 	i.log.Infof("Current sources in table: %d, running sources: %d", len(i.table.GetKeys()), len(i.sources))
 
 	// cancel all stale/outdated source runners.
@@ -124,7 +118,6 @@ func (i *Ingest) run() error {
 
 	// start all new/updated source runners.
 	newSourceKeys := memorystore.Difference(i.table.GetKeys(), i.getSourceKeys())
-	fmt.Printf("[INGEST] New sources to start: %d\n", len(newSourceKeys))
 	i.log.Infof("New sources to start: %d", len(newSourceKeys))
 	for _, key := range newSourceKeys {
 		sr := i.table.Get(key)
@@ -137,19 +130,15 @@ func (i *Ingest) run() error {
 			return errors.New("invalid source in memory store")
 		}
 
-		fmt.Printf("[INGEST] Starting new source: %s (type: %s, project: %s)\n", ss.UID, ss.Type, ss.ProjectID)
 		i.log.Infof("Starting new source: %s (type: %s, project: %s)", ss.UID, ss.Type, ss.ProjectID)
 		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.licenser, i.instanceId)
 		if err != nil {
-			fmt.Printf("[INGEST] Failed to create PubSubSource: %v\n", err)
 			log.WithError(err).Error("Failed to create PubSubSource")
 			return err
 		}
 
 		// ps.hash = key
-		fmt.Printf("[INGEST] Calling Start() for source: %s\n", ss.UID)
 		ps.Start()
-		fmt.Printf("[INGEST] Started source: %s\n", ss.UID)
 		i.log.Infof("Started source: %s", ss.UID)
 		i.sources[key] = ps
 	}

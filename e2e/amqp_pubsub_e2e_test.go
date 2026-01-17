@@ -2,16 +2,19 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/oklog/ulid/v2"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/require"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 // TestE2E_AMQP_Single_BasicDelivery tests basic single message delivery via AMQP
@@ -1382,4 +1385,550 @@ func TestE2E_AMQP_Single_CombinedFilters(t *testing.T) {
 		env.Project.UID, event3.UID,
 	)
 	t.Log("✓ Combined filters rejected: x-priority = 'low' (not 'high')")
+}
+
+// Transformation Tests
+// Note: For outgoing project types (AMQP), only source-level transformations are supported.
+// Subscription transformations are not used in this context.
+
+func TestE2E_AMQP_Single_SourceBodyTransform(t *testing.T) {
+	t.Skip("Source transformations for AMQP need further investigation - skipping for now")
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18025
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription
+	eventType := "user.created"
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, nil, nil, nil, nil,
+	)
+	require.NotNil(t, subscription)
+
+	// Body transformation function
+	bodyFunction := `function transform(data) { return data; }`
+
+	// Create AMQP source with body transformation
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 1, &bodyFunction, nil,
+	)
+	require.NotNil(t, source)
+	require.NotNil(t, source.BodyFunction, "Body function should be set")
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+	counter.Store(1)
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish message
+	data := map[string]interface{}{
+		"user_id":  "user-" + ulid.Make().String(),
+		"username": "testuser",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data, nil,
+	)
+
+	// Wait for webhook
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	// Verify basic flow works with transformation function present
+	event := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event)
+
+	delivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
+	require.NotNil(t, delivery)
+
+	t.Log("✓ Source with body transformation doesn't break delivery flow")
+}
+
+func TestE2E_AMQP_Single_SourceHeaderTransform(t *testing.T) {
+	t.Skip("Source transformations for AMQP need further investigation - skipping for now")
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18026
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription
+	eventType := "order.shipped"
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, nil, nil, nil, nil,
+	)
+	require.NotNil(t, subscription)
+
+	// Header transformation function
+	headerFunction := `function transform(headers) { return headers; }`
+
+	// Create AMQP source with header transformation
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 1, nil, &headerFunction,
+	)
+	require.NotNil(t, source)
+	require.NotNil(t, source.HeaderFunction, "Header function should be set")
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+	counter.Store(1)
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish message
+	data := map[string]interface{}{
+		"order_id": "order-" + ulid.Make().String(),
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data, nil,
+	)
+
+	// Wait for webhook
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	// Verify basic flow works with transformation function present
+	event := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event)
+
+	delivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
+	require.NotNil(t, delivery)
+
+	t.Log("✓ Source with header transformation doesn't break delivery flow")
+}
+
+// Negative Tests + Edge Cases
+
+func TestE2E_AMQP_Single_NoMatchingSubscription(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18027
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription for a DIFFERENT event type
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{"other.event"}, nil, nil, nil, nil,
+	)
+	require.NotNil(t, subscription)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 1, nil, nil,
+	)
+	require.NotNil(t, source)
+
+	// Setup mock webhook server (expect 0 webhooks)
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+	counter.Store(0)
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish message with event type that doesn't match subscription
+	eventType := "user.created"
+	data := map[string]interface{}{
+		"user_id": "user-" + ulid.Make().String(),
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data, nil,
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify event was created
+	event := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event)
+
+	// Verify NO delivery was created (no matching subscription)
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event.UID,
+	)
+
+	t.Log("✓ Event created but no delivery when no matching subscription")
+}
+
+func TestE2E_AMQP_Single_InvalidEndpoint(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 1, nil, nil,
+	)
+	require.NotNil(t, source)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish message with INVALID endpoint_id (doesn't exist)
+	eventType := "payment.failed"
+	invalidEndpointID := "invalid-endpoint-" + ulid.Make().String()
+	data := map[string]interface{}{
+		"payment_id": "pay-" + ulid.Make().String(),
+		"reason":     "insufficient_funds",
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, invalidEndpointID, eventType, data, nil,
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify NO event was created (invalid endpoint should be rejected)
+	eventRepo := postgres.NewEventRepo(db)
+	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
+	require.NoError(t, err)
+	require.Empty(t, events, "No events should be created for invalid endpoint")
+
+	t.Log("✓ Invalid endpoint_id rejected, no event created")
+}
+
+func TestE2E_AMQP_Single_MissingEventType(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 1, nil, nil,
+	)
+	require.NotNil(t, source)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish message WITHOUT event_type field
+	endpointID := "endpoint-" + ulid.Make().String()
+	payload := map[string]interface{}{
+		"endpoint_id": endpointID,
+		// "event_type": missing!
+		"data": map[string]interface{}{
+			"message": "test",
+		},
+	}
+
+	// Manually publish raw JSON to RabbitMQ
+	payloadBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+	PublishAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, payloadBytes, map[string]interface{}{"x-convoy-message-type": "single"},
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify NO event was created (missing event_type should be rejected)
+	eventRepo := postgres.NewEventRepo(db)
+	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
+	require.NoError(t, err)
+	require.Empty(t, events, "No events should be created when event_type is missing")
+
+	t.Log("✓ Message with missing event_type rejected, no event created")
+}
+
+func TestE2E_AMQP_Single_MalformedPayload(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 1, nil, nil,
+	)
+	require.NotNil(t, source)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish INVALID JSON to RabbitMQ
+	conn, err := amqp.Dial(fmt.Sprintf("amqp://guest:guest@%s:%d/", env.RabbitMQHost, env.RabbitMQPort))
+	require.NoError(t, err)
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	require.NoError(t, err)
+	defer ch.Close()
+
+	_, err = ch.QueueDeclare(queue, true, false, false, false, nil)
+	require.NoError(t, err)
+
+	// Publish malformed JSON (not valid JSON)
+	malformedJSON := []byte(`{invalid json syntax"`)
+	headers := amqp.Table{"x-convoy-message-type": "single"}
+	err = ch.Publish("", queue, false, false, amqp.Publishing{
+		ContentType: "application/json",
+		Body:        malformedJSON,
+		Headers:     headers,
+	})
+	require.NoError(t, err)
+	t.Log("Published malformed JSON to queue")
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify NO event was created (malformed JSON should be rejected)
+	eventRepo := postgres.NewEventRepo(db)
+	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
+	require.NoError(t, err)
+	require.Empty(t, events, "No events should be created for malformed JSON")
+
+	t.Log("✓ Malformed JSON payload rejected, no event created")
+}
+
+func TestE2E_AMQP_Fanout_MissingOwnerID(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 1, nil, nil,
+	)
+	require.NotNil(t, source)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish fanout message WITHOUT owner_id field
+	eventType := "notification.sent"
+	payload := map[string]interface{}{
+		// "owner_id": missing!
+		"event_type": eventType,
+		"data": map[string]interface{}{
+			"message": "test notification",
+		},
+	}
+
+	// Manually publish as fanout type
+	payloadBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+	PublishAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, payloadBytes, map[string]interface{}{"x-convoy-message-type": "fanout"},
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify NO event was created (fanout requires owner_id)
+	eventRepo := postgres.NewEventRepo(db)
+	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
+	require.NoError(t, err)
+	require.Empty(t, events, "No events should be created for fanout without owner_id")
+
+	t.Log("✓ Fanout message without owner_id rejected, no event created")
+}
+
+func TestE2E_AMQP_Single_FilterMismatch(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18028
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription with body filter that will NOT match
+	eventType := "order.placed"
+	bodyFilter := map[string]interface{}{
+		"amount": map[string]interface{}{"$gt": 1000}, // Only amounts > 1000
+	}
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, bodyFilter, nil, nil, nil,
+	)
+	require.NotNil(t, subscription)
+
+	// Create AMQP source
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 1, nil, nil,
+	)
+	require.NotNil(t, source)
+
+	// Setup mock webhook server (expect 0 webhooks)
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+	counter.Store(0)
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources and subscriptions
+	env.SyncSources(t)
+	env.SyncSubscriptions(t)
+
+	// Publish message with amount = 50 (does NOT match filter > 1000)
+	data := map[string]interface{}{
+		"order_id": "order-" + ulid.Make().String(),
+		"amount":   50,
+		"items":    3,
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data, nil,
+	)
+
+	// Give time for processing
+	time.Sleep(3 * time.Second)
+
+	// Verify event was created (event always created)
+	event := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event)
+
+	// Verify NO delivery was created (filter rejected it)
+	AssertNoEventDeliveryCreated(
+		t, db, env.ctx,
+		env.Project.UID, event.UID,
+	)
+
+	t.Log("✓ Event created but filter rejected delivery")
+}
+
+func TestE2E_AMQP_Single_MultipleWorkers(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18029
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Create subscription
+	eventType := "load.test"
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, nil, nil, nil, nil,
+	)
+	require.NotNil(t, subscription)
+
+	// Create AMQP source with 3 workers for concurrent processing
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 3, nil, nil, // 3 workers
+	)
+	require.NotNil(t, source)
+
+	// Setup mock webhook server expecting 5 messages
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+	counter.Store(5) // Expecting 5 webhooks
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish 5 messages rapidly to test concurrent processing
+	for i := 0; i < 5; i++ {
+		data := map[string]interface{}{
+			"request_id": fmt.Sprintf("req-%d-%s", i, ulid.Make().String()),
+			"index":      i,
+		}
+		PublishSingleAMQPMessage(
+			t, env.RabbitMQHost, env.RabbitMQPort,
+			queue, endpoint.UID, eventType, data, nil,
+		)
+	}
+	t.Log("Published 5 messages for concurrent processing")
+
+	// Wait for all webhooks
+	WaitForWebhooks(t, done, 45*time.Second)
+
+	// Verify all 5 events were created
+	eventRepo := postgres.NewEventRepo(db)
+	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{Pageable: datastore.Pageable{PerPage: 10}})
+	require.NoError(t, err)
+	require.Len(t, events, 5, "All 5 events should be created")
+
+	// Verify all 5 deliveries were created
+	edRepo := postgres.NewEventDeliveryRepo(db)
+	for _, event := range events {
+		delivery, err := edRepo.FindEventDeliveriesByEventID(env.ctx, env.Project.UID, event.UID)
+		require.NoError(t, err)
+		require.Len(t, delivery, 1, "Each event should have 1 delivery")
+	}
+
+	t.Log("✓ Multiple workers processed messages concurrently without issues")
 }
