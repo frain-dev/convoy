@@ -13,11 +13,12 @@ import (
 )
 
 type Environment struct {
-	CloneTestDatabase  PostgresDBCloneFunc
-	NewRedisClient     RedisClientFunc
-	NewQueueInspector  QueueInspectorFunc
-	NewMinIOClient     MinIOClientFunc
-	NewRabbitMQConnect RabbitMQConnectionFunc
+	CloneTestDatabase    PostgresDBCloneFunc
+	NewRedisClient       RedisClientFunc
+	NewQueueInspector    QueueInspectorFunc
+	NewMinIOClient       MinIOClientFunc
+	NewRabbitMQConnect   RabbitMQConnectionFunc
+	NewLocalStackConnect LocalStackConnectionFunc
 }
 
 func Launch(ctx context.Context) (*Environment, func() error, error) {
@@ -41,6 +42,11 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 		return nil, nil, fmt.Errorf("start rabbitmq container: %w", err)
 	}
 
+	localstackcontainer, localstackFactory, err := NewTestLocalStack(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("start localstack container: %w", err)
+	}
+
 	// Get Redis address for queue inspector
 	redisAddr, err := rediscontainer.ConnectionString(ctx)
 	if err != nil {
@@ -50,11 +56,12 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 	inspectorFactory := newQueueInspectorFactory(redisAddr)
 
 	res := &Environment{
-		CloneTestDatabase:  cloner,
-		NewRedisClient:     rcFactory,
-		NewQueueInspector:  inspectorFactory,
-		NewMinIOClient:     minioFactory,
-		NewRabbitMQConnect: rmqFactory,
+		CloneTestDatabase:    cloner,
+		NewRedisClient:       rcFactory,
+		NewQueueInspector:    inspectorFactory,
+		NewMinIOClient:       minioFactory,
+		NewRabbitMQConnect:   rmqFactory,
+		NewLocalStackConnect: localstackFactory,
 	}
 
 	return res, func() error {
@@ -88,6 +95,14 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 			defer cancel()
 			if err := rabbitmqcontainer.Terminate(ctx); err != nil {
 				log.Printf("terminate rabbitmq container: %v", err)
+			}
+			return nil
+		})
+		eg.Go(func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err := localstackcontainer.Terminate(ctx); err != nil {
+				log.Printf("terminate localstack container: %v", err)
 			}
 			return nil
 		})

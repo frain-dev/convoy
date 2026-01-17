@@ -666,3 +666,133 @@ func (env *E2ETestEnvWithAMQP) SyncSubscriptions(t *testing.T) {
 	// Give a small delay for the changes to propagate
 	time.Sleep(500 * time.Millisecond)
 }
+
+// E2ETestEnvWithSQS extends E2ETestEnv with SQS-specific resources
+type E2ETestEnvWithSQS struct {
+	*E2ETestEnv
+	LocalStackEndpoint string
+	Ingest             *pubsub.Ingest
+	cancelIngest       context.CancelFunc
+	sourceTable        *memorystore.Table
+	sourceContext      context.Context
+}
+
+// SetupE2EWithSQS sets up an E2E test environment with SQS pubsub infrastructure
+func SetupE2EWithSQS(t *testing.T) *E2ETestEnvWithSQS {
+	t.Helper()
+
+	// Reset memorystore to ensure test isolation from previous tests
+	memorystore.DefaultStore.Reset()
+	t.Logf("Reset memorystore before test setup for isolation")
+
+	// First set up the base E2E environment
+	baseEnv := SetupE2E(t)
+
+	// Get LocalStack connection details
+	localStackEndpoint := infra.NewLocalStackConnect(t)
+
+	// Set up repositories needed for source loading
+	sourceRepo := postgres.NewSourceRepo(baseEnv.App.DB)
+	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
+	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
+
+	// Create the source loader and table for pubsub ingest
+	lo := baseEnv.App.Logger.(*log.Logger)
+	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
+	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
+
+	// Register the sources table with the memory store
+	err := memorystore.DefaultStore.Register("sources", sourceTable)
+	if err != nil {
+		t.Logf("Source table registration: %v", err)
+	}
+
+	// Create the pubsub ingest component
+	ingestComponent, err := pubsub.NewIngest(
+		baseEnv.ctx,
+		sourceTable,
+		baseEnv.App.Queue,
+		baseEnv.App.Logger,
+		baseEnv.App.Rate,
+		baseEnv.App.Licenser,
+		"test-instance",
+		endpointRepo,
+	)
+	require.NoError(t, err)
+
+	// Start the ingest component in a goroutine
+	_, cancelIngest := context.WithCancel(baseEnv.ctx)
+	t.Logf("Starting ingest component in goroutine")
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Logf("PANIC in ingest component: %v", r)
+			}
+		}()
+		t.Logf("Ingest goroutine started, calling Run()")
+		ingestComponent.Run()
+		t.Logf("Ingest Run() returned")
+	}()
+
+	// Give the ingest component time to start and sync the sources
+	t.Logf("Waiting for ingest component to start...")
+	time.Sleep(1 * time.Second)
+	t.Logf("Ingest component should be running now")
+
+	// Add cleanup for ingest component
+	t.Cleanup(func() {
+		t.Logf("Stopping SQS ingest component for test: %s", t.Name())
+		cancelIngest()
+		time.Sleep(200 * time.Millisecond)
+	})
+
+	sqsEnv := &E2ETestEnvWithSQS{
+		E2ETestEnv:         baseEnv,
+		LocalStackEndpoint: localStackEndpoint,
+		Ingest:             ingestComponent,
+		cancelIngest:       cancelIngest,
+		sourceTable:        sourceTable,
+		sourceContext:      context.Background(),
+	}
+
+	t.Logf("Test environment ready: %s (URL: %s, project: %s)", t.Name(), baseEnv.ServerURL, baseEnv.Project.UID)
+
+	return sqsEnv
+}
+
+// SyncSources forces an immediate sync of the source table
+func (env *E2ETestEnvWithSQS) SyncSources(t *testing.T) {
+	t.Helper()
+	err := env.sourceTable.Sync(env.sourceContext)
+	if err != nil {
+		t.Logf("Warning: failed to sync sources: %v", err)
+	}
+	// Give the ingest component time to process the new sources
+	time.Sleep(1 * time.Second)
+}
+
+// SyncSubscriptions forces an immediate sync of the worker's subscription loader
+func (env *E2ETestEnvWithSQS) SyncSubscriptions(t *testing.T) {
+	t.Helper()
+
+	// Access the worker's subscription loader from the App
+	subLoader, ok := env.App.SubscriptionLoader.(*loader.SubscriptionLoader)
+	if !ok {
+		t.Fatal("SubscriptionLoader is not of expected type")
+	}
+
+	subTable, ok := env.App.SubscriptionTable.(*memorystore.Table)
+	if !ok {
+		t.Fatal("SubscriptionTable is not of expected type")
+	}
+
+	// Force an immediate sync of the worker's subscription loader
+	err := subLoader.SyncChanges(env.ctx, subTable)
+	if err != nil {
+		t.Logf("Warning: failed to sync subscriptions: %v", err)
+	}
+	t.Logf("Forced worker subscription loader sync completed")
+
+	// Give a small delay for the changes to propagate
+	time.Sleep(500 * time.Millisecond)
+}

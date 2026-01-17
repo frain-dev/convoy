@@ -13,6 +13,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
@@ -735,4 +739,208 @@ func AssertDeliveryAttemptCreated(t *testing.T, db *postgres.Postgres, ctx conte
 	require.NoError(t, err)
 	require.NotNil(t, delivery, "Event delivery should exist")
 	require.NotEmpty(t, delivery.DeliveryAttempts, "At least one delivery attempt should have been created")
+}
+
+// SQS Helper Functions
+
+// CreateSQSSource creates an SQS source for E2E testing
+func CreateSQSSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project,
+	endpoint string, queueName string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+
+	source := &datastore.Source{
+		UID:          ulid.Make().String(),
+		ProjectID:    project.UID,
+		MaskID:       ulid.Make().String(),
+		Name:         fmt.Sprintf("sqs-source-%s", ulid.Make().String()),
+		Type:         datastore.PubSubSource,
+		Provider:     datastore.GithubSourceProvider,
+		IsDisabled:   false,
+		BodyFunction: bodyFunction,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.NoopVerifier,
+		},
+		HeaderFunction: headerFunction,
+		PubSub: &datastore.PubSubConfig{
+			Type:    datastore.SqsPubSub,
+			Workers: workers,
+			Sqs: &datastore.SQSPubSubConfig{
+				AccessKeyID:   "test",
+				SecretKey:     "test",
+				DefaultRegion: "us-east-1",
+				QueueName:     queueName,
+				Endpoint:      endpoint,
+			},
+		},
+	}
+
+	sourceRepo := postgres.NewSourceRepo(db)
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err)
+
+	return source
+}
+
+// CreateSQSQueue creates an SQS queue in LocalStack and returns the queue URL
+func CreateSQSQueue(t *testing.T, endpoint string, queueName string) string {
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Create queue
+	result, err := svc.CreateQueue(&sqs.CreateQueueInput{
+		QueueName: aws.String(queueName),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result.QueueUrl)
+
+	return *result.QueueUrl
+}
+
+// GetSQSQueueURL retrieves the queue URL for a given queue name
+func GetSQSQueueURL(t *testing.T, endpoint string, queueName string) string {
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	result, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
+		QueueName: aws.String(queueName),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result.QueueUrl)
+
+	return *result.QueueUrl
+}
+
+// PublishSingleSQSMessage publishes a single-type message to SQS
+func PublishSingleSQSMessage(t *testing.T, endpoint string, queueURL string,
+	endpointID string, eventType string, data map[string]interface{}) error {
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Send message with attributes
+	_, err = svc.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    aws.String(queueURL),
+		MessageBody: aws.String(string(bodyJSON)),
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"x-convoy-message-type": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("single"),
+			},
+		},
+	})
+
+	return err
+}
+
+// PublishFanoutSQSMessage publishes a fanout-type message to SQS
+func PublishFanoutSQSMessage(t *testing.T, endpoint string, queueURL string,
+	ownerID string, eventType string, data map[string]interface{}) error {
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"owner_id":        ownerID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Send message with attributes
+	_, err = svc.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    aws.String(queueURL),
+		MessageBody: aws.String(string(bodyJSON)),
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"x-convoy-message-type": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("fanout"),
+			},
+		},
+	})
+
+	return err
+}
+
+// PublishBroadcastSQSMessage publishes a broadcast-type message to SQS
+func PublishBroadcastSQSMessage(t *testing.T, endpoint string, queueURL string,
+	eventType string, data map[string]interface{}) error {
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Send message with attributes
+	_, err = svc.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    aws.String(queueURL),
+		MessageBody: aws.String(string(bodyJSON)),
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"x-convoy-message-type": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("broadcast"),
+			},
+		},
+	})
+
+	return err
 }
