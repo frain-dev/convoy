@@ -6,9 +6,6 @@ import (
 	"time"
 )
 
-// CreateEndpointMigration handles request migration for models.CreateEndpoint
-// This migration transforms http_timeout and rate_limit_duration from string to uint64,
-// and sets default value for advanced_signatures.
 type CreateEndpointMigration struct{}
 
 func (m *CreateEndpointMigration) MigrateForward(ctx context.Context, data any) (any, error) {
@@ -17,7 +14,6 @@ func (m *CreateEndpointMigration) MigrateForward(ctx context.Context, data any) 
 		return data, nil
 	}
 
-	// Convert http_timeout from string to uint64 (seconds)
 	if timeout, ok := d["http_timeout"].(string); ok && timeout != "" {
 		seconds, err := transformDurationStringToInt(timeout)
 		if err != nil {
@@ -26,7 +22,6 @@ func (m *CreateEndpointMigration) MigrateForward(ctx context.Context, data any) 
 		d["http_timeout"] = seconds
 	}
 
-	// Convert rate_limit_duration from string to uint64 (seconds)
 	if duration, ok := d["rate_limit_duration"].(string); ok && duration != "" {
 		seconds, err := transformDurationStringToInt(duration)
 		if err != nil {
@@ -35,7 +30,6 @@ func (m *CreateEndpointMigration) MigrateForward(ctx context.Context, data any) 
 		d["rate_limit_duration"] = seconds
 	}
 
-	// Set default for advanced_signatures if not present
 	if _, ok := d["advanced_signatures"]; !ok {
 		d["advanced_signatures"] = false
 	}
@@ -49,12 +43,10 @@ func (m *CreateEndpointMigration) MigrateBackward(ctx context.Context, data any)
 		return data, nil
 	}
 
-	// Convert http_timeout from uint64 back to string
 	if timeout, ok := d["http_timeout"].(float64); ok {
 		d["http_timeout"] = transformIntToDurationString(uint64(timeout))
 	}
 
-	// Convert rate_limit_duration from uint64 back to string
 	if duration, ok := d["rate_limit_duration"].(float64); ok {
 		d["rate_limit_duration"] = transformIntToDurationString(uint64(duration))
 	}
@@ -62,8 +54,6 @@ func (m *CreateEndpointMigration) MigrateBackward(ctx context.Context, data any)
 	return d, nil
 }
 
-// UpdateEndpointMigration handles request migration for models.UpdateEndpoint
-// Same transformations as CreateEndpointMigration.
 type UpdateEndpointMigration struct{}
 
 func (m *UpdateEndpointMigration) MigrateForward(ctx context.Context, data any) (any, error) {
@@ -72,7 +62,6 @@ func (m *UpdateEndpointMigration) MigrateForward(ctx context.Context, data any) 
 		return data, nil
 	}
 
-	// Convert http_timeout from string to uint64 (seconds)
 	if timeout, ok := d["http_timeout"].(string); ok && timeout != "" {
 		seconds, err := transformDurationStringToInt(timeout)
 		if err != nil {
@@ -81,7 +70,6 @@ func (m *UpdateEndpointMigration) MigrateForward(ctx context.Context, data any) 
 		d["http_timeout"] = seconds
 	}
 
-	// Convert rate_limit_duration from string to uint64 (seconds)
 	if duration, ok := d["rate_limit_duration"].(string); ok && duration != "" {
 		seconds, err := transformDurationStringToInt(duration)
 		if err != nil {
@@ -90,7 +78,6 @@ func (m *UpdateEndpointMigration) MigrateForward(ctx context.Context, data any) 
 		d["rate_limit_duration"] = seconds
 	}
 
-	// Set default for advanced_signatures if not present
 	if _, ok := d["advanced_signatures"]; !ok {
 		d["advanced_signatures"] = false
 	}
@@ -104,12 +91,10 @@ func (m *UpdateEndpointMigration) MigrateBackward(ctx context.Context, data any)
 		return data, nil
 	}
 
-	// Convert http_timeout from uint64 back to string
 	if timeout, ok := d["http_timeout"].(float64); ok {
 		d["http_timeout"] = transformIntToDurationString(uint64(timeout))
 	}
 
-	// Convert rate_limit_duration from uint64 back to string
 	if duration, ok := d["rate_limit_duration"].(float64); ok {
 		d["rate_limit_duration"] = transformIntToDurationString(uint64(duration))
 	}
@@ -117,12 +102,9 @@ func (m *UpdateEndpointMigration) MigrateBackward(ctx context.Context, data any)
 	return d, nil
 }
 
-// EndpointResponseMigration handles response migration for models.EndpointResponse
-// This migrates http_timeout and rate_limit_duration from uint64 back to string for old clients.
 type EndpointResponseMigration struct{}
 
 func (m *EndpointResponseMigration) MigrateForward(ctx context.Context, data any) (any, error) {
-	// No forward migration needed for responses in this version
 	return data, nil
 }
 
@@ -132,20 +114,16 @@ func (m *EndpointResponseMigration) MigrateBackward(ctx context.Context, data an
 		return data, nil
 	}
 
-	// Convert http_timeout from uint64 to string for old clients
 	if timeout, ok := d["http_timeout"].(float64); ok {
 		d["http_timeout"] = transformIntToDurationString(uint64(timeout))
 	}
 
-	// Convert rate_limit_duration from uint64 to string for old clients
 	if duration, ok := d["rate_limit_duration"].(float64); ok {
 		d["rate_limit_duration"] = transformIntToDurationString(uint64(duration))
 	}
 
 	return d, nil
 }
-
-// Helper functions
 
 func transformDurationStringToInt(d string) (uint64, error) {
 	id, err := time.ParseDuration(d)

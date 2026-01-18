@@ -11,7 +11,6 @@ func TestCreateEndpointMigration_AdvancedSignaturesDefaultFalse(t *testing.T) {
 	migration := &CreateEndpointMigration{}
 	ctx := context.Background()
 
-	// Input without advanced_signatures
 	input := map[string]interface{}{
 		"name": "test",
 		"url":  "https://example.com",
@@ -28,7 +27,6 @@ func TestCreateEndpointMigration_AdvancedSignaturesPreserved(t *testing.T) {
 	migration := &CreateEndpointMigration{}
 	ctx := context.Background()
 
-	// Input with advanced_signatures = true
 	input := map[string]interface{}{
 		"name":                "test",
 		"url":                 "https://example.com",
@@ -46,7 +44,6 @@ func TestCreateEndpointMigration_DurationConversion(t *testing.T) {
 	migration := &CreateEndpointMigration{}
 	ctx := context.Background()
 
-	// Input with string durations (old format)
 	input := map[string]interface{}{
 		"name":                "test",
 		"url":                 "https://example.com",
@@ -66,7 +63,6 @@ func TestCreateEndpointMigration_BackwardConversion(t *testing.T) {
 	migration := &CreateEndpointMigration{}
 	ctx := context.Background()
 
-	// Input with uint64 durations (current format) - JSON numbers come as float64
 	input := map[string]interface{}{
 		"name":                "test",
 		"url":                 "https://example.com",
@@ -86,7 +82,6 @@ func TestEndpointResponseMigration_BackwardConversion(t *testing.T) {
 	migration := &EndpointResponseMigration{}
 	ctx := context.Background()
 
-	// Current format with uint64 durations - JSON numbers come as float64
 	input := map[string]interface{}{
 		"uid":                 "endpoint-123",
 		"name":                "test",

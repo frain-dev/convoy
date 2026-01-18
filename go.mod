@@ -59,7 +59,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stealthrocket/netjail v0.1.2
 	github.com/stretchr/testify v1.11.1
-	github.com/subomi/requestmigrations/v2 v2.0.0-20260113192240-d7f711cec0d5
+	github.com/subomi/requestmigrations/v2 v2.1.0
 	github.com/swaggo/swag v1.16.4
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/minio v0.40.0
@@ -256,5 +256,3 @@ require (
 )
 
 replace github.com/dop251/goja_nodejs v0.0.0-20250409162600-f7acab6894b0 => github.com/jirevwe/goja_nodejs v0.0.0-20240322142733-81d2fcfb82c1
-
-replace github.com/subomi/requestmigrations/v2 => /Users/subomioluwalana/Code/requestmigrations
