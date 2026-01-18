@@ -1,55 +1,53 @@
 package v20240401
 
 import (
-	"encoding/json"
-	"net/http"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 )
 
-func Test_Migrate(t *testing.T) {
-	tests := []struct {
-		name    string
-		payload *datastore.Endpoint
-	}{
-		{
-			name: "should_migrate_name_and_url",
-			payload: &datastore.Endpoint{
-				Name: "test-endpoint",
-				Url:  "https://google.com",
-			},
-		},
+func TestEndpointResponseMigration_BackwardFieldRename(t *testing.T) {
+	migration := &EndpointResponseMigration{}
+	ctx := context.Background()
+
+	// Current format with url and name fields
+	input := map[string]interface{}{
+		"uid":  "endpoint-123",
+		"url":  "https://google.com",
+		"name": "test-endpoint",
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var header http.Header = map[string][]string{"X-Convoy-version": {"2024-01-01"}}
+	result, err := migration.MigrateBackward(ctx, input)
+	require.NoError(t, err)
 
-			payloadBytes, err := json.Marshal(tc.payload)
-			require.NoError(t, err)
+	data := result.(map[string]interface{})
 
-			serv := &util.ServerResponse{
-				Status: true,
-				Data:   payloadBytes,
-			}
+	// url should be renamed to target_url
+	require.Equal(t, "https://google.com", data["target_url"])
+	require.Nil(t, data["url"])
 
-			body, err := json.Marshal(serv)
-			require.NoError(t, err)
+	// name should be renamed to title
+	require.Equal(t, "test-endpoint", data["title"])
+	require.Nil(t, data["name"])
+}
 
-			migration := GetEndpointResponseMigration{}
-			res, _, err := migration.Migrate(body, header)
-			require.NoError(t, err)
+func TestEndpointResponseMigration_ForwardNoOp(t *testing.T) {
+	migration := &EndpointResponseMigration{}
+	ctx := context.Background()
 
-			var endpoint map[string]any
-			err = json.Unmarshal(res, &endpoint)
-			require.NoError(t, err)
-
-			require.Equal(t, endpoint["data"].(map[string]any)["target_url"], tc.payload.Url)
-			require.Equal(t, endpoint["data"].(map[string]any)["title"], tc.payload.Name)
-		})
+	// Forward migration should be a no-op for responses
+	input := map[string]interface{}{
+		"uid":        "endpoint-123",
+		"target_url": "https://google.com",
+		"title":      "test-endpoint",
 	}
+
+	result, err := migration.MigrateForward(ctx, input)
+	require.NoError(t, err)
+
+	// Should return unchanged
+	data := result.(map[string]interface{})
+	require.Equal(t, "https://google.com", data["target_url"])
+	require.Equal(t, "test-endpoint", data["title"])
 }

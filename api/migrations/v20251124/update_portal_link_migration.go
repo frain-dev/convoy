@@ -1,29 +1,21 @@
 package v20251124
 
-import (
-	"encoding/json"
-	"net/http"
+import "context"
 
-	"github.com/frain-dev/convoy/datastore"
-)
+// UpdatePortalLinkMigration handles request migration for portal link updates.
+// This is a pass-through migration - no transformations needed.
+type UpdatePortalLinkMigration struct{}
 
-type UpdatePortalLinkRequestMigration struct{}
-
-func NewUpdatePortalLinkRequestMigration() *UpdatePortalLinkRequestMigration {
-	return &UpdatePortalLinkRequestMigration{}
+func NewUpdatePortalLinkMigration() *UpdatePortalLinkMigration {
+	return &UpdatePortalLinkMigration{}
 }
 
-func (c *UpdatePortalLinkRequestMigration) Migrate(b []byte, h http.Header) ([]byte, http.Header, error) {
-	var payload datastore.UpdatePortalLinkRequest
-	err := json.Unmarshal(b, &payload)
-	if err != nil {
-		return nil, nil, err
-	}
+func (m *UpdatePortalLinkMigration) MigrateForward(ctx context.Context, data any) (any, error) {
+	// Pass-through - no transformation needed
+	return data, nil
+}
 
-	b, err = json.Marshal(payload)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return b, h, nil
+func (m *UpdatePortalLinkMigration) MigrateBackward(ctx context.Context, data any) (any, error) {
+	// Pass-through - no transformation needed
+	return data, nil
 }

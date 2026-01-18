@@ -14,7 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/subomi/requestmigrations"
+	"github.com/subomi/requestmigrations/v2"
 
 	authz "github.com/Subomi/go-authz"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
@@ -42,10 +42,10 @@ const (
 )
 
 type ApplicationHandler struct {
-	Router http.Handler
-	rm     *requestmigrations.RequestMigration
-	A      *types.APIOptions
-	cfg    config.Configuration
+	Router     http.Handler
+	versioning *requestmigrations.RequestMigration
+	A          *types.APIOptions
+	cfg        config.Configuration
 }
 
 func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.Request) {
@@ -214,12 +214,12 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		return nil, err
 	}
 
-	err = rm.RegisterMigrations(migrations)
+	err = RegisterMigrations(rm)
 	if err != nil {
 		return nil, err
 	}
 
-	appHandler.rm = rm
+	appHandler.versioning = rm
 
 	return appHandler, nil
 }
@@ -241,7 +241,7 @@ func (a *ApplicationHandler) buildRouter() *chi.Mux {
 func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	router := a.buildRouter()
 
-	handler := &handlers.Handler{A: a.A, RM: a.rm}
+	handler := &handlers.Handler{A: a.A, Versioning: a.versioning}
 
 	if a.cfg.RootPath != "" {
 		subRouter := chi.NewMux()
@@ -819,7 +819,7 @@ func (a *ApplicationHandler) metricsHandler() http.HandlerFunc {
 func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 	router := a.buildRouter()
 
-	handler := &handlers.Handler{A: a.A, RM: a.rm}
+	handler := &handlers.Handler{A: a.A, Versioning: a.versioning}
 
 	if a.cfg.RootPath != "" {
 		subRouter := chi.NewMux()

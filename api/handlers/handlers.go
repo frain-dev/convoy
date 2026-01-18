@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/subomi/requestmigrations"
+	"github.com/subomi/requestmigrations/v2"
 
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
@@ -22,8 +22,8 @@ import (
 )
 
 type Handler struct {
-	A  *types.APIOptions
-	RM *requestmigrations.RequestMigration
+	A          *types.APIOptions
+	Versioning *requestmigrations.RequestMigration
 }
 
 func (h *Handler) IsReqWithProjectAPIKey(authUser *auth.AuthenticatedUser) bool {

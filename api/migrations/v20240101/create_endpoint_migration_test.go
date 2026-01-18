@@ -1,77 +1,104 @@
 package v20240101
 
 import (
-	"encoding/json"
-	"net/http"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/frain-dev/convoy/api/models"
 )
 
-var (
-	truthValue = true
-	falseValue = false
-)
+func TestCreateEndpointMigration_AdvancedSignaturesDefaultFalse(t *testing.T) {
+	migration := &CreateEndpointMigration{}
+	ctx := context.Background()
 
-func Test_Migrate(t *testing.T) {
-	tests := []struct {
-		name    string
-		want    bool
-		payload *oldCreateEndpoint
-	}{
-		{
-			name: "should_set_advanced_signatures_to_false_by_default",
-			want: false,
-			payload: &oldCreateEndpoint{
-				Name: "test-endpoint",
-				URL:  "https://google.com",
-			},
-		},
-		{
-			name: "should_set_advanced_signatures_to_true",
-			want: true,
-			payload: &oldCreateEndpoint{
-				Name:               "test-endpoint",
-				URL:                "https://google.com",
-				AdvancedSignatures: &truthValue,
-			},
-		},
-		{
-			name: "should_set_advanced_signatures_to_false",
-			want: false,
-			payload: &oldCreateEndpoint{
-				Name:               "test-endpoint",
-				URL:                "https://google.com",
-				AdvancedSignatures: &falseValue,
-			},
-		},
+	// Input without advanced_signatures
+	input := map[string]interface{}{
+		"name": "test",
+		"url":  "https://example.com",
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var header http.Header
+	result, err := migration.MigrateForward(ctx, input)
+	require.NoError(t, err)
 
-			body, err := json.Marshal(tc.payload)
-			if err != nil {
-				t.Fatal(err)
-			}
+	data := result.(map[string]interface{})
+	require.Equal(t, false, data["advanced_signatures"])
+}
 
-			migration := CreateEndpointRequestMigration{}
-			res, _, err := migration.Migrate(body, header)
-			if err != nil {
-				t.Fatal(err)
-			}
+func TestCreateEndpointMigration_AdvancedSignaturesPreserved(t *testing.T) {
+	migration := &CreateEndpointMigration{}
+	ctx := context.Background()
 
-			var endpoint models.CreateEndpoint
-			err = json.Unmarshal(res, &endpoint)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			require.Equal(t, *endpoint.AdvancedSignatures, tc.want)
-			require.Nil(t, err)
-		})
+	// Input with advanced_signatures = true
+	input := map[string]interface{}{
+		"name":                "test",
+		"url":                 "https://example.com",
+		"advanced_signatures": true,
 	}
+
+	result, err := migration.MigrateForward(ctx, input)
+	require.NoError(t, err)
+
+	data := result.(map[string]interface{})
+	require.Equal(t, true, data["advanced_signatures"])
+}
+
+func TestCreateEndpointMigration_DurationConversion(t *testing.T) {
+	migration := &CreateEndpointMigration{}
+	ctx := context.Background()
+
+	// Input with string durations (old format)
+	input := map[string]interface{}{
+		"name":                "test",
+		"url":                 "https://example.com",
+		"http_timeout":        "30s",
+		"rate_limit_duration": "1m",
+	}
+
+	result, err := migration.MigrateForward(ctx, input)
+	require.NoError(t, err)
+
+	data := result.(map[string]interface{})
+	require.Equal(t, uint64(30), data["http_timeout"])
+	require.Equal(t, uint64(60), data["rate_limit_duration"])
+}
+
+func TestCreateEndpointMigration_BackwardConversion(t *testing.T) {
+	migration := &CreateEndpointMigration{}
+	ctx := context.Background()
+
+	// Input with uint64 durations (current format) - JSON numbers come as float64
+	input := map[string]interface{}{
+		"name":                "test",
+		"url":                 "https://example.com",
+		"http_timeout":        float64(30),
+		"rate_limit_duration": float64(60),
+	}
+
+	result, err := migration.MigrateBackward(ctx, input)
+	require.NoError(t, err)
+
+	data := result.(map[string]interface{})
+	require.Equal(t, "30s", data["http_timeout"])
+	require.Equal(t, "1m0s", data["rate_limit_duration"])
+}
+
+func TestEndpointResponseMigration_BackwardConversion(t *testing.T) {
+	migration := &EndpointResponseMigration{}
+	ctx := context.Background()
+
+	// Current format with uint64 durations - JSON numbers come as float64
+	input := map[string]interface{}{
+		"uid":                 "endpoint-123",
+		"name":                "test",
+		"url":                 "https://example.com",
+		"http_timeout":        float64(30),
+		"rate_limit_duration": float64(60),
+	}
+
+	result, err := migration.MigrateBackward(ctx, input)
+	require.NoError(t, err)
+
+	data := result.(map[string]interface{})
+	require.Equal(t, "30s", data["http_timeout"])
+	require.Equal(t, "1m0s", data["rate_limit_duration"])
 }

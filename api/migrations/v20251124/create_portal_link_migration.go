@@ -1,36 +1,39 @@
 package v20251124
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
-	"net/http"
-
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 )
 
-type CreatePortalLinkRequestMigration struct{}
+// CreatePortalLinkMigration handles request migration for datastore.CreatePortalLinkRequest
+// This migration validates that owner_id is provided.
+type CreatePortalLinkMigration struct{}
 
-func NewCreatePortalLinkRequestMigration() *CreatePortalLinkRequestMigration {
-	return &CreatePortalLinkRequestMigration{}
+func NewCreatePortalLinkMigration() *CreatePortalLinkMigration {
+	return &CreatePortalLinkMigration{}
 }
 
-func (c *CreatePortalLinkRequestMigration) Migrate(b []byte, h http.Header) ([]byte, http.Header, error) {
-	var payload datastore.CreatePortalLinkRequest
-	err := json.Unmarshal(b, &payload)
-	if err != nil {
-		return nil, nil, err
+func (m *CreatePortalLinkMigration) MigrateForward(ctx context.Context, data any) (any, error) {
+	d, ok := data.(map[string]interface{})
+	if !ok {
+		return data, nil
 	}
 
 	// Validate owner_id is provided
-	if util.IsStringEmpty(payload.OwnerID) {
-		return nil, nil, errors.New("owner_id is required")
+	ownerID, ok := d["owner_id"]
+	if !ok {
+		return nil, errors.New("owner_id is required")
 	}
 
-	b, err = json.Marshal(payload)
-	if err != nil {
-		return nil, nil, err
+	// Check if owner_id is empty string
+	if str, ok := ownerID.(string); ok && str == "" {
+		return nil, errors.New("owner_id is required")
 	}
 
-	return b, h, nil
+	return d, nil
+}
+
+func (m *CreatePortalLinkMigration) MigrateBackward(ctx context.Context, data any) (any, error) {
+	// No backward migration needed
+	return data, nil
 }

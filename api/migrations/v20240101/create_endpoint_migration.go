@@ -1,136 +1,161 @@
 package v20240101
 
 import (
-	"encoding/json"
-	"net/http"
+	"context"
+	"fmt"
 	"time"
-
-	"gopkg.in/guregu/null.v4"
-
-	v20240401 "github.com/frain-dev/convoy/api/migrations/v20240401"
-	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 )
 
-type oldCreateEndpoint struct {
-	URL                string                         `json:"url" valid:"required~please provide a url for your endpoint"`
-	Secret             string                         `json:"secret"`
-	OwnerID            string                         `json:"owner_id"`
-	Description        string                         `json:"description"`
-	Name               string                         `json:"name" valid:"required~please provide your endpointName"`
-	SupportEmail       string                         `json:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled         bool                           `json:"is_disabled"`
-	SlackWebhookURL    string                         `json:"slack_webhook_url"`
-	HttpTimeout        string                         `json:"http_timeout"`
-	RateLimit          int                            `json:"rate_limit"`
-	AdvancedSignatures *bool                          `json:"advanced_signatures"`
-	RateLimitDuration  string                         `json:"rate_limit_duration"`
-	ContentType        string                         `json:"content_type"`
-	Authentication     *models.EndpointAuthentication `json:"authentication"`
-	AppID              string
+// CreateEndpointMigration handles request migration for models.CreateEndpoint
+// This migration transforms http_timeout and rate_limit_duration from string to uint64,
+// and sets default value for advanced_signatures.
+type CreateEndpointMigration struct{}
+
+func (m *CreateEndpointMigration) MigrateForward(ctx context.Context, data any) (any, error) {
+	d, ok := data.(map[string]interface{})
+	if !ok {
+		return data, nil
+	}
+
+	// Convert http_timeout from string to uint64 (seconds)
+	if timeout, ok := d["http_timeout"].(string); ok && timeout != "" {
+		seconds, err := transformDurationStringToInt(timeout)
+		if err != nil {
+			return nil, fmt.Errorf("invalid http_timeout format: %w", err)
+		}
+		d["http_timeout"] = seconds
+	}
+
+	// Convert rate_limit_duration from string to uint64 (seconds)
+	if duration, ok := d["rate_limit_duration"].(string); ok && duration != "" {
+		seconds, err := transformDurationStringToInt(duration)
+		if err != nil {
+			return nil, fmt.Errorf("invalid rate_limit_duration format: %w", err)
+		}
+		d["rate_limit_duration"] = seconds
+	}
+
+	// Set default for advanced_signatures if not present
+	if _, ok := d["advanced_signatures"]; !ok {
+		d["advanced_signatures"] = false
+	}
+
+	return d, nil
 }
 
-type CreateEndpointRequestMigration struct{}
-
-func (c *CreateEndpointRequestMigration) Migrate(b []byte, h http.Header) ([]byte, http.Header, error) {
-	var payload oldCreateEndpoint
-	err := json.Unmarshal(b, &payload)
-	if err != nil {
-		return nil, nil, err
+func (m *CreateEndpointMigration) MigrateBackward(ctx context.Context, data any) (any, error) {
+	d, ok := data.(map[string]interface{})
+	if !ok {
+		return data, nil
 	}
 
-	var endpoint models.CreateEndpoint
-
-	err = migrateEndpoint(&payload, &endpoint, forward)
-	if err != nil {
-		return nil, nil, err
+	// Convert http_timeout from uint64 back to string
+	if timeout, ok := d["http_timeout"].(float64); ok {
+		d["http_timeout"] = transformIntToDurationString(uint64(timeout))
 	}
 
-	if payload.AdvancedSignatures == nil {
-		// set advanced signature to the previous default.
-		val := false
-		endpoint.AdvancedSignatures = &val
+	// Convert rate_limit_duration from uint64 back to string
+	if duration, ok := d["rate_limit_duration"].(float64); ok {
+		d["rate_limit_duration"] = transformIntToDurationString(uint64(duration))
 	}
 
-	b, err = json.Marshal(endpoint)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return b, h, nil
+	return d, nil
 }
 
-type endpointResponse struct {
-	*oldEndpoint
+// UpdateEndpointMigration handles request migration for models.UpdateEndpoint
+// Same transformations as CreateEndpointMigration.
+type UpdateEndpointMigration struct{}
+
+func (m *UpdateEndpointMigration) MigrateForward(ctx context.Context, data any) (any, error) {
+	d, ok := data.(map[string]interface{})
+	if !ok {
+		return data, nil
+	}
+
+	// Convert http_timeout from string to uint64 (seconds)
+	if timeout, ok := d["http_timeout"].(string); ok && timeout != "" {
+		seconds, err := transformDurationStringToInt(timeout)
+		if err != nil {
+			return nil, fmt.Errorf("invalid http_timeout format: %w", err)
+		}
+		d["http_timeout"] = seconds
+	}
+
+	// Convert rate_limit_duration from string to uint64 (seconds)
+	if duration, ok := d["rate_limit_duration"].(string); ok && duration != "" {
+		seconds, err := transformDurationStringToInt(duration)
+		if err != nil {
+			return nil, fmt.Errorf("invalid rate_limit_duration format: %w", err)
+		}
+		d["rate_limit_duration"] = seconds
+	}
+
+	// Set default for advanced_signatures if not present
+	if _, ok := d["advanced_signatures"]; !ok {
+		d["advanced_signatures"] = false
+	}
+
+	return d, nil
 }
 
-type oldEndpoint struct {
-	UID                string            `json:"uid" db:"id"`
-	ProjectID          string            `json:"project_id" db:"project_id"`
-	OwnerID            string            `json:"owner_id,omitempty" db:"owner_id"`
-	TargetURL          string            `json:"target_url" db:"target_url"`
-	Title              string            `json:"title" db:"title"`
-	Secrets            datastore.Secrets `json:"secrets" db:"secrets"`
-	AdvancedSignatures bool              `json:"advanced_signatures" db:"advanced_signatures"`
-	Description        string            `json:"description" db:"description"`
-	SlackWebhookURL    string            `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
-	SupportEmail       string            `json:"support_email,omitempty" db:"support_email"`
-	AppID              string            `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
+func (m *UpdateEndpointMigration) MigrateBackward(ctx context.Context, data any) (any, error) {
+	d, ok := data.(map[string]interface{})
+	if !ok {
+		return data, nil
+	}
 
-	HttpTimeout string                   `json:"http_timeout" db:"http_timeout"`
-	RateLimit   int                      `json:"rate_limit" db:"rate_limit"`
-	Events      int64                    `json:"events,omitempty" db:"event_count"`
-	Status      datastore.EndpointStatus `json:"status" db:"status"`
+	// Convert http_timeout from uint64 back to string
+	if timeout, ok := d["http_timeout"].(float64); ok {
+		d["http_timeout"] = transformIntToDurationString(uint64(timeout))
+	}
 
-	RateLimitDuration string                            `json:"rate_limit_duration" db:"rate_limit_duration"`
-	ContentType       string                            `json:"content_type" db:"content_type"`
-	Authentication    *datastore.EndpointAuthentication `json:"authentication" db:"authentication"`
+	// Convert rate_limit_duration from uint64 back to string
+	if duration, ok := d["rate_limit_duration"].(float64); ok {
+		d["rate_limit_duration"] = transformIntToDurationString(uint64(duration))
+	}
 
-	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	return d, nil
 }
 
-type CreateEndpointResponseMigration struct{}
+// EndpointResponseMigration handles response migration for models.EndpointResponse
+// This migrates http_timeout and rate_limit_duration from uint64 back to string for old clients.
+type EndpointResponseMigration struct{}
 
-func (c *CreateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]byte, http.Header, error) {
-	var serverResponse util.ServerResponse
-	err := json.Unmarshal(b, &serverResponse)
+func (m *EndpointResponseMigration) MigrateForward(ctx context.Context, data any) (any, error) {
+	// No forward migration needed for responses in this version
+	return data, nil
+}
+
+func (m *EndpointResponseMigration) MigrateBackward(ctx context.Context, data any) (any, error) {
+	d, ok := data.(map[string]interface{})
+	if !ok {
+		return data, nil
+	}
+
+	// Convert http_timeout from uint64 to string for old clients
+	if timeout, ok := d["http_timeout"].(float64); ok {
+		d["http_timeout"] = transformIntToDurationString(uint64(timeout))
+	}
+
+	// Convert rate_limit_duration from uint64 to string for old clients
+	if duration, ok := d["rate_limit_duration"].(float64); ok {
+		d["rate_limit_duration"] = transformIntToDurationString(uint64(duration))
+	}
+
+	return d, nil
+}
+
+// Helper functions
+
+func transformDurationStringToInt(d string) (uint64, error) {
+	id, err := time.ParseDuration(d)
 	if err != nil {
-		return nil, nil, err
+		return 0, err
 	}
+	return uint64(id.Seconds()), nil
+}
 
-	if len(serverResponse.Data) == 0 {
-		// nothing to transform.
-		return b, h, nil
-	}
-
-	var endpointResp v20240401.OldEndpointResponse
-	err = json.Unmarshal(serverResponse.Data, &endpointResp)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var oldEndpoint oldEndpoint
-	err = migrateEndpoint(&endpointResp, &oldEndpoint, backward)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	newEndpointResponse := &endpointResponse{&oldEndpoint}
-
-	b, err = json.Marshal(newEndpointResponse)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	serverResponse.Data = json.RawMessage(b)
-
-	sb, err := json.Marshal(serverResponse)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return sb, h, nil
+func transformIntToDurationString(t uint64) string {
+	td := time.Duration(t) * time.Second
+	return td.String()
 }

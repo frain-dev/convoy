@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -41,16 +42,22 @@ import (
 func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 
-	err := h.RM.VersionRequest(r, "CreateEndpoint")
+	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Version request failed for CreateEndpoint: %v", err)
+		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to read request body: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
 		return
 	}
 
 	var e models.CreateEndpoint
-
-	err = util.ReadJSON(r, &e)
+	err = migrator.Unmarshal(body, &e)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse endpoint creation request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -106,23 +113,26 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	serverResponse := util.NewServerResponse(
-		"Endpoint created successfully",
-		resp, http.StatusCreated)
 
-	rb, err := json.Marshal(serverResponse)
+	resBytes, err := migrator.Marshal(resp)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	resBytes, err := h.RM.VersionResponse(r, rb, "CreateEndpoint")
+	serverResponse := util.ServerResponse{
+		Status:  true,
+		Message: "Endpoint created successfully",
+		Data:    resBytes,
+	}
+
+	finalBytes, err := json.Marshal(serverResponse)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	util.WriteResponse(w, r, resBytes, http.StatusCreated)
+	util.WriteResponse(w, r, finalBytes, http.StatusCreated)
 }
 
 // GetEndpoint
@@ -140,6 +150,13 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [get]
 func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
+	migrator, err := h.Versioning.For(r)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
@@ -156,22 +173,26 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	serverResponse := util.NewServerResponse(
-		"Endpoint fetched successfully", resp, http.StatusOK)
 
-	rb, err := json.Marshal(serverResponse)
+	resBytes, err := migrator.Marshal(resp)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	resBytes, err := h.RM.VersionResponse(r, rb, "GetEndpoint")
+	serverResponse := util.ServerResponse{
+		Status:  true,
+		Message: "Endpoint fetched successfully",
+		Data:    resBytes,
+	}
+
+	finalBytes, err := json.Marshal(serverResponse)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	util.WriteResponse(w, r, resBytes, http.StatusOK)
+	util.WriteResponse(w, r, finalBytes, http.StatusOK)
 }
 
 // GetEndpoints
@@ -189,6 +210,13 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints [get]
 func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
+	migrator, err := h.Versioning.For(r)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
@@ -264,23 +292,27 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		return models.EndpointResponse{Endpoint: &endpoint}
 	})
 
-	serverResponse := util.NewServerResponse(
-		"Endpoints fetched successfully",
-		models.PagedResponse{Content: &resp, Pagination: &paginationData}, http.StatusOK)
+	pagedResp := models.PagedResponse{Content: &resp, Pagination: &paginationData}
 
-	rb, err := json.Marshal(serverResponse)
+	resBytes, err := migrator.Marshal(&pagedResp)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	resBytes, err := h.RM.VersionResponse(r, rb, "GetEndpoints")
+	serverResponse := util.ServerResponse{
+		Status:  true,
+		Message: "Endpoints fetched successfully",
+		Data:    resBytes,
+	}
+
+	finalBytes, err := json.Marshal(serverResponse)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	util.WriteResponse(w, r, resBytes, http.StatusOK)
+	util.WriteResponse(w, r, finalBytes, http.StatusOK)
 }
 
 // UpdateEndpoint
@@ -299,7 +331,14 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [put]
 func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
-	err := h.RM.VersionRequest(r, "UpdateEndpoint")
+	migrator, err := h.Versioning.For(r)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -312,8 +351,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var e models.UpdateEndpoint
-
-	err = util.ReadJSON(r, &e)
+	err = migrator.Unmarshal(body, &e)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -360,21 +398,26 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	serverResponse := util.NewServerResponse("Endpoint updated successfully", resp, http.StatusAccepted)
 
-	rb, err := json.Marshal(serverResponse)
+	resBytes, err := migrator.Marshal(resp)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	resBytes, err := h.RM.VersionResponse(r, rb, "UpdateEndpoint")
+	serverResponse := util.ServerResponse{
+		Status:  true,
+		Message: "Endpoint updated successfully",
+		Data:    resBytes,
+	}
+
+	finalBytes, err := json.Marshal(serverResponse)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	util.WriteResponse(w, r, resBytes, http.StatusAccepted)
+	util.WriteResponse(w, r, finalBytes, http.StatusAccepted)
 }
 
 // DeleteEndpoint
@@ -487,6 +530,13 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
 func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
+	migrator, err := h.Versioning.For(r)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -506,21 +556,26 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	serverResponse := util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted)
 
-	rb, err := json.Marshal(serverResponse)
+	resBytes, err := migrator.Marshal(resp)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	resBytes, err := h.RM.VersionResponse(r, rb, "UpdateEndpoint")
+	serverResponse := util.ServerResponse{
+		Status:  true,
+		Message: "endpoint status updated successfully",
+		Data:    resBytes,
+	}
+
+	finalBytes, err := json.Marshal(serverResponse)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	util.WriteResponse(w, r, resBytes, http.StatusAccepted)
+	util.WriteResponse(w, r, finalBytes, http.StatusAccepted)
 }
 
 // ActivateEndpoint
@@ -538,6 +593,13 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/activate [post]
 func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
+	migrator, err := h.Versioning.For(r)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -576,21 +638,26 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	serverResponse := util.NewServerResponse("endpoint status successfully activated", resp, http.StatusAccepted)
 
-	rb, err := json.Marshal(serverResponse)
+	resBytes, err := migrator.Marshal(resp)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	resBytes, err := h.RM.VersionResponse(r, rb, "UpdateEndpoint")
+	serverResponse := util.ServerResponse{
+		Status:  true,
+		Message: "endpoint status successfully activated",
+		Data:    resBytes,
+	}
+
+	finalBytes, err := json.Marshal(serverResponse)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	util.WriteResponse(w, r, resBytes, http.StatusAccepted)
+	util.WriteResponse(w, r, finalBytes, http.StatusAccepted)
 }
 
 // TestOAuth2Connection
