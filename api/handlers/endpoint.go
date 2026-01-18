@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -95,7 +96,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	ce := services.CreateEndpointService{
 		EndpointRepo:               postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:                postgres.NewProjectRepo(h.A.DB),
+		ProjectRepo:                projects.New(h.A.Logger, h.A.DB),
 		Licenser:                   h.A.Licenser,
 		E:                          e,
 		ProjectID:                  project.UID,
@@ -379,7 +380,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	ce := services.UpdateEndpointService{
 		Cache:                      h.A.Cache,
 		EndpointRepo:               postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:                postgres.NewProjectRepo(h.A.DB),
+		ProjectRepo:                projects.New(h.A.Logger, h.A.DB),
 		Licenser:                   h.A.Licenser,
 		FeatureFlag:                h.A.FFlag,
 		FeatureFlagFetcher:         h.A.FeatureFlagFetcher,
@@ -498,7 +499,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 		Queuer:       h.A.Queue,
 		Cache:        h.A.Cache,
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(h.A.DB),
+		ProjectRepo:  projects.New(h.A.Logger, h.A.DB),
 		S:            e,
 		Endpoint:     endpoint,
 		Project:      project,

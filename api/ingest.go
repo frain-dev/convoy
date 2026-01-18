@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/verifier"
@@ -46,7 +47,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 2. Retrieve source using mask ID.
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	projectRepo := projects.New(a.A.Logger, a.A.DB)
 	project, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

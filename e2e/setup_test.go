@@ -116,6 +116,10 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	rd, err := infra.NewRedisClient(t, 0)
 	require.NoError(t, err)
 
+	// Flush Redis to ensure no stale data from previous tests
+	err = rd.FlushDB(ctx).Err()
+	require.NoError(t, err)
+
 	// Set up key manager
 	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
 	km, err := keys.NewLocalKeyManager("test-key")
@@ -133,6 +137,10 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 
 	// Create rdb client for queue
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+	require.NoError(t, err)
+
+	// Flush Redis queue client to ensure no stale jobs from previous tests
+	err = redis.Client().FlushDB(ctx).Err()
 	require.NoError(t, err)
 
 	// Create cache
@@ -314,6 +322,10 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 	rd, err := infra.NewRedisClient(t, 0)
 	require.NoError(t, err)
 
+	// Flush Redis to ensure no stale data from previous tests
+	err = rd.FlushDB(ctx).Err()
+	require.NoError(t, err)
+
 	// Set up key manager
 	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
 	km, err := keys.NewLocalKeyManager("test-key")
@@ -331,6 +343,10 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 
 	// Create rdb client for queue
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+	require.NoError(t, err)
+
+	// Flush Redis queue client to ensure no stale jobs from previous tests
+	err = redis.Client().FlushDB(ctx).Err()
 	require.NoError(t, err)
 
 	// Create cache

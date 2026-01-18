@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -17,7 +18,7 @@ import (
 
 func createProjectService(h *Handler) (*services.ProjectService, error) {
 	apiKeyRepo := api_keys.New(h.A.Logger, h.A.DB)
-	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	projectRepo := projects.New(h.A.Logger, h.A.DB)
 	eventRepo := postgres.NewEventRepo(h.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
 	eventTypesRepo := postgres.NewEventTypesRepo(h.A.DB)
@@ -48,7 +49,7 @@ func (h *Handler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewProjectRepo(h.A.DB).FillProjectsStatistics(r.Context(), project)
+	err = projects.New(h.A.Logger, h.A.DB).FillProjectsStatistics(r.Context(), project)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to count project statistics")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to count project statistics", http.StatusBadRequest))
@@ -70,7 +71,7 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewProjectRepo(h.A.DB).DeleteProject(r.Context(), project.UID)
+	err = projects.New(h.A.Logger, h.A.DB).DeleteProject(r.Context(), project.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete project")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete project", http.StatusBadRequest))
@@ -185,13 +186,13 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
-	projects, err := postgres.NewProjectRepo(h.A.DB).LoadProjects(r.Context(), filter)
+	projectsList, err := projects.New(h.A.Logger, h.A.DB).LoadProjects(r.Context(), filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load projects")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching projects", http.StatusBadRequest))
 		return
 	}
 
-	resp := models.NewListProjectResponse(projects)
+	resp := models.NewListProjectResponse(projectsList)
 	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", resp, http.StatusOK))
 }

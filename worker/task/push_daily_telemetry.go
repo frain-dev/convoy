@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	pkglog "github.com/frain-dev/convoy/pkg/log"
 )
@@ -67,7 +68,7 @@ func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis)
 			return err
 		}
 		eventRepo := postgres.NewEventRepo(db)
-		projectRepo := postgres.NewProjectRepo(db)
+		projectRepo := projects.New(log, db)
 
 		totalEventsTracker := &telemetry.TotalEventsTracker{
 			Orgs:        orgs,

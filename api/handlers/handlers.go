@@ -12,12 +12,12 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -54,7 +54,7 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	var project *datastore.Project
 	var err error
 
-	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	projectRepo := projects.New(h.A.Logger, h.A.DB)
 
 	switch {
 	case h.IsReqWithJWT(authUser), h.IsReqWithPersonalAccessToken(authUser):
