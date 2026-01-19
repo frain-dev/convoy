@@ -13,13 +13,14 @@ import (
 )
 
 type Environment struct {
-	CloneTestDatabase    PostgresDBCloneFunc
-	NewRedisClient       RedisClientFunc
-	NewQueueInspector    QueueInspectorFunc
-	NewMinIOClient       MinIOClientFunc
-	NewRabbitMQConnect   RabbitMQConnectionFunc
-	NewLocalStackConnect LocalStackConnectionFunc
-	NewKafkaConnect      KafkaConnectionFunc
+	CloneTestDatabase     PostgresDBCloneFunc
+	NewRedisClient        RedisClientFunc
+	NewQueueInspector     QueueInspectorFunc
+	NewMinIOClient        MinIOClientFunc
+	NewRabbitMQConnect    RabbitMQConnectionFunc
+	NewLocalStackConnect  LocalStackConnectionFunc
+	NewKafkaConnect       KafkaConnectionFunc
+	NewPubSubEmulatorHost PubSubEmulatorHostFunc
 }
 
 func Launch(ctx context.Context) (*Environment, func() error, error) {
@@ -53,6 +54,11 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 		return nil, nil, fmt.Errorf("start kafka container: %w", err)
 	}
 
+	pubsubcontainer, pubsubFactory, err := NewTestPubSubEmulator(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("start pubsub emulator container: %w", err)
+	}
+
 	// Get Redis address for queue inspector
 	redisAddr, err := rediscontainer.ConnectionString(ctx)
 	if err != nil {
@@ -62,13 +68,14 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 	inspectorFactory := newQueueInspectorFactory(redisAddr)
 
 	res := &Environment{
-		CloneTestDatabase:    cloner,
-		NewRedisClient:       rcFactory,
-		NewQueueInspector:    inspectorFactory,
-		NewMinIOClient:       minioFactory,
-		NewRabbitMQConnect:   rmqFactory,
-		NewLocalStackConnect: localstackFactory,
-		NewKafkaConnect:      kafkaFactory,
+		CloneTestDatabase:     cloner,
+		NewRedisClient:        rcFactory,
+		NewQueueInspector:     inspectorFactory,
+		NewMinIOClient:        minioFactory,
+		NewRabbitMQConnect:    rmqFactory,
+		NewLocalStackConnect:  localstackFactory,
+		NewKafkaConnect:       kafkaFactory,
+		NewPubSubEmulatorHost: pubsubFactory,
 	}
 
 	return res, func() error {
@@ -118,6 +125,14 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 			defer cancel()
 			if err := kafkacontainer.Terminate(ctx); err != nil {
 				log.Printf("terminate kafka container: %v", err)
+			}
+			return nil
+		})
+		eg.Go(func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err := pubsubcontainer.Terminate(ctx); err != nil {
+				log.Printf("terminate pubsub emulator container: %v", err)
 			}
 			return nil
 		})

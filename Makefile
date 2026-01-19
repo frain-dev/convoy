@@ -115,6 +115,28 @@ test_e2e:
 	@go test -v ./e2e/... -run TestE2E_Kafka_Fanout_MissingOwnerID -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_Kafka_Single_FilterMismatch -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_Kafka_Single_MultipleWorkers -timeout 2m
+	@echo "Running Google Pub/Sub E2E tests..."
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_BasicDelivery -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Fanout_MultipleEndpoints -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Broadcast_AllSubscribers -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_WildcardEventType -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Fanout_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Broadcast_EventTypeFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_BodyFilter_Equal -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_BodyFilter_GreaterThan -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_BodyFilter_In -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_HeaderFilter -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_CombinedFilters -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_SourceBodyTransform -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_SourceHeaderTransform -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_NoMatchingSubscription -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_InvalidEndpoint -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_MissingEventType -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_MalformedPayload -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Fanout_MissingOwnerID -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_FilterMismatch -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub_Single_MultipleWorkers -timeout 2m
 	@echo "✅ All E2E tests passed!"
 
 # Run all E2E tests together (may be flaky, use test_e2e for CI)

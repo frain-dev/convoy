@@ -59,6 +59,17 @@ func TestMain(m *testing.M) {
 	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Infrastructure launched successfully\n")
 	infra = res
 
+	// Set PUBSUB_EMULATOR_HOST for all tests that need Google Pub/Sub emulator
+	// This must be set BEFORE any test runs so the pubsub package initialization sees it
+	if res.NewPubSubEmulatorHost != nil {
+		emulatorHost := res.NewPubSubEmulatorHost(nil) // Pass nil since we modified factory to handle it
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		_, _ = fmt.Fprintf(os.Stderr, "TestMain: Set PUBSUB_EMULATOR_HOST=%s\n", emulatorHost)
+		// Verify it was set
+		verifyHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+		_, _ = fmt.Fprintf(os.Stderr, "TestMain: Verified PUBSUB_EMULATOR_HOST=%s\n", verifyHost)
+	}
+
 	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Running tests...\n")
 	code := m.Run()
 
@@ -925,4 +936,128 @@ func (env *E2ETestEnvWithKafka) SyncSubscriptions(t *testing.T) {
 
 	// Give a small delay for the changes to propagate
 	time.Sleep(500 * time.Millisecond)
+}
+
+// Google Pub/Sub Test Setup
+
+type E2ETestEnvWithGooglePubSub struct {
+	*E2ETestEnv
+	PubSubEmulatorHost string
+	ProjectID          string
+	Ingest             *pubsub.Ingest
+	cancelIngest       context.CancelFunc
+	sourceTable        *memorystore.Table
+	sourceContext      context.Context
+}
+
+// SetupE2EWithGooglePubSub sets up an E2E test environment with Google Pub/Sub infrastructure
+func SetupE2EWithGooglePubSub(t *testing.T) *E2ETestEnvWithGooglePubSub {
+	t.Helper()
+
+	// Reset memorystore to ensure test isolation from previous tests
+	memorystore.DefaultStore.Reset()
+	t.Logf("Reset memorystore before test setup for isolation")
+
+	// Get Pub/Sub emulator connection details
+	// Note: PUBSUB_EMULATOR_HOST is set globally in TestMain
+	emulatorHost := infra.NewPubSubEmulatorHost(t)
+	projectID := "convoy-test-project"
+
+	// Set up the base E2E environment (which starts the worker)
+	baseEnv := SetupE2E(t)
+
+	// Set up repositories needed for source loading
+	sourceRepo := postgres.NewSourceRepo(baseEnv.App.DB)
+	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
+	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
+
+	// Create the source loader and table for pubsub ingest
+	lo := baseEnv.App.Logger.(*log.Logger)
+	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
+	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
+
+	// Register the sources table with the memory store
+	err := memorystore.DefaultStore.Register("sources", sourceTable)
+	if err != nil {
+		t.Logf("Source table registration: %v", err)
+	}
+
+	// Create the pubsub ingest component
+	ingestComponent, err := pubsub.NewIngest(
+		baseEnv.ctx,
+		sourceTable,
+		baseEnv.App.Queue,
+		baseEnv.App.Logger,
+		baseEnv.App.Rate,
+		baseEnv.App.Licenser,
+		"test-instance",
+		endpointRepo,
+	)
+	require.NoError(t, err)
+
+	// Start the ingest component in a goroutine
+	_, cancelIngest := context.WithCancel(baseEnv.ctx)
+	t.Logf("Starting ingest component in goroutine")
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Logf("PANIC in ingest component: %v", r)
+			}
+		}()
+		t.Logf("Ingest goroutine started, calling Run()")
+		ingestComponent.Run()
+		t.Logf("Ingest Run() returned")
+	}()
+
+	// Register cleanup
+	t.Cleanup(func() {
+		t.Log("Stopping Google Pub/Sub ingest component for test:", t.Name())
+		cancelIngest()
+	})
+
+	return &E2ETestEnvWithGooglePubSub{
+		E2ETestEnv:         baseEnv,
+		PubSubEmulatorHost: emulatorHost,
+		ProjectID:          projectID,
+		Ingest:             ingestComponent,
+		cancelIngest:       cancelIngest,
+		sourceTable:        sourceTable,
+		sourceContext:      context.Background(),
+	}
+}
+
+// SyncSources triggers a manual sync of sources into the memorystore table
+func (env *E2ETestEnvWithGooglePubSub) SyncSources(t *testing.T) {
+	t.Helper()
+	t.Log("Manually syncing sources to memorystore...")
+	err := env.sourceTable.Sync(env.sourceContext)
+	require.NoError(t, err)
+	t.Log("Source sync complete")
+}
+
+// SyncSubscriptions forces an immediate sync of the worker's subscription loader
+func (env *E2ETestEnvWithGooglePubSub) SyncSubscriptions(t *testing.T) {
+	t.Helper()
+
+	// Access the worker's subscription loader from the App
+	subLoader, ok := env.App.SubscriptionLoader.(*loader.SubscriptionLoader)
+	if !ok {
+		t.Fatal("SubscriptionLoader is not of expected type")
+	}
+
+	subTable, ok := env.App.SubscriptionTable.(*memorystore.Table)
+	if !ok {
+		t.Fatal("SubscriptionTable is not of expected type")
+	}
+
+	// Force an immediate sync of the worker's subscription loader
+	err := subTable.Sync(env.ctx)
+	if err != nil {
+		t.Logf("Warning: failed to sync subscriptions: %v", err)
+	}
+
+	// Give the worker time to pick up the new subscriptions
+	time.Sleep(1 * time.Second)
+
+	t.Logf("Synced subscriptions: loader=%p, table=%p", subLoader, subTable)
 }

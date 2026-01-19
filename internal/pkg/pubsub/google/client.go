@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	//nolint:staticcheck // we don't want to use v2
 	"cloud.google.com/go/pubsub"
@@ -54,7 +55,16 @@ func (g *Google) Start(ctx context.Context) {
 func (g *Google) Verify() error {
 	ctx := context.Background()
 
-	client, err := pubsub.NewClient(ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
+	// Check if using emulator (for testing)
+	var client *pubsub.Client
+	var err error
+	if os.Getenv("PUBSUB_EMULATOR_HOST") != "" {
+		// When using emulator, don't pass credentials
+		client, err = pubsub.NewClient(ctx, g.Cfg.ProjectID)
+	} else {
+		// Production: use provided credentials
+		client, err = pubsub.NewClient(ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
+	}
 	if err != nil {
 		log.WithError(err).Error("failed to create new Google PubSub client")
 		return ErrInvalidCredentials
@@ -76,20 +86,36 @@ func (g *Google) Verify() error {
 }
 
 func (g *Google) consume() {
-	client, err := pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
+	// Check if using emulator (for testing)
+	var client *pubsub.Client
+	var err error
+	if os.Getenv("PUBSUB_EMULATOR_HOST") != "" {
+		// When using emulator, don't pass credentials
+		client, err = pubsub.NewClient(g.ctx, g.Cfg.ProjectID)
+	} else {
+		// Production: use provided credentials
+		client, err = pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
+	}
 	if err != nil {
 		g.log.WithError(err).Error("failed to create new Google PubSub client")
+		return
+	}
+
+	if client == nil {
+		g.log.Error("Pub/Sub client is nil")
+		return
 	}
 
 	defer g.handleError(client)
 
+	g.log.Infof("Successfully created Pub/Sub client, getting subscription: %s", g.Cfg.SubscriptionID)
 	sub := client.Subscription(g.Cfg.SubscriptionID)
 
 	// NumGoroutines determines the number of goroutines sub.Receive will spawn to pull messages
 	sub.ReceiveSettings.NumGoroutines = g.workers
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
-		if m.Attributes != nil {
+		if m.Attributes == nil {
 			m.Attributes = map[string]string{}
 		}
 

@@ -8,12 +8,15 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	//nolint:staticcheck // we don't want to use v2
+	"cloud.google.com/go/pubsub"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -1121,4 +1124,231 @@ func PublishBroadcastKafkaMessage(t *testing.T, broker string, topic string,
 	require.NoError(t, err)
 
 	t.Logf("Published broadcast Kafka message to topic %s", topic)
+}
+
+// Google Pub/Sub Helper Functions
+
+// CreateGooglePubSubSource creates a Google Pub/Sub source for E2E testing
+func CreateGooglePubSubSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project,
+	projectID string, subscriptionID string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+	t.Helper()
+
+	source := &datastore.Source{
+		UID:          ulid.Make().String(),
+		ProjectID:    project.UID,
+		MaskID:       ulid.Make().String(),
+		Name:         fmt.Sprintf("pubsub-source-%s", ulid.Make().String()),
+		Type:         datastore.PubSubSource,
+		Provider:     datastore.GithubSourceProvider,
+		IsDisabled:   false,
+		BodyFunction: bodyFunction,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.NoopVerifier,
+		},
+		HeaderFunction: headerFunction,
+		PubSub: &datastore.PubSubConfig{
+			Type:    datastore.GooglePubSub,
+			Workers: workers,
+			Google: &datastore.GooglePubSubConfig{
+				ProjectID:      projectID,
+				SubscriptionID: subscriptionID,
+				// Valid service account JSON for emulator
+				// When PUBSUB_EMULATOR_HOST is set, authentication is bypassed but the JSON must be structurally valid
+				ServiceAccount: []byte(`{
+					"type": "service_account",
+					"project_id": "` + projectID + `",
+					"private_key_id": "test-key-id",
+					"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCnHlJP11mvWMEM\nh7W4zSv3+9zhM+e+u71TzjogbJulwbucjWPznod8qhoaN6M8QWX6xSSkMqsfGjSm\nwbFOY9DEy9vIYq+xZkBOTUebE71pfhtz3/LNMH6dFLIA+6YuFFVoMiHBJk8YB81l\nbGvOb9UXbBhQKL9uZY6EDe2VeyRc6VyNNefG0RfP/jSUl0DNIfyO0fKNaRZ+vYMD\nChPIGP+tQqHpV8leMGmLuzpSKz16AxacYEI/jPWIe7VGc4dZ4fXWcfxcvsXMWSvJ\nA/VB5NUyVgcncrl7LvOOgnMKqG7UAHLWbHOMy3Jv3M/JX1LAebO93gRJZwPov9UN\n6Q/WNIErAgMBAAECggEADE4Rvno7Sstsr3kAmuJUhfZgDZ7uRd958cVCB2gnz70j\njMPmY6Y9EKNPt7V4CfRAx4WjjImEiw45aTviy8RSt2LRRIBrslK2km1jQ9pgvHdC\nGzaWoKAc+oDvGF5vHn51yW3DiX7CHSFZ8MlaaMFYPdjCM4jEi6LjqvqBj1uZUlPn\n6YNxJZ5zbKOaQLs9zyODFIos51qvl1VF6IiYmuhMQPCNf4gqHcoQB8wlli9v2LX0\na1ZUC/iO4ZS8qU5KkNXJNRVM7Jm7ozA6hHpZy+vAmjMmHR80DqocQy+gc8h+F8ZE\n08/4odstGZsMKX1k/NeakMKM/bXqS2WQirRgPBjOzQKBgQDdyCpzetMrkuBa+8kJ\nQYf14VrKnOyyXNLiOEfOs3jye1p0BYiefuq9+1z7QA9PgXggoLxYwLM2vRMMzBSa\nhbolMK1jRn3t7jJ5B3cWZcMx9yfj5u9XHcpDGmjNfSoO3AhmVzrSjpOw4J6+S3lU\nWeDOyOet1HTWaMUKBiNHPGrTjQKBgQDA5xXDqJ1XGzBRUQAprb/yQAGz953Xz227\naFkdSrCYVh/3WTQd2bgBdjRQuCHsNlu89rF/2qaO9hUdnQrfMBM6kmCRqjtrWuir\njn7FU+R+mgXhqn5II0sEJy5vf32xGMMZF58ahEM3sLXKliPTk14r10YWW1O9OfWL\nU+fmIBXdlwKBgB09BluzFaPo+SsFhrtxqDsCOrX7ejkJg8PPJ6hYgNl26bXiBODg\nWpIxUVDOYTZaGzwx9KK+xOGyi5BkV1MHzkKY6ELuSCvV+1F5annJcLJloxyolWUm\nyEOQd8Cff6v11iWn2lln8pCfDE6KJLS6JKkeU2zXVY/uwAtSQ9RgYrUBAoGADW2I\nlFAec7vOxzpOOph/rgtKkw5/jFBCITOIUIOse04zd3JcMF/BcUibJ6tJoTm/dQ3v\nGSlNQtJace9GnHaqP/+EfV9ON5DidV678FyAoVdzZVwK4laimC1qDBTh2PwSSKLe\nTmg6jZvda7a707SEb6TSmifNUnTAZOx4TgqZuw0CgYEAhK/hUC/XB9slvcfdcjIl\nnL9177YOsze5d8H1c+X4KbnYCtMHqVUSBqzPE7mEBnYcYnPKMbaJSZEFWWSs03VJ\nzyWW47RpUlM7mF5TQknf1Wrztm+1vGl+/WqGfBWtcI+FmsADI8eNH5W3Zo1lsPx1\n62HDtYD7HVNKoJT0JMwmpDI=\n-----END PRIVATE KEY-----\n",
+					"client_email": "test@convoy-test-project.iam.gserviceaccount.com",
+					"client_id": "123456789",
+					"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+					"token_uri": "https://oauth2.googleapis.com/token",
+					"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
+				}`),
+			},
+		},
+	}
+
+	sourceRepo := postgres.NewSourceRepo(db)
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err)
+
+	return source
+}
+
+// CreateGooglePubSubTopicAndSubscription creates a Pub/Sub topic and subscription using the emulator
+func CreateGooglePubSubTopicAndSubscription(t *testing.T, emulatorHost string, projectID string, topicID string, subscriptionID string) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	// Set emulator host environment variable only if not already set
+	// This preserves the global setting from TestMain
+	existingHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+	if existingHost == "" {
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		defer os.Unsetenv("PUBSUB_EMULATOR_HOST")
+	}
+
+	// Create client
+	client, err := pubsub.NewClient(ctx, projectID)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Create topic
+	topic, err := client.CreateTopic(ctx, topicID)
+	require.NoError(t, err)
+
+	t.Logf("Created Pub/Sub topic: %s", topicID)
+
+	// Create subscription
+	_, err = client.CreateSubscription(ctx, subscriptionID, pubsub.SubscriptionConfig{
+		Topic: topic,
+	})
+	require.NoError(t, err)
+
+	t.Logf("Created Pub/Sub subscription: %s", subscriptionID)
+}
+
+// PublishSingleGooglePubSubMessage publishes a single-type message to Google Pub/Sub
+func PublishSingleGooglePubSubMessage(t *testing.T, emulatorHost string, projectID string, topicID string,
+	endpointID string, eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	// Set emulator host only if not already set
+	existingHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+	if existingHost == "" {
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		defer os.Unsetenv("PUBSUB_EMULATOR_HOST")
+	}
+
+	// Create client
+	client, err := pubsub.NewClient(ctx, projectID)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Get topic
+	topic := client.Topic(topicID)
+
+	// Publish message with attributes
+	result := topic.Publish(ctx, &pubsub.Message{
+		Data: bodyJSON,
+		Attributes: map[string]string{
+			"x-convoy-message-type": "single",
+		},
+	})
+
+	// Wait for publish to complete
+	_, err = result.Get(ctx)
+	require.NoError(t, err)
+
+	t.Logf("Published single Pub/Sub message to topic %s", topicID)
+}
+
+// PublishFanoutGooglePubSubMessage publishes a fanout-type message to Google Pub/Sub
+func PublishFanoutGooglePubSubMessage(t *testing.T, emulatorHost string, projectID string, topicID string,
+	ownerID string, eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	// Set emulator host only if not already set
+	existingHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+	if existingHost == "" {
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		defer os.Unsetenv("PUBSUB_EMULATOR_HOST")
+	}
+
+	// Create client
+	client, err := pubsub.NewClient(ctx, projectID)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"owner_id":        ownerID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Get topic
+	topic := client.Topic(topicID)
+
+	// Publish message with attributes
+	result := topic.Publish(ctx, &pubsub.Message{
+		Data: bodyJSON,
+		Attributes: map[string]string{
+			"x-convoy-message-type": "fanout",
+		},
+	})
+
+	// Wait for publish to complete
+	_, err = result.Get(ctx)
+	require.NoError(t, err)
+
+	t.Logf("Published fanout Pub/Sub message to topic %s", topicID)
+}
+
+// PublishBroadcastGooglePubSubMessage publishes a broadcast-type message to Google Pub/Sub
+func PublishBroadcastGooglePubSubMessage(t *testing.T, emulatorHost string, projectID string, topicID string,
+	eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	// Set emulator host only if not already set
+	existingHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+	if existingHost == "" {
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		defer os.Unsetenv("PUBSUB_EMULATOR_HOST")
+	}
+
+	// Create client
+	client, err := pubsub.NewClient(ctx, projectID)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Get topic
+	topic := client.Topic(topicID)
+
+	// Publish message with attributes
+	result := topic.Publish(ctx, &pubsub.Message{
+		Data: bodyJSON,
+		Attributes: map[string]string{
+			"x-convoy-message-type": "broadcast",
+		},
+	})
+
+	// Wait for publish to complete
+	_, err = result.Get(ctx)
+	require.NoError(t, err)
+
+	t.Logf("Published broadcast Pub/Sub message to topic %s", topicID)
 }
