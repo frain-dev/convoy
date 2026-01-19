@@ -166,6 +166,10 @@ func TestE2E_GooglePubSub_Broadcast_AllSubscribers(t *testing.T) {
 	CreateSubscriptionWithFilter(t, db, env.ctx, env.Project, endpoint2, []string{eventType}, nil, nil, nil, nil)
 	CreateSubscriptionWithFilter(t, db, env.ctx, env.Project, endpoint3, []string{eventType}, nil, nil, nil, nil)
 
+	// IMPORTANT: Sync subscriptions to memory table for broadcast event processing
+	// Broadcast events use in-memory subscription lookup, not database queries
+	env.SyncSubscriptions(t)
+
 	// Create Pub/Sub topic and subscription
 	topicID := "test-topic-" + ulid.Make().String()
 	subscriptionID := "test-sub-" + ulid.Make().String()
@@ -382,6 +386,10 @@ func TestE2E_GooglePubSub_Broadcast_EventTypeFilter(t *testing.T) {
 	CreateSubscriptionWithFilter(t, db, env.ctx, env.Project, endpoint1, []string{"user.created"}, nil, nil, nil, nil)
 	CreateSubscriptionWithFilter(t, db, env.ctx, env.Project, endpoint2, []string{"user.created"}, nil, nil, nil, nil)
 	CreateSubscriptionWithFilter(t, db, env.ctx, env.Project, endpoint3, []string{"*"}, nil, nil, nil, nil)
+
+	// IMPORTANT: Sync subscriptions to memory table for broadcast event processing
+	// Broadcast events use in-memory subscription lookup, not database queries
+	env.SyncSubscriptions(t)
 
 	topicID := "test-topic-" + ulid.Make().String()
 	subscriptionID := "test-sub-" + ulid.Make().String()
