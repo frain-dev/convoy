@@ -13,6 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/sources/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -49,35 +50,6 @@ func New(logger log.StdLogger, db database.Database) *Service {
 		repo:   repo.New(db.GetConn()),
 		db:     db.GetConn(),
 	}
-}
-
-// ============================================================================
-// Type Conversion Helpers
-// ============================================================================
-
-// stringToPgText converts a string to pgtype.Text
-func stringToPgText(s string) pgtype.Text {
-	if util.IsStringEmpty(s) {
-		return pgtype.Text{String: "", Valid: false}
-	}
-	return pgtype.Text{String: s, Valid: true}
-}
-
-// stringPtrToPgText converts a string pointer to pgtype.Text
-func stringPtrToPgText(s *string) pgtype.Text {
-	if s == nil || util.IsStringEmpty(*s) {
-		return pgtype.Text{String: "", Valid: false}
-	}
-	return pgtype.Text{String: *s, Valid: true}
-}
-
-// stringPtrFromPgText converts pgtype.Text to a string pointer
-func stringPtrFromPgText(t pgtype.Text) *string {
-	if !t.Valid || util.IsStringEmpty(t.String) {
-		return nil
-	}
-	s := t.String
-	return &s
 }
 
 // stringsToPgArray converts []string to []string for pgx
@@ -285,8 +257,8 @@ func rowToSource(row interface{}) (*datastore.Source, error) {
 			ContentType: customResponseContentType,
 		},
 		IdempotencyKeys: idempotencyKeys,
-		BodyFunction:    stringPtrFromPgText(bodyFunction),
-		HeaderFunction:  stringPtrFromPgText(headerFunction),
+		BodyFunction:    common.StringPtrFromPgText(bodyFunction),
+		HeaderFunction:  common.StringPtrFromPgText(headerFunction),
 		VerifierID:      sourceVerifierID,
 		CreatedAt:       createdAt.Time,
 		UpdatedAt:       updatedAt.Time,
@@ -330,14 +302,14 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 		err = qtx.CreateSourceVerifier(ctx, repo.CreateSourceVerifierParams{
 			ID:                verifierID,
 			Type:              string(source.Verifier.Type),
-			BasicUsername:     stringToPgText(params.basicUser),
-			BasicPassword:     stringToPgText(params.basicPass),
-			ApiKeyHeaderName:  stringToPgText(params.apiKeyHeader),
-			ApiKeyHeaderValue: stringToPgText(params.apiKeyValue),
-			HmacHash:          stringToPgText(params.hmacHash),
-			HmacHeader:        stringToPgText(params.hmacHeader),
-			HmacSecret:        stringToPgText(params.hmacSecret),
-			HmacEncoding:      stringToPgText(params.hmacEncoding),
+			BasicUsername:     common.StringToPgText(params.basicUser),
+			BasicPassword:     common.StringToPgText(params.basicPass),
+			ApiKeyHeaderName:  common.StringToPgText(params.apiKeyHeader),
+			ApiKeyHeaderValue: common.StringToPgText(params.apiKeyValue),
+			HmacHash:          common.StringToPgText(params.hmacHash),
+			HmacHeader:        common.StringToPgText(params.hmacHeader),
+			HmacSecret:        common.StringToPgText(params.hmacSecret),
+			HmacEncoding:      common.StringToPgText(params.hmacEncoding),
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to create source verifier")
@@ -350,7 +322,7 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 	// Create source
 	err = qtx.CreateSource(ctx, repo.CreateSourceParams{
 		ID:                        source.UID,
-		SourceVerifierID:          stringToPgText(source.VerifierID),
+		SourceVerifierID:          common.StringToPgText(source.VerifierID),
 		Name:                      source.Name,
 		Type:                      string(source.Type),
 		MaskID:                    source.MaskID,
@@ -359,11 +331,11 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 		ForwardHeaders:            stringsToPgArray(source.ForwardHeaders),
 		ProjectID:                 source.ProjectID,
 		PubSub:                    pubSubToPgJSON(source.PubSub),
-		CustomResponseBody:        stringToPgText(source.CustomResponse.Body),
-		CustomResponseContentType: stringToPgText(source.CustomResponse.ContentType),
+		CustomResponseBody:        common.StringToPgText(source.CustomResponse.Body),
+		CustomResponseContentType: common.StringToPgText(source.CustomResponse.ContentType),
 		IdempotencyKeys:           stringsToPgArray(source.IdempotencyKeys),
-		BodyFunction:              stringPtrToPgText(source.BodyFunction),
-		HeaderFunction:            stringPtrToPgText(source.HeaderFunction),
+		BodyFunction:              common.StringPtrToPgText(source.BodyFunction),
+		HeaderFunction:            common.StringPtrToPgText(source.HeaderFunction),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to create source")
@@ -404,11 +376,11 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 		ForwardHeaders:            stringsToPgArray(source.ForwardHeaders),
 		ProjectID:                 projectID,
 		PubSub:                    pubSubToPgJSON(source.PubSub),
-		CustomResponseBody:        stringToPgText(source.CustomResponse.Body),
-		CustomResponseContentType: stringToPgText(source.CustomResponse.ContentType),
+		CustomResponseBody:        common.StringToPgText(source.CustomResponse.Body),
+		CustomResponseContentType: common.StringToPgText(source.CustomResponse.ContentType),
 		IdempotencyKeys:           stringsToPgArray(source.IdempotencyKeys),
-		BodyFunction:              stringPtrToPgText(source.BodyFunction),
-		HeaderFunction:            stringPtrToPgText(source.HeaderFunction),
+		BodyFunction:              common.StringPtrToPgText(source.BodyFunction),
+		HeaderFunction:            common.StringPtrToPgText(source.HeaderFunction),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to update source")
@@ -426,14 +398,14 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 		result2, err := qtx.UpdateSourceVerifier(ctx, repo.UpdateSourceVerifierParams{
 			ID:                source.VerifierID,
 			Type:              string(source.Verifier.Type),
-			BasicUsername:     stringToPgText(params.basicUser),
-			BasicPassword:     stringToPgText(params.basicPass),
-			ApiKeyHeaderName:  stringToPgText(params.apiKeyHeader),
-			ApiKeyHeaderValue: stringToPgText(params.apiKeyValue),
-			HmacHash:          stringToPgText(params.hmacHash),
-			HmacHeader:        stringToPgText(params.hmacHeader),
-			HmacSecret:        stringToPgText(params.hmacSecret),
-			HmacEncoding:      stringToPgText(params.hmacEncoding),
+			BasicUsername:     common.StringToPgText(params.basicUser),
+			BasicPassword:     common.StringToPgText(params.basicPass),
+			ApiKeyHeaderName:  common.StringToPgText(params.apiKeyHeader),
+			ApiKeyHeaderValue: common.StringToPgText(params.apiKeyValue),
+			HmacHash:          common.StringToPgText(params.hmacHash),
+			HmacHeader:        common.StringToPgText(params.hmacHeader),
+			HmacSecret:        common.StringToPgText(params.hmacSecret),
+			HmacEncoding:      common.StringToPgText(params.hmacEncoding),
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to update source verifier")
@@ -534,7 +506,7 @@ func (s *Service) DeleteSourceByID(ctx context.Context, projectID, id, verifierI
 
 	// Cascade delete subscriptions
 	err = qtx.DeleteSourceSubscriptions(ctx, repo.DeleteSourceSubscriptionsParams{
-		SourceID:  stringToPgText(id),
+		SourceID:  common.StringToPgText(id),
 		ProjectID: projectID,
 	})
 	if err != nil {
@@ -665,8 +637,8 @@ func (s *Service) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIDs 
 			ProjectID:       row.ProjectID,
 			PubSub:          pgJSONToPubSub(row.PubSub),
 			IdempotencyKeys: row.IdempotencyKeys,
-			BodyFunction:    stringPtrFromPgText(row.BodyFunction),
-			HeaderFunction:  stringPtrFromPgText(row.HeaderFunction),
+			BodyFunction:    common.StringPtrFromPgText(row.BodyFunction),
+			HeaderFunction:  common.StringPtrFromPgText(row.HeaderFunction),
 			CreatedAt:       row.CreatedAt.Time,
 			UpdatedAt:       row.UpdatedAt.Time,
 		}

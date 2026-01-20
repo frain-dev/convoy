@@ -10,10 +10,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/organisations/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -38,34 +38,6 @@ func New(logger log.StdLogger, db database.Database) *Service {
 		db:     db.GetConn(),
 		legacy: db,
 	}
-}
-
-// ============================================================================
-// Type Conversion Helpers
-// ============================================================================
-
-// stringToPgText converts a string to pgtype.Text
-// Empty strings are represented as invalid (NULL in database)
-func stringToPgText(s string) pgtype.Text {
-	if util.IsStringEmpty(s) {
-		return pgtype.Text{String: "", Valid: false}
-	}
-	return pgtype.Text{String: s, Valid: true}
-}
-
-// pgTextToNullString converts pgtype.Text to null.String
-func pgTextToNullString(t pgtype.Text) null.String {
-	return null.NewString(t.String, t.Valid)
-}
-
-// nullStringToPgText converts null.String to pgtype.Text
-func nullStringToPgText(ns null.String) pgtype.Text {
-	return pgtype.Text{String: ns.String, Valid: ns.Valid}
-}
-
-// pgTimestamptzToNullTime converts pgtype.Timestamptz to null.Time
-func pgTimestamptzToNullTime(t pgtype.Timestamptz) null.Time {
-	return null.NewTime(t.Time, t.Valid)
 }
 
 // rowToOrganisation converts any SQLc-generated row struct to datastore.Organisation
@@ -101,11 +73,11 @@ func rowToOrganisation(row interface{}) datastore.Organisation {
 		UID:            id,
 		OwnerID:        ownerID,
 		Name:           name,
-		CustomDomain:   pgTextToNullString(customDomain),
-		AssignedDomain: pgTextToNullString(assignedDomain),
+		CustomDomain:   common.PgTextToNullString(customDomain),
+		AssignedDomain: common.PgTextToNullString(assignedDomain),
 		CreatedAt:      createdAt.Time,
 		UpdatedAt:      updatedAt.Time,
-		DeletedAt:      pgTimestamptzToNullTime(deletedAt),
+		DeletedAt:      common.PgTimestamptzToNullTime(deletedAt),
 	}
 }
 
@@ -123,8 +95,8 @@ func (s *Service) CreateOrganisation(ctx context.Context, org *datastore.Organis
 		ID:             org.UID,
 		Name:           org.Name,
 		OwnerID:        org.OwnerID,
-		CustomDomain:   nullStringToPgText(org.CustomDomain),
-		AssignedDomain: nullStringToPgText(org.AssignedDomain),
+		CustomDomain:   common.NullStringToPgText(org.CustomDomain),
+		AssignedDomain: common.NullStringToPgText(org.AssignedDomain),
 	})
 
 	if err != nil {
@@ -144,8 +116,8 @@ func (s *Service) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 	result, err := s.repo.UpdateOrganisation(ctx, repo.UpdateOrganisationParams{
 		ID:             org.UID,
 		Name:           org.Name,
-		CustomDomain:   nullStringToPgText(org.CustomDomain),
-		AssignedDomain: nullStringToPgText(org.AssignedDomain),
+		CustomDomain:   common.NullStringToPgText(org.CustomDomain),
+		AssignedDomain: common.NullStringToPgText(org.AssignedDomain),
 	})
 
 	if err != nil {
@@ -192,7 +164,7 @@ func (s *Service) FetchOrganisationByID(ctx context.Context, id string) (*datast
 
 // FetchOrganisationByCustomDomain retrieves an organisation by its custom domain
 func (s *Service) FetchOrganisationByCustomDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
-	row, err := s.repo.FetchOrganisationByCustomDomain(ctx, stringToPgText(domain))
+	row, err := s.repo.FetchOrganisationByCustomDomain(ctx, common.StringToPgText(domain))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgNotFound
@@ -207,7 +179,7 @@ func (s *Service) FetchOrganisationByCustomDomain(ctx context.Context, domain st
 
 // FetchOrganisationByAssignedDomain retrieves an organisation by its assigned domain
 func (s *Service) FetchOrganisationByAssignedDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
-	row, err := s.repo.FetchOrganisationByAssignedDomain(ctx, stringToPgText(domain))
+	row, err := s.repo.FetchOrganisationByAssignedDomain(ctx, common.StringToPgText(domain))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgNotFound

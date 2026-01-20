@@ -8,12 +8,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gopkg.in/guregu/null.v4"
 
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys/repo"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -37,51 +36,6 @@ func New(logger log.StdLogger, db database.Database) *Service {
 		db:       db.GetConn(),
 		legacyDB: db,
 	}
-}
-
-// ============================================================================
-// Type Conversion Helpers
-// ============================================================================
-
-// roleToParams converts auth.Role to database column parameters
-func roleToParams(role auth.Role) (roleType, roleProject, roleEndpoint pgtype.Text) {
-	roleType = pgtype.Text{
-		String: string(role.Type),
-		Valid:  !util.IsStringEmpty(string(role.Type)),
-	}
-	roleProject = pgtype.Text{
-		String: role.Project,
-		Valid:  !util.IsStringEmpty(role.Project),
-	}
-	roleEndpoint = pgtype.Text{
-		String: role.Endpoint,
-		Valid:  !util.IsStringEmpty(role.Endpoint),
-	}
-	return
-}
-
-// paramsToRole converts database columns to auth.Role
-func paramsToRole(roleType, roleProject, roleEndpoint string) auth.Role {
-	return auth.Role{
-		Type:     auth.RoleType(roleType),
-		Project:  roleProject,
-		Endpoint: roleEndpoint,
-	}
-}
-
-// nullTimeToPgTimestamptz converts null.Time to pgtype.Timestamptz
-func nullTimeToPgTimestamptz(t null.Time) pgtype.Timestamptz {
-	return pgtype.Timestamptz{Time: t.Time, Valid: t.Valid}
-}
-
-// pgTimestamptzToNullTime converts pgtype.Timestamptz to null.Time
-func pgTimestamptzToNullTime(t pgtype.Timestamptz) null.Time {
-	return null.NewTime(t.Time, t.Valid)
-}
-
-// Helper to convert string to pgtype.Text for filters (empty string means no filter)
-func stringToPgTextFilter(s string) pgtype.Text {
-	return pgtype.Text{String: s, Valid: true}
 }
 
 // rowToAPIKey converts any SQLc-generated row struct to datastore.APIKey
@@ -135,12 +89,12 @@ func (s *Service) rowToAPIKey(row interface{}) datastore.APIKey {
 		Name:      name,
 		Type:      datastore.KeyType(keyType),
 		MaskID:    maskID,
-		Role:      paramsToRole(roleType, roleProject, roleEndpoint),
+		Role:      common.ParamsToRole(roleType, roleProject, roleEndpoint),
 		Hash:      hash,
 		Salt:      salt,
 		UserID:    userID,
-		ExpiresAt: pgTimestamptzToNullTime(expiresAt),
-		DeletedAt: pgTimestamptzToNullTime(deletedAt),
+		ExpiresAt: common.PgTimestamptzToNullTime(expiresAt),
+		DeletedAt: common.PgTimestamptzToNullTime(deletedAt),
 		CreatedAt: createdAt.Time,
 		UpdatedAt: updatedAt.Time,
 	}
@@ -157,7 +111,7 @@ func (s *Service) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 	}
 
 	// Convert role to database params
-	roleType, roleProject, roleEndpoint := roleToParams(apiKey.Role)
+	roleType, roleProject, roleEndpoint := common.RoleToParams(apiKey.Role)
 
 	// Convert user_id to pgtype.Text (can be null)
 	userID := pgtype.Text{
@@ -177,7 +131,7 @@ func (s *Service) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 		Hash:         apiKey.Hash,
 		Salt:         apiKey.Salt,
 		UserID:       userID,
-		ExpiresAt:    nullTimeToPgTimestamptz(apiKey.ExpiresAt),
+		ExpiresAt:    common.NullTimeToPgTimestamptz(apiKey.ExpiresAt),
 	})
 
 	if err != nil {
@@ -195,7 +149,7 @@ func (s *Service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 	}
 
 	// Convert role to database params
-	roleType, roleProject, roleEndpoint := roleToParams(apiKey.Role)
+	roleType, roleProject, roleEndpoint := common.RoleToParams(apiKey.Role)
 
 	// Update API key
 	err := s.repo.UpdateAPIKey(ctx, repo.UpdateAPIKeyParams{
@@ -262,7 +216,7 @@ func (s *Service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.
 
 // GetAPIKeyByProjectID retrieves an API key by its project ID
 func (s *Service) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByProjectID(ctx, stringToPgTextFilter(projectID))
+	row, err := s.repo.FindAPIKeyByProjectID(ctx, common.StringToPgTextFilter(projectID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -302,15 +256,15 @@ func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Filter
 	hasEndpointIdsFilter := len(filter.EndpointIDs) > 0
 
 	// Convert filter strings to pgtype.Text
-	projectID := stringToPgTextFilter(filter.ProjectID)
-	endpointID := stringToPgTextFilter(filter.EndpointID)
-	userID := stringToPgTextFilter(filter.UserID)
-	keyType := stringToPgTextFilter(string(filter.KeyType))
+	projectID := common.StringToPgTextFilter(filter.ProjectID)
+	endpointID := common.StringToPgTextFilter(filter.EndpointID)
+	userID := common.StringToPgTextFilter(filter.UserID)
+	keyType := common.StringToPgTextFilter(string(filter.KeyType))
 
 	// Query with unified pagination
 	rows, err := s.repo.FetchAPIKeysPaginated(ctx, repo.FetchAPIKeysPaginatedParams{
 		Direction:      direction,
-		Cursor:         stringToPgTextFilter(pageable.Cursor()),
+		Cursor:         common.StringToPgTextFilter(pageable.Cursor()),
 		ProjectID:      projectID,
 		EndpointID:     endpointID,
 		UserID:         userID,
