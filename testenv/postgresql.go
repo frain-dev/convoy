@@ -121,15 +121,15 @@ func newPostgresCloneFunc(container *postgres.PostgresContainer) PostgresDBClone
 
 			pool.Close()
 
-			conn, err := pgx.Connect(timeoutCtx, uri)
-			if err != nil {
-				panic(fmt.Errorf("drop test database: connect: %w", err))
+			cleanupConn, err2 := pgx.Connect(timeoutCtx, uri)
+			if err2 != nil {
+				panic(fmt.Errorf("drop test database: connect: %w", err2))
 			}
-			defer conn.Close(timeoutCtx)
+			defer cleanupConn.Close(timeoutCtx)
 
-			_, err = conn.Exec(timeoutCtx, fmt.Sprintf("DROP DATABASE %s;", clonename))
-			if err != nil {
-				panic(fmt.Errorf("drop test database: exec: %w", err))
+			_, err2 = cleanupConn.Exec(timeoutCtx, fmt.Sprintf("DROP DATABASE %s;", clonename))
+			if err2 != nil {
+				panic(fmt.Errorf("drop test database: exec: %w", err2))
 			}
 		})
 

@@ -81,57 +81,57 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 	return res, func() error {
 		var eg errgroup.Group
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := pgcontainer.Terminate(ctx); err != nil {
+			if err = pgcontainer.Terminate(c); err != nil {
 				log.Printf("terminate postgres container: %v", err)
 			}
 			return nil
 		})
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := rediscontainer.Terminate(ctx); err != nil {
+			if err = rediscontainer.Terminate(c); err != nil {
 				log.Printf("terminate redis container: %v", err)
 			}
 			return nil
 		})
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := miniocontainer.Terminate(ctx); err != nil {
+			if err = miniocontainer.Terminate(c); err != nil {
 				log.Printf("terminate minio container: %v", err)
 			}
 			return nil
 		})
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := rabbitmqcontainer.Terminate(ctx); err != nil {
+			if err = rabbitmqcontainer.Terminate(c); err != nil {
 				log.Printf("terminate rabbitmq container: %v", err)
 			}
 			return nil
 		})
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := localstackcontainer.Terminate(ctx); err != nil {
+			if err = localstackcontainer.Terminate(c); err != nil {
 				log.Printf("terminate localstack container: %v", err)
 			}
 			return nil
 		})
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := kafkacontainer.Terminate(ctx); err != nil {
+			if err = kafkacontainer.Terminate(c); err != nil {
 				log.Printf("terminate kafka container: %v", err)
 			}
 			return nil
 		})
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := pubsubcontainer.Terminate(ctx); err != nil {
+			if err = pubsubcontainer.Terminate(c); err != nil {
 				log.Printf("terminate pubsub emulator container: %v", err)
 			}
 			return nil

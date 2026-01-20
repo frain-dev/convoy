@@ -31,6 +31,8 @@ import (
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 // EventManifest tracks received webhooks for verification
@@ -378,7 +380,7 @@ func CreateAMQPSource(t *testing.T, db *postgres.Postgres, ctx context.Context, 
 		},
 	}
 
-	sourceRepo := postgres.NewSourceRepo(db)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
 	err := sourceRepo.CreateSource(ctx, source)
 	require.NoError(t, err)
 
@@ -548,8 +550,15 @@ func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx conte
 }
 
 // AssertEventCreated verifies that an event was created in the database
-func AssertEventCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventType string) *datastore.Event {
+// Optional timeWindow parameter specifies the lookback window (defaults to 2 minutes if not provided)
+func AssertEventCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventType string, timeWindow ...time.Duration) *datastore.Event {
 	t.Helper()
+
+	// Use default 2-minute window if not specified
+	lookback := 2 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
 
 	// Use a short retry loop to account for async processing
 	var event *datastore.Event
@@ -572,8 +581,8 @@ func AssertEventCreated(t *testing.T, db *postgres.Postgres, ctx context.Context
 			LIMIT 1
 		`
 
-		startTime := time.Now().Add(-2 * time.Minute)
-		endTime := time.Now().Add(2 * time.Minute)
+		startTime := time.Now().Add(-lookback)
+		endTime := time.Now().Add(1 * time.Minute)
 
 		var e datastore.Event
 		err = dbConn.QueryRowContext(ctx, query, projectID, eventType, startTime, endTime).Scan(
@@ -616,8 +625,15 @@ func AssertEventCreated(t *testing.T, db *postgres.Postgres, ctx context.Context
 }
 
 // AssertEventDeliveryCreated verifies that an event delivery was created
-func AssertEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID, endpointID string) *datastore.EventDelivery {
+// Optional timeWindow parameter specifies the lookback window (defaults to 2 minutes if not provided)
+func AssertEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID, endpointID string, timeWindow ...time.Duration) *datastore.EventDelivery {
 	t.Helper()
+
+	// Use default 2-minute window if not specified
+	lookback := 2 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
 
 	// Use a short retry loop to account for async processing
 	var eventDelivery *datastore.EventDelivery
@@ -646,8 +662,8 @@ func AssertEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context
 			LIMIT 1
 		`
 
-		startTime := time.Now().Add(-2 * time.Minute)
-		endTime := time.Now().Add(2 * time.Minute)
+		startTime := time.Now().Add(-lookback)
+		endTime := time.Now().Add(1 * time.Minute)
 
 		var ed datastore.EventDelivery
 		err = dbConn.QueryRowContext(ctx, query, projectID, eventID, endpointID, startTime, endTime).Scan(
@@ -693,17 +709,32 @@ func AssertEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context
 }
 
 // AssertNoEventDeliveryCreated verifies that NO event delivery was created (for negative tests)
-func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID string) {
+// Optional timeWindow parameter specifies the lookback window (defaults to 5 minutes if not provided)
+//
+// NOTE: This function has a known limitation - it does NOT filter by endpoint ID.
+// It queries for ALL deliveries with the given eventID across all endpoints.
+// This can cause false positives when used after AssertEventDeliveryCreated confirms
+// a delivery exists for the same event but different endpoint.
+//
+// TODO: Add endpointID parameter and update all 48 call sites to properly filter by endpoint
+func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID string, timeWindow ...time.Duration) {
 	t.Helper()
+
+	// Use default 5-minute window if not specified (larger window for negative tests)
+	lookback := 5 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
 
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 
 	// Wait a bit to ensure no delivery is created
 	time.Sleep(2 * time.Second)
 
+	now := time.Now()
 	searchParams := datastore.SearchParams{
-		CreatedAtStart: time.Now().Add(-1 * time.Minute).Unix(),
-		CreatedAtEnd:   time.Now().Add(1 * time.Minute).Unix(),
+		CreatedAtStart: now.Add(-lookback).Unix(),
+		CreatedAtEnd:   now.Add(1 * time.Minute).Unix(),
 	}
 	pageable := datastore.Pageable{
 		PerPage:   10,
@@ -777,7 +808,7 @@ func CreateSQSSource(t *testing.T, db *postgres.Postgres, ctx context.Context, p
 		},
 	}
 
-	sourceRepo := postgres.NewSourceRepo(db)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
 	err := sourceRepo.CreateSource(ctx, source)
 	require.NoError(t, err)
 
@@ -981,7 +1012,7 @@ func CreateKafkaSource(t *testing.T, db *postgres.Postgres, ctx context.Context,
 		},
 	}
 
-	sourceRepo := postgres.NewSourceRepo(db)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
 	err := sourceRepo.CreateSource(ctx, source)
 	require.NoError(t, err)
 
@@ -1169,7 +1200,7 @@ func CreateGooglePubSubSource(t *testing.T, db *postgres.Postgres, ctx context.C
 		},
 	}
 
-	sourceRepo := postgres.NewSourceRepo(db)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
 	err := sourceRepo.CreateSource(ctx, source)
 	require.NoError(t, err)
 

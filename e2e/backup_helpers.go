@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -108,7 +109,7 @@ func findExportFiles(t *testing.T, baseDir, tableName string) []string {
 func seedSource(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project) *datastore.Source {
 	t.Helper()
 
-	sourceRepo := postgres.NewSourceRepo(db)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
 
 	source := &datastore.Source{
 		UID:       ulid.Make().String(),
@@ -137,7 +138,15 @@ func seedSource(t *testing.T, db database.Database, ctx context.Context, project
 }
 
 // seedOldEvent creates an event with a timestamp in the past
+// hoursOld specifies how many hours in the past to set the timestamp
 func seedOldEvent(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint, hoursOld int) *datastore.Event {
+	t.Helper()
+	targetTime := time.Now().Add(-time.Duration(hoursOld) * time.Hour)
+	return seedEventWithTimestamp(t, db, ctx, project, endpoint, targetTime)
+}
+
+// seedEventWithTimestamp creates an event with a specific timestamp
+func seedEventWithTimestamp(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint, timestamp time.Time) *datastore.Event {
 	t.Helper()
 
 	// Create a source first (required for events)
@@ -162,11 +171,10 @@ func seedOldEvent(t *testing.T, db database.Database, ctx context.Context, proje
 	err := eventRepo.CreateEvent(ctx, event)
 	require.NoError(t, err, "failed to create event")
 
-	// Update timestamp to be old
-	targetTime := time.Now().Add(-time.Duration(hoursOld) * time.Hour)
+	// Update timestamp to the specified time
 	_, err = db.GetDB().ExecContext(ctx,
 		"UPDATE convoy.events SET created_at=$1, updated_at=$1 WHERE id=$2",
-		targetTime, event.UID)
+		timestamp, event.UID)
 	require.NoError(t, err, "failed to update event timestamp")
 
 	// Reload event to get updated timestamps
@@ -211,7 +219,15 @@ func seedSubscription(t *testing.T, db database.Database, ctx context.Context, p
 }
 
 // seedOldEventDelivery creates an event delivery with a timestamp in the past
+// hoursOld specifies how many hours in the past to set the timestamp
 func seedOldEventDelivery(t *testing.T, db database.Database, ctx context.Context, event *datastore.Event, endpoint *datastore.Endpoint, hoursOld int) *datastore.EventDelivery {
+	t.Helper()
+	targetTime := time.Now().Add(-time.Duration(hoursOld) * time.Hour)
+	return seedEventDeliveryWithTimestamp(t, db, ctx, event, endpoint, targetTime)
+}
+
+// seedEventDeliveryWithTimestamp creates an event delivery with a specific timestamp
+func seedEventDeliveryWithTimestamp(t *testing.T, db database.Database, ctx context.Context, event *datastore.Event, endpoint *datastore.Endpoint, timestamp time.Time) *datastore.EventDelivery {
 	t.Helper()
 
 	// Create a subscription first (required for event deliveries)
@@ -242,11 +258,10 @@ func seedOldEventDelivery(t *testing.T, db database.Database, ctx context.Contex
 	err := eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
 	require.NoError(t, err, "failed to create event delivery")
 
-	// Update timestamp to be old
-	targetTime := time.Now().Add(-time.Duration(hoursOld) * time.Hour)
+	// Update timestamp to the specified time
 	_, err = db.GetDB().ExecContext(ctx,
 		"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2",
-		targetTime, eventDelivery.UID)
+		timestamp, eventDelivery.UID)
 	require.NoError(t, err, "failed to update event delivery timestamp")
 
 	// Reload event delivery to get updated timestamps
@@ -257,7 +272,15 @@ func seedOldEventDelivery(t *testing.T, db database.Database, ctx context.Contex
 }
 
 // seedOldDeliveryAttempt creates a delivery attempt with a timestamp in the past
+// hoursOld specifies how many hours in the past to set the timestamp
 func seedOldDeliveryAttempt(t *testing.T, db database.Database, ctx context.Context, delivery *datastore.EventDelivery, endpoint *datastore.Endpoint, hoursOld int) {
+	t.Helper()
+	targetTime := time.Now().Add(-time.Duration(hoursOld) * time.Hour)
+	seedDeliveryAttemptWithTimestamp(t, db, ctx, delivery, endpoint, targetTime)
+}
+
+// seedDeliveryAttemptWithTimestamp creates a delivery attempt with a specific timestamp
+func seedDeliveryAttemptWithTimestamp(t *testing.T, db database.Database, ctx context.Context, delivery *datastore.EventDelivery, endpoint *datastore.Endpoint, timestamp time.Time) {
 	t.Helper()
 
 	attempt := &datastore.DeliveryAttempt{
@@ -281,11 +304,10 @@ func seedOldDeliveryAttempt(t *testing.T, db database.Database, ctx context.Cont
 		attempt.CreatedAt, attempt.UpdatedAt)
 	require.NoError(t, err, "failed to create delivery attempt")
 
-	// Update timestamp to be old
-	targetTime := time.Now().Add(-time.Duration(hoursOld) * time.Hour)
+	// Update timestamp to the specified time
 	_, err = db.GetDB().ExecContext(ctx,
 		"UPDATE convoy.delivery_attempts SET created_at=$1, updated_at=$1 WHERE id=$2",
-		targetTime, attempt.UID)
+		timestamp, attempt.UID)
 	require.NoError(t, err, "failed to update delivery attempt timestamp")
 }
 

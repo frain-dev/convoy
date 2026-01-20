@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"sync"
@@ -33,6 +34,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -563,7 +565,7 @@ func SetupE2EWithAMQP(t *testing.T) *E2ETestEnvWithAMQP {
 	require.NoError(t, err)
 
 	// Set up repositories needed for source loading
-	sourceRepo := postgres.NewSourceRepo(baseEnv.App.DB)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
 	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
 	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
 
@@ -703,7 +705,7 @@ func SetupE2EWithSQS(t *testing.T) *E2ETestEnvWithSQS {
 	localStackEndpoint := infra.NewLocalStackConnect(t)
 
 	// Set up repositories needed for source loading
-	sourceRepo := postgres.NewSourceRepo(baseEnv.App.DB)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
 	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
 	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
 
@@ -833,7 +835,7 @@ func SetupE2EWithKafka(t *testing.T) *E2ETestEnvWithKafka {
 	kafkaBroker := infra.NewKafkaConnect(t)
 
 	// Set up repositories needed for source loading
-	sourceRepo := postgres.NewSourceRepo(baseEnv.App.DB)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
 	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
 	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
 
@@ -967,7 +969,7 @@ func SetupE2EWithGooglePubSub(t *testing.T) *E2ETestEnvWithGooglePubSub {
 	baseEnv := SetupE2E(t)
 
 	// Set up repositories needed for source loading
-	sourceRepo := postgres.NewSourceRepo(baseEnv.App.DB)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
 	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
 	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
 
