@@ -18,6 +18,7 @@ func NewTestPubSubEmulator(ctx context.Context) (*PubSubEmulatorContainer, PubSu
 		return nil, nil, err
 	}
 
+	//nolint:thelper // t.Helper() is called after nil check which is required
 	factory := func(t *testing.T) string {
 		if t != nil {
 			t.Helper()

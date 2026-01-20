@@ -111,41 +111,49 @@ func pgJSONToPubSub(data []byte) *datastore.PubSubConfig {
 }
 
 // extractVerifierParams extracts verifier parameters based on type
-func extractVerifierParams(verifier *datastore.VerifierConfig) (
-	basicUser, basicPass, apiKeyHeader, apiKeyValue,
-	hmacHash, hmacHeader, hmacSecret, hmacEncoding string) {
+type verifierParams struct {
+	basicUser    string
+	basicPass    string
+	apiKeyHeader string
+	apiKeyValue  string
+	hmacHash     string
+	hmacHeader   string
+	hmacSecret   string
+	hmacEncoding string
+}
+
+func extractVerifierParams(verifier *datastore.VerifierConfig) verifierParams {
+	var params verifierParams
 
 	if verifier == nil {
-		return
+		return params
 	}
 
 	switch verifier.Type {
 	case datastore.APIKeyVerifier:
 		if verifier.ApiKey != nil {
-			apiKeyHeader = verifier.ApiKey.HeaderName
-			apiKeyValue = verifier.ApiKey.HeaderValue
+			params.apiKeyHeader = verifier.ApiKey.HeaderName
+			params.apiKeyValue = verifier.ApiKey.HeaderValue
 		}
 	case datastore.BasicAuthVerifier:
 		if verifier.BasicAuth != nil {
-			basicUser = verifier.BasicAuth.UserName
-			basicPass = verifier.BasicAuth.Password
+			params.basicUser = verifier.BasicAuth.UserName
+			params.basicPass = verifier.BasicAuth.Password
 		}
 	case datastore.HMacVerifier:
 		if verifier.HMac != nil {
-			hmacHash = verifier.HMac.Hash
-			hmacHeader = verifier.HMac.Header
-			hmacSecret = verifier.HMac.Secret
-			hmacEncoding = string(verifier.HMac.Encoding)
+			params.hmacHash = verifier.HMac.Hash
+			params.hmacHeader = verifier.HMac.Header
+			params.hmacSecret = verifier.HMac.Secret
+			params.hmacEncoding = string(verifier.HMac.Encoding)
 		}
 	}
 
-	return
+	return params
 }
 
 // buildVerifierConfig constructs VerifierConfig from row data
-func buildVerifierConfig(verifierType, basicUser, basicPass, apiKeyHeader, apiKeyValue,
-	hmacHash, hmacHeader, hmacSecret, hmacEncoding string) *datastore.VerifierConfig {
-
+func buildVerifierConfig(verifierType, basicUser, basicPass, apiKeyHeader, apiKeyValue, hmacHash, hmacHeader, hmacSecret, hmacEncoding string) *datastore.VerifierConfig {
 	if util.IsStringEmpty(verifierType) {
 		return &datastore.VerifierConfig{Type: datastore.NoopVerifier}
 	}
@@ -317,20 +325,19 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 	if !util.IsStringEmpty(string(source.Verifier.Type)) && source.Verifier.Type != datastore.NoopVerifier {
 		verifierID := ulid.Make().String()
 
-		basicUser, basicPass, apiKeyHeader, apiKeyValue,
-			hmacHash, hmacHeader, hmacSecret, hmacEncoding := extractVerifierParams(source.Verifier)
+		params := extractVerifierParams(source.Verifier)
 
 		err = qtx.CreateSourceVerifier(ctx, repo.CreateSourceVerifierParams{
 			ID:                verifierID,
 			Type:              string(source.Verifier.Type),
-			BasicUsername:     stringToPgText(basicUser),
-			BasicPassword:     stringToPgText(basicPass),
-			ApiKeyHeaderName:  stringToPgText(apiKeyHeader),
-			ApiKeyHeaderValue: stringToPgText(apiKeyValue),
-			HmacHash:          stringToPgText(hmacHash),
-			HmacHeader:        stringToPgText(hmacHeader),
-			HmacSecret:        stringToPgText(hmacSecret),
-			HmacEncoding:      stringToPgText(hmacEncoding),
+			BasicUsername:     stringToPgText(params.basicUser),
+			BasicPassword:     stringToPgText(params.basicPass),
+			ApiKeyHeaderName:  stringToPgText(params.apiKeyHeader),
+			ApiKeyHeaderValue: stringToPgText(params.apiKeyValue),
+			HmacHash:          stringToPgText(params.hmacHash),
+			HmacHeader:        stringToPgText(params.hmacHeader),
+			HmacSecret:        stringToPgText(params.hmacSecret),
+			HmacEncoding:      stringToPgText(params.hmacEncoding),
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to create source verifier")
@@ -414,20 +421,19 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 
 	// Update verifier if present
 	if !util.IsStringEmpty(string(source.Verifier.Type)) && source.Verifier.Type != datastore.NoopVerifier {
-		basicUser, basicPass, apiKeyHeader, apiKeyValue,
-			hmacHash, hmacHeader, hmacSecret, hmacEncoding := extractVerifierParams(source.Verifier)
+		params := extractVerifierParams(source.Verifier)
 
 		result2, err := qtx.UpdateSourceVerifier(ctx, repo.UpdateSourceVerifierParams{
 			ID:                source.VerifierID,
 			Type:              string(source.Verifier.Type),
-			BasicUsername:     stringToPgText(basicUser),
-			BasicPassword:     stringToPgText(basicPass),
-			ApiKeyHeaderName:  stringToPgText(apiKeyHeader),
-			ApiKeyHeaderValue: stringToPgText(apiKeyValue),
-			HmacHash:          stringToPgText(hmacHash),
-			HmacHeader:        stringToPgText(hmacHeader),
-			HmacSecret:        stringToPgText(hmacSecret),
-			HmacEncoding:      stringToPgText(hmacEncoding),
+			BasicUsername:     stringToPgText(params.basicUser),
+			BasicPassword:     stringToPgText(params.basicPass),
+			ApiKeyHeaderName:  stringToPgText(params.apiKeyHeader),
+			ApiKeyHeaderValue: stringToPgText(params.apiKeyValue),
+			HmacHash:          stringToPgText(params.hmacHash),
+			HmacHeader:        stringToPgText(params.hmacHeader),
+			HmacSecret:        stringToPgText(params.hmacSecret),
+			HmacEncoding:      stringToPgText(params.hmacEncoding),
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to update source verifier")

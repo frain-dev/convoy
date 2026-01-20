@@ -749,9 +749,8 @@ func AssertDeliveryAttemptCreated(t *testing.T, db *postgres.Postgres, ctx conte
 // SQS Helper Functions
 
 // CreateSQSSource creates an SQS source for E2E testing
-func CreateSQSSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project,
-	endpoint string, queueName string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
-
+func CreateSQSSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project, endpoint, queueName string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+	t.Helper()
 	source := &datastore.Source{
 		UID:          ulid.Make().String(),
 		ProjectID:    project.UID,
@@ -786,7 +785,9 @@ func CreateSQSSource(t *testing.T, db *postgres.Postgres, ctx context.Context, p
 }
 
 // CreateSQSQueue creates an SQS queue in LocalStack and returns the queue URL
-func CreateSQSQueue(t *testing.T, endpoint string, queueName string) string {
+func CreateSQSQueue(t *testing.T, endpoint, queueName string) string {
+	t.Helper()
+
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"),
 		Endpoint:    aws.String(endpoint),
@@ -808,7 +809,9 @@ func CreateSQSQueue(t *testing.T, endpoint string, queueName string) string {
 }
 
 // GetSQSQueueURL retrieves the queue URL for a given queue name
-func GetSQSQueueURL(t *testing.T, endpoint string, queueName string) string {
+func GetSQSQueueURL(t *testing.T, endpoint, queueName string) string {
+	t.Helper()
+
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"),
 		Endpoint:    aws.String(endpoint),
@@ -829,9 +832,8 @@ func GetSQSQueueURL(t *testing.T, endpoint string, queueName string) string {
 }
 
 // PublishSingleSQSMessage publishes a single-type message to SQS
-func PublishSingleSQSMessage(t *testing.T, endpoint string, queueURL string,
-	endpointID string, eventType string, data map[string]interface{}) error {
-
+func PublishSingleSQSMessage(t *testing.T, endpoint, queueURL, endpointID, eventType string, data map[string]interface{}) error {
+	t.Helper()
 	// Create message body
 	messageBody := map[string]interface{}{
 		"endpoint_id":     endpointID,
@@ -870,9 +872,8 @@ func PublishSingleSQSMessage(t *testing.T, endpoint string, queueURL string,
 }
 
 // PublishFanoutSQSMessage publishes a fanout-type message to SQS
-func PublishFanoutSQSMessage(t *testing.T, endpoint string, queueURL string,
-	ownerID string, eventType string, data map[string]interface{}) error {
-
+func PublishFanoutSQSMessage(t *testing.T, endpoint, queueURL, ownerID, eventType string, data map[string]interface{}) error {
+	t.Helper()
 	// Create message body
 	messageBody := map[string]interface{}{
 		"owner_id":        ownerID,
@@ -911,9 +912,8 @@ func PublishFanoutSQSMessage(t *testing.T, endpoint string, queueURL string,
 }
 
 // PublishBroadcastSQSMessage publishes a broadcast-type message to SQS
-func PublishBroadcastSQSMessage(t *testing.T, endpoint string, queueURL string,
-	eventType string, data map[string]interface{}) error {
-
+func PublishBroadcastSQSMessage(t *testing.T, endpoint, queueURL, eventType string, data map[string]interface{}) error {
+	t.Helper()
 	// Create message body
 	messageBody := map[string]interface{}{
 		"event_type":      eventType,
@@ -989,7 +989,7 @@ func CreateKafkaSource(t *testing.T, db *postgres.Postgres, ctx context.Context,
 }
 
 // CreateKafkaTopic creates a Kafka topic using kafka-go admin client
-func CreateKafkaTopic(t *testing.T, broker string, topic string, numPartitions int, replicationFactor int) {
+func CreateKafkaTopic(t *testing.T, broker, topic string, numPartitions, replicationFactor int) {
 	t.Helper()
 
 	conn, err := kafka.Dial("tcp", broker)
@@ -1158,7 +1158,7 @@ func CreateGooglePubSubSource(t *testing.T, db *postgres.Postgres, ctx context.C
 					"type": "service_account",
 					"project_id": "` + projectID + `",
 					"private_key_id": "test-key-id",
-					"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCnHlJP11mvWMEM\nh7W4zSv3+9zhM+e+u71TzjogbJulwbucjWPznod8qhoaN6M8QWX6xSSkMqsfGjSm\nwbFOY9DEy9vIYq+xZkBOTUebE71pfhtz3/LNMH6dFLIA+6YuFFVoMiHBJk8YB81l\nbGvOb9UXbBhQKL9uZY6EDe2VeyRc6VyNNefG0RfP/jSUl0DNIfyO0fKNaRZ+vYMD\nChPIGP+tQqHpV8leMGmLuzpSKz16AxacYEI/jPWIe7VGc4dZ4fXWcfxcvsXMWSvJ\nA/VB5NUyVgcncrl7LvOOgnMKqG7UAHLWbHOMy3Jv3M/JX1LAebO93gRJZwPov9UN\n6Q/WNIErAgMBAAECggEADE4Rvno7Sstsr3kAmuJUhfZgDZ7uRd958cVCB2gnz70j\njMPmY6Y9EKNPt7V4CfRAx4WjjImEiw45aTviy8RSt2LRRIBrslK2km1jQ9pgvHdC\nGzaWoKAc+oDvGF5vHn51yW3DiX7CHSFZ8MlaaMFYPdjCM4jEi6LjqvqBj1uZUlPn\n6YNxJZ5zbKOaQLs9zyODFIos51qvl1VF6IiYmuhMQPCNf4gqHcoQB8wlli9v2LX0\na1ZUC/iO4ZS8qU5KkNXJNRVM7Jm7ozA6hHpZy+vAmjMmHR80DqocQy+gc8h+F8ZE\n08/4odstGZsMKX1k/NeakMKM/bXqS2WQirRgPBjOzQKBgQDdyCpzetMrkuBa+8kJ\nQYf14VrKnOyyXNLiOEfOs3jye1p0BYiefuq9+1z7QA9PgXggoLxYwLM2vRMMzBSa\nhbolMK1jRn3t7jJ5B3cWZcMx9yfj5u9XHcpDGmjNfSoO3AhmVzrSjpOw4J6+S3lU\nWeDOyOet1HTWaMUKBiNHPGrTjQKBgQDA5xXDqJ1XGzBRUQAprb/yQAGz953Xz227\naFkdSrCYVh/3WTQd2bgBdjRQuCHsNlu89rF/2qaO9hUdnQrfMBM6kmCRqjtrWuir\njn7FU+R+mgXhqn5II0sEJy5vf32xGMMZF58ahEM3sLXKliPTk14r10YWW1O9OfWL\nU+fmIBXdlwKBgB09BluzFaPo+SsFhrtxqDsCOrX7ejkJg8PPJ6hYgNl26bXiBODg\nWpIxUVDOYTZaGzwx9KK+xOGyi5BkV1MHzkKY6ELuSCvV+1F5annJcLJloxyolWUm\nyEOQd8Cff6v11iWn2lln8pCfDE6KJLS6JKkeU2zXVY/uwAtSQ9RgYrUBAoGADW2I\nlFAec7vOxzpOOph/rgtKkw5/jFBCITOIUIOse04zd3JcMF/BcUibJ6tJoTm/dQ3v\nGSlNQtJace9GnHaqP/+EfV9ON5DidV678FyAoVdzZVwK4laimC1qDBTh2PwSSKLe\nTmg6jZvda7a707SEb6TSmifNUnTAZOx4TgqZuw0CgYEAhK/hUC/XB9slvcfdcjIl\nnL9177YOsze5d8H1c+X4KbnYCtMHqVUSBqzPE7mEBnYcYnPKMbaJSZEFWWSs03VJ\nzyWW47RpUlM7mF5TQknf1Wrztm+1vGl+/WqGfBWtcI+FmsADI8eNH5W3Zo1lsPx1\n62HDtYD7HVNKoJT0JMwmpDI=\n-----END PRIVATE KEY-----\n",
+					"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCnHlJP11mvWMEM\nh7W4zSv3+9zhM+e+u71TzjogbJulwbucjWPznod8qhoaN6M8QWX6xSSkMqsfGjSm\nwbFOY9DEy9vIYq+xZkBOTUebE71pfhtz3/LNMH6dFLIA+6YuFFVoMiHBJk8YB81l\nbGvOb9UXbBhQKL9uZY6EDe2VeyRc6VyNNefG0RfP/jSUl0DNIfyO0fKNaRZ+vYMD\nChPIGP+tQqHpV8leMGmLuzpSKz16AxacYEI/jPWIe7VGc4dZ4fXWcfxcvsXMWSvJ\nA/VB5NUyVgcncrl7LvOOgnMKqG7UAHLWbHOMy3Jv3M/JX1LAebO93gRJZwPov9UN\n6Q/WNIErAgMBAAECggEADE4Rvno7Sstsr3kAmuJUhfZgDZ7uRd958cVCB2gnz70j\njMPmY6Y9EKNPt7V4CfRAx4WjjImEiw45aTviy8RSt2LRRIBrslK2km1jQ9pgvHdC\nGzaWoKAc+oDvGF5vHn51yW3DiX7CHSFZ8MlaaMFYPdjCM4jEi6LjqvqBj1uZUlPn\n6YNxJZ5zbKOaQLs9zyODFIos51qvl1VF6IiYmuhMQPCNf4gqHcoQB8wlli9v2LX0\na1ZUC/iO4ZS8qU5KkNXJNRVM7Jm7ozA6hHpZy+vAmjMmHR80DqocQy+gc8h+F8ZE\n08/4odstGZsMKX1k/NeakMKM/bXqS2WQirRgPBjOzQKBgQDdyCpzetMrkuBa+8kJ\nQYf14VrKnOyyXNLiOEfOs3jye1p0BYiefuq9+1z7QA9PgXggoLxYwLM2vRMMzBSa\nhbolMK1jRn3t7jJ5B3cWZcMx9yfj5u9XHcpDGmjNfSoO3AhmVzrSjpOw4J6+S3lU\nWeDOyOet1HTWaMUKBiNHPGrTjQKBgQDA5xXDqJ1XGzBRUQAprb/yQAGz953Xz227\naFkdSrCYVh/3WTQd2bgBdjRQuCHsNlu89rF/2qaO9hUdnQrfMBM6kmCRqjtrWuir\njn7FU+R+mgXhqn5II0sEJy5vf32xGMMZF58ahEM3sLXKliPTk14r10YWW1O9OfWL\nU+fmIBXdlwKBgB09BluzFaPo+SsFhrtxqDsCOrX7ejkJg8PPJ6hYgNl26bXiBODg\nWpIxUVDOYTZaGzwx9KK+xOGyi5BkV1MHzkKY6ELuSCvV+1F5annJcLJloxyolWUm\nyEOQd8Cff6v11iWn2lln8pCfDE6KJLS6JKkeU2zXVY/uwAtSQ9RgYrUBAoGADW2I\nlFAec7vOxzpOOph/rgtKkw5/jFBCITOIUIOse04zd3JcMF/BcUibJ6tJoTm/dQ3v\nGSlNQtJace9GnHaqP/+EfV9ON5DidV678FyAoVdzZVwK4laimC1qDBTh2PwSSKLe\nTmg6jZvda7a707SEb6TSmifNUnTAZOx4TgqZuw0CgYEAhK/hUC/XB9slvcfdcjIl\nnL9177YOsze5d8H1c+X4KbnYCtMHqVUSBqzPE7mEBnYcYnPKMbaJSZEFWWSs03VJ\nzyWW47RpUlM7mF5TQknf1Wrztm+1vGl+/WqGfBWtcI+FmsADI8eNH5W3Zo1lsPx1\n62HDtYD7HVNKoJT0JMwmpDI=\n-----END PRIVATE KEY-----\n"",
 					"client_email": "test@convoy-test-project.iam.gserviceaccount.com",
 					"client_id": "123456789",
 					"auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -1177,7 +1177,7 @@ func CreateGooglePubSubSource(t *testing.T, db *postgres.Postgres, ctx context.C
 }
 
 // CreateGooglePubSubTopicAndSubscription creates a Pub/Sub topic and subscription using the emulator
-func CreateGooglePubSubTopicAndSubscription(t *testing.T, emulatorHost string, projectID string, topicID string, subscriptionID string) {
+func CreateGooglePubSubTopicAndSubscription(t *testing.T, emulatorHost, projectID, topicID, subscriptionID string) {
 	t.Helper()
 
 	ctx := context.Background()

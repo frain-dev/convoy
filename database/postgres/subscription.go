@@ -554,7 +554,7 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 	return subs, nil
 }
 
-func (s *subscriptionRepo) FetchNewSubscriptions(ctx context.Context, projectIDs []string, knownSubscriptionIDs []string, lastSyncTime time.Time, pageSize int64) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FetchNewSubscriptions(ctx context.Context, projectIDs, knownSubscriptionIDs []string, lastSyncTime time.Time, pageSize int64) ([]datastore.Subscription, error) {
 	if len(projectIDs) == 0 {
 		return []datastore.Subscription{}, nil
 	}
