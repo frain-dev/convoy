@@ -17,9 +17,7 @@ build:
 
 .PHONY: test
 test:
-	@for pkg in $$(go list ./... | grep -v '/e2e'); do \
-    		go test -v -p 1 $$pkg; \
-    	done
+	@go test -p 1 $(shell go list ./... | grep -v '/e2e')
 
 # E2E Tests - Run individually for reliability and reproducibility
 test_e2e:

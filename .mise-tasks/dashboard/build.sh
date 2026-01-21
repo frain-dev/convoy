@@ -2,7 +2,7 @@
 
 #MISE description="Build the Angular dashboard application"
 #MISE dir="{{ config_root }}"
-#MI SE sources=["web/ui/dashboard/**/*"]
+#MISE sources=["web/ui/dashboard/**/*"]
 
 set -e
 
