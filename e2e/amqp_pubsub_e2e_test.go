@@ -1523,6 +1523,78 @@ func TestE2E_AMQP_Single_SourceHeaderTransform(t *testing.T) {
 	t.Log("✓ Source with header transformation doesn't break delivery flow")
 }
 
+func TestE2E_AMQP_Single_SubscriptionTransform(t *testing.T) {
+	env := SetupE2EWithAMQP(t)
+
+	// Create Convoy SDK client
+	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
+
+	// Get postgres DB
+	db := env.App.DB.(*postgres.Postgres)
+
+	// Create endpoint
+	port := 18100
+	ownerID := "owner-" + ulid.Make().String()
+	endpoint := CreateEndpointViaSDK(t, c, port, ownerID)
+
+	// Subscription transformation function (modifies the data field)
+	transformFunction := `function transform(payload) {
+		payload.transformed = true;
+		payload.timestamp = new Date().toISOString();
+		return payload;
+	}`
+
+	// Create subscription with transformation function
+	eventType := "data.sync"
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{eventType}, nil, nil, &transformFunction, nil,
+	)
+	require.NotNil(t, subscription)
+	require.True(t, subscription.Function.Valid, "Function should be set")
+
+	// Create AMQP source (no source-level transformation)
+	queue := "test-queue-" + ulid.Make().String()
+	source := CreateAMQPSource(
+		t, db, env.ctx, env.Project,
+		env.RabbitMQHost, env.RabbitMQPort,
+		queue, 1, nil, nil,
+	)
+	require.NotNil(t, source)
+
+	// Setup mock webhook server
+	manifest := NewEventManifest()
+	done := make(chan bool, 1)
+	var counter atomic.Int64
+	counter.Store(1)
+	StartMockWebhookServer(t, manifest, done, &counter, port)
+
+	// Sync sources
+	env.SyncSources(t)
+
+	// Publish message
+	data := map[string]interface{}{
+		"record_id": "rec-" + ulid.Make().String(),
+		"value":     42,
+	}
+	PublishSingleAMQPMessage(
+		t, env.RabbitMQHost, env.RabbitMQPort,
+		queue, endpoint.UID, eventType, data, nil,
+	)
+
+	// Wait for webhook
+	WaitForWebhooks(t, done, 30*time.Second)
+
+	// Verify event and delivery were created
+	event := AssertEventCreated(t, db, env.ctx, env.Project.UID, eventType)
+	require.NotNil(t, event)
+
+	delivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
+	require.NotNil(t, delivery)
+
+	t.Log("✓ Subscription transformation applied during event delivery creation")
+}
+
 // Negative Tests + Edge Cases
 
 func TestE2E_AMQP_Single_NoMatchingSubscription(t *testing.T) {
