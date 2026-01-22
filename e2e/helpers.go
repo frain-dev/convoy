@@ -708,16 +708,15 @@ func AssertEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context
 	return eventDelivery
 }
 
-// AssertNoEventDeliveryCreated verifies that NO event delivery was created (for negative tests)
+// AssertNoEventDeliveryCreated verifies that NO event delivery was created for a specific
+// event and endpoint within a time window. This is used in negative test cases to verify
+// that filtering logic (event types, body filters, headers) correctly prevents delivery creation.
+//
+// The function filters by both eventID AND endpointID to ensure test isolation when multiple
+// endpoints exist in the same project.
+//
 // Optional timeWindow parameter specifies the lookback window (defaults to 5 minutes if not provided)
-//
-// NOTE: This function has a known limitation - it does NOT filter by endpoint ID.
-// It queries for ALL deliveries with the given eventID across all endpoints.
-// This can cause false positives when used after AssertEventDeliveryCreated confirms
-// a delivery exists for the same event but different endpoint.
-//
-// TODO: Add endpointID parameter and update all 48 call sites to properly filter by endpoint
-func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID string, timeWindow ...time.Duration) {
+func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID, endpointID string, timeWindow ...time.Duration) {
 	t.Helper()
 
 	// Use default 5-minute window if not specified (larger window for negative tests)
@@ -742,7 +741,7 @@ func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx conte
 	}
 
 	deliveries, _, err := eventDeliveryRepo.LoadEventDeliveriesPaged(
-		ctx, projectID, nil, eventID, "",
+		ctx, projectID, []string{endpointID}, eventID, "",
 		nil, searchParams, pageable, "", "", "",
 	)
 	require.NoError(t, err)

@@ -413,7 +413,7 @@ func TestE2E_AMQP_Single_EventTypeFilter(t *testing.T) {
 	// Verify event delivery was NOT created for non-matching event type
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event2.UID,
+		env.Project.UID, event2.UID, endpoint.UID,
 	)
 	t.Log("✓ Event delivery correctly not created for non-matching event type")
 }
@@ -593,7 +593,7 @@ func TestE2E_AMQP_Fanout_EventTypeFilter(t *testing.T) {
 	// Verify event delivery was NOT created for endpoint2
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event1.UID,
+		env.Project.UID, event1.UID, endpoint2.UID,
 	)
 	t.Log("✓ Event delivery correctly not created for endpoint2 (non-matching event type)")
 
@@ -633,7 +633,7 @@ func TestE2E_AMQP_Fanout_EventTypeFilter(t *testing.T) {
 	// Verify event delivery was NOT created for endpoint1
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event2.UID,
+		env.Project.UID, event2.UID, endpoint1.UID,
 	)
 	t.Log("✓ Event delivery correctly not created for endpoint1 (non-matching event type)")
 }
@@ -776,7 +776,7 @@ func TestE2E_AMQP_Broadcast_EventTypeFilter(t *testing.T) {
 	// Endpoint3 should NOT have a delivery
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event1.UID,
+		env.Project.UID, event1.UID, endpoint3.UID,
 	)
 	t.Log("✓ Broadcast correctly delivered only to subscriptions matching event type")
 
@@ -844,11 +844,11 @@ func TestE2E_AMQP_Broadcast_EventTypeFilter(t *testing.T) {
 	// Endpoint1 and Endpoint2 should NOT have deliveries
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event2.UID,
+		env.Project.UID, event2.UID, endpoint1.UID,
 	)
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event2.UID,
+		env.Project.UID, event2.UID, endpoint2.UID,
 	)
 	t.Log("✓ Broadcast correctly filtered by event type")
 }
@@ -949,7 +949,7 @@ func TestE2E_AMQP_Single_BodyFilter_Equal(t *testing.T) {
 	// Verify NO delivery was created (filter didn't match)
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event2.UID,
+		env.Project.UID, event2.UID, endpoint.UID,
 	)
 	t.Log("✓ Body filter correctly rejected: amount = 200")
 }
@@ -1020,7 +1020,7 @@ func TestE2E_AMQP_Single_BodyFilter_GreaterThan(t *testing.T) {
 
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event1.UID,
+		env.Project.UID, event1.UID, endpoint.UID,
 	)
 	t.Log("✓ Body filter correctly rejected: amount = 50 (not > 100)")
 
@@ -1145,7 +1145,7 @@ func TestE2E_AMQP_Single_BodyFilter_In(t *testing.T) {
 	// Verify NO delivery was created for "completed" status
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event3.UID,
+		env.Project.UID, event3.UID, endpoint.UID,
 	)
 	t.Log("✓ Body filter correctly rejected: status = 'completed'")
 }
@@ -1246,7 +1246,7 @@ func TestE2E_AMQP_Single_HeaderFilter(t *testing.T) {
 	// Verify NO delivery was created (filter didn't match)
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event2.UID,
+		env.Project.UID, event2.UID, endpoint.UID,
 	)
 	t.Log("✓ Header filter correctly rejected: x-tenant = 'other'")
 }
@@ -1356,7 +1356,7 @@ func TestE2E_AMQP_Single_CombinedFilters(t *testing.T) {
 
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event2.UID,
+		env.Project.UID, event2.UID, endpoint.UID,
 	)
 	t.Log("✓ Combined filters rejected: amount = 30 (not > 50)")
 
@@ -1383,7 +1383,7 @@ func TestE2E_AMQP_Single_CombinedFilters(t *testing.T) {
 
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event3.UID,
+		env.Project.UID, event3.UID, endpoint.UID,
 	)
 	t.Log("✓ Combined filters rejected: x-priority = 'low' (not 'high')")
 }
@@ -1657,7 +1657,7 @@ func TestE2E_AMQP_Single_NoMatchingSubscription(t *testing.T) {
 	// Verify NO delivery was created (no matching subscription)
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event.UID,
+		env.Project.UID, event.UID, endpoint.UID,
 	)
 
 	t.Log("✓ Event created but no delivery when no matching subscription")
@@ -1920,7 +1920,7 @@ func TestE2E_AMQP_Single_FilterMismatch(t *testing.T) {
 	// Verify NO delivery was created (filter rejected it)
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
-		env.Project.UID, event.UID,
+		env.Project.UID, event.UID, endpoint.UID,
 	)
 
 	t.Log("✓ Event created but filter rejected delivery")

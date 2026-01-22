@@ -270,7 +270,7 @@ func TestE2E_GooglePubSub_Single_EventTypeFilter(t *testing.T) {
 
 	// Verify event created but NO delivery for non-matching type
 	event2 := AssertEventCreated(t, db, env.ctx, env.Project.UID, "user.signup")
-	AssertNoEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event2.UID)
+	AssertNoEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event2.UID, endpoint.UID)
 }
 
 // Test 2.2: Wildcard event type matching
@@ -488,7 +488,7 @@ func TestE2E_GooglePubSub_Single_BodyFilter_Equal(t *testing.T) {
 
 	// Verify event created but NO delivery for non-matching filter
 	event2 := AssertEventCreated(t, db, env.ctx, env.Project.UID, "payment.received")
-	AssertNoEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event2.UID)
+	AssertNoEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event2.UID, endpoint.UID)
 }
 
 // Test 3.2: Body filter with $gt operator
@@ -812,7 +812,7 @@ func TestE2E_GooglePubSub_Single_NoMatchingSubscription(t *testing.T) {
 
 	// Verify event created but NO delivery
 	event := AssertEventCreated(t, db, env.ctx, env.Project.UID, "test.event")
-	AssertNoEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID)
+	AssertNoEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 }
 
 // Test 5.2: Invalid endpoint
@@ -957,7 +957,7 @@ func TestE2E_GooglePubSub_Single_FilterMismatch(t *testing.T) {
 
 	// Verify event created but NO delivery
 	event := AssertEventCreated(t, db, env.ctx, env.Project.UID, "payment.received")
-	AssertNoEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID)
+	AssertNoEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 }
 
 // Test 6.1: Multiple workers (concurrent processing)
