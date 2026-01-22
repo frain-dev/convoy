@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	//nolint:staticcheck // we don't want to use v2
 	"cloud.google.com/go/pubsub"
@@ -55,16 +54,8 @@ func (g *Google) Start(ctx context.Context) {
 func (g *Google) Verify() error {
 	ctx := context.Background()
 
-	// Check if using emulator (for testing)
-	var client *pubsub.Client
-	var err error
-	if os.Getenv("PUBSUB_EMULATOR_HOST") != "" {
-		// When using emulator, don't pass credentials
-		client, err = pubsub.NewClient(ctx, g.Cfg.ProjectID)
-	} else {
-		// Production: use provided credentials
-		client, err = pubsub.NewClient(ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
-	}
+	// The SDK automatically detects PUBSUB_EMULATOR_HOST and disables authentication when set
+	client, err := pubsub.NewClient(ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 	if err != nil {
 		log.WithError(err).Error("failed to create new Google PubSub client")
 		return ErrInvalidCredentials
@@ -86,16 +77,8 @@ func (g *Google) Verify() error {
 }
 
 func (g *Google) consume() {
-	// Check if using emulator (for testing)
-	var client *pubsub.Client
-	var err error
-	if os.Getenv("PUBSUB_EMULATOR_HOST") != "" {
-		// When using emulator, don't pass credentials
-		client, err = pubsub.NewClient(g.ctx, g.Cfg.ProjectID)
-	} else {
-		// Production: use provided credentials
-		client, err = pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
-	}
+	// The SDK automatically detects PUBSUB_EMULATOR_HOST and disables authentication when set
+	client, err := pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 	if err != nil {
 		g.log.WithError(err).Error("failed to create new Google PubSub client")
 		return
