@@ -31,6 +31,7 @@ import (
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/log"
 )
@@ -748,32 +749,35 @@ func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx conte
 	require.Empty(t, deliveries, "No event delivery should have been created")
 }
 
-// AssertDeliveryAttemptCreated verifies that a delivery attempt was created
-func AssertDeliveryAttemptCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventDeliveryID string) {
+// AssertDeliveryAttemptCreated verifies that at least one delivery attempt was created
+// for the specified event delivery. Returns the most recent delivery attempt for
+// additional assertions (HTTP status, error details, etc.).
+//
+// This helper uses a retry loop (20 attempts, 200ms apart) to account for async
+// delivery attempt creation after webhook delivery completes.
+func AssertDeliveryAttemptCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, eventDeliveryID string) *datastore.DeliveryAttempt {
 	t.Helper()
 
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	attemptsService := delivery_attempts.New(nil, db)
 
-	// Use a short retry loop - fetch the event delivery and check if it has attempts
-	var delivery *datastore.EventDelivery
+	// Retry loop - delivery attempts may take time to be created
+	var attempts []datastore.DeliveryAttempt
 	var err error
 	for i := 0; i < 20; i++ {
-		delivery, err = eventDeliveryRepo.FindEventDeliveryByID(ctx, projectID, eventDeliveryID)
-		if err == nil {
-			t.Logf("Event delivery loaded: ID=%s, Status=%s, Attempts=%d (attempt %d)", delivery.UID, delivery.Status, len(delivery.DeliveryAttempts), i+1)
-			if len(delivery.DeliveryAttempts) > 0 {
-				t.Logf("✓ Found delivery attempts: %d", len(delivery.DeliveryAttempts))
-				break
-			}
-		} else {
-			t.Logf("ERROR loading event delivery (attempt %d): %v", i+1, err)
+		attempts, err = attemptsService.FindDeliveryAttempts(ctx, eventDeliveryID)
+		if err == nil && len(attempts) > 0 {
+			t.Logf("✓ Found %d delivery attempt(s) for delivery %s (attempt %d)",
+				len(attempts), eventDeliveryID, i+1)
+			break
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
 
-	require.NoError(t, err)
-	require.NotNil(t, delivery, "Event delivery should exist")
-	require.NotEmpty(t, delivery.DeliveryAttempts, "At least one delivery attempt should have been created")
+	require.NoError(t, err, "Failed to query delivery attempts")
+	require.NotEmpty(t, attempts, "At least one delivery attempt should have been created")
+
+	// Return the most recent attempt
+	return &attempts[len(attempts)-1]
 }
 
 // SQS Helper Functions

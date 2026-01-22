@@ -82,6 +82,11 @@ func TestE2E_GooglePubSub_Single_BasicDelivery(t *testing.T) {
 
 	eventDelivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 	require.NotNil(t, eventDelivery)
+
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // Test 1.2: Fanout delivery to multiple endpoints
@@ -145,6 +150,15 @@ func TestE2E_GooglePubSub_Fanout_MultipleEndpoints(t *testing.T) {
 
 	eventDelivery2 := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint2.UID)
 	require.NotNil(t, eventDelivery2)
+
+	// Verify delivery attempts were created for both endpoints
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook 1 should return 200 OK")
+
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook 2 should return 200 OK")
 }
 
 // Test 1.3: Broadcast delivery to all matching subscriptions
@@ -218,6 +232,19 @@ func TestE2E_GooglePubSub_Broadcast_AllSubscribers(t *testing.T) {
 
 	eventDelivery3 := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint3.UID)
 	require.NotNil(t, eventDelivery3)
+
+	// Verify delivery attempts were created for all endpoints
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook 1 should return 200 OK")
+
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook 2 should return 200 OK")
+
+	attempt3 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery3.UID)
+	require.NotNil(t, attempt3)
+	require.Equal(t, "200 OK", attempt3.HttpResponseCode, "Webhook 3 should return 200 OK")
 }
 
 // Test 2.1: Event type filtering
@@ -261,6 +288,11 @@ func TestE2E_GooglePubSub_Single_EventTypeFilter(t *testing.T) {
 
 	eventDelivery1 := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event1.UID, endpoint.UID)
 	require.NotNil(t, eventDelivery1)
+
+	// Verify delivery attempt was created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
 
 	// Publish non-matching event type
 	data2 := map[string]interface{}{"user_id": "user-" + ulid.Make().String()}
@@ -313,8 +345,24 @@ func TestE2E_GooglePubSub_Single_WildcardEventType(t *testing.T) {
 	event1 := AssertEventCreated(t, db, env.ctx, env.Project.UID, "payment.completed")
 	require.NotNil(t, event1)
 
+	eventDelivery1 := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event1.UID, endpoint.UID)
+	require.NotNil(t, eventDelivery1)
+
+	// Verify delivery attempt was created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
+
 	event2 := AssertEventCreated(t, db, env.ctx, env.Project.UID, "order.created")
 	require.NotNil(t, event2)
+
+	eventDelivery2 := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event2.UID, endpoint.UID)
+	require.NotNil(t, eventDelivery2)
+
+	// Verify delivery attempt was created
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // Test 2.3: Fanout with event type filtering
@@ -368,6 +416,15 @@ func TestE2E_GooglePubSub_Fanout_EventTypeFilter(t *testing.T) {
 
 	eventDelivery2 := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint2.UID)
 	require.NotNil(t, eventDelivery2)
+
+	// Verify delivery attempts were created for both endpoints
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook 1 should return 200 OK")
+
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook 2 should return 200 OK")
 }
 
 // Test 2.4: Broadcast with event type filtering
@@ -433,6 +490,19 @@ func TestE2E_GooglePubSub_Broadcast_EventTypeFilter(t *testing.T) {
 
 	eventDelivery3 := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint3.UID)
 	require.NotNil(t, eventDelivery3)
+
+	// Verify delivery attempts were created for all endpoints
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook 1 should return 200 OK")
+
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook 2 should return 200 OK")
+
+	attempt3 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery3.UID)
+	require.NotNil(t, attempt3)
+	require.Equal(t, "200 OK", attempt3.HttpResponseCode, "Webhook 3 should return 200 OK")
 }
 
 // Test 3.1: Body filter with $eq operator
@@ -479,6 +549,11 @@ func TestE2E_GooglePubSub_Single_BodyFilter_Equal(t *testing.T) {
 
 	eventDelivery1 := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event1.UID, endpoint.UID)
 	require.NotNil(t, eventDelivery1)
+
+	// Verify delivery attempt was created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
 
 	// Publish message NOT matching filter
 	data2 := map[string]interface{}{"amount": 50}
@@ -535,6 +610,11 @@ func TestE2E_GooglePubSub_Single_BodyFilter_GreaterThan(t *testing.T) {
 
 	eventDelivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 	require.NotNil(t, eventDelivery)
+
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // Test 3.3: Body filter with $in operator
@@ -581,6 +661,11 @@ func TestE2E_GooglePubSub_Single_BodyFilter_In(t *testing.T) {
 
 	eventDelivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 	require.NotNil(t, eventDelivery)
+
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // Test 3.4: Header filter
@@ -634,6 +719,11 @@ func TestE2E_GooglePubSub_Single_HeaderFilter(t *testing.T) {
 
 	eventDelivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 	require.NotNil(t, eventDelivery)
+
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // Test 3.5: Combined filters (body + header)
@@ -692,6 +782,11 @@ func TestE2E_GooglePubSub_Single_CombinedFilters(t *testing.T) {
 
 	eventDelivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 	require.NotNil(t, eventDelivery)
+
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // Test 4.1: Source body transformation
@@ -737,6 +832,11 @@ func TestE2E_GooglePubSub_Single_SourceBodyTransform(t *testing.T) {
 
 	eventDelivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 	require.NotNil(t, eventDelivery)
+
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // Test 4.2: Source header transformation
@@ -783,6 +883,11 @@ func TestE2E_GooglePubSub_Single_SourceHeaderTransform(t *testing.T) {
 
 	eventDelivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 	require.NotNil(t, eventDelivery)
+
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // Test 5.1: No matching subscription
@@ -1014,6 +1119,12 @@ func TestE2E_GooglePubSub_Single_MultipleWorkers(t *testing.T) {
 				env.Project.UID, event.UID, endpoint.UID,
 			)
 			require.NotNil(t, delivery, "Each event should have a delivery")
+
+			// Verify delivery attempt was created
+			attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, delivery.UID)
+			require.NotNil(t, attempt)
+			require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
+
 			break // Found at least one event, that's enough to verify the system works
 		}
 	}

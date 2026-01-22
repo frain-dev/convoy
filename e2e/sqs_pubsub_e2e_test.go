@@ -94,6 +94,11 @@ func TestE2E_SQS_Single_BasicDelivery(t *testing.T) {
 		env.Project.UID, event.UID, endpoint.UID,
 	)
 	require.NotNil(t, eventDelivery)
+
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // TestE2E_SQS_Fanout_MultipleEndpoints tests fanout message delivery to multiple endpoints
@@ -191,6 +196,15 @@ func TestE2E_SQS_Fanout_MultipleEndpoints(t *testing.T) {
 	)
 	require.NotNil(t, eventDelivery1)
 	require.NotNil(t, eventDelivery2)
+
+	// Verify delivery attempts were created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
+
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // TestE2E_SQS_Broadcast_AllSubscribers tests broadcast message delivery to all subscriptions
@@ -308,6 +322,15 @@ func TestE2E_SQS_Broadcast_AllSubscribers(t *testing.T) {
 	)
 	require.NotNil(t, eventDelivery1)
 	require.NotNil(t, eventDelivery2)
+
+	// Verify delivery attempts were created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
+
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook should return 200 OK")
 }
 
 // Event Type Filtering Tests
@@ -388,6 +411,11 @@ func TestE2E_SQS_Single_EventTypeFilter(t *testing.T) {
 		env.Project.UID, event1.UID, endpoint.UID,
 	)
 	require.NotNil(t, eventDelivery1)
+
+	// Verify delivery attempt was created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
 
 	// Test 2: Publish message with NON-MATCHING event type (user.signup)
 	t.Log("Publishing message with non-matching event type...")
@@ -508,6 +536,11 @@ func TestE2E_SQS_Single_WildcardEventType(t *testing.T) {
 			env.Project.UID, event.UID, endpoint.UID,
 		)
 		require.NotNil(t, eventDelivery)
+
+		// Verify delivery attempt was created
+		attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery.UID)
+		require.NotNil(t, attempt)
+		require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 	}
 
 	t.Log("✓ Wildcard subscription correctly matched all event types")
@@ -603,6 +636,11 @@ func TestE2E_SQS_Fanout_EventTypeFilter(t *testing.T) {
 	)
 	require.NotNil(t, eventDelivery1)
 
+	// Verify delivery attempt was created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
+
 	// Verify event delivery was NOT created for endpoint2
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
@@ -643,6 +681,11 @@ func TestE2E_SQS_Fanout_EventTypeFilter(t *testing.T) {
 		env.Project.UID, event2.UID, endpoint2.UID,
 	)
 	require.NotNil(t, eventDelivery2)
+
+	// Verify delivery attempt was created
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook should return 200 OK")
 
 	// Verify event delivery was NOT created for endpoint1
 	AssertNoEventDeliveryCreated(
@@ -789,6 +832,15 @@ func TestE2E_SQS_Broadcast_EventTypeFilter(t *testing.T) {
 	)
 	require.NotNil(t, eventDelivery2)
 
+	// Verify delivery attempts were created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
+
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook should return 200 OK")
+
 	// Endpoint3 should NOT have a delivery
 	AssertNoEventDeliveryCreated(
 		t, db, env.ctx,
@@ -855,6 +907,11 @@ func TestE2E_SQS_Broadcast_EventTypeFilter(t *testing.T) {
 		env.Project.UID, event2.UID, endpoint3.UID,
 	)
 	require.NotNil(t, eventDelivery3)
+
+	// Verify delivery attempt was created
+	attempt3 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery3.UID)
+	require.NotNil(t, attempt3)
+	require.Equal(t, "200 OK", attempt3.HttpResponseCode, "Webhook should return 200 OK")
 
 	// Endpoint1 and Endpoint2 should NOT have deliveries
 	AssertNoEventDeliveryCreated(
@@ -942,6 +999,11 @@ func TestE2E_SQS_Single_BodyFilter_Equal(t *testing.T) {
 		env.Project.UID, event1.UID, endpoint.UID,
 	)
 	require.NotNil(t, eventDelivery1)
+
+	// Verify delivery attempt was created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
 	t.Log("✓ Body filter matched: amount = 100")
 
 	// Test 2: Publish message with amount = 200 (should NOT match)
@@ -1070,6 +1132,11 @@ func TestE2E_SQS_Single_BodyFilter_GreaterThan(t *testing.T) {
 		env.Project.UID, event2.UID, endpoint.UID,
 	)
 	require.NotNil(t, eventDelivery2)
+
+	// Verify delivery attempt was created
+	attempt2 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery2.UID)
+	require.NotNil(t, attempt2)
+	require.Equal(t, "200 OK", attempt2.HttpResponseCode, "Webhook should return 200 OK")
 	t.Log("✓ Body filter matched: amount = 150 (> 100)")
 }
 
@@ -1248,6 +1315,11 @@ func TestE2E_SQS_Single_HeaderFilter(t *testing.T) {
 		env.Project.UID, event1.UID, endpoint.UID,
 	)
 	require.NotNil(t, eventDelivery1)
+
+	// Verify delivery attempt was created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
 	t.Log("✓ Header filter matched: x-tenant = 'acme'")
 
 	// Test 2: Publish message with x-tenant = "other" (should NOT match)
@@ -1361,6 +1433,11 @@ func TestE2E_SQS_Single_CombinedFilters(t *testing.T) {
 		env.Project.UID, event1.UID, endpoint.UID,
 	)
 	require.NotNil(t, eventDelivery1)
+
+	// Verify delivery attempt was created
+	attempt1 := AssertDeliveryAttemptCreated(t, db, env.ctx, eventDelivery1.UID)
+	require.NotNil(t, attempt1)
+	require.Equal(t, "200 OK", attempt1.HttpResponseCode, "Webhook should return 200 OK")
 	t.Log("✓ Combined filters matched: amount > 50 AND x-priority = 'high'")
 
 	// Test 2: Body filter fails (amount = 30, should NOT deliver)
@@ -1486,6 +1563,11 @@ func TestE2E_SQS_Single_SourceBodyTransform(t *testing.T) {
 	delivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 	require.NotNil(t, delivery)
 
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, delivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
+
 	t.Log("✓ Source with body transformation doesn't break delivery flow")
 }
 
@@ -1553,6 +1635,11 @@ func TestE2E_SQS_Single_SourceHeaderTransform(t *testing.T) {
 
 	delivery := AssertEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 	require.NotNil(t, delivery)
+
+	// Verify delivery attempt was created
+	attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, delivery.UID)
+	require.NotNil(t, attempt)
+	require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 
 	t.Log("✓ Source with header transformation doesn't break delivery flow")
 }
@@ -2001,6 +2088,11 @@ func TestE2E_SQS_Single_MultipleWorkers(t *testing.T) {
 				env.Project.UID, event.UID, endpoint.UID,
 			)
 			require.NotNil(t, delivery, "Each event should have a delivery")
+
+			// Verify delivery attempt was created
+			attempt := AssertDeliveryAttemptCreated(t, db, env.ctx, delivery.UID)
+			require.NotNil(t, attempt)
+			require.Equal(t, "200 OK", attempt.HttpResponseCode, "Webhook should return 200 OK")
 			break // Found at least one event, that's enough to verify the system works
 		}
 	}
