@@ -1,5 +1,8 @@
 name: Daily PubSub E2E Tests
 
+permissions:
+  contents: read
+
 on:
   schedule:
     # Run daily at 2 AM UTC
