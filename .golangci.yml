@@ -239,6 +239,10 @@ linters:
           - funlen # Allow longer functions in main commands
           - errcheck #Allow uncheked e.g db.CLose
 
+      - path: e2e/
+        linters:
+          - lll # Allow longer lines for test data in e2e helpers
+
       - path: migrations/
         linters:
           - funlen

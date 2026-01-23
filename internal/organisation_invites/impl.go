@@ -8,11 +8,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gopkg.in/guregu/null.v4"
 
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/organisation_invites/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -37,41 +36,6 @@ func New(logger log.StdLogger, db database.Database) *Service {
 		db:     db.GetConn(),
 		legacy: db,
 	}
-}
-
-// ============================================================================
-// Type Conversion Helpers
-// ============================================================================
-
-// roleToParams converts auth.Role to database column parameters
-func roleToParams(role auth.Role) (roleType string, roleProject, roleEndpoint pgtype.Text) {
-	roleType = string(role.Type)
-
-	roleProject = pgtype.Text{
-		String: role.Project,
-		Valid:  !util.IsStringEmpty(role.Project),
-	}
-
-	roleEndpoint = pgtype.Text{
-		String: role.Endpoint,
-		Valid:  !util.IsStringEmpty(role.Endpoint),
-	}
-
-	return
-}
-
-// paramsToRole converts database columns to auth.Role
-func paramsToRole(roleType, roleProject, roleEndpoint string) auth.Role {
-	return auth.Role{
-		Type:     auth.RoleType(roleType),
-		Project:  roleProject,
-		Endpoint: roleEndpoint,
-	}
-}
-
-// nullTimeToPgTimestamptz converts null.Time to pgtype.Timestamptz
-func nullTimeToPgTimestamptz(t null.Time) pgtype.Timestamptz {
-	return pgtype.Timestamptz{Time: t.Time, Valid: t.Valid}
 }
 
 // rowToOrganisationInvite converts any SQLc-generated row struct to datastore.OrganisationInvite
@@ -110,7 +74,7 @@ func rowToOrganisationInvite(row interface{}) datastore.OrganisationInvite {
 		InviteeEmail:   inviteeEmail,
 		Token:          token,
 		Status:         datastore.InviteStatus(status),
-		Role:           paramsToRole(roleType, roleProject, roleEndpoint),
+		Role:           common.ParamsToRole(roleType, roleProject, roleEndpoint),
 		ExpiresAt:      expiresAt.Time,
 		CreatedAt:      createdAt.Time,
 		UpdatedAt:      updatedAt.Time,
@@ -128,14 +92,14 @@ func (s *Service) CreateOrganisationInvite(ctx context.Context, iv *datastore.Or
 	}
 
 	// Convert role to database params
-	roleType, roleProject, roleEndpoint := roleToParams(iv.Role)
+	roleTypePg, roleProject, roleEndpoint := common.RoleToParams(iv.Role)
 
 	err := s.repo.CreateOrganisationInvite(ctx, repo.CreateOrganisationInviteParams{
 		ID:             iv.UID,
 		OrganisationID: iv.OrganisationID,
 		InviteeEmail:   iv.InviteeEmail,
 		Token:          iv.Token,
-		RoleType:       roleType,
+		RoleType:       roleTypePg.String,
 		RoleProject:    roleProject,
 		RoleEndpoint:   roleEndpoint,
 		Status:         string(iv.Status),
@@ -157,16 +121,16 @@ func (s *Service) UpdateOrganisationInvite(ctx context.Context, iv *datastore.Or
 	}
 
 	// Convert role to database params
-	roleType, roleProject, roleEndpoint := roleToParams(iv.Role)
+	roleTypePg, roleProject, roleEndpoint := common.RoleToParams(iv.Role)
 
 	err := s.repo.UpdateOrganisationInvite(ctx, repo.UpdateOrganisationInviteParams{
 		ID:           iv.UID,
-		RoleType:     roleType,
+		RoleType:     roleTypePg.String,
 		RoleProject:  roleProject,
 		RoleEndpoint: roleEndpoint,
 		Status:       string(iv.Status),
 		ExpiresAt:    pgtype.Timestamptz{Time: iv.ExpiresAt, Valid: true},
-		DeletedAt:    nullTimeToPgTimestamptz(iv.DeletedAt),
+		DeletedAt:    common.NullTimeToPgTimestamptz(iv.DeletedAt),
 	})
 
 	if err != nil {

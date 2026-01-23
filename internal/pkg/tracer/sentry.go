@@ -41,7 +41,7 @@ func (st *SentryTracer) Init(componentName string) error {
 		ServerName:       componentName,
 		EnableTracing:    true,
 		TracesSampleRate: sampleRate,
-		Debug:            true,
+		Debug:            st.cfg.Debug,
 	})
 	if err != nil {
 		return err

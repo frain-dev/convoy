@@ -24,6 +24,7 @@ type SubscriptionTableManager interface {
 type SubscriptionFetcher interface {
 	FetchAllSubscriptions(ctx context.Context) ([]datastore.Subscription, error)
 	FetchUpdatedSubscriptions(ctx context.Context) ([]datastore.Subscription, error)
+	FetchNewSubscriptions(ctx context.Context) ([]datastore.Subscription, error)
 	FetchDeletedSubscriptions(ctx context.Context) ([]datastore.Subscription, error)
 }
 

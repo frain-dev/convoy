@@ -35,7 +35,23 @@ func (u *LoginUserService) isPrimaryInstanceAdmin(ctx context.Context, userID st
 
 	// If no instance admins exist, check if user is first org admin in any of their organisations
 	if count == 0 {
-		return u.isFirstOrgAdminInAnyOrg(ctx, userID)
+		isFirstOrgAdmin, err := u.isFirstOrgAdminInAnyOrg(ctx, userID)
+		if err != nil {
+			return false, err
+		}
+
+		// If user is not an org admin, check if they're the only user in the system
+		if !isFirstOrgAdmin {
+			userCount, err := u.UserRepo.CountUsers(ctx)
+			if err != nil {
+				return false, err
+			}
+			if userCount == 1 {
+				return true, nil
+			}
+		}
+
+		return isFirstOrgAdmin, nil
 	}
 
 	// If instance admins exist, check if user is first instance admin

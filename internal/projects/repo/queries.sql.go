@@ -473,6 +473,7 @@ func (q *Queries) FetchProjects(ctx context.Context, orgID string) ([]FetchProje
 }
 
 const getProjectsWithEventsInInterval = `-- name: GetProjectsWithEventsInInterval :many
+
 SELECT p.id, COUNT(e.id) AS events_count
 FROM convoy.projects p
 LEFT JOIN convoy.events e ON p.id = e.project_id

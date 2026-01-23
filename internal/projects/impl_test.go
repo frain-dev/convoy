@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 // TestSignatureVersionSerialization tests that signature versions are correctly

@@ -15,6 +15,7 @@ type SubscriptionLoader struct {
 	subscriptionCollection *SubscriptionCollection
 	config                 *LoaderConfig
 	loaded                 bool
+	lastSyncTime           time.Time
 	log                    log.StdLogger
 }
 
@@ -59,6 +60,8 @@ func (s *SubscriptionLoader) performInitialLoad(ctx context.Context, table *memo
 	}
 
 	s.loaded = true
+	s.SetLastSyncTime()
+
 	s.log.Infof("syncing subscriptions completed in %fs", time.Since(startTime).Seconds())
 	return nil
 }
@@ -72,11 +75,27 @@ func (s *SubscriptionLoader) performIncrementalSync(ctx context.Context, table *
 		return err
 	}
 
+	if err := s.processNewSubscriptions(ctx, table); err != nil {
+		return err
+	}
+
 	if err := s.processDeletedSubscriptions(ctx, table); err != nil {
 		return err
 	}
 
+	s.SetLastSyncTime()
+
 	return nil
+}
+
+func (s *SubscriptionLoader) SetLastSyncTime() {
+	// Update sync time after successful processing
+	s.lastSyncTime = time.Now()
+
+	// Update the fetcher's sync time for next incremental sync
+	if fetcher, ok := s.subscriptionFetcher.(*subscriptionFetcher); ok {
+		fetcher.SetLastSyncTime(s.lastSyncTime)
+	}
 }
 
 func (s *SubscriptionLoader) processUpdatedSubscriptions(ctx context.Context, table *memorystore.Table) error {
@@ -88,6 +107,21 @@ func (s *SubscriptionLoader) processUpdatedSubscriptions(ctx context.Context, ta
 
 	for _, sub := range updatedSubs {
 		s.tableManager.RemoveSubscriptionFromAllEventTypes(sub, table)
+		s.subscriptionCollection.AddOrUpdate(sub)
+		s.tableManager.AddSubscription(sub, table)
+	}
+
+	return nil
+}
+
+func (s *SubscriptionLoader) processNewSubscriptions(ctx context.Context, table *memorystore.Table) error {
+	newSubs, err := s.subscriptionFetcher.FetchNewSubscriptions(ctx)
+	if err != nil {
+		s.log.WithError(err).Error("failed to fetch new subscriptions")
+		return err
+	}
+
+	for _, sub := range newSubs {
 		s.subscriptionCollection.AddOrUpdate(sub)
 		s.tableManager.AddSubscription(sub, table)
 	}

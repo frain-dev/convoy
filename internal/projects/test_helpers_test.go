@@ -3,6 +3,7 @@ package projects
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -319,7 +321,7 @@ func seedSubscription(t *testing.T, db database.Database, project *datastore.Pro
 func seedSource(t *testing.T, db database.Database, project *datastore.Project) {
 	t.Helper()
 
-	sourceRepo := postgres.NewSourceRepo(db)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
 	source := &datastore.Source{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,

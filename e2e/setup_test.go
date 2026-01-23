@@ -2,7 +2,9 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"sync"
@@ -26,9 +28,13 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
+	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -54,6 +60,17 @@ func TestMain(m *testing.M) {
 
 	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Infrastructure launched successfully\n")
 	infra = res
+
+	// Set PUBSUB_EMULATOR_HOST for all tests that need Google Pub/Sub emulator
+	// This must be set BEFORE any test runs so the pubsub package initialization sees it
+	if res.NewPubSubEmulatorHost != nil {
+		emulatorHost := res.NewPubSubEmulatorHost(nil) // Pass nil since we modified factory to handle it
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		_, _ = fmt.Fprintf(os.Stderr, "TestMain: Set PUBSUB_EMULATOR_HOST=%s\n", emulatorHost)
+		// Verify it was set
+		verifyHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+		_, _ = fmt.Fprintf(os.Stderr, "TestMain: Verified PUBSUB_EMULATOR_HOST=%s\n", verifyHost)
+	}
 
 	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Running tests...\n")
 	code := m.Run()
@@ -139,7 +156,10 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	require.NoError(t, err)
 
-	// Flush Redis queue client to ensure no stale jobs from previous tests
+	// Always flush Redis to ensure complete test isolation.
+	// Each test has its own database clone, so we MUST ensure no jobs from
+	// previous tests leak through the shared Redis queue.
+	t.Logf("Flushing Redis to ensure clean state for test %s", t.Name())
 	err = redis.Client().FlushDB(ctx).Err()
 	require.NoError(t, err)
 
@@ -245,26 +265,41 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 		t.Logf("Starting worker for test: %s", t.Name())
 		err := cmdworker.StartWorker(workerCtx, app, cfg)
 		if err != nil {
-			t.Logf("Worker error for test %s: %v", t.Name(), err)
-			logger.WithError(err).Error("Worker error")
+			if !errors.Is(err, context.Canceled) {
+				t.Logf("Worker error for test %s: %v", t.Name(), err)
+				logger.WithError(err).Error("Worker error")
+			} else {
+				t.Logf("Worker context canceled (expected during cleanup)")
+			}
+		} else {
+			t.Logf("Worker exited with nil error (unexpected!)")
 		}
 		t.Logf("Worker stopped for test: %s", t.Name())
 	}()
 
-	// Give worker a moment to start
-	time.Sleep(1 * time.Second)
+	// Give worker more time to fully start and begin processing
+	time.Sleep(3 * time.Second)
 	t.Logf("Test environment ready: %s (port: %d, project: %s)", t.Name(), serverPort, project.UID)
 
 	// Cleanup function
 	t.Cleanup(func() {
 		t.Logf("Cleaning up test: %s", t.Name())
+
+		// Cancel worker and server contexts
 		cancelWorker()
 		cancelServer()
-		// Give servers time to fully shut down - increased to ensure cleanup
-		time.Sleep(2 * time.Second)
+
+		// Wait for worker to finish processing any in-flight jobs and fully shut down
+		// Asynq consumer needs time to gracefully stop all goroutines and release Redis connections
+		t.Logf("Waiting for worker to fully shut down...")
+		time.Sleep(10 * time.Second)
+
+		// Note: Redis is flushed at the START of each test (not in cleanup),
+		// so the next test begins with clean state.
 
 		// Reset memory store to prevent "table already registered" errors in next test
 		memorystore.DefaultStore.Reset()
+		t.Logf("Memorystore reset complete")
 
 		// Unlock mutex to allow next test to run
 		testMutex.Unlock()
@@ -345,7 +380,10 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	require.NoError(t, err)
 
-	// Flush Redis queue client to ensure no stale jobs from previous tests
+	// Always flush Redis to ensure complete test isolation.
+	// Each test has its own database clone, so we MUST ensure no jobs from
+	// previous tests leak through the shared Redis queue.
+	t.Logf("Flushing Redis to ensure clean state for test %s", t.Name())
 	err = redis.Client().FlushDB(ctx).Err()
 	require.NoError(t, err)
 
@@ -497,4 +535,531 @@ func waitForServer(t *testing.T, url string, timeout time.Duration) {
 	}
 
 	t.Fatalf("Server did not start within %v", timeout)
+}
+
+// E2ETestEnvWithAMQP extends E2ETestEnv with AMQP-specific configuration
+type E2ETestEnvWithAMQP struct {
+	*E2ETestEnv
+	RabbitMQHost  string
+	RabbitMQPort  int
+	Ingest        *pubsub.Ingest
+	cancelIngest  context.CancelFunc
+	sourceTable   *memorystore.Table
+	sourceContext context.Context
+}
+
+// SetupE2EWithAMQP initializes the E2E test environment with AMQP/RabbitMQ support
+func SetupE2EWithAMQP(t *testing.T) *E2ETestEnvWithAMQP {
+	t.Helper()
+
+	// Reset memorystore to ensure test isolation from previous tests
+	// This must be done BEFORE setting up the base environment which starts the worker
+	memorystore.DefaultStore.Reset()
+	t.Logf("Reset memorystore before test setup for isolation")
+
+	// First set up the base E2E environment
+	baseEnv := SetupE2E(t)
+
+	// Get RabbitMQ connection details
+	rmqHost, rmqPort, err := infra.NewRabbitMQConnect(t)
+	require.NoError(t, err)
+
+	// Set up repositories needed for source loading
+	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
+	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
+	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
+
+	// Create the source loader and table for pubsub ingest
+	lo := baseEnv.App.Logger.(*log.Logger)
+	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
+	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
+
+	// Register the sources table with the memory store
+	err = memorystore.DefaultStore.Register("sources", sourceTable)
+	if err != nil {
+		// If already registered (from a previous test), that's okay
+		t.Logf("Source table registration: %v", err)
+	}
+
+	// Note: We DON'T create a separate subscription loader here because the worker
+	// creates its own and exposes it via App.SubscriptionLoader. Creating multiple
+	// loaders causes test isolation issues.
+
+	// Create the pubsub ingest component
+	ingestComponent, err := pubsub.NewIngest(
+		baseEnv.ctx,
+		sourceTable,
+		baseEnv.App.Queue,
+		baseEnv.App.Logger,
+		baseEnv.App.Rate,
+		baseEnv.App.Licenser,
+		"test-instance",
+		endpointRepo,
+	)
+	require.NoError(t, err)
+
+	// Start the ingest component in a goroutine
+	_, cancelIngest := context.WithCancel(baseEnv.ctx)
+	t.Logf("Starting ingest component in goroutine")
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Logf("PANIC in ingest component: %v", r)
+			}
+		}()
+		t.Logf("Ingest goroutine started, calling Run()")
+		ingestComponent.Run()
+		t.Logf("Ingest Run() returned")
+	}()
+
+	// Give the ingest component time to start and sync the sources
+	t.Logf("Waiting for ingest component to start...")
+	time.Sleep(1 * time.Second)
+	t.Logf("Ingest component should be running now")
+
+	// Add cleanup for ingest component
+	t.Cleanup(func() {
+		t.Logf("Stopping AMQP ingest component for test: %s", t.Name())
+		cancelIngest()
+		// Small delay to allow cleanup
+		time.Sleep(200 * time.Millisecond)
+	})
+
+	amqpEnv := &E2ETestEnvWithAMQP{
+		E2ETestEnv:    baseEnv,
+		RabbitMQHost:  rmqHost,
+		RabbitMQPort:  rmqPort,
+		Ingest:        ingestComponent,
+		cancelIngest:  cancelIngest,
+		sourceTable:   sourceTable,
+		sourceContext: baseEnv.ctx,
+	}
+
+	return amqpEnv
+}
+
+// SyncSources manually triggers a sync of the sources table to pick up new sources
+func (env *E2ETestEnvWithAMQP) SyncSources(t *testing.T) {
+	t.Helper()
+	err := env.sourceTable.Sync(env.sourceContext)
+	if err != nil {
+		t.Logf("Warning: failed to sync sources: %v", err)
+	}
+	// Give the ingest component time to process the new sources
+	time.Sleep(1 * time.Second)
+}
+
+// SyncSubscriptions forces an immediate sync of the worker's subscription loader
+// This is needed for broadcast events which use in-memory subscription lookup
+func (env *E2ETestEnvWithAMQP) SyncSubscriptions(t *testing.T) {
+	t.Helper()
+
+	// Access the worker's subscription loader from the App
+	if env.App.SubscriptionLoader == nil {
+		t.Fatal("SubscriptionLoader not initialized in App - worker may not have started")
+	}
+
+	subLoader, ok := env.App.SubscriptionLoader.(*loader.SubscriptionLoader)
+	if !ok {
+		t.Fatal("SubscriptionLoader is not of expected type")
+	}
+
+	subTable, ok := env.App.SubscriptionTable.(*memorystore.Table)
+	if !ok {
+		t.Fatal("SubscriptionTable is not of expected type")
+	}
+
+	// Force an immediate sync of the worker's subscription loader
+	err := subLoader.SyncChanges(env.ctx, subTable)
+	if err != nil {
+		t.Logf("Warning: failed to sync subscriptions: %v", err)
+	}
+	t.Logf("Forced worker subscription loader sync completed")
+
+	// Give a small delay for the changes to propagate
+	time.Sleep(500 * time.Millisecond)
+}
+
+// E2ETestEnvWithSQS extends E2ETestEnv with SQS-specific resources
+type E2ETestEnvWithSQS struct {
+	*E2ETestEnv
+	LocalStackEndpoint string
+	Ingest             *pubsub.Ingest
+	cancelIngest       context.CancelFunc
+	sourceTable        *memorystore.Table
+	sourceContext      context.Context
+}
+
+// SetupE2EWithSQS sets up an E2E test environment with SQS pubsub infrastructure
+func SetupE2EWithSQS(t *testing.T) *E2ETestEnvWithSQS {
+	t.Helper()
+
+	// Reset memorystore to ensure test isolation from previous tests
+	memorystore.DefaultStore.Reset()
+	t.Logf("Reset memorystore before test setup for isolation")
+
+	// First set up the base E2E environment
+	baseEnv := SetupE2E(t)
+
+	// Get LocalStack connection details
+	localStackEndpoint := infra.NewLocalStackConnect(t)
+
+	// Set up repositories needed for source loading
+	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
+	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
+	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
+
+	// Create the source loader and table for pubsub ingest
+	lo := baseEnv.App.Logger.(*log.Logger)
+	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
+	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
+
+	// Register the sources table with the memory store
+	err := memorystore.DefaultStore.Register("sources", sourceTable)
+	if err != nil {
+		t.Logf("Source table registration: %v", err)
+	}
+
+	// Create the pubsub ingest component
+	ingestComponent, err := pubsub.NewIngest(
+		baseEnv.ctx,
+		sourceTable,
+		baseEnv.App.Queue,
+		baseEnv.App.Logger,
+		baseEnv.App.Rate,
+		baseEnv.App.Licenser,
+		"test-instance",
+		endpointRepo,
+	)
+	require.NoError(t, err)
+
+	// Start the ingest component in a goroutine
+	_, cancelIngest := context.WithCancel(baseEnv.ctx)
+	t.Logf("Starting ingest component in goroutine")
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Logf("PANIC in ingest component: %v", r)
+			}
+		}()
+		t.Logf("Ingest goroutine started, calling Run()")
+		ingestComponent.Run()
+		t.Logf("Ingest Run() returned")
+	}()
+
+	// Give the ingest component time to start and sync the sources
+	t.Logf("Waiting for ingest component to start...")
+	time.Sleep(1 * time.Second)
+	t.Logf("Ingest component should be running now")
+
+	// Add cleanup for ingest component
+	t.Cleanup(func() {
+		t.Logf("Stopping SQS ingest component for test: %s", t.Name())
+		cancelIngest()
+		time.Sleep(200 * time.Millisecond)
+	})
+
+	sqsEnv := &E2ETestEnvWithSQS{
+		E2ETestEnv:         baseEnv,
+		LocalStackEndpoint: localStackEndpoint,
+		Ingest:             ingestComponent,
+		cancelIngest:       cancelIngest,
+		sourceTable:        sourceTable,
+		sourceContext:      context.Background(),
+	}
+
+	t.Logf("Test environment ready: %s (URL: %s, project: %s)", t.Name(), baseEnv.ServerURL, baseEnv.Project.UID)
+
+	return sqsEnv
+}
+
+// SyncSources forces an immediate sync of the source table
+func (env *E2ETestEnvWithSQS) SyncSources(t *testing.T) {
+	t.Helper()
+	err := env.sourceTable.Sync(env.sourceContext)
+	if err != nil {
+		t.Logf("Warning: failed to sync sources: %v", err)
+	}
+	// Give the ingest component time to process the new sources
+	time.Sleep(1 * time.Second)
+}
+
+// SyncSubscriptions forces an immediate sync of the worker's subscription loader
+func (env *E2ETestEnvWithSQS) SyncSubscriptions(t *testing.T) {
+	t.Helper()
+
+	// Access the worker's subscription loader from the App
+	subLoader, ok := env.App.SubscriptionLoader.(*loader.SubscriptionLoader)
+	if !ok {
+		t.Fatal("SubscriptionLoader is not of expected type")
+	}
+
+	subTable, ok := env.App.SubscriptionTable.(*memorystore.Table)
+	if !ok {
+		t.Fatal("SubscriptionTable is not of expected type")
+	}
+
+	// Force an immediate sync of the worker's subscription loader
+	err := subLoader.SyncChanges(env.ctx, subTable)
+	if err != nil {
+		t.Logf("Warning: failed to sync subscriptions: %v", err)
+	}
+	t.Logf("Forced worker subscription loader sync completed")
+
+	// Give a small delay for the changes to propagate
+	time.Sleep(500 * time.Millisecond)
+}
+
+// E2ETestEnvWithKafka extends E2ETestEnv with Kafka-specific resources
+type E2ETestEnvWithKafka struct {
+	*E2ETestEnv
+	KafkaBroker   string
+	Ingest        *pubsub.Ingest
+	cancelIngest  context.CancelFunc
+	sourceTable   *memorystore.Table
+	sourceContext context.Context
+}
+
+// SetupE2EWithKafka sets up an E2E test environment with Kafka pubsub infrastructure
+func SetupE2EWithKafka(t *testing.T) *E2ETestEnvWithKafka {
+	t.Helper()
+
+	// Reset memorystore to ensure test isolation from previous tests
+	memorystore.DefaultStore.Reset()
+	t.Logf("Reset memorystore before test setup for isolation")
+
+	// First set up the base E2E environment
+	baseEnv := SetupE2E(t)
+
+	// Get Kafka broker connection details
+	kafkaBroker := infra.NewKafkaConnect(t)
+
+	// Set up repositories needed for source loading
+	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
+	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
+	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
+
+	// Create the source loader and table for pubsub ingest
+	lo := baseEnv.App.Logger.(*log.Logger)
+	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
+	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
+
+	// Register the sources table with the memory store
+	err := memorystore.DefaultStore.Register("sources", sourceTable)
+	if err != nil {
+		t.Logf("Source table registration: %v", err)
+	}
+
+	// Create the pubsub ingest component
+	ingestComponent, err := pubsub.NewIngest(
+		baseEnv.ctx,
+		sourceTable,
+		baseEnv.App.Queue,
+		baseEnv.App.Logger,
+		baseEnv.App.Rate,
+		baseEnv.App.Licenser,
+		"test-instance",
+		endpointRepo,
+	)
+	require.NoError(t, err)
+
+	// Start the ingest component in a goroutine
+	_, cancelIngest := context.WithCancel(baseEnv.ctx)
+	t.Logf("Starting ingest component in goroutine")
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Logf("PANIC in ingest component: %v", r)
+			}
+		}()
+		t.Logf("Ingest goroutine started, calling Run()")
+		ingestComponent.Run()
+		t.Logf("Ingest Run() returned")
+	}()
+
+	// Give the ingest component time to start and sync the sources
+	t.Logf("Waiting for ingest component to start...")
+	time.Sleep(1 * time.Second)
+	t.Logf("Ingest component should be running now")
+
+	// Add cleanup for ingest component
+	t.Cleanup(func() {
+		t.Logf("Stopping Kafka ingest component for test: %s", t.Name())
+		cancelIngest()
+		time.Sleep(200 * time.Millisecond)
+	})
+
+	kafkaEnv := &E2ETestEnvWithKafka{
+		E2ETestEnv:    baseEnv,
+		KafkaBroker:   kafkaBroker,
+		Ingest:        ingestComponent,
+		cancelIngest:  cancelIngest,
+		sourceTable:   sourceTable,
+		sourceContext: context.Background(),
+	}
+
+	t.Logf("Test environment ready: %s (URL: %s, project: %s)", t.Name(), baseEnv.ServerURL, baseEnv.Project.UID)
+
+	return kafkaEnv
+}
+
+// SyncSources forces an immediate sync of the source table
+func (env *E2ETestEnvWithKafka) SyncSources(t *testing.T) {
+	t.Helper()
+	err := env.sourceTable.Sync(env.sourceContext)
+	if err != nil {
+		t.Logf("Warning: failed to sync sources: %v", err)
+	}
+	// Give the ingest component time to process the new sources
+	time.Sleep(1 * time.Second)
+}
+
+// SyncSubscriptions forces an immediate sync of the worker's subscription loader
+func (env *E2ETestEnvWithKafka) SyncSubscriptions(t *testing.T) {
+	t.Helper()
+
+	// Access the worker's subscription loader from the App
+	subLoader, ok := env.App.SubscriptionLoader.(*loader.SubscriptionLoader)
+	if !ok {
+		t.Fatal("SubscriptionLoader is not of expected type")
+	}
+
+	subTable, ok := env.App.SubscriptionTable.(*memorystore.Table)
+	if !ok {
+		t.Fatal("SubscriptionTable is not of expected type")
+	}
+
+	// Force an immediate sync of the worker's subscription loader
+	err := subLoader.SyncChanges(env.ctx, subTable)
+	if err != nil {
+		t.Logf("Warning: failed to sync subscriptions: %v", err)
+	}
+	t.Logf("Forced worker subscription loader sync completed")
+
+	// Give a small delay for the changes to propagate
+	time.Sleep(500 * time.Millisecond)
+}
+
+// Google Pub/Sub Test Setup
+
+type E2ETestEnvWithGooglePubSub struct {
+	*E2ETestEnv
+	PubSubEmulatorHost string
+	ProjectID          string
+	Ingest             *pubsub.Ingest
+	cancelIngest       context.CancelFunc
+	sourceTable        *memorystore.Table
+	sourceContext      context.Context
+}
+
+// SetupE2EWithGooglePubSub sets up an E2E test environment with Google Pub/Sub infrastructure
+func SetupE2EWithGooglePubSub(t *testing.T) *E2ETestEnvWithGooglePubSub {
+	t.Helper()
+
+	// Reset memorystore to ensure test isolation from previous tests
+	memorystore.DefaultStore.Reset()
+	t.Logf("Reset memorystore before test setup for isolation")
+
+	// Get Pub/Sub emulator connection details
+	// Note: PUBSUB_EMULATOR_HOST is set globally in TestMain
+	emulatorHost := infra.NewPubSubEmulatorHost(t)
+	projectID := "convoy-test-project"
+
+	// Set up the base E2E environment (which starts the worker)
+	baseEnv := SetupE2E(t)
+
+	// Set up repositories needed for source loading
+	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
+	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
+	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
+
+	// Create the source loader and table for pubsub ingest
+	lo := baseEnv.App.Logger.(*log.Logger)
+	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
+	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
+
+	// Register the sources table with the memory store
+	err := memorystore.DefaultStore.Register("sources", sourceTable)
+	if err != nil {
+		t.Logf("Source table registration: %v", err)
+	}
+
+	// Create the pubsub ingest component
+	ingestComponent, err := pubsub.NewIngest(
+		baseEnv.ctx,
+		sourceTable,
+		baseEnv.App.Queue,
+		baseEnv.App.Logger,
+		baseEnv.App.Rate,
+		baseEnv.App.Licenser,
+		"test-instance",
+		endpointRepo,
+	)
+	require.NoError(t, err)
+
+	// Start the ingest component in a goroutine
+	_, cancelIngest := context.WithCancel(baseEnv.ctx)
+	t.Logf("Starting ingest component in goroutine")
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Logf("PANIC in ingest component: %v", r)
+			}
+		}()
+		t.Logf("Ingest goroutine started, calling Run()")
+		ingestComponent.Run()
+		t.Logf("Ingest Run() returned")
+	}()
+
+	// Register cleanup
+	t.Cleanup(func() {
+		t.Log("Stopping Google Pub/Sub ingest component for test:", t.Name())
+		cancelIngest()
+	})
+
+	return &E2ETestEnvWithGooglePubSub{
+		E2ETestEnv:         baseEnv,
+		PubSubEmulatorHost: emulatorHost,
+		ProjectID:          projectID,
+		Ingest:             ingestComponent,
+		cancelIngest:       cancelIngest,
+		sourceTable:        sourceTable,
+		sourceContext:      context.Background(),
+	}
+}
+
+// SyncSources triggers a manual sync of sources into the memorystore table
+func (env *E2ETestEnvWithGooglePubSub) SyncSources(t *testing.T) {
+	t.Helper()
+	t.Log("Manually syncing sources to memorystore...")
+	err := env.sourceTable.Sync(env.sourceContext)
+	require.NoError(t, err)
+	t.Log("Source sync complete")
+}
+
+// SyncSubscriptions forces an immediate sync of the worker's subscription loader
+func (env *E2ETestEnvWithGooglePubSub) SyncSubscriptions(t *testing.T) {
+	t.Helper()
+
+	// Access the worker's subscription loader from the App
+	subLoader, ok := env.App.SubscriptionLoader.(*loader.SubscriptionLoader)
+	if !ok {
+		t.Fatal("SubscriptionLoader is not of expected type")
+	}
+
+	subTable, ok := env.App.SubscriptionTable.(*memorystore.Table)
+	if !ok {
+		t.Fatal("SubscriptionTable is not of expected type")
+	}
+
+	// Force an immediate sync of the worker's subscription loader
+	err := subTable.Sync(env.ctx)
+	if err != nil {
+		t.Logf("Warning: failed to sync subscriptions: %v", err)
+	}
+
+	// Give the worker time to pick up the new subscriptions
+	time.Sleep(1 * time.Second)
+
+	t.Logf("Synced subscriptions: loader=%p, table=%p", subLoader, subTable)
 }
