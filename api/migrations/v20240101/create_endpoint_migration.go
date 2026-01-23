@@ -30,7 +30,7 @@ func (m *CreateEndpointMigration) MigrateForward(ctx context.Context, data any) 
 		d["rate_limit_duration"] = seconds
 	}
 
-	if _, ok := d["advanced_signatures"]; !ok {
+	if val, ok := d["advanced_signatures"]; !ok || val == nil {
 		d["advanced_signatures"] = false
 	}
 
@@ -78,7 +78,7 @@ func (m *UpdateEndpointMigration) MigrateForward(ctx context.Context, data any) 
 		d["rate_limit_duration"] = seconds
 	}
 
-	if _, ok := d["advanced_signatures"]; !ok {
+	if val, ok := d["advanced_signatures"]; !ok || val == nil {
 		d["advanced_signatures"] = false
 	}
 

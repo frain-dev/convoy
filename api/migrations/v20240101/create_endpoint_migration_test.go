@@ -40,6 +40,24 @@ func TestCreateEndpointMigration_AdvancedSignaturesPreserved(t *testing.T) {
 	require.Equal(t, true, data["advanced_signatures"])
 }
 
+func TestCreateEndpointMigration_AdvancedSignaturesExplicitNull(t *testing.T) {
+	migration := &CreateEndpointMigration{}
+	ctx := context.Background()
+
+	// Simulate JSON null: key exists but value is nil
+	input := map[string]interface{}{
+		"name":                "test",
+		"url":                 "https://example.com",
+		"advanced_signatures": nil,
+	}
+
+	result, err := migration.MigrateForward(ctx, input)
+	require.NoError(t, err)
+
+	data := result.(map[string]interface{})
+	require.Equal(t, false, data["advanced_signatures"])
+}
+
 func TestCreateEndpointMigration_DurationConversion(t *testing.T) {
 	migration := &CreateEndpointMigration{}
 	ctx := context.Background()
