@@ -60,12 +60,7 @@ func (s *SubscriptionLoader) performInitialLoad(ctx context.Context, table *memo
 	}
 
 	s.loaded = true
-	s.lastSyncTime = time.Now()
-
-	// Update the fetcher's sync time for future incremental syncs
-	if fetcher, ok := s.subscriptionFetcher.(*subscriptionFetcher); ok {
-		fetcher.SetLastSyncTime(s.lastSyncTime)
-	}
+	s.SetLastSyncTime()
 
 	s.log.Infof("syncing subscriptions completed in %fs", time.Since(startTime).Seconds())
 	return nil
@@ -88,6 +83,12 @@ func (s *SubscriptionLoader) performIncrementalSync(ctx context.Context, table *
 		return err
 	}
 
+	s.SetLastSyncTime()
+
+	return nil
+}
+
+func (s *SubscriptionLoader) SetLastSyncTime() {
 	// Update sync time after successful processing
 	s.lastSyncTime = time.Now()
 
@@ -95,8 +96,6 @@ func (s *SubscriptionLoader) performIncrementalSync(ctx context.Context, table *
 	if fetcher, ok := s.subscriptionFetcher.(*subscriptionFetcher); ok {
 		fetcher.SetLastSyncTime(s.lastSyncTime)
 	}
-
-	return nil
 }
 
 func (s *SubscriptionLoader) processUpdatedSubscriptions(ctx context.Context, table *memorystore.Table) error {
