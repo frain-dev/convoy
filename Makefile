@@ -15,21 +15,27 @@ ui_install:
 build:
 	scripts/build.sh
 
+.PHONY: test
 test:
-	go test -p 1 $(shell go list ./... | grep -v '/e2e')
+	@go test -p 1 $(shell go list ./... | grep -v '/e2e')
 
-# E2E Tests - Run individually for reliability and reproducibility
-test_e2e:
-	@echo "Running E2E tests individually..."
+# Fast E2E tests - Run on PRs (10-15 minutes)
+.PHONY: test_e2e_fast
+test_e2e_fast:
+	@echo "Running Fast E2E tests (non-pubsub)..."
+	@echo "Running Direct Event tests..."
 	@go test -v ./e2e/... -run TestE2E_DirectEvent_AllSubscriptions -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_DirectEvent_MustMatchSubscription -timeout 2m
+	@echo "Running Fanout Event tests..."
 	@go test -v ./e2e/... -run TestE2E_FanOutEvent_AllSubscriptions -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_FanOutEvent_MustMatchSubscription -timeout 2m
+	@echo "Running Form Endpoint tests..."
 	@go test -v ./e2e/... -run TestE2E_FormEndpoint_ContentType -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_FormEndpoint_WithCustomHeaders -timeout 2m
+	@echo "Running OAuth2 tests..."
 	@go test -v ./e2e/... -run TestE2E_OAuth2_SharedSecret -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_OAuth2_ClientAssertion -timeout 2m
-	@echo "Running Job ID E2E tests..."
+	@echo "Running Job ID tests..."
 	@go test -v ./e2e/... -run TestE2E_SingleEvent_JobID_Format -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_SingleEvent_JobID_Deduplication -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_FanoutEvent_JobID_Format -timeout 2m
@@ -40,13 +46,32 @@ test_e2e:
 	@go test -v ./e2e/... -run TestE2E_DynamicEvent_MultipleEventTypes -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_ReplayEvent_JobID_Format -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_ReplayEvent_MultipleReplays -timeout 2m
-	@echo "Running Backup E2E tests..."
+	@echo "Running Backup tests..."
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_MinIO -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_OnPrem -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_MultiTenant -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_TimeFiltering -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_BackupProjectData_AllTables -timeout 2m
-	@echo "✅ All E2E tests passed!"
+	@echo "✅ Fast E2E tests passed!"
+
+# Slow PubSub/Message Broker tests - Run daily (60+ minutes)
+.PHONY: test_e2e_pubsub
+test_e2e_pubsub:
+	@echo "Running PubSub/Message Broker E2E tests..."
+	@echo "Running AMQP PubSub tests..."
+	@go test -v ./e2e/... -run TestE2E_AMQP -timeout 2m
+	@echo "Running SQS PubSub tests..."
+	@go test -v ./e2e/... -run TestE2E_SQS -timeout 2m
+	@echo "Running Kafka PubSub tests..."
+	@go test -v ./e2e/... -run TestE2E_Kafka -timeout 2m
+	@echo "Running Google Pub/Sub tests..."
+	@go test -v ./e2e/... -run TestE2E_GooglePubSub -timeout 2m
+	@echo "✅ All PubSub E2E tests passed!"
+
+# Original test_e2e - runs ALL tests (for local comprehensive testing)
+.PHONY: test_e2e
+test_e2e: test_e2e_fast test_e2e_pubsub
+	@echo "✅ All E2E tests (fast + pubsub) passed!"
 
 # Run all E2E tests together (may be flaky, use test_e2e for CI)
 test_e2e_all:

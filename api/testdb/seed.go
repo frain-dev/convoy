@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -513,7 +515,7 @@ func SeedSource(db database.Database, g *datastore.Project, uid, maskID, ds stri
 	}
 
 	// Seed Data
-	sourceRepo := postgres.NewSourceRepo(db)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
 	err := sourceRepo.CreateSource(context.TODO(), source)
 	if err != nil {
 		return nil, err

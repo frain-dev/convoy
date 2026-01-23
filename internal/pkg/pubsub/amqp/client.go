@@ -87,17 +87,20 @@ func (k *Amqp) Verify() error {
 }
 
 func (k *Amqp) consume() {
+	k.log.Infof("Starting AMQP consumer for queue: %s", k.Cfg.Queue)
 	conn, err := k.dialer()
 	if err != nil {
 		log.WithError(err).Error("failed to instantiate a connection")
 		return
 	}
+	k.log.Debug("AMQP connection established")
 
 	ch, err := conn.Channel()
 	if err != nil {
 		log.WithError(err).Error("failed to instantiate a channel")
 		return
 	}
+	k.log.Debug("AMQP channel created")
 
 	defer conn.Close()
 	defer ch.Close()
@@ -143,11 +146,14 @@ func (k *Amqp) consume() {
 		log.WithError(err).Error("failed to consume messages")
 		return
 	}
+	k.log.Infof("AMQP consumer started, waiting for messages on queue: %s", q.Name)
 
 	mm := metrics.GetDPInstance(k.licenser)
 	mm.IncrementIngestTotal(k.source.UID, k.source.ProjectID)
 
+	k.log.Debug("Entering AMQP message processing loop")
 	for d := range messages {
+		k.log.Debugf("AMQP message received, body length: %d bytes", len(d.Body))
 		if d.Headers == nil {
 			d.Headers = amqp.Table{}
 		}
@@ -158,19 +164,23 @@ func (k *Amqp) consume() {
 			k.log.WithError(err).Error("failed to marshall message headers")
 		}
 
+		k.log.Debugf("Processing AMQP message: %s", string(d.Body))
 		if err := k.handler(k.ctx, k.source, string(d.Body), headers); err != nil {
 			k.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
-			if err := d.Ack(false); err != nil {
-				k.log.WithError(err).Error("failed to ack message")
-				mm.IncrementIngestErrorsTotal(k.source)
-			} else {
-				mm.IncrementIngestConsumedTotal(k.source)
-			}
-		} else {
 			// Reject the message and send it to DLQ
 			if err := d.Nack(false, false); err != nil {
 				k.log.WithError(err).Error("failed to nack message")
 				mm.IncrementIngestErrorsTotal(k.source)
+			}
+		} else {
+			k.log.Debug("AMQP message processed successfully")
+			// Acknowledge successful processing
+			if err := d.Ack(false); err != nil {
+				k.log.WithError(err).Error("failed to ack message")
+				mm.IncrementIngestErrorsTotal(k.source)
+			} else {
+				k.log.Debug("AMQP message acknowledged")
+				mm.IncrementIngestConsumedTotal(k.source)
 			}
 		}
 	}

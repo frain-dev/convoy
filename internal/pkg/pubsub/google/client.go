@@ -54,6 +54,7 @@ func (g *Google) Start(ctx context.Context) {
 func (g *Google) Verify() error {
 	ctx := context.Background()
 
+	// The SDK automatically detects PUBSUB_EMULATOR_HOST and disables authentication when set
 	client, err := pubsub.NewClient(ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 	if err != nil {
 		log.WithError(err).Error("failed to create new Google PubSub client")
@@ -76,20 +77,28 @@ func (g *Google) Verify() error {
 }
 
 func (g *Google) consume() {
+	// The SDK automatically detects PUBSUB_EMULATOR_HOST and disables authentication when set
 	client, err := pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 	if err != nil {
 		g.log.WithError(err).Error("failed to create new Google PubSub client")
+		return
+	}
+
+	if client == nil {
+		g.log.Error("Pub/Sub client is nil")
+		return
 	}
 
 	defer g.handleError(client)
 
+	g.log.Infof("Successfully created Pub/Sub client, getting subscription: %s", g.Cfg.SubscriptionID)
 	sub := client.Subscription(g.Cfg.SubscriptionID)
 
 	// NumGoroutines determines the number of goroutines sub.Receive will spawn to pull messages
 	sub.ReceiveSettings.NumGoroutines = g.workers
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
-		if m.Attributes != nil {
+		if m.Attributes == nil {
 			m.Attributes = map[string]string{}
 		}
 

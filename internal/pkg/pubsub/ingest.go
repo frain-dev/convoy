@@ -68,20 +68,24 @@ func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer
 // 3. Cancels deleted sources.
 // 4. Starts new sources.
 func (i *Ingest) Run() {
+	i.log.Infof("Ingest.Run() started - waiting for ticker")
 	for {
 		select {
 		// retrieve new sources
 		case <-i.ticker.C:
+			i.log.Infof("Ingest ticker fired")
 			err := i.run()
 			if err != nil {
 				i.log.WithError(err).Error("ingest runner failed")
 			}
 
 		case <-i.ctx.Done():
+			i.log.Infof("Ingest context cancelled - stopping")
 			// stop ticker.
 			i.ticker.Stop()
 
 			// clean up. :)
+			return
 		}
 	}
 }
@@ -96,8 +100,12 @@ func (i *Ingest) getSourceKeys() []memorystore.Key {
 }
 
 func (i *Ingest) run() error {
+	i.log.Infof("Ingest.run() called - checking for source changes")
+	i.log.Infof("Current sources in table: %d, running sources: %d", len(i.table.GetKeys()), len(i.sources))
+
 	// cancel all stale/outdated source runners.
 	staleRows := memorystore.Difference(i.getSourceKeys(), i.table.GetKeys())
+	i.log.Infof("Stale sources to remove: %d", len(staleRows))
 	for _, key := range staleRows {
 		ps, ok := i.sources[key]
 		if !ok {
@@ -110,6 +118,7 @@ func (i *Ingest) run() error {
 
 	// start all new/updated source runners.
 	newSourceKeys := memorystore.Difference(i.table.GetKeys(), i.getSourceKeys())
+	i.log.Infof("New sources to start: %d", len(newSourceKeys))
 	for _, key := range newSourceKeys {
 		sr := i.table.Get(key)
 		if sr == nil {
@@ -121,13 +130,16 @@ func (i *Ingest) run() error {
 			return errors.New("invalid source in memory store")
 		}
 
+		i.log.Infof("Starting new source: %s (type: %s, project: %s)", ss.UID, ss.Type, ss.ProjectID)
 		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.licenser, i.instanceId)
 		if err != nil {
+			i.log.WithError(err).Error("Failed to create PubSubSource")
 			return err
 		}
 
 		// ps.hash = key
 		ps.Start()
+		i.log.Infof("Started source: %s", ss.UID)
 		i.sources[key] = ps
 	}
 
@@ -135,11 +147,14 @@ func (i *Ingest) run() error {
 }
 
 func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg string, metadata []byte) error {
-	defer handlePanic(source)
+	defer i.handlePanic(source)
+
+	i.log.Infof("AMQP handler called for source %s (project: %s), message: %s", source.UID, source.ProjectID, msg)
 
 	// unmarshal to an interface{} struct
 	var raw any
 	if err := json.Unmarshal([]byte(msg), &raw); err != nil {
+		i.log.WithError(err).Error("Failed to unmarshal AMQP message")
 		return err
 	}
 
@@ -177,7 +192,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 
 	// check the payload structure to be sure it satisfies what convoy can ingest else discard and nack it.
 	if err = decoder.Decode(&convoyEvent); err != nil {
-		log.WithError(err).Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or"+
+		i.log.WithError(err).Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or"+
 			" use transform functions to properly format it, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		return err
 	}
@@ -278,10 +293,13 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		}
 
 		// write to our queue if it's a normal event
+		i.log.Infof("Writing CreateEvent job to queue for event %s (endpoint: %s, project: %s)", id, ce.Params.EndpointID, ce.Params.ProjectID)
 		err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
+			i.log.WithError(err).Error("Failed to write CreateEvent job to queue")
 			return err
 		}
+		i.log.Infof("Successfully wrote CreateEvent job to queue for event %s", id)
 	case "fanout":
 		id := ulid.Make().String()
 		jobId := queue.JobId{ProjectID: source.ProjectID, ResourceID: id}.FanOutJobId()
@@ -318,10 +336,12 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		}
 
 		// write to our queue if it's a normal event
+		i.log.Infof("Writing fanout CreateEvent job to queue for event %s (owner: %s, project: %s)", id, ce.Params.OwnerID, ce.Params.ProjectID)
 		err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
 			return err
 		}
+		i.log.Infof("Successfully wrote fanout CreateEvent job to queue for event %s", id)
 	case "broadcast":
 		eventId := ulid.Make().String()
 		jobId := queue.JobId{ProjectID: source.ProjectID, ResourceID: eventId}.BroadcastJobId()
@@ -348,13 +368,15 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		}
 
 		// write to our queue if it's a broadcast event
+		i.log.Infof("Writing broadcast event job to queue for event %s (project: %s)", eventId, broadcastEvent.ProjectID)
 		err = i.queue.Write(convoy.CreateBroadcastEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
 			return err
 		}
+		i.log.Infof("Successfully wrote broadcast event job to queue for event %s", eventId)
 	default:
 		err = fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single, fanout or broadcast", messageType)
-		log.Error(err)
+		i.log.Error(err)
 		return err
 	}
 
@@ -388,8 +410,8 @@ func mergeHeaders(dest, src map[string]string) {
 	}
 }
 
-func handlePanic(source *datastore.Source) {
+func (i *Ingest) handlePanic(source *datastore.Source) {
 	if err := recover(); err != nil {
-		log.Error(fmt.Errorf("recovered from panic, source %s with id: %s crashed with error: %s", source.Name, source.UID, err))
+		i.log.Error(fmt.Errorf("recovered from panic, source %s with id: %s crashed with error: %s", source.Name, source.UID, err))
 	}
 }

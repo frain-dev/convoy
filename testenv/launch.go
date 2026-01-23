@@ -13,10 +13,14 @@ import (
 )
 
 type Environment struct {
-	CloneTestDatabase PostgresDBCloneFunc
-	NewRedisClient    RedisClientFunc
-	NewQueueInspector QueueInspectorFunc
-	NewMinIOClient    MinIOClientFunc
+	CloneTestDatabase     PostgresDBCloneFunc
+	NewRedisClient        RedisClientFunc
+	NewQueueInspector     QueueInspectorFunc
+	NewMinIOClient        MinIOClientFunc
+	NewRabbitMQConnect    RabbitMQConnectionFunc
+	NewLocalStackConnect  LocalStackConnectionFunc
+	NewKafkaConnect       KafkaConnectionFunc
+	NewPubSubEmulatorHost PubSubEmulatorHostFunc
 }
 
 func Launch(ctx context.Context) (*Environment, func() error, error) {
@@ -35,6 +39,26 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 		return nil, nil, fmt.Errorf("start minio container: %w", err)
 	}
 
+	rabbitmqcontainer, rmqFactory, err := NewTestRabbitMQ(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("start rabbitmq container: %w", err)
+	}
+
+	localstackcontainer, localstackFactory, err := NewTestLocalStack(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("start localstack container: %w", err)
+	}
+
+	kafkacontainer, kafkaFactory, err := NewTestKafka(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("start kafka container: %w", err)
+	}
+
+	pubsubcontainer, pubsubFactory, err := NewTestPubSubEmulator(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("start pubsub emulator container: %w", err)
+	}
+
 	// Get Redis address for queue inspector
 	redisAddr, err := rediscontainer.ConnectionString(ctx)
 	if err != nil {
@@ -44,35 +68,71 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 	inspectorFactory := newQueueInspectorFactory(redisAddr)
 
 	res := &Environment{
-		CloneTestDatabase: cloner,
-		NewRedisClient:    rcFactory,
-		NewQueueInspector: inspectorFactory,
-		NewMinIOClient:    minioFactory,
+		CloneTestDatabase:     cloner,
+		NewRedisClient:        rcFactory,
+		NewQueueInspector:     inspectorFactory,
+		NewMinIOClient:        minioFactory,
+		NewRabbitMQConnect:    rmqFactory,
+		NewLocalStackConnect:  localstackFactory,
+		NewKafkaConnect:       kafkaFactory,
+		NewPubSubEmulatorHost: pubsubFactory,
 	}
 
 	return res, func() error {
 		var eg errgroup.Group
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := pgcontainer.Terminate(ctx); err != nil {
+			if err = pgcontainer.Terminate(c); err != nil {
 				log.Printf("terminate postgres container: %v", err)
 			}
 			return nil
 		})
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := rediscontainer.Terminate(ctx); err != nil {
+			if err = rediscontainer.Terminate(c); err != nil {
 				log.Printf("terminate redis container: %v", err)
 			}
 			return nil
 		})
 		eg.Go(func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err := miniocontainer.Terminate(ctx); err != nil {
+			if err = miniocontainer.Terminate(c); err != nil {
 				log.Printf("terminate minio container: %v", err)
+			}
+			return nil
+		})
+		eg.Go(func() error {
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err = rabbitmqcontainer.Terminate(c); err != nil {
+				log.Printf("terminate rabbitmq container: %v", err)
+			}
+			return nil
+		})
+		eg.Go(func() error {
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err = localstackcontainer.Terminate(c); err != nil {
+				log.Printf("terminate localstack container: %v", err)
+			}
+			return nil
+		})
+		eg.Go(func() error {
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err = kafkacontainer.Terminate(c); err != nil {
+				log.Printf("terminate kafka container: %v", err)
+			}
+			return nil
+		})
+		eg.Go(func() error {
+			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err = pubsubcontainer.Terminate(c); err != nil {
+				log.Printf("terminate pubsub emulator container: %v", err)
 			}
 			return nil
 		})

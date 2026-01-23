@@ -630,6 +630,9 @@ components:
           type: string
         default_region:
           type: string
+        endpoint:
+          description: 'Optional: for LocalStack testing'
+          type: string
         queue_name:
           type: string
         secret_key:

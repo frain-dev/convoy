@@ -1255,6 +1255,7 @@ type SQSPubSubConfig struct {
 	SecretKey     string `json:"secret_key" db:"secret_key"`
 	DefaultRegion string `json:"default_region" db:"default_region"`
 	QueueName     string `json:"queue_name" db:"queue_name"`
+	Endpoint      string `json:"endpoint,omitempty" db:"endpoint"` // Optional: for LocalStack testing
 }
 
 type GooglePubSubConfig struct {

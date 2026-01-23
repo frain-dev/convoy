@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/projects/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -43,23 +44,6 @@ func New(logger log.StdLogger, db database.Database) *Service {
 		db:     db.GetConn(),
 		hook:   db.GetHook(),
 	}
-}
-
-// ============================================================================
-// Type Conversion Helpers
-// ============================================================================
-
-// stringToPgText converts a string to pgtype.Text
-func stringToPgText(s string) pgtype.Text {
-	if util.IsStringEmpty(s) {
-		return pgtype.Text{String: "", Valid: false}
-	}
-	return pgtype.Text{String: s, Valid: true}
-}
-
-// boolToPgBool converts a bool to pgtype.Bool
-func boolToPgBool(b bool) pgtype.Bool {
-	return pgtype.Bool{Bool: b, Valid: true}
 }
 
 // pubSubToJSON converts PubSubConfig to JSON bytes
@@ -146,7 +130,7 @@ func projectConfigToCreateParams(id string, config *datastore.ProjectConfig) rep
 
 	return repo.CreateProjectConfigurationParams{
 		ID:                             id,
-		SearchPolicy:                   stringToPgText(config.SearchPolicy),
+		SearchPolicy:                   common.StringToPgText(config.SearchPolicy),
 		MaxPayloadReadSize:             int32(config.MaxIngestSize),
 		ReplayAttacksPreventionEnabled: config.ReplayAttacks,
 		RatelimitCount:                 int32(rlc.Count),
@@ -158,12 +142,12 @@ func projectConfigToCreateParams(id string, config *datastore.ProjectConfig) rep
 		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
 		DisableEndpoint:                config.DisableEndpoint,
 		MetaEventsEnabled:              me.IsEnabled,
-		MetaEventsType:                 stringToPgText(string(me.Type)),
+		MetaEventsType:                 common.StringToPgText(string(me.Type)),
 		MetaEventsEventType:            sliceToPgText(me.EventType),
-		MetaEventsUrl:                  stringToPgText(me.URL),
-		MetaEventsSecret:               stringToPgText(me.Secret),
+		MetaEventsUrl:                  common.StringToPgText(me.URL),
+		MetaEventsSecret:               common.StringToPgText(me.Secret),
 		MetaEventsPubSub:               pubSubToJSON(me.PubSub),
-		SslEnforceSecureEndpoints:      boolToPgBool(ssl.EnforceSecureEndpoints),
+		SslEnforceSecureEndpoints:      common.BoolToPgBool(ssl.EnforceSecureEndpoints),
 		CbSampleRate:                   int32(cb.SampleRate),
 		CbErrorTimeout:                 int32(cb.ErrorTimeout),
 		CbFailureThreshold:             int32(cb.FailureThreshold),
@@ -196,13 +180,13 @@ func projectConfigToUpdateParams(id string, config *datastore.ProjectConfig) rep
 		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
 		DisableEndpoint:                config.DisableEndpoint,
 		MetaEventsEnabled:              me.IsEnabled,
-		MetaEventsType:                 stringToPgText(string(me.Type)),
+		MetaEventsType:                 common.StringToPgText(string(me.Type)),
 		MetaEventsEventType:            sliceToPgText(me.EventType),
-		MetaEventsUrl:                  stringToPgText(me.URL),
-		MetaEventsSecret:               stringToPgText(me.Secret),
+		MetaEventsUrl:                  common.StringToPgText(me.URL),
+		MetaEventsSecret:               common.StringToPgText(me.Secret),
 		MetaEventsPubSub:               pubSubToJSON(me.PubSub),
-		SearchPolicy:                   stringToPgText(config.SearchPolicy),
-		SslEnforceSecureEndpoints:      boolToPgBool(ssl.EnforceSecureEndpoints),
+		SearchPolicy:                   common.StringToPgText(config.SearchPolicy),
+		SslEnforceSecureEndpoints:      common.BoolToPgBool(ssl.EnforceSecureEndpoints),
 		CbSampleRate:                   int32(cb.SampleRate),
 		CbErrorTimeout:                 int32(cb.ErrorTimeout),
 		CbFailureThreshold:             int32(cb.FailureThreshold),
@@ -409,7 +393,7 @@ func (s *Service) CreateProject(ctx context.Context, project *datastore.Project)
 		ID:                     project.UID,
 		Name:                   project.Name,
 		Type:                   string(project.Type),
-		LogoUrl:                stringToPgText(project.LogoURL),
+		LogoUrl:                common.StringToPgText(project.LogoURL),
 		OrganisationID:         project.OrganisationID,
 		ProjectConfigurationID: configID,
 	})
@@ -486,7 +470,7 @@ func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project)
 	result, err := qtx.UpdateProject(ctx, repo.UpdateProjectParams{
 		ID:             project.UID,
 		Name:           project.Name,
-		LogoUrl:        stringToPgText(project.LogoURL),
+		LogoUrl:        common.StringToPgText(project.LogoURL),
 		RetainedEvents: pgtype.Int4{Int32: int32(project.RetainedEvents), Valid: true},
 	})
 	if err != nil {
@@ -561,7 +545,7 @@ func (s *Service) FillProjectsStatistics(ctx context.Context, project *datastore
 		return util.NewServiceError(http.StatusBadRequest, errors.New("project cannot be nil"))
 	}
 
-	stats, err := s.repo.FetchProjectStatistics(ctx, stringToPgText(project.UID))
+	stats, err := s.repo.FetchProjectStatistics(ctx, common.StringToPgText(project.UID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to fetch project statistics")
 		return util.NewServiceError(http.StatusInternalServerError, err)
