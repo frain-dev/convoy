@@ -59,9 +59,10 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stealthrocket/netjail v0.1.2
 	github.com/stretchr/testify v1.11.1
-	github.com/subomi/requestmigrations/v2 v2.1.0
+	github.com/subomi/requestmigrations/v2 v2.2.0
 	github.com/swaggo/swag v1.16.4
 	github.com/testcontainers/testcontainers-go v0.40.0
+	github.com/testcontainers/testcontainers-go/modules/kafka v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/minio v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/redis v0.40.0
@@ -182,8 +183,6 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.6 // indirect
-	github.com/testcontainers/testcontainers-go/modules/kafka v0.40.0 // indirect
-	github.com/testcontainers/testcontainers-go/modules/minio v0.40.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tinylib/msgp v1.3.0 // indirect
