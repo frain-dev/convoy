@@ -96,6 +96,61 @@ func TestCreateEndpointMigration_BackwardConversion(t *testing.T) {
 	require.Equal(t, "1m0s", data["rate_limit_duration"])
 }
 
+func TestUpdateEndpointMigration_DoesNotSetAdvancedSignatures(t *testing.T) {
+	migration := &UpdateEndpointMigration{}
+	ctx := context.Background()
+
+	// When advanced_signatures is not provided, it should remain absent (nil means "no change")
+	input := map[string]interface{}{
+		"name": "test",
+		"url":  "https://example.com",
+	}
+
+	result, err := migration.MigrateForward(ctx, input)
+	require.NoError(t, err)
+
+	data := result.(map[string]interface{})
+	_, exists := data["advanced_signatures"]
+	require.False(t, exists, "advanced_signatures should not be set when not provided")
+}
+
+func TestUpdateEndpointMigration_PreservesExplicitAdvancedSignatures(t *testing.T) {
+	migration := &UpdateEndpointMigration{}
+	ctx := context.Background()
+
+	// When advanced_signatures is explicitly provided, it should be preserved
+	input := map[string]interface{}{
+		"name":                "test",
+		"url":                 "https://example.com",
+		"advanced_signatures": true,
+	}
+
+	result, err := migration.MigrateForward(ctx, input)
+	require.NoError(t, err)
+
+	data := result.(map[string]interface{})
+	require.Equal(t, true, data["advanced_signatures"])
+}
+
+func TestUpdateEndpointMigration_DurationConversion(t *testing.T) {
+	migration := &UpdateEndpointMigration{}
+	ctx := context.Background()
+
+	input := map[string]interface{}{
+		"name":                "test",
+		"url":                 "https://example.com",
+		"http_timeout":        "30s",
+		"rate_limit_duration": "1m",
+	}
+
+	result, err := migration.MigrateForward(ctx, input)
+	require.NoError(t, err)
+
+	data := result.(map[string]interface{})
+	require.Equal(t, uint64(30), data["http_timeout"])
+	require.Equal(t, uint64(60), data["rate_limit_duration"])
+}
+
 func TestEndpointResponseMigration_BackwardConversion(t *testing.T) {
 	migration := &EndpointResponseMigration{}
 	ctx := context.Background()
