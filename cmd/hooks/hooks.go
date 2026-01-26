@@ -697,6 +697,15 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			SampleRate: sampleRate,
 			Debug:      debug,
 		}
+
+		cfg, err := config.Get()
+		if err != nil {
+			return nil, err
+		}
+
+		if !util.IsStringEmpty(cfg.Environment) {
+			c.Tracer.Sentry.Environment = cfg.Environment
+		}
 	}
 
 	c.Metrics = config.MetricsConfiguration{
