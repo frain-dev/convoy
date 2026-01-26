@@ -1,12 +1,14 @@
 package common
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 // ============================================================================
@@ -126,4 +128,45 @@ func ParamsToRole(roleType, roleProject, roleEndpoint string) auth.Role {
 		Project:  roleProject,
 		Endpoint: roleEndpoint,
 	}
+}
+
+// ============================================================================
+// JSONB conversions (for filters and other JSONB fields)
+// ============================================================================
+
+// MToJSONB converts datastore.M to JSONB []byte for PostgreSQL storage.
+// Returns empty JSON object "{}" for nil maps.
+func MToJSONB(m datastore.M) ([]byte, error) {
+	if m == nil {
+		return []byte("{}"), nil
+	}
+	return json.Marshal(m)
+}
+
+// JSONBToM converts JSONB []byte from PostgreSQL to datastore.M.
+// Returns empty map for empty or null JSONB.
+func JSONBToM(data []byte) (datastore.M, error) {
+	if len(data) == 0 || string(data) == "{}" {
+		return datastore.M{}, nil
+	}
+	var m datastore.M
+	if err := json.Unmarshal(data, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// FlattenM flattens a nested datastore.M structure for efficient matching.
+// Uses the M.Flatten() method which handles nested structures.
+func FlattenM(m datastore.M) (datastore.M, error) {
+	if len(m) == 0 {
+		return datastore.M{}, nil
+	}
+
+	// Use the Flatten method on M
+	mCopy := m
+	if err := (&mCopy).Flatten(); err != nil {
+		return nil, err
+	}
+	return mCopy, nil
 }
