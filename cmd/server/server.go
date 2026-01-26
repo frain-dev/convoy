@@ -178,21 +178,21 @@ func StartConvoyServer(a *cli.App) error {
 	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
 	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
-	// Refresh metrics materialized views
-	if cfg.Metrics.IsEnabled && cfg.Metrics.Backend == config.PrometheusMetricsProvider {
-		refreshInterval := cfg.Metrics.Prometheus.MaterializedViewRefreshInterval
-		if refreshInterval < 1 {
-			refreshInterval = 1
-		}
-		if refreshInterval > 60 {
-			refreshInterval = 60
-		}
+	// if cfg.Metrics.IsEnabled && cfg.Metrics.Backend == config.PrometheusMetricsProvider {
+	// 	refreshInterval := cfg.Metrics.Prometheus.MaterializedViewRefreshInterval
+	// 	if refreshInterval < 1 {
+	// 		refreshInterval = 1
+	// 	}
+	// 	if refreshInterval > 60 {
+	// 		refreshInterval = 60
+	// 	}
 
-		cronSpec := fmt.Sprintf("*/%d * * * *", refreshInterval)
-		s.RegisterTask(cronSpec, convoy.ScheduleQueue, convoy.RefreshMetricsMaterializedViews)
+	//nolint:gocritic
+	// 	cronSpec := fmt.Sprintf("*/%d * * * *", refreshInterval)
+	// 	s.RegisterTask(cronSpec, convoy.ScheduleQueue, convoy.RefreshMetricsMaterializedViews)
 
-		lo.Infof("Registered metrics materialized view refresh every %d min", refreshInterval)
-	}
+	// 	lo.Infof("Registered metrics materialized view refresh every %d min", refreshInterval)
+	// }
 
 	// ensures that project data is backed up about 2 hours before they are deleted
 	if a.Licenser.RetentionPolicy() {

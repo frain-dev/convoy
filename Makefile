@@ -85,6 +85,9 @@ test_e2e_single:
 generate_migration_time:
 	@date +"%Y%m%d%H%M%S"
 
+migrate_create:
+	@go run cmd/main.go migrate create
+
 generate_docs:
 	swag init --generatedTime --parseDependency --parseInternal -d api/ api/*
 
