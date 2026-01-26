@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
@@ -24,7 +24,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.Redis) func(context.Context, *asynq.Task) error {
+func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.Redis) func(context.Context, *job.JobEnvelope) error {
 	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
 	subRepo := postgres.NewSubscriptionRepo(db)
 	endpointRepo := postgres.NewEndpointRepo(db)
@@ -32,7 +32,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.
 	pool := goredis.NewPool(redis.Client())
 	rs := redsync.New(pool)
 
-	return func(ctx context.Context, t *asynq.Task) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		const mutexName = "convoy:monitor_twitter_sources:mutex"
 		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
 
@@ -117,8 +117,13 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 		return err
 	}
 
+	jobID := queue.JobId{
+		ProjectID:  source.ProjectID,
+		ResourceID: ulid.Make().String(),
+	}.NotificationJobId()
+
 	job := &queue.Job{
-		ID:      ulid.Make().String(),
+		ID:      jobID,
 		Payload: bytes,
 	}
 

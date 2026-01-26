@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -28,14 +28,14 @@ type MetaEvent struct {
 	ProjectID   string
 }
 
-func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher, tracerBackend tracer2.Backend) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher, tracerBackend tracer2.Backend) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		var data MetaEvent
 
-		err := msgpack.DecodeMsgPack(t.Payload(), &data)
+		err := msgpack.DecodeMsgPack(jobEnvelope.Args, &data)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal process process meta event payload")
-			err := json.Unmarshal(t.Payload(), &data)
+			err := json.Unmarshal(jobEnvelope.Args, &data)
 			if err != nil {
 				return &EndpointError{Err: err, delay: defaultDelay}
 			}

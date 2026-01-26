@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
@@ -14,13 +14,13 @@ import (
 
 var ErrInvalidEmailPayload = errors.New("invalid email payload")
 
-func ProcessEmails(sc smtp.SmtpClient) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+func ProcessEmails(sc smtp.SmtpClient) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		var message email.Message
 
-		err := msgpack.DecodeMsgPack(t.Payload(), &message)
+		err := msgpack.DecodeMsgPack(jobEnvelope.Args, &message)
 		if err != nil {
-			err := json.Unmarshal(t.Payload(), &message)
+			err := json.Unmarshal(jobEnvelope.Args, &message)
 			if err != nil {
 				return ErrInvalidEmailPayload
 			}

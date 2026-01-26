@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
@@ -30,10 +30,10 @@ func ProcessBatchRetry(
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	queuer queue.Queuer,
 	lo *log.Logger,
-) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		var br *datastore.BatchRetry
-		err := msgpack.DecodeMsgPack(t.Payload(), &br)
+		err := msgpack.DecodeMsgPack(jobEnvelope.Args, &br)
 		if err != nil {
 			lo.WithError(err).Error("failed to unmarshal batch retry payload")
 			return err
@@ -153,8 +153,13 @@ func ProcessBatchRetry(
 					continue
 				}
 
+				jobID := queue.JobId{
+					ProjectID:  activeRetry.ProjectID,
+					ResourceID: delivery.UID,
+				}.EventJobId()
+
 				job := &queue.Job{
-					ID:      delivery.UID,
+					ID:      jobID,
 					Payload: data,
 				}
 

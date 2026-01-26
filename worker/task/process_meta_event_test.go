@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/jarcoal/httpmock"
+	jobenvelope "github.com/olamilekan000/surge/surge/job"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -182,9 +182,17 @@ func TestProcessMetaEvent(t *testing.T) {
 				Payload: data,
 			}
 
-			task := asynq.NewTask(string(convoy.MetaEventProcessor), job.Payload, asynq.Queue(string(convoy.MetaEventQueue)), asynq.ProcessIn(job.Delay))
+			jobEnvelope := &jobenvelope.JobEnvelope{
+				ID:        "",
+				Topic:     string(convoy.MetaEventProcessor),
+				Args:      job.Payload,
+				Namespace: "default",
+				Queue:     string(convoy.MetaEventQueue),
+				State:     jobenvelope.StatePending,
+				CreatedAt: time.Now(),
+			}
 
-			err = processFn(context.Background(), task)
+			err = processFn(context.Background(), jobEnvelope)
 
 			// Asset
 			assert.Equal(t, tc.expectedError, err)

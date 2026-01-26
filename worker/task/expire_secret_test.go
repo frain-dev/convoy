@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -83,8 +83,16 @@ func TestExpireSecret(t *testing.T) {
 			buf, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			task := asynq.NewTask(string(convoy.ExpireSecretsProcessor), buf, asynq.Queue(string(convoy.DefaultQueue)), asynq.ProcessIn(time.Nanosecond))
-			err = fn(context.Background(), task)
+			jobEnvelope := &job.JobEnvelope{
+				ID:        "",
+				Topic:     string(convoy.ExpireSecretsProcessor),
+				Args:      buf,
+				Namespace: "default",
+				Queue:     string(convoy.DefaultQueue),
+				State:     job.StatePending,
+				CreatedAt: time.Now(),
+			}
+			err = fn(context.Background(), jobEnvelope)
 
 			require.Equal(t, err, tt.wantErr)
 		})

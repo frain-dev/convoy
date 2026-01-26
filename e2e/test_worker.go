@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -104,9 +104,9 @@ func NewTestWorker(ctx context.Context, t *testing.T, q queue.Queuer, validator 
 }
 
 // handleCreateEvent validates the job ID and records it
-func (tw *TestWorker) handleCreateEvent(ctx context.Context, t *asynq.Task) error {
-	// Get the job ID from the task
-	jobID := t.ResultWriter().TaskID()
+func (tw *TestWorker) handleCreateEvent(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
+	// Get the job ID from the job envelope
+	jobID := jobEnvelope.ID
 
 	// Record the job ID for validation
 	tw.validator.RecordJobID(jobID)

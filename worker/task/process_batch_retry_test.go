@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -351,9 +352,17 @@ func TestProcessBatchRetry(t *testing.T) {
 			data, err := msgpack.EncodeMsgPack(tc.batchRetry)
 			require.NoError(t, err)
 
-			task := asynq.NewTask(string(convoy.BatchRetryProcessor), data, asynq.Queue(string(convoy.BatchRetryQueue)))
+			jobEnvelope := &job.JobEnvelope{
+				ID:        "",
+				Topic:     string(convoy.BatchRetryProcessor),
+				Args:      data,
+				Namespace: "default",
+				Queue:     string(convoy.BatchRetryQueue),
+				State:     job.StatePending,
+				CreatedAt: time.Now(),
+			}
 
-			err = processFn(context.Background(), task)
+			err = processFn(context.Background(), jobEnvelope)
 			if tc.expectedError != nil {
 				assert.Equal(t, tc.expectedError.Error(), err.Error())
 			} else {

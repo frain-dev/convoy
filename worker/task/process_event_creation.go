@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
+	"github.com/olamilekan000/surge/surge/job"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
@@ -86,7 +86,7 @@ func (d *DefaultEventChannel) GetConfig() *EventChannelConfig {
 // create event
 // find & match subscriptions & create deliveries (e = SUCCESS)
 // deliver ed (ed = SUCCESS)
-func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
+func (d *DefaultEventChannel) CreateEvent(ctx context.Context, jobEnvelope *job.JobEnvelope, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
 	var createEvent CreateEvent
 	var event *datastore.Event
 	var projectID string
@@ -98,9 +98,9 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		"channel":    channel,
 	}
 
-	err := msgpack.DecodeMsgPack(t.Payload(), &createEvent)
+	err := msgpack.DecodeMsgPack(jobEnvelope.Args, &createEvent)
 	if err != nil {
-		err = json.Unmarshal(t.Payload(), &createEvent)
+		err = json.Unmarshal(jobEnvelope.Args, &createEvent)
 		if err != nil {
 			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
@@ -221,7 +221,7 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	return &response, nil
 }
 
-func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *job.JobEnvelope) error {
 	ch := &DefaultEventChannel{}
 
 	return ProcessEventCreationByChannel(
@@ -410,8 +410,13 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 
+			jobID := queue.JobId{
+				ProjectID:  eventDelivery.ProjectID,
+				ResourceID: eventDelivery.UID,
+			}.EventJobId()
+
 			job := &queue.Job{
-				ID:      eventDelivery.UID,
+				ID:      jobID,
 				Payload: data,
 			}
 

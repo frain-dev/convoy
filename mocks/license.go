@@ -123,18 +123,18 @@ func (mr *MockLicenserMockRecorder) AgentExecutionMode() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AgentExecutionMode", reflect.TypeOf((*MockLicenser)(nil).AgentExecutionMode))
 }
 
-// AsynqMonitoring mocks base method.
-func (m *MockLicenser) AsynqMonitoring() bool {
+// SurgeMonitoring mocks base method.
+func (m *MockLicenser) SurgeMonitoring() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AsynqMonitoring")
+	ret := m.ctrl.Call(m, "SurgeMonitoring")
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// AsynqMonitoring indicates an expected call of AsynqMonitoring.
-func (mr *MockLicenserMockRecorder) AsynqMonitoring() *gomock.Call {
+// SurgeMonitoring indicates an expected call of SurgeMonitoring.
+func (mr *MockLicenserMockRecorder) SurgeMonitoring() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsynqMonitoring", reflect.TypeOf((*MockLicenser)(nil).AsynqMonitoring))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SurgeMonitoring", reflect.TypeOf((*MockLicenser)(nil).SurgeMonitoring))
 }
 
 // BillingModule mocks base method.

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -39,7 +39,7 @@ func (b *BroadcastEventChannel) GetConfig() *EventChannelConfig {
 	}
 }
 
-func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
+func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, jobEnvelope *job.JobEnvelope, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
 	// Start a new trace span for event creation
 	startTime := time.Now()
 	attributes := map[string]interface{}{
@@ -48,7 +48,7 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 	}
 
 	var broadcastEvent models.BroadcastEvent
-	err := msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
+		err := msgpack.DecodeMsgPack(jobEnvelope.Args, &broadcastEvent)
 	if err != nil {
 		args.tracerBackend.Capture(ctx, "broadcast.event.creation.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1001, err: %s", err.Error()), delay: defaultBroadcastDelay}
@@ -176,7 +176,7 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 func ProcessBroadcastEventCreation(
 	ch *BroadcastEventChannel,
 	deps EventProcessorDeps,
-) func(context.Context, *asynq.Task) error {
+) func(context.Context, *job.JobEnvelope) error {
 	return ProcessEventCreationByChannel(
 		ch,
 		deps.EndpointRepo,

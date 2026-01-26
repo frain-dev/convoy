@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
-	"github.com/hibiken/asynq"
+	jobenvelope "github.com/olamilekan000/surge/surge/job"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
@@ -48,16 +49,20 @@ func Test_ProcessEmails(t *testing.T) {
 				Delay:   0,
 			}
 
-			task := asynq.NewTask(
-				string(convoy.EmailProcessor),
-				job.Payload,
-				asynq.Queue(string(convoy.DefaultQueue)),
-				asynq.ProcessIn(job.Delay))
+			jobEnvelope := &jobenvelope.JobEnvelope{
+				ID:        "",
+				Topic:     string(convoy.EmailProcessor),
+				Args:      job.Payload,
+				Namespace: "default",
+				Queue:     string(convoy.DefaultQueue),
+				State:     jobenvelope.StatePending,
+				CreatedAt: time.Now(),
+			}
 
 			processFn := ProcessEmails(sc)
 
 			// Act.
-			err := processFn(context.Background(), task)
+			err := processFn(context.Background(), jobEnvelope)
 
 			// Assert.
 			assert.Equal(t, tc.expectedError, err)

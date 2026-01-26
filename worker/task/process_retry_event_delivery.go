@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
@@ -34,8 +34,8 @@ var (
 )
 
 //nolint:cyclop // Large function handling complex retry event delivery logic with many conditional branches
-func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		// Start a new trace span for retry event delivery
 		traceStartTime := time.Now()
 		attributes := map[string]interface{}{
@@ -44,9 +44,9 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 
 		var data EventDelivery
 
-		err := msgpack.DecodeMsgPack(t.Payload(), &data)
+		err := msgpack.DecodeMsgPack(jobEnvelope.Args, &data)
 		if err != nil {
-			innerErr := json.Unmarshal(t.Payload(), &data)
+			innerErr := json.Unmarshal(jobEnvelope.Args, &data)
 			if innerErr != nil {
 				deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
 				return &EndpointError{Err: innerErr, delay: defaultEventDelay}

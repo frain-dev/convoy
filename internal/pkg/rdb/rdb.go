@@ -154,7 +154,7 @@ func (r *Redis) Client() redis.UniversalClient {
 	return r.client
 }
 
-// MakeRedisClient is used to fulfill asynq's interface
+// MakeRedisClient is used to fulfill surge's interface
 func (r *Redis) MakeRedisClient() interface{} {
 	return r.client
 }

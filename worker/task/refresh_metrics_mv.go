@@ -7,18 +7,18 @@ import (
 
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
-func RefreshMetricsMaterializedViews(db database.Database, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func RefreshMetricsMaterializedViews(db database.Database, rd *rdb.Redis) func(context.Context, *job.JobEnvelope) error {
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
 
-	return func(ctx context.Context, t *asynq.Task) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		const mutexName = "convoy:refresh_metrics_mv:mutex"
 		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(25*time.Minute), redsync.WithTries(1))
 

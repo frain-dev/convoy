@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -48,14 +49,14 @@ func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	// Collect queue info with error handling - return zero values on error to prevent blocking
-	qinfo, err := q.inspector.GetQueueInfo(string(convoy.CreateEventQueue))
+	ctx := context.Background()
+	namespace := "default"
+
+	stats, err := q.backend.QueueStats(ctx, namespace, string(convoy.CreateEventQueue))
 	if err != nil {
-		// Only log non-expected errors (queues are created dynamically, so NOT_FOUND is normal)
 		if !strings.Contains(err.Error(), "NOT_FOUND") && !strings.Contains(err.Error(), "does not exist") {
-			log.Errorf("an error occurred while fetching queue info for %s: %+v", convoy.CreateEventQueue, err)
+			log.Errorf("an error occurred while fetching queue stats for %s: %+v", convoy.CreateEventQueue, err)
 		}
-		// Send zero value instead of returning to prevent blocking the endpoint
 		ch <- prometheus.MustNewConstMetric(
 			eventQueueTotalDesc,
 			prometheus.GaugeValue,
@@ -66,18 +67,16 @@ func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			eventQueueTotalDesc,
 			prometheus.GaugeValue,
-			float64(qinfo.Size-qinfo.Completed-qinfo.Archived),
-			"scheduled", // not yet in db
+			float64(stats.Pending),
+			"scheduled",
 		)
 	}
 
-	qMSinfo, err := q.inspector.GetQueueInfo(string(convoy.EventWorkflowQueue))
+	workflowStats, err := q.backend.QueueStats(ctx, namespace, string(convoy.EventWorkflowQueue))
 	if err != nil {
-		// Only log non-expected errors (queues are created dynamically, so NOT_FOUND is normal)
 		if !strings.Contains(err.Error(), "NOT_FOUND") && !strings.Contains(err.Error(), "does not exist") {
-			log.Errorf("an error occurred while fetching queue info for %s: %+v", convoy.EventWorkflowQueue, err)
+			log.Errorf("an error occurred while fetching queue stats for %s: %+v", convoy.EventWorkflowQueue, err)
 		}
-		// Send zero value instead of returning to prevent blocking the endpoint
 		ch <- prometheus.MustNewConstMetric(
 			eventQueueMatchSubscriptionsTotalDesc,
 			prometheus.GaugeValue,
@@ -88,7 +87,7 @@ func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			eventQueueMatchSubscriptionsTotalDesc,
 			prometheus.GaugeValue,
-			float64(qMSinfo.Size-qMSinfo.Completed-qMSinfo.Archived),
+			float64(workflowStats.Pending),
 			"scheduled",
 		)
 	}

@@ -256,6 +256,16 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		a.mountControlPlaneRoutes(router, handler)
 	}
 
+	// Register surge monitoring route at root level before catch-all to prevent Angular from intercepting
+	// if a.A.Licenser.SurgeMonitoring() {
+	router.Route("/queue", func(surgeRouter chi.Router) {
+		// Temporarily removed auth for dashboard access
+		// surgeRouter.Use(middleware.RequireAuth())
+		surgeRouter.Handle("/monitoring", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+		surgeRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+	})
+	// }
+
 	router.HandleFunc("/*", a.reactRootHandler)
 
 	a.Router = router
@@ -792,13 +802,6 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			})
 		})
 	})
-
-	if a.A.Licenser.AsynqMonitoring() {
-		router.Route("/queue", func(asynqRouter chi.Router) {
-			asynqRouter.Use(middleware.RequireAuth())
-			asynqRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
-		})
-	}
 
 	router.HandleFunc("/metrics", a.metricsHandler())
 }

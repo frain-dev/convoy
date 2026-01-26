@@ -42,7 +42,7 @@ func (s *OSSLoginIntegrationTestSuite) SetupSuite() {
 	s.mockLicenser = mocks.NewMockLicenser(s.mockCtrl)
 
 	s.mockLicenser.EXPECT().MultiPlayerMode().Return(false).AnyTimes()
-	s.mockLicenser.EXPECT().AsynqMonitoring().Return(false).AnyTimes()
+	s.mockLicenser.EXPECT().SurgeMonitoring().Return(false).AnyTimes()
 	s.mockLicenser.EXPECT().CreateOrg(gomock.Any()).Return(true, nil).AnyTimes()
 	s.mockLicenser.EXPECT().CreateUser(gomock.Any()).Return(true, nil).AnyTimes()
 	s.mockLicenser.EXPECT().CreateProject(gomock.Any()).Return(true, nil).AnyTimes()

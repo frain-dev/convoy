@@ -106,8 +106,13 @@ func SendEndpointNotification(
 			continue
 		}
 
+		jobID := queue.JobId{
+			ProjectID:  project.UID,
+			ResourceID: ulid.Make().String(),
+		}.NotificationJobId()
+
 		job := &queue.Job{
-			ID:      ulid.Make().String(),
+			ID:      jobID,
 			Payload: buf,
 		}
 

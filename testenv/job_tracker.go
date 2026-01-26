@@ -3,7 +3,7 @@ package testenv
 import (
 	"sync"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 )
 
 // JobTracker captures job IDs during E2E tests for verification
@@ -21,8 +21,8 @@ func NewJobTracker() *JobTracker {
 	}
 }
 
-// RecordJob records a job ID from a task
-func (jt *JobTracker) RecordJob(task *asynq.Task) {
+// RecordJob records a job ID from a job envelope
+func (jt *JobTracker) RecordJob(jobEnvelope *job.JobEnvelope) {
 	if !jt.enabled {
 		return
 	}
@@ -30,9 +30,8 @@ func (jt *JobTracker) RecordJob(task *asynq.Task) {
 	jt.mu.Lock()
 	defer jt.mu.Unlock()
 
-	// The task ID in Asynq is the job ID we're tracking
-	taskID := task.ResultWriter().TaskID()
-	jt.jobIDs = append(jt.jobIDs, taskID)
+	// Record the job ID
+	jt.jobIDs = append(jt.jobIDs, jobEnvelope.ID)
 }
 
 // GetJobIDs returns all recorded job IDs

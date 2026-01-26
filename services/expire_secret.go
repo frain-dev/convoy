@@ -59,8 +59,13 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
+	jobID := queue.JobId{
+		ProjectID:  a.Project.UID,
+		ResourceID: secret.UID,
+	}.ExpireSecretJobId()
+
 	job := &queue.Job{
-		ID:      secret.UID,
+		ID:      jobID,
 		Payload: bytes,
 		Delay:   time.Hour * time.Duration(a.S.Expiration),
 	}

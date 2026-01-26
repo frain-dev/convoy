@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -19,11 +19,11 @@ import (
 )
 
 func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository,
-	eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd redis.UniversalClient) func(context.Context, *asynq.Task) error {
+	eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd redis.UniversalClient) func(context.Context, *job.JobEnvelope) error {
 	pool := goredis.NewPool(rd)
 	rs := redsync.New(pool)
 
-	return func(ctx context.Context, t *asynq.Task) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		const mutexName = "convoy:backup-project-data:mutex"
 		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
 
@@ -97,11 +97,11 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 	}
 }
 
-func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner) func(context.Context, *asynq.Task) error {
+func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner) func(context.Context, *job.JobEnvelope) error {
 	pool := goredis.NewPool(rd)
 	rs := redsync.New(pool)
 
-	return func(ctx context.Context, t *asynq.Task) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		const mutexName = "convoy:retention:mutex"
 		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
 

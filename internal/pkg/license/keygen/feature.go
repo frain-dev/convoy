@@ -20,7 +20,7 @@ const (
 	WebhookAnalytics           Feature = "WEBHOOK_ANALYTICS"
 	MutualTLS                  Feature = "MUTUAL_TLS"
 	OAuth2EndpointAuth         Feature = "OAUTH2_ENDPOINT_AUTH"
-	AsynqMonitoring            Feature = "ASYNQ_MONITORING"
+	SurgeMonitoring            Feature = "SURGE_MONITORING"
 	SynchronousWebhooks        Feature = "SYNCHRONOUS_WEBHOOKS"
 	PortalLinks                Feature = "PORTAL_LINKS"
 	ConsumerPoolTuning         Feature = "CONSUMER_POOL_TUNING"

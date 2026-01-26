@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
+	jobenvelope "github.com/olamilekan000/surge/surge/job"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -124,11 +124,19 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 			payload, err := msgpack.EncodeMsgPack(tt.dynamicEvent)
 			require.NoError(t, err)
 
-			job := queue.Job{
+			job := &queue.Job{
 				Payload: payload,
 			}
 
-			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
+			jobEnvelope := &jobenvelope.JobEnvelope{
+				ID:        "",
+				Topic:     string(convoy.EventProcessor),
+				Args:      job.Payload,
+				Namespace: "default",
+				Queue:     string(convoy.EventQueue),
+				State:     jobenvelope.StatePending,
+				CreatedAt: time.Now(),
+			}
 
 			deps := EventProcessorDeps{
 				EndpointRepo:       args.endpointRepo,
@@ -142,7 +150,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				OAuth2TokenService: args.oauth2TokenService,
 			}
 			fn := ProcessDynamicEventCreation(deps)
-			err = fn(context.Background(), task)
+			err = fn(context.Background(), jobEnvelope)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrMsg, err.(*EndpointError).Error())

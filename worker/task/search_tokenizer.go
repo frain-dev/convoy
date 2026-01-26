@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/config"
@@ -19,8 +19,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
-func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, redis *rdb.Redis) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, redis *rdb.Redis) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		pool := goredis.NewPool(redis.Client())
 		rs := redsync.New(pool)
 
@@ -64,10 +64,10 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 	}
 }
 
-func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.JobRepository) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.JobRepository) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		var params datastore.SearchIndexParams
-		err := json.Unmarshal(t.Payload(), &params)
+		err := json.Unmarshal(jobEnvelope.Args, &params)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal tokenizer handler payload")
 			return &EndpointError{Err: err, delay: time.Second * 30}

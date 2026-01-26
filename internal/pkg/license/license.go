@@ -17,7 +17,7 @@ type Licenser interface {
 	AdvancedEndpointMgmt() bool
 	AdvancedSubscriptions() bool
 	Transformations() bool
-	AsynqMonitoring() bool
+	SurgeMonitoring() bool
 	PortalLinks() bool
 	ConsumerPoolTuning() bool
 	AdvancedWebhookFiltering() bool

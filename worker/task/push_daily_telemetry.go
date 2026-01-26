@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -22,14 +22,14 @@ import (
 
 const perPage = 50
 
-func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis) func(context.Context, *job.JobEnvelope) error {
 	// Create a pool with go-redis
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
 
 	// Do your work that requires the lock.
 
-	return func(ctx context.Context, t *asynq.Task) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		// Obtain a new mutex by using the same name for all instances wanting the
 		// same lock.
 		const mutexName = "convoy:analytics:mutex"

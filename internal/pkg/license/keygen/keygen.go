@@ -418,11 +418,11 @@ func (k *Licenser) BillingModule() bool {
 	return ok
 }
 
-func (k *Licenser) AsynqMonitoring() bool {
+func (k *Licenser) SurgeMonitoring() bool {
 	if checkExpiry(k.license) != nil {
 		return false
 	}
-	_, ok := k.featureList[AsynqMonitoring]
+	_, ok := k.featureList[SurgeMonitoring]
 	return ok
 }
 

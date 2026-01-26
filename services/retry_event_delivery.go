@@ -67,8 +67,13 @@ func requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDel
 		return &ServiceError{ErrMsg: "error occurred marshaling event delivery payload", Err: err}
 	}
 
+	jobID := queue.JobId{
+		ProjectID:  g.UID,
+		ResourceID: eventDelivery.UID,
+	}.EventJobId()
+
 	job := &queue.Job{
-		ID:      eventDelivery.UID,
+		ID:      jobID,
 		Payload: bytes,
 		Delay:   1 * time.Second,
 	}

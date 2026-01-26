@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
@@ -196,8 +196,24 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	// call handler
-	retentionTask := asynq.NewTask(string(convoy.RetentionPolicies), nil, asynq.Queue(string(convoy.ScheduleQueue)))
-	backUpTask := asynq.NewTask(string(convoy.BackupProjectData), nil, asynq.Queue(string(convoy.ScheduleQueue)))
+	retentionJobEnvelope := &job.JobEnvelope{
+		ID:        ulid.Make().String(),
+		Topic:     string(convoy.RetentionPolicies),
+		Args:      []byte("{}"),
+		Namespace: "default",
+		Queue:     string(convoy.ScheduleQueue),
+		State:     job.StatePending,
+		CreatedAt: time.Now(),
+	}
+	backUpJobEnvelope := &job.JobEnvelope{
+		ID:        ulid.Make().String(),
+		Topic:     string(convoy.BackupProjectData),
+		Args:      []byte("{}"),
+		Namespace: "default",
+		Queue:     string(convoy.ScheduleQueue),
+		State:     job.StatePending,
+		CreatedAt: time.Now(),
+	}
 
 	clock.AdvanceTime(duration + time.Hour)
 
@@ -207,10 +223,10 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		r.ConvoyApp.eventRepo,
 		r.ConvoyApp.eventDeliveryRepo,
 		r.ConvoyApp.deliveryRepo,
-		r.ConvoyApp.redis)(context.Background(), backUpTask)
+		r.ConvoyApp.redis)(context.Background(), backUpJobEnvelope)
 	require.NoError(r.T(), err)
 
-	err = RetentionPolicies(r.ConvoyApp.redis, ret)(context.Background(), retentionTask)
+	err = RetentionPolicies(r.ConvoyApp.redis, ret)(context.Background(), retentionJobEnvelope)
 	require.NoError(r.T(), err)
 
 	_, err = r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery1.UID, attempt1.UID)

@@ -26,6 +26,7 @@ type QueueOptions struct {
 	RedisClient       *rdb.Redis
 	RedisAddress      []string
 	PrometheusAddress string
+	MaxWorkers        int // MaxWorkers for surge (optional, defaults to 50)
 }
 
 type JobId struct {
@@ -59,4 +60,28 @@ func (j JobId) ReplayJobId() string {
 
 func (j JobId) MatchSubsJobId() string {
 	return fmt.Sprintf("match_subs:%s:%s", j.ProjectID, j.ResourceID)
+}
+
+func (j JobId) RetryJobId() string {
+	return fmt.Sprintf("retry:%s:%s", j.ProjectID, j.ResourceID)
+}
+
+func (j JobId) EventJobId() string {
+	return fmt.Sprintf("event:%s:%s", j.ProjectID, j.ResourceID)
+}
+
+func (j JobId) BatchRetryJobId() string {
+	return fmt.Sprintf("batch_retry:%s:%s", j.ProjectID, j.ResourceID)
+}
+
+func (j JobId) NotificationJobId() string {
+	return fmt.Sprintf("notification:%s:%s", j.ProjectID, j.ResourceID)
+}
+
+func (j JobId) TokenizeSearchJobId() string {
+	return fmt.Sprintf("tokenize_search:%s:%s", j.ProjectID, j.ResourceID)
+}
+
+func (j JobId) ExpireSecretJobId() string {
+	return fmt.Sprintf("expire_secret:%s:%s", j.ProjectID, j.ResourceID)
 }

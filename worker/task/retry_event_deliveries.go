@@ -196,8 +196,13 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 			}
 
 			taskName := convoy.EventProcessor
+			jobID := queue.JobId{
+				ProjectID:  delivery.ProjectID,
+				ResourceID: delivery.UID,
+			}.EventJobId()
+
 			job := &queue.Job{
-				ID:      delivery.UID,
+				ID:      jobID,
 				Payload: data,
 				Delay:   1 * time.Second,
 			}

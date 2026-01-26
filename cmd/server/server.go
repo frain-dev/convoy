@@ -176,7 +176,10 @@ func StartConvoyServer(a *cli.App) error {
 	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
 	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
-	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
+
+	if flag.CanAccessFeature(fflag.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {
+		s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
+	}
 
 	// if cfg.Metrics.IsEnabled && cfg.Metrics.Backend == config.PrometheusMetricsProvider {
 	// 	refreshInterval := cfg.Metrics.Prometheus.MaterializedViewRefreshInterval

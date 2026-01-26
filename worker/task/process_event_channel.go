@@ -7,10 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -18,8 +17,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/util"
 )
 
 type EventChannelConfig struct {
@@ -51,60 +48,43 @@ type EventChannelSubResponse struct {
 
 type EventChannel interface {
 	GetConfig() *EventChannelConfig
-	CreateEvent(context.Context, *asynq.Task, EventChannel, EventChannelArgs) (*datastore.Event, error)
+	CreateEvent(context.Context, *job.JobEnvelope, EventChannel, EventChannelArgs) (*datastore.Event, error)
 	MatchSubscriptions(context.Context, EventChannelMetadata, EventChannelArgs) (*EventChannelSubResponse, error)
 }
 
 func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository,
 	eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
-	licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService OAuth2TokenService) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+	licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService OAuth2TokenService) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		cfg := channel.GetConfig()
 
-		// get or create event
-		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo)
+		var event *datastore.Event
+		event, err := channel.CreateEvent(ctx, jobEnvelope, channel, EventChannelArgs{
+			eventRepo:          eventRepo,
+			projectRepo:        projectRepo,
+			endpointRepo:       endpointRepo,
+			subRepo:            subRepo,
+			filterRepo:         filterRepo,
+			licenser:           licenser,
+			tracerBackend:      tracerBackend,
+			oauth2TokenService: oauth2TokenService,
+		})
 		if err != nil {
-			log.WithError(err).Error("failed to get last task info")
+			if strings.Contains(err.Error(), "duplicate key") {
+				foundEvent, findErr := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
+				if findErr == nil && foundEvent != nil {
+					log.WithError(err).Error("skipping duplicated event: " + event.UID)
+					return nil
+				}
+			}
+
+			writeErr := fmt.Errorf("failed to create event, err: %s", err.Error())
+			err = &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
 			return err
 		}
-
-		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
-			log.FromContext(ctx).Debugf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey)
-			return nil
-		}
-
-		var event *datastore.Event
-		if lastEvent != nil {
-			event = lastEvent
-		} else {
-			event, err = channel.CreateEvent(ctx, t, channel, EventChannelArgs{
-				eventRepo:          eventRepo,
-				projectRepo:        projectRepo,
-				endpointRepo:       endpointRepo,
-				subRepo:            subRepo,
-				filterRepo:         filterRepo,
-				licenser:           licenser,
-				tracerBackend:      tracerBackend,
-				oauth2TokenService: oauth2TokenService,
-			})
-			if err != nil {
-				if strings.Contains(err.Error(), "duplicate key") {
-					lastEvent, err = eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
-				}
-
-				if lastEvent == nil {
-					writeErr := fmt.Errorf("failed to create event, err: %s", err.Error())
-					err = &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
-					return err
-				}
-
-				log.WithError(err).Error("skipping duplicated event: " + event.UID)
-				return nil
-			}
-			if event == nil {
-				return &EndpointError{Err: fmt.Errorf("CODE: 1009, no response, failed to create event via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
-			}
+		if event == nil {
+			return &EndpointError{Err: fmt.Errorf("CODE: 1009, no response, failed to create event via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
 		}
 
 		metadata := EventChannelMetadata{
@@ -126,7 +106,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 
 		err = eventQueue.Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred while matching event subs")
+			log.FromContext(ctx).WithError(err).Errorf("[surge]: an error occurred while matching event subs")
 		}
 
 		return err
@@ -150,8 +130,8 @@ type MatchSubscriptionsDeps struct {
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 }
 
-func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		// Start a new trace span for subscription matching and event delivery creation
 		startTime := time.Now()
 		attributes := map[string]interface{}{
@@ -159,7 +139,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		}
 
 		var metadata EventChannelMetadata
-		err := getTaskPayload(t, &metadata)
+		err := getTaskPayload(jobEnvelope, &metadata)
 		if err != nil {
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
 			return err
@@ -262,68 +242,10 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 	}
 }
 
-func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQueue queue.Queuer, eventRepo datastore.EventRepository) (*datastore.Event, bool, error) {
-	var jobID string
-	switch ch.GetConfig().Channel {
-	case "broadcast":
-		var broadcastEvent models.BroadcastEvent
-		err := getTaskPayload(t, &broadcastEvent)
-		if err != nil {
-			return nil, false, err
-		}
-		jobID = broadcastEvent.JobID
-	case "dynamic":
-		var dynamicEvent models.DynamicEvent
-		err := getTaskPayload(t, &dynamicEvent)
-		if err != nil {
-			return nil, false, err
-		}
-		jobID = dynamicEvent.JobID
-	default:
-		var createEvent CreateEvent
-		err := getTaskPayload(t, &createEvent)
-		if err != nil {
-			return nil, false, err
-		}
-		jobID = createEvent.JobID
-	}
-
-	if util.IsStringEmpty(jobID) || !strings.Contains(jobID, ":") {
-		return nil, false, &EndpointError{Err: fmt.Errorf("cannot deduce jobID: %s", jobID)}
-	}
-
-	q, ok := eventQueue.(*redis.RedisQueue)
-	if !ok {
-		// For non-Redis queues (e.g., in tests), skip the task info check
-		return nil, false, nil
-	}
-
-	ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), jobID)
+func getTaskPayload(jobEnvelope *job.JobEnvelope, pogo interface{}) error {
+	err := msgpack.DecodeMsgPack(jobEnvelope.Args, pogo)
 	if err != nil {
-		log.WithError(err).Error("failed to get task from queue")
-		return nil, false, &EndpointError{Err: fmt.Errorf("failed to get task from queue, err: %s", err.Error()), delay: defaultBroadcastDelay}
-	}
-
-	lastRunErrored := ti != nil && strings.Contains(ti.LastErr, ErrFailedToWriteToQueue.Error())
-
-	var lastEvent *datastore.Event
-
-	if lastRunErrored {
-		split := strings.Split(ti.LastErr, ":")
-		if len(split) == 3 {
-			projectId, eventId := split[1], split[2]
-			if !util.IsStringEmpty(projectId) && !util.IsStringEmpty(eventId) {
-				lastEvent, err = eventRepo.FindEventByID(ctx, projectId, eventId)
-			}
-		}
-	}
-	return lastEvent, lastRunErrored, err
-}
-
-func getTaskPayload(t *asynq.Task, pogo interface{}) error {
-	err := msgpack.DecodeMsgPack(t.Payload(), &pogo)
-	if err != nil {
-		err = json.Unmarshal(t.Payload(), &pogo)
+		err = json.Unmarshal(jobEnvelope.Args, pogo)
 		if err != nil {
 			return err
 		}

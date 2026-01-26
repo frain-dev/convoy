@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
+	"github.com/olamilekan000/surge/surge/job"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy"
@@ -76,8 +76,16 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
+	// Create a job envelope for the task handler
+	backupJobEnvelope := &job.JobEnvelope{
+		ID:        ulid.Make().String(),
+		Topic:     string(convoy.BackupProjectData),
+		Args:      []byte("{}"), // Empty payload for backup task
+		Namespace: "default",
+		Queue:     string(convoy.ScheduleQueue),
+		State:     job.StatePending,
+		CreatedAt: time.Now(),
+	}
 
 	err = task.BackupProjectData(
 		configRepo,
@@ -86,7 +94,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
-	)(ctx, backupTask)
+	)(ctx, backupJobEnvelope)
 	require.NoError(t, err)
 
 	// List objects in MinIO
@@ -195,8 +203,16 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
+	// Create a job envelope for the task handler
+	backupJobEnvelope := &job.JobEnvelope{
+		ID:        ulid.Make().String(),
+		Topic:     string(convoy.BackupProjectData),
+		Args:      []byte("{}"), // Empty payload for backup task
+		Namespace: "default",
+		Queue:     string(convoy.ScheduleQueue),
+		State:     job.StatePending,
+		CreatedAt: time.Now(),
+	}
 
 	err = task.BackupProjectData(
 		configRepo,
@@ -205,7 +221,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
-	)(ctx, backupTask)
+	)(ctx, backupJobEnvelope)
 	require.NoError(t, err)
 
 	// Verify export files were created
@@ -350,8 +366,16 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 	}
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
+	// Create a job envelope for the task handler
+	backupJobEnvelope := &job.JobEnvelope{
+		ID:        ulid.Make().String(),
+		Topic:     string(convoy.BackupProjectData),
+		Args:      []byte("{}"), // Empty payload for backup task
+		Namespace: "default",
+		Queue:     string(convoy.ScheduleQueue),
+		State:     job.StatePending,
+		CreatedAt: time.Now(),
+	}
 
 	err = task.BackupProjectData(
 		configRepo,
@@ -360,7 +384,7 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
-	)(ctx, backupTask)
+	)(ctx, backupJobEnvelope)
 	require.NoError(t, err)
 
 	// Verify project1 exports (should have 3 records each)
@@ -450,8 +474,16 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	seedOldDeliveryAttempt(t, db, ctx, delivery1h, endpoint, 1)
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
+	// Create a job envelope for the task handler
+	backupJobEnvelope := &job.JobEnvelope{
+		ID:        ulid.Make().String(),
+		Topic:     string(convoy.BackupProjectData),
+		Args:      []byte("{}"), // Empty payload for backup task
+		Namespace: "default",
+		Queue:     string(convoy.ScheduleQueue),
+		State:     job.StatePending,
+		CreatedAt: time.Now(),
+	}
 
 	err = task.BackupProjectData(
 		configRepo,
@@ -460,7 +492,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
-	)(ctx, backupTask)
+	)(ctx, backupJobEnvelope)
 	require.NoError(t, err)
 
 	// Verify only old events (>24h) were exported
@@ -536,8 +568,16 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
+	// Create a job envelope for the task handler
+	backupJobEnvelope := &job.JobEnvelope{
+		ID:        ulid.Make().String(),
+		Topic:     string(convoy.BackupProjectData),
+		Args:      []byte("{}"), // Empty payload for backup task
+		Namespace: "default",
+		Queue:     string(convoy.ScheduleQueue),
+		State:     job.StatePending,
+		CreatedAt: time.Now(),
+	}
 
 	err = task.BackupProjectData(
 		configRepo,
@@ -546,7 +586,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
-	)(ctx, backupTask)
+	)(ctx, backupJobEnvelope)
 	require.NoError(t, err)
 
 	// Verify all 3 tables have export files

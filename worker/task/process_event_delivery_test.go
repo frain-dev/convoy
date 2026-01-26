@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/jarcoal/httpmock"
+	jobenvelope "github.com/olamilekan000/surge/surge/job"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -1161,9 +1161,17 @@ func TestProcessEventDelivery(t *testing.T) {
 				Payload: data,
 			}
 
-			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
+			jobEnvelope := &jobenvelope.JobEnvelope{
+				ID:        "",
+				Topic:     string(convoy.EventProcessor),
+				Args:      job.Payload,
+				Namespace: "default",
+				Queue:     string(convoy.EventQueue),
+				State:     jobenvelope.StatePending,
+				CreatedAt: time.Now(),
+			}
 
-			err = processor(context.Background(), task)
+			err = processor(context.Background(), jobEnvelope)
 
 			// Assert.
 			assert.Equal(t, tc.expectedError, err)

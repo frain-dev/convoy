@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 	"github.com/slack-go/slack"
 
 	"github.com/frain-dev/convoy"
@@ -22,18 +22,18 @@ var ErrInvalidSlackPayload = errors.New("invalid slack payload")
 var ErrInvalidNotificationPayload = errors.New("invalid notification payload")
 var ErrInvalidNotificationType = errors.New("invalid notification type")
 
-func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		n := &notification.Notification{}
-		err := msgpack.DecodeMsgPack(t.Payload(), &n)
+		err := msgpack.DecodeMsgPack(jobEnvelope.Args, &n)
 		if err != nil {
-			err := json.Unmarshal(t.Payload(), &n)
+			err := json.Unmarshal(jobEnvelope.Args, &n)
 			if err != nil {
 				// If unmarshal fails, try parsing as raw email.Message (backward compatibility)
 				np := &email.Message{}
-				err := msgpack.DecodeMsgPack(t.Payload(), np)
+				err := msgpack.DecodeMsgPack(jobEnvelope.Args, np)
 				if err != nil {
-					err := json.Unmarshal(t.Payload(), np)
+					err := json.Unmarshal(jobEnvelope.Args, np)
 					if err != nil {
 						return ErrInvalidNotificationPayload
 					}
@@ -61,9 +61,9 @@ func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *asynq.Task)
 		}
 		if n.NotificationType == "" && payloadEmpty {
 			np := &email.Message{}
-			err := msgpack.DecodeMsgPack(t.Payload(), np)
+			err := msgpack.DecodeMsgPack(jobEnvelope.Args, np)
 			if err != nil {
-				err := json.Unmarshal(t.Payload(), np)
+				err := json.Unmarshal(jobEnvelope.Args, np)
 				if err != nil {
 					return ErrInvalidNotificationPayload
 				}

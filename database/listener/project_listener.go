@@ -55,8 +55,13 @@ func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventTy
 							return
 						}
 
+						jobID := queue.JobId{
+							ProjectID:  project.UID,
+							ResourceID: project.UID,
+						}.TokenizeSearchJobId()
+
 						job := &queue.Job{
-							ID:      project.UID,
+							ID:      jobID,
 							Payload: bytes,
 							Delay:   1 * time.Second,
 						}

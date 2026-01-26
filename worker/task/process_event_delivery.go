@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -52,8 +52,8 @@ type EventDeliveryProcessorDeps struct {
 	OAuth2TokenService         OAuth2TokenService
 }
 
-func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) (err error) {
+func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *job.JobEnvelope) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) (err error) {
 		// Start a new trace span for event delivery
 		traceStartTime := time.Now()
 		attributes := map[string]interface{}{
@@ -76,22 +76,26 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				delayDuration = defaultEventDelay
 			}
 
-			job := &queue.Job{
-				Payload: t.Payload(),
+			retryJobID := queue.JobId{
+				ProjectID:  data.ProjectID,
+				ResourceID: data.EventDeliveryID,
+			}.RetryJobId()
+
+			retryJob := &queue.Job{
+				Payload: jobEnvelope.Args,
 				Delay:   delayDuration,
-				ID:      data.EventDeliveryID,
+				ID:      retryJobID,
 			}
 
-			// write it to the retry queue.
-			deferErr := deps.Queue.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
+			deferErr := deps.Queue.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, retryJob)
 			if deferErr != nil {
-				log.FromContext(ctx).WithError(deferErr).Error("[asynq]: an error occurred sending event delivery to the retry queue")
+				log.FromContext(ctx).WithError(deferErr).Error("[surge]: an error occurred sending event delivery to the retry queue")
 			}
 		}()
 
-		err = msgpack.DecodeMsgPack(t.Payload(), &data)
+		err = msgpack.DecodeMsgPack(jobEnvelope.Args, &data)
 		if err != nil {
-			err = json.Unmarshal(t.Payload(), &data)
+			err = json.Unmarshal(jobEnvelope.Args, &data)
 			if err != nil {
 				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 				return &DeliveryError{Err: err}

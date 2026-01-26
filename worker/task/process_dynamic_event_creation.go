@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
+	jobenvelope "github.com/olamilekan000/surge/surge/job"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
@@ -36,7 +36,7 @@ func (d *DynamicEventChannel) GetConfig() *EventChannelConfig {
 	}
 }
 
-func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
+func (d *DynamicEventChannel) CreateEvent(ctx context.Context, jobEnvelope *jobenvelope.JobEnvelope, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
 	// Start a new trace span for event creation
 	startTime := time.Now()
 	attributes := map[string]interface{}{
@@ -45,9 +45,9 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	}
 
 	var dynamicEvent models.DynamicEvent
-	err := msgpack.DecodeMsgPack(t.Payload(), &dynamicEvent)
+	err := msgpack.DecodeMsgPack(jobEnvelope.Args, &dynamicEvent)
 	if err != nil {
-		err := json.Unmarshal(t.Payload(), &dynamicEvent)
+		err := json.Unmarshal(jobEnvelope.Args, &dynamicEvent)
 		if err != nil {
 			args.tracerBackend.Capture(ctx, "dynamic.event.creation.error", attributes, startTime, time.Now())
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
@@ -185,7 +185,7 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	return &response, nil
 }
 
-func ProcessDynamicEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.Task) error {
+func ProcessDynamicEventCreation(deps EventProcessorDeps) func(context.Context, *jobenvelope.JobEnvelope) error {
 	ch := &DynamicEventChannel{}
 
 	return ProcessEventCreationByChannel(

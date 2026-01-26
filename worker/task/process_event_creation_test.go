@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
+	jobenvelope "github.com/olamilekan000/surge/surge/job"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -352,7 +352,16 @@ func TestProcessEventCreated(t *testing.T) {
 				Payload: payload,
 			}
 
-			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
+			// Create job envelope for surge
+			jobEnvelope := &jobenvelope.JobEnvelope{
+				ID:        job.ID,
+				Topic:     string(convoy.EventProcessor),
+				Args:      job.Payload,
+				Namespace: "default",
+				Queue:     string(convoy.EventQueue),
+				State:     jobenvelope.StatePending,
+				CreatedAt: time.Now(),
+			}
 
 			deps := EventProcessorDeps{
 				EndpointRepo:       args.endpointRepo,
@@ -366,7 +375,7 @@ func TestProcessEventCreated(t *testing.T) {
 				OAuth2TokenService: args.oauth2TokenService,
 			}
 			fn := ProcessEventCreation(deps)
-			err = fn(context.Background(), task)
+			err = fn(context.Background(), jobEnvelope)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrMsg, err.(*EndpointError).Error())

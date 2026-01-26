@@ -8,8 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/olamilekan000/surge/surge"
+	"github.com/olamilekan000/surge/surge/backend"
+	"github.com/olamilekan000/surge/surge/config"
 )
 
 type Environment struct {
@@ -141,19 +144,31 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 	}, nil
 }
 
-// newQueueInspectorFactory creates a factory function for creating asynq inspectors
+// newQueueInspectorFactory creates a factory function for creating surge backends
 func newQueueInspectorFactory(redisAddr string) QueueInspectorFunc {
-	return func(t *testing.T) *asynq.Inspector {
+	return func(t *testing.T) backend.Backend {
 		t.Helper()
 
-		// Parse the Redis connection string to extract host:port
-		// testcontainers returns "redis://localhost:port" but asynq expects "localhost:port"
-		uri, err := url.Parse(redisAddr)
+		// Create surge config from Redis address
+		cfg := &config.Config{
+			DefaultNamespace: "default",
+		}
+
+		// Parse the Redis connection string
+		_, err := url.Parse(redisAddr)
 		if err != nil {
 			t.Fatalf("failed to parse redis connection string: %v", err)
 		}
 
-		redisOpt := asynq.RedisClientOpt{Addr: uri.Host}
-		return asynq.NewInspector(redisOpt)
+		cfg.RedisURL = redisAddr
+
+		// Create surge client to get backend
+		ctx := context.Background()
+		client, err := surge.NewClient(ctx, cfg)
+		if err != nil {
+			t.Fatalf("failed to create surge client: %v", err)
+		}
+
+		return client.Backend()
 	}
 }

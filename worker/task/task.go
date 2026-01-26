@@ -3,7 +3,7 @@ package task
 import (
 	"time"
 
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 
 	"github.com/frain-dev/convoy/datastore"
 )
@@ -45,7 +45,7 @@ func (e *RateLimitError) Delay() time.Duration {
 func (e *RateLimitError) RateLimit() {
 }
 
-func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
+func GetRetryDelay(n int, err error, jobEnvelope *job.JobEnvelope) time.Duration {
 	if endpointError, ok := err.(*EndpointError); ok {
 		return endpointError.Delay()
 	}
@@ -56,7 +56,9 @@ func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
 		return circuitBreakerError.Delay()
 	}
 
-	return asynq.DefaultRetryDelayFunc(n, err, t)
+	// Default exponential backoff
+	baseDelay := time.Second
+	return baseDelay * time.Duration(1<<uint(n))
 }
 
 type SignatureValues struct {

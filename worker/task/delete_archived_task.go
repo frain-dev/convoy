@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
-	"github.com/hibiken/asynq"
+	"github.com/olamilekan000/surge/surge/job"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -17,11 +17,11 @@ import (
 	"github.com/frain-dev/convoy/queue/redis"
 )
 
-func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *job.JobEnvelope) error {
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
 
-	return func(ctx context.Context, t *asynq.Task) error {
+	return func(ctx context.Context, jobEnvelope *job.JobEnvelope) error {
 		const mutexName = "convoy:delete_archived_tasks:mutex"
 		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
 
@@ -61,11 +61,20 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 			return errors.New("invalid queue type")
 		}
 
-		for _, qu := range queues {
-			_, err := q.Inspector().DeleteAllArchivedTasks(qu)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Errorf("failed to delete archived task from queue - %s", qu)
-				continue
+		backend := q.Inspector()
+		namespaces, err := backend.GetNamespaces(ctx)
+		if err != nil {
+			log.FromContext(ctx).WithError(err).Error("failed to get namespaces")
+			namespaces = []string{"system"}
+		}
+
+		for _, ns := range namespaces {
+			for _, qu := range queues {
+				_, err := backend.Drain(ctx, ns, qu)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Errorf("failed to drain queue - %s in namespace %s", qu, ns)
+					continue
+				}
 			}
 		}
 

@@ -47,8 +47,13 @@ func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDelive
 				continue
 			}
 
+			jobID := queue.JobId{
+				ProjectID:  eventDelivery.ProjectID,
+				ResourceID: eventDelivery.UID,
+			}.EventJobId()
+
 			job := &queue.Job{
-				ID:      eventDelivery.UID,
+				ID:      jobID,
 				Payload: data,
 				Delay:   1 * time.Second,
 			}

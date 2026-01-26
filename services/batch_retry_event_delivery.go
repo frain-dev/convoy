@@ -66,8 +66,13 @@ func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "failed to encode batch retry payload", Err: err}
 	}
 
+	jobID := queue.JobId{
+		ProjectID:  e.ProjectID,
+		ResourceID: batchRetry.ID,
+	}.BatchRetryJobId()
+
 	job := &queue.Job{
-		ID:      batchRetry.ID,
+		ID:      jobID,
 		Payload: data,
 		Delay:   0,
 	}

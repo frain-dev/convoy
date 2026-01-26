@@ -34,7 +34,7 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datast
 				"endpoint_status": "inactive",
 			},
 		}
-		if err := enqueueEmail(q, emailMsg); err != nil {
+		if err := enqueueEmail(q, emailMsg, project); err != nil {
 			lo.WithError(err).Error("Failed to queue circuit breaker notification email")
 		}
 	}
@@ -65,14 +65,14 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datast
 				"endpoint_status": "inactive",
 			},
 		}
-		if err := enqueueEmail(q, emailMsg); err != nil {
+		if err := enqueueEmail(q, emailMsg, project); err != nil {
 			lo.WithError(err).Error("Failed to queue circuit breaker notification email to owner")
 		}
 	}
 	return nil
 }
 
-func enqueueEmail(q queue.Queuer, emailMsg *email.Message) error {
+func enqueueEmail(q queue.Queuer, emailMsg *email.Message, project *datastore.Project) error {
 	// Wrap email message in notification.Notification struct
 	// ProcessNotifications expects this structure with NotificationType and Payload
 	notif := &notification.Notification{
@@ -84,8 +84,14 @@ func enqueueEmail(q queue.Queuer, emailMsg *email.Message) error {
 	if err != nil {
 		return err
 	}
+
+	jobID := queue.JobId{
+		ProjectID:  project.UID,
+		ResourceID: ulid.Make().String(),
+	}.NotificationJobId()
+
 	job := &queue.Job{
-		ID:      ulid.Make().String(),
+		ID:      jobID,
 		Payload: bytes,
 	}
 	return q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)

@@ -49,7 +49,7 @@ func (Licenser) Transformations() bool {
 	return true
 }
 
-func (Licenser) AsynqMonitoring() bool {
+func (Licenser) SurgeMonitoring() bool {
 	return true
 }
 

@@ -70,11 +70,11 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	k = Licenser{featureList: map[Feature]*Properties{MutualTLS: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
 	require.False(t, k.MutualTLS())
 
-	k = Licenser{featureList: map[Feature]*Properties{AsynqMonitoring: {}}, license: &keygen.License{}}
-	require.True(t, k.AsynqMonitoring())
+	k = Licenser{featureList: map[Feature]*Properties{SurgeMonitoring: {}}, license: &keygen.License{}}
+	require.True(t, k.SurgeMonitoring())
 
-	k = Licenser{featureList: map[Feature]*Properties{AsynqMonitoring: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
-	require.False(t, k.AsynqMonitoring())
+	k = Licenser{featureList: map[Feature]*Properties{SurgeMonitoring: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.SurgeMonitoring())
 
 	k = Licenser{featureList: map[Feature]*Properties{SynchronousWebhooks: {}}, license: &keygen.License{}}
 	require.True(t, k.SynchronousWebhooks())
@@ -134,7 +134,7 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	require.False(t, falseLicenser.HADeployment())
 	require.False(t, falseLicenser.WebhookAnalytics())
 	require.False(t, falseLicenser.MutualTLS())
-	require.False(t, falseLicenser.AsynqMonitoring())
+	require.False(t, falseLicenser.SurgeMonitoring())
 	require.False(t, falseLicenser.SynchronousWebhooks())
 }
 

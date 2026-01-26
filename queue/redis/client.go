@@ -1,12 +1,19 @@
 package redis
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
 
-	"github.com/danvixent/asynqmon"
-	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
+	"github.com/olamilekan000/surge/surge"
+	"github.com/olamilekan000/surge/surge/backend"
+	"github.com/olamilekan000/surge/surge/config"
+	"github.com/olamilekan000/surge/surge/errors"
+	"github.com/olamilekan000/surge/surge/server"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy"
@@ -15,135 +22,154 @@ import (
 )
 
 var (
-	ErrTaskNotFound  = fmt.Errorf("asynq: %w", asynq.ErrTaskNotFound)
-	ErrQueueNotFound = fmt.Errorf("asynq: %w", asynq.ErrQueueNotFound)
+	ErrTaskNotFound  = fmt.Errorf("surge: %w", errors.ErrJobNotFound)
+	ErrQueueNotFound = fmt.Errorf("surge: %w", errors.ErrQueueNotFound)
 )
 
 type RedisQueue struct {
-	opts      queue.QueueOptions
-	client    *asynq.Client
-	inspector *asynq.Inspector
+	opts    queue.QueueOptions
+	client  *surge.Client
+	backend backend.Backend
+	ctx     context.Context
+}
+
+type TaskPayload struct {
+	TaskName string `json:"task_name"`
+	Payload  []byte `json:"payload"`
+	ID       string `json:"id"`
+	Queue    string `json:"queue"`
+}
+
+func (t TaskPayload) JobName() string {
+	return t.TaskName
+}
+
+func extractNamespaceFromJobID(jobID string) string {
+	parts := strings.Split(jobID, ":")
+	if len(parts) >= 2 {
+		return parts[1]
+	}
+	return "system"
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
-	var c asynq.RedisConnOpt
-	if len(opts.RedisAddress) == 1 {
-		var _ = opts.RedisClient.MakeRedisClient().(redis.UniversalClient)
-		c = opts.RedisClient
-	} else {
-		c = asynq.RedisClusterClientOpt{
-			Addrs: opts.RedisAddress,
+	ctx := context.Background()
+
+	maxWorkers := opts.MaxWorkers
+	if maxWorkers <= 0 {
+		maxWorkers = 50
+	}
+
+	cfg := &config.Config{
+		MaxWorkers:       maxWorkers,
+		DefaultNamespace: "default",
+		RedisHost:        "localhost",
+		RedisPort:        6379,
+		RedisDB:          0,
+	}
+
+	if len(opts.RedisAddress) > 0 && opts.RedisAddress[0] != "" {
+		redisOpts, err := redis.ParseURL(opts.RedisAddress[0])
+		if err == nil {
+			if redisOpts.Addr != "" {
+				parts := strings.Split(redisOpts.Addr, ":")
+				if len(parts) == 2 {
+					if parts[0] != "" {
+						cfg.RedisHost = parts[0]
+					}
+					if port, err := strconv.Atoi(parts[1]); err == nil {
+						cfg.RedisPort = port
+					}
+				}
+			}
+			cfg.RedisPassword = redisOpts.Password
+			cfg.RedisUsername = redisOpts.Username
+			cfg.RedisDB = redisOpts.DB
 		}
 	}
 
-	client := asynq.NewClient(c)
-	inspector := asynq.NewInspector(c)
+	client, err := surge.NewClient(ctx, cfg)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create surge client: %v", err))
+	}
+
 	return &RedisQueue{
-		client:    client,
-		opts:      opts,
-		inspector: inspector,
+		client:  client,
+		backend: client.Backend(),
+		opts:    opts,
+		ctx:     ctx,
 	}
 }
 
 func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
-	s := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
 	}
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
 
-	_, err := q.inspector.GetTaskInfo(s, job.ID)
-	if err != nil {
-		// If the task or queue does not yet exist, we can proceed
-		// to enqueuing the task
-		message := err.Error()
-		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
-			_, err := q.client.Enqueue(t, nil)
-			return err
-		}
+	namespace := extractNamespaceFromJobID(job.ID)
 
-		return err
+	payload := TaskPayload{
+		TaskName: string(taskName),
+		Payload:  job.Payload,
+		ID:       job.ID,
+		Queue:    string(queueName),
 	}
 
-	// At this point, the task is already on the queue based on its ID.
-	// We need to delete before enqueuing
-	err = q.inspector.DeleteTask(s, job.ID)
-	if err != nil {
-		return err
+	jobBuilder := q.client.Job(payload).Ns(namespace)
+
+	if job.Delay > 0 {
+		jobBuilder = jobBuilder.Schedule(job.Delay)
 	}
 
-	_, err = q.client.Enqueue(t, nil)
-	return err
+	// jobBuilder = jobBuilder.UniqueFor(24 * time.Hour)
+
+	return jobBuilder.Enqueue(q.ctx)
 }
 
 func (q *RedisQueue) WriteWithoutTimeout(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
-	s := string(queueName)
-	if job.ID == "" {
-		job.ID = ulid.Make().String()
-	}
-
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.Timeout(0), asynq.ProcessIn(job.Delay))
-
-	task, err := q.inspector.GetTaskInfo(s, job.ID)
-	if err != nil {
-		// If the task or queue does not yet exist, we can proceed
-		// to enqueuing the task
-		message := err.Error()
-		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
-			_, err := q.client.Enqueue(t, nil)
-			return err
-		}
-
-		return err
-	}
-
-	// At this point, the task is already on the queue based on its ID.
-	// We need to delete before enqueuing
-	err = q.inspector.DeleteTask(s, task.ID)
-	if err != nil {
-		return err
-	}
-
-	_, err = q.client.Enqueue(t, nil)
-	return err
+	return q.Write(taskName, queueName, job)
 }
 
 func (q *RedisQueue) Options() queue.QueueOptions {
 	return q.opts
 }
 
-func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
-	h := asynqmon.New(asynqmon.Options{
-		RootPath:          "/queue/monitoring",
-		RedisConnOpt:      q.opts.RedisClient,
-		PrometheusAddress: q.opts.PrometheusAddress,
-		PayloadFormatter:  Formatter{},
-		ResultFormatter:   Formatter{},
-	})
-	return h
+func (q *RedisQueue) Monitor() http.Handler {
+	dashboard := server.NewDashboardServer(q.client, 0)
+	dashboard.SetRootPath("/queue/monitoring")
+	return dashboard.Handler()
 }
 
-func (q *RedisQueue) Inspector() *asynq.Inspector {
-	return q.inspector
+func (q *RedisQueue) Inspector() backend.Backend {
+	return q.backend
+}
+
+func (q *RedisQueue) Client() *surge.Client {
+	return q.client
 }
 
 func (q *RedisQueue) DeleteEventDeliveriesFromQueue(queueName convoy.QueueName, ids []string) error {
+	ctx := context.Background()
+
 	for _, id := range ids {
-		taskInfo, err := q.inspector.GetTaskInfo(string(queueName), id)
+		namespace := extractNamespaceFromJobID(id)
+		dlqJobs, err := q.backend.InspectDLQ(ctx, namespace, string(queueName), 0, 1000)
 		if err != nil {
-			return err
+			continue
 		}
-		if taskInfo.State == asynq.TaskStateActive {
-			err = q.inspector.CancelProcessing(id)
-			if err != nil {
-				return err
+
+		for _, dlqJob := range dlqJobs {
+			var taskPayload TaskPayload
+			if err := json.Unmarshal(dlqJob.Args, &taskPayload); err == nil {
+				if taskPayload.ID == id {
+					if retryErr := q.backend.RetryFromDLQ(ctx, dlqJob.ID); retryErr != nil {
+						continue
+					}
+				}
 			}
 		}
-		err = q.inspector.DeleteTask(string(queueName), id)
-		if err != nil {
-			return err
-		}
 	}
+
 	return nil
 }
 

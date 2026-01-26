@@ -126,6 +126,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		RedisAddress:      cfg.Redis.BuildDsn(),
 		Type:              string(config.RedisQueueProvider),
 		PrometheusAddress: cfg.Prometheus.Dsn,
+		MaxWorkers:        cfg.ConsumerPoolSize,
 	}
 
 	q := redisQueue.NewQueue(opts)
@@ -437,6 +438,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		return fmt.Errorf("failed to register queue metrics: %w", err)
 	}
 
+	// Log summary of registered handlers before starting
+	lo.Infof("All handlers registered. Starting consumer...")
+
+	consumer.RegisterDispatcherHandler()
 	// start worker
 	consumer.Start()
 	lo.Printf("Starting Convoy Consumer Pool")

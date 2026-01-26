@@ -290,7 +290,7 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 		cancelServer()
 
 		// Wait for worker to finish processing any in-flight jobs and fully shut down
-		// Asynq consumer needs time to gracefully stop all goroutines and release Redis connections
+		// Surge consumer needs time to gracefully stop all goroutines and release Redis connections
 		t.Logf("Waiting for worker to fully shut down...")
 		time.Sleep(10 * time.Second)
 
