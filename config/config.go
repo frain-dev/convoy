@@ -323,9 +323,10 @@ type OTelAuthConfiguration struct {
 }
 
 type SentryConfiguration struct {
-	DSN        string  `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
-	SampleRate float64 `json:"sample_rate" envconfig:"CONVOY_SENTRY_SAMPLE_RATE"`
-	Debug      bool    `json:"debug" envconfig:"CONVOY_SENTRY_DEBUG"`
+	DSN         string  `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
+	SampleRate  float64 `json:"sample_rate" envconfig:"CONVOY_SENTRY_SAMPLE_RATE"`
+	Debug       bool    `json:"debug" envconfig:"CONVOY_SENTRY_DEBUG"`
+	Environment string  `json:"environment" envconfig:"CONVOY_SENTRY_ENVIRONMENT"`
 }
 
 type DatadogConfiguration struct {
