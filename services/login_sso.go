@@ -1,13 +1,11 @@
 package services
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
+	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -15,8 +13,10 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/sso/service"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -28,129 +28,121 @@ type LoginUserSSOService struct {
 	JWT           *jwt.Jwt
 	ConfigRepo    datastore.ConfigurationRepository
 	Licenser      license.Licenser
+	SSOClient     *service.Client
 
 	LicenseKey string
 	Host       string
 }
 
-const ssoUrl = "https://ssoproxy.getconvoy.io"
-const ssoRedirectPath = "/ssoready/redirect"
-const ssoTokenPath = "/ssoready/token"
-
 func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
-	ssoReq := models.SSORequest{
-		LicenseKey: u.LicenseKey,
-		Host:       u.Host,
-	}
-
-	if ssoReq.LicenseKey == "" {
+	if u.LicenseKey == "" {
 		return nil, errors.New("missing license key")
 	}
 
-	b, err := json.Marshal(ssoReq)
+	cfg, err := config.Get()
 	if err != nil {
-		return nil, errors.New("failed to marshal payload")
+		return nil, fmt.Errorf("failed to get configuration: %w", err)
 	}
 
-	rUrl := ssoUrl + ssoRedirectPath
-	req, err := http.NewRequest("POST", rUrl, bytes.NewBuffer(b))
+	ssoClient := u.SSOClient
+	if ssoClient == nil {
+		ssoClient = service.NewClient(service.Config{
+			Host:            cfg.SSOService.Host,
+			RedirectPath:    cfg.SSOService.RedirectPath,
+			TokenPath:       cfg.SSOService.TokenPath,
+			AdminPortalPath: cfg.SSOService.AdminPortalPath,
+			Timeout:         cfg.SSOService.Timeout,
+			RetryCount:      cfg.SSOService.RetryCount,
+		})
+	}
+
+	redirectURI := strings.TrimSpace(cfg.Auth.SSO.RedirectURL)
+	if redirectURI == "" {
+		return nil, errors.New("auth.sso.redirect_url is required for SSO login")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	redirectResp, err := ssoClient.GetRedirectURL(ctx, u.LicenseKey, u.Host, redirectURI)
 	if err != nil {
-		return nil, errors.New("failed to create SSO request")
+		log.Errorf("failed to get SSO redirect URL: %+v", err)
+		return nil, fmt.Errorf("failed to get SSO redirect URL: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Errorf("failed to call SSO: %+v", err)
-		return nil, errors.New("failed to call SSO")
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.New("failed to read SSO response")
-	}
-
-	var ssoResp models.SSOResponse
-	if err := json.Unmarshal(body, &ssoResp); err != nil {
-		return nil, errors.New("failed to parse SSO JSON response")
-	}
-
-	if !ssoResp.Status || ssoResp.Data.RedirectURL == "" {
-		log.Errorf("no valid redirectUrl in SSO response: %+v", ssoResp)
+	if redirectResp.Data.RedirectURL == "" {
 		return nil, errors.New("no redirect URL in SSO response")
 	}
 
-	log.Infof("Login should be successful: %+v", ssoResp)
+	log.Infof("SSO redirect URL obtained successfully")
 
 	return &models.SSOLoginResponse{
-		RedirectURL: ssoResp.Data.RedirectURL,
+		RedirectURL: redirectResp.Data.RedirectURL,
 	}, nil
 }
 
 func (u *LoginUserSSOService) RedeemToken(queryValues url.Values) (*models.SSOTokenResponse, error) {
-	accessCode := queryValues.Get("saml_access_code")
-
-	if accessCode == "" {
-		return nil, errors.New("missing saml_access_code")
+	token := queryValues.Get("token")
+	if token == "" {
+		token = queryValues.Get("sso_token")
+	}
+	if token == "" {
+		return nil, errors.New("missing token")
 	}
 
-	tokenRequest := models.SSOTokenRequest{
-		Token: accessCode,
-	}
-
-	b, err := json.Marshal(tokenRequest)
+	cfg, err := config.Get()
 	if err != nil {
-		return nil, errors.New("failed to marshal payload")
+		return nil, fmt.Errorf("failed to get configuration: %w", err)
 	}
 
-	rUrl := ssoUrl + ssoTokenPath
-	req, err := http.NewRequest("POST", rUrl, bytes.NewBuffer(b))
+	ssoClient := u.SSOClient
+	if ssoClient == nil {
+		ssoClient = service.NewClient(service.Config{
+			Host:            cfg.SSOService.Host,
+			RedirectPath:    cfg.SSOService.RedirectPath,
+			TokenPath:       cfg.SSOService.TokenPath,
+			AdminPortalPath: cfg.SSOService.AdminPortalPath,
+			Timeout:         cfg.SSOService.Timeout,
+			RetryCount:      cfg.SSOService.RetryCount,
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	tokenResp, err := ssoClient.ValidateToken(ctx, token)
 	if err != nil {
-		return nil, errors.New("failed to create SSO token request")
+		log.Errorf("failed to validate SSO token: %+v", err)
+		return nil, fmt.Errorf("failed to validate SSO token: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Errorf("failed to call SSO: %+v", err)
-		return nil, errors.New("failed to call SSO for token")
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.New("failed to read SSO token response")
+	payload := models.Payload{
+		Email:                  tokenResp.Data.Payload.Email,
+		FirstName:              tokenResp.Data.Payload.FirstName,
+		LastName:               tokenResp.Data.Payload.LastName,
+		OrganizationID:         tokenResp.Data.Payload.OrganizationID,
+		OrganizationExternalID: tokenResp.Data.Payload.OrganizationExternalID,
+		ID:                     tokenResp.Data.Payload.ID,
 	}
 
-	var tokenResponse models.SSOTokenResponse
-	if err := json.Unmarshal(body, &tokenResponse); err != nil {
-		return nil, errors.New("failed to parse SSO token JSON response")
-	}
-
-	if !tokenResponse.Status {
-		log.Errorf("failed to redeem token in response: %+v", tokenResponse)
-		return nil, errors.New("failed to redeem token")
-	}
-
-	if tokenResponse.Data.Payload.Email == "" {
+	if payload.Email == "" {
 		return nil, errors.New("no email in token response")
 	}
-	if tokenResponse.Data.Payload.OrganizationExternalID == "" {
+	if payload.OrganizationExternalID == "" {
 		return nil, errors.New("no external organization id in token response")
 	}
 
-	log.Infof("Token should be successful: %+v", tokenResponse)
+	log.Infof("SSO token validated successfully")
 
-	return &tokenResponse, nil
+	return &models.SSOTokenResponse{
+		Status:  true,
+		Message: "Token validated successfully",
+		Data: struct {
+			Payload models.Payload `json:"payload"`
+		}{
+			Payload: payload,
+		},
+	}, nil
 }
 
 func (u *LoginUserSSOService) LoginSSOUser(ctx context.Context, t *models.SSOTokenResponse) (*datastore.User, *jwt.Token, error) {
@@ -207,7 +199,11 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate hash", Err: err}
 	}
 
-	firstName, lastName := util.ExtractOrGenerateNamesFromEmail(t.Data.Payload.Email)
+	firstName := t.Data.Payload.FirstName
+	lastName := t.Data.Payload.LastName
+	if firstName == "" || lastName == "" {
+		firstName, lastName = util.ExtractOrGenerateNamesFromEmail(t.Data.Payload.Email)
+	}
 	user = &datastore.User{
 		UID:                    ulid.Make().String(),
 		FirstName:              firstName,

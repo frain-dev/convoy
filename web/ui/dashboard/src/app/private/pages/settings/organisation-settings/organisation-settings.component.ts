@@ -18,12 +18,20 @@ export class OrganisationSettingsComponent implements OnInit {
 	showDeleteModal = false;
 	isEditingOrganisation = false;
 	isDeletingOrganisation = false;
+	configuringSSO = false;
 	editOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
 	private rbacService = inject(RbacService);
 
-	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private privateService: PrivateService, public licenseService: LicensesService) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private settingService: SettingsService,
+		private generalService: GeneralService,
+		private router: Router,
+		private privateService: PrivateService,
+		public licenseService: LicensesService
+	) {}
 
 	async ngOnInit() {
 		this.getOrganisationDetails();
@@ -52,6 +60,25 @@ export class OrganisationSettingsComponent implements OnInit {
 			this.editOrganisationForm.patchValue({
 				name: organisationDetails.name
 			});
+		}
+	}
+
+	async configureSSO() {
+		this.configuringSSO = true;
+		try {
+			const returnUrl = window.location.href || (window.location.origin + '/');
+			const response = await this.settingService.getSSOAdminPortal(returnUrl);
+			const portalUrl = response?.data?.portal_url;
+			if (portalUrl) {
+				window.location.href = portalUrl;
+			} else {
+				this.generalService.showNotification({ style: 'error', message: 'Invalid response from SSO service' });
+				this.configuringSSO = false;
+			}
+		} catch (err: any) {
+			const message = typeof err === 'string' ? err : err?.response?.data?.message || err?.message || 'Failed to open SSO admin portal';
+			this.generalService.showNotification({ style: 'error', message });
+			this.configuringSSO = false;
 		}
 	}
 
