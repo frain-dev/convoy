@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel"
@@ -75,10 +76,11 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo l
 	}
 }
 
-func (c *Consumer) Start() {
+func (c *Consumer) Start() error {
 	if err := c.srv.Start(c.mux); err != nil {
-		c.log.WithError(err).Fatal("error starting worker")
+		return fmt.Errorf("error starting worker: %w", err)
 	}
+	return nil
 }
 
 func (c *Consumer) RegisterHandlers(taskName convoy.TaskName, handlerFn func(context.Context, *asynq.Task) error, tel *telemetry.Telemetry) {

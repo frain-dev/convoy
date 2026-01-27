@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"time"
@@ -66,16 +67,36 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 
 			cfg, err := config.Get()
 			if err != nil {
-				a.Logger.WithError(err).Fatal("Failed to load configuration")
+				return fmt.Errorf("failed to load configuration: %w", err)
 			}
 
 			// start sync configuration from the database.
 			go memorystore.DefaultStore.Sync(ctx, interval)
 
-			err = workerSrv.StartWorker(ctx, a, cfg)
+			worker, err := workerSrv.NewWorker(ctx, a, cfg)
 			if err != nil {
-				a.Logger.Errorf("Error starting data plane worker component, err: %v", err)
+				a.Logger.Errorf("Error initializing data plane worker component, err: %v", err)
 				return err
+			}
+
+			workerReady := make(chan struct{})
+			workerErr := make(chan error, 1)
+
+			go func() {
+				if err := worker.Run(ctx, workerReady); err != nil {
+					if ctx.Err() == nil {
+						workerErr <- err
+					}
+				}
+			}()
+
+			select {
+			case err := <-workerErr:
+				return fmt.Errorf("worker failed to start: %w", err)
+			case <-workerReady:
+				a.Logger.Info("Worker is ready")
+			case <-time.After(30 * time.Second):
+				return fmt.Errorf("worker failed to become ready within 30 seconds")
 			}
 
 			err = ingestSrv.StartIngest(cmd.Context(), a, cfg, interval)
@@ -124,7 +145,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 
 	cfg, err := config.Get()
 	if err != nil {
-		lo.WithError(err).Fatal("Failed to load configuration")
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	start := time.Now()
@@ -136,12 +157,11 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 	configRepo := configuration.New(a.Logger, a.DB)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
 	if err != nil {
-		lo.WithError(err).Fatal("failed to initialize realm chain")
+		return fmt.Errorf("failed to initialize realm chain: %w", err)
 	}
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
-	// start events handler
 	srv := server.NewServer(cfg.Server.HTTP.AgentPort, func() {})
 
 	evHandler, err := api.NewApplicationHandler(
@@ -158,7 +178,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 			ConfigRepo: configRepo,
 		})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create application handler: %w", err)
 	}
 
 	srv.SetHandler(evHandler.BuildDataPlaneRoutes())

@@ -123,7 +123,9 @@ func (tw *TestWorker) handleCreateEvent(ctx context.Context, t *asynq.Task) erro
 // Start starts the test worker
 func (tw *TestWorker) Start() {
 	go func() {
-		tw.consumer.Start()
+		if err := tw.consumer.Start(); err != nil {
+			tw.validator.t.Errorf("Failed to start test worker: %v", err)
+		}
 	}()
 }
 
