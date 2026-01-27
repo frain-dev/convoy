@@ -735,8 +735,14 @@ func (s *Service) CountEndpointSubscriptions(ctx context.Context, projectID, end
 }
 
 func (s *Service) TestSubscriptionFilter(_ context.Context, payload, filter interface{}, isFlattened bool) (bool, error) {
-	if payload == nil || filter == nil {
+	// If filter is nil, match everything
+	if filter == nil {
 		return true, nil
+	}
+
+	// If payload is nil but filter is not, no match
+	if payload == nil {
+		return false, nil
 	}
 
 	p, err := flatten.Flatten(payload)
@@ -759,8 +765,14 @@ func (s *Service) TestSubscriptionFilter(_ context.Context, payload, filter inte
 }
 
 func (s *Service) CompareFlattenedPayload(_ context.Context, payload, filter flatten.M, isFlattened bool) (bool, error) {
-	if payload == nil || filter == nil {
+	// If filter is nil, match everything
+	if filter == nil {
 		return true, nil
+	}
+
+	// If payload is nil but filter is not, no match
+	if payload == nil {
+		return false, nil
 	}
 
 	if !isFlattened {

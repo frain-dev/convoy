@@ -134,10 +134,9 @@ func TestTestSubscriptionFilter(t *testing.T) {
 			},
 		}
 
+		// When isFlattened=true, the filter should be fully flattened
 		filter := map[string]interface{}{
-			"body": map[string]interface{}{
-				"user.name": "John",
-			},
+			"body.user.name": "John",
 		}
 
 		matches, err := service.TestSubscriptionFilter(ctx, payload, filter, true)
@@ -208,11 +207,10 @@ func TestTestSubscriptionFilter(t *testing.T) {
 			},
 		}
 
+		// When isFlattened=true, the filter should be fully flattened
 		filter := map[string]interface{}{
-			"body": map[string]interface{}{
-				"user.status": "active",
-				"event":       "user.created",
-			},
+			"body.user.status": "active",
+			"body.event":       "user.created",
 		}
 
 		matches, err := service.TestSubscriptionFilter(ctx, payload, filter, true)
