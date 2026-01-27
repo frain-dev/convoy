@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/subscriptions/repo"
-	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -135,19 +134,6 @@ func mToPgJSON(m datastore.M) []byte {
 // pgJSONToM converts JSONB bytes to datastore.M (map)
 func pgJSONToM(data []byte) datastore.M {
 	return common.PgJSONToM(data)
-}
-
-// pgJSONToFlattenM converts JSONB bytes to flatten.M (map)
-func pgJSONToFlattenM(data []byte) flatten.M {
-	if len(data) == 0 {
-		return make(flatten.M)
-	}
-	var result flatten.M
-	err := json.Unmarshal(data, &result)
-	if err != nil {
-		return make(flatten.M)
-	}
-	return result
 }
 
 // ============================================================================
