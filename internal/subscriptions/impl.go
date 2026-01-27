@@ -101,7 +101,7 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 	// Prepare parameters
 	alertCount, alertThreshold := alertConfigToParams(&ac)
 	retryType, retryDuration, retryRetryCount := retryConfigToParams(&rc)
-	eventTypes, filterHeaders, filterBody, filterIsFlattened, filterRawHeaders, filterRawBody := filterConfigToParams(&fc)
+	filterParams := filterConfigToParams(&fc)
 	rateLimitCount, rateLimitDuration := rateLimitConfigToParams(&rlc)
 
 	// Create subscription
@@ -212,7 +212,7 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 	// Prepare parameters
 	alertCount, alertThreshold := alertConfigToParams(&ac)
 	retryType, retryDuration, retryRetryCount := retryConfigToParams(&rc)
-	eventTypes, filterHeaders, filterBody, filterIsFlattened, filterRawHeaders, filterRawBody := filterConfigToParams(&fc)
+	filterParams := filterConfigToParams(&fc)
 	rateLimitCount, rateLimitDuration := rateLimitConfigToParams(&rlc)
 
 	// Update subscription

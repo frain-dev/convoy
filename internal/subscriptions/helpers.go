@@ -45,7 +45,7 @@ func retryConfigToParams(rc *datastore.RetryConfiguration) (string, int32, int32
 }
 
 // paramsToRetryConfig converts database parameters to RetryConfiguration
-func paramsToRetryConfig(configType string, duration int32, retryCount int32) *datastore.RetryConfiguration {
+func paramsToRetryConfig(configType string, duration, retryCount int32) *datastore.RetryConfiguration {
 	if configType == "" && duration == 0 && retryCount == 0 {
 		return nil
 	}
@@ -56,10 +56,27 @@ func paramsToRetryConfig(configType string, duration int32, retryCount int32) *d
 	}
 }
 
+// filterConfigParams holds database parameters for filter configuration
+type filterConfigParams struct {
+	eventTypes  []string
+	headers     []byte
+	body        []byte
+	isFlattened pgtype.Bool
+	rawHeaders  []byte
+	rawBody     []byte
+}
+
 // filterConfigToParams converts FilterConfiguration to database parameters
-func filterConfigToParams(fc *datastore.FilterConfiguration) ([]string, []byte, []byte, pgtype.Bool, []byte, []byte) {
+func filterConfigToParams(fc *datastore.FilterConfiguration) filterConfigParams {
 	if fc == nil {
-		return []string{}, []byte("{}"), []byte("{}"), pgtype.Bool{Bool: false, Valid: true}, []byte("{}"), []byte("{}")
+		return filterConfigParams{
+			eventTypes:  []string{},
+			headers:     []byte("{}"),
+			body:        []byte("{}"),
+			isFlattened: pgtype.Bool{Bool: false, Valid: true},
+			rawHeaders:  []byte("{}"),
+			rawBody:     []byte("{}"),
+		}
 	}
 
 	eventTypes := fc.EventTypes
@@ -67,13 +84,14 @@ func filterConfigToParams(fc *datastore.FilterConfiguration) ([]string, []byte, 
 		eventTypes = []string{}
 	}
 
-	headers := mToPgJSON(fc.Filter.Headers)
-	body := mToPgJSON(fc.Filter.Body)
-	rawHeaders := mToPgJSON(fc.Filter.RawHeaders)
-	rawBody := mToPgJSON(fc.Filter.RawBody)
-	isFlattened := pgtype.Bool{Bool: fc.Filter.IsFlattened, Valid: true}
-
-	return eventTypes, headers, body, isFlattened, rawHeaders, rawBody
+	return filterConfigParams{
+		eventTypes:  eventTypes,
+		headers:     mToPgJSON(fc.Filter.Headers),
+		body:        mToPgJSON(fc.Filter.Body),
+		isFlattened: pgtype.Bool{Bool: fc.Filter.IsFlattened, Valid: true},
+		rawHeaders:  mToPgJSON(fc.Filter.RawHeaders),
+		rawBody:     mToPgJSON(fc.Filter.RawBody),
+	}
 }
 
 // paramsToFilterConfig converts database parameters to FilterConfiguration
@@ -112,7 +130,7 @@ func rateLimitConfigToParams(rlc *datastore.RateLimitConfiguration) (int32, int3
 }
 
 // paramsToRateLimitConfig converts database parameters to RateLimitConfiguration
-func paramsToRateLimitConfig(count int32, duration int32) *datastore.RateLimitConfiguration {
+func paramsToRateLimitConfig(count, duration int32) *datastore.RateLimitConfiguration {
 	if count == 0 && duration == 0 {
 		return nil
 	}
