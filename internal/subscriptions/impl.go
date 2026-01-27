@@ -245,7 +245,7 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 
 	rowsAffected := result.RowsAffected()
 	if rowsAffected < 1 {
-		return ErrSubscriptionNotUpdated
+		return datastore.ErrSubscriptionNotFound
 	}
 
 	// Update subscription with raw filters
@@ -509,7 +509,7 @@ func (s *Service) DeleteSubscription(ctx context.Context, projectID string, subs
 
 	rowsAffected := result.RowsAffected()
 	if rowsAffected < 1 {
-		return ErrSubscriptionNotDeleted
+		return datastore.ErrSubscriptionNotFound
 	}
 
 	return nil
