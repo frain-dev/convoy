@@ -7,8 +7,9 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/filters"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 // SeedFilter creates a filter for integration tests
@@ -42,7 +43,8 @@ func SeedFilter(db database.Database, subscriptionID, uid, eventType string, hea
 		UpdatedAt:      time.Now(),
 	}
 
-	filterRepo := postgres.NewFilterRepo(db)
+	logger := log.NewLogger(nil)
+	filterRepo := filters.New(logger, db)
 	err := filterRepo.CreateFilter(context.Background(), filter)
 	if err != nil {
 		return nil, err
