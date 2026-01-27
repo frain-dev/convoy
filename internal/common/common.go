@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"gopkg.in/guregu/null.v4"
@@ -169,4 +170,80 @@ func FlattenM(m datastore.M) (datastore.M, error) {
 		return nil, err
 	}
 	return mCopy, nil
+}
+
+// ============================================================================
+// pgtype.Text to string conversions
+// ============================================================================
+
+// PgTextToString converts pgtype.Text to string.
+// Invalid pgtype.Text returns empty string.
+func PgTextToString(t pgtype.Text) string {
+	if !t.Valid {
+		return ""
+	}
+	return t.String
+}
+
+// ============================================================================
+// Timestamptz conversions
+// ============================================================================
+
+// PgTimestamptzToTime converts pgtype.Timestamptz to time.Time.
+// Invalid timestamptz returns zero time.
+func PgTimestamptzToTime(t pgtype.Timestamptz) time.Time {
+	if !t.Valid {
+		return time.Time{}
+	}
+	return t.Time
+}
+
+// ============================================================================
+// Array conversions
+// ============================================================================
+
+// StringsToPgArray converts []string to []string for pgx (identity function for consistency).
+func StringsToPgArray(strs []string) []string {
+	if strs == nil {
+		return []string{}
+	}
+	return strs
+}
+
+// PgArrayToStrings converts []string from pgx to []string (identity function for consistency).
+func PgArrayToStrings(arr []string) []string {
+	if arr == nil {
+		return []string{}
+	}
+	return arr
+}
+
+// ============================================================================
+// JSONB conversion helpers (no error return for convenience)
+// ============================================================================
+
+// MToPgJSON converts datastore.M (map) to JSONB bytes.
+// Returns empty JSON object on error or nil input.
+func MToPgJSON(m datastore.M) []byte {
+	if m == nil {
+		return []byte("{}")
+	}
+	data, err := json.Marshal(m)
+	if err != nil {
+		return []byte("{}")
+	}
+	return data
+}
+
+// PgJSONToM converts JSONB bytes to datastore.M (map).
+// Returns empty map on error or empty input.
+func PgJSONToM(data []byte) datastore.M {
+	if len(data) == 0 {
+		return make(datastore.M)
+	}
+	var result datastore.M
+	if err := json.Unmarshal(data, &result); err != nil {
+		return make(datastore.M)
+	}
+	return result
 }
