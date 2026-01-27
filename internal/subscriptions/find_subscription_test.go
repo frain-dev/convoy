@@ -163,10 +163,9 @@ func TestFindSubscriptionsBySourceID(t *testing.T) {
 		err := service.CreateSubscription(ctx, project.UID, sub)
 		require.NoError(t, err)
 
-		initialCount := 0
 		subscriptions, err := service.FindSubscriptionsBySourceID(ctx, project.UID, source.UID)
 		require.NoError(t, err)
-		initialCount = len(subscriptions)
+		initialCount := len(subscriptions)
 
 		err = service.DeleteSubscription(ctx, project.UID, sub)
 		require.NoError(t, err)
@@ -231,10 +230,9 @@ func TestFindSubscriptionsByEndpointID(t *testing.T) {
 		err := service.CreateSubscription(ctx, project.UID, sub)
 		require.NoError(t, err)
 
-		initialCount := 0
 		subscriptions, err := service.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 		require.NoError(t, err)
-		initialCount = len(subscriptions)
+		initialCount := len(subscriptions)
 
 		err = service.DeleteSubscription(ctx, project.UID, sub)
 		require.NoError(t, err)
@@ -347,10 +345,9 @@ func TestFindCLISubscriptions(t *testing.T) {
 		err := service.CreateSubscription(ctx, project.UID, cli)
 		require.NoError(t, err)
 
-		initialCount := 0
 		subscriptions, err := service.FindCLISubscriptions(ctx, project.UID)
 		require.NoError(t, err)
-		initialCount = len(subscriptions)
+		initialCount := len(subscriptions)
 
 		err = service.DeleteSubscription(ctx, project.UID, cli)
 		require.NoError(t, err)

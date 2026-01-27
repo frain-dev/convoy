@@ -2,6 +2,7 @@ package subscriptions
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -93,11 +94,12 @@ func setupTestDB(t *testing.T) (database.Database, context.Context, *Service) {
 func seedUser(t *testing.T, db database.Database) *datastore.User {
 	t.Helper()
 
+	uid := ulid.Make().String()
 	user := &datastore.User{
-		UID:       ulid.Make().String(),
+		UID:       uid,
 		FirstName: "Test",
 		LastName:  "User",
-		Email:     "test@user.com",
+		Email:     fmt.Sprintf("test-%s@user.com", uid),
 	}
 
 	userRepo := postgres.NewUserRepo(db)
@@ -199,7 +201,7 @@ func seedSource(t *testing.T, db database.Database, project *datastore.Project) 
 }
 
 // seedDevice creates a test device
-func seedDevice(t *testing.T, db database.Database, project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Device {
+func seedDevice(t *testing.T, db database.Database, project *datastore.Project) *datastore.Device {
 	t.Helper()
 
 	device := &datastore.Device{
@@ -230,7 +232,7 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *data
 	project := seedProject(t, db, org)
 	endpoint := seedEndpoint(t, db, project)
 	source := seedSource(t, db, project)
-	device := seedDevice(t, db, project, endpoint)
+	device := seedDevice(t, db, project)
 
 	return project, endpoint, source, device
 }

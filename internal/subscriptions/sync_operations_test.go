@@ -83,8 +83,13 @@ func TestFetchSubscriptionsForBroadcast(t *testing.T) {
 	})
 
 	t.Run("should_return_empty_for_no_matches", func(t *testing.T) {
+		// Create a separate project to avoid interference from wildcard subscriptions
+		user := seedUser(t, db)
+		org := seedOrganisation(t, db, user)
+		emptyProject := seedProject(t, db, org)
+
 		eventType := "non.existent.event"
-		subscriptions, err := service.FetchSubscriptionsForBroadcast(ctx, project.UID, eventType, 10)
+		subscriptions, err := service.FetchSubscriptionsForBroadcast(ctx, emptyProject.UID, eventType, 10)
 		require.NoError(t, err)
 		require.Empty(t, subscriptions)
 	})
