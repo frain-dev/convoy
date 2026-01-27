@@ -25,9 +25,8 @@ import (
 // Service implements the FilterRepository using SQLc-generated queries
 type Service struct {
 	logger log.StdLogger
-	repo   repo.Querier      // SQLc-generated interface
-	db     *pgxpool.Pool     // Connection pool for transactions
-	legacy database.Database // For gradual migration if needed
+	repo   repo.Querier
+	db     *pgxpool.Pool
 }
 
 // Ensure Service implements datastore.FilterRepository at compile time
@@ -39,7 +38,6 @@ func New(logger log.StdLogger, db database.Database) *Service {
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
 		db:     db.GetConn(),
-		legacy: db,
 	}
 }
 
