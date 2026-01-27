@@ -33,6 +33,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -543,7 +544,7 @@ func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx conte
 		}
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(db)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 	err := subRepo.CreateSubscription(ctx, project.UID, subscription)
 	require.NoError(t, err)
 

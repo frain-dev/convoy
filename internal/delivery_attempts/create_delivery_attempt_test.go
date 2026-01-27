@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -320,7 +321,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	require.NoError(t, err)
 
 	// Create a subscription
-	subscriptionRepo := postgres.NewSubscriptionRepo(db)
+	subscriptionRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		Name:       "Test Subscription",

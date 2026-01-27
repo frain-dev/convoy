@@ -33,6 +33,7 @@ import (
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -3611,7 +3612,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
@@ -3670,7 +3671,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
@@ -3809,7 +3810,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -3860,7 +3861,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -3933,7 +3934,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	_, err = subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.ErrorIs(s.T(), err, datastore.ErrSubscriptionNotFound)
 }
@@ -3989,7 +3990,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))

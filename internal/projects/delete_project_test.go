@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/subscriptions"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func TestDeleteProject(t *testing.T) {
@@ -94,7 +97,7 @@ func TestDeleteProject_CascadeDeletes(t *testing.T) {
 	require.Nil(t, fetchedEvent)
 
 	// Verify subscriptions are soft deleted
-	subRepo := postgres.NewSubscriptionRepo(db)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 	fetchedSub, err := subRepo.FindSubscriptionByID(ctx, project.UID, subscription.UID)
 	require.Error(t, err)
 	require.Nil(t, fetchedSub)

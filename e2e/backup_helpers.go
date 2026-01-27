@@ -22,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -188,7 +189,7 @@ func seedEventWithTimestamp(t *testing.T, db database.Database, ctx context.Cont
 func seedSubscription(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
 	t.Helper()
 
-	subscriptionRepo := postgres.NewSubscriptionRepo(db)
+	subscriptionRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),

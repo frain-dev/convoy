@@ -259,7 +259,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sub, err := postgres.NewSubscriptionRepo(h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	sub, err := subscriptions.New(h.A.Logger, h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {

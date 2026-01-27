@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/filters"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -54,7 +55,7 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
+	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
 
@@ -142,7 +143,7 @@ func (h *Handler) GetFilter(w http.ResponseWriter, r *http.Request) {
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 	filterID := chi.URLParam(r, "filterID")
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
+	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -200,7 +201,7 @@ func (h *Handler) GetFilters(w http.ResponseWriter, r *http.Request) {
 
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
+	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -281,7 +282,7 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
+	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -386,7 +387,7 @@ func (h *Handler) DeleteFilter(w http.ResponseWriter, r *http.Request) {
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 	filterID := chi.URLParam(r, "filterID")
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
+	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -459,7 +460,7 @@ func (h *Handler) TestFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
+	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -524,7 +525,7 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
+	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
 
@@ -648,7 +649,7 @@ func (h *Handler) BulkUpdateFilters(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
+	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
 
