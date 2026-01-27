@@ -658,10 +658,164 @@ func (s *Service) FetchDeletedSubscriptions(ctx context.Context, projectIDs []st
 }
 
 func (s *Service) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate, pageSize int64) ([]datastore.Subscription, error) {
-	// Note: This method requires dynamic SQL generation for the CTE VALUES clause
-	// which is not directly supported by SQLc. For now, return an error
-	// indicating this needs to be implemented with custom SQL generation
-	return nil, errors.New("FetchUpdatedSubscriptions requires custom SQL generation - use legacy implementation")
+	if len(projectIDs) == 0 || len(subscriptionUpdates) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
+	// Build dynamic VALUES clause for input_map CTE
+	valuesSQL := ""
+	args := []interface{}{}
+	argIdx := 1
+
+	for i, update := range subscriptionUpdates {
+		valuesSQL += fmt.Sprintf("($%d, $%d::timestamptz)", argIdx, argIdx+1)
+		args = append(args, update.UID, update.UpdatedAt)
+		argIdx += 2
+
+		if i < len(subscriptionUpdates)-1 {
+			valuesSQL += ", "
+		}
+	}
+
+	// Add project IDs and limit
+	args = append(args, projectIDs, pageSize)
+
+	// Build the complete query
+	query := fmt.Sprintf(`
+WITH input_map(id, last_updated_at) AS (
+    VALUES %s
+),
+updated_existing AS (
+    SELECT
+        s.name,
+        s.id,
+        s.type,
+        s.project_id,
+        s.endpoint_id,
+        s.device_id,
+        s.source_id,
+        s.function,
+        s.delivery_mode,
+        s.updated_at,
+        s.created_at,
+        s.alert_config_count,
+        s.alert_config_threshold,
+        s.retry_config_type,
+        s.retry_config_duration,
+        s.retry_config_retry_count,
+        s.filter_config_event_types,
+        s.filter_config_filter_headers,
+        s.filter_config_filter_body,
+        s.filter_config_filter_is_flattened,
+        s.filter_config_filter_raw_headers,
+        s.filter_config_filter_raw_body,
+        s.rate_limit_config_count,
+        s.rate_limit_config_duration
+    FROM convoy.subscriptions s
+    JOIN input_map m ON s.id = m.id
+    WHERE s.updated_at > m.last_updated_at
+        AND s.project_id = ANY($%d::text[])
+        AND s.deleted_at IS NULL
+),
+new_subscriptions AS (
+    SELECT
+        s.name,
+        s.id,
+        s.type,
+        s.project_id,
+        s.endpoint_id,
+        s.device_id,
+        s.source_id,
+        s.function,
+        s.delivery_mode,
+        s.updated_at,
+        s.created_at,
+        s.alert_config_count,
+        s.alert_config_threshold,
+        s.retry_config_type,
+        s.retry_config_duration,
+        s.retry_config_retry_count,
+        s.filter_config_event_types,
+        s.filter_config_filter_headers,
+        s.filter_config_filter_body,
+        s.filter_config_filter_is_flattened,
+        s.filter_config_filter_raw_headers,
+        s.filter_config_filter_raw_body,
+        s.rate_limit_config_count,
+        s.rate_limit_config_duration
+    FROM convoy.subscriptions s
+    WHERE s.id NOT IN (SELECT id FROM input_map)
+        AND s.project_id = ANY($%d::text[])
+        AND s.deleted_at IS NULL
+)
+SELECT * FROM updated_existing
+UNION ALL
+SELECT * FROM new_subscriptions
+ORDER BY id
+LIMIT $%d`, valuesSQL, argIdx-2, argIdx-2, argIdx-1)
+
+	rows, err := s.db.Query(ctx, query, args...)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to fetch updated subscriptions")
+		return nil, &ServiceError{ErrMsg: "failed to fetch updated subscriptions", Err: err}
+	}
+	defer rows.Close()
+
+	subs := make([]datastore.Subscription, 0)
+	for rows.Next() {
+		var name, id, subType, projectID string
+		var endpointID, deviceID, sourceID, function, deliveryMode pgtype.Text
+		var updatedAt, createdAt pgtype.Timestamptz
+		var alertCount int32
+		var alertThreshold string
+		var retryType string
+		var retryDuration, retryRetryCount int32
+		var eventTypes []string
+		var filterHeaders, filterBody []byte
+		var filterIsFlattened pgtype.Bool
+		var filterRawHeaders, filterRawBody []byte
+		var rateLimitCount, rateLimitDuration int32
+
+		if err := rows.Scan(
+			&name, &id, &subType, &projectID, &endpointID, &deviceID, &sourceID,
+			&function, &deliveryMode, &updatedAt, &createdAt,
+			&alertCount, &alertThreshold,
+			&retryType, &retryDuration, &retryRetryCount,
+			&eventTypes, &filterHeaders, &filterBody, &filterIsFlattened,
+			&filterRawHeaders, &filterRawBody,
+			&rateLimitCount, &rateLimitDuration,
+		); err != nil {
+			s.logger.WithError(err).Error("failed to scan updated subscription")
+			return nil, &ServiceError{ErrMsg: "failed to scan updated subscription", Err: err}
+		}
+
+		sub := datastore.Subscription{
+			UID:             id,
+			Name:            name,
+			Type:            datastore.SubscriptionType(subType),
+			ProjectID:       projectID,
+			EndpointID:      pgTextToString(endpointID),
+			DeviceID:        pgTextToString(deviceID),
+			SourceID:        pgTextToString(sourceID),
+			Function:        null.NewString(pgTextToString(function), function.Valid),
+			DeliveryMode:    datastore.DeliveryMode(pgTextToString(deliveryMode)),
+			AlertConfig:     paramsToAlertConfig(alertCount, alertThreshold),
+			RetryConfig:     paramsToRetryConfig(retryType, retryDuration, retryRetryCount),
+			FilterConfig:    paramsToFilterConfig(eventTypes, filterHeaders, filterBody, filterIsFlattened, filterRawHeaders, filterRawBody),
+			RateLimitConfig: paramsToRateLimitConfig(rateLimitCount, rateLimitDuration),
+			CreatedAt:       pgTimestamptzToTime(createdAt),
+			UpdatedAt:       pgTimestamptzToTime(updatedAt),
+		}
+
+		subs = append(subs, sub)
+	}
+
+	if err := rows.Err(); err != nil {
+		s.logger.WithError(err).Error("failed to iterate updated subscriptions")
+		return nil, &ServiceError{ErrMsg: "failed to iterate updated subscriptions", Err: err}
+	}
+
+	return subs, nil
 }
 
 func (s *Service) FetchNewSubscriptions(ctx context.Context, projectIDs, knownSubscriptionIDs []string, lastSyncTime time.Time, pageSize int64) ([]datastore.Subscription, error) {
