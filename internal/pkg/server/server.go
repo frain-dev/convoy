@@ -60,7 +60,7 @@ func (s *Server) SetHandler(handler http.Handler) {
 		})
 	}
 
-	router.Handle("/*", handler)
+	router.Mount("/", handler)
 	s.s.Handler = router
 }
 
