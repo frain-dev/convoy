@@ -247,3 +247,103 @@ func TestClient_ValidateToken_MissingEmail(t *testing.T) {
 	assert.Nil(t, resp)
 	assert.Contains(t, err.Error(), "email is missing from profile")
 }
+
+func TestClient_GetRedirectURL_WithAPIKey_SendsAuthorization(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "Bearer cloud-api-key", r.Header.Get("Authorization"))
+		assert.Equal(t, "test-license-key", r.Header.Get("X-License-Key"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(RedirectURLResponse{
+			Status:  true,
+			Message: "Success",
+			Data:    RedirectURLData{RedirectURL: "https://workos.com/authorize"},
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient(Config{
+		Host:         server.URL,
+		RedirectPath: "/sso/redirect",
+		TokenPath:    "/sso/token",
+		Timeout:      5 * time.Second,
+		RetryCount:   1,
+		APIKey:       "cloud-api-key",
+	})
+
+	resp, err := client.GetRedirectURL(context.Background(), "test-license-key", "https://convoy.example.com", "https://convoy.example.com/sso/callback")
+	require.NoError(t, err)
+	assert.True(t, resp.Status)
+	assert.Equal(t, "https://workos.com/authorize", resp.Data.RedirectURL)
+}
+
+func TestClient_ValidateToken_WithLicenseKey_SendsXLicenseKey(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "Bearer cloud-api-key", r.Header.Get("Authorization"))
+		assert.Equal(t, "config-license-key", r.Header.Get("X-License-Key"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(TokenValidationResponse{
+			Status:  true,
+			Message: "Success",
+			Data: TokenValidationData{
+				Payload: UserProfile{
+					Email: "user@example.com",
+					ID:    "user-123",
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient(Config{
+		Host:         server.URL,
+		RedirectPath: "/sso/redirect",
+		TokenPath:    "/sso/token",
+		Timeout:      5 * time.Second,
+		RetryCount:   1,
+		APIKey:       "cloud-api-key",
+		LicenseKey:   "config-license-key",
+	})
+
+	resp, err := client.ValidateToken(context.Background(), "test-token")
+	require.NoError(t, err)
+	assert.True(t, resp.Status)
+	assert.Equal(t, "user@example.com", resp.Data.Payload.Email)
+}
+
+func TestClient_GetAdminPortalURL_WithOrgID_SendsOrgIDInBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "Bearer cloud-api-key", r.Header.Get("Authorization"))
+		assert.Equal(t, "test-license-key", r.Header.Get("X-License-Key"))
+		var req AdminPortalRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+		assert.Equal(t, "org-123", req.OrgID)
+		assert.Equal(t, "https://return.example.com", req.ReturnURL)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(AdminPortalResponse{
+			Status:  true,
+			Message: "Success",
+			Data:    AdminPortalData{PortalURL: "https://portal.example.com", ExpiresIn: 300},
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient(Config{
+		Host:            server.URL,
+		RedirectPath:    "/sso/redirect",
+		TokenPath:       "/sso/token",
+		AdminPortalPath: "/sso/admin-portal",
+		Timeout:         5 * time.Second,
+		RetryCount:      1,
+		APIKey:          "cloud-api-key",
+		OrgID:           "org-123",
+	})
+
+	resp, err := client.GetAdminPortalURL(context.Background(), "test-license-key", "https://return.example.com", "https://success.example.com")
+	require.NoError(t, err)
+	assert.True(t, resp.Status)
+	assert.Equal(t, "https://portal.example.com", resp.Data.PortalURL)
+}

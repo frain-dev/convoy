@@ -2,6 +2,7 @@ package service
 
 type RedirectURLRequest struct {
 	CallbackURL string `json:"callback_url"`
+	OrgID       string `json:"org_id,omitempty"`
 }
 
 type RedirectURLData struct {
@@ -17,6 +18,7 @@ type RedirectURLResponse struct {
 
 type TokenValidationRequest struct {
 	Token string `json:"token"`
+	OrgID string `json:"org_id,omitempty"`
 }
 
 type TokenValidationData struct {
@@ -43,6 +45,7 @@ type UserProfile struct {
 type AdminPortalRequest struct {
 	ReturnURL  string `json:"return_url"`
 	SuccessURL string `json:"success_url"`
+	OrgID      string `json:"org_id,omitempty"`
 }
 
 // AdminPortalData is the data object in the admin-portal response.

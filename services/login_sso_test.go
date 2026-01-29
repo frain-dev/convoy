@@ -31,15 +31,15 @@ func provideLoginUserSSOService(ctrl *gomock.Controller, t *testing.T) (*LoginUs
 	// Create a mock SSO server
 	ssoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-
-		if r.URL.Path == "/sso/redirect" {
+		switch r.URL.Path {
+		case "/sso/redirect":
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(service.RedirectURLResponse{
 				Status:  true,
 				Message: "Success",
 				Data:    service.RedirectURLData{RedirectURL: "https://workos.com/authorize?client_id=test"},
 			})
-		} else if r.URL.Path == "/sso/token" {
+		case "/sso/token":
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(service.TokenValidationResponse{
 				Status:  true,

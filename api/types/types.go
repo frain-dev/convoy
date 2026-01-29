@@ -32,4 +32,6 @@ type APIOptions struct {
 	Cfg                        config.Configuration
 	BillingClient              billing.Client
 	ConfigRepo                 datastore.ConfigurationRepository
+	// OrgRepo is optional. When set (e.g. in tests), GetLicenseFeatures uses it for org lookup instead of organisations.New(Logger, DB).
+	OrgRepo datastore.OrganisationRepository
 }

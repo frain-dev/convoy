@@ -29,6 +29,7 @@ type Querier interface {
 	// Final select: reverse order for backward pagination
 	FetchOrganisationsPaginated(ctx context.Context, arg FetchOrganisationsPaginatedParams) ([]FetchOrganisationsPaginatedRow, error)
 	UpdateOrganisation(ctx context.Context, arg UpdateOrganisationParams) (pgconn.CommandTag, error)
+	UpdateOrganisationLicenseData(ctx context.Context, arg UpdateOrganisationLicenseDataParams) (pgconn.CommandTag, error)
 }
 
 var _ Querier = (*Queries)(nil)

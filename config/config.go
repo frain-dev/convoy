@@ -505,11 +505,12 @@ type HCPVaultConfig struct {
 }
 
 type BillingConfiguration struct {
-	Enabled         bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
-	URL             string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
-	APIKey          string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
-	PaymentProvider PaymentProviderConfiguration `json:"payment_provider"`
-	Plans           []interface{}                `json:"plans,omitempty"`
+	Enabled          bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
+	URL              string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
+	APIKey           string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
+	OrganisationHost string                       `json:"organisation_host" envconfig:"CONVOY_BILLING_ORGANISATION_HOST"`
+	PaymentProvider  PaymentProviderConfiguration `json:"payment_provider"`
+	Plans            []interface{}                `json:"plans,omitempty"`
 }
 
 type PaymentProviderConfiguration struct {

@@ -27,6 +27,9 @@ type Config struct {
 	AdminPortalPath string
 	Timeout         time.Duration
 	RetryCount      int
+	APIKey          string
+	LicenseKey      string
+	OrgID           string
 }
 
 type Client struct {
@@ -37,6 +40,9 @@ type Client struct {
 	timeout         time.Duration
 	retryCount      int
 	httpClient      *http.Client
+	apiKey          string
+	licenseKey      string
+	orgID           string
 }
 
 func NewClient(cfg Config) *Client {
@@ -66,6 +72,19 @@ func NewClient(cfg Config) *Client {
 		timeout:         cfg.Timeout,
 		retryCount:      cfg.RetryCount,
 		httpClient:      &http.Client{Timeout: cfg.Timeout},
+		apiKey:          cfg.APIKey,
+		licenseKey:      cfg.LicenseKey,
+		orgID:           cfg.OrgID,
+	}
+}
+
+// setAuthHeaders sets Authorization (when apiKey is set) and X-License-Key (when licenseKeyForHeader is non-empty).
+func (c *Client) setAuthHeaders(req *http.Request, licenseKeyForHeader string) {
+	if c.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	}
+	if licenseKeyForHeader != "" {
+		req.Header.Set("X-License-Key", licenseKeyForHeader)
 	}
 }
 
@@ -78,6 +97,9 @@ func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, _, redirectURI 
 	}
 
 	body := RedirectURLRequest{CallbackURL: redirectURI}
+	if c.apiKey != "" && c.orgID != "" {
+		body.OrgID = c.orgID
+	}
 	bodyBytes, _ := json.Marshal(body)
 	url := c.host + c.redirectPath
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
@@ -85,7 +107,7 @@ func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, _, redirectURI 
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-License-Key", licenseKey)
+	c.setAuthHeaders(req, licenseKey)
 
 	var lastErr error
 	for attempt := 0; attempt <= c.retryCount; attempt++ {
@@ -123,6 +145,9 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 	}
 
 	body := TokenValidationRequest{Token: token}
+	if c.apiKey != "" && c.orgID != "" {
+		body.OrgID = c.orgID
+	}
 	bodyBytes, _ := json.Marshal(body)
 	url := c.host + c.tokenPath
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
@@ -130,6 +155,7 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	c.setAuthHeaders(req, c.licenseKey)
 
 	var lastErr error
 	for attempt := 0; attempt <= c.retryCount; attempt++ {
@@ -186,6 +212,9 @@ func (c *Client) GetAdminPortalURL(ctx context.Context, licenseKey, returnURL, s
 	}
 
 	body := AdminPortalRequest{ReturnURL: returnURL, SuccessURL: successURL}
+	if c.apiKey != "" && c.orgID != "" {
+		body.OrgID = c.orgID
+	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -196,7 +225,7 @@ func (c *Client) GetAdminPortalURL(ctx context.Context, licenseKey, returnURL, s
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-License-Key", licenseKey)
+	c.setAuthHeaders(req, licenseKey)
 
 	var lastErr error
 	for attempt := 0; attempt <= c.retryCount; attempt++ {

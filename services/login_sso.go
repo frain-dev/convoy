@@ -46,14 +46,19 @@ func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
 
 	ssoClient := u.SSOClient
 	if ssoClient == nil {
-		ssoClient = service.NewClient(service.Config{
+		sc := service.Config{
 			Host:            cfg.SSOService.Host,
 			RedirectPath:    cfg.SSOService.RedirectPath,
 			TokenPath:       cfg.SSOService.TokenPath,
 			AdminPortalPath: cfg.SSOService.AdminPortalPath,
 			Timeout:         cfg.SSOService.Timeout,
 			RetryCount:      cfg.SSOService.RetryCount,
-		})
+		}
+		if cfg.Billing.Enabled && cfg.Billing.APIKey != "" {
+			sc.APIKey = cfg.Billing.APIKey
+			sc.LicenseKey = u.LicenseKey
+		}
+		ssoClient = service.NewClient(sc)
 	}
 
 	redirectURI := strings.TrimSpace(cfg.Auth.SSO.RedirectURL)
@@ -97,14 +102,19 @@ func (u *LoginUserSSOService) RedeemToken(queryValues url.Values) (*models.SSOTo
 
 	ssoClient := u.SSOClient
 	if ssoClient == nil {
-		ssoClient = service.NewClient(service.Config{
+		sc := service.Config{
 			Host:            cfg.SSOService.Host,
 			RedirectPath:    cfg.SSOService.RedirectPath,
 			TokenPath:       cfg.SSOService.TokenPath,
 			AdminPortalPath: cfg.SSOService.AdminPortalPath,
 			Timeout:         cfg.SSOService.Timeout,
 			RetryCount:      cfg.SSOService.RetryCount,
-		})
+		}
+		if cfg.Billing.Enabled && cfg.Billing.APIKey != "" {
+			sc.APIKey = cfg.Billing.APIKey
+			sc.LicenseKey = u.LicenseKey
+		}
+		ssoClient = service.NewClient(sc)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)

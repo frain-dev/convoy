@@ -86,6 +86,14 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
+		BillingClient: h.A.BillingClient,
+		Logger:        h.A.Logger,
+		Cfg:           h.A.Cfg,
+	})
+
 	u := &models.LoginUserResponse{
 		User:  user,
 		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
@@ -121,14 +129,20 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ssoClient := service.NewClient(service.Config{
+	sc := service.Config{
 		Host:            configuration.SSOService.Host,
 		RedirectPath:    configuration.SSOService.RedirectPath,
 		TokenPath:       configuration.SSOService.TokenPath,
 		AdminPortalPath: configuration.SSOService.AdminPortalPath,
 		Timeout:         configuration.SSOService.Timeout,
 		RetryCount:      configuration.SSOService.RetryCount,
-	})
+	}
+	if configuration.Billing.Enabled && configuration.Billing.APIKey != "" {
+		sc.APIKey = configuration.Billing.APIKey
+		sc.LicenseKey = configuration.LicenseKey
+		sc.OrgID = r.Header.Get("X-Organisation-Id")
+	}
+	ssoClient := service.NewClient(sc)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
@@ -190,6 +204,14 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
+		BillingClient: h.A.BillingClient,
+		Logger:        h.A.Logger,
+		Cfg:           h.A.Cfg,
+	})
 
 	u := &models.LoginUserResponse{
 		User:  user,

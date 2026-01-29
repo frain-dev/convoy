@@ -16,6 +16,9 @@
 		<span class="text-12 text-neutral-10 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ organisationId }}</span>
 		<convoy-copy-button [text]="organisationId" notificationText="Organisation ID has been copied to your clipboard"></convoy-copy-button>
 	</div>
+	<div class="mt-12px" *ngIf="licenseService.hasOrgLicense(currentOrg)">
+		<span class="text-12 text-neutral-10">Licensed</span>
+	</div>
 </form>
 
 <ng-container *ngIf="licenseService.hasLicense('EnterpriseSSO')">

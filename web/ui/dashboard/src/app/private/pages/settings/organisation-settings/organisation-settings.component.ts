@@ -1,11 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { SettingsService } from '../settings.service';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { Router } from '@angular/router';
-import { PrivateService } from 'src/app/private/private.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import {Component, inject, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {SettingsService} from '../settings.service';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {Router} from '@angular/router';
+import {PrivateService} from 'src/app/private/private.service';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'organisation-settings',
@@ -49,6 +49,10 @@ export class OrganisationSettingsComponent implements OnInit {
 		} catch {
 			this.isEditingOrganisation = false;
 		}
+	}
+
+	get currentOrg() {
+		return this.privateService.getOrganisation;
 	}
 
 	getOrganisationDetails() {
