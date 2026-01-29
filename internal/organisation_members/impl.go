@@ -8,11 +8,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gopkg.in/guregu/null.v4"
 
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/organisation_members/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -35,43 +34,6 @@ func New(logger log.StdLogger, db database.Database) *Service {
 		repo:   repo.New(db.GetConn()),
 		db:     db.GetConn(),
 	}
-}
-
-// ============================================================================
-// Type Conversion Helpers
-// ============================================================================
-
-// roleToParams converts auth.Role to database column parameters
-func roleToParams(role auth.Role) (roleType string, roleProject, roleEndpoint pgtype.Text) {
-	roleType = string(role.Type)
-	roleProject = pgtype.Text{
-		String: role.Project,
-		Valid:  !util.IsStringEmpty(role.Project),
-	}
-	roleEndpoint = pgtype.Text{
-		String: role.Endpoint,
-		Valid:  !util.IsStringEmpty(role.Endpoint),
-	}
-	return
-}
-
-// paramsToRole converts database columns to auth.Role
-func paramsToRole(roleType, roleProject, roleEndpoint string) auth.Role {
-	return auth.Role{
-		Type:     auth.RoleType(roleType),
-		Project:  roleProject,
-		Endpoint: roleEndpoint,
-	}
-}
-
-// pgTextToNullString converts pgtype.Text to null.String
-func pgTextToNullString(t pgtype.Text) null.String {
-	return null.NewString(t.String, t.Valid)
-}
-
-// pgTimestamptzToNullTime converts pgtype.Timestamptz to null.Time
-func pgTimestamptzToNullTime(t pgtype.Timestamptz) null.Time {
-	return null.NewTime(t.Time, t.Valid)
 }
 
 // rowToOrganisationMember converts any SQLc-generated row struct to datastore.OrganisationMember
@@ -132,7 +94,7 @@ func rowToOrganisationMember(row interface{}) *datastore.OrganisationMember {
 		UID:            id,
 		OrganisationID: organisationID,
 		UserID:         userID,
-		Role:           paramsToRole(roleType, roleProject, roleEndpoint),
+		Role:           common.ParamsToRole(roleType, roleProject, roleEndpoint),
 		UserMetadata: datastore.UserMetadata{
 			UserID:    userMetadataUserID,
 			FirstName: userMetadataFirstName,
@@ -150,11 +112,11 @@ func rowToOrganisation(row repo.FetchUserOrganisationsPaginatedRow) datastore.Or
 		UID:            row.ID,
 		Name:           row.Name,
 		OwnerID:        row.OwnerID,
-		CustomDomain:   pgTextToNullString(row.CustomDomain),
-		AssignedDomain: pgTextToNullString(row.AssignedDomain),
+		CustomDomain:   common.PgTextToNullString(row.CustomDomain),
+		AssignedDomain: common.PgTextToNullString(row.AssignedDomain),
 		CreatedAt:      row.CreatedAt.Time,
 		UpdatedAt:      row.UpdatedAt.Time,
-		DeletedAt:      pgTimestamptzToNullTime(row.DeletedAt),
+		DeletedAt:      common.PgTimestamptzToNullTime(row.DeletedAt),
 	}
 }
 
@@ -168,13 +130,13 @@ func (s *Service) CreateOrganisationMember(ctx context.Context, member *datastor
 		return util.NewServiceError(http.StatusBadRequest, errors.New("organisation member cannot be nil"))
 	}
 
-	roleType, roleProject, roleEndpoint := roleToParams(member.Role)
+	roleTypePg, roleProject, roleEndpoint := common.RoleToParams(member.Role)
 
 	err := s.repo.CreateOrganisationMember(ctx, repo.CreateOrganisationMemberParams{
 		ID:             member.UID,
 		OrganisationID: member.OrganisationID,
 		UserID:         member.UserID,
-		RoleType:       roleType,
+		RoleType:       roleTypePg.String,
 		RoleProject:    roleProject,
 		RoleEndpoint:   roleEndpoint,
 	})
@@ -193,11 +155,11 @@ func (s *Service) UpdateOrganisationMember(ctx context.Context, member *datastor
 		return util.NewServiceError(http.StatusBadRequest, errors.New("organisation member cannot be nil"))
 	}
 
-	roleType, roleProject, roleEndpoint := roleToParams(member.Role)
+	roleTypePg, roleProject, roleEndpoint := common.RoleToParams(member.Role)
 
 	err := s.repo.UpdateOrganisationMember(ctx, repo.UpdateOrganisationMemberParams{
 		ID:           member.UID,
-		RoleType:     roleType,
+		RoleType:     roleTypePg.String,
 		RoleProject:  roleProject,
 		RoleEndpoint: roleEndpoint,
 	})

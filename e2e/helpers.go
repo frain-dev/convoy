@@ -1,20 +1,39 @@
 package e2e
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"os"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	//nolint:staticcheck // we don't want to use v2
+	"cloud.google.com/go/pubsub"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/oklog/ulid/v2"
+	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
+	amqp091 "github.com/rabbitmq/amqp091-go"
+
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 // EventManifest tracks received webhooks for verification
@@ -322,4 +341,1048 @@ func containsSubstring(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// AMQP Helper Functions
+
+// CreateAMQPSource creates an AMQP source for testing
+func CreateAMQPSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project,
+	host string, port int, queue string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+	t.Helper()
+
+	vhost := "/"
+	source := &datastore.Source{
+		UID:          ulid.Make().String(),
+		ProjectID:    project.UID,
+		MaskID:       ulid.Make().String(),
+		Name:         fmt.Sprintf("amqp-source-%s", ulid.Make().String()),
+		Type:         datastore.PubSubSource,
+		Provider:     datastore.GithubSourceProvider,
+		IsDisabled:   false,
+		BodyFunction: bodyFunction,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.NoopVerifier,
+		},
+		HeaderFunction: headerFunction,
+		PubSub: &datastore.PubSubConfig{
+			Type:    datastore.AmqpPubSub,
+			Workers: workers,
+			Amqp: &datastore.AmqpPubSubConfig{
+				Schema: "amqp",
+				Host:   host,
+				Port:   fmt.Sprintf("%d", port),
+				Queue:  queue,
+				Auth: &datastore.AmqpCredentials{
+					User:     "guest",
+					Password: "guest",
+				},
+				Vhost: &vhost,
+			},
+		},
+	}
+
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err)
+
+	return source
+}
+
+// PublishAMQPMessage publishes a message to RabbitMQ with headers
+func PublishAMQPMessage(t *testing.T, host string, port int, queue string, body []byte, headers map[string]interface{}) {
+	t.Helper()
+
+	connStr := fmt.Sprintf("amqp://guest:guest@%s:%d/", host, port)
+	conn, err := amqp091.Dial(connStr)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	require.NoError(t, err)
+	defer ch.Close()
+
+	// Declare queue (idempotent) - must match AMQP consumer settings
+	_, err = ch.QueueDeclare(
+		queue, // name
+		true,  // durable - must match consumer setting
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	require.NoError(t, err)
+
+	// Convert headers to AMQP table
+	amqpHeaders := make(amqp091.Table)
+	for k, v := range headers {
+		amqpHeaders[k] = v
+	}
+
+	err = ch.Publish(
+		"",    // exchange
+		queue, // routing key
+		false, // mandatory
+		false, // immediate
+		amqp091.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+			Headers:     amqpHeaders,
+		},
+	)
+	require.NoError(t, err)
+	t.Logf("Published AMQP message to queue %s", queue)
+}
+
+// PublishSingleAMQPMessage publishes a single-type AMQP message
+func PublishSingleAMQPMessage(t *testing.T, host string, port int, queue, endpointID, eventType string, data map[string]interface{}, customHeaders map[string]string) {
+	t.Helper()
+
+	payload := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	if customHeaders != nil {
+		payload["custom_headers"] = customHeaders
+	}
+
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	headers := map[string]interface{}{
+		"x-convoy-message-type": "single",
+	}
+
+	PublishAMQPMessage(t, host, port, queue, body, headers)
+}
+
+// PublishFanoutAMQPMessage publishes a fanout-type AMQP message
+func PublishFanoutAMQPMessage(t *testing.T, host string, port int, queue, ownerID, eventType string, data map[string]interface{}, customHeaders map[string]string) {
+	t.Helper()
+
+	payload := map[string]interface{}{
+		"owner_id":        ownerID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	if customHeaders != nil {
+		payload["custom_headers"] = customHeaders
+	}
+
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	headers := map[string]interface{}{
+		"x-convoy-message-type": "fanout",
+	}
+
+	PublishAMQPMessage(t, host, port, queue, body, headers)
+}
+
+// PublishBroadcastAMQPMessage publishes a broadcast-type AMQP message
+func PublishBroadcastAMQPMessage(t *testing.T, host string, port int, queue, eventType string, data map[string]interface{}, customHeaders map[string]string) {
+	t.Helper()
+
+	payload := map[string]interface{}{
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	if customHeaders != nil {
+		payload["custom_headers"] = customHeaders
+	}
+
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	headers := map[string]interface{}{
+		"x-convoy-message-type": "broadcast",
+	}
+
+	PublishAMQPMessage(t, host, port, queue, body, headers)
+}
+
+// CreateSubscriptionWithFilter creates a subscription with advanced filtering
+func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx context.Context,
+	project *datastore.Project, endpoint *convoy.EndpointResponse, eventTypes []string,
+	bodyFilter, headerFilter map[string]interface{}, function *string, sourceID *string) *datastore.Subscription {
+	t.Helper()
+
+	var nullFunc null.String
+	if function != nil {
+		nullFunc = null.StringFrom(*function)
+	}
+
+	subscription := &datastore.Subscription{
+		UID:        ulid.Make().String(),
+		ProjectID:  project.UID,
+		Name:       fmt.Sprintf("subscription-%s", ulid.Make().String()),
+		Type:       datastore.SubscriptionTypeAPI,
+		EndpointID: endpoint.UID,
+		FilterConfig: &datastore.FilterConfiguration{
+			EventTypes: eventTypes,
+		},
+		Function: nullFunc,
+	}
+
+	// Set source ID if provided (for broadcast messages with source filter)
+	if sourceID != nil {
+		subscription.SourceID = *sourceID
+	}
+
+	// Add advanced filters if provided
+	if bodyFilter != nil || headerFilter != nil {
+		subscription.FilterConfig.Filter = datastore.FilterSchema{
+			Body:    bodyFilter,
+			Headers: headerFilter,
+		}
+	}
+
+	subRepo := postgres.NewSubscriptionRepo(db)
+	err := subRepo.CreateSubscription(ctx, project.UID, subscription)
+	require.NoError(t, err)
+
+	return subscription
+}
+
+// AssertEventCreated verifies that an event was created in the database
+// Optional timeWindow parameter specifies the lookback window (defaults to 2 minutes if not provided)
+func AssertEventCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventType string, timeWindow ...time.Duration) *datastore.Event {
+	t.Helper()
+
+	// Use default 2-minute window if not specified
+	lookback := 2 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	// Use a short retry loop to account for async processing
+	var event *datastore.Event
+	var err error
+	dbConn := db.GetDB()
+
+	for i := 0; i < 15; i++ {
+		// Query events directly from the events table
+		query := `
+			SELECT id, project_id, event_type, source_id, headers, raw, data,
+				   created_at, updated_at, deleted_at, acknowledged_at,
+				   idempotency_key, url_query_params, is_duplicate_event
+			FROM convoy.events
+			WHERE project_id = $1
+			  AND event_type = $2
+			  AND deleted_at IS NULL
+			  AND created_at >= $3
+			  AND created_at <= $4
+			ORDER BY created_at DESC
+			LIMIT 1
+		`
+
+		startTime := time.Now().Add(-lookback)
+		endTime := time.Now().Add(1 * time.Minute)
+
+		var e datastore.Event
+		err = dbConn.QueryRowContext(ctx, query, projectID, eventType, startTime, endTime).Scan(
+			&e.UID,
+			&e.ProjectID,
+			&e.EventType,
+			&e.SourceID,
+			&e.Headers,
+			&e.Raw,
+			&e.Data,
+			&e.CreatedAt,
+			&e.UpdatedAt,
+			&e.DeletedAt,
+			&e.AcknowledgedAt,
+			&e.IdempotencyKey,
+			&e.URLQueryParams,
+			&e.IsDuplicateEvent,
+		)
+
+		if err == nil {
+			t.Logf("✓ Found event: ID=%s, Type=%s, CreatedAt=%s (attempt %d)", e.UID, e.EventType, e.CreatedAt, i+1)
+			event = &e
+			break
+		}
+
+		if err != sql.ErrNoRows {
+			t.Logf("ERROR querying events (attempt %d): %v", i+1, err)
+		} else {
+			t.Logf("No event found yet for project %s with type %s (attempt %d)", projectID, eventType, i+1)
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	require.NoError(t, err)
+	require.NotNil(t, event, "Event with type %s should have been created", eventType)
+	require.Equal(t, eventType, string(event.EventType))
+
+	return event
+}
+
+// AssertEventDeliveryCreated verifies that an event delivery was created
+// Optional timeWindow parameter specifies the lookback window (defaults to 2 minutes if not provided)
+func AssertEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID, endpointID string, timeWindow ...time.Duration) *datastore.EventDelivery {
+	t.Helper()
+
+	// Use default 2-minute window if not specified
+	lookback := 2 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	// Use a short retry loop to account for async processing
+	var eventDelivery *datastore.EventDelivery
+	var err error
+	dbConn := db.GetDB()
+
+	for i := 0; i < 20; i++ {
+		// Query event deliveries directly from the table
+		query := `
+			SELECT id, project_id, event_id, endpoint_id,
+				   COALESCE(device_id, '') as device_id,
+				   COALESCE(subscription_id, '') as subscription_id,
+				   headers, attempts, status,
+				   COALESCE(metadata::text, '{}')::jsonb as metadata,
+				   COALESCE(cli_metadata::text, '{}')::jsonb as cli_metadata,
+				   COALESCE(description, '') as description,
+				   created_at, updated_at, deleted_at, acknowledged_at
+			FROM convoy.event_deliveries
+			WHERE project_id = $1
+			  AND event_id = $2
+			  AND endpoint_id = $3
+			  AND deleted_at IS NULL
+			  AND created_at >= $4
+			  AND created_at <= $5
+			ORDER BY created_at DESC
+			LIMIT 1
+		`
+
+		startTime := time.Now().Add(-lookback)
+		endTime := time.Now().Add(1 * time.Minute)
+
+		var ed datastore.EventDelivery
+		err = dbConn.QueryRowContext(ctx, query, projectID, eventID, endpointID, startTime, endTime).Scan(
+			&ed.UID,
+			&ed.ProjectID,
+			&ed.EventID,
+			&ed.EndpointID,
+			&ed.DeviceID,
+			&ed.SubscriptionID,
+			&ed.Headers,
+			&ed.DeliveryAttempts,
+			&ed.Status,
+			&ed.Metadata,
+			&ed.CLIMetadata,
+			&ed.Description,
+			&ed.CreatedAt,
+			&ed.UpdatedAt,
+			&ed.DeletedAt,
+			&ed.AcknowledgedAt,
+		)
+
+		if err == nil {
+			t.Logf("✓ Found event delivery: ID=%s, EventID=%s, EndpointID=%s, Status=%s (attempt %d)", ed.UID, ed.EventID, ed.EndpointID, ed.Status, i+1)
+			eventDelivery = &ed
+			break
+		}
+
+		if err != sql.ErrNoRows {
+			t.Logf("ERROR querying event deliveries (attempt %d): %v", i+1, err)
+		} else {
+			t.Logf("No event delivery found yet for event %s, endpoint %s (attempt %d)", eventID, endpointID, i+1)
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	require.NoError(t, err)
+	require.NotNil(t, eventDelivery, "Event delivery should have been created")
+	require.Equal(t, eventID, eventDelivery.EventID)
+	require.Equal(t, endpointID, eventDelivery.EndpointID)
+
+	return eventDelivery
+}
+
+// AssertNoEventDeliveryCreated verifies that NO event delivery was created for a specific
+// event and endpoint within a time window. This is used in negative test cases to verify
+// that filtering logic (event types, body filters, headers) correctly prevents delivery creation.
+//
+// The function filters by both eventID AND endpointID to ensure test isolation when multiple
+// endpoints exist in the same project.
+//
+// Optional timeWindow parameter specifies the lookback window (defaults to 5 minutes if not provided)
+func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID, endpointID string, timeWindow ...time.Duration) {
+	t.Helper()
+
+	// Use default 5-minute window if not specified (larger window for negative tests)
+	lookback := 5 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+
+	// Wait a bit to ensure no delivery is created
+	time.Sleep(2 * time.Second)
+
+	now := time.Now()
+	searchParams := datastore.SearchParams{
+		CreatedAtStart: now.Add(-lookback).Unix(),
+		CreatedAtEnd:   now.Add(1 * time.Minute).Unix(),
+	}
+	pageable := datastore.Pageable{
+		PerPage:   10,
+		Direction: datastore.Next,
+	}
+
+	deliveries, _, err := eventDeliveryRepo.LoadEventDeliveriesPaged(
+		ctx, projectID, []string{endpointID}, eventID, "",
+		nil, searchParams, pageable, "", "", "",
+	)
+	require.NoError(t, err)
+	require.Empty(t, deliveries, "No event delivery should have been created")
+}
+
+// AssertDeliveryAttemptCreated verifies that at least one delivery attempt was created
+// for the specified event delivery. Returns the most recent delivery attempt for
+// additional assertions (HTTP status, error details, etc.).
+//
+// This helper uses a retry loop (20 attempts, 200ms apart) to account for async
+// delivery attempt creation after webhook delivery completes.
+func AssertDeliveryAttemptCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, eventDeliveryID string) *datastore.DeliveryAttempt {
+	t.Helper()
+
+	attemptsService := delivery_attempts.New(nil, db)
+
+	// Retry loop - delivery attempts may take time to be created
+	var attempts []datastore.DeliveryAttempt
+	var err error
+	for i := 0; i < 20; i++ {
+		attempts, err = attemptsService.FindDeliveryAttempts(ctx, eventDeliveryID)
+		if err == nil && len(attempts) > 0 {
+			t.Logf("✓ Found %d delivery attempt(s) for delivery %s (attempt %d)",
+				len(attempts), eventDeliveryID, i+1)
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	require.NoError(t, err, "Failed to query delivery attempts")
+	require.NotEmpty(t, attempts, "At least one delivery attempt should have been created")
+
+	// Return the most recent attempt
+	return &attempts[len(attempts)-1]
+}
+
+// SQS Helper Functions
+
+// CreateSQSSource creates an SQS source for E2E testing
+func CreateSQSSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project, endpoint, queueName string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+	t.Helper()
+	source := &datastore.Source{
+		UID:          ulid.Make().String(),
+		ProjectID:    project.UID,
+		MaskID:       ulid.Make().String(),
+		Name:         fmt.Sprintf("sqs-source-%s", ulid.Make().String()),
+		Type:         datastore.PubSubSource,
+		Provider:     datastore.GithubSourceProvider,
+		IsDisabled:   false,
+		BodyFunction: bodyFunction,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.NoopVerifier,
+		},
+		HeaderFunction: headerFunction,
+		PubSub: &datastore.PubSubConfig{
+			Type:    datastore.SqsPubSub,
+			Workers: workers,
+			Sqs: &datastore.SQSPubSubConfig{
+				AccessKeyID:   "test",
+				SecretKey:     "test",
+				DefaultRegion: "us-east-1",
+				QueueName:     queueName,
+				Endpoint:      endpoint,
+			},
+		},
+	}
+
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err)
+
+	return source
+}
+
+// CreateSQSQueue creates an SQS queue in LocalStack and returns the queue URL
+func CreateSQSQueue(t *testing.T, endpoint, queueName string) string {
+	t.Helper()
+
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Create queue
+	result, err := svc.CreateQueue(&sqs.CreateQueueInput{
+		QueueName: aws.String(queueName),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result.QueueUrl)
+
+	return *result.QueueUrl
+}
+
+// GetSQSQueueURL retrieves the queue URL for a given queue name
+func GetSQSQueueURL(t *testing.T, endpoint, queueName string) string {
+	t.Helper()
+
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	result, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
+		QueueName: aws.String(queueName),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result.QueueUrl)
+
+	return *result.QueueUrl
+}
+
+// PublishSingleSQSMessage publishes a single-type message to SQS
+func PublishSingleSQSMessage(t *testing.T, endpoint, queueURL, endpointID, eventType string, data map[string]interface{}) error {
+	t.Helper()
+	// Create message body
+	messageBody := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Send message with attributes
+	_, err = svc.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    aws.String(queueURL),
+		MessageBody: aws.String(string(bodyJSON)),
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"x-convoy-message-type": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("single"),
+			},
+		},
+	})
+
+	return err
+}
+
+// PublishFanoutSQSMessage publishes a fanout-type message to SQS
+func PublishFanoutSQSMessage(t *testing.T, endpoint, queueURL, ownerID, eventType string, data map[string]interface{}) error {
+	t.Helper()
+	// Create message body
+	messageBody := map[string]interface{}{
+		"owner_id":        ownerID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Send message with attributes
+	_, err = svc.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    aws.String(queueURL),
+		MessageBody: aws.String(string(bodyJSON)),
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"x-convoy-message-type": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("fanout"),
+			},
+		},
+	})
+
+	return err
+}
+
+// PublishBroadcastSQSMessage publishes a broadcast-type message to SQS
+func PublishBroadcastSQSMessage(t *testing.T, endpoint, queueURL, eventType string, data map[string]interface{}) error {
+	t.Helper()
+	// Create message body
+	messageBody := map[string]interface{}{
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Send message with attributes
+	_, err = svc.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    aws.String(queueURL),
+		MessageBody: aws.String(string(bodyJSON)),
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"x-convoy-message-type": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("broadcast"),
+			},
+		},
+	})
+
+	return err
+}
+
+// Kafka Helper Functions
+
+// CreateKafkaSource creates a Kafka source for E2E testing
+func CreateKafkaSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project,
+	brokers []string, topic string, consumerGroupID string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+	t.Helper()
+
+	source := &datastore.Source{
+		UID:          ulid.Make().String(),
+		ProjectID:    project.UID,
+		MaskID:       ulid.Make().String(),
+		Name:         fmt.Sprintf("kafka-source-%s", ulid.Make().String()),
+		Type:         datastore.PubSubSource,
+		Provider:     datastore.GithubSourceProvider,
+		IsDisabled:   false,
+		BodyFunction: bodyFunction,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.NoopVerifier,
+		},
+		HeaderFunction: headerFunction,
+		PubSub: &datastore.PubSubConfig{
+			Type:    datastore.KafkaPubSub,
+			Workers: workers,
+			Kafka: &datastore.KafkaPubSubConfig{
+				Brokers:         brokers,
+				ConsumerGroupID: consumerGroupID,
+				TopicName:       topic,
+			},
+		},
+	}
+
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err)
+
+	return source
+}
+
+// CreateKafkaTopic creates a Kafka topic using kafka-go admin client
+func CreateKafkaTopic(t *testing.T, broker, topic string, numPartitions, replicationFactor int) {
+	t.Helper()
+
+	conn, err := kafka.Dial("tcp", broker)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	controller, err := conn.Controller()
+	require.NoError(t, err)
+
+	controllerConn, err := kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
+	require.NoError(t, err)
+	defer controllerConn.Close()
+
+	err = controllerConn.CreateTopics(kafka.TopicConfig{
+		Topic:             topic,
+		NumPartitions:     numPartitions,
+		ReplicationFactor: replicationFactor,
+	})
+	require.NoError(t, err)
+
+	t.Logf("Created Kafka topic: %s", topic)
+}
+
+// PublishSingleKafkaMessage publishes a single-type message to Kafka
+func PublishSingleKafkaMessage(t *testing.T, broker string, topic string,
+	endpointID string, eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create Kafka writer
+	writer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{broker},
+		Topic:   topic,
+	})
+	defer writer.Close()
+
+	// Publish message with headers
+	err = writer.WriteMessages(context.Background(), kafka.Message{
+		Value: bodyJSON,
+		Headers: []kafka.Header{
+			{
+				Key:   "x-convoy-message-type",
+				Value: []byte("single"),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	t.Logf("Published single Kafka message to topic %s", topic)
+}
+
+// PublishFanoutKafkaMessage publishes a fanout-type message to Kafka
+func PublishFanoutKafkaMessage(t *testing.T, broker string, topic string,
+	ownerID string, eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"owner_id":        ownerID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create Kafka writer
+	writer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{broker},
+		Topic:   topic,
+	})
+	defer writer.Close()
+
+	// Publish message with headers
+	err = writer.WriteMessages(context.Background(), kafka.Message{
+		Value: bodyJSON,
+		Headers: []kafka.Header{
+			{
+				Key:   "x-convoy-message-type",
+				Value: []byte("fanout"),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	t.Logf("Published fanout Kafka message to topic %s", topic)
+}
+
+// PublishBroadcastKafkaMessage publishes a broadcast-type message to Kafka
+func PublishBroadcastKafkaMessage(t *testing.T, broker string, topic string,
+	eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create Kafka writer
+	writer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{broker},
+		Topic:   topic,
+	})
+	defer writer.Close()
+
+	// Publish message with headers
+	err = writer.WriteMessages(context.Background(), kafka.Message{
+		Value: bodyJSON,
+		Headers: []kafka.Header{
+			{
+				Key:   "x-convoy-message-type",
+				Value: []byte("broadcast"),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	t.Logf("Published broadcast Kafka message to topic %s", topic)
+}
+
+// Google Pub/Sub Helper Functions
+
+// CreateGooglePubSubSource creates a Google Pub/Sub source for E2E testing
+func CreateGooglePubSubSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project,
+	projectID string, subscriptionID string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+	t.Helper()
+
+	source := &datastore.Source{
+		UID:          ulid.Make().String(),
+		ProjectID:    project.UID,
+		MaskID:       ulid.Make().String(),
+		Name:         fmt.Sprintf("pubsub-source-%s", ulid.Make().String()),
+		Type:         datastore.PubSubSource,
+		Provider:     datastore.GithubSourceProvider,
+		IsDisabled:   false,
+		BodyFunction: bodyFunction,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.NoopVerifier,
+		},
+		HeaderFunction: headerFunction,
+		PubSub: &datastore.PubSubConfig{
+			Type:    datastore.GooglePubSub,
+			Workers: workers,
+			Google: &datastore.GooglePubSubConfig{
+				ProjectID:      projectID,
+				SubscriptionID: subscriptionID,
+				// Valid service account JSON for emulator
+				// When PUBSUB_EMULATOR_HOST is set, authentication is bypassed but the JSON must be structurally valid
+				ServiceAccount: []byte(`{
+					"type": "service_account",
+					"project_id": "` + projectID + `",
+					"private_key_id": "test-key-id",
+					"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCnHlJP11mvWMEM\nh7W4zSv3+9zhM+e+u71TzjogbJulwbucjWPznod8qhoaN6M8QWX6xSSkMqsfGjSm\nwbFOY9DEy9vIYq+xZkBOTUebE71pfhtz3/LNMH6dFLIA+6YuFFVoMiHBJk8YB81l\nbGvOb9UXbBhQKL9uZY6EDe2VeyRc6VyNNefG0RfP/jSUl0DNIfyO0fKNaRZ+vYMD\nChPIGP+tQqHpV8leMGmLuzpSKz16AxacYEI/jPWIe7VGc4dZ4fXWcfxcvsXMWSvJ\nA/VB5NUyVgcncrl7LvOOgnMKqG7UAHLWbHOMy3Jv3M/JX1LAebO93gRJZwPov9UN\n6Q/WNIErAgMBAAECggEADE4Rvno7Sstsr3kAmuJUhfZgDZ7uRd958cVCB2gnz70j\njMPmY6Y9EKNPt7V4CfRAx4WjjImEiw45aTviy8RSt2LRRIBrslK2km1jQ9pgvHdC\nGzaWoKAc+oDvGF5vHn51yW3DiX7CHSFZ8MlaaMFYPdjCM4jEi6LjqvqBj1uZUlPn\n6YNxJZ5zbKOaQLs9zyODFIos51qvl1VF6IiYmuhMQPCNf4gqHcoQB8wlli9v2LX0\na1ZUC/iO4ZS8qU5KkNXJNRVM7Jm7ozA6hHpZy+vAmjMmHR80DqocQy+gc8h+F8ZE\n08/4odstGZsMKX1k/NeakMKM/bXqS2WQirRgPBjOzQKBgQDdyCpzetMrkuBa+8kJ\nQYf14VrKnOyyXNLiOEfOs3jye1p0BYiefuq9+1z7QA9PgXggoLxYwLM2vRMMzBSa\nhbolMK1jRn3t7jJ5B3cWZcMx9yfj5u9XHcpDGmjNfSoO3AhmVzrSjpOw4J6+S3lU\nWeDOyOet1HTWaMUKBiNHPGrTjQKBgQDA5xXDqJ1XGzBRUQAprb/yQAGz953Xz227\naFkdSrCYVh/3WTQd2bgBdjRQuCHsNlu89rF/2qaO9hUdnQrfMBM6kmCRqjtrWuir\njn7FU+R+mgXhqn5II0sEJy5vf32xGMMZF58ahEM3sLXKliPTk14r10YWW1O9OfWL\nU+fmIBXdlwKBgB09BluzFaPo+SsFhrtxqDsCOrX7ejkJg8PPJ6hYgNl26bXiBODg\nWpIxUVDOYTZaGzwx9KK+xOGyi5BkV1MHzkKY6ELuSCvV+1F5annJcLJloxyolWUm\nyEOQd8Cff6v11iWn2lln8pCfDE6KJLS6JKkeU2zXVY/uwAtSQ9RgYrUBAoGADW2I\nlFAec7vOxzpOOph/rgtKkw5/jFBCITOIUIOse04zd3JcMF/BcUibJ6tJoTm/dQ3v\nGSlNQtJace9GnHaqP/+EfV9ON5DidV678FyAoVdzZVwK4laimC1qDBTh2PwSSKLe\nTmg6jZvda7a707SEb6TSmifNUnTAZOx4TgqZuw0CgYEAhK/hUC/XB9slvcfdcjIl\nnL9177YOsze5d8H1c+X4KbnYCtMHqVUSBqzPE7mEBnYcYnPKMbaJSZEFWWSs03VJ\nzyWW47RpUlM7mF5TQknf1Wrztm+1vGl+/WqGfBWtcI+FmsADI8eNH5W3Zo1lsPx1\n62HDtYD7HVNKoJT0JMwmpDI=\n-----END PRIVATE KEY-----\n"",
+					"client_email": "test@convoy-test-project.iam.gserviceaccount.com",
+					"client_id": "123456789",
+					"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+					"token_uri": "https://oauth2.googleapis.com/token",
+					"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
+				}`),
+			},
+		},
+	}
+
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err)
+
+	return source
+}
+
+// CreateGooglePubSubTopicAndSubscription creates a Pub/Sub topic and subscription using the emulator
+func CreateGooglePubSubTopicAndSubscription(t *testing.T, emulatorHost, projectID, topicID, subscriptionID string) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	// Set emulator host environment variable only if not already set
+	// This preserves the global setting from TestMain
+	existingHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+	if existingHost == "" {
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		defer os.Unsetenv("PUBSUB_EMULATOR_HOST")
+	}
+
+	// Create client
+	client, err := pubsub.NewClient(ctx, projectID)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Create topic
+	topic, err := client.CreateTopic(ctx, topicID)
+	require.NoError(t, err)
+
+	t.Logf("Created Pub/Sub topic: %s", topicID)
+
+	// Create subscription
+	_, err = client.CreateSubscription(ctx, subscriptionID, pubsub.SubscriptionConfig{
+		Topic: topic,
+	})
+	require.NoError(t, err)
+
+	t.Logf("Created Pub/Sub subscription: %s", subscriptionID)
+}
+
+// PublishSingleGooglePubSubMessage publishes a single-type message to Google Pub/Sub
+func PublishSingleGooglePubSubMessage(t *testing.T, emulatorHost string, projectID string, topicID string,
+	endpointID string, eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	// Set emulator host only if not already set
+	existingHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+	if existingHost == "" {
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		defer os.Unsetenv("PUBSUB_EMULATOR_HOST")
+	}
+
+	// Create client
+	client, err := pubsub.NewClient(ctx, projectID)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Get topic
+	topic := client.Topic(topicID)
+
+	// Publish message with attributes
+	result := topic.Publish(ctx, &pubsub.Message{
+		Data: bodyJSON,
+		Attributes: map[string]string{
+			"x-convoy-message-type": "single",
+		},
+	})
+
+	// Wait for publish to complete
+	_, err = result.Get(ctx)
+	require.NoError(t, err)
+
+	t.Logf("Published single Pub/Sub message to topic %s", topicID)
+}
+
+// PublishFanoutGooglePubSubMessage publishes a fanout-type message to Google Pub/Sub
+func PublishFanoutGooglePubSubMessage(t *testing.T, emulatorHost string, projectID string, topicID string,
+	ownerID string, eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	// Set emulator host only if not already set
+	existingHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+	if existingHost == "" {
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		defer os.Unsetenv("PUBSUB_EMULATOR_HOST")
+	}
+
+	// Create client
+	client, err := pubsub.NewClient(ctx, projectID)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"owner_id":        ownerID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Get topic
+	topic := client.Topic(topicID)
+
+	// Publish message with attributes
+	result := topic.Publish(ctx, &pubsub.Message{
+		Data: bodyJSON,
+		Attributes: map[string]string{
+			"x-convoy-message-type": "fanout",
+		},
+	})
+
+	// Wait for publish to complete
+	_, err = result.Get(ctx)
+	require.NoError(t, err)
+
+	t.Logf("Published fanout Pub/Sub message to topic %s", topicID)
+}
+
+// PublishBroadcastGooglePubSubMessage publishes a broadcast-type message to Google Pub/Sub
+func PublishBroadcastGooglePubSubMessage(t *testing.T, emulatorHost string, projectID string, topicID string,
+	eventType string, data map[string]interface{}) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	// Set emulator host only if not already set
+	existingHost := os.Getenv("PUBSUB_EMULATOR_HOST")
+	if existingHost == "" {
+		os.Setenv("PUBSUB_EMULATOR_HOST", emulatorHost)
+		defer os.Unsetenv("PUBSUB_EMULATOR_HOST")
+	}
+
+	// Create client
+	client, err := pubsub.NewClient(ctx, projectID)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Create message body
+	messageBody := map[string]interface{}{
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Get topic
+	topic := client.Topic(topicID)
+
+	// Publish message with attributes
+	result := topic.Publish(ctx, &pubsub.Message{
+		Data: bodyJSON,
+		Attributes: map[string]string{
+			"x-convoy-message-type": "broadcast",
+		},
+	})
+
+	// Wait for publish to complete
+	_, err = result.Get(ctx)
+	require.NoError(t, err)
+
+	t.Logf("Published broadcast Pub/Sub message to topic %s", topicID)
 }

@@ -36,13 +36,19 @@ func (st *SentryTracer) Init(componentName string) error {
 		sampleRate = 0.1 // Default to 10% sampling if not specified
 	}
 
-	err := sentry.Init(sentry.ClientOptions{
+	opts := sentry.ClientOptions{
 		Dsn:              st.cfg.DSN,
 		ServerName:       componentName,
 		EnableTracing:    true,
 		TracesSampleRate: sampleRate,
-		Debug:            true,
-	})
+		Debug:            st.cfg.Debug,
+	}
+
+	if st.cfg.Environment != "" {
+		opts.Environment = st.cfg.Environment
+	}
+
+	err := sentry.Init(opts)
 	if err != nil {
 		return err
 	}

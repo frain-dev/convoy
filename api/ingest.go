@@ -20,6 +20,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/verifier"
@@ -34,7 +36,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	maskID := chi.URLParam(r, "maskID")
 
 	// 2. Retrieve source using mask ID.
-	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskID)
+	source, err := sources.New(a.A.Logger, a.A.DB).FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			a.A.Logger.WithError(err).Errorf("Source not found for mask ID %s", maskID)
@@ -46,7 +48,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 2. Retrieve source using mask ID.
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	projectRepo := projects.New(a.A.Logger, a.A.DB)
 	project, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -327,7 +329,7 @@ func convertRequestFormToJSON(r *http.Request) ([]byte, error) {
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
 	maskId := chi.URLParam(r, "maskID")
-	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskId)
+	source, err := sources.New(a.A.Logger, a.A.DB).FindSourceByMaskID(r.Context(), maskId)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			a.A.Logger.WithError(err).Errorf("Source not found for mask ID %s", maskId)
@@ -358,7 +360,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sourceRepo := postgres.NewSourceRepo(a.A.DB)
+	sourceRepo := sources.New(a.A.Logger, a.A.DB)
 	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("CRC check failed")

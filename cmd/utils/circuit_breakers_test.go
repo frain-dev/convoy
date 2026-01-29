@@ -15,8 +15,10 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/projects"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func captureStdout(fn func()) string {
@@ -128,7 +130,7 @@ func TestCircuitBreakersUpdate_Integration(t *testing.T) {
 	org := &datastore.Organisation{UID: "cli-org-1", Name: "CLI Org 1", OwnerID: user.UID}
 	_ = orgRepo.CreateOrganisation(ctx, org)
 
-	projectRepo := postgres.NewProjectRepo(app.Database)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), app.Database)
 	pc := datastore.DefaultProjectConfig
 	pc.CircuitBreaker = &datastore.CircuitBreakerConfiguration{
 		SampleRate:                  30,
@@ -185,7 +187,7 @@ func TestCircuitBreakersUpdate_EdgeCases(t *testing.T) {
 
 	userRepo := postgres.NewUserRepo(app.Database)
 	orgRepo := organisations.New(app.Logger, app.Database)
-	projectRepo := postgres.NewProjectRepo(app.Database)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), app.Database)
 
 	// base seed (unique ids)
 	user := &datastore.User{UID: fmt.Sprintf("cli-user-%d", now), Email: fmt.Sprintf("cli-user-%d@test.local", now)}

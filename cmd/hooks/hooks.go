@@ -34,6 +34,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
@@ -164,7 +165,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		// the order matters here
 		projectListener := listener.NewProjectListener(q)
 		hooks.RegisterHook(datastore.ProjectUpdated, projectListener.AfterUpdate)
-		projectRepo := postgres.NewProjectRepo(postgresDB)
+		projectRepo := projects.New(lo, postgresDB)
 
 		metaEventRepo := postgres.NewMetaEventRepo(postgresDB)
 		attemptsRepo := delivery_attempts.New(lo, postgresDB)
@@ -700,9 +701,24 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			return nil, err
 		}
 
+		debug, err := cmd.Flags().GetBool("sentry-debug")
+		if err != nil {
+			return nil, err
+		}
+
 		c.Tracer.Sentry = config.SentryConfiguration{
 			DSN:        dsn,
 			SampleRate: sampleRate,
+			Debug:      debug,
+		}
+
+		cfg, err := config.Get()
+		if err != nil {
+			return nil, err
+		}
+
+		if !util.IsStringEmpty(cfg.Environment) {
+			c.Tracer.Sentry.Environment = cfg.Environment
 		}
 	}
 

@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/projects"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -143,7 +143,7 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 			}
 
 			// Get current project configuration
-			projectRepo := postgres.NewProjectRepo(a.DB)
+			projectRepo := projects.New(a.Logger, a.DB)
 			project, err := projectRepo.FetchProjectByID(context.Background(), projectID)
 			if err != nil {
 				return fmt.Errorf("failed to fetch project: %v", err)

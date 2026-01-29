@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -20,8 +21,8 @@ func (s *ActivateEndpointService) Run(ctx context.Context) (*datastore.Endpoint,
 		return nil, &ServiceError{ErrMsg: "failed to find endpoint", Err: err}
 	}
 
-	if endpoint.Status != datastore.InactiveEndpointStatus {
-		return nil, &ServiceError{ErrMsg: "the endpoint must be inactive"}
+	if endpoint.Status != datastore.InactiveEndpointStatus && endpoint.Status != datastore.PausedEndpointStatus {
+		return nil, &ServiceError{ErrMsg: fmt.Sprintf("current endpoint status - %s, does not support activation", endpoint.Status)}
 	}
 
 	err = s.EndpointRepo.UpdateEndpointStatus(ctx, s.ProjectID, endpoint.UID, datastore.ActiveEndpointStatus)

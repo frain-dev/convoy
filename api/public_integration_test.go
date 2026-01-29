@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +28,9 @@ import (
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type PublicEndpointIntegrationTestSuite struct {
@@ -2118,7 +2123,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey(
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	projectRepo := postgres.NewProjectRepo(s.ConvoyApp.A.DB)
+	projectRepo := projects.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	_, err = projectRepo.FetchProjectByID(context.Background(), projectID)
 	require.Equal(s.T(), datastore.ErrProjectNotFound, err)
 }
@@ -2427,7 +2432,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
 	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
@@ -2628,7 +2633,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_UpdateSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
 	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
@@ -2656,7 +2661,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_DeleteSource() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
 	_, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
