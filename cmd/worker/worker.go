@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/filters"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -434,6 +435,12 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	// consumer.RegisterHandlers(convoy.RefreshMetricsMaterializedViews, task.RefreshMetricsMaterializedViews(a.DB, rd), nil)
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
+
+	var billingClient billing.Client
+	if cfg.Billing.Enabled {
+		billingClient = billing.NewClient(cfg.Billing)
+		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(a.DB, billingClient, rd, lo), nil)
+	}
 
 	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
 	if err != nil {

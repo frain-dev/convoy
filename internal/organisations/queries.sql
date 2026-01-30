@@ -22,6 +22,7 @@ SET
     name = $2,
     custom_domain = $3,
     assigned_domain = $4,
+    disabled_at = $5,
     updated_at = NOW()
 WHERE id = $1
   AND deleted_at IS NULL;
@@ -41,7 +42,8 @@ SELECT
     assigned_domain,
     created_at,
     updated_at,
-    deleted_at
+    deleted_at,
+    disabled_at
 FROM convoy.organisations
 WHERE id = $1
   AND deleted_at IS NULL;
@@ -55,7 +57,8 @@ SELECT
     assigned_domain,
     created_at,
     updated_at,
-    deleted_at
+    deleted_at,
+    disabled_at
 FROM convoy.organisations
 WHERE custom_domain = $1
   AND deleted_at IS NULL;
@@ -69,7 +72,8 @@ SELECT
     assigned_domain,
     created_at,
     updated_at,
-    deleted_at
+    deleted_at,
+    disabled_at
 FROM convoy.organisations
 WHERE assigned_domain = $1
   AND deleted_at IS NULL;
@@ -89,7 +93,8 @@ WITH filtered_organisations AS (
         assigned_domain,
         created_at,
         updated_at,
-        deleted_at
+        deleted_at,
+        disabled_at
     FROM convoy.organisations
     WHERE deleted_at IS NULL
         -- Optional search filter (searches both name and id)

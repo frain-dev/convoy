@@ -459,6 +459,7 @@ type Configuration struct {
 	WorkerExecutionMode ExecutionMode                `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
+	LicenseService      LicenseServiceConfiguration  `json:"license_service" envconfig:"CONVOY_LICENSE_SERVICE"`
 	Dispatcher          DispatcherConfiguration      `json:"dispatcher"`
 	HCPVault            HCPVaultConfig               `json:"hcp_vault"`
 	Billing             BillingConfiguration         `json:"billing"`
@@ -502,6 +503,13 @@ type BillingConfiguration struct {
 type PaymentProviderConfiguration struct {
 	Type           string `json:"type" envconfig:"CONVOY_PAYMENT_PROVIDER_TYPE"`
 	PublishableKey string `json:"publishable_key" envconfig:"CONVOY_PAYMENT_PROVIDER_PUBLISHABLE_KEY"`
+}
+
+type LicenseServiceConfiguration struct {
+	Host         string        `json:"host" envconfig:"CONVOY_LICENSE_SERVICE_HOST"`
+	ValidatePath string        `json:"validate_path" envconfig:"CONVOY_LICENSE_SERVICE_VALIDATE_ENDPOINT"`
+	Timeout      time.Duration `json:"timeout" envconfig:"CONVOY_LICENSE_SERVICE_TIMEOUT"`
+	RetryCount   int           `json:"retry_count" envconfig:"CONVOY_LICENSE_SERVICE_RETRY_COUNT"`
 }
 
 // Validate checks if the billing configuration is valid when enabled

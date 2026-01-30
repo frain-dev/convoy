@@ -3,6 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {CheckoutResolverData} from './billing/checkout.resolver';
 
 export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing' | 'early adopter features';
 
@@ -33,9 +34,23 @@ export class SettingsComponent implements OnInit {
 	async ngOnInit() {
 		await this.checkBillingAccess();
 		this.checkBillingStatus();
-		// Set active page from URL query parameter with license validation
+		
+		const checkoutData: CheckoutResolverData = this.route.snapshot.data['checkout'];
+		if (checkoutData?.checkoutProcessed) {
+			this.cleanupCheckoutParams();
+		}
+		
 		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'organisation settings';
 		this.setActivePageWithLicenseCheck(requestedPage);
+	}
+	
+	private cleanupCheckoutParams() {
+		const activePage = this.route.snapshot.queryParams?.['activePage'] || 'usage and billing';
+		this.router.navigate([], {
+			relativeTo: this.route,
+			queryParams: { activePage },
+			replaceUrl: true
+		});
 	}
 
 	private async checkBillingStatus() {
@@ -45,10 +60,8 @@ export class SettingsComponent implements OnInit {
 				method: 'get',
 				hideNotification: true
 			});
+			// Billing is now controlled by backend configuration, not entitlements
 			this.billingEnabled = response.data?.enabled || false;
-			if (this.billingEnabled && !this.licenseService.hasLicense('BILLING_MODULE')) {
-				this.billingEnabled = false;
-			}
 			this.updateSettingsMenu();
 		} catch (error) {
 			console.warn('Failed to check billing status:', error);
@@ -93,10 +106,8 @@ export class SettingsComponent implements OnInit {
 	}
 
 	setActivePageWithLicenseCheck(requestedPage: string) {
-		if (requestedPage === 'team' && !this.licenseService.hasLicense('CREATE_USER')) {
-			this.toggleActivePage('organisation settings');
-			return;
-		}
+		// CREATE_USER entitlement removed - user limits handle this now
+		// Team page access is now controlled by user limits on the backend
 
 		if (requestedPage === 'usage and billing' && !this.canAccessBilling) {
 			this.toggleActivePage('organisation settings');
@@ -112,8 +123,24 @@ export class SettingsComponent implements OnInit {
 	}
 
 	addPageToUrl() {
-		const queryParams: any = {};
-		queryParams.activePage = this.activePage;
-		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
+		this.router.navigate([], { 
+			relativeTo: this.route,
+			queryParams: { activePage: this.activePage }
+		});
+	}
+
+	getUserLimitMessage(): string {
+		if (!this.licenseService.hasLicense('user_limit')) {
+			if (!this.licenseService.isLimitAvailable('user_limit')) {
+				return 'Business';
+			}
+			if (this.licenseService.isLimitAvailable('user_limit') && this.licenseService.isLimitReached('user_limit')) {
+				const limitInfo = this.licenseService.getLimitInfo('user_limit');
+				const current = limitInfo?.current ?? 0;
+				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
+				return `Limit reached (${current}/${limit})`;
+			}
+		}
+		return '';
 	}
 }

@@ -295,4 +295,19 @@ export class PrivateComponent implements OnInit {
 			this.isInstanceAdmin = false;
 		}
 	}
+
+	getOrgLimitMessage(): string {
+		if (!this.licenseService.hasLicense('org_limit')) {
+			if (!this.licenseService.isLimitAvailable('org_limit')) {
+				return 'Business';
+			}
+			if (this.licenseService.isLimitAvailable('org_limit') && this.licenseService.isLimitReached('org_limit')) {
+				const limitInfo = this.licenseService.getLimitInfo('org_limit');
+				const current = limitInfo?.current ?? 0;
+				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
+				return `Limit reached (${current}/${limit})`;
+			}
+		}
+		return '';
+	}
 }
