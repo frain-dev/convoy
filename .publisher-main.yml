@@ -4,6 +4,9 @@ before:
   hooks:
     - go mod tidy
 
+snapshot:
+  name_template: "{{ .ShortCommit }}"
+
 builds:
   - env:
       - CGO_ENABLED=0
@@ -20,7 +23,6 @@ builds:
   - id: lib
     skip: true
 
-# https://goreleaser.com/customization/archive/
 archives:
   - name_template: "{{ .ProjectName}}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     id: cobin-archive
@@ -29,7 +31,6 @@ archives:
     files:
       - README.md
 
-# https://goreleaser.com/customization/nfpm/
 nfpms:
   - id: deb
     license: MPL-2.0
@@ -49,7 +50,6 @@ nfpms:
     formats:
       - rpm
 
-# https://goreleaser.com/customization/publishers/
 publishers:
   - name: cloudsmith-raw
     ids:
@@ -75,13 +75,12 @@ publishers:
     env:
       - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
 
-# https://goreleaser.com/customization/homebrew/
 brews:
   - name: convoy
     homepage: https://getconvoy.io/
     description: A fast & secure open source webhooks service
     license: MPL-2.0
-    skip_upload: auto
+    skip_upload: true
     commit_author:
       name: frain-dev
       email: dev@frain.dev
@@ -94,11 +93,4 @@ checksum:
   name_template: "{{ .ProjectName}}_checksums.txt"
 
 release:
-  ids:
-    - lib
-  github:
-    owner: frain-dev
-    name: Convoy
-  prerelease: auto
-  draft: false
-  name_template: "v{{ .Version }}"
+  disable: true

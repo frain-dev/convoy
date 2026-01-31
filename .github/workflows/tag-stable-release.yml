@@ -1,0 +1,55 @@
+name: Tag Stable Release
+
+on:
+  schedule:
+    - cron: "0 3 28-31 * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Override version (e.g. 26.1.0). Defaults to latest in CHANGELOG.md"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  tag-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop if not last day of month (schedule only)
+        if: ${{ github.event_name == 'schedule' }}
+        run: |
+          if [ "$(date -u -d "tomorrow" +%d)" != "01" ]; then
+            echo "Not the last day of the month; exiting."
+            exit 0
+          fi
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Fetch tags
+        run: git fetch --tags --force
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="$(awk 'NR==1 {sub(/^# /,""); print $0}' CHANGELOG.md)"
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "Version not found in CHANGELOG.md"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Create and push tag
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists; exiting."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
