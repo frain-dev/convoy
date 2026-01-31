@@ -263,9 +263,15 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	workerCtx, cancelWorker := context.WithCancel(serverCtx)
 	go func() {
 		t.Logf("Starting worker for test: %s", t.Name())
-		err := cmdworker.StartWorker(workerCtx, app, cfg)
+		worker, err := cmdworker.NewWorker(workerCtx, app, cfg)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
+			t.Logf("Worker initialization error for test %s: %v", t.Name(), err)
+			logger.WithError(err).Error("Worker initialization error")
+			return
+		}
+		err = worker.Run(workerCtx, nil)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				t.Logf("Worker error for test %s: %v", t.Name(), err)
 				logger.WithError(err).Error("Worker error")
 			} else {

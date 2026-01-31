@@ -414,7 +414,7 @@
 				<div>
 					<div class="flex items-center gap-8px">
 						<h4 class="text-neutral-10 font-medium text-12">Transform</h4>
-						<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('WEBHOOK_TRANSFORMATIONS')">
+						<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('Transformations')">
 							<svg width="10" height="10" class="fill-new.primary-400 scale-150">
 								<use xlink:href="#lock-icon"></use>
 							</svg>
@@ -424,7 +424,7 @@
 					<p class="text-10 text-neutral-10 mt-4px">Transform request body of events with a javascript function.</p>
 				</div>
 				<div class="flex items-center">
-					<button convoy-button fill="outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()" [disabled]="!licenseService.hasLicense('WEBHOOK_TRANSFORMATIONS')">Open Editor</button>
+					<button convoy-button fill="outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()" [disabled]="!licenseService.hasLicense('Transformations')">Open Editor</button>
 
 					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
 

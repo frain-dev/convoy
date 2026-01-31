@@ -1565,6 +1565,7 @@ type Organisation struct {
 	Name           string      `json:"name" db:"name"`
 	CustomDomain   null.String `json:"custom_domain" db:"custom_domain"`
 	AssignedDomain null.String `json:"assigned_domain" db:"assigned_domain"`
+	DisabledAt     null.Time   `json:"disabled_at,omitempty" db:"disabled_at" swaggertype:"string"`
 	CreatedAt      time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt      null.Time   `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`

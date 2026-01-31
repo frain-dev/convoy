@@ -13,7 +13,9 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/filters"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -37,7 +39,13 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 )
 
-func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) error {
+type Worker struct {
+	consumer *worker.Consumer
+	logger   *log.Logger
+}
+
+// NewWorker initializes all worker components and returns a Worker instance.
+func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Worker, error) {
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("worker")
 
@@ -45,20 +53,20 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	if km.IsSet() {
 		if _, err := km.GetCurrentKeyFromCache(); err != nil {
 			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
-				return err
+				return nil, err
 			}
 			km.Unset()
 		}
 	}
 
 	if err := keys.Set(km); err != nil {
-		return err
+		return nil, err
 	}
 
 	sc, err := smtp.NewClient(&cfg.SMTP)
 	if err != nil {
 		lo.WithError(err).Error("Failed to create smtp client")
-		return err
+		return nil, err
 	}
 
 	redis, err := rdb.NewClientFromConfig(
@@ -69,7 +77,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		cfg.Redis.TLSKeyFile,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	events := map[string]int{
@@ -104,7 +112,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 
 	err = config.Override(&cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var queueNames map[string]int
@@ -116,7 +124,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	case config.DefaultExecutionMode:
 		queueNames = both
 	default:
-		return fmt.Errorf("unknown execution mode: %s", cfg.WorkerExecutionMode)
+		return nil, fmt.Errorf("unknown execution mode: %s", cfg.WorkerExecutionMode)
 	}
 
 	opts := queue.QueueOptions{
@@ -132,7 +140,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	ctx = log.NewContext(ctx, lo, log.Fields{})
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// register worker.
@@ -155,7 +163,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	subRepo := postgres.NewSubscriptionRepo(a.DB)
 	configRepo := configuration.New(a.Logger, a.DB)
 	attemptRepo := delivery_attempts.New(a.Logger, a.DB)
-	filterRepo := postgres.NewFilterRepo(a.DB)
+	filterRepo := filters.New(a.Logger, a.DB)
 	batchRetryRepo := postgres.NewBatchRetryRepo(a.DB)
 
 	rd, err := rdb.NewClientFromConfig(
@@ -166,12 +174,12 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		cfg.Redis.TLSKeyFile,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	rateLimiter, err := limiter.NewLimiter(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	counter := &telemetry.EventsCounter{}
@@ -181,8 +189,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 
 	configuration, err := configRepo.LoadConfiguration(context.Background())
 	if err != nil {
-		lo.WithError(err).Fatal("Failed to instance configuration")
-		return err
+		return nil, fmt.Errorf("failed to initialize configuration: %w", err)
 	}
 
 	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, lo, 0)
@@ -194,13 +201,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 
 	err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// initial sync.
 	err = subscriptionsLoader.SyncChanges(ctx, subscriptionsTable)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
@@ -211,7 +218,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 
 	caCertTLSCfg, err := config.GetCaCert()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	dispatcher, err := net.NewDispatcher(
@@ -226,8 +233,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),
 	)
 	if err != nil {
-		lo.WithError(err).Fatal("Failed to create new net dispatcher")
-		return err
+		return nil, fmt.Errorf("failed to create new net dispatcher: %w", err)
 	}
 
 	var circuitBreakerManager *cb.CircuitBreakerManager
@@ -309,7 +315,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 			}),
 		)
 		if err != nil {
-			lo.WithError(err).Fatal("Failed to create circuit breaker manager")
+			return nil, fmt.Errorf("failed to create circuit breaker manager: %w", err)
 		}
 
 		go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
@@ -321,13 +327,12 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && a.Licenser.RetentionPolicy() {
 		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
 		if _err != nil {
-			lo.WithError(_err).Fatal("Failed to parse retention policy")
-			return _err
+			return nil, fmt.Errorf("failed to parse retention policy: %w", _err)
 		}
 
 		ret, err = retention.NewPartitionRetentionPolicy(a.DB, lo, policy)
 		if err != nil {
-			lo.WithError(err).Fatal("Failed to create retention policy")
+			return nil, fmt.Errorf("failed to create retention policy: %w", err)
 		}
 
 		ret.Start(ctx, time.Minute)
@@ -426,24 +431,43 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
-	consumer.RegisterHandlers(convoy.RefreshMetricsMaterializedViews, task.RefreshMetricsMaterializedViews(a.DB, rd), nil)
+	//nolint:gocritic
+	// consumer.RegisterHandlers(convoy.RefreshMetricsMaterializedViews, task.RefreshMetricsMaterializedViews(a.DB, rd), nil)
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
 
-	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
-	if err != nil {
-		return fmt.Errorf("failed to register queue metrics: %w", err)
+	var billingClient billing.Client
+	if cfg.Billing.Enabled {
+		billingClient = billing.NewClient(cfg.Billing)
+		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(a.DB, billingClient, rd, lo), nil)
 	}
 
-	// start worker
-	consumer.Start()
-	lo.Printf("Starting Convoy Consumer Pool")
+	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
+	if err != nil {
+		return nil, fmt.Errorf("failed to register queue metrics: %w", err)
+	}
+
+	return &Worker{
+		consumer: consumer,
+		logger:   lo,
+	}, nil
+}
+
+func (w *Worker) Run(ctx context.Context, workerReady chan struct{}) error {
+	if err := w.consumer.Start(); err != nil {
+		return fmt.Errorf("failed to start consumer: %w", err)
+	}
+	w.logger.Printf("Starting Convoy Consumer Pool")
+
+	if workerReady != nil {
+		close(workerReady)
+	}
 
 	// Wait for context to be canceled before returning
 	<-ctx.Done()
-	lo.Printf("Context canceled, stopping Convoy Consumer Pool...")
-	consumer.Stop()
-	lo.Printf("Convoy Consumer Pool stopped")
+	w.logger.Printf("Context canceled, stopping Convoy Consumer Pool...")
+	w.consumer.Stop()
+	w.logger.Printf("Convoy Consumer Pool stopped")
 
 	return ctx.Err()
 }
