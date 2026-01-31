@@ -32,6 +32,11 @@ jobs:
             controlplane
             dataplane
             dashboard
+            infra
+            release
+            docs
+            deps
+            build
           requireScope: true
           subjectPattern: ^.+$
           subjectPatternError: Subject must not be empty
