@@ -5,6 +5,9 @@ on:
             - main
     pull_request:
 
+permissions:
+    contents: read
+
 jobs:
     test:
         if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
@@ -37,7 +40,7 @@ jobs:
 
             - name: Get the version
               id: get_version
-              run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
+              run: echo "tag=${GITHUB_SHA:0:8}" >> "$GITHUB_OUTPUT"
 
             - name: Set up Go
               uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6

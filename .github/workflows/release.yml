@@ -67,7 +67,7 @@ jobs:
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
         name: Set up QEMU
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         name: Setup Python
         with:
           python-version: "3.9"
@@ -95,7 +95,7 @@ jobs:
 
       - name: Release (Tag)
         if: ${{ needs.set-release-kind.outputs.release_kind == 'tag' }}
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
         with:
           version: latest
           args: -f .publisher.yml release --clean --release-notes /tmp/release-notes.md
@@ -106,7 +106,7 @@ jobs:
 
       - name: Release (Main Snapshot)
         if: ${{ needs.set-release-kind.outputs.release_kind == 'main' }}
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
         with:
           version: latest
           args: -f .publisher.yml release --clean --snapshot --skip=homebrew --skip=nfpm

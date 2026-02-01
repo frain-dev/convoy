@@ -12,6 +12,8 @@ on:
         description: "Manual workflow name"
         required: true
 
+permissions:
+  contents: read
 
 jobs:
    load_test: 

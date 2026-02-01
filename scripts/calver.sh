@@ -14,7 +14,9 @@ MONTH=$(date -u +%-m)
 
 # Find the highest patch number for this year.month
 PREFIX="v${YEAR}.${MONTH}."
-LATEST_PATCH=$(git tag --list "${PREFIX}*" | sed "s/^${PREFIX}//" | sort -n | tail -1)
+# Escape dots for sed regex since they're special characters
+PREFIX_ESCAPED="v${YEAR}\\.${MONTH}\\."
+LATEST_PATCH=$(git tag --list "${PREFIX}*" | sed "s/^${PREFIX_ESCAPED}//" | sort -n | tail -1)
 
 if [ -z "$LATEST_PATCH" ]; then
   PATCH=0
