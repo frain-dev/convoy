@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repo 📚
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
 
       - name: Run `openapi` command 🚀
-        uses: readmeio/rdme@v8
+        uses: readmeio/rdme@51a80867c45de15e2b41af0c4bd5bbc61b932804 # v8
         with:
           rdme: openapi docs/v3/openapi3.json --key=${{ secrets.README_API_KEY }} --id=620fb30f3b9bf300264daa75
