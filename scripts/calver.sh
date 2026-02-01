@@ -4,7 +4,6 @@
 # Usage: ./scripts/calver.sh
 #
 # Outputs the version to stdout (e.g., "26.2.0")
-# If GITHUB_OUTPUT is set, also writes to GitHub Actions output.
 
 set -euo pipefail
 
@@ -24,11 +23,4 @@ else
   PATCH=$((LATEST_PATCH + 1))
 fi
 
-VERSION="${YEAR}.${MONTH}.${PATCH}"
-
-# Output for GitHub Actions if running in CI
-if [ -n "${GITHUB_OUTPUT:-}" ]; then
-  echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-fi
-
-echo "$VERSION"
+echo "${YEAR}.${MONTH}.${PATCH}"

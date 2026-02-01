@@ -43,7 +43,9 @@ jobs:
       - name: Calculate CalVer version
         id: calver
         if: ${{ steps.check-day.outputs.should_run == 'true' }}
-        run: ./scripts/calver.sh
+        run: |
+          VERSION="$(./scripts/calver.sh)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Install git-cliff
         if: ${{ steps.check-day.outputs.should_run == 'true' }}

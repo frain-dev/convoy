@@ -1,28 +1,27 @@
 [changelog]
 header = ""
 body = """
-{% for release in releases %}
-# {{ release.version | trim_start_matches(pat="v") }}
+# {{ version | trim_start_matches(pat="v") }}
 
-{% for group, commits in release.commits | group_by(attribute="group") %}
-### {{ group }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
 
 {% for commit in commits %}
-- {{ commit.message }}{% if commit.remote.pr_number %} #{{ commit.remote.pr_number }}{% endif %}
+- {{ commit.message | split(pat="\n") | first }}{% if commit.remote.pr_number %} (#{{ commit.remote.pr_number }}){% endif %}
 {% endfor %}
 
-{% endfor %}
 {% endfor %}
 """
 trim = true
 
 [git]
-conventional_commits = true
-filter_unconventional = true
+conventional_commits = false
+filter_unconventional = false
 tag_pattern = "^v\\d+\\.\\d+\\.\\d+$"
 sort_commits = "oldest"
 commit_parsers = [
   { message = "^feat", group = "Features" },
   { message = "^fix", group = "Bug Fixes" },
   { message = "^(perf|refactor|chore|build|ci|docs|test)", group = "Improvements" },
+  { message = ".*", group = "Other" },
 ]
