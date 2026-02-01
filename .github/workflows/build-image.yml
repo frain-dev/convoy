@@ -12,6 +12,10 @@ on:
     tags:
       - v*
 
+permissions:
+  contents: read
+  actions: write
+
 env:
   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
   DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
