@@ -2,6 +2,11 @@ name: Tag Stable Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "CalVer version to tag (e.g., 26.2.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -10,31 +15,20 @@ jobs:
   tag-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Stop if not last day of month (schedule only)
-        if: ${{ github.event_name == 'schedule' }}
-        run: |
-          if [ "$(date -u -d "tomorrow" +%d)" != "01" ]; then
-            echo "Not the last day of the month; exiting."
-            exit 0
-          fi
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
           persist-credentials: true
+
       - name: Fetch tags
         run: git fetch --tags --force
-      - name: Determine version
-        id: version
-        run: |
-          VERSION="$(awk 'NR==1 {sub(/^# /,""); print $0}' CHANGELOG.md)"
-          if [ -z "$VERSION" ]; then
-            echo "Version not found in CHANGELOG.md"
-            exit 1
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Log version
+        run: echo "Tagging version: v${{ inputs.version }}"
+
       - name: Create and push tag
         run: |
-          TAG="v${{ steps.version.outputs.version }}"
+          TAG="v${{ inputs.version }}"
           if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists; exiting."
             exit 0

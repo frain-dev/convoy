@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#
+# Calculate CalVer version in the format: YY.M.PATCH
+# Usage: ./scripts/calver.sh
+#
+# Outputs the version to stdout (e.g., "26.2.0")
+# If GITHUB_OUTPUT is set, also writes to GitHub Actions output.
+
+set -euo pipefail
+
+# Get current year (2-digit) and month
+YEAR=$(date -u +%y)
+MONTH=$(date -u +%-m)
+
+# Find the highest patch number for this year.month
+PREFIX="v${YEAR}.${MONTH}."
+LATEST_PATCH=$(git tag --list "${PREFIX}*" | sed "s/^${PREFIX}//" | sort -n | tail -1)
+
+if [ -z "$LATEST_PATCH" ]; then
+  PATCH=0
+else
+  PATCH=$((LATEST_PATCH + 1))
+fi
+
+VERSION="${YEAR}.${MONTH}.${PATCH}"
+
+# Output for GitHub Actions if running in CI
+if [ -n "${GITHUB_OUTPUT:-}" ]; then
+  echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+fi
+
+echo "$VERSION"
