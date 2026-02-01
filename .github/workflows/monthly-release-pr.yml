@@ -39,7 +39,7 @@ jobs:
           tool: git-cliff
 
       - name: Update changelog
-        run: git-cliff --config .git-cliff.toml --tag "v${{ steps.calver.outputs.version }}" --append --output CHANGELOG.md
+        run: git-cliff --config .git-cliff.toml --unreleased --tag "v${{ steps.calver.outputs.version }}" --prepend CHANGELOG.md
 
       - name: Create release PR
         uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6

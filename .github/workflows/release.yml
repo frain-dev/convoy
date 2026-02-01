@@ -83,12 +83,22 @@ jobs:
           git checkout -- api/ui/build/
           git clean -fd
 
+      - name: Install git-cliff
+        if: ${{ needs.set-release-kind.outputs.release_kind == 'tag' }}
+        uses: taiki-e/install-action@650c5ca14212efbbf3e580844b04bdccf68dac31 # v2
+        with:
+          tool: git-cliff
+
+      - name: Generate release notes
+        if: ${{ needs.set-release-kind.outputs.release_kind == 'tag' }}
+        run: git-cliff --config .git-cliff.toml --latest --output /tmp/release-notes.md
+
       - name: Release (Tag)
         if: ${{ needs.set-release-kind.outputs.release_kind == 'tag' }}
         uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
-          args: -f .publisher.yml release --clean
+          args: -f .publisher.yml release --clean --release-notes /tmp/release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           REPO_NAME: ${{ github.repository }}
