@@ -7,6 +7,8 @@ on:
         description: "Manual workflow name"
         required: true
   push:
+    branches:
+      - main
     tags:
       - v*
 
@@ -14,9 +16,33 @@ env:
   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
   DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
   IMAGE_NAME: getconvoy/convoy
-  RELEASE_VERSION: ${{ github.ref_name }}
 
 jobs:
+  set-image-tag:
+    name: Set image tag
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set-tag-release.outputs.image_tag || steps.set-tag-main.outputs.image_tag }}
+      release_kind: ${{ steps.set-tag-release.outputs.release_kind || steps.set-tag-main.outputs.release_kind }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+      - name: Set tag outputs for release tags
+        if: ${{ github.ref_type == 'tag' }}
+        id: set-tag-release
+        run: |
+          echo "release_kind=tag" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Set tag outputs for main
+        if: ${{ github.ref_type != 'tag' }}
+        id: set-tag-main
+        run: |
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          echo "release_kind=main" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
   build_ui:
     name: Build UI
     runs-on: ubuntu-latest
@@ -35,7 +61,7 @@ jobs:
 
   build-and-push-arch:
     runs-on: ubuntu-latest
-    needs: [build_ui]
+    needs: [build_ui, set-image-tag]
     strategy:
       matrix:
         include:
@@ -87,7 +113,8 @@ jobs:
           username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ env.DOCKER_HUB_TOKEN }}
 
-      - name: Build and push arch specific images
+      - name: Build and push stable arch images
+        if: ${{ needs.set-image-tag.outputs.release_kind == 'tag' }}
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
         with:
           context: .
@@ -95,13 +122,26 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-${{ matrix.arch }}
+            ${{ env.IMAGE_NAME }}:${{ needs.set-image-tag.outputs.image_tag }}-${{ matrix.arch }}
+          build-args: |
+            ARCH=${{ matrix.arch }}
+
+      - name: Build and push main arch images
+        if: ${{ needs.set-image-tag.outputs.release_kind == 'main' }}
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}-${{ matrix.arch }}
           build-args: |
             ARCH=${{ matrix.arch }}
 
   build-and-push-default:
     runs-on: ubuntu-latest
-    needs: [build-and-push-arch]
+    needs: [build-and-push-arch, set-image-tag]
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
@@ -109,14 +149,20 @@ jobs:
           username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ env.DOCKER_HUB_TOKEN }}
 
-      - name: Create and push manifest for latest
+      - name: Create and push stable manifests
+        if: ${{ needs.set-image-tag.outputs.release_kind == 'tag' }}
+        run: |
+          docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:${{ needs.set-image-tag.outputs.image_tag }} \
+            ${{ env.IMAGE_NAME }}:${{ needs.set-image-tag.outputs.image_tag }}-amd64 \
+            ${{ env.IMAGE_NAME }}:${{ needs.set-image-tag.outputs.image_tag }}-arm64
+
+      - name: Create and push main manifests
+        if: ${{ needs.set-image-tag.outputs.release_kind == 'main' }}
         run: |
           docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:latest \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-amd64 \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-arm64
+            ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}-amd64 \
+            ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}-arm64
 
-      - name: Create and push manifest for version
-        run: |
-          docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }} \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-amd64 \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-arm64
+          docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }} \
+            ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}-amd64 \
+            ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}-arm64

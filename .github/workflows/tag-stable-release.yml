@@ -1,13 +1,7 @@
 name: Tag Stable Release
 
 on:
-  schedule:
-    - cron: "0 3 28-31 * *"
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Override version (e.g. 26.1.0). Defaults to latest in CHANGELOG.md"
-        required: false
 
 permissions:
   contents: write
@@ -32,11 +26,7 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
-          else
-            VERSION="$(awk 'NR==1 {sub(/^# /,""); print $0}' CHANGELOG.md)"
-          fi
+          VERSION="$(awk 'NR==1 {sub(/^# /,""); print $0}' CHANGELOG.md)"
           if [ -z "$VERSION" ]; then
             echo "Version not found in CHANGELOG.md"
             exit 1

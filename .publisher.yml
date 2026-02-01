@@ -4,6 +4,10 @@ before:
   hooks:
     - go mod tidy
 
+# Used only when running with --snapshot flag
+snapshot:
+  name_template: "{{ .ShortCommit }}"
+
 builds:
   - env:
       - CGO_ENABLED=0

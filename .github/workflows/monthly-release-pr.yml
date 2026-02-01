@@ -4,10 +4,13 @@ on:
   schedule:
     - cron: "0 2 28-31 * *"
   workflow_dispatch:
+  pull_request:
+    types: [closed]
 
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   prepare-release:
@@ -38,3 +41,12 @@ jobs:
             Automated changelog update for the monthly release.
           branch: "chore/monthly-release"
           base: "main"
+
+  trigger-tag-stable-release:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'chore/monthly-release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger tag-stable-release workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run "tag-stable-release.yml" --ref main --repo "${{ github.repository }}"
