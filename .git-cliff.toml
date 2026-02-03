@@ -21,7 +21,7 @@ tag_pattern = "^v\\d+\\.\\d+\\.\\d+$"
 sort_commits = "oldest"
 commit_parsers = [
   { message = "^feat", group = "Features" },
-  { message = "^fix", group = "Bug Fixes" },
+  { message = "^(fix|bugfix)", group = "Bug Fixes" },
   { message = "^(perf|refactor|chore|build|ci|docs|test)", group = "Improvements" },
   { message = ".*", group = "Other" },
 ]
