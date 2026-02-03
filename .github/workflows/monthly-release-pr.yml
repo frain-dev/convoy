@@ -1,0 +1,95 @@
+name: Monthly Release PR
+
+on:
+  schedule:
+    - cron: "0 2 28-31 * *"
+  workflow_dispatch:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.calver.outputs.version }}
+      should_run: ${{ steps.check-day.outputs.should_run }}
+    steps:
+      - name: Check if last day of month (schedule only)
+        id: check-day
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "$(date -u -d "tomorrow" +%d)" != "01" ]; then
+              echo "Not the last day of the month; skipping release."
+              echo "should_run=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "Last day of month; proceeding with release."
+              echo "should_run=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "Manual or PR trigger; proceeding with release."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        if: ${{ steps.check-day.outputs.should_run == 'true' }}
+        with:
+          fetch-depth: 0
+
+      - name: Calculate CalVer version
+        id: calver
+        if: ${{ steps.check-day.outputs.should_run == 'true' }}
+        run: |
+          VERSION="$(./scripts/calver.sh)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Install git-cliff
+        if: ${{ steps.check-day.outputs.should_run == 'true' }}
+        uses: taiki-e/install-action@650c5ca14212efbbf3e580844b04bdccf68dac31 # v2
+        with:
+          tool: git-cliff
+
+      - name: Update changelog
+        if: ${{ steps.check-day.outputs.should_run == 'true' }}
+        run: git-cliff --config .git-cliff.toml --unreleased --tag "v${{ steps.calver.outputs.version }}" --prepend CHANGELOG.md
+
+      - name: Create release PR
+        if: ${{ steps.check-day.outputs.should_run == 'true' }}
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6
+        with:
+          commit-message: "chore(release): prepare v${{ steps.calver.outputs.version }}"
+          title: "chore(release): prepare v${{ steps.calver.outputs.version }}"
+          body: |
+            Automated changelog update for the monthly release.
+
+            **Version:** `v${{ steps.calver.outputs.version }}`
+          branch: "chore/monthly-release"
+          base: "main"
+
+  trigger-tag-stable-release:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'chore/monthly-release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Extract version from CHANGELOG.md
+        id: version
+        run: |
+          VERSION="$(awk 'NR==1 {sub(/^# /,""); print $0}' CHANGELOG.md)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger tag-stable-release workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run "tag-stable-release.yml" \
+            --ref main \
+            --repo "${{ github.repository }}" \
+            -f version="${{ steps.version.outputs.version }}"
