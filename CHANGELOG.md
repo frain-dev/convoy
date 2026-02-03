@@ -1,3 +1,20 @@
+
+# 26.2.0
+
+
+### Improvements
+
+
+- chore(infra): update release process to generate clean changelogs (#2542) (#2542)
+
+
+
+### Other
+
+
+- License service integration (#2528) (#2528)
+
+
 # 26.1.1
 
 ### Enhancements
