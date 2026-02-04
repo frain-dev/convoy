@@ -170,3 +170,29 @@ func FlattenM(m datastore.M) (datastore.M, error) {
 	}
 	return mCopy, nil
 }
+
+// ============================================================================
+// RetryFilter JSONB conversions
+// ============================================================================
+
+// RetryFilterToJSONB converts datastore.RetryFilter to JSONB []byte for PostgreSQL storage.
+// Returns empty JSON object "{}" for nil filters.
+func RetryFilterToJSONB(filter datastore.RetryFilter) ([]byte, error) {
+	if filter == nil {
+		return []byte("{}"), nil
+	}
+	return json.Marshal(filter)
+}
+
+// JSONBToRetryFilter converts JSONB []byte from PostgreSQL to datastore.RetryFilter.
+// Returns empty filter for empty or null JSONB.
+func JSONBToRetryFilter(data []byte) (datastore.RetryFilter, error) {
+	if len(data) == 0 || string(data) == "{}" {
+		return datastore.RetryFilter{}, nil
+	}
+	var filter datastore.RetryFilter
+	if err := json.Unmarshal(data, &filter); err != nil {
+		return nil, err
+	}
+	return filter, nil
+}

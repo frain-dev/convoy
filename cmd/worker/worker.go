@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/filters"
@@ -164,7 +165,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	configRepo := configuration.New(a.Logger, a.DB)
 	attemptRepo := delivery_attempts.New(a.Logger, a.DB)
 	filterRepo := filters.New(a.Logger, a.DB)
-	batchRetryRepo := postgres.NewBatchRetryRepo(a.DB)
+	batchRetryRepo := batch_retries.New(lo, a.DB)
 
 	rd, err := rdb.NewClientFromConfig(
 		cfg.Redis.BuildDsn(),
