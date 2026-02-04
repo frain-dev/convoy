@@ -3,13 +3,12 @@ header = ""
 body = """
 # {{ version | trim_start_matches(pat="v") }}
 
-{% for group, commits in commits | group_by(attribute="group") %}
+{% for group, commits in commits | group_by(attribute="group") -%}
 ### {{ group | upper_first }}
 
-{% for commit in commits %}
-- {{ commit.message | split(pat="\n") | first }}{% if commit.remote.pr_number %} (#{{ commit.remote.pr_number }}){% endif %}
+{% for commit in commits -%}
+- {{ commit.message | split(pat="\n") | first }}
 {% endfor %}
-
 {% endfor %}
 """
 trim = true
