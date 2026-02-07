@@ -85,10 +85,11 @@ func (a *Amqp) Verify() error {
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
-		log.WithError(err).Error("failed to instantiate a channel")
+		a.log.WithError(err).Error("failed to instantiate a channel")
 		return err
 	}
 	defer ch.Close()
