@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type RabbitMQContainer struct {

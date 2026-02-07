@@ -755,6 +755,17 @@ func AssertMultipleEventsCreated(t *testing.T, db *postgres.Postgres, ctx contex
 			continue
 		}
 
+		if rows.Err() != nil {
+			err = rows.Close()
+			if err != nil {
+				return nil
+			}
+
+			t.Logf("ERROR scanning events (attempt %d): %v", i+1, rows.Err())
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
 		events = nil // Reset for each attempt
 		for rows.Next() {
 			var e datastore.Event
@@ -819,8 +830,8 @@ func AssertEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context
 				   COALESCE(device_id, '') as device_id,
 				   COALESCE(subscription_id, '') as subscription_id,
 				   headers, attempts, status,
-				   COALESCE(metadata::text, '{}')::jsonb as metadata,
-				   COALESCE(cli_metadata::text, '{}')::jsonb as cli_metadata,
+				   COALESCE(metadata::TEXT, '{}')::jsonb as metadata,
+				   COALESCE(cli_metadata::TEXT, '{}')::jsonb as cli_metadata,
 				   COALESCE(description, '') as description,
 				   created_at, updated_at, deleted_at, acknowledged_at
 			FROM convoy.event_deliveries
