@@ -388,6 +388,18 @@ func CreateAMQPSource(t *testing.T, db *postgres.Postgres, ctx context.Context, 
 	return source
 }
 
+// UpdateAMQPSourcePort updates the port configuration for an AMQP source.
+// This is useful when the RabbitMQ container is restarted and gets a new port.
+func UpdateAMQPSourcePort(t *testing.T, db *postgres.Postgres, ctx context.Context, source *datastore.Source, newPort int) {
+	t.Helper()
+
+	source.PubSub.Amqp.Port = fmt.Sprintf("%d", newPort)
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	err := sourceRepo.UpdateSource(ctx, source.ProjectID, source)
+	require.NoError(t, err)
+	t.Logf("Updated source %s port to %d", source.UID, newPort)
+}
+
 // PublishAMQPMessage publishes a message to RabbitMQ with headers
 func PublishAMQPMessage(t *testing.T, host string, port int, queue string, body []byte, headers map[string]interface{}) {
 	t.Helper()
@@ -456,6 +468,86 @@ func PublishSingleAMQPMessage(t *testing.T, host string, port int, queue, endpoi
 	}
 
 	PublishAMQPMessage(t, host, port, queue, body, headers)
+}
+
+// TryPublishAMQPMessage attempts to publish a single-type AMQP message and returns an error if it fails.
+// This is useful for testing reconnection scenarios where we need to retry publishing.
+func TryPublishAMQPMessage(t *testing.T, host string, port int, queue, endpointID, eventType string, data map[string]interface{}, customHeaders map[string]string) error {
+	t.Helper()
+
+	payload := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	if customHeaders != nil {
+		payload["custom_headers"] = customHeaders
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	headers := map[string]interface{}{
+		"x-convoy-message-type": "single",
+	}
+
+	return TryPublishAMQPMessageRaw(host, port, queue, body, headers)
+}
+
+// TryPublishAMQPMessageRaw attempts to publish a raw AMQP message and returns an error if it fails.
+func TryPublishAMQPMessageRaw(host string, port int, queue string, body []byte, headers map[string]interface{}) error {
+	connStr := fmt.Sprintf("amqp://guest:guest@%s:%d/", host, port)
+	conn, err := amqp091.Dial(connStr)
+	if err != nil {
+		return fmt.Errorf("failed to connect: %w", err)
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		return fmt.Errorf("failed to open channel: %w", err)
+	}
+	defer ch.Close()
+
+	// Declare queue (idempotent)
+	_, err = ch.QueueDeclare(
+		queue,
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare queue: %w", err)
+	}
+
+	// Convert headers to AMQP table
+	amqpHeaders := make(amqp091.Table)
+	for k, v := range headers {
+		amqpHeaders[k] = v
+	}
+
+	err = ch.Publish(
+		"",    // exchange
+		queue, // routing key
+		false, // mandatory
+		false, // immediate
+		amqp091.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+			Headers:     amqpHeaders,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to publish: %w", err)
+	}
+
+	return nil
 }
 
 // PublishFanoutAMQPMessage publishes a fanout-type AMQP message
@@ -623,6 +715,85 @@ func AssertEventCreated(t *testing.T, db *postgres.Postgres, ctx context.Context
 	require.Equal(t, eventType, string(event.EventType))
 
 	return event
+}
+
+// AssertMultipleEventsCreated verifies that multiple events were created in the database
+// and returns all matching events. The expectedCount parameter specifies how many events are expected.
+func AssertMultipleEventsCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventType string, expectedCount int, timeWindow ...time.Duration) []*datastore.Event {
+	t.Helper()
+
+	// Use default 2-minute window if not specified
+	lookback := 2 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	var events []*datastore.Event
+	dbConn := db.GetDB()
+
+	for i := 0; i < 30; i++ {
+		query := `
+			SELECT id, project_id, event_type, source_id, headers, raw, data,
+				   created_at, updated_at, deleted_at, acknowledged_at,
+				   idempotency_key, url_query_params, is_duplicate_event
+			FROM convoy.events
+			WHERE project_id = $1
+			  AND event_type = $2
+			  AND deleted_at IS NULL
+			  AND created_at >= $3
+			  AND created_at <= $4
+			ORDER BY created_at ASC
+		`
+
+		startTime := time.Now().Add(-lookback)
+		endTime := time.Now().Add(1 * time.Minute)
+
+		rows, err := dbConn.QueryContext(ctx, query, projectID, eventType, startTime, endTime)
+		if err != nil {
+			t.Logf("ERROR querying events (attempt %d): %v", i+1, err)
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		events = nil // Reset for each attempt
+		for rows.Next() {
+			var e datastore.Event
+			err := rows.Scan(
+				&e.UID,
+				&e.ProjectID,
+				&e.EventType,
+				&e.SourceID,
+				&e.Headers,
+				&e.Raw,
+				&e.Data,
+				&e.CreatedAt,
+				&e.UpdatedAt,
+				&e.DeletedAt,
+				&e.AcknowledgedAt,
+				&e.IdempotencyKey,
+				&e.URLQueryParams,
+				&e.IsDuplicateEvent,
+			)
+			if err != nil {
+				rows.Close()
+				t.Logf("ERROR scanning event (attempt %d): %v", i+1, err)
+				break
+			}
+			events = append(events, &e)
+		}
+		rows.Close()
+
+		if len(events) >= expectedCount {
+			t.Logf("✓ Found %d events of type %s (attempt %d)", len(events), eventType, i+1)
+			break
+		}
+
+		t.Logf("Found %d/%d events for project %s with type %s (attempt %d)", len(events), expectedCount, projectID, eventType, i+1)
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	require.GreaterOrEqual(t, len(events), expectedCount, "Expected at least %d events with type %s", expectedCount, eventType)
+	return events
 }
 
 // AssertEventDeliveryCreated verifies that an event delivery was created
