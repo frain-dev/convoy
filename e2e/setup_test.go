@@ -263,9 +263,15 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	workerCtx, cancelWorker := context.WithCancel(serverCtx)
 	go func() {
 		t.Logf("Starting worker for test: %s", t.Name())
-		err := cmdworker.StartWorker(workerCtx, app, cfg)
+		worker, err := cmdworker.NewWorker(workerCtx, app, cfg)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
+			t.Logf("Worker initialization error for test %s: %v", t.Name(), err)
+			logger.WithError(err).Error("Worker initialization error")
+			return
+		}
+		err = worker.Run(workerCtx, nil)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				t.Logf("Worker error for test %s: %v", t.Name(), err)
 				logger.WithError(err).Error("Worker error")
 			} else {
@@ -647,6 +653,22 @@ func (env *E2ETestEnvWithAMQP) SyncSources(t *testing.T) {
 	}
 	// Give the ingest component time to process the new sources
 	time.Sleep(1 * time.Second)
+}
+
+// RestartRabbitMQ restarts the RabbitMQ container and updates the connection details.
+// This is useful for testing reconnection logic.
+func (env *E2ETestEnvWithAMQP) RestartRabbitMQ(t *testing.T) {
+	t.Helper()
+	t.Log("Restarting RabbitMQ container...")
+	err := infra.RestartRabbitMQ(context.Background())
+	require.NoError(t, err, "Failed to restart RabbitMQ")
+
+	// Refresh the connection details as the port mapping may have changed
+	rmqHost, rmqPort, err := infra.NewRabbitMQConnect(t)
+	require.NoError(t, err, "Failed to get RabbitMQ connection details after restart")
+	env.RabbitMQHost = rmqHost
+	env.RabbitMQPort = rmqPort
+	t.Logf("RabbitMQ container restarted successfully (host=%s, port=%d)", rmqHost, rmqPort)
 }
 
 // SyncSubscriptions forces an immediate sync of the worker's subscription loader

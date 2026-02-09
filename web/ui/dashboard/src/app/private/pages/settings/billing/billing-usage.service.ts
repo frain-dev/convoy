@@ -48,7 +48,7 @@ export class BillingUsageService {
     return `${fixed} ${units[idx]}`;
   }
 
-  private formatUsageData(usage: any): UsageRow[] {
+  formatUsageData(usage: any): UsageRow[] {
     const sentVolume = Number(usage?.sent?.volume || 0);       // outgoing deliveries count
     const receivedVolume = Number(usage?.received?.volume || 0); // incoming events count
     const sentBytes = Number(usage?.sent?.bytes || 0);         // outgoing bytes (egress)

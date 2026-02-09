@@ -1,0 +1,27 @@
+[changelog]
+header = ""
+body = """
+# {{ version | trim_start_matches(pat="v") }}
+
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+
+{% for commit in commits %}
+- {{ commit.message | split(pat="\n") | first }}{% if commit.remote.pr_number %} (#{{ commit.remote.pr_number }}){% endif %}
+{% endfor %}
+
+{% endfor %}
+"""
+trim = true
+
+[git]
+conventional_commits = false
+filter_unconventional = false
+tag_pattern = "^v\\d+\\.\\d+\\.\\d+$"
+sort_commits = "oldest"
+commit_parsers = [
+  { message = "^feat", group = "Features" },
+  { message = "^(fix|bugfix)", group = "Bug Fixes" },
+  { message = "^(perf|refactor|chore|build|ci|docs|test)", group = "Improvements" },
+  { message = ".*", group = "Other" },
+]

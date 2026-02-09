@@ -2,6 +2,8 @@ import {Injectable} from '@angular/core';
 import {from, Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {HttpService} from 'src/app/services/http/http.service';
+import axios from 'axios';
+import {environment} from 'src/environments/environment';
 
 export interface InvoiceRow {
   id: string;
@@ -23,8 +25,8 @@ export class BillingInvoicesService {
     );
   }
 
-  downloadInvoice(pdfLink: string): Observable<Blob> {
-    return from(this.downloadInvoiceData(pdfLink));
+  downloadInvoice(orgID: string, invoiceID: string): Observable<Blob> {
+    return from(this.downloadInvoiceData(orgID, invoiceID));
   }
 
   private async getInvoicesData() {
@@ -42,16 +44,42 @@ export class BillingInvoicesService {
     }
   }
 
-  private async downloadInvoiceData(pdfLink: string): Promise<Blob> {
+  private async downloadInvoiceData(orgID: string, invoiceID: string): Promise<Blob> {
     try {
-      const response = await fetch(pdfLink);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Get auth token for the request
+      const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
+      let authToken = '';
+      if (authDetails && authDetails !== 'undefined') {
+        const token = JSON.parse(authDetails);
+        authToken = token.access_token || '';
       }
-      return await response.blob();
-    } catch (error) {
+
+      // Build the URL
+      const baseElement = document.querySelector('base');
+      const baseHref = baseElement?.getAttribute('href') || '/';
+      const rootPath = baseHref.replace(/\/$/, '');
+      const apiURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
+      const url = `${rootPath === '/' ? '' : rootPath}${apiURL}/billing/organisations/${orgID}/invoices/${invoiceID}/download`;
+
+      // Make request with blob response type
+      const response = await axios.get(url, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'X-Convoy-Version': '2024-04-01'
+        }
+      });
+
+      return response.data;
+    } catch (error: any) {
       console.error('Failed to download invoice:', error);
-      throw error;
+      if (error.response?.status === 404) {
+        throw new Error('Invoice not found');
+      } else if (error.response?.status === 403) {
+        throw new Error('Unauthorized to download this invoice');
+      } else {
+        throw new Error('Failed to download invoice. Please try again.');
+      }
     }
   }
 

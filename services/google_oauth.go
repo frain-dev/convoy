@@ -99,7 +99,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 	}
 
 	// Check license limits
-	ok, err := a.Licenser.CreateUser(ctx)
+	ok, err := a.Licenser.CheckUserLimit(ctx)
 	if err != nil {
 		return nil, nil, &ServiceError{ErrMsg: err.Error()}
 	}

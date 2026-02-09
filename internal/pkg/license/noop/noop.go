@@ -17,16 +17,21 @@ func NewLicenser() *Licenser {
 	return &Licenser{}
 }
 
-func (Licenser) CreateOrg(_ context.Context) (bool, error) {
+// Limit check methods
+func (Licenser) CheckOrgLimit(_ context.Context) (bool, error) {
 	return true, nil
 }
 
-func (Licenser) CreateUser(_ context.Context) (bool, error) {
+func (Licenser) CheckUserLimit(_ context.Context) (bool, error) {
 	return true, nil
 }
 
-func (Licenser) CreateProject(_ context.Context) (bool, error) {
+func (Licenser) CheckProjectLimit(_ context.Context) (bool, error) {
 	return true, nil
+}
+
+func (Licenser) IsMultiUserMode(_ context.Context) (bool, error) {
+	return true, nil // Noop allows multi-user
 }
 
 func (Licenser) UseForwardProxy() bool {
@@ -57,15 +62,7 @@ func (Licenser) RetentionPolicy() bool {
 	return true
 }
 
-func (Licenser) AdvancedMsgBroker() bool {
-	return true
-}
-
 func (Licenser) WebhookAnalytics() bool {
-	return true
-}
-
-func (Licenser) HADeployment() bool {
 	return true
 }
 
@@ -74,10 +71,6 @@ func (Licenser) MutualTLS() bool {
 }
 
 func (Licenser) OAuth2EndpointAuth() bool {
-	return true
-}
-
-func (Licenser) SynchronousWebhooks() bool {
 	return true
 }
 
@@ -102,10 +95,6 @@ func (Licenser) PortalLinks() bool {
 }
 
 func (Licenser) CircuitBreaking() bool {
-	return true
-}
-
-func (Licenser) MultiPlayerMode() bool {
 	return true
 }
 
@@ -145,6 +134,6 @@ func (k *Licenser) CustomCertificateAuthority() bool {
 	return true
 }
 
-func (k Licenser) BillingModule() bool {
+func (k *Licenser) StaticIP() bool {
 	return true
 }

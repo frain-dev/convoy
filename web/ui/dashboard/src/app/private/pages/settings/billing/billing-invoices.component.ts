@@ -19,10 +19,9 @@ export class BillingInvoicesComponent implements OnInit {
     private overviewService: BillingOverviewService
   ) {}
 
-  ngOnInit() {
-    this.overviewService.ensureBillingReady().then(() => {
-      this.fetchInvoices();
-    });
+  async ngOnInit() {
+    await this.overviewService.waitForBootstrap();
+    this.fetchInvoices();
   }
 
   fetchInvoices() {
@@ -34,24 +33,40 @@ export class BillingInvoicesComponent implements OnInit {
   }
 
   downloadInvoice(invoiceId: string) {
-    // Find the invoice row to get the pdf_link
-    const invoiceRow = this.invoiceRows.find(row => row.id === invoiceId);
-    
-    if (!invoiceRow || !invoiceRow.pdfLink) {
+    // Get organisation ID from localStorage
+    const org = localStorage.getItem('CONVOY_ORG');
+    if (!org) {
       this.generalService.showNotification({
-        message: 'Invoice PDF link not available',
+        message: 'Organisation not found. Please refresh the page.',
         style: 'error'
       });
       return;
     }
 
-    this.invoicesService.downloadInvoice(invoiceRow.pdfLink).subscribe({
+    let orgID: string;
+    try {
+      const orgData = JSON.parse(org);
+      orgID = orgData.uid || '';
+      if (!orgID) {
+        throw new Error('Invalid organisation data');
+      }
+    } catch (error) {
+      this.generalService.showNotification({
+        message: 'Invalid organisation data. Please refresh the page.',
+        style: 'error'
+      });
+      return;
+    }
+
+    // Find the invoice row to get the invoice number for filename
+    const invoiceRow = this.invoiceRows.find(row => row.id === invoiceId);
+    const invoiceNumber = invoiceRow?.number || invoiceId;
+
+    this.invoicesService.downloadInvoice(orgID, invoiceId).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        // Use invoice number for filename, fallback to ID if number not available
-        const invoiceNumber = invoiceRow.number || invoiceId;
         // Convert to lowercase and replace spaces/hyphens if needed (e.g., "INV-1493" -> "inv-1493")
         const filename = invoiceNumber.toLowerCase().replace(/\s+/g, '-');
         link.download = `${filename}.pdf`;
@@ -67,8 +82,9 @@ export class BillingInvoicesComponent implements OnInit {
       },
       error: (error) => {
         console.error('Download failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to download invoice. Please try again.';
         this.generalService.showNotification({
-          message: 'Failed to download invoice. Please try again.',
+          message: errorMessage,
           style: 'error'
         });
       }

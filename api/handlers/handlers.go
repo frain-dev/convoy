@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/subomi/requestmigrations"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
@@ -137,14 +138,44 @@ func (h *Handler) retrieveHost() (string, error) {
 }
 
 func (h *Handler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {
-	orgID := chi.URLParam(r, "orgID")
+	var (
+		org *datastore.Organisation
+		err error
+	)
 
+	orgID := chi.URLParam(r, "orgID")
 	if util.IsStringEmpty(orgID) {
 		orgID = r.URL.Query().Get("orgID")
 	}
+	if !util.IsStringEmpty(orgID) {
+		orgRepo := organisations.New(h.A.Logger, h.A.DB)
+		org, err = orgRepo.FetchOrganisationByID(r.Context(), orgID)
+		if err == nil && org != nil {
+			return org, nil
+		}
+	}
 
-	orgRepo := organisations.New(h.A.Logger, h.A.DB)
-	return orgRepo.FetchOrganisationByID(r.Context(), orgID)
+	if cachedOrg := r.Context().Value(convoy.OrganisationCtx); cachedOrg != nil {
+		org = cachedOrg.(*datastore.Organisation)
+	} else if cachedProject := r.Context().Value(convoy.ProjectCtx); cachedProject != nil {
+		project := cachedProject.(*datastore.Project)
+		orgRepo := organisations.New(h.A.Logger, h.A.DB)
+		org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
+	} else if projectID := chi.URLParam(r, "projectID"); projectID != "" {
+		projectRepo := projects.New(h.A.Logger, h.A.DB)
+		var project *datastore.Project
+		project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+		if err == nil {
+			orgRepo := organisations.New(h.A.Logger, h.A.DB)
+			org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
+		}
+	}
+
+	if err != nil || org == nil {
+		return nil, err
+	}
+
+	return org, nil
 }
 
 func (h *Handler) retrieveMembership(r *http.Request) (*datastore.OrganisationMember, error) {
@@ -223,4 +254,8 @@ func (h *Handler) CanManageEndpoint() func(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func (h *Handler) isOrganisationDisabled(org *datastore.Organisation) bool {
+	return org.DisabledAt.Valid
 }
