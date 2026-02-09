@@ -20,10 +20,9 @@ import (
 
 // Service implements the BatchRetryRepository using SQLc-generated queries
 type Service struct {
-	logger   log.StdLogger
-	repo     repo.Querier      // SQLc-generated interface
-	db       *pgxpool.Pool     // Connection pool
-	legacyDB database.Database // For gradual migration if needed
+	logger log.StdLogger
+	repo   repo.Querier  // SQLc-generated interface
+	db     *pgxpool.Pool // Connection pool
 }
 
 // Ensure Service implements datastore.BatchRetryRepository at compile time
@@ -32,14 +31,13 @@ var _ datastore.BatchRetryRepository = (*Service)(nil)
 // New creates a new Batch Retry Service
 func New(logger log.StdLogger, db database.Database) *Service {
 	return &Service{
-		logger:   logger,
-		repo:     repo.New(db.GetConn()),
-		db:       db.GetConn(),
-		legacyDB: db,
+		logger: logger,
+		repo:   repo.New(db.GetConn()),
+		db:     db.GetConn(),
 	}
 }
 
-// rowToBatchRetry converts a SQLc-generated row struct to datastore.BatchRetry
+// rowToBatchRetry converts an SQLc-generated row struct to datastore.BatchRetry
 func rowToBatchRetry(row repo.ConvoyBatchRetry) (*datastore.BatchRetry, error) {
 	filter, err := common.JSONBToRetryFilter(row.Filter)
 	if err != nil {
