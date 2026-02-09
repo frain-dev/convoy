@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -151,7 +152,7 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 	data.Filter.Pageable = *pp
 
 	br := services.BatchRetryEventDeliveryService{
-		BatchRetryRepo:    postgres.NewBatchRetryRepo(h.A.DB),
+		BatchRetryRepo:    batch_retries.New(nil, h.A.DB),
 		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB),
 		Queue:             h.A.Queue,
 		Filter:            data.Filter,
