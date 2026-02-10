@@ -3,10 +3,12 @@ package organisation_members
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
@@ -100,7 +102,7 @@ func seedUser(t *testing.T, db database.Database, email string) *datastore.User 
 		email = fmt.Sprintf("test-%s@example.com", ulid.Make().String())
 	}
 
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(log.NewLogger(io.Discard), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",

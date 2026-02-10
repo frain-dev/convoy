@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
@@ -101,11 +102,11 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func seedTestData(t *testing.T, db database.Database) *datastore.Project {
 	t.Helper()
-
 	ctx := context.Background()
+	logger := log.NewLogger(os.Stdout)
 
 	// Create user
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(logger, db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		Email:     "test@example.com",
@@ -116,7 +117,6 @@ func seedTestData(t *testing.T, db database.Database) *datastore.Project {
 	require.NoError(t, err)
 
 	// Create organisation
-	logger := log.NewLogger(os.Stdout)
 	orgRepo := organisations.New(logger, db)
 	org := &datastore.Organisation{
 		UID:     ulid.Make().String(),

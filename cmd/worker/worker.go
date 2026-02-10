@@ -30,6 +30,7 @@ import (
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/telemetry"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
@@ -304,7 +305,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 					orgRepo := organisations.New(lo, a.DB)
 					ownerEmail := ""
 					if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
-						if owner, err := postgres.NewUserRepo(a.DB).FindUserByID(ctx, org.OwnerID); err == nil {
+						if owner, err := users.New(a.Logger, a.DB).FindUserByID(ctx, org.OwnerID); err == nil {
 							ownerEmail = owner.Email
 						}
 					}

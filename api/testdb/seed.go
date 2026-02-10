@@ -30,6 +30,7 @@ import (
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -206,7 +207,7 @@ func SeedDefaultUser(db database.Database, isAdmin ...bool) (*datastore.User, er
 	}
 
 	// Seed Data.
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(log.NewLogger(io.Discard), db)
 	err = userRepo.CreateUser(context.TODO(), defaultUser)
 	if err != nil {
 		return &datastore.User{}, err
@@ -594,7 +595,7 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 	}
 
 	// Seed Data
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(log.NewLogger(io.Discard), db)
 	err = userRepo.CreateUser(context.TODO(), user)
 	if err != nil {
 		return nil, err

@@ -2,6 +2,7 @@ package api_keys
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"testing"
 
@@ -9,9 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -268,7 +269,7 @@ func TestLoadAPIKeysPaged_FilterByUser(t *testing.T) {
 	user1, _, project := seedTestData(t, db)
 
 	// Create a second user
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(log.NewLogger(io.Discard), db)
 	user2 := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "User",
@@ -408,7 +409,7 @@ func TestLoadAPIKeysPaged_MultipleFilters(t *testing.T) {
 	user1, _, project := seedTestData(t, db)
 
 	// Create a second user
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(log.NewLogger(io.Discard), db)
 	user2 := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "User",

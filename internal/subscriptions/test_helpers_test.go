@@ -3,9 +3,11 @@ package subscriptions
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
@@ -102,7 +104,7 @@ func seedUser(t *testing.T, db database.Database) *datastore.User {
 		Email:     fmt.Sprintf("test-%s@user.com", uid),
 	}
 
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(log.NewLogger(io.Discard), db)
 	err := userRepo.CreateUser(context.Background(), user)
 	require.NoError(t, err)
 

@@ -198,6 +198,15 @@ func PgTimestamptzToTime(t pgtype.Timestamptz) time.Time {
 	return t.Time
 }
 
+// TimeToPgTimestamptz converts time.Time to pgtype.Timestamptz.
+// Zero time is represented as invalid (NULL in database).
+func TimeToPgTimestamptz(t time.Time) pgtype.Timestamptz {
+	if t.IsZero() {
+		return pgtype.Timestamptz{Valid: false}
+	}
+	return pgtype.Timestamptz{Time: t, Valid: true}
+}
+
 // ============================================================================
 // Array conversions
 // ============================================================================
