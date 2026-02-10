@@ -77,8 +77,8 @@ jobs:
           api_key: ${{ secrets.DEFECTDOJO_API_KEY }}
           file: trivy-image.json
           scan_type: Trivy Scan
-          product_id: ${{ steps.defectdojo_fs.outputs.product_id }}
-          engagement_id: ${{ steps.defectdojo_fs.outputs.engagement_id }}
+          product_name: ${{ env.DEFECTDOJO_PRODUCT_NAME }}-image-scan
+          engagement_name: "Trivy Image Scan- main - ${{ github.run_id }} - ${{ github.sha }}"
           commit_hash: ${{ github.sha }}
           branch_tag: main
 
