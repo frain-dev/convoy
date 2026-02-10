@@ -234,6 +234,7 @@ linters:
           - err113
           - gocritic
           - unused
+          - unparam
       - path: cmd/
         linters:
           - funlen # Allow longer functions in main commands
@@ -260,6 +261,9 @@ linters:
         linters:
           - unused #certain functions in e.g clients may not be used
           - unparam
+      - path: ".*/telemetry/.*"
+        linters:
+          - unparam # error return required by Tracker interface
       - path: ".*/middleware/.*"
         linters:
           - unused #certain middleware may not be used
