@@ -752,7 +752,7 @@ SELECT * FROM updated_existing
 UNION ALL
 SELECT * FROM new_subscriptions
 ORDER BY id
-LIMIT $%d`, valuesSQL, argIdx-2, argIdx-2, argIdx-1)
+LIMIT $%d`, valuesSQL, argIdx, argIdx, argIdx+1)
 
 	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
