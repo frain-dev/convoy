@@ -1,0 +1,60 @@
+name: Trivy scan and push to DefectDojo
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: trivy-defectdojo-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DEFECTDOJO_URL: ${{ secrets.DEFECTDOJO_URL }}
+  DEFECTDOJO_API_KEY: ${{ secrets.DEFECTDOJO_API_KEY }}
+  DEFECTDOJO_PRODUCT_NAME: Convoy-OSS
+
+jobs:
+  scan-and-import:
+    name: Scan and import to DefectDojo
+    runs-on: ubuntu-latest
+    outputs:
+      engagement_id: ${{ steps.defectdojo.outputs.engagement_id }}
+      test_id: ${{ steps.defectdojo.outputs.test_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Run Trivy (filesystem)
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "json"
+          output: "trivy-results.json"
+          exit-code: "0"
+          severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+          hide-progress: true
+
+      - name: Import scan to DefectDojo
+        id: defectdojo
+        uses: olamilekan000/defectdojo-action@v1.0.0
+        with:
+          defectdojo_url: ${{ env.DEFECTDOJO_URL }}
+          api_key: ${{ secrets.DEFECTDOJO_API_KEY }}
+          file: trivy-results.json
+          scan_type: Trivy Scan
+          product_name: ${{ env.DEFECTDOJO_PRODUCT_NAME }}
+          engagement_name: "Trivy - main - ${{ github.run_id }} - ${{ github.sha }}"
+          commit_hash: ${{ github.sha }}
+          branch_tag: main
+
+      - name: Upload Trivy report artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: trivy-report-${{ github.sha }}
+          path: trivy-results.json
+          retention-days: 7
