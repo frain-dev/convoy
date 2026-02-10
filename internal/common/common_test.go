@@ -165,6 +165,37 @@ func TestNullTimeToPgTimestamptz(t *testing.T) {
 	}
 }
 
+func TestTimeToPgTimestamptz(t *testing.T) {
+	now := time.Now().UTC()
+
+	tests := []struct {
+		name     string
+		input    time.Time
+		expected pgtype.Timestamptz
+	}{
+		{
+			name:     "valid time",
+			input:    now,
+			expected: pgtype.Timestamptz{Time: now, Valid: true},
+		},
+		{
+			name:     "zero time becomes invalid (NULL)",
+			input:    time.Time{},
+			expected: pgtype.Timestamptz{Time: time.Time{}, Valid: false},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := TimeToPgTimestamptz(tt.input)
+			require.Equal(t, tt.expected.Valid, result.Valid)
+			if tt.expected.Valid {
+				require.Equal(t, tt.expected.Time, result.Time)
+			}
+		})
+	}
+}
+
 // ============================================================================
 // Role conversion tests
 // ============================================================================
