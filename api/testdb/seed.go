@@ -23,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisation_invites"
 	"github.com/frain-dev/convoy/internal/organisation_members"
@@ -38,7 +39,7 @@ import (
 )
 
 func SeedEventType(db database.Database, projectId, uid, name, desc, category string) (*datastore.ProjectEventType, error) {
-	evtTypesRepo := postgres.NewEventTypesRepo(db)
+	evtTypesRepo := event_types.New(log.NewLogger(os.Stdout), db)
 	pe := &datastore.ProjectEventType{
 		UID:         uid,
 		Name:        name,

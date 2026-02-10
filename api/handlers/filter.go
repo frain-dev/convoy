@@ -11,8 +11,8 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/filters"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/util"
@@ -57,7 +57,7 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 
 	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
-	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
 	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
@@ -281,7 +281,7 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
@@ -527,7 +527,7 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 
 	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
-	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
 	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
@@ -651,7 +651,7 @@ func (h *Handler) BulkUpdateFilters(w http.ResponseWriter, r *http.Request) {
 
 	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
-	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
 	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
