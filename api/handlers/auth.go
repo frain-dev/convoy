@@ -10,11 +10,11 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -31,7 +31,7 @@ const (
 func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
 	lu := services.LoginUserSSOService{
-		UserRepo:      postgres.NewUserRepo(h.A.DB),
+		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
@@ -63,7 +63,7 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 	configuration := h.A.Cfg
 
 	lu := services.LoginUserSSOService{
-		UserRepo:      postgres.NewUserRepo(h.A.DB),
+		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
@@ -132,7 +132,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lu := services.LoginUserService{
-		UserRepo:      postgres.NewUserRepo(h.A.DB),
+		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		Cache:         h.A.Cache,
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
@@ -190,7 +190,7 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rf := services.RefreshTokenService{
-		UserRepo: postgres.NewUserRepo(h.A.DB),
+		UserRepo: users.New(h.A.Logger, h.A.DB),
 		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Data:     &refreshToken,
 	}
@@ -221,7 +221,7 @@ func (h *Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lg := services.LogoutUserService{
-		UserRepo: postgres.NewUserRepo(h.A.DB),
+		UserRepo: users.New(h.A.Logger, h.A.DB),
 		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Token:    auth.Token,
 	}
@@ -259,7 +259,7 @@ func (h *Handler) GoogleOAuthToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	googleOAuthService := services.NewGoogleOAuthService(
-		postgres.NewUserRepo(h.A.DB),
+		users.New(h.A.Logger, h.A.DB),
 		organisations.New(h.A.Logger, h.A.DB),
 		organisation_members.New(h.A.Logger, h.A.DB),
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
@@ -317,7 +317,7 @@ func (h *Handler) GoogleOAuthSetup(w http.ResponseWriter, r *http.Request) {
 
 	configuration := h.A.Cfg
 	googleOAuthService := services.NewGoogleOAuthService(
-		postgres.NewUserRepo(h.A.DB),
+		users.New(h.A.Logger, h.A.DB),
 		organisations.New(h.A.Logger, h.A.DB),
 		organisation_members.New(h.A.Logger, h.A.DB),
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),

@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
@@ -92,7 +93,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func seedUser(t *testing.T, db database.Database) *datastore.User {
 	t.Helper()
 
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(log.NewLogger(io.Discard), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",

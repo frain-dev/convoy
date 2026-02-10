@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
@@ -244,9 +245,10 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func seedTestData(t *testing.T, db database.Database, ctx context.Context) *datastore.Project {
 	t.Helper()
+	logger := log.NewLogger(os.Stdout)
 
 	// Create user with unique email
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(logger, db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		Email:     "test-" + ulid.Make().String() + "@example.com", // Unique email per test
@@ -257,7 +259,6 @@ func seedTestData(t *testing.T, db database.Database, ctx context.Context) *data
 	require.NoError(t, err)
 
 	// Create organisation
-	logger := log.NewLogger(os.Stdout)
 	orgRepo := organisations.New(logger, db)
 	org := &datastore.Organisation{
 		UID:     ulid.Make().String(),

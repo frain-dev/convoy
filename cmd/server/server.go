@@ -22,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
@@ -117,7 +118,7 @@ func StartConvoyServer(a *cli.App) error {
 	}
 
 	apiKeyRepo := api_keys.New(a.Logger, a.DB)
-	userRepo := postgres.NewUserRepo(a.DB)
+	userRepo := users.New(a.Logger, a.DB)
 	portalLinkRepo := portal_links.New(a.Logger, a.DB)
 	configRepo := configuration.New(a.Logger, a.DB)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
