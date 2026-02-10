@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -137,7 +138,7 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *data
 	require.NoError(t, err)
 
 	// Create subscription
-	subRepo := postgres.NewSubscriptionRepo(db)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		ProjectID:  project.UID,

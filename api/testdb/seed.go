@@ -29,6 +29,7 @@ import (
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -564,7 +565,7 @@ func SeedSubscription(db database.Database,
 		FilterConfig: filterConfig,
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(db)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 	err := subRepo.CreateSubscription(context.TODO(), g.UID, subscription)
 	if err != nil {
 		return nil, err

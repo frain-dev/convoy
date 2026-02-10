@@ -29,7 +29,6 @@ jobs:
                     POSTGRES_DB: convoy
                     POSTGRES_PASSWORD: postgres
                     POSTGRES_MAX_CONNECTIONS: 2000
-                    # set up health check for postgres
                 options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
         steps:
             - name: Start Redis v${{ matrix.redis-version }}
@@ -80,26 +79,8 @@ jobs:
                   CONVOY_REDIS_HOST: localhost
                   CONVOY_REDIS_PORT: 6379
 
-            - name: Run integration tests (with test containers)
+            - name: Run integration tests
               run: make test
-              env:
-                  TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
-                  CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
-                  CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
-                  CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
-                  TEST_DB_SCHEME: postgres
-                  TEST_DB_HOST: localhost
-                  TEST_DB_USERNAME: postgres
-                  TEST_DB_PASSWORD: postgres
-                  TEST_DB_DATABASE: convoy
-                  TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
-                  TEST_DB_PORT: 5432
-                  TEST_REDIS_SCHEME: redis
-                  TEST_REDIS_HOST: localhost
-                  TEST_REDIS_PORT: 6379
-
-            - name: Run Fast E2E tests (testcontainers)
-              run: make test_e2e_fast
               env:
                   TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
                   CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}

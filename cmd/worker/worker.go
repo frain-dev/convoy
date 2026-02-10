@@ -28,6 +28,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -161,7 +162,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	eventRepo := postgres.NewEventRepo(a.DB)
 	jobRepo := postgres.NewJobRepo(a.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
-	subRepo := postgres.NewSubscriptionRepo(a.DB)
+	subRepo := subscriptions.New(a.Logger, a.DB)
 	configRepo := configuration.New(a.Logger, a.DB)
 	attemptRepo := delivery_attempts.New(a.Logger, a.DB)
 	filterRepo := filters.New(a.Logger, a.DB)
