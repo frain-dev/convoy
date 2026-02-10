@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [1.24.x]
+        go-version: [ "1.24.13" ]
         postgres-version: ["15"]
         redis-version: ["6.2.6"]
 
