@@ -23,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisation_invites"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
@@ -661,7 +662,7 @@ func SeedMetaEvent(db database.Database, project *datastore.Project) (*datastore
 		UpdatedAt: time.Now(),
 	}
 
-	metaEventRepo := postgres.NewMetaEventRepo(db)
+	metaEventRepo := meta_events.New(log.NewLogger(io.Discard), db)
 	err := metaEventRepo.CreateMetaEvent(context.TODO(), metaEvent)
 	if err != nil {
 		return nil, err

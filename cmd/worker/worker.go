@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/filters"
+	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -158,7 +159,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	}
 
 	projectRepo := projects.New(a.Logger, a.DB)
-	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
+	metaEventRepo := meta_events.New(a.Logger, a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
 	eventRepo := postgres.NewEventRepo(a.DB)
 	jobRepo := postgres.NewJobRepo(a.DB)
