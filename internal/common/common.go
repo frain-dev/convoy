@@ -246,6 +246,8 @@ func PgJSONToM(data []byte) datastore.M {
 		return make(datastore.M)
 	}
 	return result
+}
+
 // RetryFilter JSONB conversions
 // ============================================================================
 
