@@ -1,9 +1,12 @@
 name: Trivy scan and push to DefectDojo
 
 on:
-  push:
-    branches:
-      - main
+  # Run after the image has been built and pushed by the main build workflow.
+  workflow_run:
+    workflows:
+      - Build and Push Docker Images
+    types:
+      - completed
 
 concurrency:
   group: trivy-defectdojo-${{ github.ref }}
@@ -21,6 +24,9 @@ jobs:
   scan-and-import:
     name: Scan and import to DefectDojo
     runs-on: ubuntu-latest
+    if: >
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_branch == 'main' }}
     outputs:
       engagement_id: ${{ steps.defectdojo_fs.outputs.engagement_id }}
       fs_test_id: ${{ steps.defectdojo_fs.outputs.test_id }}
@@ -40,14 +46,10 @@ jobs:
           severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
           hide-progress: true
 
-      - name: Build image for Trivy scan
-        run: |
-          docker build -t convoy:${{ github.sha }} -f release.Dockerfile .
-
       - name: Run Trivy (image)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
-          image-ref: "convoy:${{ github.sha }}"
+          image-ref: "getconvoy/convoy:latest"
           format: "json"
           output: "trivy-image.json"
           exit-code: "0"
