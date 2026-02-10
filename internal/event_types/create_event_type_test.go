@@ -133,7 +133,7 @@ func TestService_CreateDefaultEventType(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "*", eventType.Name)
 	require.Equal(t, project.UID, eventType.ProjectId)
-	require.Equal(t, []byte(`{}`), eventType.JSONSchema)
+	require.JSONEq(t, `{}`, string(eventType.JSONSchema))
 	require.Empty(t, eventType.Description)
 	require.Empty(t, eventType.Category)
 }

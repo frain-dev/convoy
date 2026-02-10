@@ -116,7 +116,7 @@ func (s *Service) CreateEventType(ctx context.Context, eventType *datastore.Proj
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to create event type")
-		return util.NewServiceError(500, errors.New("failed to create event type"))
+		return util.NewServiceError(500, err)
 	}
 
 	return nil
@@ -133,7 +133,7 @@ func (s *Service) CreateDefaultEventType(ctx context.Context, projectId string) 
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to create default event type")
-		return util.NewServiceError(500, errors.New("failed to create default event type"))
+		return util.NewServiceError(500, err)
 	}
 
 	return nil
@@ -153,7 +153,7 @@ func (s *Service) UpdateEventType(ctx context.Context, eventType *datastore.Proj
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to update event type")
-		return util.NewServiceError(500, errors.New("failed to update event type"))
+		return util.NewServiceError(500, err)
 	}
 
 	if result.RowsAffected() == 0 {
@@ -173,7 +173,7 @@ func (s *Service) DeprecateEventType(ctx context.Context, id, projectId string) 
 			return nil, util.NewServiceError(404, ErrEventTypeNotFound)
 		}
 		s.logger.WithError(err).Error("failed to deprecate event type")
-		return nil, util.NewServiceError(500, errors.New("failed to deprecate event type"))
+		return nil, util.NewServiceError(500, err)
 	}
 
 	eventType := rowToEventType(row)
@@ -190,7 +190,7 @@ func (s *Service) FetchEventTypeById(ctx context.Context, id, projectId string) 
 			return nil, util.NewServiceError(404, ErrEventTypeNotFound)
 		}
 		s.logger.WithError(err).Error("failed to fetch event type by id")
-		return nil, util.NewServiceError(500, errors.New("failed to fetch event type"))
+		return nil, util.NewServiceError(500, err)
 	}
 
 	eventType := rowToEventType(row)
@@ -207,7 +207,7 @@ func (s *Service) FetchEventTypeByName(ctx context.Context, name, projectId stri
 			return nil, util.NewServiceError(404, ErrEventTypeNotFound)
 		}
 		s.logger.WithError(err).Error("failed to fetch event type by name")
-		return nil, util.NewServiceError(500, errors.New("failed to fetch event type"))
+		return nil, util.NewServiceError(500, err)
 	}
 
 	eventType := rowToEventType(row)
@@ -221,7 +221,7 @@ func (s *Service) CheckEventTypeExists(ctx context.Context, name, projectId stri
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to check event type exists")
-		return false, util.NewServiceError(500, errors.New("failed to check event type"))
+		return false, util.NewServiceError(500, err)
 	}
 
 	return exists, nil
@@ -231,7 +231,7 @@ func (s *Service) FetchAllEventTypes(ctx context.Context, projectId string) ([]d
 	rows, err := s.repo.FetchAllEventTypes(ctx, projectId)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to fetch all event types")
-		return nil, util.NewServiceError(500, errors.New("failed to fetch event types"))
+		return nil, util.NewServiceError(500, err)
 	}
 
 	eventTypes := make([]datastore.ProjectEventType, 0, len(rows))

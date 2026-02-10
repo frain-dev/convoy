@@ -191,14 +191,20 @@ func seedEventType(t *testing.T, db database.Database, projectID, eventType stri
 	eventTypeRepo := event_types.New(log.NewLogger(os.Stdout), db)
 
 	et := &datastore.ProjectEventType{
-		UID:       ulid.Make().String(),
-		ProjectId: projectID,
-		Name:      eventType,
+		UID:        ulid.Make().String(),
+		ProjectId:  projectID,
+		Name:       eventType,
+		JSONSchema: []byte(`{}`),
 	}
 	err := eventTypeRepo.CreateEventType(ctx, et)
 	// Ignore duplicate key errors - event type may already exist from subscription creation
-	if err != nil && !strings.Contains(err.Error(), "duplicate key") && !strings.Contains(err.Error(), "SQLSTATE 23505") {
-		require.NoError(t, err)
+	if err != nil {
+		errMsg := err.Error()
+		if !strings.Contains(errMsg, "duplicate key") &&
+			!strings.Contains(errMsg, "SQLSTATE 23505") &&
+			!strings.Contains(errMsg, "idx_event_types_name_project_id") {
+			require.NoError(t, err)
+		}
 	}
 }
 
