@@ -25,10 +25,9 @@ var (
 
 // Service implements the meta event Service using SQLc-generated queries
 type Service struct {
-	logger   log.StdLogger
-	repo     repo.Querier      // SQLc-generated interface
-	db       *pgxpool.Pool     // Connection pool
-	legacyDB database.Database // For gradual migration if needed
+	logger log.StdLogger
+	repo   repo.Querier  // SQLc-generated interface
+	db     *pgxpool.Pool // Connection pool
 }
 
 // Ensure Service implements datastore.MetaEventRepository at compile time
@@ -37,10 +36,9 @@ var _ datastore.MetaEventRepository = (*Service)(nil)
 // New creates a new meta event Service
 func New(logger log.StdLogger, db database.Database) *Service {
 	return &Service{
-		logger:   logger,
-		repo:     repo.New(db.GetConn()),
-		db:       db.GetConn(),
-		legacyDB: db,
+		logger: logger,
+		repo:   repo.New(db.GetConn()),
+		db:     db.GetConn(),
 	}
 }
 
@@ -181,7 +179,7 @@ func (s *Service) LoadMetaEventsPaged(ctx context.Context, projectID string, fil
 	// Get date filters
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
-	// Convert cursor to pgtype.Text
+	// Convert cursor to pgtype.Text (empty string is handled in SQL query)
 	cursor := pgtype.Text{String: filter.Pageable.Cursor(), Valid: true}
 
 	// Query with unified pagination
