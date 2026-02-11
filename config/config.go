@@ -504,13 +504,19 @@ type HCPVaultConfig struct {
 	SecretName   string `json:"secret_name" envconfig:"CONVOY_HCP_SECRET_NAME"`
 }
 
+// BillingPlanConfig is a plan entry in billing config (e.g. for merging with API plans).
+type BillingPlanConfig struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
 type BillingConfiguration struct {
 	Enabled          bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
 	URL              string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
 	APIKey           string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
 	OrganisationHost string                       `json:"organisation_host" envconfig:"CONVOY_BILLING_ORGANISATION_HOST"`
 	PaymentProvider  PaymentProviderConfiguration `json:"payment_provider"`
-	Plans            []interface{}                `json:"plans,omitempty"`
+	Plans            []BillingPlanConfig         `json:"plans,omitempty"`
 }
 
 type PaymentProviderConfiguration struct {
