@@ -18,6 +18,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/metrics/timeseries"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -50,6 +51,7 @@ type EventDeliveryProcessorDeps struct {
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 	TracerBackend              tracer.Backend
 	OAuth2TokenService         OAuth2TokenService
+	MetricsRecorder            timeseries.MetricsRecorder
 }
 
 func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *asynq.Task) error {
@@ -168,10 +170,17 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			}
 		}
 
+		oldStatus := eventDelivery.Status
 		err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
 		if err != nil {
 			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 			return &DeliveryError{Err: err}
+		}
+
+		// Record status change metric
+		if deps.MetricsRecorder != nil {
+			edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+			_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.ProcessingEventStatus))
 		}
 
 		done := true
@@ -314,9 +323,16 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			requestLogger.Debugf("%s sent", eventDelivery.UID)
 			attemptStatus = true
 
+			oldStatus := eventDelivery.Status
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
 			eventDelivery.LatencySeconds = time.Since(eventDelivery.GetLatencyStartTime()).Seconds()
+
+			// Record status change metric
+			if deps.MetricsRecorder != nil {
+				edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+				_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.SuccessEventStatus))
+			}
 
 			// register latency
 			mm := metrics.GetDPInstance(deps.Licenser)
@@ -326,6 +342,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			done = false
 
 			// For at-most-once delivery, only retry on network failures
+			oldStatus := eventDelivery.Status
 			if eventDelivery.DeliveryMode == datastore.AtMostOnceDeliveryMode {
 				if retryableForAtMostOnceDeliveryMode(resp.StatusCode) {
 					// Network error - retry
@@ -334,6 +351,12 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 					eventDelivery.Metadata.NextSendTime = nextTime
 					attempts := eventDelivery.Metadata.NumTrials + 1
 
+					// Record status change metric
+					if deps.MetricsRecorder != nil {
+						edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+						_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.RetryEventStatus))
+					}
+
 					log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
 						nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 				} else {
@@ -341,6 +364,12 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 					eventDelivery.Status = datastore.FailureEventStatus
 					eventDelivery.Description = fmt.Sprintf("Endpoint returned status code %d", statusCode)
 					done = true
+
+					// Record status change metric
+					if deps.MetricsRecorder != nil {
+						edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+						_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.FailureEventStatus))
+					}
 				}
 			} else {
 				// At-least-once delivery - retry on any failure
@@ -348,6 +377,12 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				nextTime := time.Now().Add(delayDuration)
 				eventDelivery.Metadata.NextSendTime = nextTime
 				attempts := eventDelivery.Metadata.NumTrials + 1
+
+				// Record status change metric
+				if deps.MetricsRecorder != nil {
+					edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+					_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.RetryEventStatus))
+				}
 
 				log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
 					nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
@@ -382,15 +417,28 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		eventDelivery.Metadata.NumTrials++
 
 		if eventDelivery.Metadata.NumTrials >= eventDelivery.Metadata.RetryLimit {
+			oldStatus := eventDelivery.Status
 			if done {
 				if eventDelivery.Status != datastore.SuccessEventStatus {
 					log.FromContext(ctx).Error("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
 					eventDelivery.Status = datastore.FailureEventStatus
+
+					// Record status change metric
+					if deps.MetricsRecorder != nil {
+						edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+						_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.FailureEventStatus))
+					}
 				}
 			} else {
 				log.FromContext(ctx).Errorf("%s retry limit exceeded ", eventDelivery.UID)
 				eventDelivery.Description = "Retry limit exceeded"
 				eventDelivery.Status = datastore.FailureEventStatus
+
+				// Record status change metric
+				if deps.MetricsRecorder != nil {
+					edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+					_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.FailureEventStatus))
+				}
 			}
 
 			if project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
@@ -419,6 +467,18 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			return &DeliveryError{Err: fmt.Errorf("%w: %w", ErrDeliveryAttemptFailed, err)}
 		}
 
+		// Record delivery attempt metric
+		if deps.MetricsRecorder != nil {
+			attemptMetrics := &timeseries.DeliveryAttemptMetrics{
+				ProjectID:  eventDelivery.ProjectID,
+				EndpointID: endpoint.UID,
+				EventType:  string(eventDelivery.EventType),
+				Status:     string(eventDelivery.Status),
+				StatusCode: resp.StatusCode,
+			}
+			_ = deps.MetricsRecorder.RecordDeliveryAttempt(ctx, attemptMetrics)
+		}
+
 		err = deps.EventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to update message ", eventDelivery.UID)
@@ -439,4 +499,19 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 func retryableForAtMostOnceDeliveryMode(statusCode int) bool {
 	return statusCode < 100
+}
+
+// buildEventDeliveryMetrics creates EventDeliveryMetrics from delivery and project data
+func buildEventDeliveryMetrics(ed *datastore.EventDelivery, project *datastore.Project, endpoint *datastore.Endpoint, eventType string) *timeseries.EventDeliveryMetrics {
+	return &timeseries.EventDeliveryMetrics{
+		ProjectID:   ed.ProjectID,
+		ProjectName: project.Name,
+		EndpointID:  ed.EndpointID,
+		EventID:     ed.EventID,
+		EventType:   eventType,
+		SourceID:    "", // Source ID not available in slim event delivery
+		OrgID:       project.OrganisationID,
+		OrgName:     project.OrganisationID, // Can be enhanced if org name is available
+		Status:      string(ed.Status),
+	}
 }

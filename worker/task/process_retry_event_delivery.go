@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/metrics/timeseries"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -140,10 +141,17 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			}
 		}
 
+		oldStatus := eventDelivery.Status
 		err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
 		if err != nil {
 			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
 			return &EndpointError{Err: err, delay: defaultEventDelay}
+		}
+
+		// Record status change metric
+		if deps.MetricsRecorder != nil {
+			edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+			_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.ProcessingEventStatus))
 		}
 
 		var attempt datastore.DeliveryAttempt
@@ -300,13 +308,21 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			requestLogger.Debugf("%s sent", eventDelivery.UID)
 			attemptStatus = true
 
+			oldStatus := eventDelivery.Status
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
+
+			// Record status change metric
+			if deps.MetricsRecorder != nil {
+				edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+				_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.SuccessEventStatus))
+			}
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
 
 			// For at-most-once delivery, only retry on network failures
+			oldStatus := eventDelivery.Status
 			if eventDelivery.DeliveryMode == datastore.AtMostOnceDeliveryMode {
 				if retryableForAtMostOnceDeliveryMode(resp.StatusCode) {
 					// Network error - retry
@@ -315,6 +331,12 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 					eventDelivery.Metadata.NextSendTime = nextTime
 					attempts := eventDelivery.Metadata.NumTrials + 1
 
+					// Record status change metric
+					if deps.MetricsRecorder != nil {
+						edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+						_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.RetryEventStatus))
+					}
+
 					log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
 						nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 				} else {
@@ -322,6 +344,12 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 					eventDelivery.Status = datastore.FailureEventStatus
 					eventDelivery.Description = fmt.Sprintf("Endpoint returned status code %d", statusCode)
 					done = true
+
+					// Record status change metric
+					if deps.MetricsRecorder != nil {
+						edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+						_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.FailureEventStatus))
+					}
 				}
 			} else {
 				// At-least-once delivery - retry on any failure
@@ -329,6 +357,12 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 				nextTime := time.Now().Add(delayDuration)
 				eventDelivery.Metadata.NextSendTime = nextTime
 				attempts := eventDelivery.Metadata.NumTrials + 1
+
+				// Record status change metric
+				if deps.MetricsRecorder != nil {
+					edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+					_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.RetryEventStatus))
+				}
 
 				log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
 					nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
@@ -356,15 +390,28 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		eventDelivery.Metadata.NumTrials++
 
 		if eventDelivery.Metadata.NumTrials >= eventDelivery.Metadata.RetryLimit {
+			oldStatus := eventDelivery.Status
 			if done {
 				if eventDelivery.Status != datastore.SuccessEventStatus {
 					log.FromContext(ctx).Error("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
 					eventDelivery.Status = datastore.FailureEventStatus
+
+					// Record status change metric
+					if deps.MetricsRecorder != nil {
+						edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+						_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.FailureEventStatus))
+					}
 				}
 			} else {
 				log.FromContext(ctx).Errorf("%s retry limit exceeded ", eventDelivery.UID)
 				eventDelivery.Description = "Retry limit exceeded"
 				eventDelivery.Status = datastore.FailureEventStatus
+
+				// Record status change metric
+				if deps.MetricsRecorder != nil {
+					edMetrics := buildEventDeliveryMetrics(eventDelivery, project, endpoint, string(eventDelivery.EventType))
+					_ = deps.MetricsRecorder.RecordEventDeliveryStatusChange(ctx, edMetrics, string(oldStatus), string(datastore.FailureEventStatus))
+				}
 			}
 
 			if project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
@@ -392,6 +439,18 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 				Errorf("failed to create delivery attempt for event delivery with id: %s and delivery attempt: %s", eventDelivery.UID, attempt.ResponseData)
 			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
 			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+		}
+
+		// Record delivery attempt metric
+		if deps.MetricsRecorder != nil {
+			attemptMetrics := &timeseries.DeliveryAttemptMetrics{
+				ProjectID:  eventDelivery.ProjectID,
+				EndpointID: endpoint.UID,
+				EventType:  string(eventDelivery.EventType),
+				Status:     string(eventDelivery.Status),
+				StatusCode: resp.StatusCode,
+			}
+			_ = deps.MetricsRecorder.RecordDeliveryAttempt(ctx, attemptMetrics)
 		}
 
 		err = deps.EventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
