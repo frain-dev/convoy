@@ -94,6 +94,35 @@ func (c *Client) setAuthHeaders(req *http.Request, licenseKeyForHeader string) {
 	}
 }
 
+// doRequest executes req with retries, reads the body, and returns it on 2xx. opName is used for logging and error wrapping.
+func (c *Client) doRequest(req *http.Request, opName string) ([]byte, error) {
+	var lastErr error
+	for attempt := 0; attempt <= c.retryCount; attempt++ {
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		rb, err := io.ReadAll(resp.Body)
+		if err != nil && c.logger != nil {
+			c.logger.WithError(err).Error(opName + ": read response body failed")
+		}
+		if closeErr := resp.Body.Close(); closeErr != nil && c.logger != nil {
+			c.logger.WithError(closeErr).Error(opName + ": close response body failed")
+		}
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			lastErr = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(rb))
+			continue
+		}
+		return rb, nil
+	}
+	return nil, fmt.Errorf("%s: %w", opName, lastErr)
+}
+
 // GetRedirectURL returns the SSO redirect URL.
 func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, host, redirectURI string) (*RedirectURLResponse, error) {
 	if licenseKey == "" {
@@ -119,43 +148,21 @@ func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, host, redirectU
 	req.Header.Set("Content-Type", "application/json")
 	c.setAuthHeaders(req, licenseKey)
 
-	var lastErr error
-	for attempt := 0; attempt <= c.retryCount; attempt++ {
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		rb, err := io.ReadAll(resp.Body)
-		if err != nil && c.logger != nil {
-			c.logger.WithError(err).Error("SSO redirect: read response body failed")
-		}
-		if closeErr := resp.Body.Close(); closeErr != nil && c.logger != nil {
-			c.logger.WithError(closeErr).Error("SSO redirect: close response body failed")
-		}
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			lastErr = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(rb))
-			continue
-		}
-		var out RedirectURLResponse
-		if err := json.Unmarshal(rb, &out); err != nil {
-			lastErr = err
-			continue
-		}
-		if !out.Status {
-			lastErr = fmt.Errorf("SSO redirect failed: %s", out.Message)
-			continue
-		}
-		if out.Data.RedirectURL == "" && out.Data.AuthorizationURL != "" {
-			out.Data.RedirectURL = out.Data.AuthorizationURL
-		}
-		return &out, nil
+	rb, err := c.doRequest(req, "SSO redirect")
+	if err != nil {
+		return nil, err
 	}
-	return nil, lastErr
+	var out RedirectURLResponse
+	if err := json.Unmarshal(rb, &out); err != nil {
+		return nil, fmt.Errorf("SSO redirect: %w", err)
+	}
+	if !out.Status {
+		return nil, fmt.Errorf("SSO redirect failed: %s", out.Message)
+	}
+	if out.Data.RedirectURL == "" && out.Data.AuthorizationURL != "" {
+		out.Data.RedirectURL = out.Data.AuthorizationURL
+	}
+	return &out, nil
 }
 
 func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidationResponse, error) {
@@ -179,59 +186,38 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 	req.Header.Set("Content-Type", "application/json")
 	c.setAuthHeaders(req, c.licenseKey)
 
-	var lastErr error
-	for attempt := 0; attempt <= c.retryCount; attempt++ {
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		rb, err := io.ReadAll(resp.Body)
-		if err != nil && c.logger != nil {
-			c.logger.WithError(err).Error("SSO token validation: read response body failed")
-		}
-		if closeErr := resp.Body.Close(); closeErr != nil && c.logger != nil {
-			c.logger.WithError(closeErr).Error("SSO token validation: close response body failed")
-		}
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			lastErr = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(rb))
-			continue
-		}
-		var out tokenResponseFlex
-		if err := json.Unmarshal(rb, &out); err != nil {
-			lastErr = err
-			continue
-		}
-		if !out.Status {
-			return nil, fmt.Errorf("SSO token validation failed: %s", out.Message)
-		}
-		p := out.Data.Payload
-		if p == nil {
-			p = out.Data.Profile
-		}
-		if p == nil {
-			return nil, fmt.Errorf("email is missing from profile")
-		}
-		if p.ID == "" && p.ProfileID != "" {
-			p.ID = p.ProfileID
-		}
-		if p.OrganizationExternalID == "" && p.OrganizationID != "" {
-			p.OrganizationExternalID = p.OrganizationID
-		}
-		if p.Email == "" {
-			return nil, fmt.Errorf("email is missing from profile")
-		}
-		return &TokenValidationResponse{
-			Status:  out.Status,
-			Message: out.Message,
-			Data:    TokenValidationData{Payload: *p},
-		}, nil
+	rb, err := c.doRequest(req, "SSO token validation")
+	if err != nil {
+		return nil, err
 	}
-	return nil, lastErr
+	var out tokenResponseFlex
+	if err := json.Unmarshal(rb, &out); err != nil {
+		return nil, fmt.Errorf("SSO token validation: %w", err)
+	}
+	if !out.Status {
+		return nil, fmt.Errorf("SSO token validation failed: %s", out.Message)
+	}
+	p := out.Data.Payload
+	if p == nil {
+		p = out.Data.Profile
+	}
+	if p == nil {
+		return nil, fmt.Errorf("email is missing from profile")
+	}
+	if p.ID == "" && p.ProfileID != "" {
+		p.ID = p.ProfileID
+	}
+	if p.OrganizationExternalID == "" && p.OrganizationID != "" {
+		p.OrganizationExternalID = p.OrganizationID
+	}
+	if p.Email == "" {
+		return nil, fmt.Errorf("email is missing from profile")
+	}
+	return &TokenValidationResponse{
+		Status:  out.Status,
+		Message: out.Message,
+		Data:    TokenValidationData{Payload: *p},
+	}, nil
 }
 
 func (c *Client) GetAdminPortalURL(ctx context.Context, licenseKey, returnURL, successURL string) (*AdminPortalResponse, error) {
@@ -258,40 +244,18 @@ func (c *Client) GetAdminPortalURL(ctx context.Context, licenseKey, returnURL, s
 	req.Header.Set("Content-Type", "application/json")
 	c.setAuthHeaders(req, licenseKey)
 
-	var lastErr error
-	for attempt := 0; attempt <= c.retryCount; attempt++ {
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		rb, err := io.ReadAll(resp.Body)
-		if err != nil && c.logger != nil {
-			c.logger.WithError(err).Error("SSO admin portal: read response body failed")
-		}
-		if closeErr := resp.Body.Close(); closeErr != nil && c.logger != nil {
-			c.logger.WithError(closeErr).Error("SSO admin portal: close response body failed")
-		}
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			lastErr = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(rb))
-			continue
-		}
-		var out AdminPortalResponse
-		if err := json.Unmarshal(rb, &out); err != nil {
-			lastErr = err
-			continue
-		}
-		if !out.Status {
-			lastErr = fmt.Errorf("SSO admin portal failed: %s", out.Message)
-			continue
-		}
-		return &out, nil
+	rb, err := c.doRequest(req, "SSO admin portal")
+	if err != nil {
+		return nil, err
 	}
-	return nil, lastErr
+	var out AdminPortalResponse
+	if err := json.Unmarshal(rb, &out); err != nil {
+		return nil, fmt.Errorf("SSO admin portal: %w", err)
+	}
+	if !out.Status {
+		return nil, fmt.Errorf("SSO admin portal failed: %s", out.Message)
+	}
+	return &out, nil
 }
 
 type tokenResponseFlex struct {
