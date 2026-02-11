@@ -2,6 +2,7 @@ package service
 
 type RedirectURLRequest struct {
 	CallbackURL string `json:"callback_url"`
+	Host        string `json:"host,omitempty"`
 	OrgID       string `json:"org_id,omitempty"`
 }
 

@@ -516,7 +516,7 @@ type BillingConfiguration struct {
 	APIKey           string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
 	OrganisationHost string                       `json:"organisation_host" envconfig:"CONVOY_BILLING_ORGANISATION_HOST"`
 	PaymentProvider  PaymentProviderConfiguration `json:"payment_provider"`
-	Plans            []BillingPlanConfig         `json:"plans,omitempty"`
+	Plans            []BillingPlanConfig          `json:"plans,omitempty"`
 }
 
 type PaymentProviderConfiguration struct {

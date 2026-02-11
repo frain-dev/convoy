@@ -27,6 +27,8 @@ type CreateOrganisationService struct {
 	User          *datastore.User
 	Licenser      license.Licenser
 	RoleType      auth.RoleType
+	// Logger is required for RunBillingOrganisationSync when billing is enabled.
+	Logger log.StdLogger
 }
 
 var ErrOrgLimit = errors.New("your instance has reached it's organisation limit, upgrade to create new organisations")
@@ -95,6 +97,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 			co.User.Email,
 			hostForBilling,
 			co.OrgRepo,
+			co.Logger,
 		)
 	}
 
@@ -105,6 +108,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 // validates with the license service, encrypts the payload, and updates the org's license data.
 // It is called in a goroutine from CreateOrganisationService.Run; it can also be called
 // synchronously from tests with a mock billing client and org repo.
+// logger must be non-nil.
 func RunBillingOrganisationSync(
 	ctx context.Context,
 	billingClient billing.Client,
@@ -113,7 +117,11 @@ func RunBillingOrganisationSync(
 	userEmail string,
 	billingHost string,
 	orgRepo datastore.OrganisationRepository,
+	logger log.StdLogger,
 ) {
+	if logger == nil {
+		panic("RunBillingOrganisationSync: logger is required and must not be nil")
+	}
 	orgData := billing.BillingOrganisation{
 		Name:         org.Name,
 		ExternalID:   org.UID,
@@ -126,7 +134,7 @@ func RunBillingOrganisationSync(
 		key = resp.Data.LicenseKey
 	}
 	if createErr != nil {
-		log.FromContext(ctx).WithError(createErr).Error("create_organisation: CreateOrganisation failed")
+		logger.WithError(createErr).Error("create_organisation: CreateOrganisation failed")
 	}
 	if key == "" && createErr == nil {
 		licResp, licErr := billingClient.GetOrganisationLicense(ctx, org.UID)
@@ -134,7 +142,7 @@ func RunBillingOrganisationSync(
 			key = licResp.Data.Key
 		}
 		if licErr != nil {
-			log.FromContext(ctx).WithError(licErr).Error("create_organisation: GetOrganisationLicense failed")
+			logger.WithError(licErr).Error("create_organisation: GetOrganisationLicense failed")
 		}
 	}
 	if key == "" {
@@ -153,10 +161,10 @@ func RunBillingOrganisationSync(
 	payload := &license.LicenseDataPayload{Key: key, Entitlements: entitlements}
 	enc, encErr := license.EncryptLicenseData(org.UID, payload)
 	if encErr != nil {
-		log.FromContext(ctx).WithError(encErr).Error("create_organisation: EncryptLicenseData failed")
+		logger.WithError(encErr).Error("create_organisation: EncryptLicenseData failed")
 		return
 	}
 	if updateErr := orgRepo.UpdateOrganisationLicenseData(ctx, org.UID, enc); updateErr != nil {
-		log.FromContext(ctx).WithError(updateErr).Error("create_organisation: UpdateOrganisationLicenseData failed")
+		logger.WithError(updateErr).Error("create_organisation: UpdateOrganisationLicenseData failed")
 	}
 }

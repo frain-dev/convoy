@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *datastore.OrganisationRequest, user *datastore.User) *CreateOrganisationService {
@@ -193,7 +194,7 @@ func TestRunBillingOrganisationSync(t *testing.T) {
 			CreateOrganisationLicenseKey: "test-license-key-from-billing",
 		}
 
-		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo)
+		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.FromContext(ctx))
 
 		require.NotEmpty(t, capturedLicenseData, "UpdateOrganisationLicenseData should be called with encrypted payload")
 		payload, err := license.DecryptLicenseData(org.UID, capturedLicenseData)
@@ -211,6 +212,6 @@ func TestRunBillingOrganisationSync(t *testing.T) {
 		mockBilling := &billing.MockBillingClient{}
 		// CreateOrganisationLicenseKey and GetOrganisationLicenseKey left empty
 
-		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo)
+		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.FromContext(ctx))
 	})
 }

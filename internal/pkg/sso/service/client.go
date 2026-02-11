@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 const (
@@ -30,6 +32,8 @@ type Config struct {
 	APIKey          string
 	LicenseKey      string
 	OrgID           string
+	// Logger is optional; when set, read/close errors during requests are logged.
+	Logger log.StdLogger
 }
 
 type Client struct {
@@ -43,6 +47,7 @@ type Client struct {
 	apiKey          string
 	licenseKey      string
 	orgID           string
+	logger          log.StdLogger
 }
 
 func NewClient(cfg Config) *Client {
@@ -75,6 +80,7 @@ func NewClient(cfg Config) *Client {
 		apiKey:          cfg.APIKey,
 		licenseKey:      cfg.LicenseKey,
 		orgID:           cfg.OrgID,
+		logger:          cfg.Logger,
 	}
 }
 
@@ -88,7 +94,8 @@ func (c *Client) setAuthHeaders(req *http.Request, licenseKeyForHeader string) {
 	}
 }
 
-func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, _, redirectURI string) (*RedirectURLResponse, error) {
+// GetRedirectURL returns the SSO redirect URL.
+func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, host, redirectURI string) (*RedirectURLResponse, error) {
 	if licenseKey == "" {
 		return nil, fmt.Errorf("license key is required")
 	}
@@ -96,11 +103,14 @@ func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, _, redirectURI 
 		return nil, fmt.Errorf("redirect URI is required")
 	}
 
-	body := RedirectURLRequest{CallbackURL: redirectURI}
+	body := RedirectURLRequest{CallbackURL: redirectURI, Host: host}
 	if c.apiKey != "" && c.orgID != "" {
 		body.OrgID = c.orgID
 	}
-	bodyBytes, _ := json.Marshal(body)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal redirect request: %w", err)
+	}
 	url := c.host + c.redirectPath
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
@@ -116,8 +126,17 @@ func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, _, redirectURI 
 			lastErr = err
 			continue
 		}
-		rb, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
+		rb, err := io.ReadAll(resp.Body)
+		if err != nil && c.logger != nil {
+			c.logger.WithError(err).Error("SSO redirect: read response body failed")
+		}
+		if closeErr := resp.Body.Close(); closeErr != nil && c.logger != nil {
+			c.logger.WithError(closeErr).Error("SSO redirect: close response body failed")
+		}
+		if err != nil {
+			lastErr = err
+			continue
+		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			lastErr = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(rb))
 			continue
@@ -148,7 +167,10 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 	if c.apiKey != "" && c.orgID != "" {
 		body.OrgID = c.orgID
 	}
-	bodyBytes, _ := json.Marshal(body)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal token validation request: %w", err)
+	}
 	url := c.host + c.tokenPath
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
@@ -164,8 +186,17 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 			lastErr = err
 			continue
 		}
-		rb, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
+		rb, err := io.ReadAll(resp.Body)
+		if err != nil && c.logger != nil {
+			c.logger.WithError(err).Error("SSO token validation: read response body failed")
+		}
+		if closeErr := resp.Body.Close(); closeErr != nil && c.logger != nil {
+			c.logger.WithError(closeErr).Error("SSO token validation: close response body failed")
+		}
+		if err != nil {
+			lastErr = err
+			continue
+		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			lastErr = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(rb))
 			continue
@@ -234,8 +265,17 @@ func (c *Client) GetAdminPortalURL(ctx context.Context, licenseKey, returnURL, s
 			lastErr = err
 			continue
 		}
-		rb, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
+		rb, err := io.ReadAll(resp.Body)
+		if err != nil && c.logger != nil {
+			c.logger.WithError(err).Error("SSO admin portal: read response body failed")
+		}
+		if closeErr := resp.Body.Close(); closeErr != nil && c.logger != nil {
+			c.logger.WithError(closeErr).Error("SSO admin portal: close response body failed")
+		}
+		if err != nil {
+			lastErr = err
+			continue
+		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			lastErr = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(rb))
 			continue
