@@ -13,27 +13,28 @@ import (
 )
 
 func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
-	// Prefer per-org entitlements when an org is specified (query or header).
-	orgID := r.URL.Query().Get("orgID")
-	if util.IsStringEmpty(orgID) {
-		orgID = r.Header.Get("X-Organisation-Id")
-	}
-	if !util.IsStringEmpty(orgID) {
-		var org *datastore.Organisation
-		var err error
-		if h.A.OrgRepo != nil {
-			org, err = h.A.OrgRepo.FetchOrganisationByID(r.Context(), orgID)
-		} else {
-			orgRepo := organisations.New(h.A.Logger, h.A.DB)
-			org, err = orgRepo.FetchOrganisationByID(r.Context(), orgID)
+	if h.A.Cfg.Billing.Enabled {
+		orgID := r.URL.Query().Get("orgID")
+		if util.IsStringEmpty(orgID) {
+			orgID = r.Header.Get("X-Organisation-Id")
 		}
-		if err == nil && org != nil && org.LicenseData != "" {
-			payload, decErr := license.DecryptLicenseData(org.UID, org.LicenseData)
-			if decErr == nil && payload != nil && len(payload.Entitlements) > 0 {
-				v, encErr := license.FeatureListFromEntitlements(payload.Entitlements)
-				if encErr == nil {
-					_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
-					return
+		if !util.IsStringEmpty(orgID) {
+			var org *datastore.Organisation
+			var err error
+			if h.A.OrgRepo != nil {
+				org, err = h.A.OrgRepo.FetchOrganisationByID(r.Context(), orgID)
+			} else {
+				orgRepo := organisations.New(h.A.Logger, h.A.DB)
+				org, err = orgRepo.FetchOrganisationByID(r.Context(), orgID)
+			}
+			if err == nil && org != nil && org.LicenseData != "" {
+				payload, decErr := license.DecryptLicenseData(org.UID, org.LicenseData)
+				if decErr == nil && payload != nil && len(payload.Entitlements) > 0 {
+					v, encErr := license.FeatureListFromEntitlements(payload.Entitlements)
+					if encErr == nil {
+						_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
+						return
+					}
 				}
 			}
 		}

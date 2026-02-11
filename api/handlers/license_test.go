@@ -10,6 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/mocks"
@@ -64,6 +65,7 @@ func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
+			Cfg:      config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			Licenser: mocks.NewMockLicenser(ctrl), // not used on org path
 			OrgRepo:  mockOrgRepo,
 		},
@@ -106,7 +108,10 @@ func TestGetLicenseFeatures_OrgLevel_Header(t *testing.T) {
 
 	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	handler := &Handler{
-		A: &types.APIOptions{OrgRepo: mockOrgRepo},
+		A: &types.APIOptions{
+			Cfg:     config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
+			OrgRepo: mockOrgRepo,
+		},
 	}
 
 	mockOrgRepo.EXPECT().
@@ -141,7 +146,11 @@ func TestGetLicenseFeatures_OrgLevel_FallbackToInstanceWhenNoLicenseData(t *test
 	instanceFeatures := json.RawMessage(`{"EnterpriseSSO":false}`)
 
 	handler := &Handler{
-		A: &types.APIOptions{Licenser: mockLicenser, OrgRepo: mockOrgRepo},
+		A: &types.APIOptions{
+			Cfg:      config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
+			Licenser: mockLicenser,
+			OrgRepo:  mockOrgRepo,
+		},
 	}
 
 	mockOrgRepo.EXPECT().

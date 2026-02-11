@@ -86,13 +86,15 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
-		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-		BillingClient: h.A.BillingClient,
-		Logger:        h.A.Logger,
-		Cfg:           h.A.Cfg,
-	})
+	if configuration.Billing.Enabled {
+		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
+			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
+			BillingClient: h.A.BillingClient,
+			Logger:        h.A.Logger,
+			Cfg:           h.A.Cfg,
+		})
+	}
 
 	u := &models.LoginUserResponse{
 		User:  user,
@@ -205,13 +207,15 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
-		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-		BillingClient: h.A.BillingClient,
-		Logger:        h.A.Logger,
-		Cfg:           h.A.Cfg,
-	})
+	if configuration.Billing.Enabled {
+		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
+			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
+			BillingClient: h.A.BillingClient,
+			Logger:        h.A.Logger,
+			Cfg:           h.A.Cfg,
+		})
+	}
 
 	u := &models.LoginUserResponse{
 		User:  user,
