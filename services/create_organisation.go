@@ -137,25 +137,26 @@ func RunBillingOrganisationSync(
 			log.FromContext(ctx).WithError(licErr).Error("create_organisation: GetOrganisationLicense failed")
 		}
 	}
-	if key != "" {
-		var entitlements map[string]interface{}
-		lc := licensesvc.NewClient(licensesvc.Config{
-			Host:         cfg.LicenseService.Host,
-			ValidatePath: cfg.LicenseService.ValidatePath,
-			Timeout:      cfg.LicenseService.Timeout,
-			RetryCount:   cfg.LicenseService.RetryCount,
-		})
-		if data, valErr := lc.ValidateLicense(ctx, key); valErr == nil {
-			entitlements, _ = data.GetEntitlementsMap()
-		}
-		payload := &license.LicenseDataPayload{Key: key, Entitlements: entitlements}
-		enc, encErr := license.EncryptLicenseData(org.UID, payload)
-		if encErr == nil {
-			if updateErr := orgRepo.UpdateOrganisationLicenseData(ctx, org.UID, enc); updateErr != nil {
-				log.FromContext(ctx).WithError(updateErr).Error("create_organisation: UpdateOrganisationLicenseData failed")
-			}
-		} else {
-			log.FromContext(ctx).WithError(encErr).Error("create_organisation: EncryptLicenseData failed")
-		}
+	if key == "" {
+		return
+	}
+	var entitlements map[string]interface{}
+	lc := licensesvc.NewClient(licensesvc.Config{
+		Host:         cfg.LicenseService.Host,
+		ValidatePath: cfg.LicenseService.ValidatePath,
+		Timeout:      cfg.LicenseService.Timeout,
+		RetryCount:   cfg.LicenseService.RetryCount,
+	})
+	if data, valErr := lc.ValidateLicense(ctx, key); valErr == nil {
+		entitlements, _ = data.GetEntitlementsMap()
+	}
+	payload := &license.LicenseDataPayload{Key: key, Entitlements: entitlements}
+	enc, encErr := license.EncryptLicenseData(org.UID, payload)
+	if encErr != nil {
+		log.FromContext(ctx).WithError(encErr).Error("create_organisation: EncryptLicenseData failed")
+		return
+	}
+	if updateErr := orgRepo.UpdateOrganisationLicenseData(ctx, org.UID, enc); updateErr != nil {
+		log.FromContext(ctx).WithError(updateErr).Error("create_organisation: UpdateOrganisationLicenseData failed")
 	}
 }

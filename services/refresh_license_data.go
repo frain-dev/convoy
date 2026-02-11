@@ -35,11 +35,17 @@ func RefreshLicenseDataForUser(userID string, deps RefreshLicenseDataDeps) {
 	}
 	logger := deps.Logger.WithFields(log.Fields{"user_id": userID})
 
+	// Use first-page cursor: empty cursor would make the query use o.id <= '' which matches no ULID org ids.
 	orgs, _, err := deps.OrgMemberRepo.LoadUserOrganisationsPaged(ctx, userID, datastore.Pageable{
-		PerPage: 100,
+		PerPage:    100,
+		Direction:  datastore.Next,
+		NextCursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
 	})
 	if err != nil {
 		logger.WithError(err).Warn("refresh license data: failed to load user organisations")
+		return
+	}
+	if len(orgs) == 0 {
 		return
 	}
 

@@ -19,6 +19,8 @@ export class OrganisationSettingsComponent implements OnInit {
 	isEditingOrganisation = false;
 	isDeletingOrganisation = false;
 	configuringSSO = false;
+	/** True when this org's license has enterprise_sso; false or null when not or unknown. */
+	orgHasEnterpriseSSO: boolean | null = null;
 	editOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
@@ -64,7 +66,28 @@ export class OrganisationSettingsComponent implements OnInit {
 			this.editOrganisationForm.patchValue({
 				name: organisationDetails.name
 			});
+			this.loadOrgLicenseForSSO();
 		}
+	}
+
+	/** Load this org's license features so Configure SSO visibility uses org license, not instance. */
+	private loadOrgLicenseForSSO() {
+		if (!this.organisationId) return;
+		this.licenseService
+			.getLicenses(this.organisationId)
+			.then((res) => {
+				const d = res?.data as Record<string, unknown> | undefined;
+				if (!d) {
+					this.orgHasEnterpriseSSO = false;
+					return;
+				}
+				const v = d['EnterpriseSSO'];
+				if (v === true) this.orgHasEnterpriseSSO = true;
+				else if (v && typeof v === 'object' && 'allowed' in v && (v as { allowed: boolean }).allowed === true)
+					this.orgHasEnterpriseSSO = true;
+				else this.orgHasEnterpriseSSO = false;
+			})
+			.catch(() => (this.orgHasEnterpriseSSO = false));
 	}
 
 	async configureSSO() {
