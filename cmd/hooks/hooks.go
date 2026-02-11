@@ -26,6 +26,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -36,6 +37,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/telemetry"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
@@ -167,7 +169,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		hooks.RegisterHook(datastore.ProjectUpdated, projectListener.AfterUpdate)
 		projectRepo := projects.New(lo, postgresDB)
 
-		metaEventRepo := postgres.NewMetaEventRepo(postgresDB)
+		metaEventRepo := meta_events.New(lo, postgresDB)
 		attemptsRepo := delivery_attempts.New(lo, postgresDB)
 		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
 		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo, attemptsRepo)
@@ -236,7 +238,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				LicenseKey:  cfg.LicenseKey,
 				Client:      licenseClient,
 				OrgRepo:     organisations.New(lo, app.DB),
-				UserRepo:    postgres.NewUserRepo(app.DB),
+				UserRepo:    users.New(log.NewLogger(io.Discard), app.DB),
 				ProjectRepo: projectRepo,
 				Logger:      lo,
 			},
@@ -909,7 +911,7 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 }
 
 func ensureDefaultUser(ctx context.Context, a *cli.App) error {
-	userRepo := postgres.NewUserRepo(a.DB)
+	userRepo := users.New(a.Logger, a.DB)
 	count, err := userRepo.CountUsers(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to count users: %v", err)

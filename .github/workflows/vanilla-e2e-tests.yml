@@ -1,0 +1,77 @@
+name: Build and Run Vanilla E2E tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pubsub-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ 1.24.x ]
+        postgres-version: [ "15" ]
+        redis-version: [ "6.2.6" ]
+
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres-version }}
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: convoy
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_MAX_CONNECTIONS: 2000
+        options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
+
+    steps:
+      - name: Start Redis v${{ matrix.redis-version }}
+        uses: supercharge/redis-github-action@4b67a313c69bc7a90f162e8d810392fffe10d3b5 # 1.4.0
+        with:
+          redis-version: ${{ matrix.redis-version }}
+          redis-port: 6379
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Cache go modules
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+
+      - name: Check out code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Get and verify dependencies
+        run: go mod download && go mod verify
+
+      - name: Migrate Postgres
+        run: go run ./cmd migrate up
+        env:
+          CONVOY_DB_SCHEME: postgres
+          CONVOY_DB_HOST: localhost
+          CONVOY_DB_USERNAME: postgres
+          CONVOY_DB_PASSWORD: postgres
+          CONVOY_DB_DATABASE: convoy
+          CONVOY_DB_OPTIONS: sslmode=disable&connect_timeout=30
+          CONVOY_DB_PORT: 5432
+          CONVOY_REDIS_SCHEME: redis
+          CONVOY_REDIS_HOST: localhost
+          CONVOY_REDIS_PORT: 6379
+
+      - name: Run Fast E2E tests (testcontainers)
+        run: make test_e2e_fast
+        env:
+          TEST_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+          CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+          CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
+          CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true

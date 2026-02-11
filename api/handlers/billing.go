@@ -16,9 +16,9 @@ import (
 
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -61,7 +61,7 @@ func (h *BillingHandler) getOwnerEmail(ctx context.Context, orgID string) string
 		return ""
 	}
 
-	userRepo := postgres.NewUserRepo(h.A.DB)
+	userRepo := users.New(h.A.Logger, h.A.DB)
 	owner, err := userRepo.FindUserByID(ctx, org.OwnerID)
 	if err != nil {
 		return ""

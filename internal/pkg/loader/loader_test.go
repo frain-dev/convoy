@@ -10,10 +10,10 @@ import (
 
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -201,7 +201,7 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 			ctx, l := newLoader(t)
 			table := memorystore.NewTable()
 
-			subRepo := postgres.NewSubscriptionRepo(l.Database)
+			subRepo := subscriptions.New(log.NewLogger(os.Stdout), l.Database)
 			projectRepo := projects.New(log.NewLogger(os.Stdout), l.Database)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, l.Logger, 1000)
@@ -221,7 +221,7 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 			ctx := context.Background()
 			logger := log.NewLogger(os.Stdout)
 
-			subRepo := postgres.NewSubscriptionRepo(testData.DB)
+			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
 			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
@@ -250,7 +250,7 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 			ctx := context.Background()
 			logger := log.NewLogger(os.Stdout)
 
-			subRepo := postgres.NewSubscriptionRepo(testData.DB)
+			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
 			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
@@ -300,7 +300,7 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 			ctx := context.Background()
 			logger := log.NewLogger(os.Stdout)
 
-			subRepo := postgres.NewSubscriptionRepo(testData.DB)
+			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
 			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
@@ -343,7 +343,7 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 			ctx := context.Background()
 			logger := log.NewLogger(os.Stdout)
 
-			subRepo := postgres.NewSubscriptionRepo(testData.DB)
+			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
 			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
@@ -387,7 +387,7 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 			ctx := context.Background()
 			logger := log.NewLogger(os.Stdout)
 
-			subRepo := postgres.NewSubscriptionRepo(testData.DB)
+			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
 			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
@@ -427,7 +427,7 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 			ctx := context.Background()
 			logger := log.NewLogger(os.Stdout)
 
-			subRepo := postgres.NewSubscriptionRepo(testData.DB)
+			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
 			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
@@ -446,7 +446,7 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 			ctx := context.Background()
 			logger := log.NewLogger(os.Stdout)
 
-			subRepo := postgres.NewSubscriptionRepo(testData.DB)
+			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
 			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
 
 			// Test with very small batch size

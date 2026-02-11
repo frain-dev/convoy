@@ -12,6 +12,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// RabbitMQRestartFunc is a function type for restarting RabbitMQ container
+type RabbitMQRestartFunc func(ctx context.Context) error
+
 type Environment struct {
 	CloneTestDatabase     PostgresDBCloneFunc
 	NewRedisClient        RedisClientFunc
@@ -21,6 +24,7 @@ type Environment struct {
 	NewLocalStackConnect  LocalStackConnectionFunc
 	NewKafkaConnect       KafkaConnectionFunc
 	NewPubSubEmulatorHost PubSubEmulatorHostFunc
+	RestartRabbitMQ       RabbitMQRestartFunc
 }
 
 func Launch(ctx context.Context) (*Environment, func() error, error) {
@@ -76,6 +80,7 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 		NewLocalStackConnect:  localstackFactory,
 		NewKafkaConnect:       kafkaFactory,
 		NewPubSubEmulatorHost: pubsubFactory,
+		RestartRabbitMQ:       rabbitmqcontainer.Restart,
 	}
 
 	return res, func() error {

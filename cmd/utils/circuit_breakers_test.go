@@ -11,11 +11,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/users"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -122,7 +122,7 @@ func TestCircuitBreakersGet_NotFound(t *testing.T) {
 func TestCircuitBreakersUpdate_Integration(t *testing.T) {
 	ctx, app := newInfra(t)
 
-	userRepo := postgres.NewUserRepo(app.Database)
+	userRepo := users.New(app.Logger, app.Database)
 	user := &datastore.User{UID: "cli-user-1", Email: "cli-user-1@test.local"}
 	_ = userRepo.CreateUser(ctx, user)
 
@@ -185,9 +185,9 @@ func TestCircuitBreakersUpdate_EdgeCases(t *testing.T) {
 	ctx, app := newInfra(t)
 	now := time.Now().UnixNano()
 
-	userRepo := postgres.NewUserRepo(app.Database)
+	userRepo := users.New(app.Logger, app.Database)
 	orgRepo := organisations.New(app.Logger, app.Database)
-	projectRepo := projects.New(log.NewLogger(os.Stdout), app.Database)
+	projectRepo := projects.New(app.Logger, app.Database)
 
 	// base seed (unique ids)
 	user := &datastore.User{UID: fmt.Sprintf("cli-user-%d", now), Email: fmt.Sprintf("cli-user-%d@test.local", now)}
