@@ -67,21 +67,18 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 
 	user, token, err := lu.LoginSSOUser(r.Context(), tokenResp)
 	if err != nil {
-		if errors.Is(err, datastore.ErrUserNotFound) {
-			user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
-			if err != nil {
-				if errors.Is(err, services.ErrUserAlreadyExist) {
-					h.A.Logger.WithError(err).Errorf("SSO callback - user already exists: %v", err)
-					_ = render.Render(w, r, util.NewErrorResponse("User already exists", http.StatusConflict))
-					return
-				}
-				h.A.Logger.WithError(err).Errorf("SSO callback registration failed: %v", err)
-				_ = render.Render(w, r, util.NewErrorResponse("Registration failed", http.StatusForbidden))
-				return
-			}
-		} else {
+		if !errors.Is(err, datastore.ErrUserNotFound) {
 			h.A.Logger.WithError(err).Errorf("SSO callback login failed: %v", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
+			return
+		}
+		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
+		if err != nil && errors.Is(err, services.ErrUserAlreadyExist) {
+			user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
+		}
+		if err != nil {
+			h.A.Logger.WithError(err).Errorf("SSO callback registration failed: %v", err)
+			_ = render.Render(w, r, util.NewErrorResponse("Registration failed", http.StatusForbidden))
 			return
 		}
 	}
