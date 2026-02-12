@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/go-chi/render"
 
@@ -14,18 +17,10 @@ import (
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/pkg/sso/service"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-)
-
-type (
-	SSOAuthIntent string
-)
-
-const (
-	LoginIntent    SSOAuthIntent = "login"
-	RegisterIntent SSOAuthIntent = "register"
 )
 
 func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
@@ -51,17 +46,8 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Get Redirect successful", resp, http.StatusOK))
 }
 
-func (h *Handler) RedeemLoginSSOToken(w http.ResponseWriter, r *http.Request) {
-	h.redeemSSOToken(w, r, LoginIntent)
-}
-
-func (h *Handler) RedeemRegisterSSOToken(w http.ResponseWriter, r *http.Request) {
-	h.redeemSSOToken(w, r, RegisterIntent)
-}
-
-func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent SSOAuthIntent) {
+func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
-
 	lu := services.LoginUserSSOService{
 		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
@@ -79,41 +65,99 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 		return
 	}
 
-	var user *datastore.User
-	var token *jwt.Token
-	if intent == RegisterIntent {
-		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
-		if err != nil {
-			if errors.Is(err, services.ErrUserAlreadyExist) {
-				h.A.Logger.WithError(err).Errorf("SSO user registration failed - user already exists: %v", err)
-				_ = render.Render(w, r, util.NewErrorResponse("User already exists", http.StatusConflict))
-				return
-			}
-
-			h.A.Logger.WithError(err).Errorf("SSO user registration failed: %v", err)
-			_ = render.Render(w, r, util.NewErrorResponse("Registration failed", http.StatusForbidden))
-			return
-		}
-	} else {
-		user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
-		if err != nil {
-			if errors.Is(err, datastore.ErrUserNotFound) {
-				h.A.Logger.WithError(err).Errorf("SSO login failed - user not found: %v", err)
-				_ = render.Render(w, r, util.NewErrorResponse("Invalid credentials", http.StatusNotFound))
-				return
-			}
-			h.A.Logger.WithError(err).Errorf("SSO login failed: %v", err)
+	user, token, err := lu.LoginSSOUser(r.Context(), tokenResp)
+	if err != nil {
+		if !errors.Is(err, datastore.ErrUserNotFound) {
+			h.A.Logger.WithError(err).Errorf("SSO callback login failed: %v", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 			return
 		}
+		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
+		if err != nil && errors.Is(err, services.ErrUserAlreadyExist) {
+			user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
+		}
+		if err != nil {
+			h.A.Logger.WithError(err).Errorf("SSO callback registration failed: %v", err)
+			_ = render.Render(w, r, util.NewErrorResponse("Registration failed", http.StatusForbidden))
+			return
+		}
+	}
+
+	if configuration.Billing.Enabled {
+		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
+			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
+			BillingClient: h.A.BillingClient,
+			Logger:        h.A.Logger,
+			Cfg:           h.A.Cfg,
+		})
 	}
 
 	u := &models.LoginUserResponse{
 		User:  user,
 		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 	}
-
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
+}
+
+type adminPortalRequest struct {
+	ReturnURL  string `json:"return_url"`
+	SuccessURL string `json:"success_url"`
+}
+
+func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
+	configuration := h.A.Cfg
+	if configuration.LicenseKey == "" {
+		h.A.Logger.Error("SSO admin portal: missing license key")
+		_ = render.Render(w, r, util.NewErrorResponse("SSO not configured", http.StatusForbidden))
+		return
+	}
+
+	var body adminPortalRequest
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	returnURL := strings.TrimSpace(body.ReturnURL)
+	successURL := strings.TrimSpace(body.SuccessURL)
+	if returnURL == "" {
+		returnURL = configuration.Host
+		if returnURL != "" && !strings.HasPrefix(returnURL, "http://") && !strings.HasPrefix(returnURL, "https://") {
+			returnURL = "https://" + returnURL
+		}
+	}
+	if returnURL == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("return_url is required", http.StatusBadRequest))
+		return
+	}
+
+	sc := service.Config{
+		Host:            configuration.SSOService.Host,
+		RedirectPath:    configuration.SSOService.RedirectPath,
+		TokenPath:       configuration.SSOService.TokenPath,
+		AdminPortalPath: configuration.SSOService.AdminPortalPath,
+		Timeout:         configuration.SSOService.Timeout,
+		RetryCount:      configuration.SSOService.RetryCount,
+	}
+	if configuration.Billing.Enabled && configuration.Billing.APIKey != "" {
+		sc.APIKey = configuration.Billing.APIKey
+		sc.LicenseKey = configuration.LicenseKey
+		sc.OrgID = r.Header.Get("X-Organisation-Id")
+	}
+	ssoClient := service.NewClient(sc)
+
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+
+	resp, err := ssoClient.GetAdminPortalURL(ctx, configuration.LicenseKey, returnURL, successURL)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("SSO admin portal failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Failed to get SSO admin portal URL", http.StatusForbidden))
+		return
+	}
+
+	data := map[string]interface{}{
+		"portal_url": resp.Data.PortalURL,
+		"expires_in": resp.Data.ExpiresIn,
+	}
+	_ = render.Render(w, r, util.NewServerResponse("Admin portal URL generated", data, http.StatusOK))
 }
 
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -158,6 +202,16 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(errMsg, http.StatusForbidden))
 
 		return
+	}
+
+	if configuration.Billing.Enabled {
+		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
+			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
+			BillingClient: h.A.BillingClient,
+			Logger:        h.A.Logger,
+			Cfg:           h.A.Cfg,
+		})
 	}
 
 	u := &models.LoginUserResponse{

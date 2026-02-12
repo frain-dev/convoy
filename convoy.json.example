@@ -104,5 +104,12 @@
             "query_timeout": 30,
             "materialized_view_refresh_interval": 2
         }
+  },
+  "sso_service": {
+    "host": "https://overwatch.getconvoy.cloud",
+    "redirect_path": "/sso/redirect",
+    "token_path": "/sso/token",
+    "timeout": "10s",
+    "retry_count": 3
   }
 }

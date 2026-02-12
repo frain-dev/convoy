@@ -13,40 +13,38 @@ import { PrivateService } from 'src/app/private/private.service';
 	styleUrls: ['./saml.component.scss']
 })
 export class SamlComponent implements OnInit {
-	accessCode: string = this.route.snapshot.queryParams.saml_access_code;
+	token: string = this.route.snapshot.queryParams['token'] ?? this.route.snapshot.queryParams['sso_token'];
 
 	constructor(private samlService: SamlService, private route: ActivatedRoute, private router: Router, private privateService: PrivateService) {}
 
 	ngOnInit() {
-		const authType = localStorage.getItem('AUTH_TYPE');
-		authType === 'login' ? this.authenticateLogin() : this.authenticateSignup();
+		this.redeemToken();
 	}
 
-	async authenticateLogin() {
-		try {
-			const response = await this.samlService.authenticateLoginWithSaml(this.accessCode);
-
-			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
-			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
-
-			await this.getOrganisations();
-			this.router.navigateByUrl('/');
-		} catch {
-			this.router.navigateByUrl('/login');
+	async redeemToken() {
+		if (!this.token) {
+			const authType = localStorage.getItem('AUTH_TYPE');
+			this.router.navigateByUrl(authType === 'login' ? '/login' : '/signup');
+			return;
 		}
-	}
-
-	async authenticateSignup() {
 		try {
-			const response = await this.samlService.authenticateSignupWithSaml(this.accessCode);
-
+			const response = await this.samlService.redeemSSOToken(this.token);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
-
 			await this.getOrganisations();
+
+			if (typeof window !== 'undefined' && window.opener) {
+				const pathname = window.location.pathname;
+				const appRoot = pathname.replace(/\/sso\/callback(\?.*)?$/i, '').replace(/\/$/, '') || '';
+				const projectsUrl = window.location.origin + (appRoot ? appRoot + '/projects' : '/projects');
+				window.opener.location.href = projectsUrl;
+				window.close();
+				return;
+			}
 			this.router.navigateByUrl('/');
-		} catch {
-			this.router.navigateByUrl('/signup');
+		} catch (err) {
+			const authType = localStorage.getItem('AUTH_TYPE');
+			this.router.navigateByUrl(authType === 'login' ? '/login' : '/signup');
 		}
 	}
 

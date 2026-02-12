@@ -328,16 +328,8 @@ func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
 	}
 
 	configPlans := make([]billing.Plan, 0, len(h.A.Cfg.Billing.Plans))
-	for _, configPlan := range h.A.Cfg.Billing.Plans {
-		planJSON, err := json.Marshal(configPlan)
-		if err != nil {
-			continue
-		}
-		var plan billing.Plan
-		if err := json.Unmarshal(planJSON, &plan); err != nil {
-			continue
-		}
-		configPlans = append(configPlans, plan)
+	for _, p := range h.A.Cfg.Billing.Plans {
+		configPlans = append(configPlans, billing.Plan{ID: p.ID, Name: p.Name})
 	}
 
 	mergedPlans := h.mergePlansWithFeatures(resp.Data, configPlans)

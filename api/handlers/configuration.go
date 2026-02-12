@@ -123,8 +123,9 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 			"client_id":    cfg.Auth.GoogleOAuth.ClientID,
 			"redirect_url": cfg.Auth.GoogleOAuth.RedirectURL,
 		},
-		"saml": map[string]interface{}{
-			"enabled": h.A.Licenser.EnterpriseSSO(),
+		"sso": map[string]interface{}{
+			"enabled":      h.A.Licenser.EnterpriseSSO(),
+			"redirect_url": cfg.Auth.SSO.RedirectURL,
 		},
 	}
 

@@ -1,0 +1,268 @@
+package service
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/frain-dev/convoy/pkg/log"
+)
+
+const (
+	DefaultOverwatchHost   = "https://overwatch.getconvoy.cloud"
+	DefaultRedirectPath    = "/sso/redirect"
+	DefaultTokenPath       = "/sso/token"
+	DefaultAdminPortalPath = "/sso/admin-portal"
+	DefaultTimeout         = 10 * time.Second
+	DefaultRetryCount      = 3
+)
+
+type Config struct {
+	Host            string
+	RedirectPath    string
+	TokenPath       string
+	AdminPortalPath string
+	Timeout         time.Duration
+	RetryCount      int
+	APIKey          string
+	LicenseKey      string
+	OrgID           string
+	// Logger is optional; when set, read/close errors during requests are logged.
+	Logger log.StdLogger
+}
+
+type Client struct {
+	host            string
+	redirectPath    string
+	tokenPath       string
+	adminPortalPath string
+	timeout         time.Duration
+	retryCount      int
+	httpClient      *http.Client
+	apiKey          string
+	licenseKey      string
+	orgID           string
+	logger          log.StdLogger
+}
+
+func NewClient(cfg Config) *Client {
+	if cfg.Host == "" {
+		cfg.Host = DefaultOverwatchHost
+	}
+	if cfg.RedirectPath == "" {
+		cfg.RedirectPath = DefaultRedirectPath
+	}
+	if cfg.TokenPath == "" {
+		cfg.TokenPath = DefaultTokenPath
+	}
+	if cfg.AdminPortalPath == "" {
+		cfg.AdminPortalPath = DefaultAdminPortalPath
+	}
+	if cfg.Timeout == 0 {
+		cfg.Timeout = DefaultTimeout
+	}
+	if cfg.RetryCount == 0 {
+		cfg.RetryCount = DefaultRetryCount
+	}
+	return &Client{
+		host:            strings.TrimSuffix(cfg.Host, "/"),
+		redirectPath:    cfg.RedirectPath,
+		tokenPath:       cfg.TokenPath,
+		adminPortalPath: cfg.AdminPortalPath,
+		timeout:         cfg.Timeout,
+		retryCount:      cfg.RetryCount,
+		httpClient:      &http.Client{Timeout: cfg.Timeout},
+		apiKey:          cfg.APIKey,
+		licenseKey:      cfg.LicenseKey,
+		orgID:           cfg.OrgID,
+		logger:          cfg.Logger,
+	}
+}
+
+// setAuthHeaders sets Authorization (when apiKey is set) and X-License-Key (when licenseKeyForHeader is non-empty).
+func (c *Client) setAuthHeaders(req *http.Request, licenseKeyForHeader string) {
+	if c.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	}
+	if licenseKeyForHeader != "" {
+		req.Header.Set("X-License-Key", licenseKeyForHeader)
+	}
+}
+
+// doRequest executes req with retries, reads the body, and returns it on 2xx. opName is used for logging and error wrapping.
+func (c *Client) doRequest(req *http.Request, opName string) ([]byte, error) {
+	var lastErr error
+	for attempt := 0; attempt <= c.retryCount; attempt++ {
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		rb, err := io.ReadAll(resp.Body)
+		if err != nil && c.logger != nil {
+			c.logger.WithError(err).Error(opName + ": read response body failed")
+		}
+		if closeErr := resp.Body.Close(); closeErr != nil && c.logger != nil {
+			c.logger.WithError(closeErr).Error(opName + ": close response body failed")
+		}
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			lastErr = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(rb))
+			continue
+		}
+		return rb, nil
+	}
+	return nil, fmt.Errorf("%s: %w", opName, lastErr)
+}
+
+// GetRedirectURL returns the SSO redirect URL.
+func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, host, redirectURI string) (*RedirectURLResponse, error) {
+	if licenseKey == "" {
+		return nil, fmt.Errorf("license key is required")
+	}
+	if redirectURI == "" {
+		return nil, fmt.Errorf("redirect URI is required")
+	}
+
+	body := RedirectURLRequest{CallbackURL: redirectURI, Host: host}
+	if c.apiKey != "" && c.orgID != "" {
+		body.OrgID = c.orgID
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal redirect request: %w", err)
+	}
+	url := c.host + c.redirectPath
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	c.setAuthHeaders(req, licenseKey)
+
+	rb, err := c.doRequest(req, "SSO redirect")
+	if err != nil {
+		return nil, err
+	}
+	var out RedirectURLResponse
+	if err := json.Unmarshal(rb, &out); err != nil {
+		return nil, fmt.Errorf("SSO redirect: %w", err)
+	}
+	if !out.Status {
+		return nil, fmt.Errorf("SSO redirect failed: %s", out.Message)
+	}
+	if out.Data.RedirectURL == "" && out.Data.AuthorizationURL != "" {
+		out.Data.RedirectURL = out.Data.AuthorizationURL
+	}
+	return &out, nil
+}
+
+func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidationResponse, error) {
+	if token == "" {
+		return nil, fmt.Errorf("token is required")
+	}
+
+	body := TokenValidationRequest{Token: token}
+	if c.apiKey != "" && c.orgID != "" {
+		body.OrgID = c.orgID
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal token validation request: %w", err)
+	}
+	url := c.host + c.tokenPath
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	c.setAuthHeaders(req, c.licenseKey)
+
+	rb, err := c.doRequest(req, "SSO token validation")
+	if err != nil {
+		return nil, err
+	}
+	var out tokenResponseFlex
+	if err := json.Unmarshal(rb, &out); err != nil {
+		return nil, fmt.Errorf("SSO token validation: %w", err)
+	}
+	if !out.Status {
+		return nil, fmt.Errorf("SSO token validation failed: %s", out.Message)
+	}
+	p := out.Data.Payload
+	if p == nil {
+		p = out.Data.Profile
+	}
+	if p == nil {
+		return nil, fmt.Errorf("email is missing from profile")
+	}
+	if p.ID == "" && p.ProfileID != "" {
+		p.ID = p.ProfileID
+	}
+	if p.OrganizationExternalID == "" && p.OrganizationID != "" {
+		p.OrganizationExternalID = p.OrganizationID
+	}
+	if p.Email == "" {
+		return nil, fmt.Errorf("email is missing from profile")
+	}
+	return &TokenValidationResponse{
+		Status:  out.Status,
+		Message: out.Message,
+		Data:    TokenValidationData{Payload: *p},
+	}, nil
+}
+
+func (c *Client) GetAdminPortalURL(ctx context.Context, licenseKey, returnURL, successURL string) (*AdminPortalResponse, error) {
+	if licenseKey == "" {
+		return nil, fmt.Errorf("license key is required")
+	}
+	if returnURL == "" {
+		return nil, fmt.Errorf("return_url is required")
+	}
+
+	body := AdminPortalRequest{ReturnURL: returnURL, SuccessURL: successURL}
+	if c.apiKey != "" && c.orgID != "" {
+		body.OrgID = c.orgID
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	url := c.host + c.adminPortalPath
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	c.setAuthHeaders(req, licenseKey)
+
+	rb, err := c.doRequest(req, "SSO admin portal")
+	if err != nil {
+		return nil, err
+	}
+	var out AdminPortalResponse
+	if err := json.Unmarshal(rb, &out); err != nil {
+		return nil, fmt.Errorf("SSO admin portal: %w", err)
+	}
+	if !out.Status {
+		return nil, fmt.Errorf("SSO admin portal failed: %s", out.Message)
+	}
+	return &out, nil
+}
+
+type tokenResponseFlex struct {
+	Status  bool   `json:"status"`
+	Message string `json:"message"`
+	Data    struct {
+		Payload *UserProfile `json:"payload"`
+		Profile *UserProfile `json:"profile"`
+	} `json:"data"`
+}

@@ -168,13 +168,15 @@ INSERT INTO convoy.organisations (
     name,
     owner_id,
     custom_domain,
-    assigned_domain
+    assigned_domain,
+    license_data
 ) VALUES (
     $1,
     $2,
     $3,
     $4,
-    $5
+    $5,
+    $6
 )
 `
 
@@ -184,6 +186,7 @@ type CreateOrganisationParams struct {
 	OwnerID        string
 	CustomDomain   pgtype.Text
 	AssignedDomain pgtype.Text
+	LicenseData    pgtype.Text
 }
 
 // Organisation Repository SQLc Queries
@@ -195,6 +198,7 @@ func (q *Queries) CreateOrganisation(ctx context.Context, arg CreateOrganisation
 		arg.OwnerID,
 		arg.CustomDomain,
 		arg.AssignedDomain,
+		arg.LicenseData,
 	)
 	return err
 }
@@ -217,6 +221,7 @@ SELECT
     name,
     custom_domain,
     assigned_domain,
+    license_data,
     created_at,
     updated_at,
     deleted_at,
@@ -232,6 +237,7 @@ type FetchOrganisationByAssignedDomainRow struct {
 	Name           string
 	CustomDomain   pgtype.Text
 	AssignedDomain pgtype.Text
+	LicenseData    pgtype.Text
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
 	DeletedAt      pgtype.Timestamptz
@@ -247,6 +253,7 @@ func (q *Queries) FetchOrganisationByAssignedDomain(ctx context.Context, assigne
 		&i.Name,
 		&i.CustomDomain,
 		&i.AssignedDomain,
+		&i.LicenseData,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -262,6 +269,7 @@ SELECT
     name,
     custom_domain,
     assigned_domain,
+    license_data,
     created_at,
     updated_at,
     deleted_at,
@@ -277,6 +285,7 @@ type FetchOrganisationByCustomDomainRow struct {
 	Name           string
 	CustomDomain   pgtype.Text
 	AssignedDomain pgtype.Text
+	LicenseData    pgtype.Text
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
 	DeletedAt      pgtype.Timestamptz
@@ -292,6 +301,7 @@ func (q *Queries) FetchOrganisationByCustomDomain(ctx context.Context, customDom
 		&i.Name,
 		&i.CustomDomain,
 		&i.AssignedDomain,
+		&i.LicenseData,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -307,6 +317,7 @@ SELECT
     name,
     custom_domain,
     assigned_domain,
+    license_data,
     created_at,
     updated_at,
     deleted_at,
@@ -322,6 +333,7 @@ type FetchOrganisationByIDRow struct {
 	Name           string
 	CustomDomain   pgtype.Text
 	AssignedDomain pgtype.Text
+	LicenseData    pgtype.Text
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
 	DeletedAt      pgtype.Timestamptz
@@ -337,6 +349,7 @@ func (q *Queries) FetchOrganisationByID(ctx context.Context, id string) (FetchOr
 		&i.Name,
 		&i.CustomDomain,
 		&i.AssignedDomain,
+		&i.LicenseData,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -353,6 +366,7 @@ WITH filtered_organisations AS (
         name,
         custom_domain,
         assigned_domain,
+        license_data,
         created_at,
         updated_at,
         deleted_at,
@@ -381,7 +395,7 @@ WITH filtered_organisations AS (
         CASE WHEN $1::text = 'prev' THEN id END ASC
     LIMIT $5
 )
-SELECT id, owner_id, name, custom_domain, assigned_domain, created_at, updated_at, deleted_at, disabled_at FROM filtered_organisations
+SELECT id, owner_id, name, custom_domain, assigned_domain, license_data, created_at, updated_at, deleted_at, disabled_at FROM filtered_organisations
 ORDER BY
     CASE WHEN $1::text = 'prev' THEN id END DESC,
     CASE WHEN $1::text = 'next' THEN id END DESC
@@ -401,6 +415,7 @@ type FetchOrganisationsPaginatedRow struct {
 	Name           string
 	CustomDomain   pgtype.Text
 	AssignedDomain pgtype.Text
+	LicenseData    pgtype.Text
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
 	DeletedAt      pgtype.Timestamptz
@@ -429,6 +444,7 @@ func (q *Queries) FetchOrganisationsPaginated(ctx context.Context, arg FetchOrga
 			&i.Name,
 			&i.CustomDomain,
 			&i.AssignedDomain,
+			&i.LicenseData,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -451,6 +467,7 @@ SET
     custom_domain = $3,
     assigned_domain = $4,
     disabled_at = $5,
+    license_data = $6,
     updated_at = NOW()
 WHERE id = $1
   AND deleted_at IS NULL
@@ -462,6 +479,7 @@ type UpdateOrganisationParams struct {
 	CustomDomain   pgtype.Text
 	AssignedDomain pgtype.Text
 	DisabledAt     pgtype.Timestamptz
+	LicenseData    pgtype.Text
 }
 
 func (q *Queries) UpdateOrganisation(ctx context.Context, arg UpdateOrganisationParams) (pgconn.CommandTag, error) {
@@ -471,5 +489,23 @@ func (q *Queries) UpdateOrganisation(ctx context.Context, arg UpdateOrganisation
 		arg.CustomDomain,
 		arg.AssignedDomain,
 		arg.DisabledAt,
+		arg.LicenseData,
 	)
+}
+
+const updateOrganisationLicenseData = `-- name: UpdateOrganisationLicenseData :execresult
+UPDATE convoy.organisations
+SET license_data = $2,
+    updated_at = NOW()
+WHERE id = $1
+  AND deleted_at IS NULL
+`
+
+type UpdateOrganisationLicenseDataParams struct {
+	ID          string
+	LicenseData pgtype.Text
+}
+
+func (q *Queries) UpdateOrganisationLicenseData(ctx context.Context, arg UpdateOrganisationLicenseDataParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, updateOrganisationLicenseData, arg.ID, arg.LicenseData)
 }

@@ -34,9 +34,12 @@
 							<li convoy-dropdown-option *ngFor="let organisation of organisations">
 								<button convoy-button fill="text" color="neutral" size="sm" class="justify-start px-16px py-12px w-full" (click)="selectOrganisation(organisation)">
 									<div class="flex justify-between items-center w-full">
-										<convoy-badge [text]="organisation.name" [show-text]="false">
-											<div class="max-w-[110px] truncate">{{ organisation?.name }}</div>
-										</convoy-badge>
+										<div class="flex items-center gap-8px">
+											<convoy-badge [text]="organisation.name" [show-text]="false">
+												<div class="max-w-[110px] truncate">{{ organisation?.name }}</div>
+											</convoy-badge>
+											<span class="text-10 text-neutral-11" *ngIf="licenseService.hasOrgLicense(organisation)">Licensed</span>
+										</div>
 
 										<div class="flex gap-16px items-center" *ngIf="organisation.uid == userOrganization?.uid">
 											<a convoy-button fill="soft" class="py-4px !px-8px" convoy-dropdown-option (click)="$event.stopPropagation(); this.showOrgDropdown = false" routerLink="/settings">

@@ -1,11 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { SettingsService } from '../settings.service';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { Router } from '@angular/router';
-import { PrivateService } from 'src/app/private/private.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import {Component, inject, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {SettingsService} from '../settings.service';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {Router} from '@angular/router';
+import {PrivateService} from 'src/app/private/private.service';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'organisation-settings',
@@ -18,12 +18,22 @@ export class OrganisationSettingsComponent implements OnInit {
 	showDeleteModal = false;
 	isEditingOrganisation = false;
 	isDeletingOrganisation = false;
+	configuringSSO = false;
+	/** True when this org's license has enterprise_sso; false or null when not or unknown. */
+	orgHasEnterpriseSSO: boolean | null = null;
 	editOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
 	private rbacService = inject(RbacService);
 
-	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private privateService: PrivateService, public licenseService: LicensesService) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private settingService: SettingsService,
+		private generalService: GeneralService,
+		private router: Router,
+		private privateService: PrivateService,
+		public licenseService: LicensesService
+	) {}
 
 	async ngOnInit() {
 		this.getOrganisationDetails();
@@ -43,6 +53,10 @@ export class OrganisationSettingsComponent implements OnInit {
 		}
 	}
 
+	get currentOrg() {
+		return this.privateService.getOrganisation;
+	}
+
 	getOrganisationDetails() {
 		const org = localStorage.getItem('CONVOY_ORG');
 		if (org) {
@@ -52,6 +66,46 @@ export class OrganisationSettingsComponent implements OnInit {
 			this.editOrganisationForm.patchValue({
 				name: organisationDetails.name
 			});
+			this.loadOrgLicenseForSSO();
+		}
+	}
+
+	/** Load this org's license features so Configure SSO visibility uses org license, not instance. */
+	private loadOrgLicenseForSSO() {
+		if (!this.organisationId) return;
+		this.licenseService
+			.getLicenses(this.organisationId)
+			.then((res) => {
+				const d = res?.data as Record<string, unknown> | undefined;
+				if (!d) {
+					this.orgHasEnterpriseSSO = false;
+					return;
+				}
+				const v = d['EnterpriseSSO'];
+				if (v === true) this.orgHasEnterpriseSSO = true;
+				else if (v && typeof v === 'object' && 'allowed' in v && (v as { allowed: boolean }).allowed === true)
+					this.orgHasEnterpriseSSO = true;
+				else this.orgHasEnterpriseSSO = false;
+			})
+			.catch(() => (this.orgHasEnterpriseSSO = false));
+	}
+
+	async configureSSO() {
+		this.configuringSSO = true;
+		try {
+			const returnUrl = window.location.href || (window.location.origin + '/');
+			const response = await this.settingService.getSSOAdminPortal(returnUrl);
+			const portalUrl = response?.data?.portal_url;
+			if (portalUrl) {
+				window.location.href = portalUrl;
+			} else {
+				this.generalService.showNotification({ style: 'error', message: 'Invalid response from SSO service' });
+				this.configuringSSO = false;
+			}
+		} catch (err: any) {
+			const message = typeof err === 'string' ? err : err?.response?.data?.message || err?.message || 'Failed to open SSO admin portal';
+			this.generalService.showNotification({ style: 'error', message });
+			this.configuringSSO = false;
 		}
 	}
 

@@ -2,6 +2,7 @@ export interface ORGANIZATION_DATA {
 	uid: string;
 	members: ORGANIZATION_MEMBERS[];
 	name: string;
+	license_data?: string;
 }
 export interface ORGANIZATION_MEMBERS {
 	confirmed_at: string;
