@@ -24,7 +24,7 @@ jobs:
         run: git fetch --tags --force
 
       - name: Log version
-        run: echo "Tagging version: v${{ inputs.version }}"
+        run: 'echo "Tagging version: v${{ inputs.version }}"'
 
       - name: Create and push tag
         run: |
