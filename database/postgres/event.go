@@ -131,22 +131,22 @@ const (
 
         %s %s AND ev.id <= :cursor
 		GROUP BY ev.id, s.id
-	    ORDER BY ev.created_at %s
+	    ORDER BY ev.created_at %s, ev.id %s
 	    LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY created_at %s
+	SELECT * FROM events ORDER BY created_at %s, id %s
 	`
 
 	baseEventsPagedBackward = `
 
         %s %s AND ev.id >= :cursor
 		GROUP BY ev.id, s.id
-		ORDER BY ev.created_at %s
+		ORDER BY ev.created_at %s, ev.id %s
 		LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY created_at %s
+	SELECT * FROM events ORDER BY created_at %s, id %s
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id
@@ -541,7 +541,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		preOrder = reverseOrder(preOrder)
 	}
 
-	query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, filter.Pageable.SortOrder())
+	query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, filter.Pageable.SortOrder(), preOrder, filter.Pageable.SortOrder())
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
