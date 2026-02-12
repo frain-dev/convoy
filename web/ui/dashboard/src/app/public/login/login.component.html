@@ -29,7 +29,7 @@
 				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
 			</button>
 
-			<button *ngIf="isSAMLEnabled" convoy-button size="sm" type="button" fill="text" class="w-full" (click)="loginWithSAML()">Login with SAML</button>
+			<button *ngIf="isSSOEnabled" convoy-button size="sm" type="button" fill="text" class="w-full" (click)="loginWithSSO()">Login with SSO</button>
 
 			<button *ngIf="isGoogleOAuthEnabled" convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="loginWithGoogle()" [disabled]="isGoogleSigningIn">
 				<img *ngIf="!isGoogleSigningIn" src="/assets/img/svg/google.svg" alt="Google icon" class="w-16px h-16px inline mr-8px" />

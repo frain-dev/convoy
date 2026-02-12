@@ -76,6 +76,9 @@ type OrganisationRepository interface {
 	// UpdateOrganisation updates an existing organisation
 	UpdateOrganisation(ctx context.Context, org *Organisation) error
 
+	// UpdateOrganisationLicenseData updates only the license_data field for an organisation
+	UpdateOrganisationLicenseData(ctx context.Context, orgID, licenseData string) error
+
 	// DeleteOrganisation soft deletes an organisation by ID
 	DeleteOrganisation(ctx context.Context, id string) error
 

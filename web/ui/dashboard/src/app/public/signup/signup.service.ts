@@ -38,7 +38,7 @@ export class SignupService {
 		});
 	}
 
-    signUpWithSAML(): Promise<HTTP_RESPONSE> {
+	signUpWithSSO(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
