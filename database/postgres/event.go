@@ -596,12 +596,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		}
 		query = fmt.Sprintf(existsPagination, baseEventsPagedExists, filterQueryNoEndpoint, existsSubquery, preOrder, filter.Pageable.SortOrder(), preOrder, filter.Pageable.SortOrder())
 	} else {
+		base = baseEventsSearch
 		if len(filter.OwnerID) == 0 {
 			base = strings.Replace(base, "with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id),", "with ", 1)
 			base = strings.Replace(base, "endpoint_ids", "convoy.endpoints", 1)
 		}
 		filterQuery += searchFilter
-		base = baseEventsSearch
 		query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, filter.Pageable.SortOrder(), preOrder, filter.Pageable.SortOrder())
 	}
 	query, args, err = sqlx.Named(query, arg)
