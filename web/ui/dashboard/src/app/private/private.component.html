@@ -34,9 +34,12 @@
 							<li convoy-dropdown-option *ngFor="let organisation of organisations">
 								<button convoy-button fill="text" color="neutral" size="sm" class="justify-start px-16px py-12px w-full" (click)="selectOrganisation(organisation)">
 									<div class="flex justify-between items-center w-full">
-										<convoy-badge [text]="organisation.name" [show-text]="false">
-											<div class="max-w-[110px] truncate">{{ organisation?.name }}</div>
-										</convoy-badge>
+										<div class="flex items-center gap-8px">
+											<convoy-badge [text]="organisation.name" [show-text]="false">
+												<div class="max-w-[110px] truncate">{{ organisation?.name }}</div>
+											</convoy-badge>
+											<span class="text-10 text-neutral-11" *ngIf="licenseService.hasOrgLicense(organisation)">Licensed</span>
+										</div>
 
 										<div class="flex gap-16px items-center" *ngIf="organisation.uid == userOrganization?.uid">
 											<a convoy-button fill="soft" class="py-4px !px-8px" convoy-dropdown-option (click)="$event.stopPropagation(); this.showOrgDropdown = false" routerLink="/settings">
@@ -56,11 +59,11 @@
 								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 								Add {{ organisations?.length ? 'another' : 'an' }} Organization
 							</button>
-							<div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full" *ngIf="!licenseService.hasLicense('CREATE_ORG')">
+							<div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full" *ngIf="!licenseService.hasLicense('org_limit') && getOrgLimitMessage()">
 								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
 									<use xlink:href="#lock-icon"></use>
 								</svg>
-								Business
+								{{ getOrgLimitMessage() }}
 							</div>
 						</li>
 					</ul>

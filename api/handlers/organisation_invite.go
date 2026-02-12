@@ -11,12 +11,12 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisation_invites"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -113,7 +113,7 @@ func (h *Handler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http
 	prc := services.ProcessInviteService{
 		Queue:         h.A.Queue,
 		InviteRepo:    organisation_invites.New(h.A.Logger, h.A.DB),
-		UserRepo:      postgres.NewUserRepo(h.A.DB),
+		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		Licenser:      h.A.Licenser,
@@ -139,7 +139,7 @@ func (h *Handler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) 
 		Queue:      h.A.Queue,
 		InviteRepo: organisation_invites.New(h.A.Logger, h.A.DB),
 		OrgRepo:    organisations.New(h.A.Logger, h.A.DB),
-		UserRepo:   postgres.NewUserRepo(h.A.DB),
+		UserRepo:   users.New(h.A.Logger, h.A.DB),
 		Token:      token,
 	}
 

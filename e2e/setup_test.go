@@ -655,6 +655,22 @@ func (env *E2ETestEnvWithAMQP) SyncSources(t *testing.T) {
 	time.Sleep(1 * time.Second)
 }
 
+// RestartRabbitMQ restarts the RabbitMQ container and updates the connection details.
+// This is useful for testing reconnection logic.
+func (env *E2ETestEnvWithAMQP) RestartRabbitMQ(t *testing.T) {
+	t.Helper()
+	t.Log("Restarting RabbitMQ container...")
+	err := infra.RestartRabbitMQ(context.Background())
+	require.NoError(t, err, "Failed to restart RabbitMQ")
+
+	// Refresh the connection details as the port mapping may have changed
+	rmqHost, rmqPort, err := infra.NewRabbitMQConnect(t)
+	require.NoError(t, err, "Failed to get RabbitMQ connection details after restart")
+	env.RabbitMQHost = rmqHost
+	env.RabbitMQPort = rmqPort
+	t.Logf("RabbitMQ container restarted successfully (host=%s, port=%d)", rmqHost, rmqPort)
+}
+
 // SyncSubscriptions forces an immediate sync of the worker's subscription loader
 // This is needed for broadcast events which use in-memory subscription lookup
 func (env *E2ETestEnvWithAMQP) SyncSubscriptions(t *testing.T) {

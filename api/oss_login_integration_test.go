@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,7 +24,9 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 )
@@ -41,11 +44,11 @@ func (s *OSSLoginIntegrationTestSuite) SetupSuite() {
 	s.mockCtrl = gomock.NewController(s.T())
 	s.mockLicenser = mocks.NewMockLicenser(s.mockCtrl)
 
-	s.mockLicenser.EXPECT().MultiPlayerMode().Return(false).AnyTimes()
+	s.mockLicenser.EXPECT().IsMultiUserMode(gomock.Any()).Return(false, nil).AnyTimes()
 	s.mockLicenser.EXPECT().AsynqMonitoring().Return(false).AnyTimes()
-	s.mockLicenser.EXPECT().CreateOrg(gomock.Any()).Return(true, nil).AnyTimes()
-	s.mockLicenser.EXPECT().CreateUser(gomock.Any()).Return(true, nil).AnyTimes()
-	s.mockLicenser.EXPECT().CreateProject(gomock.Any()).Return(true, nil).AnyTimes()
+	s.mockLicenser.EXPECT().CheckOrgLimit(gomock.Any()).Return(true, nil).AnyTimes()
+	s.mockLicenser.EXPECT().CheckUserLimit(gomock.Any()).Return(true, nil).AnyTimes()
+	s.mockLicenser.EXPECT().CheckProjectLimit(gomock.Any()).Return(true, nil).AnyTimes()
 	s.mockLicenser.EXPECT().ProjectEnabled(gomock.Any()).Return(true).AnyTimes()
 	s.mockLicenser.EXPECT().AddEnabledProject(gomock.Any()).AnyTimes()
 	s.mockLicenser.EXPECT().RemoveEnabledProject(gomock.Any()).AnyTimes()
@@ -80,11 +83,11 @@ func (s *OSSLoginIntegrationTestSuite) SetupTest() {
 		UpdatedAt:     time.Now(),
 	}
 
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	userRepo := users.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
 	err = userRepo.CreateUser(context.Background(), s.DefaultUser)
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }

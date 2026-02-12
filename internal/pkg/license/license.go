@@ -4,14 +4,17 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
+	"github.com/frain-dev/convoy/internal/pkg/license/service"
 )
 
 // Licenser interface provides methods to determine whether the specified license can utilise certain features in convoy.
 type Licenser interface {
-	CreateOrg(ctx context.Context) (bool, error)
-	CreateUser(ctx context.Context) (bool, error)
-	CreateProject(ctx context.Context) (bool, error)
+	// Limit check methods
+	CheckOrgLimit(ctx context.Context) (bool, error)
+	CheckUserLimit(ctx context.Context) (bool, error)
+	CheckProjectLimit(ctx context.Context) (bool, error)
+	IsMultiUserMode(ctx context.Context) (bool, error)
+
 	UseForwardProxy() bool
 	CanExportPrometheusMetrics() bool
 	AdvancedEndpointMgmt() bool
@@ -22,7 +25,6 @@ type Licenser interface {
 	ConsumerPoolTuning() bool
 	AdvancedWebhookFiltering() bool
 	CircuitBreaking() bool
-	MultiPlayerMode() bool
 	IngestRate() bool
 	AgentExecutionMode() bool
 	IpRules() bool
@@ -32,15 +34,12 @@ type Licenser interface {
 	ReadReplica() bool
 	CredentialEncryption() bool
 	CustomCertificateAuthority() bool
+	StaticIP() bool
 
 	RetentionPolicy() bool
-	AdvancedMsgBroker() bool
 	WebhookAnalytics() bool
-	HADeployment() bool
 	MutualTLS() bool
 	OAuth2EndpointAuth() bool
-	SynchronousWebhooks() bool
-	BillingModule() bool
 	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 
 	RemoveEnabledProject(projectID string)
@@ -48,12 +47,12 @@ type Licenser interface {
 	ProjectEnabled(projectID string) bool
 }
 
-var _ Licenser = &keygen.Licenser{}
+var _ Licenser = &service.Licenser{}
 
 type Config struct {
-	KeyGen keygen.Config
+	LicenseService service.LicenserConfig
 }
 
 func NewLicenser(c *Config) (Licenser, error) {
-	return keygen.NewKeygenLicenser(&c.KeyGen)
+	return service.NewLicenser(c.LicenseService)
 }

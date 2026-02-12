@@ -1,0 +1,39 @@
+name: Tag Stable Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "CalVer version to tag (e.g., 26.2.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  tag-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Log version
+        run: 'echo "Tagging version: v${{ inputs.version }} "'
+
+      - name: Create and push tag
+        run: |
+          TAG="v${{ inputs.version }}"
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists; exiting."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"

@@ -67,20 +67,6 @@ func (mr *MockLicenserMockRecorder) AdvancedEndpointMgmt() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdvancedEndpointMgmt", reflect.TypeOf((*MockLicenser)(nil).AdvancedEndpointMgmt))
 }
 
-// AdvancedMsgBroker mocks base method.
-func (m *MockLicenser) AdvancedMsgBroker() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AdvancedMsgBroker")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// AdvancedMsgBroker indicates an expected call of AdvancedMsgBroker.
-func (mr *MockLicenserMockRecorder) AdvancedMsgBroker() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdvancedMsgBroker", reflect.TypeOf((*MockLicenser)(nil).AdvancedMsgBroker))
-}
-
 // AdvancedSubscriptions mocks base method.
 func (m *MockLicenser) AdvancedSubscriptions() bool {
 	m.ctrl.T.Helper()
@@ -137,20 +123,6 @@ func (mr *MockLicenserMockRecorder) AsynqMonitoring() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsynqMonitoring", reflect.TypeOf((*MockLicenser)(nil).AsynqMonitoring))
 }
 
-// BillingModule mocks base method.
-func (m *MockLicenser) BillingModule() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BillingModule")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// BillingModule indicates an expected call of BillingModule.
-func (mr *MockLicenserMockRecorder) BillingModule() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BillingModule", reflect.TypeOf((*MockLicenser)(nil).BillingModule))
-}
-
 // CanExportPrometheusMetrics mocks base method.
 func (m *MockLicenser) CanExportPrometheusMetrics() bool {
 	m.ctrl.T.Helper()
@@ -193,49 +165,64 @@ func (mr *MockLicenserMockRecorder) ConsumerPoolTuning() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConsumerPoolTuning", reflect.TypeOf((*MockLicenser)(nil).ConsumerPoolTuning))
 }
 
-// CreateOrg mocks base method.
-func (m *MockLicenser) CreateOrg(ctx context.Context) (bool, error) {
+// CheckOrgLimit mocks base method.
+func (m *MockLicenser) CheckOrgLimit(ctx context.Context) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrg", ctx)
+	ret := m.ctrl.Call(m, "CheckOrgLimit", ctx)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateOrg indicates an expected call of CreateOrg.
-func (mr *MockLicenserMockRecorder) CreateOrg(ctx any) *gomock.Call {
+// CheckOrgLimit indicates an expected call of CheckOrgLimit.
+func (mr *MockLicenserMockRecorder) CheckOrgLimit(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrg", reflect.TypeOf((*MockLicenser)(nil).CreateOrg), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckOrgLimit", reflect.TypeOf((*MockLicenser)(nil).CheckOrgLimit), ctx)
 }
 
-// CreateProject mocks base method.
-func (m *MockLicenser) CreateProject(ctx context.Context) (bool, error) {
+// CheckProjectLimit mocks base method.
+func (m *MockLicenser) CheckProjectLimit(ctx context.Context) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateProject", ctx)
+	ret := m.ctrl.Call(m, "CheckProjectLimit", ctx)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateProject indicates an expected call of CreateProject.
-func (mr *MockLicenserMockRecorder) CreateProject(ctx any) *gomock.Call {
+// CheckProjectLimit indicates an expected call of CheckProjectLimit.
+func (mr *MockLicenserMockRecorder) CheckProjectLimit(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProject", reflect.TypeOf((*MockLicenser)(nil).CreateProject), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckProjectLimit", reflect.TypeOf((*MockLicenser)(nil).CheckProjectLimit), ctx)
 }
 
-// CreateUser mocks base method.
-func (m *MockLicenser) CreateUser(ctx context.Context) (bool, error) {
+// CheckUserLimit mocks base method.
+func (m *MockLicenser) CheckUserLimit(ctx context.Context) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUser", ctx)
+	ret := m.ctrl.Call(m, "CheckUserLimit", ctx)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateUser indicates an expected call of CreateUser.
-func (mr *MockLicenserMockRecorder) CreateUser(ctx any) *gomock.Call {
+// CheckUserLimit indicates an expected call of CheckUserLimit.
+func (mr *MockLicenserMockRecorder) CheckUserLimit(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockLicenser)(nil).CreateUser), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserLimit", reflect.TypeOf((*MockLicenser)(nil).CheckUserLimit), ctx)
+}
+
+// IsMultiUserMode mocks base method.
+func (m *MockLicenser) IsMultiUserMode(ctx context.Context) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsMultiUserMode", ctx)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsMultiUserMode indicates an expected call of IsMultiUserMode.
+func (mr *MockLicenserMockRecorder) IsMultiUserMode(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMultiUserMode", reflect.TypeOf((*MockLicenser)(nil).IsMultiUserMode), ctx)
 }
 
 // CredentialEncryption mocks base method.
@@ -323,20 +310,6 @@ func (mr *MockLicenserMockRecorder) GoogleOAuth() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GoogleOAuth", reflect.TypeOf((*MockLicenser)(nil).GoogleOAuth))
 }
 
-// HADeployment mocks base method.
-func (m *MockLicenser) HADeployment() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HADeployment")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// HADeployment indicates an expected call of HADeployment.
-func (mr *MockLicenserMockRecorder) HADeployment() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HADeployment", reflect.TypeOf((*MockLicenser)(nil).HADeployment))
-}
-
 // IngestRate mocks base method.
 func (m *MockLicenser) IngestRate() bool {
 	m.ctrl.T.Helper()
@@ -363,20 +336,6 @@ func (m *MockLicenser) IpRules() bool {
 func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IpRules", reflect.TypeOf((*MockLicenser)(nil).IpRules))
-}
-
-// MultiPlayerMode mocks base method.
-func (m *MockLicenser) MultiPlayerMode() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MultiPlayerMode")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// MultiPlayerMode indicates an expected call of MultiPlayerMode.
-func (mr *MockLicenserMockRecorder) MultiPlayerMode() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MultiPlayerMode", reflect.TypeOf((*MockLicenser)(nil).MultiPlayerMode))
 }
 
 // MutualTLS mocks base method.
@@ -475,20 +434,6 @@ func (mr *MockLicenserMockRecorder) RetentionPolicy() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetentionPolicy", reflect.TypeOf((*MockLicenser)(nil).RetentionPolicy))
 }
 
-// SynchronousWebhooks mocks base method.
-func (m *MockLicenser) SynchronousWebhooks() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SynchronousWebhooks")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// SynchronousWebhooks indicates an expected call of SynchronousWebhooks.
-func (mr *MockLicenserMockRecorder) SynchronousWebhooks() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SynchronousWebhooks", reflect.TypeOf((*MockLicenser)(nil).SynchronousWebhooks))
-}
-
 // Transformations mocks base method.
 func (m *MockLicenser) Transformations() bool {
 	m.ctrl.T.Helper()
@@ -529,4 +474,18 @@ func (m *MockLicenser) WebhookAnalytics() bool {
 func (mr *MockLicenserMockRecorder) WebhookAnalytics() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WebhookAnalytics", reflect.TypeOf((*MockLicenser)(nil).WebhookAnalytics))
+}
+
+// StaticIP mocks base method.
+func (m *MockLicenser) StaticIP() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StaticIP")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// StaticIP indicates an expected call of StaticIP.
+func (mr *MockLicenserMockRecorder) StaticIP() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StaticIP", reflect.TypeOf((*MockLicenser)(nil).StaticIP))
 }

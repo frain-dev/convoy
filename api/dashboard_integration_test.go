@@ -33,6 +33,8 @@ import (
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/internal/subscriptions"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -62,8 +64,8 @@ func (u *AuthIntegrationTestSuite) SetupTest() {
 
 	u.jwt = jwt.NewJwt(&configuration.Auth.Jwt, u.ConvoyApp.A.Cache)
 
-	apiRepo := api_keys.New(nil, u.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
+	userRepo := users.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	initRealmChain(u.T(), apiRepo, userRepo, portalLinkRepo, u.ConvoyApp.A.Cache)
 }
@@ -341,8 +343,8 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -547,8 +549,8 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-			userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+			apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+			userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 			portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 			initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 
@@ -621,8 +623,8 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 
 	_ = config.LoadCaCert("", "")
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -1061,8 +1063,8 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 
 	_ = config.LoadCaCert("", "")
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -1614,8 +1616,8 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -1913,8 +1915,8 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -2350,8 +2352,8 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -2655,8 +2657,8 @@ func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -2926,8 +2928,8 @@ func (s *ProjectIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -3232,8 +3234,8 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -3552,8 +3554,8 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -3611,7 +3613,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
@@ -3670,7 +3672,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
@@ -3809,7 +3811,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -3860,7 +3862,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -3933,7 +3935,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	_, err = subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.ErrorIs(s.T(), err, datastore.ErrSubscriptionNotFound)
 }
@@ -3989,7 +3991,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
@@ -4023,8 +4025,8 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 
 	u.jwt = jwt.NewJwt(&configuration.Auth.Jwt, u.ConvoyApp.A.Cache)
 
-	apiRepo := api_keys.New(nil, u.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
+	userRepo := users.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	initRealmChain(u.T(), apiRepo, userRepo, portalLinkRepo, u.ConvoyApp.A.Cache)
 }
@@ -4072,7 +4074,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser() {
 	require.Equal(u.T(), r.LastName, response.LastName)
 	require.Equal(u.T(), r.Email, response.Email)
 
-	dbUser, err := postgres.NewUserRepo(u.ConvoyApp.A.DB).FindUserByID(context.Background(), response.UID)
+	dbUser, err := users.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB).FindUserByID(context.Background(), response.UID)
 	require.NoError(u.T(), err)
 	require.False(u.T(), dbUser.EmailVerified)
 	require.NotEmpty(u.T(), dbUser.EmailVerificationToken)
@@ -4202,7 +4204,7 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.DB, "", password)
 
 	user.EmailVerified = true
-	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
+	userRepo := users.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 
 	err := userRepo.UpdateUser(context.Background(), user)
 	require.NoError(u.T(), err)
@@ -4251,7 +4253,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 
 	user.EmailVerified = true
 
-	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
+	userRepo := users.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	err := userRepo.UpdateUser(context.Background(), user)
 	require.NoError(u.T(), err)
 
@@ -4300,7 +4302,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password(
 
 	user.EmailVerified = true
 
-	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
+	userRepo := users.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	err := userRepo.UpdateUser(context.Background(), user)
 	require.NoError(u.T(), err)
 
@@ -4333,7 +4335,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirma
 
 	user.EmailVerified = true
 
-	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
+	userRepo := users.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	err := userRepo.UpdateUser(context.Background(), user)
 	require.NoError(u.T(), err)
 
@@ -4379,7 +4381,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
-	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
+	userRepo := users.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	dbUser, err := userRepo.FindUserByEmail(context.Background(), user.Email)
 	require.NoError(u.T(), err)
 
@@ -4450,7 +4452,7 @@ func (u *UserIntegrationTestSuite) Test_VerifyEmail() {
 	user.EmailVerificationToken = ulid.Make().String()
 	user.EmailVerificationExpiresAt = time.Now().Add(time.Hour)
 
-	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
+	userRepo := users.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	err := userRepo.UpdateUser(context.Background(), user)
 	require.NoError(u.T(), err)
 
@@ -4512,8 +4514,8 @@ func (s *MetaEventIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }

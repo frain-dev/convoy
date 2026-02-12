@@ -39,7 +39,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 	isGoogleSigningIn = false;
 	isSignupEnabled = false;
 	isGoogleOAuthEnabled = false;
-	isSAMLEnabled = false;
+	isSSOEnabled = false;
 	googleClientId = '';
 	organisations?: ORGANIZATION_DATA[];
 
@@ -64,14 +64,14 @@ export class LoginComponent implements OnInit, AfterViewInit {
 		try {
 			const config = await this.configService.getConfig();
 			this.isGoogleOAuthEnabled = config.auth?.google_oauth?.enabled || false;
-			this.isSAMLEnabled = config.auth?.saml?.enabled || false;
+			this.isSSOEnabled = config.auth?.sso?.enabled || false;
 			this.googleClientId = config.auth?.google_oauth?.client_id || '';
 			this.isSignupEnabled = config.auth?.is_signup_enabled || false;
 
 		} catch (error) {
 			console.error('Failed to get config:', error);
 			this.isGoogleOAuthEnabled = false;
-			this.isSAMLEnabled = false;
+			this.isSSOEnabled = false;
 			this.googleClientId = '';
 			this.isSignupEnabled = false;
 		}
@@ -178,7 +178,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 		}
 	}
 
-	async loginWithSAML() {
+	async loginWithSSO() {
 		localStorage.setItem('AUTH_TYPE', 'login');
 
 		try {

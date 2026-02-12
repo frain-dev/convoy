@@ -10,7 +10,7 @@ export interface GoogleOAuthConfig {
 export interface AppConfig {
   auth: {
     google_oauth: GoogleOAuthConfig;
-    saml?: { enabled: boolean };
+    sso?: { enabled: boolean; redirect_url?: string };
     is_signup_enabled?: boolean;
     [key: string]: any;
   };
@@ -45,7 +45,10 @@ export class ConfigService {
               client_id: response.data.google_oauth?.client_id || '',
               redirect_url: response.data.google_oauth?.redirect_url || ''
             },
-            saml: response.data.saml || { enabled: false },
+            sso: {
+              enabled: response.data.sso?.enabled ?? false,
+              redirect_url: response.data.sso?.redirect_url || ''
+            },
             is_signup_enabled: response.data.is_signup_enabled || false
           }
         } as AppConfig;
@@ -84,7 +87,8 @@ export class ConfigService {
           enabled: false,
           client_id: '',
           redirect_url: ''
-        }
+        },
+        sso: { enabled: false, redirect_url: '' }
       }
     };
   }

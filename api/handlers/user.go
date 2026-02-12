@@ -9,11 +9,11 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -46,7 +46,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs := services.RegisterUserService{
-		UserRepo:      postgres.NewUserRepo(h.A.DB),
+		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		Queue:         h.A.Queue,
@@ -90,7 +90,7 @@ func (h *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request
 	}
 
 	rs := services.ResendEmailVerificationTokenService{
-		UserRepo: postgres.NewUserRepo(h.A.DB),
+		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Queue:    h.A.Queue,
 		BaseURL:  baseUrl,
 		User:     user,
@@ -138,7 +138,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := services.UpdateUserService{
-		UserRepo: postgres.NewUserRepo(h.A.DB),
+		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Data:     &userUpdate,
 		User:     user,
 	}
@@ -175,7 +175,7 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	up := services.UpdatePasswordService{
-		UserRepo: postgres.NewUserRepo(h.A.DB),
+		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Data:     &updatePassword,
 		User:     user,
 	}
@@ -216,7 +216,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gp := services.GeneratePasswordResetTokenService{
-		UserRepo: postgres.NewUserRepo(h.A.DB),
+		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Queue:    h.A.Queue,
 		BaseURL:  baseUrl,
 		Data:     &forgotPassword,
@@ -228,7 +228,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	ve := services.VerifyEmailService{
-		UserRepo: postgres.NewUserRepo(h.A.DB),
+		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Token:    r.URL.Query().Get("token"),
 	}
 
@@ -258,7 +258,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs := services.ResetPasswordService{
-		UserRepo: postgres.NewUserRepo(h.A.DB),
+		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Token:    token,
 		Data:     &resetPassword,
 	}

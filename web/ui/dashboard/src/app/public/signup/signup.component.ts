@@ -48,7 +48,7 @@ export class SignupComponent implements OnInit {
 		this.licenseService.setLicenses();
 		this.checkGoogleOAuthConfig();
 
-		if (!this.licenseService.hasLicense('CREATE_USER')) this.router.navigateByUrl('/login');
+		if (!this.licenseService.hasLicense('user_limit')) this.router.navigateByUrl('/login');
 	}
 
 	async signup() {
@@ -91,11 +91,11 @@ export class SignupComponent implements OnInit {
 		}
 	}
 
-	async signUpWithSAML() {
+	async signUpWithSSO() {
 		localStorage.setItem('AUTH_TYPE', 'signup');
 
 		try {
-			const res = await this.signupService.signUpWithSAML();
+			const res = await this.signupService.signUpWithSSO();
 			console.log(res);
 			const { redirectUrl } = res.data;
 			window.open(redirectUrl, '_blank');

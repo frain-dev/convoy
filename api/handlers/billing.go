@@ -1,20 +1,24 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -26,8 +30,8 @@ type BillingHandler struct {
 }
 
 func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Request, orgID string) bool {
-	if !h.A.Licenser.BillingModule() {
-		_ = render.Render(w, r, util.NewErrorResponse("Billing module is not available in your license plan", http.StatusForbidden))
+	if !h.A.Cfg.Billing.Enabled {
+		_ = render.Render(w, r, util.NewErrorResponse("Billing module is not enabled", http.StatusForbidden))
 		return false
 	}
 
@@ -50,9 +54,56 @@ func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Reque
 	return true
 }
 
+func (h *BillingHandler) getOwnerEmail(ctx context.Context, orgID string) string {
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
+	if err != nil {
+		return ""
+	}
+
+	userRepo := users.New(h.A.Logger, h.A.DB)
+	owner, err := userRepo.FindUserByID(ctx, org.OwnerID)
+	if err != nil {
+		return ""
+	}
+
+	return owner.Email
+}
+
+func (h *BillingHandler) updateBillingEmailIfEmpty(orgID string) {
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		resp, err := h.BillingClient.GetOrganisation(bgCtx, orgID)
+		if err != nil {
+			return
+		}
+
+		if resp.Data.BillingEmail != "" {
+			return
+		}
+
+		ownerEmail := h.getOwnerEmail(bgCtx, orgID)
+		if ownerEmail == "" {
+			return
+		}
+
+		updateData := billing.BillingOrganisation{
+			BillingEmail: ownerEmail,
+		}
+		_, updateErr := h.BillingClient.UpdateOrganisation(bgCtx, orgID, updateData)
+		if updateErr != nil {
+			h.A.Logger.WithError(updateErr).Warnf("Failed to update billing_email for organisation %s", orgID)
+		} else {
+			h.A.Logger.Infof("Updated billing_email for organisation %s", orgID)
+		}
+	}()
+}
+
 func (h *BillingHandler) GetBillingEnabled(w http.ResponseWriter, r *http.Request) {
 	response := map[string]bool{
-		"enabled": h.A.Cfg.Billing.Enabled && h.A.Licenser.BillingModule(),
+		"enabled": h.A.Cfg.Billing.Enabled,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Billing status retrieved", response, http.StatusOK))
@@ -164,11 +215,16 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		orgData := map[string]interface{}{
-			"name":          org.Name,
-			"external_id":   orgID,
-			"billing_email": "",
-			"host":          cfg.Host,
+		ownerEmail := h.getOwnerEmail(r.Context(), orgID)
+		if ownerEmail == "" {
+			h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
+		}
+
+		orgData := billing.BillingOrganisation{
+			Name:         org.Name,
+			ExternalID:   orgID,
+			BillingEmail: ownerEmail,
+			Host:         cfg.Host,
 		}
 
 		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
@@ -190,6 +246,9 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return
 	}
+
+	h.updateOrganisationStatus(r.Context(), orgID, resp.Data)
+	h.updateBillingEmailIfEmpty(orgID)
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscription retrieved successfully", resp.Data, http.StatusOK))
 }
@@ -257,15 +316,71 @@ func (h *BillingHandler) DeletePaymentMethod(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
-	// Serve plans from configuration if available, otherwise return empty array
-	var plans []interface{}
-	if len(h.A.Cfg.Billing.Plans) > 0 {
-		plans = h.A.Cfg.Billing.Plans
-	} else {
-		plans = []interface{}{}
+	if !h.A.Cfg.Billing.Enabled {
+		_ = render.Render(w, r, util.NewErrorResponse("Billing module is not enabled", http.StatusForbidden))
+		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", plans, http.StatusOK))
+	resp, err := h.BillingClient.GetPlans(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	configPlans := make([]billing.Plan, 0, len(h.A.Cfg.Billing.Plans))
+	for _, p := range h.A.Cfg.Billing.Plans {
+		configPlans = append(configPlans, billing.Plan{ID: p.ID, Name: p.Name})
+	}
+
+	mergedPlans := h.mergePlansWithFeatures(resp.Data, configPlans)
+
+	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", mergedPlans, http.StatusOK))
+}
+
+func (h *BillingHandler) mergePlansWithFeatures(plans, configPlans []billing.Plan) []interface{} {
+	configPlansMap := make(map[string]map[string]interface{})
+	for _, plan := range configPlans {
+		if plan.Name == "" {
+			continue
+		}
+		planJSON, err := json.Marshal(plan)
+		if err != nil {
+			continue
+		}
+		var planMap map[string]interface{}
+		if err := json.Unmarshal(planJSON, &planMap); err != nil {
+			continue
+		}
+		configPlansMap[strings.ToLower(plan.Name)] = planMap
+	}
+
+	mergedPlans := make([]interface{}, 0, len(plans))
+	for _, plan := range plans {
+		planJSON, err := json.Marshal(plan)
+		if err != nil {
+			continue
+		}
+		var planMap map[string]interface{}
+		if err := json.Unmarshal(planJSON, &planMap); err != nil {
+			continue
+		}
+
+		configPlanMap, found := configPlansMap[strings.ToLower(plan.Name)]
+		if found {
+			mergedPlan := make(map[string]interface{})
+			for k, v := range configPlanMap {
+				mergedPlan[k] = v
+			}
+			for k, v := range planMap {
+				mergedPlan[k] = v
+			}
+			mergedPlans = append(mergedPlans, mergedPlan)
+		} else {
+			mergedPlans = append(mergedPlans, planMap)
+		}
+	}
+
+	return mergedPlans
 }
 
 func (h *BillingHandler) GetTaxIDTypes(w http.ResponseWriter, r *http.Request) {
@@ -280,7 +395,7 @@ func (h *BillingHandler) GetTaxIDTypes(w http.ResponseWriter, r *http.Request) {
 
 // Organisation handlers
 func (h *BillingHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
-	var orgData map[string]interface{}
+	var orgData billing.BillingOrganisation
 	if err := json.NewDecoder(r.Body).Decode(&orgData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
@@ -326,7 +441,7 @@ func (h *BillingHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var orgData map[string]interface{}
+	var orgData billing.BillingOrganisation
 	if err := json.NewDecoder(r.Body).Decode(&orgData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
@@ -352,7 +467,7 @@ func (h *BillingHandler) UpdateOrganisationTaxID(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var taxData map[string]interface{}
+	var taxData billing.UpdateOrganisationTaxIDRequest
 	if err := json.NewDecoder(r.Body).Decode(&taxData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
@@ -378,7 +493,7 @@ func (h *BillingHandler) UpdateOrganisationAddress(w http.ResponseWriter, r *htt
 		return
 	}
 
-	var addressData map[string]interface{}
+	var addressData billing.UpdateOrganisationAddressRequest
 	if err := json.NewDecoder(r.Body).Decode(&addressData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
@@ -414,10 +529,48 @@ func (h *BillingHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions retrieved successfully", resp.Data, http.StatusOK))
 }
 
-func (h *BillingHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
+func (h *BillingHandler) OnboardSubscription(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	// Only require billing access, not enabled organisation - allows onboarding even if org is disabled
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
+	var requestData billing.OnboardSubscriptionRequest
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
+		return
+	}
+
+	if requestData.PlanID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("plan_id is required and must be a valid UUID", http.StatusBadRequest))
+		return
+	}
+
+	if requestData.Host == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("host is required", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.OnboardSubscription(r.Context(), orgID, requestData)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Checkout session created successfully", resp.Data, http.StatusOK))
+}
+
+func (h *BillingHandler) UpgradeSubscription(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	subscriptionID := chi.URLParam(r, "subscriptionID")
+	if orgID == "" || subscriptionID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and subscription ID are required", http.StatusBadRequest))
 		return
 	}
 
@@ -425,19 +578,52 @@ func (h *BillingHandler) CreateSubscription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var subData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&subData); err != nil {
+	var requestData billing.UpgradeSubscriptionRequest
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
 	}
 
-	resp, err := h.BillingClient.CreateSubscription(r.Context(), orgID, subData)
+	if requestData.PlanID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("plan_id is required and must be a valid UUID", http.StatusBadRequest))
+		return
+	}
+
+	if requestData.Host == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("host is required", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.UpgradeSubscription(r.Context(), orgID, subscriptionID, requestData)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", resp.Data, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Checkout session created successfully", resp.Data, http.StatusOK))
+}
+
+func (h *BillingHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	subscriptionID := chi.URLParam(r, "subscriptionID")
+	if orgID == "" || subscriptionID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and subscription ID are required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
+	resp, err := h.BillingClient.DeleteSubscription(r.Context(), orgID, subscriptionID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	h.updateOrganisationStatus(r.Context(), orgID, resp.Data)
+
+	_ = render.Render(w, r, util.NewServerResponse("Subscription cancelled successfully", resp.Data, http.StatusOK))
 }
 
 // Payment method handlers
@@ -483,6 +669,41 @@ func (h *BillingHandler) GetInvoice(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Invoice retrieved successfully", resp.Data, http.StatusOK))
 }
 
+func (h *BillingHandler) DownloadInvoice(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	invoiceID := chi.URLParam(r, "invoiceID")
+	if orgID == "" || invoiceID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and invoice ID are required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
+	pdfResp, err := h.BillingClient.DownloadInvoice(r.Context(), orgID, invoiceID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			_ = render.Render(w, r, util.NewErrorResponse("Invoice not found", http.StatusNotFound))
+		} else if strings.Contains(err.Error(), "PDF link not found") {
+			_ = render.Render(w, r, util.NewErrorResponse("Invoice PDF link not available", http.StatusNotFound))
+		} else {
+			_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("Failed to download invoice: %s", err.Error()), http.StatusInternalServerError))
+		}
+		return
+	}
+	defer pdfResp.Body.Close()
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="invoice-%s.pdf"`, invoiceID))
+
+	_, err = io.Copy(w, pdfResp.Body)
+	if err != nil {
+		h.A.Logger.WithError(err).Error("Failed to stream PDF to client")
+		return
+	}
+}
+
 // GetInternalOrganisationID returns the internal organisation ID from billing service
 func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "orgID")
@@ -518,11 +739,16 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 			return
 		}
 
-		orgData := map[string]interface{}{
-			"name":          org.Name,
-			"external_id":   orgID,
-			"billing_email": "",
-			"host":          cfg.Host,
+		ownerEmail := h.getOwnerEmail(r.Context(), orgID)
+		if ownerEmail == "" {
+			h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
+		}
+
+		orgData := billing.BillingOrganisation{
+			Name:         org.Name,
+			ExternalID:   orgID,
+			BillingEmail: ownerEmail,
+			Host:         cfg.Host,
 		}
 
 		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
@@ -548,21 +774,42 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Extract just the internal ID from the response
-	var internalID string
-	if resp.Data != nil {
-		if data, ok := resp.Data.(map[string]interface{}); ok {
-			if id, exists := data["id"]; exists {
-				if idStr, ok := id.(string); ok {
-					internalID = idStr
-				}
-			}
-		}
-	}
+	h.updateBillingEmailIfEmpty(orgID)
 
 	responseData := map[string]interface{}{
-		"id": internalID,
+		"id": resp.Data.ID,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Internal organisation ID retrieved successfully", responseData, http.StatusOK))
+}
+
+func (h *BillingHandler) updateOrganisationStatus(ctx context.Context, orgID string, subscriptionData interface{}) {
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to fetch organisation %s for disabled status update", orgID)
+		return
+	}
+
+	isActive := billing.HasActiveSubscription(subscriptionData)
+
+	if isActive {
+		if org.DisabledAt.Valid {
+			org.DisabledAt = null.Time{}
+			if err := orgRepo.UpdateOrganisation(ctx, org); err != nil {
+				h.A.Logger.WithError(err).Errorf("Failed to clear organisation %s disabled_at", orgID)
+				return
+			}
+			h.A.Logger.Infof("Cleared organisation %s disabled_at - subscription active", orgID)
+		}
+	} else {
+		if !org.DisabledAt.Valid {
+			org.DisabledAt = null.NewTime(time.Now(), true)
+			if err := orgRepo.UpdateOrganisation(ctx, org); err != nil {
+				h.A.Logger.WithError(err).Errorf("Failed to set organisation %s disabled_at", orgID)
+				return
+			}
+			h.A.Logger.Infof("Set organisation %s disabled_at - subscription not active", orgID)
+		}
+	}
 }

@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { HttpService } from '../http/http.service';
-import { HTTP_RESPONSE } from 'src/app/models/global.model';
+import {Injectable} from '@angular/core';
+import {HttpService} from '../http/http.service';
+import {HTTP_RESPONSE} from 'src/app/models/global.model';
 
 @Injectable({
 	providedIn: 'root'
@@ -8,12 +8,14 @@ import { HTTP_RESPONSE } from 'src/app/models/global.model';
 export class LicensesService {
 	constructor(private http: HttpService) {}
 
-	getLicenses(): Promise<HTTP_RESPONSE> {
+	getLicenses(orgId?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				const org = orgId ?? this.http.getOrganisation()?.uid;
 				const response = await this.http.request({
 					url: `/license/features`,
-					method: 'get'
+					method: 'get',
+					query: org ? { orgID: org } : undefined
 				});
 
 				return resolve(response);
@@ -27,25 +29,114 @@ export class LicensesService {
 	async setLicenses() {
 		try {
 			const response = await this.getLicenses();
-
-			let allowedLicenses: any[] = [];
-			Object.entries(response.data).forEach(([key, entry]: any) => {
-				if (entry.allowed) allowedLicenses.push(key);
-			});
-
-			localStorage.setItem('licenses', JSON.stringify(allowedLicenses));
+			// Store full response data for new format (limits with allowed field and boolean features)
+			localStorage.setItem('licenses', JSON.stringify(response.data));
 		} catch {}
 	}
 
-	hasLicense(license: string) {
-		const savedLicenses = localStorage.getItem('licenses');
-		if (savedLicenses) {
-			const licenses = JSON.parse(savedLicenses);
-			const userHasLicense = licenses.includes(license);
+	hasOrgLicense(org: { license_data?: string } | null): boolean {
+		return !!(org?.license_data);
+	}
 
-			return userHasLicense;
+	hasLicense(license: string): boolean {
+		const savedLicenses = localStorage.getItem('licenses');
+		if (!savedLicenses) {
+			return false;
 		}
 
-		return false;
+		try {
+			const licenseData = JSON.parse(savedLicenses);
+
+			// Check if it's a limit (object with allowed field)
+			if (licenseData[license] && typeof licenseData[license] === 'object' && 'allowed' in licenseData[license]) {
+				return licenseData[license].allowed === true;
+			}
+
+			// Check if it's a boolean feature
+			if (typeof licenseData[license] === 'boolean') {
+				return licenseData[license] === true;
+			}
+
+			return false;
+		} catch {
+			return false;
+		}
+	}
+
+	isMultiUserMode(): boolean {
+		const savedLicenses = localStorage.getItem('licenses');
+		if (!savedLicenses) {
+			return false;
+		}
+
+		try {
+			const licenseData = JSON.parse(savedLicenses);
+			const userLimit = licenseData['user_limit'];
+			if (userLimit && typeof userLimit === 'object' && 'allowed' in userLimit && 'limit' in userLimit) {
+				return userLimit.allowed === true && userLimit.limit > 1;
+			}
+			return false;
+		} catch {
+			return false;
+		}
+	}
+
+	isLimitAvailable(limitKey: string): boolean {
+		const savedLicenses = localStorage.getItem('licenses');
+		if (!savedLicenses) {
+			return false;
+		}
+
+		try {
+			const licenseData = JSON.parse(savedLicenses);
+			const limit = licenseData[limitKey];
+			if (limit && typeof limit === 'object' && 'available' in limit) {
+				return limit.available === true;
+			}
+			return false;
+		} catch {
+			return false;
+		}
+	}
+
+	isLimitReached(limitKey: string): boolean {
+		const savedLicenses = localStorage.getItem('licenses');
+		if (!savedLicenses) {
+			return false;
+		}
+
+		try {
+			const licenseData = JSON.parse(savedLicenses);
+			const limit = licenseData[limitKey];
+			if (limit && typeof limit === 'object' && 'limit_reached' in limit) {
+				return limit.limit_reached === true;
+			}
+			return false;
+		} catch {
+			return false;
+		}
+	}
+
+	getLimitInfo(limitKey: string): {current: number, limit: number, available: boolean, limit_reached: boolean} | null {
+		const savedLicenses = localStorage.getItem('licenses');
+		if (!savedLicenses) {
+			return null;
+		}
+
+		try {
+			const licenseData = JSON.parse(savedLicenses);
+			const limit = licenseData[limitKey];
+			if (limit && typeof limit === 'object' && 'current' in limit && 'limit' in limit && 'available' in limit && 'limit_reached' in limit) {
+				return {
+					current: limit.current || 0,
+					limit: limit.limit || 0,
+					available: limit.available === true,
+					limit_reached: limit.limit_reached === true
+				};
+			}
+			return null;
+		} catch {
+			return null;
+		}
 	}
 }

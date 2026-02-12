@@ -250,6 +250,7 @@ WITH user_organisations AS (
         o.owner_id,
         o.custom_domain,
         o.assigned_domain,
+        o.license_data,
         o.created_at,
         o.updated_at,
         o.deleted_at

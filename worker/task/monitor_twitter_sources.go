@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
-	"io"
+	"os"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -18,6 +18,7 @@ import (
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -25,8 +26,8 @@ import (
 )
 
 func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.Redis) func(context.Context, *asynq.Task) error {
-	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
-	subRepo := postgres.NewSubscriptionRepo(db)
+	sourceRepo := sources.New(log.NewLogger(os.Stdout), db)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 	endpointRepo := postgres.NewEndpointRepo(db)
 
 	pool := goredis.NewPool(redis.Client())

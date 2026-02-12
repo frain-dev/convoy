@@ -20,6 +20,8 @@ export interface BillingOverview {
 
 @Injectable({ providedIn: 'root' })
 export class BillingOverviewService {
+  bootstrapPromise: Promise<void> | null = null;
+
   constructor(private httpService: HttpService) {}
 
   getOverview(): Observable<BillingOverview> {
@@ -28,12 +30,22 @@ export class BillingOverviewService {
     );
   }
 
+  setBootstrapPromise(promise: Promise<void>): void {
+    this.bootstrapPromise = promise;
+  }
+
+  async waitForBootstrap(): Promise<void> {
+    if (this.bootstrapPromise) {
+      await this.bootstrapPromise;
+    }
+  }
+
   async ensureBillingReady(): Promise<void> {
     const orgId = this.getOrganisationId();
     await this.httpService.request({ url: `/billing/organisations/${orgId}/subscription`, method: 'get', hideNotification: true });
   }
 
-  private async getOverviewData() {
+  async getOverviewData() {
     try {
       const orgId = this.getOrganisationId();
 
@@ -58,7 +70,7 @@ export class BillingOverviewService {
     }
   }
 
-  private formatOverviewData(data: any): BillingOverview {
+  formatOverviewData(data: any): BillingOverview {
     if (!data) {
       return {
         plan: { name: 'No plan', price: '$0' },

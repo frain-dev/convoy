@@ -7,13 +7,15 @@ INSERT INTO convoy.organisations (
     name,
     owner_id,
     custom_domain,
-    assigned_domain
+    assigned_domain,
+    license_data
 ) VALUES (
     $1,
     $2,
     $3,
     $4,
-    $5
+    $5,
+    $6
 );
 
 -- name: UpdateOrganisation :execresult
@@ -22,6 +24,15 @@ SET
     name = $2,
     custom_domain = $3,
     assigned_domain = $4,
+    disabled_at = $5,
+    license_data = $6,
+    updated_at = NOW()
+WHERE id = $1
+  AND deleted_at IS NULL;
+
+-- name: UpdateOrganisationLicenseData :execresult
+UPDATE convoy.organisations
+SET license_data = $2,
     updated_at = NOW()
 WHERE id = $1
   AND deleted_at IS NULL;
@@ -39,9 +50,11 @@ SELECT
     name,
     custom_domain,
     assigned_domain,
+    license_data,
     created_at,
     updated_at,
-    deleted_at
+    deleted_at,
+    disabled_at
 FROM convoy.organisations
 WHERE id = $1
   AND deleted_at IS NULL;
@@ -53,9 +66,11 @@ SELECT
     name,
     custom_domain,
     assigned_domain,
+    license_data,
     created_at,
     updated_at,
-    deleted_at
+    deleted_at,
+    disabled_at
 FROM convoy.organisations
 WHERE custom_domain = $1
   AND deleted_at IS NULL;
@@ -67,9 +82,11 @@ SELECT
     name,
     custom_domain,
     assigned_domain,
+    license_data,
     created_at,
     updated_at,
-    deleted_at
+    deleted_at,
+    disabled_at
 FROM convoy.organisations
 WHERE assigned_domain = $1
   AND deleted_at IS NULL;
@@ -87,9 +104,11 @@ WITH filtered_organisations AS (
         name,
         custom_domain,
         assigned_domain,
+        license_data,
         created_at,
         updated_at,
-        deleted_at
+        deleted_at,
+        disabled_at
     FROM convoy.organisations
     WHERE deleted_at IS NULL
         -- Optional search filter (searches both name and id)

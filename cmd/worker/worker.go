@@ -11,10 +11,13 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/filters"
+	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -26,7 +29,9 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/telemetry"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
@@ -154,16 +159,16 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	}
 
 	projectRepo := projects.New(a.Logger, a.DB)
-	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
+	metaEventRepo := meta_events.New(a.Logger, a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
 	eventRepo := postgres.NewEventRepo(a.DB)
 	jobRepo := postgres.NewJobRepo(a.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
-	subRepo := postgres.NewSubscriptionRepo(a.DB)
+	subRepo := subscriptions.New(a.Logger, a.DB)
 	configRepo := configuration.New(a.Logger, a.DB)
 	attemptRepo := delivery_attempts.New(a.Logger, a.DB)
 	filterRepo := filters.New(a.Logger, a.DB)
-	batchRetryRepo := postgres.NewBatchRetryRepo(a.DB)
+	batchRetryRepo := batch_retries.New(lo, a.DB)
 
 	rd, err := rdb.NewClientFromConfig(
 		cfg.Redis.BuildDsn(),
@@ -301,7 +306,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 					orgRepo := organisations.New(lo, a.DB)
 					ownerEmail := ""
 					if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
-						if owner, err := postgres.NewUserRepo(a.DB).FindUserByID(ctx, org.OwnerID); err == nil {
+						if owner, err := users.New(a.Logger, a.DB).FindUserByID(ctx, org.OwnerID); err == nil {
 							ownerEmail = owner.Email
 						}
 					}
@@ -434,6 +439,12 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	// consumer.RegisterHandlers(convoy.RefreshMetricsMaterializedViews, task.RefreshMetricsMaterializedViews(a.DB, rd), nil)
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
+
+	var billingClient billing.Client
+	if cfg.Billing.Enabled {
+		billingClient = billing.NewClient(cfg.Billing)
+		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(a.DB, billingClient, rd, lo), nil)
+	}
 
 	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
 	if err != nil {

@@ -1,9 +1,14 @@
 <app-billing-overview 
+  [overview]="billingOverview"
+  [isLoading]="isLoadingBillingData"
   [refreshTrigger]="refreshOverviewTrigger"
   (openPaymentDetails)="openPaymentDetails()"
   (openManagePlan)="openManagePlan()">
 </app-billing-overview>
-<app-billing-usage></app-billing-usage>
+<app-billing-usage 
+  [usageRows]="usageRows"
+  [isFetchingUsage]="isLoadingBillingData">
+</app-billing-usage>
 <app-billing-invoices></app-billing-invoices>
 
 <dialog #paymentDetailsDialog convoy-dialog>
@@ -360,11 +365,12 @@
         <button 
           type="button" 
           convoy-button 
-          [fill]="plan.id === 'enterprise' ? 'solid' : 'outline'" 
-          [color]="plan.id === 'enterprise' ? 'primary' : 'neutral'" 
+          [fill]="selectedPlan === plan.id ? 'solid' : 'outline'" 
+          [color]="selectedPlan === plan.id ? 'primary' : 'neutral'" 
+          [disabled]="selectedPlan !== plan.id || isCurrentPlan(plan.id) || isLoadingCheckout"
           class="plan-card-button" 
-          (click)="plan.id === 'enterprise' ? onUpgradePlan() : onCancelPlan(); $event.stopPropagation()">
-          {{ plan.id === 'enterprise' ? 'Upgrade' : 'Cancel' }}
+          (click)="selectedPlan === plan.id && !isCurrentPlan(plan.id) ? onUpgradePlan() : selectPlan(plan.id); $event.stopPropagation()">
+          {{ getButtonText(plan.id) }}
         </button>
       </div>
     </div>
@@ -443,6 +449,48 @@
           </div>
         </div>
       </div>
+
+      <!-- Cancel Subscription Section - Visible for testing -->
+      <div *ngIf="currentSubscription && currentSubscription.id" class="mt-40px pt-40px border-t border-neutral-4">
+        <h4 class="text-16 font-medium mb-16px text-red-600">Danger Zone</h4>
+        <p class="text-14 text-neutral-7 mb-16px">Cancel your subscription. This action cannot be undone.</p>
+        <button 
+          convoy-button 
+          fill="outline" 
+          color="error"
+          [disabled]="isCancellingSubscription"
+          (click)="onCancelPlan()">
+          {{ getCancelButtonText() }}
+        </button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<dialog #cancelConfirmDialog convoy-dialog position="center" size="md">
+  <div convoy-dialog-header (closeDialog)="closeCancelConfirm()">
+    <h2 class="font-semibold text-14">Cancel Subscription</h2>
+  </div>
+
+  <div class="p-24px">
+    <p class="text-14 text-neutral-7 mb-24px">
+      Are you sure you want to cancel your subscription? This action cannot be undone.
+    </p>
+
+    <div class="flex gap-12px justify-end">
+      <button
+        convoy-button
+        fill="outline"
+        (click)="closeCancelConfirm()">
+        Cancel
+      </button>
+      <button
+        convoy-button
+        color="error"
+        [disabled]="isCancellingSubscription"
+        (click)="confirmCancelSubscription()">
+        {{ getCancelButtonText() }}
+      </button>
     </div>
   </div>
 </dialog>

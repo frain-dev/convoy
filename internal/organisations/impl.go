@@ -43,28 +43,41 @@ func New(logger log.StdLogger, db database.Database) *Service {
 // rowToOrganisation converts any SQLc-generated row struct to datastore.Organisation
 func rowToOrganisation(row interface{}) datastore.Organisation {
 	var (
-		id, ownerID, name               string
+		id, ownerID, name, licenseData  string
 		customDomain, assignedDomain    pgtype.Text
 		createdAt, updatedAt, deletedAt pgtype.Timestamptz
+		disabledAt                      pgtype.Timestamptz
 	)
 
 	switch r := row.(type) {
 	case repo.FetchOrganisationByIDRow:
 		id, ownerID, name = r.ID, r.OwnerID, r.Name
 		customDomain, assignedDomain = r.CustomDomain, r.AssignedDomain
-		createdAt, updatedAt, deletedAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt
+		if r.LicenseData.Valid {
+			licenseData = r.LicenseData.String
+		}
+		createdAt, updatedAt, deletedAt, disabledAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.DisabledAt
 	case repo.FetchOrganisationByCustomDomainRow:
 		id, ownerID, name = r.ID, r.OwnerID, r.Name
 		customDomain, assignedDomain = r.CustomDomain, r.AssignedDomain
-		createdAt, updatedAt, deletedAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt
+		if r.LicenseData.Valid {
+			licenseData = r.LicenseData.String
+		}
+		createdAt, updatedAt, deletedAt, disabledAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.DisabledAt
 	case repo.FetchOrganisationByAssignedDomainRow:
 		id, ownerID, name = r.ID, r.OwnerID, r.Name
 		customDomain, assignedDomain = r.CustomDomain, r.AssignedDomain
-		createdAt, updatedAt, deletedAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt
+		if r.LicenseData.Valid {
+			licenseData = r.LicenseData.String
+		}
+		createdAt, updatedAt, deletedAt, disabledAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.DisabledAt
 	case repo.FetchOrganisationsPaginatedRow:
 		id, ownerID, name = r.ID, r.OwnerID, r.Name
 		customDomain, assignedDomain = r.CustomDomain, r.AssignedDomain
-		createdAt, updatedAt, deletedAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt
+		if r.LicenseData.Valid {
+			licenseData = r.LicenseData.String
+		}
+		createdAt, updatedAt, deletedAt, disabledAt = r.CreatedAt, r.UpdatedAt, r.DeletedAt, r.DisabledAt
 	default:
 		return datastore.Organisation{}
 	}
@@ -75,9 +88,11 @@ func rowToOrganisation(row interface{}) datastore.Organisation {
 		Name:           name,
 		CustomDomain:   common.PgTextToNullString(customDomain),
 		AssignedDomain: common.PgTextToNullString(assignedDomain),
+		LicenseData:    licenseData,
 		CreatedAt:      createdAt.Time,
 		UpdatedAt:      updatedAt.Time,
 		DeletedAt:      common.PgTimestamptzToNullTime(deletedAt),
+		DisabledAt:     common.PgTimestamptzToNullTime(disabledAt),
 	}
 }
 
@@ -97,6 +112,7 @@ func (s *Service) CreateOrganisation(ctx context.Context, org *datastore.Organis
 		OwnerID:        org.OwnerID,
 		CustomDomain:   common.NullStringToPgText(org.CustomDomain),
 		AssignedDomain: common.NullStringToPgText(org.AssignedDomain),
+		LicenseData:    common.StringToPgText(org.LicenseData),
 	})
 
 	if err != nil {
@@ -118,6 +134,8 @@ func (s *Service) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 		Name:           org.Name,
 		CustomDomain:   common.NullStringToPgText(org.CustomDomain),
 		AssignedDomain: common.NullStringToPgText(org.AssignedDomain),
+		DisabledAt:     common.NullTimeToPgTimestamptz(org.DisabledAt),
+		LicenseData:    common.StringToPgText(org.LicenseData),
 	})
 
 	if err != nil {
@@ -129,6 +147,22 @@ func (s *Service) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 		return util.NewServiceError(http.StatusNotFound, datastore.ErrOrgNotFound)
 	}
 
+	return nil
+}
+
+// UpdateOrganisationLicenseData updates only the license_data field for an organisation
+func (s *Service) UpdateOrganisationLicenseData(ctx context.Context, orgID, licenseData string) error {
+	result, err := s.repo.UpdateOrganisationLicenseData(ctx, repo.UpdateOrganisationLicenseDataParams{
+		ID:          orgID,
+		LicenseData: common.StringToPgText(licenseData),
+	})
+	if err != nil {
+		s.logger.WithError(err).Error("failed to update organisation license data")
+		return util.NewServiceError(http.StatusInternalServerError, err)
+	}
+	if result.RowsAffected() == 0 {
+		return util.NewServiceError(http.StatusNotFound, datastore.ErrOrgNotFound)
+	}
 	return nil
 }
 
