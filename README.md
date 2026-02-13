@@ -1,7 +1,7 @@
 # ![convoy image](./convoy_logo.png)
 
 [![golangci-lint](https://github.com/frain-dev/convoy/actions/workflows/linter.yml/badge.svg)](https://github.com/frain-dev/convoy/actions/workflows/linter.yml)
-[![Build and run all tests](https://github.com/frain-dev/convoy/actions/workflows/go.yml/badge.svg)](https://github.com/frain-dev/convoy/actions/workflows/go.yml)
+[![Build and run all tests](https://github.com/frain-dev/convoy/actions/workflows/go.yml/badge.svg)](https://github.com/frain-dev/convoy/actions/workflows/integration-tests.yml)
 
 - Website: https://getconvoy.io
 - Forum: [Convoy Community](https://community.getconvoy.io)
