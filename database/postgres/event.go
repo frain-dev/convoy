@@ -131,22 +131,56 @@ const (
 
         %s %s AND ev.id <= :cursor
 		GROUP BY ev.id, s.id
-	    ORDER BY ev.created_at %s
+	    ORDER BY ev.created_at %s, ev.id %s
 	    LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY created_at %s
+	SELECT * FROM events ORDER BY created_at %s, id %s
 	`
 
 	baseEventsPagedBackward = `
 
         %s %s AND ev.id >= :cursor
 		GROUP BY ev.id, s.id
-		ORDER BY ev.created_at %s
+		ORDER BY ev.created_at %s, ev.id %s
 		LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY created_at %s
+	SELECT * FROM events ORDER BY created_at %s, id %s
+	`
+
+	baseEventsPagedExists = `
+	SELECT ev.id, ev.project_id,
+	ev.id AS event_type, ev.is_duplicate_event,
+	COALESCE(ev.source_id, '') AS source_id,
+	ev.headers, ev.raw, ev.data, ev.created_at,
+	COALESCE(ev.idempotency_key, '') AS idempotency_key,
+	COALESCE(ev.url_query_params, '') AS url_query_params,
+	ev.updated_at, ev.deleted_at, ev.acknowledged_at,
+	COALESCE(s.id, '') AS "source_metadata.id",
+	COALESCE(s.name, '') AS "source_metadata.name"
+	FROM convoy.events ev
+	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+	WHERE ev.deleted_at IS NULL`
+
+	baseEventsPagedExistsForward = `
+	with events as (
+		%s %s AND ev.id <= :cursor
+		AND EXISTS ( %s )
+		ORDER BY ev.created_at %s, ev.id %s
+		LIMIT :limit
+	)
+	SELECT * FROM events ORDER BY created_at %s, id %s
+	`
+
+	baseEventsPagedExistsBackward = `
+	with events as (
+		%s %s AND ev.id >= :cursor
+		AND EXISTS ( %s )
+		ORDER BY ev.created_at %s, ev.id %s
+		LIMIT :limit
+	)
+	SELECT * FROM events ORDER BY created_at %s, id %s
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id
@@ -176,6 +210,12 @@ const (
 		FROM convoy.events_search ev
 		LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 		WHERE ev.deleted_at IS NULL
+	`
+	baseCountPrevEventsExists = `
+	select exists(
+		SELECT 1 FROM convoy.events ev
+		WHERE ev.deleted_at IS NULL
+		AND EXISTS ( %s )
 	`
 	countPrevEvents = ` AND ev.id > :cursor ORDER BY ev.created_at %s`
 
@@ -525,23 +565,45 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		filterQuery += brokerMessageIdFilter
 	}
 
-	// if there's no owner_id, we remove the initial CTE
-	if len(filter.OwnerID) == 0 {
-		base = strings.Replace(base, "with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id),", "with ", 1)
-		base = strings.Replace(base, "endpoint_ids", "convoy.endpoints", 1)
-	}
-
-	if !util.IsStringEmpty(filter.Query) {
-		filterQuery += searchFilter
-		base = baseEventsSearch
-	}
-
 	preOrder := filter.Pageable.SortOrder()
 	if filter.Pageable.Direction == datastore.Prev {
 		preOrder = reverseOrder(preOrder)
 	}
 
-	query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, filter.Pageable.SortOrder())
+	useExistsQuery := util.IsStringEmpty(filter.Query)
+	var filterQueryNoEndpoint string
+	var existsSubquery string
+	if useExistsQuery {
+		filterQueryNoEndpoint = baseEventFilter
+		if len(filter.SourceIDs) > 0 {
+			filterQueryNoEndpoint += sourceFilter
+		}
+		if len(filter.BrokerMessageId) > 0 {
+			filterQueryNoEndpoint += brokerMessageIdFilter
+		}
+		existsSubquery = buildExistsSubquery(len(filter.OwnerID) > 0, len(filter.EndpointIDs) > 0)
+		var existsPagination string
+		if filter.Pageable.Direction == datastore.Next {
+			existsPagination = baseEventsPagedExistsForward
+			if preOrder == "ASC" {
+				existsPagination = strings.Replace(existsPagination, "<=", ">=", 1)
+			}
+		} else {
+			existsPagination = baseEventsPagedExistsBackward
+			if preOrder == "ASC" {
+				existsPagination = strings.Replace(existsPagination, ">=", "<=", 1)
+			}
+		}
+		query = fmt.Sprintf(existsPagination, baseEventsPagedExists, filterQueryNoEndpoint, existsSubquery, preOrder, filter.Pageable.SortOrder(), preOrder, filter.Pageable.SortOrder())
+	} else {
+		base = baseEventsSearch
+		if len(filter.OwnerID) == 0 {
+			base = strings.Replace(base, "with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id),", "with ", 1)
+			base = strings.Replace(base, "endpoint_ids", "convoy.endpoints", 1)
+		}
+		filterQuery += searchFilter
+		query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, filter.Pageable.SortOrder(), preOrder, filter.Pageable.SortOrder())
+	}
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -578,14 +640,18 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		qarg["cursor"] = first.UID
 
 		baseCountEvents := baseCountPrevEvents
-		if !util.IsStringEmpty(filter.Query) {
+		countFilterQuery := filterQuery
+		if useExistsQuery {
+			baseCountEvents = fmt.Sprintf(baseCountPrevEventsExists, existsSubquery)
+			countFilterQuery = filterQueryNoEndpoint
+		} else if !util.IsStringEmpty(filter.Query) {
 			baseCountEvents = baseCountPrevEventSearch
 		}
 
 		tmp := getCountDeliveriesPrevRowQuery(filter.Pageable.SortOrder())
 		tmp = fmt.Sprintf(tmp, filter.Pageable.SortOrder())
 
-		cq := baseCountEvents + filterQuery + tmp + ");"
+		cq := baseCountEvents + countFilterQuery + tmp + ");"
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -713,6 +779,19 @@ func getCountDeliveriesPrevRowQuery(sortOrder string) string {
 	}
 
 	return countPrevEvents
+}
+
+func buildExistsSubquery(hasOwnerID, hasEndpointIDs bool) string {
+	q := `SELECT 1 FROM convoy.events_endpoints ee
+    JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+    WHERE ee.event_id = ev.id`
+	if hasOwnerID {
+		q += ` AND e.owner_id = :owner_id`
+	}
+	if hasEndpointIDs {
+		q += ` AND ee.endpoint_id IN (:endpoint_ids)`
+	}
+	return q
 }
 
 func (e *eventRepo) PartitionEventsTable(ctx context.Context) error {
