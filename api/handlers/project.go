@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -21,7 +22,7 @@ func createProjectService(h *Handler) (*services.ProjectService, error) {
 	projectRepo := projects.New(h.A.Logger, h.A.DB)
 	eventRepo := postgres.NewEventRepo(h.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
-	eventTypesRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypesRepo := event_types.New(h.A.Logger, h.A.DB)
 
 	projectService, err := services.NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, h.A.Licenser, eventTypesRepo)
 	if err != nil {
