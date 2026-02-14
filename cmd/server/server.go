@@ -203,7 +203,7 @@ func StartConvoyServer(a *cli.App) error {
 		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
 
-	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
+	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, a.Redis, nil)
 	if err != nil {
 		return fmt.Errorf("failed to register queue metrics: %w", err)
 	}
