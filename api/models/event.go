@@ -249,7 +249,9 @@ func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 
 	var startT time.Time
 	if len(startDate) == 0 {
-		startT = time.Unix(0, 0)
+		now := time.Now()
+		startT = now.AddDate(0, 0, -7)
+		startT = time.Date(startT.Year(), startT.Month(), startT.Day(), 0, 0, 0, 0, startT.Location())
 	} else {
 		startT, err = time.Parse(format, startDate)
 		if err != nil {
