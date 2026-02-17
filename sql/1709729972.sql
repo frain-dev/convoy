@@ -1,13 +1,19 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
     ADD COLUMN IF NOT EXISTS name text,
     ADD COLUMN IF NOT EXISTS url text;
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 UPDATE convoy.endpoints
 SET name = title, url = target_url;
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
     ALTER COLUMN url SET NOT NULL,
     ALTER COLUMN name SET NOT NULL,

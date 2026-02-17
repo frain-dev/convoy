@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TYPE convoy.delivery_mode AS ENUM ('at_least_once', 'at_most_once');
 
 ALTER TABLE convoy.subscriptions ADD COLUMN IF NOT EXISTS delivery_mode convoy.delivery_mode DEFAULT 'at_least_once';

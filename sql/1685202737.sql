@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.portal_links
     ADD COLUMN IF NOT EXISTS owner_id VARCHAR,
     ADD COLUMN IF NOT EXISTS can_manage_endpoint BOOLEAN,
@@ -6,7 +8,9 @@ ALTER TABLE convoy.portal_links
     ALTER COLUMN endpoints DROP NOT NULL;
 
 -- +migrate Up
-CREATE INDEX IF NOT EXISTS idx_portal_links_owner_id_key ON convoy.portal_links (owner_id);
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_portal_links_owner_id_key ON convoy.portal_links (owner_id);
 
 -- +migrate Down
 ALTER TABLE convoy.portal_links
@@ -14,4 +18,4 @@ ALTER TABLE convoy.portal_links
     DROP COLUMN IF EXISTS can_manage_endpoint;
 
 -- +migrate Down
-DROP INDEX IF EXISTS convoy.idx_portal_links_owner_id_key;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_portal_links_owner_id_key;

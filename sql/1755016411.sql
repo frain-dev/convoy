@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.project_configurations ADD COLUMN IF NOT EXISTS cb_sample_rate INTEGER NOT NULL DEFAULT 30;
 ALTER TABLE convoy.project_configurations ADD COLUMN IF NOT EXISTS cb_error_timeout INTEGER NOT NULL DEFAULT 30;
 ALTER TABLE convoy.project_configurations ADD COLUMN IF NOT EXISTS cb_failure_threshold INTEGER NOT NULL DEFAULT 70;

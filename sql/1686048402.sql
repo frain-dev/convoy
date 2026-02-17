@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS url_query_params VARCHAR;
 ALTER TABLE convoy.event_deliveries ADD COLUMN IF NOT EXISTS url_query_params VARCHAR;
 

@@ -1,28 +1,40 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
     ADD COLUMN IF NOT EXISTS new_http_timeout int,
     ADD COLUMN IF NOT EXISTS new_rate_limit_duration int;
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 UPDATE convoy.endpoints
     SET new_http_timeout = convoy.duration_to_seconds(http_timeout::interval),
         new_rate_limit_duration = convoy.duration_to_seconds(rate_limit_duration::interval);
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
     ALTER COLUMN new_http_timeout SET NOT NULL,
     DROP COLUMN IF EXISTS http_timeout;
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
     ALTER COLUMN new_rate_limit_duration SET NOT NULL,
     DROP COLUMN IF EXISTS rate_limit_duration;
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
     RENAME COLUMN new_http_timeout TO http_timeout;
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
     RENAME COLUMN new_rate_limit_duration TO rate_limit_duration;
 

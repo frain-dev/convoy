@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE IF EXISTS convoy.sources DROP COLUMN IF EXISTS function;
 ALTER TABLE convoy.sources ADD COLUMN IF NOT EXISTS body_function TEXT;
 ALTER TABLE convoy.sources ADD COLUMN IF NOT EXISTS header_function TEXT;

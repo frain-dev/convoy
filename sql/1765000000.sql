@@ -1,20 +1,22 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.early_adopter_features (
     id              VARCHAR NOT NULL PRIMARY KEY,
     organisation_id VARCHAR NOT NULL,
     feature_key     VARCHAR NOT NULL,  -- 'mtls' or 'oauth-token-exchange'
     enabled         BOOLEAN NOT NULL DEFAULT false,
     enabled_by      VARCHAR,            -- User ID who enabled it
-    enabled_at      TIMESTAMP,
-    created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMP NOT NULL DEFAULT NOW(),
+    enabled_at      TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
     UNIQUE(organisation_id, feature_key),
     FOREIGN KEY (organisation_id) REFERENCES convoy.organisations(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_early_adopter_features_org ON convoy.early_adopter_features(organisation_id);
-CREATE INDEX IF NOT EXISTS idx_early_adopter_features_key ON convoy.early_adopter_features(feature_key);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_early_adopter_features_org ON convoy.early_adopter_features(organisation_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_early_adopter_features_key ON convoy.early_adopter_features(feature_key);
 
 INSERT INTO convoy.early_adopter_features (id, organisation_id, feature_key, enabled, enabled_by, enabled_at, created_at, updated_at)
 SELECT 
@@ -74,6 +76,6 @@ FROM convoy.early_adopter_features eaf
 INNER JOIN convoy.feature_flags ff ON ff.feature_key = eaf.feature_key
 ON CONFLICT (owner_type, owner_id, feature_flag_id) DO NOTHING;
 
-DROP INDEX IF EXISTS idx_early_adopter_features_key;
-DROP INDEX IF EXISTS idx_early_adopter_features_org;
+DROP INDEX CONCURRENTLY IF EXISTS idx_early_adopter_features_key;
+DROP INDEX CONCURRENTLY IF EXISTS idx_early_adopter_features_org;
 DROP TABLE IF EXISTS convoy.early_adopter_features;

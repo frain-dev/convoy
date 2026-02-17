@@ -1,9 +1,11 @@
--- +migrate Up
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 
-DROP INDEX IF EXISTS convoy.idx_event_endpoint_backlog_metrics_mv_unique;
-DROP INDEX IF EXISTS convoy.idx_event_queue_backlog_metrics_mv_unique;
-DROP INDEX IF EXISTS convoy.idx_event_delivery_queue_metrics_mv_unique;
-DROP INDEX IF EXISTS convoy.idx_event_queue_metrics_mv_unique;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_endpoint_backlog_metrics_mv_unique;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_queue_backlog_metrics_mv_unique;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_delivery_queue_metrics_mv_unique;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_queue_metrics_mv_unique;
 
 DROP MATERIALIZED VIEW IF EXISTS convoy.event_endpoint_backlog_metrics_mv;
 DROP MATERIALIZED VIEW IF EXISTS convoy.event_queue_backlog_metrics_mv;
@@ -20,7 +22,7 @@ SELECT DISTINCT
 FROM convoy.events 
 GROUP BY project_id, source_id;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_event_queue_metrics_mv_unique 
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_event_queue_metrics_mv_unique 
 ON convoy.event_queue_metrics_mv(project_id, source_id);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS convoy.event_delivery_queue_metrics_mv AS
@@ -41,7 +43,7 @@ LEFT JOIN convoy.organisations o ON p.organisation_id = o.id
 WHERE ed.deleted_at IS NULL
 GROUP BY ed.project_id, p.name, ed.endpoint_id, ed.status, ed.event_type, e.source_id, p.organisation_id, o.name;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_event_delivery_queue_metrics_mv_unique 
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_event_delivery_queue_metrics_mv_unique 
 ON convoy.event_delivery_queue_metrics_mv(project_id, endpoint_id, status, event_type, source_id, organisation_id);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS convoy.event_queue_backlog_metrics_mv AS
@@ -76,7 +78,7 @@ FROM (
 ORDER BY project_id, source_id
 LIMIT 1000; 
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_event_queue_backlog_metrics_mv_unique 
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_event_queue_backlog_metrics_mv_unique 
 ON convoy.event_queue_backlog_metrics_mv(project_id, source_id);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS convoy.event_endpoint_backlog_metrics_mv AS
@@ -114,7 +116,7 @@ FROM (
 ORDER BY project_id, source_id, endpoint_id
 LIMIT 1000;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_event_endpoint_backlog_metrics_mv_unique 
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_event_endpoint_backlog_metrics_mv_unique 
 ON convoy.event_endpoint_backlog_metrics_mv(project_id, source_id, endpoint_id);
 
 REFRESH MATERIALIZED VIEW convoy.event_queue_metrics_mv;

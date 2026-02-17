@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 alter table convoy.subscriptions add column filter_config_filter_raw_headers jsonb not null default '{}';
 alter table convoy.subscriptions add column filter_config_filter_raw_body jsonb not null default '{}';
 

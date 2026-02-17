@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
     ADD CONSTRAINT endpoints_title_project_id_pk
         UNIQUE (title, project_id, deleted_at);
