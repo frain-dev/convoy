@@ -74,19 +74,22 @@ ALTER TABLE convoy.projects
     ADD CONSTRAINT projects_project_configuration_id_fkey
         FOREIGN KEY (project_configuration_id)
             REFERENCES convoy.project_configurations(id)
-            ON DELETE CASCADE;
+            ON DELETE CASCADE
+            NOT VALID;
 
 ALTER TABLE convoy.meta_events
     ADD CONSTRAINT meta_events_project_id_fkey
         FOREIGN KEY (project_id)
             REFERENCES convoy.projects(id)
-            ON DELETE CASCADE;
+            ON DELETE CASCADE
+            NOT VALID;
 
 ALTER TABLE convoy.sources
     ADD CONSTRAINT sources_source_verifier_id_fkey
         FOREIGN KEY (source_verifier_id)
             REFERENCES convoy.source_verifiers(id)
-            ON DELETE SET NULL;
+            ON DELETE SET NULL
+            NOT VALID;
 
 -- +migrate Down
 REINDEX INDEX convoy.idx_sources_source_verifier_id;
