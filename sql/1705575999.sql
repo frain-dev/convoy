@@ -16,14 +16,30 @@ UPDATE convoy.endpoints
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
-    ALTER COLUMN new_http_timeout SET NOT NULL,
+    ADD CONSTRAINT new_http_timeout_not_null CHECK (new_http_timeout IS NOT NULL) NOT VALID;
+
+-- +migrate Up
+ALTER TABLE convoy.endpoints VALIDATE CONSTRAINT new_http_timeout_not_null;
+
+-- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+ALTER TABLE convoy.endpoints
     DROP COLUMN IF EXISTS http_timeout;
 
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
 ALTER TABLE convoy.endpoints
-    ALTER COLUMN new_rate_limit_duration SET NOT NULL,
+    ADD CONSTRAINT new_rate_limit_duration_not_null CHECK (new_rate_limit_duration IS NOT NULL) NOT VALID;
+
+-- +migrate Up
+ALTER TABLE convoy.endpoints VALIDATE CONSTRAINT new_rate_limit_duration_not_null;
+
+-- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+ALTER TABLE convoy.endpoints
     DROP COLUMN IF EXISTS rate_limit_duration;
 
 -- +migrate Up
@@ -50,8 +66,16 @@ UPDATE convoy.endpoints
 
 -- +migrate Down
 ALTER TABLE convoy.endpoints
-    ALTER COLUMN old_http_timeout SET NOT NULL,
-    ALTER COLUMN old_rate_limit_duration SET NOT NULL,
+    ADD CONSTRAINT old_http_timeout_not_null CHECK (old_http_timeout IS NOT NULL) NOT VALID,
+    ADD CONSTRAINT old_rate_limit_duration_not_null CHECK (old_rate_limit_duration IS NOT NULL) NOT VALID;
+
+-- +migrate Down
+ALTER TABLE convoy.endpoints
+    VALIDATE CONSTRAINT old_http_timeout_not_null,
+    VALIDATE CONSTRAINT old_rate_limit_duration_not_null;
+
+-- +migrate Down
+ALTER TABLE convoy.endpoints
     DROP COLUMN IF EXISTS http_timeout,
     DROP COLUMN IF EXISTS rate_limit_duration;
 
