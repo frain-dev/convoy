@@ -446,7 +446,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(a.DB, billingClient, rd, lo), nil)
 	}
 
-	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
+	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, a.Redis, circuitBreakerManager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to register queue metrics: %w", err)
 	}
