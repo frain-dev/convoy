@@ -208,7 +208,7 @@ type CreateProjectResponse struct {
 }
 
 func NewListProjectResponse(projects []*datastore.Project) []*ProjectResponse {
-	results := make([]*ProjectResponse, 0)
+	results := make([]*ProjectResponse, 0, len(projects))
 
 	for _, project := range projects {
 		results = append(results, &ProjectResponse{Project: project})
