@@ -850,10 +850,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(
 }
 
 const (
-	dailyIntervalFormat   = "yyyy-mm-dd"        // 1 day
+	dailyIntervalFormat   = "YYYY-MM-DD"        // 1 day (PostgreSQL TO_CHAR)
 	weeklyIntervalFormat  = dailyIntervalFormat // 1 week
-	monthlyIntervalFormat = "yyyy-mm"           // 1 month
-	yearlyIntervalFormat  = "yyyy"              // 1 month
+	monthlyIntervalFormat = "YYYY-MM"           // 1 month
+	yearlyIntervalFormat  = "YYYY"              // 1 year
 )
 
 func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, endpointIds []string) ([]datastore.EventInterval, error) {
