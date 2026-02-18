@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
@@ -19,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -91,7 +93,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func seedUser(t *testing.T, db database.Database) *datastore.User {
 	t.Helper()
 
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(log.NewLogger(io.Discard), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",
@@ -300,7 +302,7 @@ func seedEvent(t *testing.T, db database.Database, project *datastore.Project, e
 func seedSubscription(t *testing.T, db database.Database, project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
 	t.Helper()
 
-	subRepo := postgres.NewSubscriptionRepo(db)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		ProjectID:  project.UID,

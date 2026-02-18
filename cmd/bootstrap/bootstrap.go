@@ -10,11 +10,11 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -71,7 +71,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 				UpdatedAt: time.Now(),
 			}
 
-			userRepo := postgres.NewUserRepo(a.DB)
+			userRepo := users.New(a.Logger, a.DB)
 			err = userRepo.CreateUser(context.Background(), user)
 			if err != nil {
 				if errors.Is(err, datastore.ErrDuplicateEmail) {
@@ -86,6 +86,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			co := services.CreateOrganisationService{
 				OrgRepo:       organisations.New(a.Logger, a.DB),
 				OrgMemberRepo: organisation_members.New(a.Logger, a.DB),
+				Logger:        a.Logger,
 				NewOrg:        &datastore.OrganisationRequest{Name: "Default Organisation"},
 				User:          user,
 			}

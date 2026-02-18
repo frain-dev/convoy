@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/subscriptions"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func TestDeleteSource_WithVerifier(t *testing.T) {
@@ -78,7 +81,7 @@ func TestDeleteSource_CascadeToSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create subscription
-	subRepo := postgres.NewSubscriptionRepo(db)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		Name:       "TestSubscription",
@@ -190,7 +193,7 @@ func TestDeleteSource_MultipleSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create multiple subscriptions
-	subRepo := postgres.NewSubscriptionRepo(db)
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
 	sub1 := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		Name:       "Subscription1",

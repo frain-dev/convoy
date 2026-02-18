@@ -921,6 +921,20 @@ func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisation(ctx, org an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).UpdateOrganisation), ctx, org)
 }
 
+// UpdateOrganisationLicenseData mocks base method.
+func (m *MockOrganisationRepository) UpdateOrganisationLicenseData(ctx context.Context, orgID, licenseData string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrganisationLicenseData", ctx, orgID, licenseData)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrganisationLicenseData indicates an expected call of UpdateOrganisationLicenseData.
+func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisationLicenseData(ctx, orgID, licenseData any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisationLicenseData", reflect.TypeOf((*MockOrganisationRepository)(nil).UpdateOrganisationLicenseData), ctx, orgID, licenseData)
+}
+
 // MockAPIKeyRepository is a mock of APIKeyRepository interface.
 type MockAPIKeyRepository struct {
 	ctrl     *gomock.Controller

@@ -15,7 +15,6 @@ import (
 	ingestSrv "github.com/frain-dev/convoy/cmd/ingest"
 	workerSrv "github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -23,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -151,10 +151,10 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 	start := time.Now()
 	lo.Info("Starting Convoy data plane")
 
+	userRepo := users.New(a.Logger, a.DB)
 	apiKeyRepo := api_keys.New(a.Logger, a.DB)
-	userRepo := postgres.NewUserRepo(a.DB)
-	portalLinkRepo := portal_links.New(a.Logger, a.DB)
 	configRepo := configuration.New(a.Logger, a.DB)
+	portalLinkRepo := portal_links.New(a.Logger, a.DB)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize realm chain: %w", err)

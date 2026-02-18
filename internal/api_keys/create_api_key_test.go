@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -87,9 +88,10 @@ func createAPIKeyService(t *testing.T, db database.Database) *Service {
 
 func seedTestData(t *testing.T, db database.Database) (*datastore.User, *datastore.Organisation, *datastore.Project) {
 	ctx := context.Background()
+	logger := log.NewLogger(os.Stdout)
 
 	// Create user
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := users.New(logger, db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",
@@ -100,7 +102,6 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.User, *datasto
 	require.NoError(t, err)
 
 	// Create organisation
-	logger := log.NewLogger(os.Stdout)
 	orgRepo := organisations.New(logger, db)
 	org := &datastore.Organisation{
 		UID:     ulid.Make().String(),

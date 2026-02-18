@@ -10,6 +10,10 @@ import (
 type MockBillingClient struct {
 	mu            sync.RWMutex
 	organisations map[string]BillingOrganisation
+	// CreateOrganisationLicenseKey, when set, is returned as Data.LicenseKey from CreateOrganisation (for tests).
+	CreateOrganisationLicenseKey string
+	// GetOrganisationLicenseKey, when set, is returned as Data.Key from GetOrganisationLicense (for tests).
+	GetOrganisationLicenseKey string
 }
 
 func (m *MockBillingClient) ensureOrganisation(orgID string) {
@@ -105,6 +109,9 @@ func (m *MockBillingClient) CreateOrganisation(ctx context.Context, orgData Bill
 		BillingEmail: orgData.BillingEmail,
 		Host:         orgData.Host,
 	}
+	if m.CreateOrganisationLicenseKey != "" {
+		createdOrg.LicenseKey = m.CreateOrganisationLicenseKey
+	}
 	m.organisations[orgData.ExternalID] = createdOrg
 	m.mu.Unlock()
 
@@ -130,6 +137,19 @@ func (m *MockBillingClient) GetOrganisation(ctx context.Context, orgID string) (
 		Status:  true,
 		Message: "Organisation retrieved successfully",
 		Data:    org,
+	}, nil
+}
+
+func (m *MockBillingClient) GetOrganisationLicense(ctx context.Context, orgID string) (*Response[OrganisationLicense], error) {
+	m.ensureOrganisation(orgID)
+	data := OrganisationLicense{}
+	if m.GetOrganisationLicenseKey != "" {
+		data.Key = m.GetOrganisationLicenseKey
+	}
+	return &Response[OrganisationLicense]{
+		Status:  true,
+		Message: "OK",
+		Data:    data,
 	}, nil
 }
 

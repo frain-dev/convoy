@@ -4,6 +4,7 @@ on:
         branches:
             - main
     pull_request:
+    merge_group:
 
 permissions:
     contents: read
@@ -13,7 +14,7 @@ jobs:
         if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
         strategy:
             matrix:
-                go-version: [1.24.x]
+                go-version: [1.25.7]
                 os: [ubuntu-latest]
                 postgres-version: ["15"]
                 redis-version: ["6.2.6"]
@@ -29,15 +30,13 @@ jobs:
                     POSTGRES_DB: convoy
                     POSTGRES_PASSWORD: postgres
                     POSTGRES_MAX_CONNECTIONS: 2000
-                    # set up health check for postgres
                 options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
+            redis:
+                image: redis:${{ matrix.redis-version }}
+                ports:
+                    - 6379:6379
+                options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
         steps:
-            - name: Start Redis v${{ matrix.redis-version }}
-              uses: supercharge/redis-github-action@4b67a313c69bc7a90f162e8d810392fffe10d3b5 # 1.4.0
-              with:
-                  redis-version: ${{ matrix.redis-version }}
-                  redis-port: 6379
-
             - name: Get the version
               id: get_version
               run: echo "tag=${GITHUB_SHA:0:8}" >> "$GITHUB_OUTPUT"
@@ -80,26 +79,8 @@ jobs:
                   CONVOY_REDIS_HOST: localhost
                   CONVOY_REDIS_PORT: 6379
 
-            - name: Run integration tests (with test containers)
+            - name: Run integration tests
               run: make test
-              env:
-                  TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
-                  CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
-                  CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
-                  CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
-                  TEST_DB_SCHEME: postgres
-                  TEST_DB_HOST: localhost
-                  TEST_DB_USERNAME: postgres
-                  TEST_DB_PASSWORD: postgres
-                  TEST_DB_DATABASE: convoy
-                  TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
-                  TEST_DB_PORT: 5432
-                  TEST_REDIS_SCHEME: redis
-                  TEST_REDIS_HOST: localhost
-                  TEST_REDIS_PORT: 6379
-
-            - name: Run Fast E2E tests (testcontainers)
-              run: make test_e2e_fast
               env:
                   TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
                   CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}

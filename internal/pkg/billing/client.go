@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -21,6 +22,7 @@ type Client interface {
 	GetPlans(ctx context.Context) (*Response[[]Plan], error)
 	GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType], error)
 	CreateOrganisation(ctx context.Context, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
+	GetOrganisationLicense(ctx context.Context, orgID string) (*Response[OrganisationLicense], error)
 	GetOrganisation(ctx context.Context, orgID string) (*Response[BillingOrganisation], error)
 	UpdateOrganisation(ctx context.Context, orgID string, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
 	UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error)
@@ -145,6 +147,10 @@ func (c *HTTPClient) GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType],
 
 func (c *HTTPClient) CreateOrganisation(ctx context.Context, orgData BillingOrganisation) (*Response[BillingOrganisation], error) {
 	return makeRequest[BillingOrganisation](ctx, c.httpClient, c.config, "POST", "/organisations", orgData)
+}
+
+func (c *HTTPClient) GetOrganisationLicense(ctx context.Context, orgID string) (*Response[OrganisationLicense], error) {
+	return makeRequest[OrganisationLicense](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/license", orgID), nil)
 }
 
 func (c *HTTPClient) GetOrganisation(ctx context.Context, orgID string) (*Response[BillingOrganisation], error) {
@@ -275,13 +281,17 @@ func makeRequest[T any](ctx context.Context, httpClient *http.Client, config con
 	}
 	defer resp.Body.Close()
 
+	rawResp, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return nil, fmt.Errorf("failed to read billing response body: %w", readErr)
+	}
+
 	var baseResp struct {
 		Status  bool            `json:"status"`
 		Message string          `json:"message"`
 		Data    json.RawMessage `json:"data,omitempty"`
 	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&baseResp); err != nil {
+	if err := json.Unmarshal(rawResp, &baseResp); err != nil {
 		return nil, fmt.Errorf("failed to read billing response: %w", err)
 	}
 
