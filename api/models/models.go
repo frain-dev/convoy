@@ -98,7 +98,7 @@ type CreateEndpointApiKey struct {
 // NewListResponse is a generic function for looping over
 // a slice of type M and returning a slice of type T
 func NewListResponse[T, M any](items []M, fn func(item M) T) []T {
-	results := make([]T, 0)
+	results := make([]T, 0, len(items))
 
 	for _, item := range items {
 		results = append(results, fn(item))
