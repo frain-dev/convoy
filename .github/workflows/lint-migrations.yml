@@ -1,6 +1,7 @@
 name: SQL Migration Linting
 
 on:
+  merge_group:
   pull_request:
     paths:
       - 'sql/*.sql'
