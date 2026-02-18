@@ -110,9 +110,6 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 					billingRequiredReason = fmt.Sprintf("GetOrganisationLicense failed: %v", err)
 				}
 				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
-			} else if resp == nil {
-				billingRequiredReason = "no billing license key"
-				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
 			} else {
 				billingRequiredReason = "no billing license key"
 				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)

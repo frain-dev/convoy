@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	//nolint:staticcheck // we don't want to use v2
+	//nolint:staticcheck // SA1019: cloud.google.com/go/pubsub deprecated; we don't want to use v2 yet
 	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/option"
 

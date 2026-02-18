@@ -32,7 +32,7 @@ type APIOptions struct {
 	Cfg                        config.Configuration
 	BillingClient              billing.Client
 	ConfigRepo                 datastore.ConfigurationRepository
-	OrgRepo        datastore.OrganisationRepository
-	OrgMemberRepo  datastore.OrganisationMemberRepository
-	ProjectRepo    datastore.ProjectRepository
+	OrgRepo                    datastore.OrganisationRepository
+	OrgMemberRepo              datastore.OrganisationMemberRepository
+	ProjectRepo                datastore.ProjectRepository
 }

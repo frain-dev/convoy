@@ -70,7 +70,7 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 	if deps.OrgRepo == nil {
 		return
 	}
-	key := resolveKey(ctx, org, defaultKey, billingEnabled, deps.BillingClient, deps.Logger)
+	key := resolveKey(ctx, org, defaultKey, billingEnabled, deps.BillingClient)
 	if key == "" {
 		if billingEnabled {
 			if err := deps.OrgRepo.UpdateOrganisationLicenseData(ctx, org.UID, ""); err != nil {
@@ -112,7 +112,7 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 }
 
 // resolveKey returns the org's license key: from billing when enabled, else default. Always resolves from billing when enabled so refresh repopulates license_data.
-func resolveKey(ctx context.Context, org datastore.Organisation, defaultKey string, billingEnabled bool, billingClient billing.Client, logger log.StdLogger) string {
+func resolveKey(ctx context.Context, org datastore.Organisation, defaultKey string, billingEnabled bool, billingClient billing.Client) string {
 	if billingEnabled && billingClient != nil {
 		resp, err := billingClient.GetOrganisationLicense(ctx, org.UID)
 		if err == nil && resp != nil && resp.Data.Organisation != nil && resp.Data.Organisation.LicenseKey != "" {
@@ -143,7 +143,7 @@ type OrgProjectLimitDeps struct {
 func CheckOrganisationProjectLimit(ctx context.Context, org *datastore.Organisation, deps OrgProjectLimitDeps) (bool, error) {
 	defaultKey := deps.Cfg.LicenseKey
 	billingEnabled := deps.Cfg.Billing.Enabled && deps.BillingClient != nil
-	key := resolveKey(ctx, *org, defaultKey, billingEnabled, deps.BillingClient, deps.Logger)
+	key := resolveKey(ctx, *org, defaultKey, billingEnabled, deps.BillingClient)
 	if key == "" {
 		return false, nil
 	}

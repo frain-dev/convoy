@@ -446,6 +446,7 @@ func (s *OAuth2TokenService) jwkToECDSAPrivateKey(jwk *datastore.OAuth2SigningKe
 	}
 
 	// Validate the key
+	//nolint:staticcheck // SA1019: curve.IsOnCurve deprecated; crypto/ecdh would require larger refactor
 	if !curve.IsOnCurve(x, y) {
 		return nil, errors.New("public key point is not on the curve")
 	}
