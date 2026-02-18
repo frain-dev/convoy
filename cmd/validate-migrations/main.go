@@ -160,38 +160,40 @@ func validateMigrations(sqlDir string) ([]string, int, error) {
 		}
 
 		for _, block := range blocks {
-			if block.IsMixed() {
-				totalViolations++
-				fileName := filepath.Base(filePath)
-
-				errorMsg := fmt.Sprintf("\n❌ %s:%d (Block %d, %s)",
-					fileName, block.StartLine, block.BlockNum, block.Direction)
-				errorMsg += "\n   Mixed index operations with other DDL (requires separate migration blocks)\n"
-
-				errorMsg += "\n   Index operations:"
-				for _, op := range block.IndexOperations {
-					stmt := op.Statement
-					if len(stmt) > 80 {
-						stmt = stmt[:80] + "..."
-					}
-					errorMsg += fmt.Sprintf("\n     Line %d: %s", op.LineNum, stmt)
-				}
-
-				errorMsg += "\n\n   Other DDL operations:"
-				for _, op := range block.OtherDDL {
-					stmt := op.Statement
-					if len(stmt) > 80 {
-						stmt = stmt[:80] + "..."
-					}
-					errorMsg += fmt.Sprintf("\n     Line %d: %s", op.LineNum, stmt)
-				}
-
-				errorMsg += "\n\n   💡 Solution: Split into separate migration blocks:"
-				errorMsg += "\n      - Keep index operations in a migration block with 'notransaction'"
-				errorMsg += "\n      - Move other DDL to a separate migration block (without 'notransaction')\n"
-
-				errors = append(errors, errorMsg)
+			if !block.IsMixed() {
+				continue
 			}
+
+			totalViolations++
+			fileName := filepath.Base(filePath)
+
+			errorMsg := fmt.Sprintf("\n❌ %s:%d (Block %d, %s)",
+				fileName, block.StartLine, block.BlockNum, block.Direction)
+			errorMsg += "\n   Mixed index operations with other DDL (requires separate migration blocks)\n"
+
+			errorMsg += "\n   Index operations:"
+			for _, op := range block.IndexOperations {
+				stmt := op.Statement
+				if len(stmt) > 80 {
+					stmt = stmt[:80] + "..."
+				}
+				errorMsg += fmt.Sprintf("\n     Line %d: %s", op.LineNum, stmt)
+			}
+
+			errorMsg += "\n\n   Other DDL operations:"
+			for _, op := range block.OtherDDL {
+				stmt := op.Statement
+				if len(stmt) > 80 {
+					stmt = stmt[:80] + "..."
+				}
+				errorMsg += fmt.Sprintf("\n     Line %d: %s", op.LineNum, stmt)
+			}
+
+			errorMsg += "\n\n   💡 Solution: Split into separate migration blocks:"
+			errorMsg += "\n      - Keep index operations in a migration block with 'notransaction'"
+			errorMsg += "\n      - Move other DDL to a separate migration block (without 'notransaction')\n"
+
+			errors = append(errors, errorMsg)
 		}
 	}
 
