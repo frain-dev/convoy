@@ -18,7 +18,7 @@ ALTER TABLE convoy.events
     ADD COLUMN IF NOT EXISTS idempotency_key TEXT,
     ADD COLUMN IF NOT EXISTS is_duplicate_event BOOL DEFAULT FALSE;
 
--- +migrate Up
+-- +migrate Up notransaction
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_idempotency_key_key ON convoy.events (idempotency_key);
@@ -39,5 +39,5 @@ ALTER TABLE convoy.events
 ALTER TABLE convoy.event_deliveries
     DROP COLUMN IF EXISTS idempotency_key;
 
--- +migrate Down
+-- +migrate Down notransaction
 DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_idempotency_key_key;

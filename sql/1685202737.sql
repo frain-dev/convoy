@@ -9,7 +9,7 @@ ALTER TABLE convoy.portal_links
     ALTER COLUMN can_manage_endpoint SET DEFAULT false,
     ALTER COLUMN endpoints DROP NOT NULL;
 
--- +migrate Up
+-- +migrate Up notransaction
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_portal_links_owner_id_key ON convoy.portal_links (owner_id);
@@ -20,5 +20,5 @@ ALTER TABLE convoy.portal_links
     DROP COLUMN IF EXISTS owner_id,
     DROP COLUMN IF EXISTS can_manage_endpoint;
 
--- +migrate Down
+-- +migrate Down notransaction
 DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_portal_links_owner_id_key;
