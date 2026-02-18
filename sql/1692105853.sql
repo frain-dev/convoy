@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS convoy.events_search
     idempotency_key    TEXT,
     is_duplicate_event BOOLEAN DEFAULT FALSE,
     search_token       TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', raw)) STORED,
-    created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMPTZ,
-    updated_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMPTZ,
+    created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at         TIMESTAMP WITH TIME ZONE
 );
 
