@@ -235,12 +235,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			LicenseService: service.LicenserConfig{
-				LicenseKey:  cfg.LicenseKey,
-				Client:      licenseClient,
-				OrgRepo:     organisations.New(lo, app.DB),
-				UserRepo:    users.New(log.NewLogger(io.Discard), app.DB),
-				ProjectRepo: projectRepo,
-				Logger:      lo,
+				LicenseKey:     cfg.LicenseKey,
+				BillingEnabled: cfg.Billing.Enabled,
+				Client:         licenseClient,
+				OrgRepo:        organisations.New(lo, app.DB),
+				UserRepo:       users.New(log.NewLogger(io.Discard), app.DB),
+				ProjectRepo:    projectRepo,
+				Logger:         lo,
 			},
 		})
 		if err != nil {

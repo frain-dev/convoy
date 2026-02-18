@@ -110,9 +110,59 @@ func resolveKey(ctx context.Context, org datastore.Organisation, defaultKey stri
 		}
 	}
 
+	if billingEnabled {
+		return ""
+	}
 	if !util.IsStringEmpty(defaultKey) {
 		return defaultKey
 	}
-
 	return ""
+}
+
+// OrgProjectLimitDeps holds dependencies for checking org-scoped project limit (billing mode).
+type OrgProjectLimitDeps struct {
+	BillingClient billing.Client
+	ProjectRepo  datastore.ProjectRepository
+	Cfg          config.Configuration
+	Logger       log.StdLogger
+}
+
+// CheckOrganisationProjectLimit returns whether the org is allowed to create another project
+// based on its license (org license_data or billing GetOrganisationLicense when billing enabled).
+// Call only when billing is enabled.
+func CheckOrganisationProjectLimit(ctx context.Context, org *datastore.Organisation, deps OrgProjectLimitDeps) (bool, error) {
+	defaultKey := deps.Cfg.LicenseKey
+	billingEnabled := deps.Cfg.Billing.Enabled && deps.BillingClient != nil
+	key := resolveKey(ctx, *org, defaultKey, billingEnabled, deps.BillingClient, deps.Logger)
+	if key == "" {
+		return false, nil
+	}
+	licClient := licensesvc.NewClient(licensesvc.Config{
+		Host:         deps.Cfg.LicenseService.Host,
+		ValidatePath: deps.Cfg.LicenseService.ValidatePath,
+		Timeout:      deps.Cfg.LicenseService.Timeout,
+		RetryCount:   deps.Cfg.LicenseService.RetryCount,
+		Logger:       deps.Logger,
+	})
+	data, err := licClient.ValidateLicense(ctx, key)
+	if err != nil {
+		return false, err
+	}
+	entitlementsMap, err := data.GetEntitlementsMap()
+	if err != nil {
+		return false, err
+	}
+	entitlements := licensesvc.ParseEntitlements(entitlementsMap)
+	limit, exists := licensesvc.GetNumberEntitlement(entitlements, "project_limit")
+	if !exists {
+		return false, nil
+	}
+	if limit == -1 {
+		return true, nil
+	}
+	projects, err := deps.ProjectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
+	if err != nil {
+		return false, err
+	}
+	return int64(len(projects)) < limit, nil
 }
