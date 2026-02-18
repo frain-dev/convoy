@@ -1,6 +1,8 @@
 name: golangci-lint
 on:
   pull_request:
+  merge_group:
+    types: [checks_requested]
 
 jobs:
   backend-lint:
