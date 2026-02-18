@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rsa"
@@ -402,13 +403,17 @@ func (s *OAuth2TokenService) jwkToECDSAPrivateKey(jwk *datastore.OAuth2SigningKe
 	}
 
 	var curve elliptic.Curve
+	var ecdhCurve ecdh.Curve
 	switch jwk.Crv {
 	case "P-256":
 		curve = elliptic.P256()
+		ecdhCurve = ecdh.P256()
 	case "P-384":
 		curve = elliptic.P384()
+		ecdhCurve = ecdh.P384()
 	case "P-521":
 		curve = elliptic.P521()
+		ecdhCurve = ecdh.P521()
 	default:
 		return nil, fmt.Errorf("unsupported curve: %s (supported: P-256, P-384, P-521)", jwk.Crv)
 	}
@@ -435,6 +440,16 @@ func (s *OAuth2TokenService) jwkToECDSAPrivateKey(jwk *datastore.OAuth2SigningKe
 	y := new(big.Int).SetBytes(yBytes)
 	d := new(big.Int).SetBytes(dBytes)
 
+	// Validate the public key point is on the curve (using crypto/ecdh; avoids deprecated elliptic.IsOnCurve/Marshal)
+	byteSize := (curve.Params().BitSize + 7) / 8
+	uncompressed := make([]byte, 1+2*byteSize)
+	uncompressed[0] = 4 // uncompressed point form
+	x.FillBytes(uncompressed[1 : 1+byteSize])
+	y.FillBytes(uncompressed[1+byteSize : 1+2*byteSize])
+	if _, err := ecdhCurve.NewPublicKey(uncompressed); err != nil {
+		return nil, errors.New("public key point is not on the curve")
+	}
+
 	// Create ECDSA private key
 	privateKey := &ecdsa.PrivateKey{
 		PublicKey: ecdsa.PublicKey{
@@ -443,12 +458,6 @@ func (s *OAuth2TokenService) jwkToECDSAPrivateKey(jwk *datastore.OAuth2SigningKe
 			Y:     y,
 		},
 		D: d,
-	}
-
-	// Validate the key
-	//nolint:staticcheck // SA1019: curve.IsOnCurve deprecated; crypto/ecdh would require larger refactor
-	if !curve.IsOnCurve(x, y) {
-		return nil, errors.New("public key point is not on the curve")
 	}
 
 	return privateKey, nil
