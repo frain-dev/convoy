@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -183,6 +184,10 @@ func TestGetLicenseFeatures_OrgLevel_BillingRequiredWhenNoLicenseData(t *testing
 	mockProjectRepo.EXPECT().
 		LoadProjects(gomock.Any(), gomock.Any()).
 		Return([]*datastore.Project{}, nil)
+	// Handler starts a goroutine that calls UpdateOrganisationLicenseData when returning billing-required; allow it before test ends.
+	mockOrgRepo.EXPECT().
+		UpdateOrganisationLicenseData(gomock.Any(), orgID, "").
+		Return(nil).MaxTimes(1)
 
 	req := httptest.NewRequest(http.MethodGet, "/license/features?orgID="+orgID, nil)
 	w := httptest.NewRecorder()
@@ -202,4 +207,7 @@ func TestGetLicenseFeatures_OrgLevel_BillingRequiredWhenNoLicenseData(t *testing
 	require.True(t, ok)
 	require.False(t, pl["allowed"].(bool))
 	require.False(t, pl["available"].(bool))
+
+	// Allow background RefreshLicenseDataForOrg goroutine to run and satisfy mock before ctrl.Finish().
+	time.Sleep(100 * time.Millisecond)
 }
