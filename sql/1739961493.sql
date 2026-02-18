@@ -1,3 +1,4 @@
+-- squawk-ignore-file changing-column-type
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
@@ -8,12 +9,15 @@ ALTER TABLE convoy.sources DROP CONSTRAINT IF EXISTS sources_source_verifier_id_
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.projects
     ALTER COLUMN project_configuration_id TYPE VARCHAR USING project_configuration_id::VARCHAR;
 
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.meta_events
     ALTER COLUMN project_id TYPE VARCHAR USING project_id::VARCHAR;
 
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.sources
     ALTER COLUMN source_verifier_id TYPE VARCHAR USING source_verifier_id::VARCHAR;
 
@@ -62,10 +66,13 @@ ALTER TABLE convoy.meta_events DROP CONSTRAINT IF EXISTS meta_events_project_id_
 ALTER TABLE convoy.sources DROP CONSTRAINT IF EXISTS sources_source_verifier_id_fkey;
 
 -- +migrate Down
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.projects
     ALTER COLUMN project_configuration_id TYPE VARCHAR(26) USING project_configuration_id::VARCHAR(26);
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.meta_events
     ALTER COLUMN project_id TYPE VARCHAR(26) USING project_id::VARCHAR(26);
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.sources
     ALTER COLUMN source_verifier_id TYPE VARCHAR(26) USING source_verifier_id::VARCHAR(26);
 

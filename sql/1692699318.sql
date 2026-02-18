@@ -23,4 +23,5 @@ CREATE TABLE IF NOT EXISTS convoy.jobs(
 DROP TABLE IF EXISTS convoy.jobs;
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN search_policy;

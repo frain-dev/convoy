@@ -1,3 +1,4 @@
+-- squawk-ignore-file ban-drop-column
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
@@ -15,6 +16,7 @@ CREATE INDEX CONCURRENTLY idx_endpoints_is_encrypted ON convoy.endpoints (is_enc
 DROP INDEX CONCURRENTLY IF EXISTS idx_endpoints_is_encrypted;
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.endpoints
     DROP COLUMN IF EXISTS is_encrypted,
     DROP COLUMN IF EXISTS secrets_cipher,

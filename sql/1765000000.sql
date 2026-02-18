@@ -54,6 +54,7 @@ WHERE feature_flag_id IN (
 DELETE FROM convoy.feature_flags
 WHERE feature_key IN ('full-text-search', 'retention-policy', 'ip-rules', 'mtls', 'oauth-token-exchange');
 
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.feature_flags DROP COLUMN IF EXISTS allow_override;
 
 -- +migrate Down

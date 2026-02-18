@@ -1,3 +1,4 @@
+-- squawk-ignore-file ban-drop-column
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
@@ -23,15 +24,18 @@ SET statement_timeout = '30s';
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_idempotency_key_key ON convoy.events (idempotency_key);
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.sources
     DROP COLUMN IF EXISTS idempotency_keys;
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.events
     DROP COLUMN IF EXISTS idempotency_key,
     DROP COLUMN if exists is_duplicate_event;
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.event_deliveries
     DROP COLUMN IF EXISTS idempotency_key;
 

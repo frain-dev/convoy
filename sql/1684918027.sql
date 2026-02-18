@@ -5,6 +5,7 @@ CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS organisation_invites_invitee_emai
 
 DROP INDEX CONCURRENTLY IF EXISTS convoy.organisation_invites_invitee_email;
 
+-- squawk-ignore renaming-table
 ALTER INDEX convoy.organisation_invites_invitee_email_1 RENAME TO organisation_invites_invitee_email;
 
 -- +migrate Down
@@ -12,5 +13,6 @@ CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS organisation_invites_invitee_emai
 
 DROP INDEX CONCURRENTLY IF EXISTS convoy.organisation_invites_invitee_email;
 
+-- squawk-ignore renaming-table
 ALTER INDEX convoy.organisation_invites_invitee_email_1 RENAME TO organisation_invites_invitee_email;
 

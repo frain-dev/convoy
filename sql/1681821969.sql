@@ -26,9 +26,15 @@ ALTER TABLE convoy.project_configurations ADD meta_events_pub_sub JSONB;
 
 -- +migrate Down
 DROP TABLE IF EXISTS convoy.meta_events;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_enabled;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_type;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_event_type;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_url;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_secret;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_pub_sub;

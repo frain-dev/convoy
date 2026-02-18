@@ -5,5 +5,6 @@ CREATE TYPE convoy.endpoint_content_types AS ENUM ('application/json', 'applicat
 ALTER TABLE convoy.endpoints ADD COLUMN IF NOT EXISTS content_type convoy.endpoint_content_types NOT NULL DEFAULT 'application/json';
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.endpoints DROP COLUMN IF EXISTS content_type;
 DROP TYPE IF EXISTS convoy.endpoint_content_types;

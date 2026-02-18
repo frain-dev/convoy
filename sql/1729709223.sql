@@ -4,4 +4,5 @@ SET statement_timeout = '30s';
 ALTER TABLE convoy.users ADD COLUMN IF NOT EXISTS auth_type TEXT NOT NULL DEFAULT 'local';
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.users DROP COLUMN IF EXISTS auth_type;

@@ -1,3 +1,4 @@
+-- squawk-ignore-file ban-drop-column
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
@@ -14,6 +15,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_endpoints_oauth2_config ON convoy.en
 DROP INDEX CONCURRENTLY IF EXISTS idx_endpoints_oauth2_config;
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.endpoints
     DROP COLUMN IF EXISTS oauth2_config,
     DROP COLUMN IF EXISTS oauth2_config_cipher;

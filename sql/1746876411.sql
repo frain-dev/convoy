@@ -7,5 +7,6 @@ ALTER TABLE convoy.subscriptions ADD COLUMN IF NOT EXISTS delivery_mode convoy.d
 COMMENT ON COLUMN convoy.subscriptions.delivery_mode IS 'Specifies the delivery mode for the subscription. Can be either at_least_once or at_most_once';
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.subscriptions DROP COLUMN IF EXISTS delivery_mode;
 DROP TYPE IF EXISTS convoy.delivery_mode;

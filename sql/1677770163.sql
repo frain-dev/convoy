@@ -36,7 +36,9 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_endpoints_event_id_key ON con
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
 -- convoy.event_deliveries - type changes
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.event_deliveries ALTER COLUMN attempts TYPE varchar USING attempts::varchar;
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.event_deliveries ALTER COLUMN attempts TYPE bytea USING attempts::bytea;
 
 -- +migrate Up notransaction
@@ -88,6 +90,7 @@ ALTER TABLE convoy.project_configurations ADD disable_endpoint BOOLEAN NOT NULL 
 
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN disable_endpoint;
 
 -- +migrate Down notransaction
@@ -104,5 +107,7 @@ DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_portal_links_project_id, convoy.idx
 DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_portal_links_endpoints_enpdoint_id, convoy.idx_portal_links_endpoints_portal_link_id;
 
 -- +migrate Down
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.event_deliveries ALTER COLUMN attempts TYPE varchar USING attempts::varchar;
+-- squawk-ignore changing-column-type
 ALTER TABLE convoy.event_deliveries ALTER COLUMN attempts TYPE jsonb USING attempts::jsonb;

@@ -4,13 +4,5 @@ excluded_rules = [
 "prefer-bigint-over-int",
 "prefer-text-field",
 "ban-drop-table",
-"prefer-identity",
-# Historical migrations contain intentional breaking changes that have already run in production
-# These rules are excluded to prevent false positives on historical migrations
-# New migrations should still follow these best practices
-"changing-column-type",
-"ban-drop-column",
-"renaming-column",
-"renaming-table",
-"ban-drop-not-null"
+"prefer-identity"
 ]

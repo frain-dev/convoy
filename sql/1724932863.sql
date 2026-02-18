@@ -2,6 +2,7 @@
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
 CREATE TABLE convoy.events_endpoints_temp (LIKE convoy.events_endpoints INCLUDING INDEXES INCLUDING CONSTRAINTS);
+-- squawk-ignore renaming-table
 ALTER TABLE convoy.events_endpoints RENAME TO events_endpoints_deprecated;
 
 -- +migrate Up notransaction
@@ -18,6 +19,7 @@ SELECT DISTINCT ON (event_id, endpoint_id) *
 FROM convoy.events_endpoints_deprecated ON CONFLICT DO NOTHING;
 
 DROP table if exists convoy.events_endpoints_deprecated;
+-- squawk-ignore renaming-table
 ALTER TABLE convoy.events_endpoints_temp RENAME TO events_endpoints;
 
 ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS status text DEFAULT NULL;
@@ -29,4 +31,5 @@ DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_uq_constraint_events_endpoints_even
 -- +migrate Down
 DROP TABLE IF EXISTS convoy.events_endpoints_deprecated;
 
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.events DROP COLUMN IF EXISTS status;

@@ -12,4 +12,5 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS event_deliveries_event_type_1 ON convoy.
 DROP INDEX CONCURRENTLY IF EXISTS convoy.event_deliveries_event_type_1;
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.event_deliveries DROP COLUMN IF EXISTS event_type;

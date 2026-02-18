@@ -24,8 +24,8 @@ ALTER TABLE convoy.endpoints VALIDATE CONSTRAINT new_http_timeout_not_null;
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
-ALTER TABLE convoy.endpoints
-    DROP COLUMN IF EXISTS http_timeout;
+-- squawk-ignore ban-drop-column
+ALTER TABLE convoy.endpoints DROP COLUMN IF EXISTS http_timeout;
 
 -- +migrate Up
 SET lock_timeout = '2s';
@@ -39,20 +39,20 @@ ALTER TABLE convoy.endpoints VALIDATE CONSTRAINT new_rate_limit_duration_not_nul
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
-ALTER TABLE convoy.endpoints
-    DROP COLUMN IF EXISTS rate_limit_duration;
+-- squawk-ignore ban-drop-column
+ALTER TABLE convoy.endpoints DROP COLUMN IF EXISTS rate_limit_duration;
 
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
-ALTER TABLE convoy.endpoints
-    RENAME COLUMN new_http_timeout TO http_timeout;
+-- squawk-ignore renaming-column
+ALTER TABLE convoy.endpoints RENAME COLUMN new_http_timeout TO http_timeout;
 
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
-ALTER TABLE convoy.endpoints
-    RENAME COLUMN new_rate_limit_duration TO rate_limit_duration;
+-- squawk-ignore renaming-column
+ALTER TABLE convoy.endpoints RENAME COLUMN new_rate_limit_duration TO rate_limit_duration;
 
 -- +migrate Down
 ALTER TABLE convoy.endpoints
@@ -75,15 +75,14 @@ ALTER TABLE convoy.endpoints
     VALIDATE CONSTRAINT old_rate_limit_duration_not_null;
 
 -- +migrate Down
-ALTER TABLE convoy.endpoints
-    DROP COLUMN IF EXISTS http_timeout,
-    DROP COLUMN IF EXISTS rate_limit_duration;
+-- squawk-ignore ban-drop-column
+ALTER TABLE convoy.endpoints DROP COLUMN IF EXISTS http_timeout, DROP COLUMN IF EXISTS rate_limit_duration;
 
 
 -- +migrate Down
-ALTER TABLE convoy.endpoints
-    RENAME COLUMN old_http_timeout TO http_timeout;
+-- squawk-ignore renaming-column
+ALTER TABLE convoy.endpoints RENAME COLUMN old_http_timeout TO http_timeout;
 
 -- +migrate Down
-ALTER TABLE convoy.endpoints
-    RENAME COLUMN old_rate_limit_duration TO rate_limit_duration;
+-- squawk-ignore renaming-column
+ALTER TABLE convoy.endpoints RENAME COLUMN old_rate_limit_duration TO rate_limit_duration;

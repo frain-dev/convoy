@@ -1,3 +1,4 @@
+-- squawk-ignore-file ban-drop-column
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
@@ -26,6 +27,7 @@ ALTER TABLE convoy.endpoints
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.endpoints
     DROP COLUMN IF EXISTS title,
     DROP COLUMN IF EXISTS target_url;
@@ -50,6 +52,7 @@ ALTER TABLE convoy.endpoints
     VALIDATE CONSTRAINT target_url_not_null;
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.endpoints
     DROP COLUMN IF EXISTS url,
     DROP COLUMN IF EXISTS name;

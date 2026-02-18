@@ -17,11 +17,17 @@ create index CONCURRENTLY if not exists idx_delivery_attempts_event_delivery_id_
 create index CONCURRENTLY if not exists idx_delivery_attempts_event_delivery_id on convoy.delivery_attempts (event_delivery_id);
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 alter table convoy.configurations drop column if exists cb_sample_rate;
+-- squawk-ignore ban-drop-column
 alter table convoy.configurations drop column if exists cb_error_timeout;
+-- squawk-ignore ban-drop-column
 alter table convoy.configurations drop column if exists cb_failure_threshold;
+-- squawk-ignore ban-drop-column
 alter table convoy.configurations drop column if exists cb_success_threshold;
+-- squawk-ignore ban-drop-column
 alter table convoy.configurations drop column if exists cb_observability_window;
+-- squawk-ignore ban-drop-column
 alter table convoy.configurations drop column if exists cb_consecutive_failure_threshold;
 
 -- +migrate Down notransaction

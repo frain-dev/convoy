@@ -1,3 +1,4 @@
+-- squawk-ignore-file ban-drop-column
 -- +migrate Up
 SET lock_timeout = '2s';
 SET statement_timeout = '30s';
