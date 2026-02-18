@@ -8,13 +8,12 @@ import {HTTP_RESPONSE} from 'src/app/models/global.model';
 export class LicensesService {
 	constructor(private http: HttpService) {}
 
-	getLicenses(orgId?: string, options?: { refresh?: boolean }): Promise<HTTP_RESPONSE> {
+	getLicenses(orgId?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			const fromStorage = this.http.getOrganisation();
 			const org = orgId ?? fromStorage?.uid;
 			const query: Record<string, string> = {};
 			if (org) query['orgID'] = org;
-			if (options?.refresh) query['refresh'] = '1';
 			const queryUndefined = Object.keys(query).length === 0 ? undefined : query;
 			try {
 				const response = await this.http.request({
@@ -30,9 +29,9 @@ export class LicensesService {
 	}
 
 
-	async setLicenses(options?: { refresh?: boolean }) {
+	async setLicenses() {
 		try {
-			const response = await this.getLicenses(undefined, options);
+			const response = await this.getLicenses();
 			localStorage.setItem('licenses', JSON.stringify(response.data));
 		} catch {}
 	}

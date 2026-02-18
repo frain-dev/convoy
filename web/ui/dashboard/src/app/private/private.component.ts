@@ -67,7 +67,7 @@ export class PrivateComponent implements OnInit {
 		}
 
 		this.checkIfTokenIsExpired();
-		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses({ refresh: true }), this.getUserDetails(), this.getOrganizations()]);
+		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganizations()]);
 		// Check instance admin access after organizations are loaded
 		await this.checkInstanceAdminAccess();
 	}
@@ -166,7 +166,7 @@ export class PrivateComponent implements OnInit {
 			localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		}
 
-		await this.licenseService.setLicenses({ refresh: true });
+		await this.licenseService.setLicenses();
 		await this.privateService.getProjects({ refresh: true });
 		await this.checkInstanceAdminAccess();
 		this.showOrgDropdown = false;

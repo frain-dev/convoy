@@ -171,7 +171,7 @@ export class BillingPageComponent implements OnInit {
       const hadSubscription = this.hasActiveSubscription(this.currentSubscription);
       const hasSubscription = this.hasActiveSubscription(subscriptionResponse.data);
       if (hadSubscription !== hasSubscription) {
-        this.licensesService.setLicenses({ refresh: true }).catch(() => {});
+        this.licensesService.setLicenses().catch(() => {});
       }
 
       const overviewData = {

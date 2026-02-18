@@ -150,7 +150,20 @@ func (c *HTTPClient) CreateOrganisation(ctx context.Context, orgData BillingOrga
 }
 
 func (c *HTTPClient) GetOrganisationLicense(ctx context.Context, orgID string) (*Response[OrganisationLicense], error) {
-	return makeRequest[OrganisationLicense](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/license", orgID), nil)
+	fmt.Printf("[license_debug] billing client: GET /organisations/%s/license url=%s\n", orgID, fmt.Sprintf("%s/api/v1/organisations/%s/license", c.config.URL, orgID))
+	resp, err := makeRequest[OrganisationLicense](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/license", orgID), nil)
+	if err != nil {
+		fmt.Printf("[license_debug] billing client: org_id=%s error=%v\n", orgID, err)
+	} else if resp != nil {
+		key := ""
+		if resp.Data.Organisation != nil {
+			key = resp.Data.Organisation.LicenseKey
+		}
+		fmt.Printf("[license_debug] billing client: org_id=%s status=%v message=%s key_len=%d key_preview=%q\n", orgID, resp.Status, resp.Message, len(key), truncate(key, 20))
+	} else {
+		fmt.Printf("[license_debug] billing client: org_id=%s resp=nil\n", orgID)
+	}
+	return resp, err
 }
 
 func (c *HTTPClient) GetOrganisation(ctx context.Context, orgID string) (*Response[BillingOrganisation], error) {
@@ -286,6 +299,10 @@ func makeRequest[T any](ctx context.Context, httpClient *http.Client, config con
 		return nil, fmt.Errorf("failed to read billing response body: %w", readErr)
 	}
 
+	if strings.Contains(path, "/license") {
+		fmt.Printf("[license_debug] billing raw response: path=%s status_code=%d body=%s\n", path, resp.StatusCode, string(rawResp))
+	}
+
 	var baseResp struct {
 		Status  bool            `json:"status"`
 		Message string          `json:"message"`
@@ -311,4 +328,11 @@ func makeRequest[T any](ctx context.Context, httpClient *http.Client, config con
 		Message: baseResp.Message,
 		Data:    data,
 	}, nil
+}
+
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "..."
 }
