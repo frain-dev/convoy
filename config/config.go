@@ -508,6 +508,7 @@ type HCPVaultConfig struct {
 type BillingPlanConfig struct {
 	ID   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
+	ProductType string `json:"product_type,omitempty"`
 }
 
 type BillingConfiguration struct {

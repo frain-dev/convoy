@@ -329,7 +329,7 @@ func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
 
 	configPlans := make([]billing.Plan, 0, len(h.A.Cfg.Billing.Plans))
 	for _, p := range h.A.Cfg.Billing.Plans {
-		configPlans = append(configPlans, billing.Plan{ID: p.ID, Name: p.Name})
+		configPlans = append(configPlans, billing.Plan{ID: p.ID, Name: p.Name, ProductType: p.ProductType})
 	}
 
 	mergedPlans := h.mergePlansWithFeatures(resp.Data, configPlans)
