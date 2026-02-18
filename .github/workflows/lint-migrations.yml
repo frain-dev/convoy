@@ -21,6 +21,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Go
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
       - name: Get changed SQL files
         id: changed-files
         run: |
@@ -39,13 +45,15 @@ jobs:
             echo "files=$FILES_LIST" >> $GITHUB_OUTPUT
           fi
 
+      - name: Validate migration structure
+        if: steps.changed-files.outputs.has_changes == 'true'
+        run: |
+          echo "Validating migrations for mixed index/DDL operations..."
+          go run cmd/validate-migrations/main.go
+
       - name: Run Squawk on changed files
         if: steps.changed-files.outputs.has_changes == 'true'
         uses: sbdchd/squawk-action@dd05ab8f46e8b91f8d6d663fe6f7e4bbf5ea9ad9 # v2.0.1
         with:
           pattern: ${{ steps.changed-files.outputs.files }}
           config: .squawk.toml
-
-      - name: Skip if no SQL files changed
-        if: steps.changed-files.outputs.has_changes == 'false'
-        run: echo "No SQL migration files were changed in this PR"
