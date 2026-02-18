@@ -25,11 +25,16 @@ create table if not exists convoy.delivery_attempts (
 
 );
 
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 create index CONCURRENTLY if not exists idx_delivery_attempts_created_at_id_event_delivery_id
     on convoy.delivery_attempts using BRIN(created_at,id,project_id,event_delivery_id)
     WHERE deleted_at IS NULL;
 
+-- +migrate Down notransaction
+drop index concurrently if exists convoy.idx_delivery_attempts_created_at_id_event_delivery_id;
+
 -- +migrate Down
 drop table if exists convoy.delivery_attempts;
-drop index concurrently if exists convoy.idx_delivery_attempts_created_at_id_event_delivery_id;
 

@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS convoy.batch_retries (
     CONSTRAINT fk_batch_retries_project FOREIGN KEY (project_id) REFERENCES convoy.projects(id) ON DELETE CASCADE
 );
 
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_batch_retries_project_id ON convoy.batch_retries(project_id);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_batch_retries_status ON convoy.batch_retries(status);
 

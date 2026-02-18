@@ -12,6 +12,9 @@ create table if not exists convoy.event_types (
   deprecated_at timestamptz
 );
 
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 create index CONCURRENTLY if not exists idx_event_types_name
     on convoy.event_types(name);
 
@@ -29,14 +32,16 @@ create index CONCURRENTLY if not exists idx_event_types_category_not_deprecated
 
 create index CONCURRENTLY if not exists idx_event_types_category_deprecated
     on convoy.event_types(category) where deprecated_at is not null;
-  
--- +migrate Down
+
+-- +migrate Down notransaction
 drop index concurrently if exists convoy.idx_event_types_category;
 drop index concurrently if exists convoy.idx_event_types_name;
 drop index concurrently if exists convoy.idx_event_types_category_deprecated;
 drop index concurrently if exists convoy.idx_event_types_category_not_deprecated;
 drop index concurrently if exists convoy.idx_event_types_name_deprecated;
 drop index concurrently if exists convoy.idx_event_types_name_not_deprecated;
+
+-- +migrate Down
 drop table if exists convoy.event_types;
 
 

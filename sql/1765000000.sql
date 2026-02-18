@@ -10,16 +10,22 @@ CREATE TABLE IF NOT EXISTS convoy.early_adopter_features (
     enabled_at      TIMESTAMPTZ,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    
+
     UNIQUE(organisation_id, feature_key),
     FOREIGN KEY (organisation_id) REFERENCES convoy.organisations(id) ON DELETE CASCADE
 );
 
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_early_adopter_features_org ON convoy.early_adopter_features(organisation_id);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_early_adopter_features_key ON convoy.early_adopter_features(feature_key);
 
+-- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 INSERT INTO convoy.early_adopter_features (id, organisation_id, feature_key, enabled, enabled_by, enabled_at, created_at, updated_at)
-SELECT 
+SELECT
     convoy.generate_ulid(),
     ffo.owner_id,
     ff.feature_key,
@@ -62,7 +68,7 @@ INSERT INTO convoy.feature_flags (id, feature_key, enabled, allow_override) VALU
 ON CONFLICT (feature_key) DO NOTHING;
 
 INSERT INTO convoy.feature_flag_overrides (id, feature_flag_id, owner_type, owner_id, enabled, enabled_at, enabled_by, created_at, updated_at)
-SELECT 
+SELECT
     convoy.generate_ulid(),
     ff.id,
     'organisation',
@@ -76,6 +82,9 @@ FROM convoy.early_adopter_features eaf
 INNER JOIN convoy.feature_flags ff ON ff.feature_key = eaf.feature_key
 ON CONFLICT (owner_type, owner_id, feature_flag_id) DO NOTHING;
 
+-- +migrate Down notransaction
 DROP INDEX CONCURRENTLY IF EXISTS idx_early_adopter_features_key;
 DROP INDEX CONCURRENTLY IF EXISTS idx_early_adopter_features_org;
+
+-- +migrate Down
 DROP TABLE IF EXISTS convoy.early_adopter_features;
