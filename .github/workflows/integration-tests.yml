@@ -4,6 +4,7 @@ on:
         branches:
             - main
     pull_request:
+    merge_group:
 
 permissions:
     contents: read
@@ -30,13 +31,12 @@ jobs:
                     POSTGRES_PASSWORD: postgres
                     POSTGRES_MAX_CONNECTIONS: 2000
                 options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
+            redis:
+                image: redis:${{ matrix.redis-version }}
+                ports:
+                    - 6379:6379
+                options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
         steps:
-            - name: Start Redis v${{ matrix.redis-version }}
-              uses: supercharge/redis-github-action@4b67a313c69bc7a90f162e8d810392fffe10d3b5 # 1.4.0
-              with:
-                  redis-version: ${{ matrix.redis-version }}
-                  redis-port: 6379
-
             - name: Get the version
               id: get_version
               run: echo "tag=${GITHUB_SHA:0:8}" >> "$GITHUB_OUTPUT"
