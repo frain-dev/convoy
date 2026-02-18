@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
@@ -44,11 +43,9 @@ func RefreshLicenseDataForUser(userID string, deps RefreshLicenseDataDeps) {
 	})
 	if err != nil {
 		logger.WithError(err).Warn("refresh license data: failed to load user organisations")
-		fmt.Printf("[refresh_license_data] RefreshLicenseDataForUser: failed to load user organisations: %v\n", err)
 		return
 	}
 	if len(orgs) == 0 {
-		fmt.Printf("[refresh_license_data] RefreshLicenseDataForUser: no organisations for user %s\n", userID)
 		return
 	}
 
@@ -89,7 +86,6 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 		if deps.Logger != nil {
 			deps.Logger.WithError(err).WithField("org_id", org.UID).Warn("refresh license data: validate failed")
 		}
-		fmt.Printf("[refresh_license_data] org_id=%s: validate failed: %v\n", org.UID, err)
 		return
 	}
 	entitlements, err := data.GetEntitlementsMap()
@@ -97,7 +93,6 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 		if deps.Logger != nil {
 			deps.Logger.WithError(err).WithField("org_id", org.UID).Warn("refresh license data: get entitlements failed")
 		}
-		fmt.Printf("[refresh_license_data] org_id=%s: get entitlements failed: %v\n", org.UID, err)
 		return
 	}
 	payload := &license.LicenseDataPayload{Key: key, Entitlements: entitlements}
@@ -106,17 +101,14 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 		if deps.Logger != nil {
 			deps.Logger.WithError(err).WithField("org_id", org.UID).Warn("refresh license data: encrypt failed")
 		}
-		fmt.Printf("[refresh_license_data] org_id=%s: encrypt failed: %v\n", org.UID, err)
 		return
 	}
 	if err := deps.OrgRepo.UpdateOrganisationLicenseData(ctx, org.UID, enc); err != nil {
 		if deps.Logger != nil {
 			deps.Logger.WithError(err).WithField("org_id", org.UID).Warn("refresh license data: update failed")
 		}
-		fmt.Printf("[refresh_license_data] org_id=%s: update failed: %v\n", org.UID, err)
 		return
 	}
-	fmt.Printf("[refresh_license_data] org_id=%s: success\n", org.UID)
 }
 
 // resolveKey returns the org's license key: from billing when enabled, else default. Always resolves from billing when enabled so refresh repopulates license_data.

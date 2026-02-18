@@ -75,7 +75,6 @@
 					<p class="text-12 text-neutral-11" *ngIf="isDisabled && !billingEnabled">This action is disabled for this organization. Please contact support.</p>
 					<a *ngIf="billingEnabled" routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="text-12 font-medium text-neutral-11 hover:text-primary-100 underline hover:no-underline">Go to Billing</a>
 				</div>
-				<a *ngIf="billingEnabled && !isDisabled && (licenseService.hasLicense('project_limit') || !getProjectLimitMessage())" routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="text-12 font-medium text-neutral-11 hover:text-primary-100 underline hover:no-underline">Go to Billing</a>
 			</div>
 		</div>
 	</div>

@@ -82,10 +82,8 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// When billing is enabled, try billing first for fresh license data.
-		fmt.Printf("[license_debug] org_id=%s: calling GetOrganisationLicense from overwatch\n", org.UID)
 		if resp, err := h.A.BillingClient.GetOrganisationLicense(r.Context(), org.UID); err == nil && resp != nil && resp.Data.Organisation != nil && resp.Data.Organisation.LicenseKey != "" {
 			licenseKey := resp.Data.Organisation.LicenseKey
-			fmt.Printf("[license_debug] org_id=%s: overwatch returned key (len=%d), status=%v, message=%s\n", org.UID, len(licenseKey), resp.Status, resp.Message)
 			data, err := licClient.ValidateLicense(r.Context(), licenseKey)
 			if err == nil {
 				entitlements, err := data.GetEntitlementsMap()
@@ -108,17 +106,14 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			if err != nil {
-				fmt.Printf("[license_debug] org_id=%s: GetOrganisationLicense error: %v\n", org.UID, err)
 				if billingRequiredReason == "" {
 					billingRequiredReason = fmt.Sprintf("GetOrganisationLicense failed: %v", err)
 				}
 				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
 			} else if resp == nil {
-				fmt.Printf("[license_debug] org_id=%s: GetOrganisationLicense returned nil resp\n", org.UID)
 				billingRequiredReason = "no billing license key"
 				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
 			} else {
-				fmt.Printf("[license_debug] org_id=%s: GetOrganisationLicense returned empty key, status=%v, message=%s\n", org.UID, resp.Status, resp.Message)
 				billingRequiredReason = "no billing license key"
 				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
 			}
