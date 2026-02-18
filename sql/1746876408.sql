@@ -48,3 +48,4 @@ WHERE role_type = 'instance_admin';
 
 UPDATE convoy.api_keys
 SET role_type = 'admin'
+WHERE role_type = 'project_admin';
