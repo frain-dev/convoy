@@ -119,15 +119,25 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		if billingRequiredReason == "" {
 			billingRequiredReason = "no license data"
 		}
-		// Only trigger refresh when org has no license data; otherwise let login handle refresh.
-		if org.LicenseData == "" {
-			log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Info("get license features: no license data, returning billing-required and triggering refresh")
+		// Trigger refresh when org has no license data (gate), or when client requests hard refresh (e.g. subscription changed on billing page).
+		wantHardRefresh := r.URL.Query().Get("refresh") == "1" || r.URL.Query().Get("refresh") == "true"
+		shouldRefresh := org.LicenseData == "" || wantHardRefresh
+		if shouldRefresh {
+			if wantHardRefresh {
+				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Info("get license features: hard refresh requested (e.g. subscription changed)")
+			} else {
+				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Info("get license features: no license data, returning billing-required and triggering refresh")
+			}
 			orgRepo := h.A.OrgRepo
 			if orgRepo == nil {
 				orgRepo = organisations.New(h.A.Logger, h.A.DB)
 			}
+			orgMemberRepo := h.A.OrgMemberRepo
+			if orgMemberRepo == nil {
+				orgMemberRepo = organisation_members.New(h.A.Logger, h.A.DB)
+			}
 			deps := services.RefreshLicenseDataDeps{
-				OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+				OrgMemberRepo: orgMemberRepo,
 				OrgRepo:       orgRepo,
 				BillingClient: h.A.BillingClient,
 				Logger:        h.A.Logger,
@@ -144,14 +154,14 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			})
 			if val := r.Context().Value(convoy.AuthUserCtx); val != nil {
 				if authUser, ok := val.(*auth.AuthenticatedUser); ok && authUser != nil {
-					if user, ok := authUser.Metadata.(*datastore.User); ok && user != nil && user.UID != "" {
+					if user, ok := authUser.Metadata.(*datastore.User); ok && user != nil && user.UID != "" && !wantHardRefresh {
 						go services.RefreshLicenseDataForUser(user.UID, deps)
 					} else {
-						go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, billingEnabled, deps, licClient)
+						go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, billingEnabled, deps, licClient, wantHardRefresh)
 					}
 				}
 			} else {
-				go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, billingEnabled, deps, licClient)
+				go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, billingEnabled, deps, licClient, wantHardRefresh)
 			}
 		}
 		v, _ := license.BillingRequiredFeatureListJSON()

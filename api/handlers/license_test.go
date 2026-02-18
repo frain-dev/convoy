@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func TestGetLicenseFeatures_InstanceLevel(t *testing.T) {
@@ -156,12 +158,15 @@ func TestGetLicenseFeatures_OrgLevel_BillingRequiredWhenNoLicenseData(t *testing
 	orgID := "org-no-license"
 	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 
 	handler := &Handler{
 		A: &types.APIOptions{
 			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.FromContext(context.Background()),
 			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
 			ProjectRepo:   mockProjectRepo,
 		},
 	}

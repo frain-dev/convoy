@@ -56,7 +56,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 	) {}
 
 	ngOnInit() {
-		this.licenseService.setLicenses();
+		this.licenseService.setLicenses({ refresh: true });
 	}
 
 	async ngAfterViewInit() {

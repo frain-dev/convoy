@@ -8,49 +8,31 @@ import {HTTP_RESPONSE} from 'src/app/models/global.model';
 export class LicensesService {
 	constructor(private http: HttpService) {}
 
-	getLicenses(orgId?: string): Promise<HTTP_RESPONSE> {
+	getLicenses(orgId?: string, options?: { refresh?: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			const fromStorage = this.http.getOrganisation();
 			const org = orgId ?? fromStorage?.uid;
-			const query = org ? { orgID: org } : undefined;
+			const query: Record<string, string> = {};
+			if (org) query['orgID'] = org;
+			if (options?.refresh) query['refresh'] = '1';
+			const queryUndefined = Object.keys(query).length === 0 ? undefined : query;
 			try {
-				console.log('[getLicenses] makeRequest', {
-					orgIdParam: orgId,
-					orgFromStorage: fromStorage ? { uid: fromStorage.uid, name: (fromStorage as any).name } : null,
-					orgUsed: org,
-					url: `/license/features` + (query ? `?orgID=${org}` : ''),
-					query
-				});
 				const response = await this.http.request({
 					url: `/license/features`,
 					method: 'get',
-					query
-				});
-				const projectLimit = response?.data?.project_limit;
-				const isBillingRequired =
-					projectLimit &&
-					typeof projectLimit === 'object' &&
-					projectLimit.allowed === false &&
-					projectLimit.limit === 0;
-				console.log('[getLicenses] response', {
-					orgUsed: org,
-					project_limit: projectLimit,
-					isBillingRequired,
-					hasData: !!response?.data
+					query: queryUndefined
 				});
 				return resolve(response);
 			} catch (error) {
-				console.log('[getLicenses] request failed', { orgIdParam: orgId, orgUsed: org, error });
 				return reject(error);
 			}
 		});
 	}
 
 
-	async setLicenses() {
+	async setLicenses(options?: { refresh?: boolean }) {
 		try {
-			const response = await this.getLicenses();
-			// Store full response data for new format (limits with allowed field and boolean features)
+			const response = await this.getLicenses(undefined, options);
 			localStorage.setItem('licenses', JSON.stringify(response.data));
 		} catch {}
 	}

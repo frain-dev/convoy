@@ -16,6 +16,7 @@ import {Plan, PlanService} from './plan.service';
 import {BillingOverviewService, BillingOverview} from './billing-overview.service';
 import {BillingUsageService, UsageRow} from './billing-usage.service';
 import {HttpService} from 'src/app/services/http/http.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 @Component({
   selector: 'app-billing-page',
   templateUrl: './billing-page.component.html',
@@ -101,6 +102,7 @@ export class BillingPageComponent implements OnInit {
     private overviewService: BillingOverviewService,
     private usageService: BillingUsageService,
     private httpService: HttpService,
+    private licensesService: LicensesService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -166,13 +168,18 @@ export class BillingPageComponent implements OnInit {
         hideNotification: true
       }).catch(() => ({ data: null }));
 
+      const hadSubscription = this.hasActiveSubscription(this.currentSubscription);
+      const hasSubscription = this.hasActiveSubscription(subscriptionResponse.data);
+      if (hadSubscription !== hasSubscription) {
+        this.licensesService.setLicenses({ refresh: true }).catch(() => {});
+      }
+
       const overviewData = {
         subscription: subscriptionResponse.data,
         usage: usageResponse.data,
         payment: paymentResponse.data
       };
 
-      // Store current subscription for plan management
       this.currentSubscription = subscriptionResponse.data;
 
       if (overviewData) {
@@ -1046,6 +1053,10 @@ export class BillingPageComponent implements OnInit {
       console.error('Error getting organisation ID:', error);
       return '';
     }
+  }
+
+  private hasActiveSubscription(data: any): boolean {
+    return !!(data && (data.id || (data.plan && (data.plan.id || data.plan.name))));
   }
 
   async onUpdatePaymentMethodWithProvider(stripeElementsComponent: StripeElementsComponent, event?: Event) {
