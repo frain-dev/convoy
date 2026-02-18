@@ -54,7 +54,6 @@ jobs:
 
       - name: Run Squawk on changed files
         if: steps.changed-files.outputs.has_changes == 'true'
-        uses: sbdchd/squawk-action@dd05ab8f46e8b91f8d6d663fe6f7e4bbf5ea9ad9 # v2.0.1
+        uses: sbdchd/squawk-action@68d739e098ab69cf46c64fdbf6175bb29d195a16 # v2.0.1
         with:
           pattern: ${{ steps.changed-files.outputs.files }}
-          config: .squawk.toml
