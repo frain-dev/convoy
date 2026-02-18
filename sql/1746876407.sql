@@ -4,7 +4,7 @@ SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.batch_retries (
     id VARCHAR PRIMARY KEY,
     project_id VARCHAR NOT NULL,
-    status VARVARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
     total_events INTEGER NOT NULL,
     processed_events INTEGER NOT NULL DEFAULT 0,
     failed_events INTEGER NOT NULL DEFAULT 0,
