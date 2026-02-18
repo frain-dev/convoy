@@ -68,11 +68,14 @@ func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 
 	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
 			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.FromContext(context.Background()),
 			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
 			ProjectRepo:   mockProjectRepo,
 		},
 	}
@@ -117,11 +120,14 @@ func TestGetLicenseFeatures_OrgLevel_Header(t *testing.T) {
 
 	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
 			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.FromContext(context.Background()),
 			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
 			ProjectRepo:   mockProjectRepo,
 		},
 	}

@@ -34,12 +34,12 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			org, err = orgRepo.FetchOrganisationByID(r.Context(), orgID)
 		}
 		if err != nil || org == nil {
-			log.FromContext(r.Context()).WithError(err).Warnf("get license features: fetch org failed org_id=%s", orgID)
+			h.A.Logger.WithError(err).Warnf("get license features: fetch org failed org_id=%s", orgID)
 			v, _ := license.BillingRequiredFeatureListJSON()
 			_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
 			return
 		}
-		log.FromContext(r.Context()).WithFields(log.Fields{"org_id": orgID, "has_license_data": len(org.LicenseData) > 0, "license_data_len": len(org.LicenseData)}).Debug("get license features: fetched org")
+		h.A.Logger.WithFields(log.Fields{"org_id": orgID, "has_license_data": len(org.LicenseData) > 0, "license_data_len": len(org.LicenseData)}).Debug("get license features: fetched org")
 
 		var billingRequiredReason string
 
@@ -95,24 +95,24 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					billingRequiredReason = fmt.Sprintf("FeatureListFromEntitlements (billing key) failed: %v", encErr)
-					log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
+					h.A.Logger.WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
 				} else if err != nil {
 					billingRequiredReason = fmt.Sprintf("GetEntitlementsMap failed: %v", err)
-					log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
+					h.A.Logger.WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
 				}
 			} else {
 				billingRequiredReason = fmt.Sprintf("ValidateLicense (billing key) failed: %v", err)
-				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
+				h.A.Logger.WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
 			}
 		} else {
 			if err != nil {
 				if billingRequiredReason == "" {
 					billingRequiredReason = fmt.Sprintf("GetOrganisationLicense failed: %v", err)
 				}
-				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
+				h.A.Logger.WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
 			} else {
 				billingRequiredReason = "no billing license key"
-				log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
+				h.A.Logger.WithFields(log.Fields{"org_id": org.UID}).Debugf("get license features: %s", billingRequiredReason)
 			}
 		}
 
@@ -132,7 +132,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			billingRequiredReason = "no license data"
 		}
 		// Always trigger refresh when returning billing-required so license_data can be repopulated (e.g. after subscription activated).
-		log.FromContext(r.Context()).WithFields(log.Fields{"org_id": org.UID}).Info("get license features: returning billing-required, triggering license refresh")
+		h.A.Logger.WithFields(log.Fields{"org_id": org.UID}).Info("get license features: returning billing-required, triggering license refresh")
 		go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, billingEnabled, deps, licClient)
 		v, _ := license.BillingRequiredFeatureListJSON()
 		msg := "Retrieved license features successfully"
@@ -145,7 +145,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 
 	v, err := h.A.Licenser.FeatureListJSON(r.Context())
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to get license features")
+		h.A.Logger.WithError(err).Error("failed to get license features")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to get license features", http.StatusBadRequest))
 		return
 	}
