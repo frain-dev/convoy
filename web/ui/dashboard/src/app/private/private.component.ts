@@ -159,7 +159,6 @@ export class PrivateComponent implements OnInit {
 		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
 
-		// Save to per-user storage
 		const userId = this.authDetails()?.uid;
 		if (userId) {
 			this.privateService.setUserOrg(userId, organisation);
@@ -167,6 +166,7 @@ export class PrivateComponent implements OnInit {
 			localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		}
 
+		await this.licenseService.setLicenses();
 		await this.privateService.getProjects({ refresh: true });
 		await this.checkInstanceAdminAccess();
 		this.showOrgDropdown = false;
@@ -234,10 +234,9 @@ export class PrivateComponent implements OnInit {
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.creatingOrganisation = false;
 			this.dialog.nativeElement.close();
-			this.licenseService.setLicenses();
 
 			await this.getOrganizations(true);
-			this.selectOrganisation(response.data);
+			await this.selectOrganisation(response.data);
 		} catch {
 			this.creatingOrganisation = false;
 		}

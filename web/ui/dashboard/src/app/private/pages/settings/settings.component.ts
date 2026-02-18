@@ -3,6 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {GeneralService} from 'src/app/services/general/general.service';
 import {CheckoutResolverData} from './billing/checkout.resolver';
 
 export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing' | 'early adopter features';
@@ -17,10 +18,10 @@ export class SettingsComponent implements OnInit {
 	billingEnabled = false;
 	canAccessBilling = false;
 	canAccessEarlyAdopterFeatures = false;
+	isVerifyingSubscription = false;
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
 		{ name: 'team', icon: 'team', svg: 'stroke' }
-		// { name: 'configuration settings', icon: 'settings', svg: 'fill' }
 	];
 
 	constructor(
@@ -28,22 +29,52 @@ export class SettingsComponent implements OnInit {
 		private route: ActivatedRoute,
 		public licenseService: LicensesService,
 		private httpService: HttpService,
-		private rbacService: RbacService
+		private rbacService: RbacService,
+		private generalService: GeneralService
 	) {}
 
 	async ngOnInit() {
 		await this.checkBillingAccess();
 		this.checkBillingStatus();
-		
+
 		const checkoutData: CheckoutResolverData = this.route.snapshot.data['checkout'];
 		if (checkoutData?.checkoutProcessed) {
 			this.cleanupCheckoutParams();
+		} else if (checkoutData?.needsPolling) {
+			this.pollSubscriptionStatus(checkoutData.orgId);
 		}
-		
+
 		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'organisation settings';
 		this.setActivePageWithLicenseCheck(requestedPage);
 	}
 	
+	private async pollSubscriptionStatus(orgId: string) {
+		this.isVerifyingSubscription = true;
+		const maxAttempts = 30;
+		const pollInterval = 2000;
+
+		for (let i = 0; i < maxAttempts; i++) {
+			await new Promise(r => setTimeout(r, pollInterval));
+			try {
+				const response = await this.httpService.request({
+					url: `/billing/organisations/${orgId}/subscription`,
+					method: 'get',
+					hideNotification: true
+				});
+				if (response.data?.status === 'active') {
+					this.generalService.showNotification({ message: 'Subscription activated successfully!', style: 'success' });
+					this.isVerifyingSubscription = false;
+					this.cleanupCheckoutParams();
+					return;
+				}
+			} catch (_) {}
+		}
+
+		this.generalService.showNotification({ message: 'Unable to verify subscription. Please check billing page.', style: 'warning' });
+		this.isVerifyingSubscription = false;
+		this.cleanupCheckoutParams();
+	}
+
 	private cleanupCheckoutParams() {
 		const activePage = this.route.snapshot.queryParams?.['activePage'] || 'usage and billing';
 		this.router.navigate([], {

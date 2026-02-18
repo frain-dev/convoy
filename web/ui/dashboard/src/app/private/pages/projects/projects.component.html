@@ -64,10 +64,11 @@
 	<!-- empty state  -->
 	<div class="mt-50px" *ngIf="!isLoadingProjects && !projects.length">
 		<div convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" heading="Create a project to get started" description="Your incoming and outgoing projects appear here." id="subscriptions-empty-state">
-			<button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" emptyStateCTA [routerLink]="isDisabled ? null : './new'" [disabled]="isDisabled" class="mt-36px !py-12px" [class.opacity-50]="isDisabled" [class.cursor-not-allowed]="isDisabled">
+			<button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" emptyStateCTA [routerLink]="(isDisabled || (!licenseService.hasLicense('project_limit') && getProjectLimitMessage())) ? null : './new'" [disabled]="isDisabled || (!licenseService.hasLicense('project_limit') && getProjectLimitMessage())" class="mt-36px !py-12px" [class.opacity-50]="isDisabled || (!licenseService.hasLicense('project_limit') && getProjectLimitMessage())" [class.cursor-not-allowed]="isDisabled || (!licenseService.hasLicense('project_limit') && getProjectLimitMessage())">
 				<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 				Create a Project
 			</button>
+			<p *ngIf="!licenseService.hasLicense('project_limit') && getProjectLimitMessage()" class="mt-12px text-12 text-new.primary-400 font-medium">{{ getProjectLimitMessage() }}</p>
 		</div>
 		<p *ngIf="isDisabled" class="mt-16px text-12 text-neutral-11 text-center max-w-[500px] mx-auto">This action is disabled for this organization. Please contact support or subscribe to a plan.</p>
 	</div>
