@@ -33,7 +33,7 @@ func listMinIOObjects(t *testing.T, client *minio.Client, bucket, prefix string)
 	t.Helper()
 
 	ctx := context.Background()
-	objects := make([]minio.ObjectInfo, 0)
+	objects := make([]minio.ObjectInfo, 0, 32)
 
 	objectCh := client.ListObjects(ctx, bucket, minio.ListObjectsOptions{
 		Prefix:    prefix,
