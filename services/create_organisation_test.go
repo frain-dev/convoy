@@ -22,6 +22,7 @@ func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *datastore
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 		Licenser:      mocks.NewMockLicenser(ctrl),
+		Logger:        log.FromContext(context.Background()),
 		NewOrg:        newOrg,
 		User:          user,
 	}
