@@ -6,6 +6,7 @@ type BillingOrganisation struct {
 	ExternalID     string `json:"external_id,omitempty"`
 	BillingEmail   string `json:"billing_email,omitempty"`
 	Host           string `json:"host,omitempty"`
+	LicenseKey     string `json:"license_key,omitempty"`
 	TaxIDType      string `json:"tax_id_type,omitempty"`
 	TaxNumber      string `json:"tax_number,omitempty"`
 	BillingAddress string `json:"billing_address,omitempty"`
@@ -16,6 +17,19 @@ type BillingOrganisation struct {
 	CreatedAt      string `json:"created_at,omitempty"`
 	UpdatedAt      string `json:"updated_at,omitempty"`
 	DeletedAt      string `json:"deleted_at,omitempty"`
+}
+
+type OrganisationLicense struct {
+	ID              string               `json:"id,omitempty"`
+	Key             string               `json:"key,omitempty"`
+	KeygenLicenseID string               `json:"keygen_license_id,omitempty"`
+	DeploymentType  string               `json:"deployment_type,omitempty"`
+	InstanceURL     string               `json:"instance_url,omitempty"`
+	Status          string               `json:"status,omitempty"`
+	ExpiresAt       string               `json:"expires_at,omitempty"`
+	CreatedAt       string               `json:"created_at,omitempty"`
+	UpdatedAt       string               `json:"updated_at,omitempty"`
+	Organisation    *BillingOrganisation `json:"organisation,omitempty"`
 }
 
 type UpdateOrganisationTaxIDRequest struct {

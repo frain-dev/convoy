@@ -6,7 +6,7 @@ RUN git config --global url."https://".insteadOf git://
 RUN npm install
 RUN npm run build
 
-FROM golang:1.25 as build-env
+FROM golang:1.25.7 as build-env
 WORKDIR /go/src/frain-dev/convoy
 
 ENV CGO_ENABLED=0

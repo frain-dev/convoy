@@ -268,6 +268,13 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
 
+	router.Route("/sso", func(ssoRouter chi.Router) {
+		ssoRouter.Use(middleware.JsonResponse)
+		ssoRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+		ssoRouter.Get("/callback", handler.RedeemSSOCallback)
+		ssoRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
+	})
+
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
 		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
@@ -449,10 +456,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser)).Post("/google/setup", handler.GoogleOAuthSetup)
 		})
 
-		uiRouter.Route("/saml", func(samlRouter chi.Router) {
-			samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-			samlRouter.Get("/login", handler.RedeemLoginSSOToken)
-			samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
+		uiRouter.Route("/sso", func(ssoUiRouter chi.Router) {
+			ssoUiRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+			ssoUiRouter.Get("/callback", handler.RedeemSSOCallback)
+			ssoUiRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
 		})
 
 		uiRouter.Route("/users", func(userRouter chi.Router) {
@@ -911,12 +918,6 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			authRouter.Post("/logout", handler.LogoutUser)
 		})
 
-		uiRouter.Route("/saml", func(samlRouter chi.Router) {
-			samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-			samlRouter.Get("/login", handler.RedeemLoginSSOToken)
-			samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
-		})
-
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
 				orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
@@ -1050,8 +1051,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 
 var guestRoutes = []string{
 	"/auth/sso",
-	"/saml/login",
-	"/saml/register",
+	"/sso/callback",
 	"/auth/login",
 	"/auth/register",
 	"/auth/token/refresh",

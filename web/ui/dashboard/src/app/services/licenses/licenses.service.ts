@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { HttpService } from '../http/http.service';
-import { HTTP_RESPONSE } from 'src/app/models/global.model';
+import {Injectable} from '@angular/core';
+import {HttpService} from '../http/http.service';
+import {HTTP_RESPONSE} from 'src/app/models/global.model';
 
 @Injectable({
 	providedIn: 'root'
@@ -8,12 +8,14 @@ import { HTTP_RESPONSE } from 'src/app/models/global.model';
 export class LicensesService {
 	constructor(private http: HttpService) {}
 
-	getLicenses(): Promise<HTTP_RESPONSE> {
+	getLicenses(orgId?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				const org = orgId ?? this.http.getOrganisation()?.uid;
 				const response = await this.http.request({
 					url: `/license/features`,
-					method: 'get'
+					method: 'get',
+					query: org ? { orgID: org } : undefined
 				});
 
 				return resolve(response);
@@ -30,6 +32,10 @@ export class LicensesService {
 			// Store full response data for new format (limits with allowed field and boolean features)
 			localStorage.setItem('licenses', JSON.stringify(response.data));
 		} catch {}
+	}
+
+	hasOrgLicense(org: { license_data?: string } | null): boolean {
+		return !!(org?.license_data);
 	}
 
 	hasLicense(license: string): boolean {

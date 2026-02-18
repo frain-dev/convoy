@@ -99,6 +99,9 @@ var DefaultConfiguration = Configuration{
 		GoogleOAuth: GoogleOAuthOptions{
 			Enabled: false,
 		},
+		SSO: SSOOptions{
+			Enabled: false,
+		},
 	},
 	ConsumerPoolSize: 100,
 	Tracer: TracerConfiguration{
@@ -131,6 +134,14 @@ var DefaultConfiguration = Configuration{
 		Enabled: false,
 		URL:     "",
 		APIKey:  "",
+	},
+	SSOService: SSOServiceConfiguration{
+		Host:            "https://overwatch.getconvoy.cloud",
+		RedirectPath:    "/sso/redirect",
+		TokenPath:       "/sso/token",
+		AdminPortalPath: "/sso/admin-portal",
+		Timeout:         10 * time.Second,
+		RetryCount:      3,
 	},
 }
 
@@ -268,7 +279,7 @@ type AuthConfiguration struct {
 	Jwt             JwtRealmOptions    `json:"jwt"`
 	Portal          PortalRealmOptions `json:"portal"`
 	GoogleOAuth     GoogleOAuthOptions `json:"google_oauth"`
-	SAML            SAMLOptions        `json:"saml"`
+	SSO             SSOOptions         `json:"sso"`
 	IsSignupEnabled bool               `json:"is_signup_enabled" envconfig:"CONVOY_SIGNUP_ENABLED"`
 }
 
@@ -460,6 +471,7 @@ type Configuration struct {
 	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
 	LicenseService      LicenseServiceConfiguration  `json:"license_service" envconfig:"CONVOY_LICENSE_SERVICE"`
+	SSOService          SSOServiceConfiguration      `json:"sso_service" envconfig:"CONVOY_SSO_SERVICE"`
 	Dispatcher          DispatcherConfiguration      `json:"dispatcher"`
 	HCPVault            HCPVaultConfig               `json:"hcp_vault"`
 	Billing             BillingConfiguration         `json:"billing"`
@@ -492,12 +504,19 @@ type HCPVaultConfig struct {
 	SecretName   string `json:"secret_name" envconfig:"CONVOY_HCP_SECRET_NAME"`
 }
 
+// BillingPlanConfig is a plan entry in billing config (e.g. for merging with API plans).
+type BillingPlanConfig struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
 type BillingConfiguration struct {
-	Enabled         bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
-	URL             string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
-	APIKey          string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
-	PaymentProvider PaymentProviderConfiguration `json:"payment_provider"`
-	Plans           []interface{}                `json:"plans,omitempty"`
+	Enabled          bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
+	URL              string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
+	APIKey           string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
+	OrganisationHost string                       `json:"organisation_host" envconfig:"CONVOY_BILLING_ORGANISATION_HOST"`
+	PaymentProvider  PaymentProviderConfiguration `json:"payment_provider"`
+	Plans            []BillingPlanConfig          `json:"plans,omitempty"`
 }
 
 type PaymentProviderConfiguration struct {
@@ -510,6 +529,45 @@ type LicenseServiceConfiguration struct {
 	ValidatePath string        `json:"validate_path" envconfig:"CONVOY_LICENSE_SERVICE_VALIDATE_ENDPOINT"`
 	Timeout      time.Duration `json:"timeout" envconfig:"CONVOY_LICENSE_SERVICE_TIMEOUT"`
 	RetryCount   int           `json:"retry_count" envconfig:"CONVOY_LICENSE_SERVICE_RETRY_COUNT"`
+}
+
+type SSOServiceConfiguration struct {
+	Host            string        `json:"host" envconfig:"CONVOY_SSO_SERVICE_HOST"`
+	RedirectPath    string        `json:"redirect_path" envconfig:"CONVOY_SSO_SERVICE_REDIRECT_PATH"`
+	TokenPath       string        `json:"token_path" envconfig:"CONVOY_SSO_SERVICE_TOKEN_PATH"`
+	AdminPortalPath string        `json:"admin_portal_path" envconfig:"CONVOY_SSO_SERVICE_ADMIN_PORTAL_PATH"`
+	Timeout         time.Duration `json:"-" envconfig:"CONVOY_SSO_SERVICE_TIMEOUT"`
+	TimeoutStr      string        `json:"timeout" envconfig:"-"`
+	RetryCount      int           `json:"retry_count" envconfig:"CONVOY_SSO_SERVICE_RETRY_COUNT"`
+}
+
+func (s *SSOServiceConfiguration) UnmarshalJSON(data []byte) error {
+	aux := &struct {
+		Host            string `json:"host"`
+		RedirectPath    string `json:"redirect_path"`
+		TokenPath       string `json:"token_path"`
+		AdminPortalPath string `json:"admin_portal_path"`
+		TimeoutStr      string `json:"timeout"`
+		RetryCount      int    `json:"retry_count"`
+	}{}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	s.Host = aux.Host
+	s.RedirectPath = aux.RedirectPath
+	s.TokenPath = aux.TokenPath
+	s.AdminPortalPath = aux.AdminPortalPath
+	s.RetryCount = aux.RetryCount
+
+	if aux.TimeoutStr != "" {
+		duration, err := time.ParseDuration(aux.TimeoutStr)
+		if err != nil {
+			return fmt.Errorf("invalid timeout duration %q: %w", aux.TimeoutStr, err)
+		}
+		s.Timeout = duration
+	}
+	return nil
 }
 
 // Validate checks if the billing configuration is valid when enabled
@@ -535,8 +593,9 @@ type GoogleOAuthOptions struct {
 	RedirectURL string `json:"redirect_url" envconfig:"CONVOY_GOOGLE_OAUTH_REDIRECT_URL"`
 }
 
-type SAMLOptions struct {
-	Enabled bool `json:"enabled" envconfig:"CONVOY_SAML_ENABLED"`
+type SSOOptions struct {
+	Enabled     bool   `json:"enabled" envconfig:"CONVOY_SSO_ENABLED"`
+	RedirectURL string `json:"redirect_url" envconfig:"CONVOY_SSO_REDIRECT_URL"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

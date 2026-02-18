@@ -17,4 +17,4 @@ jobs:
         with:
           args: --config=.golangci.yml --timeout 5m --verbose
           only-new-issues: 'true'
-          version: v2.1
+          version: v2.9

@@ -108,7 +108,7 @@ func rowToOrganisationMember(row interface{}) *datastore.OrganisationMember {
 
 // rowToOrganisation converts FetchUserOrganisationsPaginatedRow to datastore.Organisation
 func rowToOrganisation(row repo.FetchUserOrganisationsPaginatedRow) datastore.Organisation {
-	return datastore.Organisation{
+	org := datastore.Organisation{
 		UID:            row.ID,
 		Name:           row.Name,
 		OwnerID:        row.OwnerID,
@@ -118,6 +118,10 @@ func rowToOrganisation(row repo.FetchUserOrganisationsPaginatedRow) datastore.Or
 		UpdatedAt:      row.UpdatedAt.Time,
 		DeletedAt:      common.PgTimestamptzToNullTime(row.DeletedAt),
 	}
+	if row.LicenseData.Valid {
+		org.LicenseData = row.LicenseData.String
+	}
+	return org
 }
 
 // ============================================================================
