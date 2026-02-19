@@ -29,9 +29,9 @@ func TestGetLicenseFeatures_InstanceLevel(t *testing.T) {
 
 	handler := &Handler{
 		A: &types.APIOptions{
-			Licenser:     mockLicenser,
-			OrgRepo:      mocks.NewMockOrganisationRepository(ctrl),
-			ProjectRepo:  mocks.NewMockProjectRepository(ctrl),
+			Licenser:    mockLicenser,
+			OrgRepo:     mocks.NewMockOrganisationRepository(ctrl),
+			ProjectRepo: mocks.NewMockProjectRepository(ctrl),
 		},
 	}
 

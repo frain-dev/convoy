@@ -33,7 +33,9 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo l
 
 	var opts asynq.RedisConnOpt
 
-	if len(q.Options().RedisAddress) == 1 {
+	if q.Options().RedisFailoverOpt != nil {
+		opts = *q.Options().RedisFailoverOpt
+	} else if len(q.Options().RedisAddress) == 1 {
 		opts = q.Options().RedisClient
 	} else {
 		opts = asynq.RedisClusterClientOpt{

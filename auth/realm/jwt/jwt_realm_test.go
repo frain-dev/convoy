@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/cache"
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -18,19 +19,15 @@ import (
 
 func TestJwtRealm_Authenticate(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	userRepo := mocks.NewMockUserRepository(ctrl)
-	newCache, err := cache.NewCache(config.DefaultConfiguration.Redis)
-
-	require.Nil(t, err)
-
+	newCache := mcache.NewMemoryCache()
 	jr := NewJwtRealm(userRepo, &config.JwtRealmOptions{}, newCache)
 
 	user := &datastore.User{UID: "123456"}
 	token, err := jr.jwt.GenerateToken(user)
-
 	require.Nil(t, err)
+
+	ctrl.Finish()
 
 	type args struct {
 		cred *auth.Credential
@@ -61,7 +58,7 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 				}, nil)
 			},
 			want: &auth.AuthenticatedUser{
-				AuthenticatedByRealm: jr.GetName(),
+				AuthenticatedByRealm: auth.JWTRealmName,
 				Credential: auth.Credential{
 					Type:  auth.CredentialTypeJWT,
 					Token: token.AccessToken,
@@ -90,7 +87,7 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 			dbFn:       nil,
 			want:       nil,
 			wantErr:    true,
-			wantErrMsg: fmt.Sprintf("%s only authenticates credential type JWT", jr.GetName()),
+			wantErrMsg: fmt.Sprintf("%s only authenticates credential type JWT", auth.JWTRealmName),
 		},
 
 		{
@@ -126,12 +123,19 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			userRepo := mocks.NewMockUserRepository(ctrl)
+			newCache := mcache.NewMemoryCache()
+			jr := NewJwtRealm(userRepo, &config.JwtRealmOptions{}, newCache)
+
 			if tc.dbFn != nil {
 				tc.dbFn(userRepo)
 			}
 
 			if tc.blacklist {
-				err := jr.jwt.BlacklistToken(&VerifiedToken{UserID: user.UID, Expiry: 10}, token.AccessToken)
+				err := jr.jwt.BlacklistToken(&VerifiedToken{UserID: user.UID, Expiry: time.Now().Add(time.Minute).Unix()}, token.AccessToken)
 				require.Nil(t, err)
 			}
 

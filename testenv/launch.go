@@ -88,56 +88,56 @@ func Launch(ctx context.Context) (*Environment, func() error, error) {
 		eg.Go(func() error {
 			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err = pgcontainer.Terminate(c); err != nil {
-				log.Printf("terminate postgres container: %v", err)
+			if termErr := pgcontainer.Terminate(c); termErr != nil {
+				log.Printf("terminate postgres container: %v", termErr)
 			}
 			return nil
 		})
 		eg.Go(func() error {
 			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err = rediscontainer.Terminate(c); err != nil {
-				log.Printf("terminate redis container: %v", err)
+			if termErr := rediscontainer.Terminate(c); termErr != nil {
+				log.Printf("terminate redis container: %v", termErr)
 			}
 			return nil
 		})
 		eg.Go(func() error {
 			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err = miniocontainer.Terminate(c); err != nil {
-				log.Printf("terminate minio container: %v", err)
+			if termErr := miniocontainer.Terminate(c); termErr != nil {
+				log.Printf("terminate minio container: %v", termErr)
 			}
 			return nil
 		})
 		eg.Go(func() error {
 			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err = rabbitmqcontainer.Terminate(c); err != nil {
-				log.Printf("terminate rabbitmq container: %v", err)
+			if termErr := rabbitmqcontainer.Terminate(c); termErr != nil {
+				log.Printf("terminate rabbitmq container: %v", termErr)
 			}
 			return nil
 		})
 		eg.Go(func() error {
 			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err = localstackcontainer.Terminate(c); err != nil {
-				log.Printf("terminate localstack container: %v", err)
+			if termErr := localstackcontainer.Terminate(c); termErr != nil {
+				log.Printf("terminate localstack container: %v", termErr)
 			}
 			return nil
 		})
 		eg.Go(func() error {
 			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err = kafkacontainer.Terminate(c); err != nil {
-				log.Printf("terminate kafka container: %v", err)
+			if termErr := kafkacontainer.Terminate(c); termErr != nil {
+				log.Printf("terminate kafka container: %v", termErr)
 			}
 			return nil
 		})
 		eg.Go(func() error {
 			c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if err = pubsubcontainer.Terminate(c); err != nil {
-				log.Printf("terminate pubsub emulator container: %v", err)
+			if termErr := pubsubcontainer.Terminate(c); termErr != nil {
+				log.Printf("terminate pubsub emulator container: %v", termErr)
 			}
 			return nil
 		})
