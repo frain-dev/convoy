@@ -1,7 +1,11 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.project_configurations ADD COLUMN search_policy text DEFAULT '720h';
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.jobs(
     id           VARCHAR NOT NULL PRIMARY KEY,
     type         TEXT    NOT NULL,
@@ -19,4 +23,5 @@ CREATE TABLE IF NOT EXISTS convoy.jobs(
 DROP TABLE IF EXISTS convoy.jobs;
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN search_policy;

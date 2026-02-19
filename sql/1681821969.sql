@@ -1,9 +1,11 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.meta_events (
-    id CHAR(26) PRIMARY KEY,
+    id VARCHAR(26) PRIMARY KEY,
 
     event_type TEXT NOT NULL,
-    project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
+    project_id VARCHAR(26) NOT NULL REFERENCES convoy.projects (id),
     metadata JSONB NOT NULL,
     attempt JSONB,
     status TEXT NOT NULL,
@@ -24,9 +26,15 @@ ALTER TABLE convoy.project_configurations ADD meta_events_pub_sub JSONB;
 
 -- +migrate Down
 DROP TABLE IF EXISTS convoy.meta_events;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_enabled;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_type;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_event_type;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_url;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_secret;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN meta_events_pub_sub;

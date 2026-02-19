@@ -1,20 +1,22 @@
--- +migrate Up
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 
 -- Create indexes on event_deliveries to optimize materialized view queries
-CREATE INDEX IF NOT EXISTS idx_event_deliveries_status_processing_project_source_created 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_event_deliveries_status_processing_project_source_created 
 ON convoy.event_deliveries (status, project_id, event_id, created_at) 
 WHERE status = 'Processing';
 
-CREATE INDEX IF NOT EXISTS idx_event_deliveries_status_processing_project_source_endpoint_created 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_event_deliveries_status_processing_project_source_endpoint_created 
 ON convoy.event_deliveries (status, project_id, endpoint_id, event_id, created_at) 
 WHERE status = 'Processing';
 
-CREATE INDEX IF NOT EXISTS idx_event_deliveries_status_success_project_source 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_event_deliveries_status_success_project_source 
 ON convoy.event_deliveries (status, project_id, event_id) 
 WHERE status = 'Success';
 
 -- Index for Success status with endpoint_id
-CREATE INDEX IF NOT EXISTS idx_event_deliveries_status_success_project_source_endpoint 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_event_deliveries_status_success_project_source_endpoint 
 ON convoy.event_deliveries (status, project_id, endpoint_id, event_id) 
 WHERE status = 'Success';
 
@@ -27,8 +29,8 @@ SELECT DISTINCT
 FROM convoy.events 
 GROUP BY project_id, source_id;
 
--- Create unique index for concurrent refresh and fast lookups
-CREATE UNIQUE INDEX IF NOT EXISTS idx_event_queue_metrics_mv_unique 
+-- Create unique index CONCURRENTLY for concurrent refresh and fast lookups
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_event_queue_metrics_mv_unique 
 ON convoy.event_queue_metrics_mv(project_id, source_id);
 
 -- Materialized view for event delivery queue metrics
@@ -50,8 +52,8 @@ LEFT JOIN convoy.organisations o ON p.organisation_id = o.id
 WHERE ed.deleted_at IS NULL
 GROUP BY ed.project_id, p.name, ed.endpoint_id, ed.status, ed.event_type, e.source_id, p.organisation_id, o.name;
 
--- Create unique index for concurrent refresh
-CREATE UNIQUE INDEX IF NOT EXISTS idx_event_delivery_queue_metrics_mv_unique 
+-- Create unique index CONCURRENTLY for concurrent refresh
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_event_delivery_queue_metrics_mv_unique 
 ON convoy.event_delivery_queue_metrics_mv(project_id, endpoint_id, status, event_type, source_id, organisation_id);
 
 -- Materialized view for event queue backlog metrics
@@ -87,8 +89,8 @@ FROM (
 ORDER BY project_id, source_id
 LIMIT 1000; -- samples
 
--- Create unique index for concurrent refresh
-CREATE UNIQUE INDEX IF NOT EXISTS idx_event_queue_backlog_metrics_mv_unique 
+-- Create unique index CONCURRENTLY for concurrent refresh
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_event_queue_backlog_metrics_mv_unique 
 ON convoy.event_queue_backlog_metrics_mv(project_id, source_id);
 
 -- Materialized view for endpoint backlog metrics
@@ -127,8 +129,8 @@ FROM (
 ORDER BY project_id, source_id, endpoint_id
 LIMIT 1000; -- samples
 
--- Create unique index for concurrent refresh
-CREATE UNIQUE INDEX IF NOT EXISTS idx_event_endpoint_backlog_metrics_mv_unique 
+-- Create unique index CONCURRENTLY for concurrent refresh
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_event_endpoint_backlog_metrics_mv_unique 
 ON convoy.event_endpoint_backlog_metrics_mv(project_id, source_id, endpoint_id);
 
 
@@ -139,10 +141,10 @@ REFRESH MATERIALIZED VIEW convoy.event_endpoint_backlog_metrics_mv;
 
 -- +migrate Down
 
-DROP INDEX IF EXISTS convoy.idx_event_endpoint_backlog_metrics_mv_unique;
-DROP INDEX IF EXISTS convoy.idx_event_queue_backlog_metrics_mv_unique;
-DROP INDEX IF EXISTS convoy.idx_event_delivery_queue_metrics_mv_unique;
-DROP INDEX IF EXISTS convoy.idx_event_queue_metrics_mv_unique;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_endpoint_backlog_metrics_mv_unique;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_queue_backlog_metrics_mv_unique;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_delivery_queue_metrics_mv_unique;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_queue_metrics_mv_unique;
 
 DROP MATERIALIZED VIEW IF EXISTS convoy.event_endpoint_backlog_metrics_mv;
 DROP MATERIALIZED VIEW IF EXISTS convoy.event_queue_backlog_metrics_mv;
@@ -150,7 +152,7 @@ DROP MATERIALIZED VIEW IF EXISTS convoy.event_delivery_queue_metrics_mv;
 DROP MATERIALIZED VIEW IF EXISTS convoy.event_queue_metrics_mv;
 
 -- Drop indexes created for materialized view optimization
-DROP INDEX IF EXISTS convoy.idx_event_deliveries_status_processing_project_source_created;
-DROP INDEX IF EXISTS convoy.idx_event_deliveries_status_processing_project_source_endpoint_created;
-DROP INDEX IF EXISTS convoy.idx_event_deliveries_status_success_project_source;
-DROP INDEX IF EXISTS convoy.idx_event_deliveries_status_success_project_source_endpoint;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_deliveries_status_processing_project_source_created;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_deliveries_status_processing_project_source_endpoint_created;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_deliveries_status_success_project_source;
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_deliveries_status_success_project_source_endpoint;

@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 -- +migrate StatementBegin
 create or replace function convoy.take_token(_key text, _rate integer, _bucket_size integer) returns boolean
     language plpgsql
