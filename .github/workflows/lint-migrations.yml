@@ -1,0 +1,59 @@
+name: SQL Migration Linting
+
+on:
+  merge_group:
+  pull_request:
+    paths:
+      - 'sql/*.sql'
+      - '.squawk.toml'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  lint-sql:
+    name: Lint SQL Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Get changed SQL files
+        id: changed-files
+        run: |
+          # Get list of changed SQL files in this PR
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.base_ref }}...HEAD -- 'sql/*.sql' || echo "")
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No SQL files changed"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changed SQL files:"
+            echo "$CHANGED_FILES"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            # Convert newlines to spaces for squawk
+            FILES_LIST=$(echo "$CHANGED_FILES" | tr '\n' ' ')
+            echo "files=$FILES_LIST" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate migration structure
+        if: steps.changed-files.outputs.has_changes == 'true'
+        run: |
+          echo "Validating migrations for mixed index/DDL operations..."
+          go run cmd/validate-migrations/main.go
+
+      - name: Run Squawk on changed files
+        if: steps.changed-files.outputs.has_changes == 'true'
+        uses: sbdchd/squawk-action@68d739e098ab69cf46c64fdbf6175bb29d195a16 # v2.0.1
+        with:
+          pattern: ${{ steps.changed-files.outputs.files }}

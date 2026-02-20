@@ -1,6 +1,4 @@
-
 excluded_rules = [
-"require-concurrent-index-creation",
 "prefer-robust-stmts",
 "prefer-bigint-over-smallint",
 "prefer-bigint-over-int",

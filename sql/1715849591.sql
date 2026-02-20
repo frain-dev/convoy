@@ -1,13 +1,19 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.configurations ADD COLUMN IF NOT EXISTS retention_policy_enabled BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE convoy.configurations ADD COLUMN IF NOT EXISTS retention_policy_policy TEXT NOT NULL DEFAULT '720h';
 
 
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN IF EXISTS retention_policy_enabled;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN IF EXISTS retention_policy_policy;
 
 -- +migrate Down
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.configurations DROP COLUMN IF EXISTS retention_policy_enabled;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.configurations DROP COLUMN IF EXISTS retention_policy_policy;
 
 ALTER TABLE convoy.project_configurations ADD COLUMN IF NOT EXISTS retention_policy_enabled BOOLEAN NOT NULL DEFAULT FALSE;

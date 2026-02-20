@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.events_search
 (
 
@@ -19,31 +21,45 @@ CREATE TABLE IF NOT EXISTS convoy.events_search
     deleted_at         TIMESTAMP WITH TIME ZONE
 );
 
--- +migrate Up
-CREATE INDEX IF NOT EXISTS idx_events_search_token_key
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_search_token_key
     ON convoy.events_search USING GIN (search_token);
 
--- +migrate Up
-CREATE INDEX IF NOT EXISTS idx_events_search_created_at_key
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_search_created_at_key
     ON convoy.events_search (created_at);
 
--- +migrate Up
-CREATE INDEX IF NOT EXISTS idx_events_search_deleted_at_key
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_search_deleted_at_key
     ON convoy.events_search (deleted_at);
 
--- +migrate Up
-CREATE INDEX IF NOT EXISTS idx_events_search_project_id_key
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_search_project_id_key
     ON convoy.events_search (project_id);
 
--- +migrate Up
-CREATE INDEX IF NOT EXISTS idx_events_search_project_id_deleted_at_key
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_search_project_id_deleted_at_key
     ON convoy.events_search (project_id, deleted_at);
 
--- +migrate Up
-CREATE INDEX IF NOT EXISTS idx_events_search_source_id_key
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_search_source_id_key
     ON convoy.events_search (source_id);
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 -- +migrate StatementBegin
 CREATE OR REPLACE FUNCTION convoy.copy_rows(pid VARCHAR, dur INTEGER) RETURNS VOID AS
 $$
