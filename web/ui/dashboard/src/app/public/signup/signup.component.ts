@@ -60,9 +60,14 @@ export class SignupComponent implements OnInit {
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
+			// Clear org/project and licenses so private app uses the new user's org, not a previous session
+			localStorage.removeItem('CONVOY_ORG');
+			localStorage.removeItem('CONVOY_PROJECT');
+			localStorage.removeItem('licenses');
+
 			if (window.location.hostname === 'dashboard.getconvoy.io') await this.hubspotService.sendWelcomeEmail({ email: this.signupForm.value.email, firstname: this.signupForm.value.first_name, lastname: this.signupForm.value.last_name });
 
-			this.router.navigateByUrl('/get-started');
+			this.router.navigateByUrl('/projects');
 			this.disableSignupBtn = false;
 		} catch {
 			this.disableSignupBtn = false;

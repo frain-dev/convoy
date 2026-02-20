@@ -142,9 +142,11 @@ func (m *MockBillingClient) GetOrganisation(ctx context.Context, orgID string) (
 
 func (m *MockBillingClient) GetOrganisationLicense(ctx context.Context, orgID string) (*Response[OrganisationLicense], error) {
 	m.ensureOrganisation(orgID)
-	data := OrganisationLicense{}
-	if m.GetOrganisationLicenseKey != "" {
-		data.Key = m.GetOrganisationLicenseKey
+	data := OrganisationLicense{
+		Organisation: &BillingOrganisation{
+			ExternalID: orgID,
+			LicenseKey: m.GetOrganisationLicenseKey,
+		},
 	}
 	return &Response[OrganisationLicense]{
 		Status:  true,

@@ -506,8 +506,9 @@ type HCPVaultConfig struct {
 
 // BillingPlanConfig is a plan entry in billing config (e.g. for merging with API plans).
 type BillingPlanConfig struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	ProductType string `json:"product_type,omitempty"`
 }
 
 type BillingConfiguration struct {

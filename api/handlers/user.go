@@ -53,6 +53,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    h.A.ConfigRepo,
 		Licenser:      h.A.Licenser,
+		Logger:        h.A.Logger,
 
 		BaseURL: baseUrl,
 		Data:    &newUser,

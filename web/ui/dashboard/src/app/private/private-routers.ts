@@ -51,10 +51,6 @@ const routes: Routes = [
 				loadChildren: () => import('./pages/admin/admin.module').then(m => m.AdminModule),
 				canActivate: [InstanceAdminGuard]
 			},
-			{
-				path: 'get-started',
-				loadComponent: () => import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent)
-			},
 		]
 	}
 ];

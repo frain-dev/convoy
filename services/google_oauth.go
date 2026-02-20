@@ -165,6 +165,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 		OrgRepo:       g.OrgRepo,
 		OrgMemberRepo: g.OrgMemberRepo,
 		Licenser:      g.Licenser,
+		Logger:        log.FromContext(ctx),
 		NewOrg:        &datastore.OrganisationRequest{Name: businessName},
 		User:          user,
 	}

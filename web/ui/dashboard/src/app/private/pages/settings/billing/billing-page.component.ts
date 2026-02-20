@@ -16,6 +16,7 @@ import {Plan, PlanService} from './plan.service';
 import {BillingOverviewService, BillingOverview} from './billing-overview.service';
 import {BillingUsageService, UsageRow} from './billing-usage.service';
 import {HttpService} from 'src/app/services/http/http.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 @Component({
   selector: 'app-billing-page',
   templateUrl: './billing-page.component.html',
@@ -30,7 +31,7 @@ export class BillingPageComponent implements OnInit {
   isManagePlanOpen = false;
   isCancelConfirmOpen = false;
   refreshOverviewTrigger = 0;
-  selectedPlan: 'pro' | 'enterprise' | null = null;
+  selectedPlan: string | null = null;
   currentYear = new Date().getFullYear() - 2000; // 2-digit current year
   currentMonth = new Date().getMonth() + 1; // Current month (1-12)
 
@@ -101,6 +102,7 @@ export class BillingPageComponent implements OnInit {
     private overviewService: BillingOverviewService,
     private usageService: BillingUsageService,
     private httpService: HttpService,
+    private licensesService: LicensesService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -113,7 +115,7 @@ export class BillingPageComponent implements OnInit {
     this.validateOrganisation();
     this.loadCountries(); // Load immediately, independent of bootstrap
     this.loadBillingConfiguration();
-    
+
     // Start bootstrap in background - code that needs it will await the promise
     this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
     this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
@@ -131,10 +133,10 @@ export class BillingPageComponent implements OnInit {
   private async bootstrapOrganisation() {
     try {
       const orgId = this.getOrganisationId();
-      await this.httpService.request({ 
-        url: `/billing/organisations/${orgId}/subscription`, 
-        method: 'get', 
-        hideNotification: true 
+      await this.httpService.request({
+        url: `/billing/organisations/${orgId}/subscription`,
+        method: 'get',
+        hideNotification: true
       });
       await this.loadBillingData();
     } catch (error) {
@@ -148,42 +150,47 @@ export class BillingPageComponent implements OnInit {
     try {
       const orgId = this.getOrganisationId();
       const [usageResponse, paymentResponse] = await Promise.all([
-        this.httpService.request({ 
-          url: `/billing/organisations/${orgId}/usage`, 
-          method: 'get', 
-          hideNotification: true 
+        this.httpService.request({
+          url: `/billing/organisations/${orgId}/usage`,
+          method: 'get',
+          hideNotification: true
         }).catch(() => ({ data: null })),
-        this.httpService.request({ 
-          url: `/billing/organisations/${orgId}/payment_methods`, 
-          method: 'get', 
-          hideNotification: true 
+        this.httpService.request({
+          url: `/billing/organisations/${orgId}/payment_methods`,
+          method: 'get',
+          hideNotification: true
         }).catch(() => ({ data: null }))
       ]);
 
-      const subscriptionResponse = await this.httpService.request({ 
-        url: `/billing/organisations/${orgId}/subscription`, 
-        method: 'get', 
-        hideNotification: true 
+      const subscriptionResponse = await this.httpService.request({
+        url: `/billing/organisations/${orgId}/subscription`,
+        method: 'get',
+        hideNotification: true
       }).catch(() => ({ data: null }));
+
+      const hadSubscription = this.hasActiveSubscription(this.currentSubscription);
+      const hasSubscription = this.hasActiveSubscription(subscriptionResponse.data);
+      if (hadSubscription !== hasSubscription) {
+        this.licensesService.setLicenses().catch(() => {});
+      }
 
       const overviewData = {
         subscription: subscriptionResponse.data,
         usage: usageResponse.data,
         payment: paymentResponse.data
       };
-      
-      // Store current subscription for plan management
+
       this.currentSubscription = subscriptionResponse.data;
-      
+
       if (overviewData) {
         this.billingOverview = this.overviewService.formatOverviewData(overviewData);
-        
+
         if (overviewData.usage) {
           this.usageRows = this.usageService.formatUsageData(overviewData.usage);
         } else {
           this.usageRows = [];
         }
-        
+
         if (overviewData.payment && Array.isArray(overviewData.payment)) {
           this.paymentMethods = overviewData.payment.sort((a: PaymentMethod, b: PaymentMethod) => a.id.localeCompare(b.id));
           if (this.paymentMethods.length > 0) {
@@ -204,7 +211,7 @@ export class BillingPageComponent implements OnInit {
         this.usageRows = [];
         this.paymentMethods = [];
       }
-      
+
       this.isLoadingBillingData = false;
       await this.loadOrganisationData();
     } catch (error) {
@@ -217,7 +224,7 @@ export class BillingPageComponent implements OnInit {
     if (this.bootstrapSubscriptionPromise) {
       await this.bootstrapSubscriptionPromise;
     }
-    
+
     this.isLoadingBillingAddress = true;
     this.isLoadingVat = true;
     try {
@@ -473,13 +480,13 @@ export class BillingPageComponent implements OnInit {
     this.planService.getPlans().subscribe({
       next: (response) => {
         const defaultData = this.planService.getDefaultPlanComparison();
-        
+
         if (!response.data || response.data.length === 0) {
           this.plans = defaultData.plans;
           this.overwatchPlans = [];
         } else {
           this.overwatchPlans = response.data;
-          
+
           const overwatchPlansMap = new Map<string, Plan>();
           response.data.forEach((plan: Plan) => {
             overwatchPlansMap.set(plan.name.toLowerCase(), plan);
@@ -487,7 +494,7 @@ export class BillingPageComponent implements OnInit {
 
           this.plans = defaultData.plans.map((defaultPlan: Plan) => {
             const overwatchPlan = overwatchPlansMap.get(defaultPlan.name.toLowerCase());
-            
+
             if (overwatchPlan) {
               if (!overwatchPlan.features || overwatchPlan.features.length === 0) {
                 return {
@@ -501,7 +508,7 @@ export class BillingPageComponent implements OnInit {
               }
               return overwatchPlan;
             }
-            
+
             return defaultPlan;
           });
         }
@@ -548,7 +555,7 @@ export class BillingPageComponent implements OnInit {
 
   async confirmCancelSubscription() {
     this.closeCancelConfirm();
-    
+
     this.isCancellingSubscription = true;
     try {
       const orgId = this.getOrganisationId();
@@ -596,10 +603,20 @@ export class BillingPageComponent implements OnInit {
     }
 
     const planName = selectedPlanData.name.toLowerCase();
-    const isProOrEnterprise = planName === 'pro' || planName === 'enterprise';
-    const planExistsInOverwatch = this.overwatchPlans.some(p => 
-      p.name.toLowerCase() === planName || p.id === selectedPlanData.id
-    );
+    const isProOrEnterprise = planName.includes('pro') || planName.includes('enterprise');
+
+    const planLower = planName.toLowerCase();
+    const planExistsInOverwatch = this.overwatchPlans.some(p => {
+          const pNameLower = p.name.toLowerCase();
+          return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
+      });
+
+    // Billing service (Overwatch) expects plan UUID, not slug; resolve from overwatch when selected plan is default slug
+    const overwatchPlan = this.overwatchPlans.find(p => {
+      const pNameLower = p.name.toLowerCase();
+      return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
+    });
+    const planIdForApi = overwatchPlan?.id ?? selectedPlanData.id;
 
     if (isProOrEnterprise && !planExistsInOverwatch) {
       const subject = encodeURIComponent(`${selectedPlanData.name} Plan Request`);
@@ -620,7 +637,7 @@ export class BillingPageComponent implements OnInit {
           url: `/billing/organisations/${orgId}/subscriptions/${this.currentSubscription.id}/upgrade`,
           method: 'put',
           body: {
-            plan_id: selectedPlanData.id,
+            plan_id: planIdForApi,
             host: host
           }
         });
@@ -635,7 +652,7 @@ export class BillingPageComponent implements OnInit {
           url: `/billing/organisations/${orgId}/subscriptions/onboard`,
           method: 'post',
           body: {
-            plan_id: selectedPlanData.id,
+            plan_id: planIdForApi,
             host: host
           }
         });
@@ -667,9 +684,9 @@ export class BillingPageComponent implements OnInit {
     const currentPlanId = this.currentSubscription.plan.id;
     const currentPlanName = this.currentSubscription.plan.name?.toLowerCase();
     const plan = this.plans.find(p => p.id === planId);
-    
+
     if (!plan) return false;
-    
+
     return plan.id === currentPlanId || plan.name.toLowerCase() === currentPlanName;
   }
 
@@ -691,7 +708,7 @@ export class BillingPageComponent implements OnInit {
   }
 
   selectPlan(planId: string) {
-    this.selectedPlan = planId as 'pro' | 'enterprise' | null;
+    this.selectedPlan = planId;
   }
 
   getFeaturesByCategory(category: 'core' | 'security' | 'support'): any[] {
@@ -763,7 +780,7 @@ export class BillingPageComponent implements OnInit {
 
   private loadPaymentMethodDetailsWithRetry(maxRetries: number = 5, retryDelay: number = 1000) {
     let retryCount = 0;
-    
+
     const attemptLoad = () => {
       this.isLoadingPaymentMethod = true;
       this.billingPaymentDetailsService.getPaymentMethodDetails().subscribe({
@@ -790,7 +807,7 @@ export class BillingPageComponent implements OnInit {
         }
       });
     };
-    
+
     attemptLoad();
   }
 
@@ -897,7 +914,7 @@ export class BillingPageComponent implements OnInit {
     this.isEditingPaymentMethod = false;
     this.setupIntentSecret = '';
     this.refreshOverviewTrigger++;
-    
+
     // Wait for webhook to process before loading payment method details
     // Stripe sends a webhook to billing service which processes asynchronously
     setTimeout(() => {
@@ -918,10 +935,10 @@ export class BillingPageComponent implements OnInit {
 
   confirmSetDefault() {
     if (!this.confirmingDefaultFor) return;
-    
+
     const pmId = this.confirmingDefaultFor;
     this.confirmingDefaultFor = null;
-    
+
     this.billingPaymentDetailsService.setDefaultPaymentMethod(pmId).subscribe({
       next: () => {
         this.generalService.showNotification({
@@ -954,7 +971,7 @@ export class BillingPageComponent implements OnInit {
 
   confirmDelete() {
     if (!this.confirmingDeleteFor) return;
-    
+
     const pmId = this.confirmingDeleteFor;
     this.confirmingDeleteFor = null;
 
@@ -1003,7 +1020,7 @@ export class BillingPageComponent implements OnInit {
     const target = event.target as HTMLElement;
     const confirmationElement = target.closest('.confirmation-ui');
     const paymentMethodCard = target.closest('[data-payment-method-card]');
-    
+
     // If clicking outside confirmation UI and not on a payment method action, cancel
     if (!confirmationElement && !paymentMethodCard && (this.confirmingDefaultFor || this.confirmingDeleteFor)) {
       this.cancelSetDefault();
@@ -1036,6 +1053,10 @@ export class BillingPageComponent implements OnInit {
       console.error('Error getting organisation ID:', error);
       return '';
     }
+  }
+
+  private hasActiveSubscription(data: any): boolean {
+    return !!(data && (data.id || (data.plan && (data.plan.id || data.plan.name))));
   }
 
   async onUpdatePaymentMethodWithProvider(stripeElementsComponent: StripeElementsComponent, event?: Event) {

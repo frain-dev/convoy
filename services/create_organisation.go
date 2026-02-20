@@ -138,8 +138,8 @@ func RunBillingOrganisationSync(
 	}
 	if key == "" && createErr == nil {
 		licResp, licErr := billingClient.GetOrganisationLicense(ctx, org.UID)
-		if licErr == nil && licResp != nil {
-			key = licResp.Data.Key
+		if licErr == nil && licResp != nil && licResp.Data.Organisation != nil {
+			key = licResp.Data.Organisation.LicenseKey
 		}
 		if licErr != nil {
 			logger.WithError(licErr).Error("create_organisation: GetOrganisationLicense failed")

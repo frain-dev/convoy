@@ -131,22 +131,22 @@ const (
 
         %s %s AND ev.id <= :cursor
 		GROUP BY ev.id, s.id
-	    ORDER BY ev.created_at %s
+	    ORDER BY ev.created_at %s, ev.id %s
 	    LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY created_at %s
+	SELECT * FROM events ORDER BY created_at %s, id %s
 	`
 
 	baseEventsPagedBackward = `
 
         %s %s AND ev.id >= :cursor
 		GROUP BY ev.id, s.id
-		ORDER BY ev.created_at %s
+		ORDER BY ev.created_at %s, ev.id %s
 		LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY created_at %s
+	SELECT * FROM events ORDER BY created_at %s, id %s
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id

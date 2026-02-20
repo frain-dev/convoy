@@ -38,16 +38,18 @@ func TestProjectService_CreateProject(t *testing.T) {
 		member     *datastore.OrganisationMember
 	}
 	tests := []struct {
-		name        string
-		args        args
-		wantProject *datastore.Project
-		dbFn        func(gs *ProjectService)
-		wantErr     bool
-		wantErrCode int
-		wantErrMsg  string
+		name            string
+		args            args
+		skipLimitCheck  bool
+		wantProject     *datastore.Project
+		dbFn            func(gs *ProjectService)
+		wantErr         bool
+		wantErrCode     int
+		wantErrMsg      string
 	}{
 		{
-			name: "should_create_outgoing_project",
+			name:           "should_create_outgoing_project",
+			skipLimitCheck: false,
 			args: args{
 				ctx: ctx,
 				newProject: &models.CreateProject{
@@ -123,7 +125,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_create_incoming_project",
+			name:           "should_create_incoming_project",
+			skipLimitCheck: false,
 			args: args{
 				ctx: ctx,
 				newProject: &models.CreateProject{
@@ -200,7 +203,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_create_incoming_project_with_defaults",
+			name:           "should_create_incoming_project_with_defaults",
+			skipLimitCheck: false,
 			args: args{
 				ctx: ctx,
 				newProject: &models.CreateProject{
@@ -261,7 +265,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_create_outgoing_project_with_defaults",
+			name:           "should_create_outgoing_project_with_defaults",
+			skipLimitCheck: false,
 			args: args{
 				ctx: ctx,
 				newProject: &models.CreateProject{
@@ -322,7 +327,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_remove_search_policy_for_license_check",
+			name:           "should_remove_search_policy_for_license_check",
+			skipLimitCheck: false,
 			args: args{
 				ctx: ctx,
 				newProject: &models.CreateProject{
@@ -398,7 +404,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_fail_to_create_project",
+			name:           "should_fail_to_create_project",
+			skipLimitCheck: false,
 			args: args{
 				ctx: ctx,
 				newProject: &models.CreateProject{
@@ -473,7 +480,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 		//	wantErrMsg:  "failed to create api key",
 		// },
 		{
-			name: "should_error_for_duplicate_project_name",
+			name:           "should_error_for_duplicate_project_name",
+			skipLimitCheck: false,
 			args: args{
 				ctx: ctx,
 				newProject: &models.CreateProject{
@@ -509,7 +517,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 			wantErrMsg:  "a project with this name already exists",
 		},
 		{
-			name: "should_error_for_cant_create_project",
+			name:           "should_error_for_cant_create_project",
+			skipLimitCheck: false,
 			args: args{
 				ctx: ctx,
 				newProject: &models.CreateProject{
@@ -539,6 +548,56 @@ func TestProjectService_CreateProject(t *testing.T) {
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  ErrProjectLimit.Error(),
 		},
+		{
+			name:           "should_create_project_with_skipLimitCheck_without_calling_licenser_limit",
+			skipLimitCheck: true,
+			args: args{
+				ctx: ctx,
+				newProject: &models.CreateProject{
+					Name:    "billing_gate_project",
+					Type:    "incoming",
+					LogoURL: "",
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{Header: "X-Convoy-Signature"},
+						Strategy:  &models.StrategyConfiguration{Type: "linear", Duration: 20, RetryCount: 4},
+						ReplayAttacks: true,
+					},
+				},
+				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
+				},
+			},
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				// CheckProjectLimit must NOT be called when skipLimitCheck is true
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+			wantProject: &datastore.Project{
+				Name:           "billing_gate_project",
+				Type:           "incoming",
+				LogoURL:        "",
+				OrganisationID: "1234",
+				Config: &datastore.ProjectConfig{
+					Signature:     &datastore.SignatureConfiguration{Header: "X-Convoy-Signature"},
+					SSL:           &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
+					Strategy:      &datastore.StrategyConfiguration{Type: "linear", Duration: 20, RetryCount: 4},
+					RateLimit:     &datastore.RateLimitConfiguration{Count: 1000, Duration: 60},
+					ReplayAttacks: true,
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -556,7 +615,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				tc.dbFn(gs)
 			}
 
-			project, apiKey, err := gs.CreateProject(tc.args.ctx, tc.args.newProject, tc.args.org, tc.args.member)
+			project, apiKey, err := gs.CreateProject(tc.args.ctx, tc.args.newProject, tc.args.org, tc.args.member, tc.skipLimitCheck)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

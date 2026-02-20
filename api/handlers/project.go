@@ -16,6 +16,8 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
+const errBillingRequired = "complete billing setup to create projects: add a subscription or payment method"
+
 func createProjectService(h *Handler) (*services.ProjectService, error) {
 	apiKeyRepo := api_keys.New(h.A.Logger, h.A.DB)
 	projectRepo := projects.New(h.A.Logger, h.A.DB)
@@ -116,13 +118,42 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	billingEnabled := h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil
+	skipLimitCheck := false
+	if billingEnabled {
+		sub, err := h.A.BillingClient.GetSubscription(r.Context(), org.UID)
+		if err != nil || !sub.Status || sub.Data.ID == "" {
+			pms, pmErr := h.A.BillingClient.GetPaymentMethods(r.Context(), org.UID)
+			if pmErr != nil || !pms.Status || len(pms.Data) == 0 {
+				_ = render.Render(w, r, util.NewErrorResponse(errBillingRequired, http.StatusPaymentRequired))
+				return
+			}
+		}
+		limitDeps := services.OrgProjectLimitDeps{
+			BillingClient: h.A.BillingClient,
+			ProjectRepo:   projects.New(h.A.Logger, h.A.DB),
+			Cfg:           h.A.Cfg,
+			Logger:        h.A.Logger,
+		}
+		ok, err := services.CheckOrganisationProjectLimit(r.Context(), org, limitDeps)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+		if !ok {
+			_ = render.Render(w, r, util.NewErrorResponse("organisation project limit reached", http.StatusPaymentRequired))
+			return
+		}
+		skipLimitCheck = true
+	}
+
 	projectService, err := createProjectService(h)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	project, apiKey, err := projectService.CreateProject(r.Context(), &newProject, org, member)
+	project, apiKey, err := projectService.CreateProject(r.Context(), &newProject, org, member, skipLimitCheck)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

@@ -10,14 +10,17 @@ export class LicensesService {
 
 	getLicenses(orgId?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			const fromStorage = this.http.getOrganisation();
+			const org = orgId ?? fromStorage?.uid;
+			const query: Record<string, string> = {};
+			if (org) query['orgID'] = org;
+			const queryUndefined = Object.keys(query).length === 0 ? undefined : query;
 			try {
-				const org = orgId ?? this.http.getOrganisation()?.uid;
 				const response = await this.http.request({
 					url: `/license/features`,
 					method: 'get',
-					query: org ? { orgID: org } : undefined
+					query: queryUndefined
 				});
-
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -29,7 +32,6 @@ export class LicensesService {
 	async setLicenses() {
 		try {
 			const response = await this.getLicenses();
-			// Store full response data for new format (limits with allowed field and boolean features)
 			localStorage.setItem('licenses', JSON.stringify(response.data));
 		} catch {}
 	}

@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -12,8 +14,10 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func TestGetLicenseFeatures_InstanceLevel(t *testing.T) {
@@ -25,8 +29,9 @@ func TestGetLicenseFeatures_InstanceLevel(t *testing.T) {
 
 	handler := &Handler{
 		A: &types.APIOptions{
-			Licenser: mockLicenser,
-			OrgRepo:  nil, // instance path: no org repo
+			Licenser:     mockLicenser,
+			OrgRepo:      mocks.NewMockOrganisationRepository(ctrl),
+			ProjectRepo:  mocks.NewMockProjectRepository(ctrl),
 		},
 	}
 
@@ -63,17 +68,25 @@ func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 	require.NoError(t, err)
 
 	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:      config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
-			Licenser: mocks.NewMockLicenser(ctrl), // not used on org path
-			OrgRepo:  mockOrgRepo,
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
+			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.FromContext(context.Background()),
+			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
+			ProjectRepo:   mockProjectRepo,
 		},
 	}
 
 	mockOrgRepo.EXPECT().
 		FetchOrganisationByID(gomock.Any(), orgID).
 		Return(&datastore.Organisation{UID: orgID, LicenseData: encrypted}, nil)
+	mockProjectRepo.EXPECT().
+		LoadProjects(gomock.Any(), gomock.Any()).
+		Return([]*datastore.Project{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/license/features?orgID="+orgID, nil)
 	w := httptest.NewRecorder()
@@ -107,16 +120,25 @@ func TestGetLicenseFeatures_OrgLevel_Header(t *testing.T) {
 	require.NoError(t, err)
 
 	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:     config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
-			OrgRepo: mockOrgRepo,
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
+			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.FromContext(context.Background()),
+			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
+			ProjectRepo:   mockProjectRepo,
 		},
 	}
 
 	mockOrgRepo.EXPECT().
 		FetchOrganisationByID(gomock.Any(), orgID).
 		Return(&datastore.Organisation{UID: orgID, LicenseData: encrypted}, nil)
+	mockProjectRepo.EXPECT().
+		LoadProjects(gomock.Any(), gomock.Any()).
+		Return([]*datastore.Project{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/license/features", nil)
 	req.Header.Set("X-Organisation-Id", orgID)
@@ -136,29 +158,36 @@ func TestGetLicenseFeatures_OrgLevel_Header(t *testing.T) {
 	require.True(t, data["PortalLinks"].(bool))
 }
 
-func TestGetLicenseFeatures_OrgLevel_FallbackToInstanceWhenNoLicenseData(t *testing.T) {
+func TestGetLicenseFeatures_OrgLevel_BillingRequiredWhenNoLicenseData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	orgID := "org-no-license"
 	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	mockLicenser := mocks.NewMockLicenser(ctrl)
-	instanceFeatures := json.RawMessage(`{"EnterpriseSSO":false}`)
+	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:      config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
-			Licenser: mockLicenser,
-			OrgRepo:  mockOrgRepo,
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
+			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.FromContext(context.Background()),
+			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
+			ProjectRepo:   mockProjectRepo,
 		},
 	}
 
 	mockOrgRepo.EXPECT().
 		FetchOrganisationByID(gomock.Any(), orgID).
 		Return(&datastore.Organisation{UID: orgID, LicenseData: ""}, nil)
-	mockLicenser.EXPECT().
-		FeatureListJSON(gomock.Any()).
-		Return(instanceFeatures, nil)
+	mockProjectRepo.EXPECT().
+		LoadProjects(gomock.Any(), gomock.Any()).
+		Return([]*datastore.Project{}, nil)
+	// Handler starts a goroutine that calls UpdateOrganisationLicenseData when returning billing-required; allow it before test ends.
+	mockOrgRepo.EXPECT().
+		UpdateOrganisationLicenseData(gomock.Any(), orgID, "").
+		Return(nil).MaxTimes(1)
 
 	req := httptest.NewRequest(http.MethodGet, "/license/features?orgID="+orgID, nil)
 	w := httptest.NewRecorder()
@@ -171,5 +200,14 @@ func TestGetLicenseFeatures_OrgLevel_FallbackToInstanceWhenNoLicenseData(t *test
 	}
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
-	require.Equal(t, instanceFeatures, resp.Data)
+	var data map[string]interface{}
+	err = json.Unmarshal(resp.Data, &data)
+	require.NoError(t, err)
+	pl, ok := data["project_limit"].(map[string]interface{})
+	require.True(t, ok)
+	require.False(t, pl["allowed"].(bool))
+	require.False(t, pl["available"].(bool))
+
+	// Allow background RefreshLicenseDataForOrg goroutine to run and satisfy mock before ctrl.Finish().
+	time.Sleep(100 * time.Millisecond)
 }
