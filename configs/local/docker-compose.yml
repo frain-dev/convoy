@@ -22,7 +22,7 @@ services:
         healthcheck:
             test: ["CMD-SHELL", "wget -q --spider http://localhost:5005/healthz"]
             interval: 5s
-            timeout: 15s
+            timeout: 30s
             retries: 3
             start_period: 10s
         depends_on:
@@ -39,7 +39,7 @@ services:
         healthcheck:
             test: ["CMD-SHELL", "wget -q --spider http://localhost:5008/healthz"]
             interval: 5s
-            timeout: 15s
+            timeout: 30s
             retries: 3
             start_period: 15s
         depends_on:
