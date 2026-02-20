@@ -11,26 +11,12 @@ import (
 )
 
 func RegisterMigrations(rm *requestmigrations.RequestMigration) error {
-	if err := requestmigrations.Register[models.CreateEndpoint](rm, "2024-01-01", &v20240101.CreateEndpointMigration{}); err != nil {
-		return err
-	}
-	if err := requestmigrations.Register[models.UpdateEndpoint](rm, "2024-01-01", &v20240101.UpdateEndpointMigration{}); err != nil {
-		return err
-	}
-	if err := requestmigrations.Register[models.EndpointResponse](rm, "2024-01-01", &v20240101.EndpointResponseMigration{}); err != nil {
-		return err
-	}
-
-	if err := requestmigrations.Register[models.EndpointResponse](rm, "2024-04-01", &v20240401.EndpointResponseMigration{}); err != nil {
-		return err
-	}
-
-	if err := requestmigrations.Register[datastore.CreatePortalLinkRequest](rm, "2025-11-24", v20251124.NewCreatePortalLinkMigration()); err != nil {
-		return err
-	}
-	if err := requestmigrations.Register[datastore.UpdatePortalLinkRequest](rm, "2025-11-24", v20251124.NewUpdatePortalLinkMigration()); err != nil {
-		return err
-	}
-
-	return nil
+	return rm.Register(
+		requestmigrations.Migration[models.CreateEndpoint]("2024-01-01", &v20240101.CreateEndpointMigration{}),
+		requestmigrations.Migration[models.UpdateEndpoint]("2024-01-01", &v20240101.UpdateEndpointMigration{}),
+		requestmigrations.Migration[models.EndpointResponse]("2024-01-01", &v20240101.EndpointResponseMigration{}),
+		requestmigrations.Migration[models.EndpointResponse]("2024-04-01", &v20240401.EndpointResponseMigration{}),
+		requestmigrations.Migration[datastore.CreatePortalLinkRequest]("2025-11-24", v20251124.NewCreatePortalLinkMigration()),
+		requestmigrations.Migration[datastore.UpdatePortalLinkRequest]("2025-11-24", v20251124.NewUpdatePortalLinkMigration()),
+	).Build()
 }
