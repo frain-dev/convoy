@@ -15,7 +15,7 @@ INSERT INTO convoy.users (
     @email_verified, @reset_password_token, @email_verification_token,
     @reset_password_expires_at, @email_verification_expires_at, @auth_type,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-) ON CONFLICT (email, deleted_at) DO NOTHING;
+);
 
 -- ============================================================================
 -- UPDATE Operations

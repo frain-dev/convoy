@@ -11,7 +11,12 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Starting services..."
-docker compose -f "$COMPOSE_FILE" up -d
+if ! docker compose -f "$COMPOSE_FILE" up -d; then
+    echo "FAIL: docker compose up failed"
+    docker compose -f "$COMPOSE_FILE" ps || true
+    docker compose -f "$COMPOSE_FILE" logs --no-color web agent caddy || true
+    exit 1
+fi
 
 echo "Waiting for Caddy to become reachable (up to ${MAX_WAIT}s)..."
 elapsed=0
