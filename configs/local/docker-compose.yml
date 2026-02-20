@@ -1,79 +1,108 @@
 services:
-    web:
-        image: getconvoy/convoy:latest
-        command: ["/start.sh"]
+    migrate:
+        image: ${CONVOY_IMAGE:-getconvoy/convoy:latest}
+        command: ["./cmd", "migrate", "up", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
-            - ./conf/redis/ca-cert.pem:/etc/ssl/certs/redis-ca.pem:ro
-        restart: unless-stopped
-        ports:
-            - "5005:5005"
-        healthcheck:
-            test: ["CMD-SHELL", "wget -q --spider localhost:5005/health"]
-            interval: 5s
-            timeout: 15s
-            retries: 3
-            start_period: 5s
         depends_on:
-            - postgres
-            - redis_server
-            - pgbouncer
-    agent:
-        image: getconvoy/convoy:latest
-        command: ["./cmd", "agent", "--config", "convoy.json"]
-        ports:
-            - "5008:5008"
+            postgres:
+                condition: service_healthy
+            pgbouncer:
+                condition: service_started
+            redis_server:
+                condition: service_started
+
+    web:
+        image: ${CONVOY_IMAGE:-getconvoy/convoy:latest}
+        command: ["./cmd", "server", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
             - ./conf/redis/ca-cert.pem:/etc/ssl/certs/redis-ca.pem:ro
         restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q --spider http://localhost:5005/healthz"]
+            interval: 5s
+            timeout: 30s
+            retries: 10
+            start_period: 10s
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+
+    agent:
+        image: ${CONVOY_IMAGE:-getconvoy/convoy:latest}
+        command: ["./cmd", "agent", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+            - ./conf/redis/ca-cert.pem:/etc/ssl/certs/redis-ca.pem:ro
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q --spider http://localhost:5008/healthz"]
+            interval: 5s
+            timeout: 30s
+            retries: 10
+            start_period: 15s
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+
+    caddy:
+        image: caddy:2-alpine
+        restart: unless-stopped
+        ports:
+            - "80:80"
+        volumes:
+            - ./Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
         depends_on:
             web:
                 condition: service_healthy
-    pgbouncer:
-        image: bitnamilegacy/pgbouncer
-        hostname: pgbouncer
-        restart: unless-stopped
-        depends_on:
-          postgres:
-            condition: service_healthy
-        env_file:
-            - ./conf/.env
-        volumes:
-            - ./conf/:/bitnami/pgbouncer/conf/
-            - ./conf/userlists.txt:/bitnami/userlists.txt
-        ports:
-            - "6432:6432"
+            agent:
+                condition: service_healthy
+
     postgres:
         image: postgres:15.2-alpine
-        restart: on-failure
-        ports:
-            - "5432:5432"
+        restart: unless-stopped
         environment:
             POSTGRES_DB: convoy
             POSTGRES_USER: convoy
             POSTGRES_PASSWORD: pg_password
             PGDATA: /data/postgres
         volumes:
-            - postgresql_master_data:/data/postgres
+            - postgres_data:/data/postgres
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U convoy"]
-            interval: 10s
+            interval: 5s
             timeout: 5s
             retries: 5
             start_period: 10s
+
+    pgbouncer:
+        image: bitnamilegacy/pgbouncer
+        hostname: pgbouncer
+        restart: unless-stopped
+        depends_on:
+            postgres:
+                condition: service_healthy
+        env_file:
+            - ./conf/.env
+        volumes:
+            - ./conf/:/bitnami/pgbouncer/conf/
+            - ./conf/userlists.txt:/bitnami/userlists.txt
+
     redis_server:
         image: redis:7-alpine
         restart: unless-stopped
-        ports:
-            - "6379:6379"
         command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
         volumes:
-          - redis_data:/data
-          - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
-          - ./conf/redis/ca-cert.pem:/usr/local/etc/redis/certs/ca-cert.pem:ro
-          - ./conf/redis/redis-server-cert.pem:/usr/local/etc/redis/certs/redis-server-cert.pem:ro
-          - ./conf/redis/redis-server-key.pem:/usr/local/etc/redis/certs/redis-server-key.pem:ro
+            - redis_data:/data
+            - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+            - ./conf/redis/ca-cert.pem:/usr/local/etc/redis/certs/ca-cert.pem:ro
+            - ./conf/redis/redis-server-cert.pem:/usr/local/etc/redis/certs/redis-server-cert.pem:ro
+            - ./conf/redis/redis-server-key.pem:/usr/local/etc/redis/certs/redis-server-key.pem:ro
+
+
 volumes:
-    postgresql_master_data:
+    postgres_data:
     redis_data:
+    caddy_data:

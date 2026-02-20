@@ -942,6 +942,9 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 
 	err = userRepo.CreateUser(ctx, defaultUser)
 	if err != nil {
+		if errors.Is(err, datastore.ErrDuplicateEmail) {
+			return nil
+		}
 		return fmt.Errorf("failed to create user - %w", err)
 	}
 
