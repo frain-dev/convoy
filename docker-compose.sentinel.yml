@@ -1,0 +1,197 @@
+version: "3"
+
+volumes:
+  postgres_data:
+  redis_master_data:
+  redis_worker_1_data:
+  redis_worker_2_data:
+
+services:
+    web:
+        profiles: ["app"]
+        build:
+          context: ./
+          dockerfile: Dockerfile.dev
+        command: [ "/start.sh" ]
+        volumes:
+            - ./convoy.sentinel.json:/convoy.json
+
+        restart: on-failure
+        ports:
+          - "5005:5005"
+        depends_on:
+            - postgres
+            - redis-sentinel-1
+            - redis-sentinel-2
+            - redis-sentinel-3
+            - migrate
+        environment:
+            - CONVOY_ENV=development
+            - CONVOY_VERSION=v1.0.0
+            - CONVOY_COMPONENT=web
+            # - CONVOY_ENABLE_FEATURE_FLAG=ip-rules,credential-encryption,circuit-breaker,prometheus
+            # - CONVOY_METRICS_ENABLED=false
+            # - CONVOY_METRICS_BACKEND=prometheus
+            # - CONVOY_METRICS_SAMPLE_TIME=5
+            - CONVOY_REDIS_SENTINEL_USERNAME=
+            - CONVOY_REDIS_SENTINEL_PASSWORD=
+            - CONVOY_REDIS_SCHEME=redis-sentinel
+            - CONVOY_REDIS_ADDRESSES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+            - CONVOY_REDIS_SENTINEL_MASTER_NAME=mymaster
+
+    migrate:
+        profiles: ["app"]
+        build:
+            context: ./
+            dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "migrate", "up"]
+        volumes:
+            - ./convoy.sentinel.json:/convoy.json
+
+        restart: on-failure
+        depends_on:
+            postgres:
+                condition: service_healthy
+
+    agent:
+        profiles: ["app"]
+        build:
+            context: ./
+            dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "agent"]
+        volumes:
+            - ./convoy.sentinel.json:/convoy.json
+
+        restart: on-failure
+        ports:
+            - "5008:5008"
+        depends_on:
+            - postgres
+            - redis-sentinel-1
+            - redis-sentinel-2
+            - redis-sentinel-3
+            - migrate
+        environment:
+            - CONVOY_ENV=development
+            - CONVOY_VERSION=v1.0.0
+            - CONVOY_COMPONENT=agent
+            # - CONVOY_ENABLE_FEATURE_FLAG=ip-rules,credential-encryption,circuit-breaker,prometheus
+            # - CONVOY_METRICS_ENABLED=false
+            # - CONVOY_METRICS_BACKEND=prometheus
+            # - CONVOY_METRICS_SAMPLE_TIME=5
+            - CONVOY_REDIS_SENTINEL_USERNAME=
+            - CONVOY_REDIS_SENTINEL_PASSWORD=
+            - CONVOY_REDIS_SCHEME=redis-sentinel
+            - CONVOY_REDIS_ADDRESSES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+            - CONVOY_REDIS_SENTINEL_MASTER_NAME=mymaster
+
+    postgres:
+        image: postgres:15.2-alpine
+        restart: unless-stopped
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_DB: convoy
+            POSTGRES_USER: convoy
+            POSTGRES_PASSWORD: convoy
+            PGDATA: /data/postgres
+        volumes:
+            - postgres_data:/data/postgres
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U convoy" ]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    redis-master:
+        image: redis:7-alpine
+        restart: always
+        ports:
+            - "6379:6379"
+        volumes:
+          - redis_master_data:/data
+
+    redis-worker-1:
+        image: redis:7-alpine
+        restart: always
+        ports:
+            - "6380:6379"
+        command: redis-server --replicaof redis-master 6379
+        depends_on:
+            - redis-master
+        volumes:
+          - redis_worker_1_data:/data
+
+    redis-worker-2:
+        image: redis:7-alpine
+        restart: always
+        ports:
+            - "6381:6379"
+        command: redis-server --replicaof redis-master 6379
+        depends_on:
+            - redis-master
+        volumes:
+          - redis_worker_2_data:/data
+
+
+    redis-sentinel-1:
+        image: redis:7-alpine
+        restart: always
+        ports:
+            - "26379:26379"
+        command: >
+            /bin/sh -c "echo 'port 26379' > /etc/sentinel.conf &&
+            echo 'sentinel monitor mymaster redis-master 6379 2' >> /etc/sentinel.conf &&
+            echo 'sentinel resolve-hostnames yes' >> /etc/sentinel.conf &&
+            echo 'sentinel announce-hostnames yes' >> /etc/sentinel.conf &&
+            echo 'sentinel down-after-milliseconds mymaster 5000' >> /etc/sentinel.conf &&
+            echo 'sentinel failover-timeout mymaster 60000' >> /etc/sentinel.conf &&
+            redis-sentinel /etc/sentinel.conf"
+        depends_on:
+            - redis-master
+            - redis-worker-1
+            - redis-worker-2
+
+    redis-sentinel-2:
+        image: redis:7-alpine
+        restart: always
+        ports:
+            - "26380:26379"
+        command: >
+            /bin/sh -c "echo 'port 26379' > /etc/sentinel.conf &&
+            echo 'sentinel monitor mymaster redis-master 6379 2' >> /etc/sentinel.conf &&
+            echo 'sentinel resolve-hostnames yes' >> /etc/sentinel.conf &&
+            echo 'sentinel announce-hostnames yes' >> /etc/sentinel.conf &&
+            echo 'sentinel down-after-milliseconds mymaster 5000' >> /etc/sentinel.conf &&
+            echo 'sentinel failover-timeout mymaster 60000' >> /etc/sentinel.conf &&
+            redis-sentinel /etc/sentinel.conf"
+        depends_on:
+            - redis-master
+            - redis-worker-1
+            - redis-worker-2
+
+    redis-sentinel-3:
+        image: redis:7-alpine
+        restart: always
+        ports:
+            - "26381:26379"
+        command: >
+            /bin/sh -c "echo 'port 26379' > /etc/sentinel.conf &&
+            echo 'sentinel monitor mymaster redis-master 6379 2' >> /etc/sentinel.conf &&
+            echo 'sentinel resolve-hostnames yes' >> /etc/sentinel.conf &&
+            echo 'sentinel announce-hostnames yes' >> /etc/sentinel.conf &&
+            echo 'sentinel down-after-milliseconds mymaster 5000' >> /etc/sentinel.conf &&
+            echo 'sentinel failover-timeout mymaster 60000' >> /etc/sentinel.conf &&
+            redis-sentinel /etc/sentinel.conf"
+        depends_on:
+            - redis-master
+            - redis-worker-1
+            - redis-worker-2
+
+    prometheus:
+        image: prom/prometheus:v2.24.0
+        volumes:
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+        ports:
+            - 9090:9090
+        restart: always

@@ -8,6 +8,7 @@ import (
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
@@ -35,6 +36,18 @@ func NewRedisLimiter(addresses []string) (*RedisLimiter, error) {
 
 func NewRedisLimiterFromConfig(addresses []string, tlsSkipVerify bool, caCertFile, certFile, keyFile string) (*RedisLimiter, error) {
 	client, err := rdb.NewClientFromConfig(addresses, tlsSkipVerify, caCertFile, certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	c := redis_rate.NewLimiter(client.Client())
+	r := &RedisLimiter{limiter: c}
+
+	return r, nil
+}
+
+func NewRedisLimiterFromRedisConfig(cfg config.RedisConfiguration) (*RedisLimiter, error) {
+	client, err := rdb.NewClientFromRedisConfig(cfg)
 	if err != nil {
 		return nil, err
 	}

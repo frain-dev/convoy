@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hibiken/asynq"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
@@ -25,6 +27,7 @@ type QueueOptions struct {
 	Type              string
 	RedisClient       *rdb.Redis
 	RedisAddress      []string
+	RedisFailoverOpt  *asynq.RedisFailoverClientOpt
 	PrometheusAddress string
 }
 

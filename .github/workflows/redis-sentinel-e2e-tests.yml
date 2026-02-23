@@ -1,0 +1,60 @@
+name: Build and Run Redis Sentinel E2E
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  sentinel-e2e-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ 1.25.7 ]
+
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Cache go modules
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+
+      - name: Check out code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Get and verify dependencies
+        run: go mod download && go mod verify
+
+      - name: Prepare sentinel config
+        run: cp convoy.sentinel.json.example convoy.sentinel.json
+
+      - name: Start Redis Sentinel Cluster
+        run: |
+          docker compose -f docker-compose.sentinel.yml up -d
+          # Wait for sentinel to be ready
+          sleep 10
+          docker ps
+
+      - name: Run Redis Sentinel E2E Test
+        run: go test -race -v ./e2e/ -run TestE2E_RedisSentinel
+        env:
+          CONVOY_REDIS_SCHEME: redis-sentinel
+          CONVOY_REDIS_ADDRESSES: 127.0.0.1:26379,127.0.0.1:26380,127.0.0.1:26381
+          CONVOY_REDIS_SENTINEL_MASTER_NAME: mymaster
+          TEST_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+          CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+          CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
+          CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
+
+      - name: Teardown Redis Sentinel Cluster
+        if: always()
+        run: docker compose -f docker-compose.sentinel.yml down -v

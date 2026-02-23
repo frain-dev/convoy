@@ -363,13 +363,41 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		return nil, err
 	}
 
+	// CONVOY_REDIS_SENTINEL_MASTER_NAME
+	redisSentinelMasterName, err := cmd.Flags().GetString("redis-sentinel-master-name")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_REDIS_SENTINEL_USERNAME
+	redisSentinelUsername, err := cmd.Flags().GetString("redis-sentinel-username")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_REDIS_SENTINEL_PASSWORD
+	redisSentinelPassword, err := cmd.Flags().GetString("redis-sentinel-password")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_REDIS_CLUSTER_ADDRESSES
+	redisAddresses, err := cmd.Flags().GetString("redis-addresses")
+	if err != nil {
+		return nil, err
+	}
+
 	c.Redis = config.RedisConfiguration{
-		Scheme:   redisScheme,
-		Host:     redisHost,
-		Username: redisUsername,
-		Password: redisPassword,
-		Database: redisDatabase,
-		Port:     redisPort,
+		Scheme:           redisScheme,
+		Host:             redisHost,
+		Username:         redisUsername,
+		Password:         redisPassword,
+		Database:         redisDatabase,
+		Port:             redisPort,
+		MasterName:       redisSentinelMasterName,
+		SentinelUsername: redisSentinelUsername,
+		SentinelPassword: redisSentinelPassword,
+		Addresses:        redisAddresses,
 	}
 
 	// CONVOY_LOGGER_LEVEL

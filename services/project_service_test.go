@@ -38,14 +38,14 @@ func TestProjectService_CreateProject(t *testing.T) {
 		member     *datastore.OrganisationMember
 	}
 	tests := []struct {
-		name            string
-		args            args
-		skipLimitCheck  bool
-		wantProject     *datastore.Project
-		dbFn            func(gs *ProjectService)
-		wantErr         bool
-		wantErrCode     int
-		wantErrMsg      string
+		name           string
+		args           args
+		skipLimitCheck bool
+		wantProject    *datastore.Project
+		dbFn           func(gs *ProjectService)
+		wantErr        bool
+		wantErrCode    int
+		wantErrMsg     string
 	}{
 		{
 			name:           "should_create_outgoing_project",
@@ -558,8 +558,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Type:    "incoming",
 					LogoURL: "",
 					Config: &models.ProjectConfig{
-						Signature: &models.SignatureConfiguration{Header: "X-Convoy-Signature"},
-						Strategy:  &models.StrategyConfiguration{Type: "linear", Duration: 20, RetryCount: 4},
+						Signature:     &models.SignatureConfiguration{Header: "X-Convoy-Signature"},
+						Strategy:      &models.StrategyConfiguration{Type: "linear", Duration: 20, RetryCount: 4},
 						ReplayAttacks: true,
 					},
 				},

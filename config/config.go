@@ -56,7 +56,7 @@ var DefaultConfiguration = Configuration{
 		SetConnMaxLifetime: 3600,
 	},
 	Redis: RedisConfiguration{
-		Scheme: "redis",
+		Scheme: RedisScheme,
 		Host:   "localhost",
 		Port:   6379,
 	},
@@ -229,20 +229,48 @@ type PrometheusConfiguration struct {
 }
 
 type RedisConfiguration struct {
-	Scheme        string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
-	Host          string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
-	Username      string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
-	Password      string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
-	Database      string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
-	Port          int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
-	Addresses     string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
-	TLSSkipVerify bool   `json:"tls_skip_verify" envconfig:"CONVOY_REDIS_TLS_SKIP_VERIFY"`
-	TLSCertFile   string `json:"tls_cert_file" envconfig:"CONVOY_REDIS_TLS_CERT_FILE"`
-	TLSKeyFile    string `json:"tls_key_file" envconfig:"CONVOY_REDIS_TLS_KEY_FILE"`
-	TLSCACertFile string `json:"tls_ca_cert_file" envconfig:"CONVOY_REDIS_TLS_CA_CERT_FILE"`
+	Scheme           string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
+	Host             string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
+	Username         string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
+	Password         string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
+	Database         string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
+	Port             int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+	Addresses        string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
+	MasterName       string `json:"master_name" envconfig:"CONVOY_REDIS_SENTINEL_MASTER_NAME"`
+	SentinelUsername string `json:"sentinel_username" envconfig:"CONVOY_REDIS_SENTINEL_USERNAME"`
+	SentinelPassword string `json:"sentinel_password" envconfig:"CONVOY_REDIS_SENTINEL_PASSWORD"`
+	TLSSkipVerify    bool   `json:"tls_skip_verify" envconfig:"CONVOY_REDIS_TLS_SKIP_VERIFY"`
+	TLSCertFile      string `json:"tls_cert_file" envconfig:"CONVOY_REDIS_TLS_CERT_FILE"`
+	TLSKeyFile       string `json:"tls_key_file" envconfig:"CONVOY_REDIS_TLS_KEY_FILE"`
+	TLSCACertFile    string `json:"tls_ca_cert_file" envconfig:"CONVOY_REDIS_TLS_CA_CERT_FILE"`
+}
+
+func (rc RedisConfiguration) IsSentinel() bool {
+	return rc.Scheme == RedisSentinelScheme
+}
+
+func (rc RedisConfiguration) SentinelAddresses() []string {
+	if len(strings.TrimSpace(rc.Addresses)) != 0 {
+		addrs := strings.Split(rc.Addresses, ",")
+		result := make([]string, 0, len(addrs))
+		for _, a := range addrs {
+			if trimmed := strings.TrimSpace(a); trimmed != "" {
+				result = append(result, trimmed)
+			}
+		}
+		return result
+	}
+	if rc.Host != "" && rc.Port > 0 {
+		return []string{fmt.Sprintf("%s:%d", rc.Host, rc.Port)}
+	}
+	return nil
 }
 
 func (rc RedisConfiguration) BuildDsn() []string {
+	if rc.IsSentinel() {
+		return rc.SentinelAddresses()
+	}
+
 	if len(strings.TrimSpace(rc.Addresses)) != 0 {
 		return strings.Split(rc.Addresses, ",")
 	}
@@ -415,6 +443,16 @@ const (
 const (
 	PrometheusMetricsProvider MetricsBackend = "prometheus"
 )
+
+const (
+	RedisScheme         = "redis"
+	RedisSentinelScheme = "redis-sentinel"
+	RedisSecureScheme   = "rediss"
+)
+
+func IsValidRedisScheme(scheme string) bool {
+	return scheme == RedisScheme || scheme == RedisSentinelScheme || scheme == RedisSecureScheme
+}
 
 type (
 	AuthProvider            string
@@ -701,6 +739,16 @@ func ensureSSL(s ServerConfiguration) error {
 }
 
 func ensureQueueConfig(queueCfg RedisConfiguration) error {
+	if queueCfg.IsSentinel() {
+		if strings.TrimSpace(queueCfg.MasterName) == "" {
+			return errors.New("redis sentinel master_name is required when scheme is redis-sentinel")
+		}
+		if len(queueCfg.SentinelAddresses()) == 0 {
+			return errors.New("redis sentinel addresses are required when scheme is redis-sentinel")
+		}
+		return nil
+	}
+
 	if len(queueCfg.BuildDsn()) == 0 {
 		return errors.New("redis queue dsn is empty")
 	}

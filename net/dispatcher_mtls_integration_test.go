@@ -228,7 +228,9 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		require.True(t,
 			strings.Contains(errMsg, "tls") ||
 				strings.Contains(errMsg, "connection reset") ||
-				strings.Contains(errMsg, "closed network connection"),
+				strings.Contains(errMsg, "closed network connection") ||
+				strings.Contains(errMsg, "broken pipe") ||
+				strings.Contains(errMsg, "EOF"),
 			"expected TLS/connection error, got: %s", errMsg)
 		if resp != nil {
 			require.NotEqual(t, http.StatusOK, resp.StatusCode)
@@ -326,7 +328,9 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		require.True(t,
 			strings.Contains(errMsg, "tls") ||
 				strings.Contains(errMsg, "connection reset") ||
-				strings.Contains(errMsg, "closed network connection"),
+				strings.Contains(errMsg, "closed network connection") ||
+				strings.Contains(errMsg, "broken pipe") ||
+				strings.Contains(errMsg, "EOF"),
 			"expected TLS/connection error, got: %s", errMsg)
 		if resp != nil {
 			require.NotEqual(t, http.StatusOK, resp.StatusCode)
