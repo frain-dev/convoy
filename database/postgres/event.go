@@ -107,7 +107,7 @@ const (
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-	JOIN endpoint_ids e ON e.id = ee.endpoint_id
+	LEFT JOIN endpoint_ids e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
@@ -124,7 +124,7 @@ const (
     FROM convoy.events_search ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
-	JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
     WHERE ev.deleted_at IS NULL`
 
 	baseEventsPagedForward = `
@@ -534,7 +534,14 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		} else {
 			suffix = getExistsBackwardSuffix(sortOrder)
 		}
-		query = baseEventsPagedExists + existsSubquery + ") " + filterQueryNoEndpoint + suffix
+
+		// If no EXISTS subquery, don't add EXISTS clause
+		if existsSubquery == "" {
+			// Remove " AND EXISTS (" from baseEventsPagedExists (13 characters)
+			query = baseEventsPagedExists[:len(baseEventsPagedExists)-13] + filterQueryNoEndpoint + suffix
+		} else {
+			query = baseEventsPagedExists + existsSubquery + ") " + filterQueryNoEndpoint + suffix
+		}
 	} else {
 		// Search or legacy path: CTE + JOIN + GROUP BY.
 		base := baseEventsPaged
@@ -761,7 +768,13 @@ func getCountDeliveriesPrevRowQuery(sortOrder string) string {
 
 // buildExistsSubquery returns the EXISTS inner query for the events list (no search).
 // Caller must bind :owner_id and :endpoint_ids when present.
+// Returns empty string when no filters are specified to include events without endpoint associations.
 func buildExistsSubquery(ownerID string, endpointIDs []string) string {
+	// If no filters, don't require endpoint associations
+	if util.IsStringEmpty(ownerID) && len(endpointIDs) == 0 {
+		return ""
+	}
+
 	q := "SELECT 1 FROM convoy.events_endpoints ee JOIN convoy.endpoints e ON e.id = ee.endpoint_id WHERE ee.event_id = ev.id"
 	if !util.IsStringEmpty(ownerID) {
 		q += " AND e.owner_id = :owner_id"
