@@ -69,12 +69,15 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithoutEndpoints() {
 		Headers:   httpheader.HTTPHeader{},
 		Raw:       string(data),
 		Data:      data,
-		Status:    datastore.FailureStatus, // Events without subscriptions get Failure status
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
 	err := eventRepo.CreateEvent(ctx, event)
+	require.NoError(s.T(), err)
+
+	// Update status to Failure (events without subscriptions get Failure status)
+	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
 	require.NoError(s.T(), err)
 
 	// Query without endpoint filter - should return the event
@@ -134,12 +137,15 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithEndpointFilter() {
 		Headers:   httpheader.HTTPHeader{},
 		Raw:       string(data),
 		Data:      data,
-		Status:    datastore.FailureStatus,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
 	err = eventRepo.CreateEvent(ctx, eventWithoutEndpoint)
+	require.NoError(s.T(), err)
+
+	// Update status to Failure (events without subscriptions get Failure status)
+	err = eventRepo.UpdateEventStatus(ctx, eventWithoutEndpoint, datastore.FailureStatus)
 	require.NoError(s.T(), err)
 
 	// Query with endpoint filter - should only return event with matching endpoint
@@ -194,12 +200,15 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_SearchWithoutEndpoints
 		Headers:   httpheader.HTTPHeader{},
 		Raw:       string(data),
 		Data:      data,
-		Status:    datastore.FailureStatus,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
 	err := eventRepo.CreateEvent(ctx, event)
+	require.NoError(s.T(), err)
+
+	// Update status to Failure (events without subscriptions get Failure status)
+	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
 	require.NoError(s.T(), err)
 
 	// Copy to search table for text search
@@ -223,6 +232,8 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_SearchWithoutEndpoints
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 1, len(events))
 	require.Equal(s.T(), event.UID, events[0].UID)
+	// Note: events_search table doesn't have metadata or status columns,
+	// so we don't check status for search results
 }
 
 func TestEventsIntegrationTestSuite(t *testing.T) {
