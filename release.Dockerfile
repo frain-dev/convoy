@@ -12,15 +12,13 @@ COPY convoy /cmd
 # Copy the migrations directory
 COPY sql/ /sql/
 
-# Copy the startup script
-COPY configs/local/start.sh /start.sh
-
 # Set permissions
-RUN chmod +x /cmd /start.sh
+RUN chmod +x /cmd
 
 # Install necessary dependencies
 RUN apk add --no-cache gcompat
 
 # Set the startup command
-CMD ["/start.sh"]
+ENTRYPOINT ["/cmd"]
+CMD ["server", "--config", "convoy.json"]
 
