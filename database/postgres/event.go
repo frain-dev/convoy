@@ -97,12 +97,12 @@ const (
 	baseEventsPaged = `
 	with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id), events as (
 	SELECT ev.id, ev.project_id,
-	ev.id AS event_type, ev.is_duplicate_event,
+	ev.event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
-	ev.updated_at, ev.deleted_at,ev.acknowledged_at,ev.metadata,ev.status,
+	ev.updated_at, ev.deleted_at, ev.acknowledged_at, ev.metadata, ev.status,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
@@ -114,7 +114,7 @@ const (
 	baseEventsSearch = `
 	with events as (
 	SELECT ev.id, ev.project_id,
-	ev.id AS event_type, ev.is_duplicate_event,
+	ev.event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
@@ -182,7 +182,7 @@ const (
 
 	// EXISTS path: no GROUP BY, uses idx_events_project_created_pagination when filter.Query is empty
 	baseEventsPagedExists = `
-	SELECT ev.id, ev.project_id, ev.id AS event_type, ev.is_duplicate_event,
+	SELECT ev.id, ev.project_id, ev.event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id, ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(ev.idempotency_key, '') AS idempotency_key,
 	COALESCE(ev.url_query_params, '') AS url_query_params,
