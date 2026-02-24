@@ -12,7 +12,7 @@ services:
         build:
           context: ./
           dockerfile: Dockerfile.dev
-        command: [ "/start.sh" ]
+        command: ["./cmd", "server", "--config", "convoy.json"]
         volumes:
             - ./convoy.sentinel.json:/convoy.json
 
