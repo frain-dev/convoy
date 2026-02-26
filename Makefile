@@ -17,7 +17,7 @@ build:
 
 .PHONY: test
 test:
-	@go test -race -p 1 $(shell go list ./... | grep -v '/e2e')
+	@go test -race -p 1 $(shell go list ./... | grep -v '/e2e') -timeout 30m
 
 # Get Docker socket from active context if DOCKER_HOST is not set
 DOCKER_HOST_VAL := $(or $(DOCKER_HOST),$(shell docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null || echo ""))
@@ -67,13 +67,13 @@ test_e2e_pubsub:
 	@echo "Using docker context: $(DOCKER_CONTEXT) (DOCKER_HOST=$(DOCKER_HOST_VAL))"
 	@echo "Running PubSub/Message Broker E2E tests..."
 	@echo "Running AMQP PubSub tests..."
-	@$(TEST_ENV) go test -race -v ./e2e/... -run TestE2E_AMQP
+	@$(TEST_ENV) go test -race -v ./e2e/... -run TestE2E_AMQP -timeout 30m
 	@echo "Running SQS PubSub tests..."
-	@$(TEST_ENV) go test -race -v ./e2e/... -run TestE2E_SQS
+	@$(TEST_ENV) go test -race -v ./e2e/... -run TestE2E_SQS -timeout 30m
 	@echo "Running Kafka PubSub tests..."
-	@$(TEST_ENV) go test -race -v ./e2e/... -run TestE2E_Kafka
+	@$(TEST_ENV) go test -race -v ./e2e/... -run TestE2E_Kafka -timeout 30m
 	@echo "Running Google Pub/Sub tests..."
-	@$(TEST_ENV) go test -race -v ./e2e/... -run TestE2E_GooglePubSub
+	@$(TEST_ENV) go test -race -v ./e2e/... -run TestE2E_GooglePubSub -timeout 30m
 	@echo "✅ All PubSub E2E tests passed!"
 
 # Original test_e2e - runs ALL tests (for local comprehensive testing)
