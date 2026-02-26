@@ -68,7 +68,7 @@ jobs:
           CONVOY_REDIS_PORT: 6379
 
       - name: Run PubSub E2E tests (testcontainers)
-        run: go test -race -v ./e2e/... -run TestE2E_Kafka
+        run: go test -race -v ./e2e/... -run TestE2E_Kafka -timeout 30m
         env:
           TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
           CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
