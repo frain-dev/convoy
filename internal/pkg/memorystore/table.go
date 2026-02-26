@@ -133,6 +133,9 @@ func (t *Table) deleteInternal(key Key) {
 }
 
 func (t *Table) GetKeys() []Key {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	keys := make([]Key, 0, len(t.rows))
 	for k := range t.rows {
 		keys = append(keys, k)
