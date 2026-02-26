@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
@@ -146,63 +147,104 @@ func NewContext(ctx context.Context, lo StdLogger, fields Fields) context.Contex
 
 // Logger logs message to io.Writer at various log levels.
 type Logger struct {
+	mu     sync.RWMutex
 	logger *logrus.Logger
 	entry  *logrus.Entry
 }
 
 func (l *Logger) Debug(args ...interface{}) {
-	l.entry.Debug(args...)
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Debug(args...)
 }
 
 func (l *Logger) Info(args ...interface{}) {
-	l.entry.Info(args...)
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Info(args...)
 }
 
 func (l *Logger) Warn(args ...interface{}) {
-	l.entry.Warn(args...)
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Warn(args...)
 }
 
 func (l *Logger) Error(args ...interface{}) {
-	l.entry.Error(args...)
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Error(args...)
 }
 
 func (l *Logger) Fatal(args ...interface{}) {
-	l.entry.Fatal(args...)
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Fatal(args...)
 }
 
 func (l *Logger) Debugf(format string, args ...interface{}) {
-	l.entry.Debug(fmt.Sprintf(format, args...))
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Debug(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Infof(format string, args ...interface{}) {
-	l.entry.Info(fmt.Sprintf(format, args...))
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Info(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Warnf(format string, args ...interface{}) {
-	l.entry.Warn(fmt.Sprintf(format, args...))
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Warn(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Errorf(format string, args ...interface{}) {
-	l.entry.Error(fmt.Sprintf(format, args...))
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Error(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Errorln(args ...interface{}) {
-	l.entry.Errorln(args...)
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Errorln(args...)
 }
 
 func (l *Logger) WithFields(f Fields) *logrus.Entry {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 	return l.entry.WithFields(f)
 }
 
 func (l *Logger) Printf(format string, args ...interface{}) {
-	l.entry.Printf(format, args...)
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Printf(format, args...)
 }
 
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.entry.Fatal(fmt.Sprintf(format, args...))
+	l.mu.RLock()
+	entry := l.entry
+	l.mu.RUnlock()
+	entry.Fatal(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) WithError(err error) *logrus.Entry {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 	return l.entry.WithError(err)
 }
 
@@ -223,6 +265,8 @@ func (l *Logger) SetLevel(v Level) {
 
 // SetPrefix sets logger fields
 func (l *Logger) SetPrefix(value interface{}) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	l.entry = l.entry.WithField("source", value)
 }
 
