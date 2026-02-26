@@ -828,6 +828,14 @@ type Event struct {
 	DeletedAt      null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
+func (d *DeliveryAttempt) Reset() {
+	*d = DeliveryAttempt{}
+}
+
+func (e *Event) Reset() {
+	*e = Event{}
+}
+
 func (e *Event) GetRawHeaders() map[string]interface{} {
 	h := make(map[string]interface{}, len(e.Headers))
 
@@ -1062,6 +1070,10 @@ type EventDelivery struct {
 	CreatedAt        time.Time           `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time           `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        null.Time           `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (e *EventDelivery) Reset() {
+	*e = EventDelivery{}
 }
 
 func (d *EventDelivery) GetLatencyStartTime() time.Time {

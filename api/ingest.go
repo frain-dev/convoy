@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -28,6 +29,15 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
+)
+
+var (
+	eventPool = sync.Pool{
+		New: func() any { return &datastore.Event{} },
+	}
+	bufferPool = sync.Pool{
+		New: func() any { return new(bytes.Buffer) },
+	}
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
@@ -160,12 +170,18 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// 3.1 On Failure
 	// Return 400 Bad Request.
 	// Read raw body for signature verification first (e.g., GitHub signs raw bytes)
-	rawPayload, err := io.ReadAll(io.LimitReader(r.Body, int64(maxIngestSize)))
+
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	_, err = io.Copy(buf, io.LimitReader(r.Body, int64(maxIngestSize)))
 	if err != nil {
 		a.A.Logger.WithError(err).Error("Failed to read request body")
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
+	rawPayload := buf.Bytes()
 
 	// Restore body for subsequent reads
 	r.Body = io.NopCloser(bytes.NewReader(rawPayload))
@@ -208,19 +224,21 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// 3.2 On success
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
-	event := &datastore.Event{
-		UID:              ulid.Make().String(),
-		EventType:        datastore.EventType(maskID),
-		SourceID:         source.UID,
-		ProjectID:        source.ProjectID,
-		Raw:              string(payload),
-		Data:             payload,
-		IsDuplicateEvent: isDuplicate,
-		URLQueryParams:   r.URL.RawQuery,
-		IdempotencyKey:   checksum,
-		Headers:          httpheader.HTTPHeader(r.Header),
-		AcknowledgedAt:   null.TimeFrom(time.Now()),
-	}
+
+	event := eventPool.Get().(*datastore.Event)
+	event.Reset()
+
+	event.UID = ulid.Make().String()
+	event.EventType = datastore.EventType(maskID)
+	event.SourceID = source.UID
+	event.ProjectID = source.ProjectID
+	event.Raw = string(payload)
+	event.Data = payload
+	event.IsDuplicateEvent = isDuplicate
+	event.URLQueryParams = r.URL.RawQuery
+	event.IdempotencyKey = checksum
+	event.Headers = httpheader.HTTPHeader(r.Header)
+	event.AcknowledgedAt = null.TimeFrom(time.Now())
 
 	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}
 
@@ -231,6 +249,9 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)
+
+	eventPool.Put(event)
+
 	if err != nil {
 		a.A.Logger.WithError(err).Error("Failed to encode event data")
 		_ = render.Render(w, r, util.NewErrorResponse("Failed to process event", http.StatusBadRequest))
