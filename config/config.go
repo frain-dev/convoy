@@ -119,6 +119,13 @@ var DefaultConfiguration = Configuration{
 			QueryTimeout:                    30,
 			MaterializedViewRefreshInterval: 2, // Default: refresh every 2 minutes
 		},
+		TimeSeries: TimeSeriesConfiguration{
+			Enabled:           false,
+			RetentionSeconds:  86400, // 24 hours
+			SampleTime:        5,     // 5 seconds
+			PipelineBatchSize: 100,
+			FlushIntervalMs:   100, // 100ms
+		},
 	},
 	Dispatcher: DispatcherConfiguration{
 		InsecureSkipVerify: false,
@@ -416,12 +423,21 @@ type MetricsConfiguration struct {
 	IsEnabled  bool                           `json:"enabled" envconfig:"CONVOY_METRICS_ENABLED"`
 	Backend    MetricsBackend                 `json:"metrics_backend" envconfig:"CONVOY_METRICS_BACKEND"`
 	Prometheus PrometheusMetricsConfiguration `json:"prometheus_metrics"`
+	TimeSeries TimeSeriesConfiguration        `json:"timeseries_metrics"`
 }
 
 type PrometheusMetricsConfiguration struct {
 	SampleTime                      uint64 `json:"sample_time" envconfig:"CONVOY_METRICS_SAMPLE_TIME"`
 	QueryTimeout                    uint64 `json:"query_timeout" envconfig:"CONVOY_METRICS_QUERY_TIMEOUT"` // Timeout in seconds for metrics collection queries
 	MaterializedViewRefreshInterval uint64 `json:"materialized_view_refresh_interval" envconfig:"CONVOY_METRICS_MATERIALIZED_VIEW_REFRESH_INTERVAL"`
+}
+
+type TimeSeriesConfiguration struct {
+	Enabled           bool   `json:"enabled" envconfig:"CONVOY_TIMESERIES_METRICS_ENABLED"`
+	RetentionSeconds  uint64 `json:"retention_seconds" envconfig:"CONVOY_TIMESERIES_RETENTION_SECONDS"`
+	SampleTime        uint64 `json:"sample_time" envconfig:"CONVOY_TIMESERIES_SAMPLE_TIME"`
+	PipelineBatchSize int    `json:"pipeline_batch_size" envconfig:"CONVOY_TIMESERIES_PIPELINE_BATCH_SIZE"`
+	FlushIntervalMs   int    `json:"flush_interval_ms" envconfig:"CONVOY_TIMESERIES_FLUSH_INTERVAL_MS"`
 }
 
 const (
@@ -442,6 +458,7 @@ const (
 
 const (
 	PrometheusMetricsProvider MetricsBackend = "prometheus"
+	TimeSeriesMetricsProvider MetricsBackend = "timeseries"
 )
 
 const (
@@ -790,6 +807,8 @@ func validate(c *Configuration) error {
 		backend := c.Metrics.Backend
 		switch backend {
 		case PrometheusMetricsProvider:
+			break
+		case TimeSeriesMetricsProvider:
 			break
 		default:
 			c.Metrics.IsEnabled = false

@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/metrics/timeseries"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -40,6 +41,7 @@ type EventChannelArgs struct {
 	licenser           license.Licenser
 	tracerBackend      tracer.Backend
 	oauth2TokenService OAuth2TokenService
+	metricsRecorder    timeseries.MetricsRecorder
 }
 
 type EventChannelSubResponse struct {
@@ -58,7 +60,8 @@ type EventChannel interface {
 func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository,
 	eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
-	licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService OAuth2TokenService) func(context.Context, *asynq.Task) error {
+	licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService OAuth2TokenService,
+	metricsRecorder timeseries.MetricsRecorder) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
@@ -87,6 +90,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 				licenser:           licenser,
 				tracerBackend:      tracerBackend,
 				oauth2TokenService: oauth2TokenService,
+				metricsRecorder:    metricsRecorder,
 			})
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate key") {
@@ -148,6 +152,7 @@ type MatchSubscriptionsDeps struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	MetricsRecorder            timeseries.MetricsRecorder
 }
 
 func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) func(context.Context, *asynq.Task) error {
@@ -187,6 +192,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			licenser:           deps.Licenser,
 			tracerBackend:      deps.TracerBackend,
 			oauth2TokenService: deps.OAuth2TokenService,
+			metricsRecorder:    deps.MetricsRecorder,
 		})
 		if err != nil {
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
@@ -240,6 +246,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			FeatureFlag:                deps.FeatureFlag,
 			FeatureFlagFetcher:         deps.FeatureFlagFetcher,
 			EarlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
+			MetricsRecorder:            deps.MetricsRecorder,
 		})
 		if err != nil {
 			log.WithError(err).Error(ErrFailedToWriteToQueue)
