@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -33,7 +35,7 @@ func Reset() {
 	prometheus.DefaultRegisterer = prometheus.NewRegistry()
 }
 
-func RegisterQueueMetrics(q queue.Queuer, db database.Database, cbm *cb.CircuitBreakerManager) error {
+func RegisterQueueMetrics(q queue.Queuer, db database.Database, rdb redis.UniversalClient, cbm *cb.CircuitBreakerManager) error {
 	configuration, err := config.Get()
 	if err != nil || !configuration.Metrics.IsEnabled {
 		return err
@@ -48,6 +50,12 @@ func RegisterQueueMetrics(q queue.Queuer, db database.Database, cbm *cb.CircuitB
 	if !ok {
 		return errors.New("failed to assert postgres database")
 	}
+
+	refreshInterval := time.Duration(configuration.Metrics.Prometheus.SampleTime) * time.Second
+	if refreshInterval <= 0 {
+		refreshInterval = 30 * time.Second
+	}
+	postgresDB.ConfigureQueueMetricsSnapshot(rdb, refreshInterval)
 
 	registry := Reg()
 
