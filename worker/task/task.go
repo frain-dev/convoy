@@ -68,6 +68,10 @@ type EventDelivery struct {
 	ProjectID       string
 }
 
+func (e *EventDelivery) Reset() {
+	*e = EventDelivery{}
+}
+
 type EventDeliveryConfig struct {
 	project      *datastore.Project
 	subscription *datastore.Subscription

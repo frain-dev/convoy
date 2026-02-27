@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -52,6 +53,10 @@ type EventDeliveryProcessorDeps struct {
 	OAuth2TokenService         OAuth2TokenService
 }
 
+var eventDeliveryPool = sync.Pool{
+	New: func() any { return &EventDelivery{} },
+}
+
 func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		// Start a new trace span for event delivery
@@ -60,7 +65,10 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			"event.type": "event.delivery",
 		}
 
-		var data EventDelivery
+		data := eventDeliveryPool.Get().(*EventDelivery)
+		data.Reset()
+		defer eventDeliveryPool.Put(data)
+
 		var delayDuration time.Duration
 
 		defer func() {
@@ -89,9 +97,9 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			}
 		}()
 
-		err = msgpack.DecodeMsgPack(t.Payload(), &data)
+		err = msgpack.DecodeMsgPack(t.Payload(), data)
 		if err != nil {
-			err = json.Unmarshal(t.Payload(), &data)
+			err = json.Unmarshal(t.Payload(), data)
 			if err != nil {
 				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 				return &DeliveryError{Err: err}

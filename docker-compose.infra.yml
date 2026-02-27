@@ -1,0 +1,52 @@
+version: "3"
+
+volumes:
+  postgres_data:
+  redis_data:
+
+services:
+  postgres:
+    image: postgres:15.2-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: convoy
+      POSTGRES_USER: convoy
+      POSTGRES_PASSWORD: convoy
+      PGDATA: /data/postgres
+    volumes:
+      - postgres_data:/data/postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U convoy" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis_server:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  prometheus:
+    image: prom/prometheus:v2.24.0
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    restart: always
+
+  migrate:
+    build:
+      context: ./
+      dockerfile: Dockerfile.dev
+    entrypoint: ["./cmd", "migrate", "up"]
+    volumes:
+      - ./convoy.json:/convoy.json
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy

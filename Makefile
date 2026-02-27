@@ -15,6 +15,15 @@ ui_install:
 build:
 	scripts/build.sh
 
+.PHONY: build-ui
+build-ui:
+	@echo "Building UI..."
+	@scripts/ui.sh -b ce
+	@echo "Updating embedded assets..."
+	@rm -rf api/ui/build/*
+	@cp -R web/ui/dashboard/dist/* api/ui/build/
+	@echo "UI Build complete!"
+
 .PHONY: test
 test:
 	@go test -p 1 $(shell go list ./... | grep -v '/e2e')

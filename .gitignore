@@ -16,15 +16,11 @@
 .idea
 .vscode
 
+# Ignore all UI build artifacts, but preserve the directory and a stub/gitkeep for go:embed
 /api/ui/build/*
-!/api/ui/build/go_test_stub.txt
-!/api/ui/build/index.html
-!/api/ui/build/*.js
-!/api/ui/build/*.css
-!/api/ui/build/*.woff
-!/api/ui/build/*.woff2
-!/api/ui/build/*.ttf
-!/api/ui/build/assets
+!/api/ui/build/.gitkeep
+!/api/ui/build/index.txt
+
 /data/mongo/
 .DS_Store
 *.db
@@ -55,4 +51,3 @@ convoy-ce
 .cursor
 
 mise.local.toml
-api/ui/*

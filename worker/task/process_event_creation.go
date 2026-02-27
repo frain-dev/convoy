@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -54,6 +55,10 @@ type CreateEvent struct {
 	CreateSubscription bool
 }
 
+func (c *CreateEvent) Reset() {
+	*c = CreateEvent{}
+}
+
 type DefaultEventChannel struct {
 }
 
@@ -72,6 +77,10 @@ type EventProcessorDeps struct {
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 }
 
+var createEventPool = sync.Pool{
+	New: func() any { return &CreateEvent{} },
+}
+
 func NewDefaultEventChannel() *DefaultEventChannel {
 	return &DefaultEventChannel{}
 }
@@ -87,7 +96,10 @@ func (d *DefaultEventChannel) GetConfig() *EventChannelConfig {
 // find & match subscriptions & create deliveries (e = SUCCESS)
 // deliver ed (ed = SUCCESS)
 func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
-	var createEvent CreateEvent
+	createEvent := createEventPool.Get().(*CreateEvent)
+	createEvent.Reset()
+	defer createEventPool.Put(createEvent)
+
 	var event *datastore.Event
 	var projectID string
 
@@ -98,9 +110,9 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		"channel":    channel,
 	}
 
-	err := msgpack.DecodeMsgPack(t.Payload(), &createEvent)
+	err := msgpack.DecodeMsgPack(t.Payload(), createEvent)
 	if err != nil {
-		err = json.Unmarshal(t.Payload(), &createEvent)
+		err = json.Unmarshal(t.Payload(), createEvent)
 		if err != nil {
 			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
