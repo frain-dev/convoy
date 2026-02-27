@@ -9,8 +9,8 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -35,7 +35,7 @@ func (h *Handler) GetEventTypes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 	eventTypes, err := eventTypeRepo.FetchAllEventTypes(r.Context(), project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -96,7 +96,7 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 	}
 	pe.JSONSchema = b
 
-	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 	err = eventTypeRepo.CreateEventType(r.Context(), pe)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -137,7 +137,7 @@ func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 	pe, err := eventTypeRepo.FetchEventTypeById(r.Context(), eventTypeId, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -192,7 +192,7 @@ func (h *Handler) DeprecateEventType(w http.ResponseWriter, r *http.Request) {
 	}
 
 	eventTypeId := chi.URLParam(r, "eventTypeId")
-	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 	pe, err := eventTypeRepo.DeprecateEventType(r.Context(), eventTypeId, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -231,7 +231,7 @@ func (h *Handler) ImportOpenApiSpec(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 	importService, err := services.NewImportOpenapiSpecService(body.Spec, project.UID, eventTypeRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
