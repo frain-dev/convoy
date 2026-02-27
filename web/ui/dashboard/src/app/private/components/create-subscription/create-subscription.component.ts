@@ -433,8 +433,8 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		// STEP 1: Handle event type selection and ensure mutual exclusivity with wildcard (*)
 
-		// If no event types are selected, use the wildcard
-		if (this.selectedEventTypes.length === 0) {
+		// If no event types are selected, use the wildcard (outgoing projects only)
+		if (this.selectedEventTypes.length === 0 && this.projectType !== 'incoming') {
 			console.log('No event types selected, using wildcard (*)');
 			this.selectedEventTypes = ['*'];
 		}
