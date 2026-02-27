@@ -97,23 +97,24 @@ const (
 	baseEventsPaged = `
 	with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id), events as (
 	SELECT ev.id, ev.project_id,
-	ev.id AS event_type, ev.is_duplicate_event,
+	ev.event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
-	ev.updated_at, ev.deleted_at,ev.acknowledged_at,
+	ev.updated_at, ev.deleted_at, ev.acknowledged_at, ev.metadata, ev.status,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-	JOIN endpoint_ids e ON e.id = ee.endpoint_id
+	LEFT JOIN endpoint_ids e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
 	baseEventsSearch = `
+	with events as (
 	SELECT ev.id, ev.project_id,
-	ev.id AS event_type, ev.is_duplicate_event,
+	ev.event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
@@ -124,7 +125,7 @@ const (
     FROM convoy.events_search ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
-	JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
     WHERE ev.deleted_at IS NULL`
 
 	baseEventsPagedForward = `
@@ -181,11 +182,11 @@ const (
 
 	// EXISTS path: no GROUP BY, uses idx_events_project_created_pagination when filter.Query is empty
 	baseEventsPagedExists = `
-	SELECT ev.id, ev.project_id, ev.id AS event_type, ev.is_duplicate_event,
+	SELECT ev.id, ev.project_id, ev.event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id, ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(ev.idempotency_key, '') AS idempotency_key,
 	COALESCE(ev.url_query_params, '') AS url_query_params,
-	ev.updated_at, ev.deleted_at, ev.acknowledged_at,
+	ev.updated_at, ev.deleted_at, ev.acknowledged_at, ev.metadata, ev.status,
 	COALESCE(s.id, '') AS "source_metadata.id", COALESCE(s.name, '') AS "source_metadata.name"
 	FROM convoy.events ev
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
@@ -534,7 +535,14 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		} else {
 			suffix = getExistsBackwardSuffix(sortOrder)
 		}
-		query = baseEventsPagedExists + existsSubquery + ") " + filterQueryNoEndpoint + suffix
+
+		// If no EXISTS subquery, don't add EXISTS clause
+		if existsSubquery == "" {
+			// Remove " AND EXISTS (" from baseEventsPagedExists (13 characters)
+			query = baseEventsPagedExists[:len(baseEventsPagedExists)-13] + filterQueryNoEndpoint + suffix
+		} else {
+			query = baseEventsPagedExists + existsSubquery + ") " + filterQueryNoEndpoint + suffix
+		}
 	} else {
 		// Search or legacy path: CTE + JOIN + GROUP BY.
 		base := baseEventsPaged
@@ -761,7 +769,13 @@ func getCountDeliveriesPrevRowQuery(sortOrder string) string {
 
 // buildExistsSubquery returns the EXISTS inner query for the events list (no search).
 // Caller must bind :owner_id and :endpoint_ids when present.
+// Returns empty string when no filters are specified to include events without endpoint associations.
 func buildExistsSubquery(ownerID string, endpointIDs []string) string {
+	// If no filters, don't require endpoint associations
+	if util.IsStringEmpty(ownerID) && len(endpointIDs) == 0 {
+		return ""
+	}
+
 	q := "SELECT 1 FROM convoy.events_endpoints ee JOIN convoy.endpoints e ON e.id = ee.endpoint_id WHERE ee.event_id = ev.id"
 	if !util.IsStringEmpty(ownerID) {
 		q += " AND e.owner_id = :owner_id"
