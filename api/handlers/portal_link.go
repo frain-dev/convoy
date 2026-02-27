@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -31,15 +32,22 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
 func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
-	err := h.RM.VersionRequest(r, "CreatePortalLink")
+	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Version request failed for CreatePortalLink: %v", err)
+		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to read request body: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
 		return
 	}
 
 	var newPortalLink datastore.CreatePortalLinkRequest
-	if err = util.ReadJSON(r, &newPortalLink); err != nil {
+	if err = migrator.Unmarshal(body, &newPortalLink); err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse portal link creation request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
@@ -149,15 +157,22 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
 func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
-	err := h.RM.VersionRequest(r, "UpdatePortalLink")
+	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Version request failed for UpdatePortalLink: %v", err)
+		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Failed to read request body: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
 		return
 	}
 
 	var updatePortalLink datastore.UpdatePortalLinkRequest
-	err = util.ReadJSON(r, &updatePortalLink)
+	err = migrator.Unmarshal(body, &updatePortalLink)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse portal link update request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
