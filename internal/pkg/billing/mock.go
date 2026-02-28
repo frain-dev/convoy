@@ -155,6 +155,17 @@ func (m *MockBillingClient) GetOrganisationLicense(ctx context.Context, orgID st
 	}, nil
 }
 
+func (m *MockBillingClient) GetWorkspaceConfigBySlug(ctx context.Context, slug string) (*Response[WorkspaceConfigData], error) {
+	if slug == "" {
+		return nil, &Error{Message: "slug is required"}
+	}
+	return &Response[WorkspaceConfigData]{
+		Status:  true,
+		Message: "OK",
+		Data:    WorkspaceConfigData{ExternalID: slug, SSOAvailable: false},
+	}, nil
+}
+
 func (m *MockBillingClient) UpdateOrganisation(ctx context.Context, orgID string, orgData BillingOrganisation) (*Response[BillingOrganisation], error) {
 	if orgID == "" || orgData.Name == "" {
 		return nil, &Error{Message: "invalid organisation update"}

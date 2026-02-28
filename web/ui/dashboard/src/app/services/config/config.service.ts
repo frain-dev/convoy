@@ -14,6 +14,7 @@ export interface AppConfig {
     is_signup_enabled?: boolean;
     [key: string]: any;
   };
+  billing_enabled?: boolean;
   [key: string]: any;
 }
 
@@ -25,20 +26,27 @@ export class ConfigService {
 
   constructor(private http: HttpService) {}
 
-  async getConfig(): Promise<AppConfig> {
-    if (this.config) {
-      return this.config;
+  /**
+   * Fetches auth configuration. When slug is provided (cloud billing), requests config for that workspace
+   * and returns sso.enabled for that org; does not use cache so each slug lookup is fresh.
+   */
+  async getConfig(slug?: string): Promise<AppConfig> {
+    const useCache = !slug && this.config;
+    if (useCache) {
+      return this.config as AppConfig;
     }
 
     try {
-
+      const query = slug ? { slug: slug.trim() } : {};
       const response = await this.http.request({
         url: '/configuration/auth',
-        method: 'get'
+        method: 'get',
+        query
       });
 
       if (response.data) {
-        this.config = {
+        const config = {
+          billing_enabled: response.data.billing_enabled,
           auth: {
             google_oauth: {
               enabled: response.data.google_oauth?.enabled || false,
@@ -52,16 +60,16 @@ export class ConfigService {
             is_signup_enabled: response.data.is_signup_enabled || false
           }
         } as AppConfig;
+        if (!slug) {
+          this.config = config;
+        }
+        return config;
       } else {
-
-        this.config = this.getDefaultConfig();
+        throw new Error('No config data in response');
       }
-      return this.config;
     } catch (error) {
       console.error('Failed to fetch config:', error);
-
-      this.config = this.getDefaultConfig();
-      return this.config;
+      throw error;
     }
   }
 
