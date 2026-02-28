@@ -25,13 +25,45 @@ import (
 
 func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
+	billingEnabled := configuration.Billing.Enabled && h.A.BillingClient != nil
+	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
+
+	licenseKey := configuration.LicenseKey
+	if billingEnabled && slug != "" {
+		orgRepo := organisations.New(h.A.Logger, h.A.DB)
+		orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
+		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
+			BillingClient: h.A.BillingClient,
+			OrgRepo:       orgRepo,
+			Logger:        h.A.Logger,
+			Cfg:           configuration,
+			RefreshDeps: services.RefreshLicenseDataDeps{
+				OrgMemberRepo: orgMemberRepo,
+				OrgRepo:       orgRepo,
+				BillingClient: h.A.BillingClient,
+				Logger:        h.A.Logger,
+				Cfg:           configuration,
+			},
+		})
+		if err != nil {
+			h.A.Logger.WithError(err).WithField("slug", slug).Debug("InitSSO: workspace resolve failed")
+			_ = render.Render(w, r, util.NewErrorResponse("Workspace not found", http.StatusBadRequest))
+			return
+		}
+		if !result.SSOAvailable {
+			_ = render.Render(w, r, util.NewErrorResponse("SSO is not available for this workspace", http.StatusBadRequest))
+			return
+		}
+		licenseKey = result.LicenseKey
+	}
+
 	lu := services.LoginUserSSOService{
 		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    h.A.ConfigRepo,
-		LicenseKey:    configuration.LicenseKey,
+		LicenseKey:    licenseKey,
 		Host:          configuration.Host,
 		Licenser:      h.A.Licenser,
 	}

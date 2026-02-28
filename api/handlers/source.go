@@ -317,6 +317,9 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 }
 
 func fillSourceURL(s *datastore.Source, baseUrl, customDomain string) {
+	if s == nil {
+		return
+	}
 	url := baseUrl
 	if len(customDomain) > 0 {
 		url = customDomain

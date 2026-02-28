@@ -45,7 +45,7 @@ export class SignupComponent implements OnInit {
 	) {}
 
 	ngOnInit(): void {
-		this.licenseService.setLicenses();
+		this.licenseService.setLicenses(true);
 		this.checkGoogleOAuthConfig();
 
 		if (!this.licenseService.hasLicense('user_limit')) this.router.navigateByUrl('/login');

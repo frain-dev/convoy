@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/render"
 
@@ -116,7 +117,31 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load configuration", http.StatusBadRequest))
 		return
 	}
+	billingEnabled := cfg.Billing.Enabled && h.A.BillingClient != nil
+	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
+
+	ssoEnabled := h.A.Licenser.EnterpriseSSO()
+	if billingEnabled && slug != "" {
+		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
+			BillingClient: h.A.BillingClient,
+			OrgRepo:       h.A.OrgRepo,
+			Logger:        h.A.Logger,
+			Cfg:           cfg,
+			RefreshDeps: services.RefreshLicenseDataDeps{
+				OrgMemberRepo: h.A.OrgMemberRepo,
+				OrgRepo:       h.A.OrgRepo,
+				BillingClient: h.A.BillingClient,
+				Logger:        h.A.Logger,
+				Cfg:           cfg,
+			},
+		})
+		if err == nil {
+			ssoEnabled = result.SSOAvailable
+		}
+	}
+
 	authConfig := map[string]interface{}{
+		"billing_enabled":   billingEnabled,
 		"is_signup_enabled": cfg.Auth.IsSignupEnabled,
 		"google_oauth": map[string]interface{}{
 			"enabled":      cfg.Auth.GoogleOAuth.Enabled && h.A.Licenser.GoogleOAuth(),
@@ -124,7 +149,7 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 			"redirect_url": cfg.Auth.GoogleOAuth.RedirectURL,
 		},
 		"sso": map[string]interface{}{
-			"enabled":      h.A.Licenser.EnterpriseSSO(),
+			"enabled":      ssoEnabled,
 			"redirect_url": cfg.Auth.SSO.RedirectURL,
 		},
 	}

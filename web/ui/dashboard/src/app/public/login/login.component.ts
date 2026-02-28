@@ -1,6 +1,6 @@
 import {CommonModule} from '@angular/common';
 import {AfterViewInit, Component, OnInit} from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
 import {ButtonComponent} from 'src/app/components/button/button.component';
 import {
@@ -23,7 +23,7 @@ import {GeneralService} from 'src/app/services/general/general.service';
 @Component({
 	selector: 'app-login',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputFieldDirective, InputDirective, LabelComponent, InputErrorComponent, PasswordInputFieldComponent, LoaderModule],
+	imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonComponent, InputFieldDirective, InputDirective, LabelComponent, InputErrorComponent, PasswordInputFieldComponent, LoaderModule],
 	templateUrl: './login.component.html',
 	styleUrls: ['./login.component.scss']
 })
@@ -42,6 +42,11 @@ export class LoginComponent implements OnInit, AfterViewInit {
 	isSSOEnabled = false;
 	googleClientId = '';
 	organisations?: ORGANIZATION_DATA[];
+	billingEnabled = false;
+	showSlugInput = false;
+	workspaceSlug = '';
+	isSubmittingSSO = false;
+	showSlugError = false;
 
 	constructor(
 		private formBuilder: FormBuilder,
@@ -56,20 +61,21 @@ export class LoginComponent implements OnInit, AfterViewInit {
 	) {}
 
 	ngOnInit() {
-		this.licenseService.setLicenses();
+		this.licenseService.setLicenses(true);
 	}
 
 	async ngAfterViewInit() {
 
 		try {
 			const config = await this.configService.getConfig();
+			this.billingEnabled = config.billing_enabled ?? false;
 			this.isGoogleOAuthEnabled = config.auth?.google_oauth?.enabled || false;
 			this.isSSOEnabled = config.auth?.sso?.enabled || false;
 			this.googleClientId = config.auth?.google_oauth?.client_id || '';
 			this.isSignupEnabled = config.auth?.is_signup_enabled || false;
-
 		} catch (error) {
 			console.error('Failed to get config:', error);
+			this.billingEnabled = false;
 			this.isGoogleOAuthEnabled = false;
 			this.isSSOEnabled = false;
 			this.googleClientId = '';
@@ -180,26 +186,35 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
 	async loginWithSSO() {
 		localStorage.setItem('AUTH_TYPE', 'login');
+		const slug = this.billingEnabled ? this.workspaceSlug?.trim() : undefined;
 
+		if (this.billingEnabled && !slug) {
+			this.showSlugError = true;
+			setTimeout(() => document.getElementById('workspace-slug')?.focus(), 0);
+			return;
+		}
+		this.showSlugError = false;
+
+		this.isSubmittingSSO = true;
 		try {
-			const res = await this.loginService.loginWithSaml();
+			const res = await this.loginService.loginWithSaml(slug);
 
 			const { redirectUrl } = res.data;
 			window.open(redirectUrl);
 		} catch (error: any) {
 			console.error('SAML login failed:', error);
 
-			let errorMessage = 'SAML login failed';
-			if (error?.message) {
-				errorMessage = error.message;
-			} else if (error?.error?.message) {
-				errorMessage = error.error.message;
-			}
+			const errorMessage =
+				typeof error === 'string'
+					? error
+					: error?.message ?? error?.error?.message ?? 'SAML login failed';
 
 			this.generalService.showNotification({
 				message: errorMessage,
 				style: 'error'
 			});
+		} finally {
+			this.isSubmittingSSO = false;
 		}
 	}
 
