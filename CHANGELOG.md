@@ -1,3 +1,49 @@
+
+# 26.2.0
+
+### Bug Fixes
+
+- fix(dataplane): fix rabbitmq reconnection issue (#2547)
+- fix build step in release.Dockerfile (#2576)
+
+### Features
+
+- feat(controlplane): org-level SSO and license data sync (#2560)
+- feat(controlplane): billing-backed license, project limits, and SSO/license sync (#2572)
+
+### Improvements
+
+- chore(infra): update release process to generate clean changelogs (#2542)
+- refactor(controlplane): add sqlc for batch retry (#2546)
+- refactor(controlplane): add sqlc for subscriptions (#2549)
+- chore: clean up .git-cliff.toml (#2545)
+- chore(build): add worflow for image scans (#2552)
+- chore(build): update dojo workflow to be triggered after image has been pushed (#2553)
+- refactor(controlplane): add sqlc for users (#2554)
+- chore(build): update dojo image scan product and engagement names (#2556)
+- refactor(dataplane): add sqlc for meta events (#2555)
+- docs: update readme with new convoy logo (#2565)
+- ci(build): unblock merge queue by emitting required checks on merge-group commits (#2571)
+- perf(controlplane): events list EXISTS path and CI Redis service in workflows (#2566)
+- refactor(infra): add sql migration linter (#2569)
+- refactor(infra): add caddy as reverse proxy for local installation (#2570)
+- chore(build): update docker-compose files (#2577)
+
+### Other
+
+- License service integration (#2528)
+- Add condition to skip job on pull requests
+- address alpine CVE (#2550)
+- add workflow for defectdojo (#2551)
+- bump stdlib to 1.25 (#2559)
+- bum stdlib to 1.25.7  to fix CVE (#2562)
+- Update badge link for integration tests
+- Fix badge link for integration tests in README
+- Add CodeQL Advanced workflow configuration
+- Delete .github/workflows/codeql.yml
+- Rename codeql-advanced.yml to codeql.yml
+- improve redis sentinel implementation (#2573)
+
 # 26.1.1
 
 ### Enhancements
