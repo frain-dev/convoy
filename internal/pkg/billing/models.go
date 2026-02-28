@@ -1,6 +1,6 @@
 package billing
 
-// WorkspaceConfigData is the response from Overwatch GET /api/v1/workspace_config?slug=...
+// WorkspaceConfigData is the workspace_config API response.
 type WorkspaceConfigData struct {
 	ExternalID   string `json:"external_id"`
 	LicenseKey   string `json:"license_key"`

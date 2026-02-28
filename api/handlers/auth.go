@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -29,11 +28,8 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	billingEnabled := configuration.Billing.Enabled && h.A.BillingClient != nil
 	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
 
-	fmt.Printf("[InitSSO] billingEnabled=%v slug=%q\n", billingEnabled, slug)
-
 	licenseKey := configuration.LicenseKey
 	if billingEnabled && slug != "" {
-		fmt.Printf("[InitSSO] resolving workspace by slug\n")
 		orgRepo := organisations.New(h.A.Logger, h.A.DB)
 		orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
 		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
@@ -50,21 +46,17 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 		if err != nil {
-			fmt.Printf("[InitSSO] workspace resolve failed: %v\n", err)
 			h.A.Logger.WithError(err).WithField("slug", slug).Debug("InitSSO: workspace resolve failed")
 			_ = render.Render(w, r, util.NewErrorResponse("Workspace not found", http.StatusBadRequest))
 			return
 		}
-		fmt.Printf("[InitSSO] resolved externalID=%s SSOAvailable=%v\n", result.ExternalID, result.SSOAvailable)
 		if !result.SSOAvailable {
-			fmt.Printf("[InitSSO] SSO not available for workspace\n")
 			_ = render.Render(w, r, util.NewErrorResponse("SSO is not available for this workspace", http.StatusBadRequest))
 			return
 		}
 		licenseKey = result.LicenseKey
 	}
 
-	fmt.Printf("[InitSSO] running LoginUserSSOService\n")
 	lu := services.LoginUserSSOService{
 		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
@@ -78,13 +70,11 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := lu.Run()
 	if err != nil {
-		fmt.Printf("[InitSSO] LoginUserSSOService.Run failed: %v\n", err)
 		h.A.Logger.WithError(err).Errorf("SSO initialization failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 		return
 	}
 
-	fmt.Printf("[InitSSO] success redirect\n")
 	_ = render.Render(w, r, util.NewServerResponse("Get Redirect successful", resp, http.StatusOK))
 }
 

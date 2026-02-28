@@ -138,7 +138,6 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			ssoEnabled = result.SSOAvailable
 		}
-		// On error (workspace not found, etc.), keep ssoEnabled as instance default or false
 	}
 
 	authConfig := map[string]interface{}{

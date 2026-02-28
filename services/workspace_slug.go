@@ -13,17 +13,16 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
-// ResolveWorkspaceBySlugDeps holds dependencies for resolving workspace by slug and syncing Convoy org.
+// ResolveWorkspaceBySlugDeps holds dependencies for ResolveWorkspaceBySlug.
 type ResolveWorkspaceBySlugDeps struct {
 	BillingClient billing.Client
 	OrgRepo       datastore.OrganisationRepository
 	Logger        log.StdLogger
 	Cfg           config.Configuration
-	// RefreshDeps is used to call RefreshLicenseDataForOrg; can reuse same deps as auth handlers.
-	RefreshDeps RefreshLicenseDataDeps
+	RefreshDeps   RefreshLicenseDataDeps
 }
 
-// ResolveWorkspaceBySlugResult is the result of resolving a workspace by slug from Overwatch and syncing Convoy.
+// ResolveWorkspaceBySlugResult is the result of ResolveWorkspaceBySlug.
 type ResolveWorkspaceBySlugResult struct {
 	ExternalID   string
 	LicenseKey   string
@@ -31,9 +30,7 @@ type ResolveWorkspaceBySlugResult struct {
 	Org          *datastore.Organisation
 }
 
-// ResolveWorkspaceBySlug calls Overwatch workspace_config by slug, then loads Convoy org by external_id (UID),
-// refreshes license_data for that org, and returns the OW payload plus the reloaded org.
-// Returns error if slug is empty, OW returns error/404, or Convoy org not found.
+// ResolveWorkspaceBySlug resolves workspace by slug via billing and syncs license data for the org.
 func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorkspaceBySlugDeps) (*ResolveWorkspaceBySlugResult, error) {
 	if slug == "" {
 		return nil, errors.New("slug is required")
@@ -59,7 +56,7 @@ func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorksp
 		return nil, errors.New("workspace not found")
 	}
 	if resp.Data.ExternalID == "" {
-		return nil, errors.New("workspace config missing external_id: ensure the organisation in Overwatch has external_id set to the Convoy organisation UID")
+		return nil, errors.New("workspace config missing external_id")
 	}
 
 	org, err := deps.OrgRepo.FetchOrganisationByID(ctx, resp.Data.ExternalID)
@@ -67,7 +64,6 @@ func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorksp
 		return nil, fmt.Errorf("organisation not found for workspace: %w", err)
 	}
 
-	// Refresh Convoy org license_data so local state stays in sync.
 	defaultKey := deps.Cfg.LicenseKey
 	billingEnabled := deps.Cfg.Billing.Enabled && deps.RefreshDeps.BillingClient != nil
 	licClient := licensesvc.NewClient(licensesvc.Config{
@@ -79,10 +75,8 @@ func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorksp
 	})
 	RefreshLicenseDataForOrg(ctx, *org, defaultKey, billingEnabled, deps.RefreshDeps, licClient)
 
-	// Re-load org after refresh.
 	org, err = deps.OrgRepo.FetchOrganisationByID(ctx, resp.Data.ExternalID)
 	if err != nil {
-		// Return the result we have; refresh may have updated anyway.
 		org = nil
 	}
 
