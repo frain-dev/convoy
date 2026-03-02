@@ -1,7 +1,7 @@
 services:
     migrate:
         image: ${CONVOY_IMAGE:-getconvoy/convoy:latest}
-        command: ["./cmd", "migrate", "up", "--config", "convoy.json"]
+        command: ["migrate", "up", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         depends_on:
@@ -14,7 +14,7 @@ services:
 
     web:
         image: ${CONVOY_IMAGE:-getconvoy/convoy:latest}
-        command: ["./cmd", "server", "--config", "convoy.json"]
+        command: ["server", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
             - ./conf/redis/ca-cert.pem:/etc/ssl/certs/redis-ca.pem:ro
@@ -31,7 +31,7 @@ services:
 
     agent:
         image: ${CONVOY_IMAGE:-getconvoy/convoy:latest}
-        command: ["./cmd", "agent", "--config", "convoy.json"]
+        command: ["agent", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
             - ./conf/redis/ca-cert.pem:/etc/ssl/certs/redis-ca.pem:ro
