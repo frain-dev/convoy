@@ -119,7 +119,7 @@ const (
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
-	ev.updated_at, ev.deleted_at,
+	ev.updated_at, ev.deleted_at, ev.acknowledged_at, ev.metadata, ev.status,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events_search ev

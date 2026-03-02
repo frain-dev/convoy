@@ -58,7 +58,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithoutEndpoints() {
 	ctx := context.Background()
 	eventRepo := postgres.NewEventRepo(s.DB)
 
-	data := json.RawMessage([]byte(`{"test": "data"}`))
+	data := json.RawMessage(`{"test": "data"}`)
 
 	// Create an event with no endpoints (simulating an event ingested for a source with no subscriptions)
 	event := &datastore.Event{
@@ -110,7 +110,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithEndpointFilter() {
 	endpoint, err := testdb.SeedEndpoint(s.DB, s.DefaultProject, "", "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
-	data := json.RawMessage([]byte(`{"test": "data"}`))
+	data := json.RawMessage(`{"test": "data"}`)
 
 	// Create event with endpoint
 	eventWithEndpoint := &datastore.Event{
@@ -189,7 +189,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_SearchWithoutEndpoints
 	ctx := context.Background()
 	eventRepo := postgres.NewEventRepo(s.DB)
 
-	data := json.RawMessage([]byte(`{"unique_search_term": "test12345"}`))
+	data := json.RawMessage(`{"unique_search_term": "test12345"}`)
 
 	// Create an event with no endpoints but searchable content
 	event := &datastore.Event{
