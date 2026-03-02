@@ -95,6 +95,7 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		NewOrg:        &newOrg,
 		User:          user,
 		Licenser:      h.A.Licenser,
+		Logger:        h.A.Logger,
 	}
 
 	organisation, err := co.Run(r.Context())

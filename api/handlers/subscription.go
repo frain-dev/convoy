@@ -113,8 +113,10 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 
 	for i := range subsList {
 		fillSourceURL(subsList[i].Source, baseUrl, customDomain)
-		subsList[i].FilterConfig.Filter.Headers = subsList[i].FilterConfig.Filter.RawHeaders
-		subsList[i].FilterConfig.Filter.Body = subsList[i].FilterConfig.Filter.RawBody
+		if subsList[i].FilterConfig != nil {
+			subsList[i].FilterConfig.Filter.Headers = subsList[i].FilterConfig.Filter.RawHeaders
+			subsList[i].FilterConfig.Filter.Body = subsList[i].FilterConfig.Filter.RawBody
+		}
 	}
 
 	resp := models.NewListResponse(subsList, func(subscription datastore.Subscription) models.SubscriptionResponse {
@@ -156,8 +158,10 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
-	subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
+	if subscription.FilterConfig != nil {
+		subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
+		subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
+	}
 
 	resp := &models.SubscriptionResponse{Subscription: subscription}
 	_ = render.Render(w, r, util.NewServerResponse("Subscription fetched successfully", resp, http.StatusOK))

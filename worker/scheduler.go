@@ -15,7 +15,14 @@ type Scheduler struct {
 }
 
 func NewScheduler(queue queue.Queuer, log log.StdLogger) *Scheduler {
-	scheduler := asynq.NewScheduler(queue.Options().RedisClient, &asynq.SchedulerOpts{
+	opts := queue.Options()
+	var redisConnOpt asynq.RedisConnOpt
+	if opts.RedisFailoverOpt != nil {
+		redisConnOpt = *opts.RedisFailoverOpt
+	} else {
+		redisConnOpt = opts.RedisClient
+	}
+	scheduler := asynq.NewScheduler(redisConnOpt, &asynq.SchedulerOpts{
 		Logger: log,
 	})
 

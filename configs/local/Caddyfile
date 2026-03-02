@@ -1,0 +1,27 @@
+:80 {
+    # Data Plane — webhook source ingestion
+    handle /ingest/* {
+        reverse_proxy agent:5008
+    }
+
+    # Data Plane — portal link event operations
+    handle /portal-api/events/* {
+        reverse_proxy agent:5008
+    }
+    handle /portal-api/events {
+        reverse_proxy agent:5008
+    }
+
+    # Data Plane — portal link delivery operations
+    handle /portal-api/eventdeliveries/* {
+        reverse_proxy agent:5008
+    }
+    handle /portal-api/eventdeliveries {
+        reverse_proxy agent:5008
+    }
+
+    # Control Plane — management API, UI, portal management, everything else
+    handle {
+        reverse_proxy web:5005
+    }
+}

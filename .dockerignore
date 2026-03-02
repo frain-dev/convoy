@@ -6,3 +6,6 @@ docker-compose.yml
 typesense_data
 postgres_data
 redis_data
+
+# UI Build
+api/ui/build
