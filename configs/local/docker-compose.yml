@@ -20,11 +20,11 @@ services:
             - ./conf/redis/ca-cert.pem:/etc/ssl/certs/redis-ca.pem:ro
         restart: unless-stopped
         healthcheck:
-            test: ["CMD-SHELL", "wget -q --spider http://localhost:5005/healthz"]
+            test: ["CMD-SHELL", "wget -q --spider http://localhost:5005/healthz 2>/dev/null || nc -z localhost 5005 || exit 1"]
             interval: 5s
-            timeout: 30s
-            retries: 10
-            start_period: 10s
+            timeout: 10s
+            retries: 18
+            start_period: 30s
         depends_on:
             migrate:
                 condition: service_completed_successfully
@@ -37,11 +37,11 @@ services:
             - ./conf/redis/ca-cert.pem:/etc/ssl/certs/redis-ca.pem:ro
         restart: unless-stopped
         healthcheck:
-            test: ["CMD-SHELL", "wget -q --spider http://localhost:5008/healthz"]
+            test: ["CMD-SHELL", "wget -q --spider http://localhost:5008/healthz 2>/dev/null || nc -z localhost 5008 || exit 1"]
             interval: 5s
-            timeout: 30s
-            retries: 10
-            start_period: 15s
+            timeout: 10s
+            retries: 18
+            start_period: 30s
         depends_on:
             migrate:
                 condition: service_completed_successfully
