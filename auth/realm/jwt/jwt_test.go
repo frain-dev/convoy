@@ -5,15 +5,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/cache"
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 )
 
 func provideJwt(t *testing.T) *Jwt {
-	newCache, err := cache.NewCache(config.DefaultConfiguration.Redis)
-
-	require.Nil(t, err)
+	newCache := mcache.NewMemoryCache()
 
 	jwt := NewJwt(&config.JwtRealmOptions{}, newCache)
 	return jwt

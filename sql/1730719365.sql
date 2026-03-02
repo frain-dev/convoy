@@ -18,6 +18,8 @@
 -- limitations under the License.
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 -- +migrate StatementBegin
 CREATE EXTENSION IF NOT EXISTS pgcrypto with schema public;
 CREATE EXTENSION IF NOT EXISTS pgcrypto with schema convoy;
@@ -81,12 +83,16 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- +migrate StatementEnd
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 INSERT INTO convoy.event_types (id, name, description, project_id, category, created_at, updated_at, deprecated_at)
 SELECT convoy.generate_ulid(), '*', '', p.id, '', NOW(), NOW(), NULL
 FROM convoy.projects p
 WHERE p.deleted_at IS NULL;
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 -- +migrate StatementBegin
 -- First, create a temporary table to hold the unique event types
 CREATE TEMPORARY TABLE temp_event_types AS

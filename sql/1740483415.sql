@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.filters (
     id VARCHAR PRIMARY KEY,
     subscription_id VARCHAR NOT NULL,
@@ -15,14 +17,19 @@ CREATE TABLE IF NOT EXISTS convoy.filters (
           ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_filters_subscription_id ON convoy.filters(subscription_id);
-CREATE INDEX IF NOT EXISTS idx_filters_event_type ON convoy.filters(event_type);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_filters_subscription_event_type ON convoy.filters(subscription_id, event_type);
-
 CREATE EXTENSION IF NOT EXISTS pgcrypto with schema public;
 CREATE EXTENSION IF NOT EXISTS pgcrypto with schema convoy;
 
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_filters_subscription_id ON convoy.filters(subscription_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_filters_event_type ON convoy.filters(event_type);
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_filters_subscription_event_type ON convoy.filters(subscription_id, event_type);
 
+-- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 -- Migrate existing subscription filters to the new filters table. For each subscription event type, create a filter.
 INSERT INTO convoy.filters (
     id,

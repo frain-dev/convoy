@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/hibiken/asynq"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
@@ -97,9 +99,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 		lo.SetLevel(lvl)
 
-		lo.Debugf("redis dsn: %s", cfg.Redis.BuildDsn())
-		lo.Debugf("postgres dsn: %s", cfg.Database.BuildDsn())
-
 		postgresDB, err := postgres.NewDB(cfg)
 		if err != nil {
 			return errors.New("failed to connect to postgres with err: " + err.Error())
@@ -115,32 +114,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		var ca cache.Cache
 		var q queue.Queuer
 
-		redis, err := rdb.NewClientFromConfig(
-			cfg.Redis.BuildDsn(),
-			cfg.Redis.TLSSkipVerify,
-			cfg.Redis.TLSCACertFile,
-			cfg.Redis.TLSCertFile,
-			cfg.Redis.TLSKeyFile,
-		)
+		redis, err := rdb.NewClientFromRedisConfig(cfg.Redis)
 		if err != nil {
 			return errors.New("failed to connect to redis with err: " + err.Error())
 		}
 
-		queueNames := map[string]int{
-			string(convoy.EventQueue):         5,
-			string(convoy.CreateEventQueue):   2,
-			string(convoy.EventWorkflowQueue): 3,
-			string(convoy.ScheduleQueue):      1,
-			string(convoy.DefaultQueue):       1,
-			string(convoy.MetaEventQueue):     1,
-		}
-
-		opts := queue.QueueOptions{
-			Names:             queueNames,
-			RedisClient:       redis,
-			RedisAddress:      cfg.Redis.BuildDsn(),
-			Type:              string(config.RedisQueueProvider),
-			PrometheusAddress: cfg.Prometheus.Dsn,
+		opts, err := getQueueOptions(&cfg, redis)
+		if err != nil {
+			return err
 		}
 
 		if cfg.Pyroscope.EnableProfiling {
@@ -235,12 +216,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			LicenseService: service.LicenserConfig{
-				LicenseKey:  cfg.LicenseKey,
-				Client:      licenseClient,
-				OrgRepo:     organisations.New(lo, app.DB),
-				UserRepo:    users.New(log.NewLogger(io.Discard), app.DB),
-				ProjectRepo: projectRepo,
-				Logger:      lo,
+				LicenseKey:     cfg.LicenseKey,
+				BillingEnabled: cfg.Billing.Enabled,
+				Client:         licenseClient,
+				OrgRepo:        organisations.New(lo, app.DB),
+				UserRepo:       users.New(log.NewLogger(io.Discard), app.DB),
+				ProjectRepo:    projectRepo,
+				Logger:         lo,
 			},
 		})
 		if err != nil {
@@ -559,6 +541,10 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
+	if !util.IsStringEmpty(redisScheme) && !config.IsValidRedisScheme(redisScheme) {
+		return nil, fmt.Errorf("invalid redis scheme: %s. Supported schemes are: %s, %s, %s", redisScheme, config.RedisScheme, config.RedisSentinelScheme, config.RedisSecureScheme)
+	}
+
 	// CONVOY_REDIS_HOST
 	redisHost, err := cmd.Flags().GetString("redis-host")
 	if err != nil {
@@ -589,13 +575,27 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
+	// CONVOY_REDIS_SENTINEL_MASTER_NAME
+	redisSentinelMasterName, err := cmd.Flags().GetString("redis-sentinel-master-name")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_REDIS_CLUSTER_ADDRESSES
+	redisAddresses, err := cmd.Flags().GetString("redis-addresses")
+	if err != nil {
+		return nil, err
+	}
+
 	c.Redis = config.RedisConfiguration{
-		Scheme:   redisScheme,
-		Host:     redisHost,
-		Username: redisUsername,
-		Password: redisPassword,
-		Database: redisDatabase,
-		Port:     redisPort,
+		Scheme:     redisScheme,
+		Host:       redisHost,
+		Username:   redisUsername,
+		Password:   redisPassword,
+		Database:   redisDatabase,
+		Port:       redisPort,
+		MasterName: redisSentinelMasterName,
+		Addresses:  redisAddresses,
 	}
 
 	// CONVOY_RETENTION_POLICY
@@ -941,10 +941,14 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 
 	err = userRepo.CreateUser(ctx, defaultUser)
 	if err != nil {
+		if errors.Is(err, datastore.ErrDuplicateEmail) {
+			return nil
+		}
 		return fmt.Errorf("failed to create user - %w", err)
 	}
 
-	a.Logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
+	a.Logger.Infof("Created Superuser with username: %s", defaultUser.Email)
+	fmt.Printf("Superuser created successfully:\n  Username: %s\n  Password: %s\n", defaultUser.Email, p.Plaintext)
 
 	return nil
 }
@@ -1007,4 +1011,39 @@ func loadHCPVaultConfig(cmd *cobra.Command, vaultConfig *config.HCPVaultConfig) 
 	}
 
 	return nil
+}
+func getQueueOptions(cfg *config.Configuration, redis *rdb.Redis) (queue.QueueOptions, error) {
+	queueNames := map[string]int{
+		string(convoy.EventQueue):         5,
+		string(convoy.CreateEventQueue):   2,
+		string(convoy.EventWorkflowQueue): 3,
+		string(convoy.ScheduleQueue):      1,
+		string(convoy.DefaultQueue):       1,
+		string(convoy.MetaEventQueue):     1,
+	}
+
+	opts := queue.QueueOptions{
+		Names:             queueNames,
+		RedisClient:       redis,
+		RedisAddress:      cfg.Redis.BuildDsn(),
+		Type:              string(config.RedisQueueProvider),
+		PrometheusAddress: cfg.Prometheus.Dsn,
+	}
+
+	if cfg.Redis.IsSentinel() {
+		db, err := strconv.Atoi(cfg.Redis.Database)
+		if err != nil {
+			return opts, err
+		}
+		opts.RedisFailoverOpt = &asynq.RedisFailoverClientOpt{
+			MasterName:       cfg.Redis.MasterName,
+			SentinelAddrs:    cfg.Redis.SentinelAddresses(),
+			Username:         cfg.Redis.Username,
+			Password:         cfg.Redis.Password,
+			SentinelPassword: cfg.Redis.SentinelPassword,
+			DB:               db,
+		}
+	}
+
+	return opts, nil
 }

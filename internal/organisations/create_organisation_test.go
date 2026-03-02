@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/frain-dev/convoy/internal/users"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
@@ -16,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )

@@ -86,9 +86,9 @@
 					<div class="w-280px truncate pl-16px" *ngIf="privateService.getProjectDetails?.type === 'outgoing'">{{ subscription.name }}</div>
 					<div class="flex items-center pl-16px min-w-[370px]" *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 						<div class="flex items-center">
-							<span class="max-w-[150px] truncate">{{ subscription.source_metadata.name }}</span>
-							<div convoy-tag *ngIf="subscription.source_metadata.verifier.type !== 'noop'" class="flex items-center ml-8px bg-neutral-4 !py-2px !px-8px text-10">
-								{{ subscription.source_metadata.provider || (subscription.source_metadata.verifier.type | sourceValue : 'verifier') }}
+							<span class="max-w-[150px] truncate">{{ subscription.source_metadata?.name }}</span>
+							<div convoy-tag *ngIf="subscription.source_metadata?.verifier?.type !== 'noop'" class="flex items-center ml-8px bg-neutral-4 !py-2px !px-8px text-10">
+								{{ subscription.source_metadata?.provider || ((subscription.source_metadata?.verifier?.type ?? '') | sourceValue : 'verifier') }}
 							</div>
 						</div>
 

@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 create unlogged table if not exists convoy.token_bucket (
     key text not null primary key,
     rate integer not null,
@@ -65,6 +67,8 @@ $$;
 -- +migrate StatementEnd
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 UPDATE convoy.endpoints
 SET
     rate_limit = 0,

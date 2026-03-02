@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/cmd/server"
 	"github.com/frain-dev/convoy/cmd/utils"
 	"github.com/frain-dev/convoy/cmd/version"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 )
@@ -60,6 +62,10 @@ func main() {
 	var redisUsername string
 	var redisPassword string
 	var redisDatabase string
+	var redisSentinelMasterName string
+	var redisSentinelUsername string
+	var redisSentinelPassword string
+	var redisAddresses string
 
 	var tracerType string
 	var sentryDSN string
@@ -119,11 +125,15 @@ func main() {
 	// redis config
 	c.Flags().StringVar(&redisHost, "redis-host", "", "Redis Host")
 	c.Flags().StringVar(&redisType, "redis-type", "", "Redis provider")
-	c.Flags().StringVar(&redisScheme, "redis-scheme", "", "Redis Scheme")
+	c.Flags().StringVar(&redisScheme, "redis-scheme", "", fmt.Sprintf("Redis Scheme (%s, %s, %s)", config.RedisScheme, config.RedisSentinelScheme, config.RedisSecureScheme))
 	c.Flags().StringVar(&redisUsername, "redis-username", "", "Redis Username")
 	c.Flags().StringVar(&redisPassword, "redis-password", "", "Redis Password")
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
+	c.Flags().StringVar(&redisSentinelMasterName, "redis-sentinel-master-name", "", "Redis Sentinel master name (required when scheme is redis-sentinel)")
+	c.Flags().StringVar(&redisSentinelUsername, "redis-sentinel-username", "", "Redis Sentinel username")
+	c.Flags().StringVar(&redisSentinelPassword, "redis-sentinel-password", "", "Redis Sentinel password")
+	c.Flags().StringVar(&redisAddresses, "redis-addresses", "", "Redis addresses (comma-separated, for cluster or sentinel)")
 
 	// misc
 	c.Flags().StringSliceVar(&fflag, "enable-feature-flag", []string{}, "List of feature flags to enable e.g. \"full-text-search,prometheus\"")

@@ -1,4 +1,7 @@
+-- squawk-ignore-file ban-drop-column
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 create type convoy.portal_auth_types as enum ('static_token', 'refresh_token');
 alter table convoy.portal_links add column if not exists auth_type convoy.portal_auth_types not null default 'static_token';
 

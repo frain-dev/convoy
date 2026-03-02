@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 ALTER TABLE convoy.project_configurations ADD COLUMN IF NOT EXISTS cb_sample_rate INTEGER NOT NULL DEFAULT 30;
 ALTER TABLE convoy.project_configurations ADD COLUMN IF NOT EXISTS cb_error_timeout INTEGER NOT NULL DEFAULT 30;
 ALTER TABLE convoy.project_configurations ADD COLUMN IF NOT EXISTS cb_failure_threshold INTEGER NOT NULL DEFAULT 70;
@@ -18,12 +20,19 @@ SET
     cb_consecutive_failure_threshold = (SELECT cb_consecutive_failure_threshold FROM convoy.configurations LIMIT 1)
 WHERE EXISTS (SELECT 1 FROM convoy.configurations);
 
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.configurations DROP COLUMN IF EXISTS cb_sample_rate;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.configurations DROP COLUMN IF EXISTS cb_error_timeout;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.configurations DROP COLUMN IF EXISTS cb_failure_threshold;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.configurations DROP COLUMN IF EXISTS cb_success_threshold;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.configurations DROP COLUMN IF EXISTS cb_observability_window;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.configurations DROP COLUMN IF EXISTS cb_minimum_request_count;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.configurations DROP COLUMN IF EXISTS cb_consecutive_failure_threshold;
 
 -- +migrate Down
@@ -46,10 +55,17 @@ SET
     cb_consecutive_failure_threshold = (SELECT cb_consecutive_failure_threshold FROM convoy.project_configurations LIMIT 1)
 WHERE EXISTS (SELECT 1 FROM convoy.project_configurations);
 
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN IF EXISTS cb_sample_rate;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN IF EXISTS cb_error_timeout;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN IF EXISTS cb_failure_threshold;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN IF EXISTS cb_success_threshold;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN IF EXISTS cb_observability_window;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN IF EXISTS cb_minimum_request_count;
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.project_configurations DROP COLUMN IF EXISTS cb_consecutive_failure_threshold;

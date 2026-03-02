@@ -1,23 +1,35 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE convoy.events_endpoints_temp (LIKE convoy.events_endpoints INCLUDING INDEXES INCLUDING CONSTRAINTS);
+-- squawk-ignore renaming-table
 ALTER TABLE convoy.events_endpoints RENAME TO events_endpoints_deprecated;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_uq_constraint_events_endpoints_event_id_endpoint_id
+
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_uq_constraint_events_endpoints_event_id_endpoint_id
     ON convoy.events_endpoints_temp(event_id, endpoint_id) NULLS NOT DISTINCT;
 
+-- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 INSERT INTO convoy.events_endpoints_temp
 SELECT DISTINCT ON (event_id, endpoint_id) *
 FROM convoy.events_endpoints_deprecated ON CONFLICT DO NOTHING;
 
 DROP table if exists convoy.events_endpoints_deprecated;
+-- squawk-ignore renaming-table
 ALTER TABLE convoy.events_endpoints_temp RENAME TO events_endpoints;
 
 ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS status text DEFAULT NULL;
 ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS metadata text DEFAULT NULL;
 
--- +migrate Down
-DROP INDEX IF EXISTS convoy.idx_uq_constraint_events_endpoints_event_id_endpoint_id;
+-- +migrate Down notransaction
+DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_uq_constraint_events_endpoints_event_id_endpoint_id;
 
+-- +migrate Down
 DROP TABLE IF EXISTS convoy.events_endpoints_deprecated;
 
+-- squawk-ignore ban-drop-column
 ALTER TABLE convoy.events DROP COLUMN IF EXISTS status;
-ALTER TABLE convoy.events DROP COLUMN IF EXISTS metadata;

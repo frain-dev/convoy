@@ -173,7 +173,7 @@ func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse {
-	response := make([]models.APIKeyByIDResponse, 0)
+	response := make([]models.APIKeyByIDResponse, 0, len(apiKeys))
 
 	for _, apiKey := range apiKeys {
 		resp := models.APIKeyByIDResponse{
