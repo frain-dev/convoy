@@ -17,7 +17,7 @@ build:
 
 .PHONY: test
 test:
-	@go test -p 1 $(shell go list ./... | grep -v '/e2e')
+	@go test -p 1 $(shell go list ./... | grep -v '/e2e') -v
 
 # Get Docker socket from active context if DOCKER_HOST is not set
 DOCKER_HOST_VAL := $(or $(DOCKER_HOST),$(shell docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null || echo ""))
