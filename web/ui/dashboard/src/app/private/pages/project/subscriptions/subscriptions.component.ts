@@ -132,7 +132,8 @@ export class SubscriptionsComponent implements OnInit {
 		return endpointSecrets?.length === 1 ? endpointSecrets[0].value : endpointSecrets[endpointSecrets?.length - 1].value;
 	}
 
-	hasFilter(filterObject: { headers: Object; body: Object }): boolean {
-		return Object.keys(filterObject.body).length > 0 || Object.keys(filterObject.headers).length > 0;
+	hasFilter(filterObject?: { headers?: Object; body?: Object }): boolean {
+		if (!filterObject) return false;
+		return Object.keys(filterObject.body ?? {}).length > 0 || Object.keys(filterObject.headers ?? {}).length > 0;
 	}
 }

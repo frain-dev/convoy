@@ -16,8 +16,8 @@ export interface SUBSCRIPTION {
 	endpoint_metadata?: ENDPOINT;
 	alert_config?: { count: number; threshold: string };
 	retry_config?: { type: string; retry_count: number; duration: number };
-	source_metadata: SOURCE;
-	filter_config: { event_types: string[]; filter: { headers: string; body: string } };
+	source_metadata?: SOURCE | null;
+	filter_config?: { event_types: string[]; filter: { headers: string; body: string } } | null;
 	active_menu?: boolean;
 	device_metadata: DEVICE;
 }
