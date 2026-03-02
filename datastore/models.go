@@ -983,7 +983,7 @@ type DeliveryAttempt struct {
 	RequestHeader      HttpHeader `json:"request_http_header,omitempty" db:"request_http_header"`
 	ResponseHeader     HttpHeader `json:"response_http_header,omitempty" db:"response_http_header"`
 	HttpResponseCode   string     `json:"http_status,omitempty" db:"http_status"`
-	ResponseData       []byte     `json:"-,omitempty" db:"response_data"`
+	ResponseData       []byte     `json:"-" db:"response_data"`
 	ResponseDataString string     `json:"response_data,omitempty" db:"-"`
 
 	Error  string `json:"error,omitempty" db:"error"`

@@ -27,7 +27,11 @@ type RedisQueue struct {
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	var c asynq.RedisConnOpt
-	if len(opts.RedisAddress) == 1 {
+	if opts.RedisFailoverOpt != nil {
+		c = *opts.RedisFailoverOpt
+	} else if opts.RedisClient != nil {
+		c = opts.RedisClient
+	} else if len(opts.RedisAddress) == 1 {
 		var _ = opts.RedisClient.MakeRedisClient().(redis.UniversalClient)
 		c = opts.RedisClient
 	} else {
@@ -113,9 +117,16 @@ func (q *RedisQueue) Options() queue.QueueOptions {
 }
 
 func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
+	var redisConnOpt asynq.RedisConnOpt
+	if q.opts.RedisFailoverOpt != nil {
+		redisConnOpt = *q.opts.RedisFailoverOpt
+	} else {
+		redisConnOpt = q.opts.RedisClient
+	}
+
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:          "/queue/monitoring",
-		RedisConnOpt:      q.opts.RedisClient,
+		RedisConnOpt:      redisConnOpt,
 		PrometheusAddress: q.opts.PrometheusAddress,
 		PayloadFormatter:  Formatter{},
 		ResultFormatter:   Formatter{},

@@ -23,12 +23,14 @@ export class LoginService {
 		});
 	}
 
-	loginWithSaml(): Promise<HTTP_RESPONSE> {
+	loginWithSaml(slug?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				const query = slug?.trim() ? { slug: slug.trim() } : {};
 				const response = await this.http.request({
 					url: '/auth/sso',
-					method: 'get'
+					method: 'get',
+					query
 				});
 				return resolve(response);
 			} catch (error) {

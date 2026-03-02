@@ -41,25 +41,29 @@ type Licenser struct {
 	mu              sync.RWMutex
 	enabledProjects map[string]bool
 	isCommunity     bool
+	denyLimits      bool
 
 	logger log.StdLogger
 }
 
 // Config holds configuration for the license service licenser
 type LicenserConfig struct {
-	LicenseKey  string
-	Client      *Client
-	OrgRepo     datastore.OrganisationRepository
-	UserRepo    datastore.UserRepository
-	ProjectRepo datastore.ProjectRepository
-	CacheTTL    time.Duration
-	Logger      log.StdLogger
+	LicenseKey     string
+	BillingEnabled bool
+	Client         *Client
+	OrgRepo        datastore.OrganisationRepository
+	UserRepo       datastore.UserRepository
+	ProjectRepo    datastore.ProjectRepository
+	CacheTTL       time.Duration
+	Logger         log.StdLogger
 }
 
 // NewLicenser creates a new license service licenser
 func NewLicenser(cfg LicenserConfig) (*Licenser, error) {
 	if util.IsStringEmpty(cfg.LicenseKey) {
-		// No license key provided, return community licenser
+		if cfg.BillingEnabled {
+			return newBillingOnlyLicenser(cfg)
+		}
 		return newCommunityLicenser(cfg)
 	}
 
@@ -121,6 +125,17 @@ func newCommunityLicenser(cfg LicenserConfig) (*Licenser, error) {
 	}, nil
 }
 
+func newBillingOnlyLicenser(cfg LicenserConfig) (*Licenser, error) {
+	return &Licenser{
+		denyLimits:   true,
+		orgRepo:      cfg.OrgRepo,
+		userRepo:     cfg.UserRepo,
+		projectRepo:  cfg.ProjectRepo,
+		entitlements: make(map[string]EntitlementValue),
+		logger:       cfg.Logger,
+	}, nil
+}
+
 // enforceProjectLimit enforces project limit for community mode
 func enforceProjectLimit(ctx context.Context, projectRepo datastore.ProjectRepository) (map[string]bool, error) {
 	projects, err := projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
@@ -166,7 +181,7 @@ func (l *Licenser) validateAndCache(ctx context.Context) error {
 
 // ensureValidCache ensures entitlements are fresh (within TTL)
 func (l *Licenser) ensureValidCache(ctx context.Context) error {
-	if l.isCommunity {
+	if l.isCommunity || l.denyLimits {
 		return nil
 	}
 
@@ -183,7 +198,7 @@ func (l *Licenser) ensureValidCache(ctx context.Context) error {
 
 // checkExpiry checks if the license has expired
 func (l *Licenser) checkExpiry() error {
-	if l.isCommunity {
+	if l.isCommunity || l.denyLimits {
 		return nil
 	}
 
@@ -217,7 +232,7 @@ func (l *Licenser) checkExpiry() error {
 
 // getEntitlement retrieves an entitlement value
 func (l *Licenser) getEntitlement(key string) EntitlementValue {
-	if l.isCommunity {
+	if l.isCommunity || l.denyLimits {
 		return false
 	}
 
@@ -229,7 +244,7 @@ func (l *Licenser) getEntitlement(key string) EntitlementValue {
 
 // hasFeature checks if a feature is enabled
 func (l *Licenser) hasFeature(key string) bool {
-	if l.isCommunity {
+	if l.isCommunity || l.denyLimits {
 		return false
 	}
 
@@ -244,6 +259,9 @@ func (l *Licenser) hasFeature(key string) bool {
 
 // checkLimit checks if a count is within the allowed limit
 func (l *Licenser) checkLimit(ctx context.Context, countFunc func(context.Context) (int64, error), limitKey string, communityLimit int64) (bool, error) {
+	if l.denyLimits {
+		return false, nil
+	}
 	if l.isCommunity {
 		count, err := countFunc(ctx)
 		if err != nil {
@@ -301,7 +319,7 @@ func (l *Licenser) CheckProjectLimit(ctx context.Context) (bool, error) {
 }
 
 func (l *Licenser) IsMultiUserMode(ctx context.Context) (bool, error) {
-	if l.isCommunity {
+	if l.isCommunity || l.denyLimits {
 		return false, nil
 	}
 

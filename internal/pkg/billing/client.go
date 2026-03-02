@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ type Client interface {
 	CreateOrganisation(ctx context.Context, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
 	GetOrganisationLicense(ctx context.Context, orgID string) (*Response[OrganisationLicense], error)
 	GetOrganisation(ctx context.Context, orgID string) (*Response[BillingOrganisation], error)
+	GetWorkspaceConfigBySlug(ctx context.Context, slug string) (*Response[WorkspaceConfigData], error)
 	UpdateOrganisation(ctx context.Context, orgID string, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
 	UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error)
 	UpdateOrganisationAddress(ctx context.Context, orgID string, addressData UpdateOrganisationAddressRequest) (*Response[BillingOrganisation], error)
@@ -155,6 +157,14 @@ func (c *HTTPClient) GetOrganisationLicense(ctx context.Context, orgID string) (
 
 func (c *HTTPClient) GetOrganisation(ctx context.Context, orgID string) (*Response[BillingOrganisation], error) {
 	return makeRequest[BillingOrganisation](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s", orgID), nil)
+}
+
+func (c *HTTPClient) GetWorkspaceConfigBySlug(ctx context.Context, slug string) (*Response[WorkspaceConfigData], error) {
+	if slug == "" {
+		return nil, fmt.Errorf("slug is required")
+	}
+	path := fmt.Sprintf("/api/v1/workspace_config?slug=%s", strings.ReplaceAll(url.QueryEscape(slug), "+", "%20"))
+	return makeRequest[WorkspaceConfigData](ctx, c.httpClient, c.config, "GET", path, nil)
 }
 
 func (c *HTTPClient) UpdateOrganisation(ctx context.Context, orgID string, orgData BillingOrganisation) (*Response[BillingOrganisation], error) {
