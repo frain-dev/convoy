@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 -- Update copy_rows function to copy new columns (acknowledged_at, status, metadata)
 -- that were added to both events and events_search tables in earlier migrations
 -- +migrate StatementBegin

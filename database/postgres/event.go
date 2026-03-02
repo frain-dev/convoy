@@ -576,7 +576,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		if filter.Pageable.Direction == datastore.Prev {
 			preOrder = reverseOrder(preOrder)
 		}
-		query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, filter.Pageable.SortOrder())
+		query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, preOrder, filter.Pageable.SortOrder(), filter.Pageable.SortOrder())
 	}
 
 	query, args, err = sqlx.Named(query, arg)
