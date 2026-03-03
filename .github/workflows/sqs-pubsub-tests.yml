@@ -67,8 +67,8 @@ jobs:
           CONVOY_REDIS_HOST: localhost
           CONVOY_REDIS_PORT: 6379
 
-      - name: Run PubSub E2E tests (testcontainers)
-        run: go test -race -v ./e2e/... -run TestE2E_SQS -timeout 30m
+      - name: Run SQS PubSub E2E tests (testcontainers)
+        run: go test -race -v ./e2e/sqs -timeout 30m
         env:
           TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
           CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
