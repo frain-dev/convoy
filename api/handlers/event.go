@@ -169,24 +169,37 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
 func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	var newMessage models.FanoutEvent
 	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
+		h.A.Logger.WithError(err).Error("failed to read fanout event json")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	err = newMessage.Validate()
 	if err != nil {
+		h.A.Logger.WithError(err).WithFields(log.Fields{
+			"owner_id":   newMessage.OwnerID,
+			"event_type": newMessage.EventType,
+		}).Error("failed to validate fanout event")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	project, err := h.retrieveProject(r)
 	if err != nil {
+		h.A.Logger.WithError(err).Error("failed to retrieve project for fanout event")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	h.A.Logger.WithFields(log.Fields{
+		"project_id": project.UID,
+		"owner_id":   newMessage.OwnerID,
+		"event_type": newMessage.EventType,
+	}).Info("processing fanout event")
 
 	cf := services.CreateFanoutEventService{
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
@@ -199,13 +212,29 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 
 	event, err := cf.Run(r.Context())
 	if err != nil {
+		h.A.Logger.WithError(err).WithFields(log.Fields{
+			"project_id": project.UID,
+			"owner_id":   newMessage.OwnerID,
+		}).Error("failed to run fanout event service")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
+	duration := time.Since(start)
 	if event.IsDuplicateEvent {
+		h.A.Logger.WithFields(log.Fields{
+			"project_id": project.UID,
+			"event_id":   event.UID,
+			"duration":   duration,
+		}).Info("duplicate fanout event received")
 		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", nil, http.StatusCreated))
 	} else {
+		h.A.Logger.WithFields(log.Fields{
+			"project_id": project.UID,
+			"event_id":   event.UID,
+			"duration":   duration,
+			"endpoints":  len(event.Endpoints),
+		}).Info("fanout event queued successfully")
 		_ = render.Render(w, r, util.NewServerResponse("Endpoint fanout event queued successfully", nil, http.StatusCreated))
 	}
 }

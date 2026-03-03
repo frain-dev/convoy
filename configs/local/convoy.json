@@ -16,9 +16,7 @@
     "server": {
         "http": {
             "port": 5005,
-            "agent_port": 5008,
-            "ingest_port": 5009,
-            "worker_port": 5006
+            "agent_port": 5008
         }
     },
     "metrics": {
@@ -28,5 +26,11 @@
         "prometheus",
         "circuit-breaker",
         "full-text-search"
-    ]
+    ],
+    "auth": {
+        "is_signup_enabled": true,
+        "native": {
+            "enabled": true
+        }
+    }
 }
