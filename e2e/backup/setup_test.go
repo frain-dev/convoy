@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	convoy "github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
 	rcache "github.com/frain-dev/convoy/cache/redis"
@@ -29,8 +30,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/testenv"
-
-	convoy "github.com/frain-dev/convoy"
 )
 
 // E2ETestEnv represents the complete E2E test environment

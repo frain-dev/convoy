@@ -14,10 +14,11 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
+
+	convoy "github.com/frain-dev/convoy-go/v2"
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"

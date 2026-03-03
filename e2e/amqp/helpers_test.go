@@ -13,11 +13,12 @@ import (
 	"testing"
 	"time"
 
-	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/oklog/ulid/v2"
-	amqp091 "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
+
+	convoy "github.com/frain-dev/convoy-go/v2"
+	amqp091 "github.com/rabbitmq/amqp091-go"
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
