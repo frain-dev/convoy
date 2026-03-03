@@ -13,7 +13,6 @@ require (
 	github.com/dop251/goja v0.0.0-20250309171923-bcd7cc6bf64c
 	github.com/dop251/goja_nodejs v0.0.0-20250409162600-f7acab6894b0
 	github.com/exaring/otelpgx v0.9.0
-	github.com/fatih/structs v1.1.0
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/frain-dev/convoy-go/v2 v2.1.15
 	github.com/getkin/kin-openapi v0.131.0
@@ -58,7 +57,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stealthrocket/netjail v0.1.2
 	github.com/stretchr/testify v1.11.1
-	github.com/subomi/requestmigrations v0.4.0
+	github.com/subomi/requestmigrations/v2 v2.3.0
 	github.com/swaggo/swag v1.16.4
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/kafka v0.40.0
