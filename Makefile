@@ -17,7 +17,7 @@ build:
 
 .PHONY: test
 test:
-	@go test -race -p 1 $(shell go list ./... | grep -v '/e2e') -timeout 30m
+	@go test -race -p 1 $(shell go list ./... | grep -v '/e2e') -v -timeout 30m
 
 # Get Docker socket from active context if DOCKER_HOST is not set
 DOCKER_HOST_VAL := $(or $(DOCKER_HOST),$(shell docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null || echo ""))
