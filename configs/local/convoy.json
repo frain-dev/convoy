@@ -24,9 +24,5 @@
         "native": {
             "enabled": true
         }
-    },
-    "license_key": "<insert-license-key>",
-    "license_service": {
-        "host": "<insert-license-service-host>"
     }
 }
