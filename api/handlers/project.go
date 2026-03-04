@@ -23,7 +23,7 @@ const errBillingRequired = "complete billing setup to create projects: add a sub
 func createProjectService(h *Handler) (*services.ProjectService, error) {
 	apiKeyRepo := api_keys.New(h.A.Logger, h.A.DB)
 	projectRepo := projects.New(h.A.Logger, h.A.DB)
-	eventRepo := events.New(h.A.Logger, h.A.DB.GetConn())
+	eventRepo := events.New(h.A.Logger, h.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
 	eventTypesRepo := event_types.New(h.A.Logger, h.A.DB)
 

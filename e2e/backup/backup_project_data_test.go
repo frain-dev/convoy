@@ -36,7 +36,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 
@@ -149,7 +149,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 
@@ -264,7 +264,7 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 	endpointRepo := postgres.NewEndpointRepo(db)
@@ -400,7 +400,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 
@@ -501,7 +501,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 

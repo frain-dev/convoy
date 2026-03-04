@@ -246,7 +246,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	// if the idempotency key query is set, find the first event with the key
 	if len(data.IdempotencyKey) > 0 {
-		event, err := events.New(h.A.Logger, h.A.DB.GetConn()).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
+		event, err := events.New(h.A.Logger, h.A.DB).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return

@@ -56,7 +56,7 @@ func (s *EventsIntegrationTestSuite) TearDownTest() {
 // are visible in the event log when no endpoint filter is applied.
 func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithoutEndpoints() {
 	ctx := context.Background()
-	eventRepo := events.New(s.ConvoyApp.A.Logger, s.DB.GetConn())
+	eventRepo := events.New(s.ConvoyApp.A.Logger, s.DB)
 
 	data := json.RawMessage(`{"test": "data"}`)
 
@@ -104,7 +104,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithoutEndpoints() {
 // 2. When not filtering, both events with and without endpoints are returned
 func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithEndpointFilter() {
 	ctx := context.Background()
-	eventRepo := events.New(s.ConvoyApp.A.Logger, s.DB.GetConn())
+	eventRepo := events.New(s.ConvoyApp.A.Logger, s.DB)
 
 	// Create an endpoint
 	endpoint, err := testdb.SeedEndpoint(s.DB, s.DefaultProject, "", "", "", false, datastore.ActiveEndpointStatus)
@@ -187,7 +187,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithEndpointFilter() {
 // are included in search results
 func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_SearchWithoutEndpoints() {
 	ctx := context.Background()
-	eventRepo := events.New(s.ConvoyApp.A.Logger, s.DB.GetConn())
+	eventRepo := events.New(s.ConvoyApp.A.Logger, s.DB)
 
 	data := json.RawMessage(`{"unique_search_term": "test12345"}`)
 

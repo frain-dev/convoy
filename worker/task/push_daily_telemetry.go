@@ -67,7 +67,7 @@ func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis)
 		if err != nil {
 			return err
 		}
-		eventRepo := events.New(log, db.GetConn())
+		eventRepo := events.New(log, db)
 		projectRepo := projects.New(log, db)
 
 		totalEventsTracker := &telemetry.TotalEventsTracker{

@@ -279,7 +279,7 @@ func seedEndpoint(t *testing.T, db database.Database, project *datastore.Project
 func seedEvent(t *testing.T, db database.Database, project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Event {
 	t.Helper()
 
-	eventRepo := events.New(testLogger, db.GetConn())
+	eventRepo := events.New(testLogger, db)
 
 	var endpoints []string
 	if endpoint != nil {

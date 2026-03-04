@@ -312,7 +312,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	t.Helper()
 
 	// First create an event
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	event := &datastore.Event{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,

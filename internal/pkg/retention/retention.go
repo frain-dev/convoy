@@ -178,7 +178,7 @@ type DeleteRetentionPolicy struct {
 }
 
 func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
-	eventRepo := events.New(d.logger, d.db.GetConn())
+	eventRepo := events.New(d.logger, d.db)
 	projectRepo := projects.New(d.logger, d.db)
 	configRepo := configuration.New(d.logger, d.db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(d.db)

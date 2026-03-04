@@ -388,7 +388,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, ui
 	}
 
 	// Seed Data.
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err

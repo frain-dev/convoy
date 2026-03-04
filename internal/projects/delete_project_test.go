@@ -92,7 +92,7 @@ func TestDeleteProject_CascadeDeletes(t *testing.T) {
 	require.Nil(t, fetchedEndpoint)
 
 	// Verify events are soft deleted
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	fetchedEvent, err := eventRepo.FindEventByID(ctx, project.UID, event.UID)
 	require.Error(t, err)
 	require.Nil(t, fetchedEvent)

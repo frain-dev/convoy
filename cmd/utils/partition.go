@@ -38,7 +38,7 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("partitioning is only available with a license key")
 			}
 
-			eventsRepo := events.New(a.Logger, a.DB.GetConn())
+			eventsRepo := events.New(a.Logger, a.DB)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
 
@@ -122,7 +122,7 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("partitioning is only available with a license key")
 			}
 
-			eventsRepo := events.New(a.Logger, a.DB.GetConn())
+			eventsRepo := events.New(a.Logger, a.DB)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
 

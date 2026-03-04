@@ -118,7 +118,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	projectRepo := projects.New(a.Logger, a.DB)
 	metaEventRepo := meta_events.New(a.Logger, a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
-	eventRepo := events.New(a.Logger, a.DB.GetConn())
+	eventRepo := events.New(a.Logger, a.DB)
 	jobRepo := postgres.NewJobRepo(a.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 	subRepo := subscriptions.New(a.Logger, a.DB)

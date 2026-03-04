@@ -943,7 +943,7 @@ func TestE2E_GooglePubSub_Single_InvalidEndpoint(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// Verify no event created (invalid endpoint should be rejected)
-	eventRepo := events.New(env.App.Logger, db.GetConn())
+	eventRepo := events.New(env.App.Logger, db)
 	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
 	require.NoError(t, err)
 	require.Empty(t, events, "No event should be created for invalid endpoint")
@@ -973,7 +973,7 @@ func TestE2E_GooglePubSub_Single_MissingEventType(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// Verify no event created
-	eventRepo := events.New(env.App.Logger, db.GetConn())
+	eventRepo := events.New(env.App.Logger, db)
 	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
 	require.NoError(t, err)
 	require.Empty(t, events, "No event should be created without event_type")
@@ -1022,7 +1022,7 @@ func TestE2E_GooglePubSub_Fanout_MissingOwnerID(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// Verify no event created (missing owner_id should be rejected)
-	eventRepo := events.New(env.App.Logger, db.GetConn())
+	eventRepo := events.New(env.App.Logger, db)
 	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
 	require.NoError(t, err)
 	require.Empty(t, events, "No event should be created for fanout without owner_id")

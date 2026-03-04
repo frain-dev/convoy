@@ -119,7 +119,7 @@ func buildApplication(t *testing.T) *applicationHandler {
 	db := tl.Database
 
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	deliveryRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)

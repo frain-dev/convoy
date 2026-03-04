@@ -154,7 +154,7 @@ func seedEventWithTimestamp(t *testing.T, db database.Database, ctx context.Cont
 	// Create a source first (required for events)
 	source := seedSource(t, db, ctx, project)
 
-	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 
 	event := &datastore.Event{
 		UID:              ulid.Make().String(),

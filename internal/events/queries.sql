@@ -196,7 +196,10 @@ WITH events AS (
         CASE WHEN NOT $17::boolean THEN ev.id END DESC
     LIMIT $18 -- limit
 )
-SELECT * FROM events
+SELECT id, project_id, event_type, is_duplicate_event, source_id, headers, raw, data, created_at,
+       idempotency_key, url_query_params, updated_at, deleted_at, acknowledged_at, metadata, status,
+       "source_metadata.id", "source_metadata.name"
+FROM events
 ORDER BY
     CASE WHEN $17::boolean THEN created_at END ASC,  -- sort_asc
     CASE WHEN $17::boolean THEN id END ASC,

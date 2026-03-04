@@ -1736,7 +1736,7 @@ func TestE2E_Kafka_Single_InvalidEndpoint(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	// Verify NO event was created (invalid endpoint should be rejected)
-	eventRepo := events.New(env.App.Logger, db.GetConn())
+	eventRepo := events.New(env.App.Logger, db)
 	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
 	require.NoError(t, err)
 	require.Empty(t, events, "No events should be created for invalid endpoint")
@@ -1798,7 +1798,7 @@ func TestE2E_Kafka_Single_MissingEventType(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	// Verify NO event was created (missing event_type should be rejected)
-	eventRepo := events.New(env.App.Logger, db.GetConn())
+	eventRepo := events.New(env.App.Logger, db)
 	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
 	require.NoError(t, err)
 	require.Empty(t, events, "No events should be created when event_type is missing")
@@ -1850,7 +1850,7 @@ func TestE2E_Kafka_Single_MalformedPayload(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	// Verify NO event was created (malformed JSON should be rejected)
-	eventRepo := events.New(env.App.Logger, db.GetConn())
+	eventRepo := events.New(env.App.Logger, db)
 	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
 	require.NoError(t, err)
 	require.Empty(t, events, "No events should be created for malformed JSON")
@@ -1912,7 +1912,7 @@ func TestE2E_Kafka_Fanout_MissingOwnerID(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	// Verify NO event was created (fanout requires owner_id)
-	eventRepo := events.New(env.App.Logger, db.GetConn())
+	eventRepo := events.New(env.App.Logger, db)
 	events, _, err := eventRepo.LoadEventsPaged(env.ctx, env.Project.UID, &datastore.Filter{})
 	require.NoError(t, err)
 	require.Empty(t, events, "No events should be created for fanout without owner_id")
