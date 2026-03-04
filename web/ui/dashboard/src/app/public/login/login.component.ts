@@ -47,6 +47,8 @@ export class LoginComponent implements OnInit, AfterViewInit {
 	workspaceSlug = '';
 	isSubmittingSSO = false;
 	showSlugError = false;
+	/** True after auth config has been fetched; prevents optional login options from flashing before we know if they're enabled. */
+	authConfigLoaded = false;
 
 	constructor(
 		private formBuilder: FormBuilder,
@@ -65,7 +67,6 @@ export class LoginComponent implements OnInit, AfterViewInit {
 	}
 
 	async ngAfterViewInit() {
-
 		try {
 			const config = await this.configService.getConfig();
 			this.billingEnabled = config.billing_enabled ?? false;
@@ -80,8 +81,9 @@ export class LoginComponent implements OnInit, AfterViewInit {
 			this.isSSOEnabled = false;
 			this.googleClientId = '';
 			this.isSignupEnabled = false;
+		} finally {
+			this.authConfigLoaded = true;
 		}
-
 
 		if (this.isGoogleOAuthEnabled) {
 			await this.googleOAuthService.initialize();
