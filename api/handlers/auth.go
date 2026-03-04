@@ -23,30 +23,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-// requestOrigin returns the request's origin (scheme + host) for redirect URLs, e.g. https://dashboard.example.com.
-// Prefers X-Forwarded-Proto and X-Forwarded-Host when behind a proxy.
-func requestOrigin(r *http.Request) string {
-	scheme := strings.TrimSpace(r.Header.Get("X-Forwarded-Proto"))
-	if scheme == "" {
-		if r.TLS != nil {
-			scheme = "https"
-		} else {
-			scheme = "http"
-		}
-	}
-	host := strings.TrimSpace(r.Header.Get("X-Forwarded-Host"))
-	if host == "" {
-		host = strings.TrimSpace(r.Host)
-	}
-	if host == "" {
-		return ""
-	}
-	if scheme != "https" && scheme != "http" {
-		scheme = "https"
-	}
-	return scheme + "://" + host
-}
-
 func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
 	billingEnabled := configuration.Billing.Enabled && h.A.BillingClient != nil
@@ -82,11 +58,10 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use request origin (browser/frontend host) for SSO redirect so callback URL matches where the user is visiting.
-	host := requestOrigin(r)
+	host := util.RequestOrigin(r)
 	if host == "" {
 		host = configuration.Host
 	}
-
 	lu := services.LoginUserSSOService{
 		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
@@ -153,6 +128,17 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 			Logger:        h.A.Logger,
 			Cfg:           h.A.Cfg,
 		})
+	}
+
+	// When callback is hit by a browser (e.g. redirect_url points at API host:5005), redirect to the UI
+	// so the dashboard handles the token and shows the app instead of dumping JSON.
+	if util.AcceptsHTML(r) {
+		redirectTo := util.RequestOrigin(r) + "/ui/sso/callback"
+		if r.URL.RawQuery != "" {
+			redirectTo += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, redirectTo, http.StatusFound)
+		return
 	}
 
 	u := &models.LoginUserResponse{
