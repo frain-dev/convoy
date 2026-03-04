@@ -52,24 +52,25 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 	}
 	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
 
-	_, err := q.inspector.GetTaskInfo(s, job.ID)
+	// _, err := q.inspector.GetTaskInfo(s, job.ID)
+	// if err != nil {
+	// 	// If the task or queue does not yet exist, we can proceed
+	// 	// to enqueuing the task
+	// 	message := err.Error()
+	// 	if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
+	// 		_, err := q.client.Enqueue(t, nil)
+	// 		return err
+	// 	}
+
+	// 	return err
+	// }
+
+	err := q.inspector.DeleteTask(s, job.ID)
 	if err != nil {
-		// If the task or queue does not yet exist, we can proceed
-		// to enqueuing the task
 		message := err.Error()
-		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
-			_, err := q.client.Enqueue(t, nil)
+		if ErrQueueNotFound.Error() != message && ErrTaskNotFound.Error() != message {
 			return err
 		}
-
-		return err
-	}
-
-	// At this point, the task is already on the queue based on its ID.
-	// We need to delete before enqueuing
-	err = q.inspector.DeleteTask(s, job.ID)
-	if err != nil {
-		return err
 	}
 
 	_, err = q.client.Enqueue(t, nil)
@@ -84,24 +85,12 @@ func (q *RedisQueue) WriteWithoutTimeout(taskName convoy.TaskName, queueName con
 
 	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.Timeout(0), asynq.ProcessIn(job.Delay))
 
-	task, err := q.inspector.GetTaskInfo(s, job.ID)
+	err := q.inspector.DeleteTask(s, job.ID)
 	if err != nil {
-		// If the task or queue does not yet exist, we can proceed
-		// to enqueuing the task
 		message := err.Error()
-		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
-			_, err := q.client.Enqueue(t, nil)
+		if ErrQueueNotFound.Error() != message && ErrTaskNotFound.Error() != message {
 			return err
 		}
-
-		return err
-	}
-
-	// At this point, the task is already on the queue based on its ID.
-	// We need to delete before enqueuing
-	err = q.inspector.DeleteTask(s, task.ID)
-	if err != nil {
-		return err
 	}
 
 	_, err = q.client.Enqueue(t, nil)
