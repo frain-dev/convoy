@@ -23,6 +23,30 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
+// requestOrigin returns the request's origin (scheme + host) for redirect URLs, e.g. https://dashboard.example.com.
+// Prefers X-Forwarded-Proto and X-Forwarded-Host when behind a proxy.
+func requestOrigin(r *http.Request) string {
+	scheme := strings.TrimSpace(r.Header.Get("X-Forwarded-Proto"))
+	if scheme == "" {
+		if r.TLS != nil {
+			scheme = "https"
+		} else {
+			scheme = "http"
+		}
+	}
+	host := strings.TrimSpace(r.Header.Get("X-Forwarded-Host"))
+	if host == "" {
+		host = strings.TrimSpace(r.Host)
+	}
+	if host == "" {
+		return ""
+	}
+	if scheme != "https" && scheme != "http" {
+		scheme = "https"
+	}
+	return scheme + "://" + host
+}
+
 func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
 	billingEnabled := configuration.Billing.Enabled && h.A.BillingClient != nil
@@ -57,6 +81,12 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 		licenseKey = result.LicenseKey
 	}
 
+	// Use request origin (browser/frontend host) for SSO redirect so callback URL matches where the user is visiting.
+	host := requestOrigin(r)
+	if host == "" {
+		host = configuration.Host
+	}
+
 	lu := services.LoginUserSSOService{
 		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
@@ -64,7 +94,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    h.A.ConfigRepo,
 		LicenseKey:    licenseKey,
-		Host:          configuration.Host,
+		Host:          host,
 		Licenser:      h.A.Licenser,
 	}
 

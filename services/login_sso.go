@@ -63,6 +63,12 @@ func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
 
 	redirectURI := strings.TrimSpace(cfg.Auth.SSO.RedirectURL)
 	if redirectURI == "" {
+		// Default to host + SSO redirect path (e.g. https://convoy.example.com/sso/redirect)
+		if strings.TrimSpace(u.Host) != "" {
+			redirectURI = strings.TrimSuffix(strings.TrimSpace(u.Host), "/") + cfg.SSOService.RedirectPath
+		}
+	}
+	if redirectURI == "" {
 		return nil, errors.New("auth.sso.redirect_url is required for SSO login")
 	}
 
