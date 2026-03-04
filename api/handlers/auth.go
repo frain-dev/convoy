@@ -130,7 +130,6 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-
 	u := &models.LoginUserResponse{
 		User:  user,
 		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},

@@ -24,6 +24,11 @@ import (
 
 var ErrHostRequiredForBilling = errors.New("organisation host (assigned domain) is required for billing. Please set the assigned domain in the configuration")
 
+type BillingHandler struct {
+	*Handler
+	BillingClient billing.Client
+}
+
 func isBillingOrgNotFound(err error) bool {
 	if err == nil {
 		return false
@@ -74,11 +79,6 @@ func (h *BillingHandler) ensureOrganisationInBilling(w http.ResponseWriter, r *h
 		return true
 	}
 	return false
-}
-
-type BillingHandler struct {
-	*Handler
-	BillingClient billing.Client
 }
 
 func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Request, orgID string) bool {
