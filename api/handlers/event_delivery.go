@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -245,7 +246,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	// if the idempotency key query is set, find the first event with the key
 	if len(data.IdempotencyKey) > 0 {
-		event, err := postgres.NewEventRepo(h.A.DB).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
+		event, err := events.New(h.A.Logger, h.A.DB.GetConn()).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return

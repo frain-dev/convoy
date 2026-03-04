@@ -9,7 +9,6 @@ import (
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/events/repo"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"gopkg.in/guregu/null.v4"
 )
 
 // rowToEvent converts various sqlc-generated row types to datastore.Event
@@ -160,12 +159,4 @@ func parseHeaders(data []byte) httpheader.HTTPHeader {
 	}
 
 	return headers
-}
-
-// nullTimeToTimestamptz converts null.Time to pgtype.Timestamptz
-func nullTimeToTimestamptz(t null.Time) interface{} {
-	if !t.Valid {
-		return nil
-	}
-	return t.Time
 }

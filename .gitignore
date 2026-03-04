@@ -48,9 +48,6 @@ postgres_data**
 redis_data
 /.run/go test github.com_frain-dev_convoy_server.run.xml
 
-# SQLc generated code
-**/repo/
-
 convoy-ee
 convoy-ce
 
@@ -58,4 +55,3 @@ convoy-ce
 .cursor
 
 mise.local.toml
-api/ui/*

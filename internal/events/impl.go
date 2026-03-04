@@ -439,7 +439,11 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 		if err != nil {
 			return datastore.PrevRowCount{}, err
 		}
-		return datastore.PrevRowCount{Count: exists}, nil
+		count := 0
+		if exists {
+			count = 1
+		}
+		return datastore.PrevRowCount{Count: count}, nil
 	}
 
 	// Search path
@@ -465,7 +469,11 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}
-	return datastore.PrevRowCount{Count: exists}, nil
+	count := 0
+	if exists {
+		count = 1
+	}
+	return datastore.PrevRowCount{Count: count}, nil
 }
 
 // DeleteProjectEvents soft or hard deletes events

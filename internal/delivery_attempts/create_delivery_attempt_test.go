@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -311,7 +312,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	t.Helper()
 
 	// First create an event
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
 	event := &datastore.Event{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
