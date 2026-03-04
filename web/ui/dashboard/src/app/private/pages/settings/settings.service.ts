@@ -127,7 +127,7 @@ export class SettingsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/sso/admin-portal`,
+					url: `/saml/admin-portal`,
 					method: 'post',
 					body: { return_url: returnUrl },
 					hideNotification: true

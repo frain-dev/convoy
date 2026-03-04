@@ -35,7 +35,7 @@ export class SamlComponent implements OnInit {
 
 			if (typeof window !== 'undefined' && window.opener) {
 				const pathname = window.location.pathname;
-				const appRoot = pathname.replace(/\/sso\/callback(\?.*)?$/i, '').replace(/\/$/, '') || '';
+				const appRoot = pathname.replace(/\/(sso\/callback|saml)$/i, '').replace(/\/$/, '') || '';
 				const projectsUrl = window.location.origin + (appRoot ? appRoot + '/projects' : '/projects');
 				window.opener.location.href = projectsUrl;
 				window.close();

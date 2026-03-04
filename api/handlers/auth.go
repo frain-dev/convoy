@@ -130,14 +130,6 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if util.AcceptsHTML(r) {
-		redirectTo := util.RequestOrigin(r) + "/ui/sso/callback"
-		if r.URL.RawQuery != "" {
-			redirectTo += "?" + r.URL.RawQuery
-		}
-		http.Redirect(w, r, redirectTo, http.StatusFound)
-		return
-	}
 
 	u := &models.LoginUserResponse{
 		User:  user,
