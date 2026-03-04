@@ -24,6 +24,7 @@ import (
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/event_types"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisation_invites"
 	"github.com/frain-dev/convoy/internal/organisation_members"
@@ -387,7 +388,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, ui
 	}
 
 	// Seed Data.
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err

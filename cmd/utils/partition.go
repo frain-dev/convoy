@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 )
@@ -37,7 +38,7 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("partitioning is only available with a license key")
 			}
 
-			eventsRepo := postgres.NewEventRepo(a.DB)
+			eventsRepo := events.New(a.Logger, a.DB.GetConn())
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
 
@@ -121,7 +122,7 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("partitioning is only available with a license key")
 			}
 
-			eventsRepo := postgres.NewEventRepo(a.DB)
+			eventsRepo := events.New(a.Logger, a.DB.GetConn())
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
 

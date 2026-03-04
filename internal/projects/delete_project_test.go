@@ -9,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 )
@@ -91,7 +92,7 @@ func TestDeleteProject_CascadeDeletes(t *testing.T) {
 	require.Nil(t, fetchedEndpoint)
 
 	// Verify events are soft deleted
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
 	fetchedEvent, err := eventRepo.FindEventByID(ctx, project.UID, event.UID)
 	require.Error(t, err)
 	require.Nil(t, fetchedEvent)

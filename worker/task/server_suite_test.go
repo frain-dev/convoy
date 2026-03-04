@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -118,7 +119,7 @@ func buildApplication(t *testing.T) *applicationHandler {
 	db := tl.Database
 
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db.GetConn())
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	deliveryRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)

@@ -10,9 +10,9 @@ import (
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -67,7 +67,7 @@ func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis)
 		if err != nil {
 			return err
 		}
-		eventRepo := postgres.NewEventRepo(db)
+		eventRepo := events.New(log, db.GetConn())
 		projectRepo := projects.New(log, db)
 
 		totalEventsTracker := &telemetry.TotalEventsTracker{
