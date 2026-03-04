@@ -1,61 +1,171 @@
 package events
 
 import (
+	"encoding/json"
+	"errors"
+	"strings"
+
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/events/repo"
+	"github.com/frain-dev/convoy/pkg/httpheader"
+	"gopkg.in/guregu/null.v4"
 )
 
 // rowToEvent converts various sqlc-generated row types to datastore.Event
-// Handles: FindEventByIDRow, LoadEventsPagedExistsRow, LoadEventsPagedSearchRow, etc.
 func rowToEvent(row interface{}) (*datastore.Event, error) {
-	// TODO: Implement type switching for different row types
-	// Example pattern:
-	// switch r := row.(type) {
-	// case repo.FindEventByIDRow:
-	//     return &datastore.Event{
-	//         UID:       r.ID,
-	//         EventType: datastore.EventType(r.EventType),
-	//         ...
-	//     }, nil
-	// case repo.LoadEventsPagedExistsRow:
-	//     ...
-	// }
-	panic("not implemented")
-}
+	switch r := row.(type) {
+	case repo.FindEventByIDRow:
+		return &datastore.Event{
+			UID:              r.ID,
+			EventType:        datastore.EventType(r.EventType),
+			Endpoints:        parseEndpoints(r.Endpoints),
+			ProjectID:        r.ProjectID,
+			SourceID:         r.SourceID,
+			Headers:          parseHeaders(r.Headers),
+			Raw:              r.Raw,
+			Data:             r.Data,
+			URLQueryParams:   r.URLQueryParams,
+			IdempotencyKey:   r.IdempotencyKey,
+			IsDuplicateEvent: r.IsDuplicateEvent,
+			Status:           datastore.EventStatus(r.Status),
+			Metadata:         common.PgTextToNullString(r.Metadata).String,
+			CreatedAt:        r.CreatedAt,
+			UpdatedAt:        r.UpdatedAt,
+			AcknowledgedAt:   common.PgTimestamptzToNullTime(r.AcknowledgedAt),
+			Source: &datastore.Source{
+				UID:  r.SourceMetadataID,
+				Name: r.SourceMetadataName,
+			},
+		}, nil
 
-// rowsToEvents converts multiple rows to events
-func rowsToEvents(rows interface{}) ([]datastore.Event, error) {
-	// TODO: Implement batch conversion
-	panic("not implemented")
-}
+	case repo.FindEventsByIDsRow:
+		return &datastore.Event{
+			UID:              r.ID,
+			EventType:        datastore.EventType(r.EventType),
+			ProjectID:        r.ProjectID,
+			SourceID:         r.SourceID,
+			Headers:          parseHeaders(r.Headers),
+			Raw:              r.Raw,
+			Data:             r.Data,
+			URLQueryParams:   r.URLQueryParams,
+			IdempotencyKey:   r.IdempotencyKey,
+			IsDuplicateEvent: r.IsDuplicateEvent,
+			CreatedAt:        r.CreatedAt,
+			UpdatedAt:        r.UpdatedAt,
+			DeletedAt:        common.PgTimestamptzToNullTime(r.DeletedAt),
+			AcknowledgedAt:   common.PgTimestamptzToNullTime(r.AcknowledgedAt),
+			Source: &datastore.Source{
+				UID:  r.SourceMetadataID,
+				Name: r.SourceMetadataName,
+			},
+		}, nil
 
-// parseEndpoints converts JSONB array to []string
-func parseEndpoints(endpointsJSON interface{}) ([]string, error) {
-	// TODO: Parse endpoints from JSONB or TEXT array
-	panic("not implemented")
+	case repo.LoadEventsPagedExistsRow:
+		return &datastore.Event{
+			UID:              r.ID,
+			EventType:        datastore.EventType(r.EventType),
+			ProjectID:        r.ProjectID,
+			SourceID:         r.SourceID,
+			Headers:          parseHeaders(r.Headers),
+			Raw:              r.Raw,
+			Data:             r.Data,
+			URLQueryParams:   r.URLQueryParams,
+			IdempotencyKey:   r.IdempotencyKey,
+			IsDuplicateEvent: r.IsDuplicateEvent,
+			Status:           datastore.EventStatus(r.Status),
+			Metadata:         common.PgTextToNullString(r.Metadata).String,
+			CreatedAt:        r.CreatedAt,
+			UpdatedAt:        r.UpdatedAt,
+			DeletedAt:        common.PgTimestamptzToNullTime(r.DeletedAt),
+			AcknowledgedAt:   common.PgTimestamptzToNullTime(r.AcknowledgedAt),
+			Source: &datastore.Source{
+				UID:  r.SourceMetadataID,
+				Name: r.SourceMetadataName,
+			},
+		}, nil
+
+	case repo.LoadEventsPagedSearchRow:
+		return &datastore.Event{
+			UID:              r.ID,
+			EventType:        datastore.EventType(r.EventType),
+			ProjectID:        r.ProjectID,
+			SourceID:         r.SourceID,
+			Headers:          parseHeaders(r.Headers),
+			Raw:              r.Raw,
+			Data:             r.Data,
+			URLQueryParams:   r.URLQueryParams,
+			IdempotencyKey:   r.IdempotencyKey,
+			IsDuplicateEvent: r.IsDuplicateEvent,
+			Status:           datastore.EventStatus(r.Status),
+			Metadata:         r.Metadata,
+			CreatedAt:        r.CreatedAt,
+			UpdatedAt:        r.UpdatedAt,
+			DeletedAt:        common.PgTimestamptzToNullTime(r.DeletedAt),
+			AcknowledgedAt:   common.PgTimestamptzToNullTime(r.AcknowledgedAt),
+			Source: &datastore.Source{
+				UID:  r.SourceMetadataID,
+				Name: r.SourceMetadataName,
+			},
+		}, nil
+
+	default:
+		return nil, errors.New("unsupported row type")
+	}
 }
 
 // endpointsToString converts []string to TEXT for storage
+// The legacy implementation stores it as a TEXT field (not JSONB array)
 func endpointsToString(endpoints []string) string {
-	// TODO: Convert to comma-separated or appropriate format
-	panic("not implemented")
+	if len(endpoints) == 0 {
+		return ""
+	}
+	// Match legacy format: stored as comma-separated or the actual database format
+	// The database column is TEXT, matching pq.StringArray in sqlx
+	return strings.Join(endpoints, ",")
 }
 
-// convertTimestamp converts pgtype.Timestamptz to time.Time
-// func convertTimestamp(ts pgtype.Timestamptz) time.Time {
-// 	// TODO: Handle nullable timestamps
-// 	panic("not implemented")
-// }
+// parseEndpoints converts TEXT to []string
+func parseEndpoints(endpointsStr string) []string {
+	if endpointsStr == "" {
+		return []string{}
+	}
+	// Handle comma-separated format
+	return strings.Split(endpointsStr, ",")
+}
 
-// convertNullableString converts pgtype.Text to string
-// func convertNullableString(s pgtype.Text) string {
-// 	// TODO: Handle NULL values
-// 	panic("not implemented")
-// }
+// headersToJSONB converts httpheader.HTTPHeader to JSONB bytes
+func headersToJSONB(headers httpheader.HTTPHeader) []byte {
+	if headers == nil {
+		headers = httpheader.HTTPHeader{}
+	}
+	data, err := json.Marshal(headers)
+	if err != nil {
+		// Should not happen for valid headers
+		return []byte("{}")
+	}
+	return data
+}
 
-// buildEventEndpoints creates event_endpoints insert params for batch processing
-func buildEventEndpoints(eventID string, endpoints []string) []repo.CreateEventEndpointsParams {
-	// TODO: Create params slice for batch insert
-	// Partition into 30K chunks if needed
-	panic("not implemented")
+// parseHeaders converts JSONB bytes to httpheader.HTTPHeader
+func parseHeaders(data []byte) httpheader.HTTPHeader {
+	if len(data) == 0 {
+		return httpheader.HTTPHeader{}
+	}
+
+	var headers httpheader.HTTPHeader
+	err := json.Unmarshal(data, &headers)
+	if err != nil {
+		return httpheader.HTTPHeader{}
+	}
+
+	return headers
+}
+
+// nullTimeToTimestamptz converts null.Time to pgtype.Timestamptz
+func nullTimeToTimestamptz(t null.Time) interface{} {
+	if !t.Valid {
+		return nil
+	}
+	return t.Time
 }
