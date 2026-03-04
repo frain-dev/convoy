@@ -477,10 +477,7 @@ export class CreateEndpointComponent implements OnInit {
 	}
 
 	async saveEndpoint() {
-		// Prevent multiple simultaneous saves
-		if (this.savingEndpoint) {
-			return;
-		}
+		if (this.savingEndpoint) return;
 
 		await this.runEndpointValidation();
 
