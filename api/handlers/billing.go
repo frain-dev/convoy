@@ -24,6 +24,58 @@ import (
 
 var ErrHostRequiredForBilling = errors.New("organisation host (assigned domain) is required for billing. Please set the assigned domain in the configuration")
 
+func isBillingOrgNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "organisation") && strings.Contains(s, "not found")
+}
+
+func (h *BillingHandler) ensureOrganisationInBilling(w http.ResponseWriter, r *http.Request, orgID string) bool {
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation data", http.StatusInternalServerError))
+		return true
+	}
+
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch config", http.StatusInternalServerError))
+		return true
+	}
+
+	if cfg.Host == "" {
+		_ = render.Render(w, r, util.NewErrorResponse(ErrHostRequiredForBilling.Error(), http.StatusBadRequest))
+		return true
+	}
+
+	ownerEmail := h.getOwnerEmail(r.Context(), orgID)
+	if ownerEmail == "" {
+		h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
+	}
+
+	orgData := billing.BillingOrganisation{
+		Name:         org.Name,
+		ExternalID:   orgID,
+		BillingEmail: ownerEmail,
+		Host:         cfg.Host,
+	}
+
+	_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
+	if createErr != nil {
+		errorMsg := createErr.Error()
+		if strings.Contains(errorMsg, "Validation failed") {
+			_ = render.Render(w, r, util.NewErrorResponse(errorMsg, http.StatusBadRequest))
+		} else {
+			_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("Failed to create organisation in billing service: %s", errorMsg), http.StatusInternalServerError))
+		}
+		return true
+	}
+	return false
+}
+
 type BillingHandler struct {
 	*Handler
 	BillingClient billing.Client
@@ -195,48 +247,8 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 	}
 
 	_, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
-	if err != nil && strings.Contains(err.Error(), "Organisation not found") {
-		orgRepo := organisations.New(h.A.Logger, h.A.DB)
-		org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation data", http.StatusInternalServerError))
-			return
-		}
-
-		cfg, err := config.Get()
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch config", http.StatusInternalServerError))
-			return
-		}
-
-		// Check if host is set - required by billing service
-		if cfg.Host == "" {
-			_ = render.Render(w, r, util.NewErrorResponse(ErrHostRequiredForBilling.Error(), http.StatusBadRequest))
-			return
-		}
-
-		ownerEmail := h.getOwnerEmail(r.Context(), orgID)
-		if ownerEmail == "" {
-			h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
-		}
-
-		orgData := billing.BillingOrganisation{
-			Name:         org.Name,
-			ExternalID:   orgID,
-			BillingEmail: ownerEmail,
-			Host:         cfg.Host,
-		}
-
-		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
-		if createErr != nil {
-			// Return the actual error message from billing service so UI can display it
-			errorMsg := createErr.Error()
-			if strings.Contains(errorMsg, "Validation failed") {
-				// Extract the validation message for better UX
-				_ = render.Render(w, r, util.NewErrorResponse(errorMsg, http.StatusBadRequest))
-			} else {
-				_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("Failed to create organisation in billing service: %s", errorMsg), http.StatusInternalServerError))
-			}
+	if err != nil && isBillingOrgNotFound(err) {
+		if h.ensureOrganisationInBilling(w, r, orgID) {
 			return
 		}
 	}
@@ -422,11 +434,18 @@ func (h *BillingHandler) GetOrganisation(w http.ResponseWriter, r *http.Request)
 	}
 
 	resp, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
+	if err != nil && isBillingOrgNotFound(err) {
+		if h.ensureOrganisationInBilling(w, r, orgID) {
+			return
+		}
+		resp, err = h.BillingClient.GetOrganisation(r.Context(), orgID)
+	}
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return
 	}
 
+	h.updateBillingEmailIfEmpty(orgID)
 	_ = render.Render(w, r, util.NewServerResponse("Organisation retrieved successfully", resp.Data, http.StatusOK))
 }
 
@@ -716,59 +735,13 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Ensure organisation exists in billing service (bootstrap if needed)
-	// Use the same bootstrap logic as GetSubscription
-	_, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
-	if err != nil && strings.Contains(err.Error(), "Organisation not found") {
-		orgRepo := organisations.New(h.A.Logger, h.A.DB)
-		org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation data", http.StatusInternalServerError))
-			return
-		}
-
-		cfg, err := config.Get()
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch config", http.StatusInternalServerError))
-			return
-		}
-
-		// Check if host is set - required by billing service
-		if cfg.Host == "" {
-			_ = render.Render(w, r, util.NewErrorResponse(ErrHostRequiredForBilling.Error(), http.StatusBadRequest))
-			return
-		}
-
-		ownerEmail := h.getOwnerEmail(r.Context(), orgID)
-		if ownerEmail == "" {
-			h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
-		}
-
-		orgData := billing.BillingOrganisation{
-			Name:         org.Name,
-			ExternalID:   orgID,
-			BillingEmail: ownerEmail,
-			Host:         cfg.Host,
-		}
-
-		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
-		if createErr != nil {
-			// Return the actual error message from billing service so UI can display it
-			errorMsg := createErr.Error()
-			if strings.Contains(errorMsg, "Validation failed") {
-				_ = render.Render(w, r, util.NewErrorResponse(errorMsg, http.StatusBadRequest))
-			} else {
-				_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("Failed to create organisation in billing service: %s", errorMsg), http.StatusInternalServerError))
-			}
-			return
-		}
-	} else if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	// Now get the organisation to extract the internal ID
 	resp, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
+	if err != nil && isBillingOrgNotFound(err) {
+		if h.ensureOrganisationInBilling(w, r, orgID) {
+			return
+		}
+		resp, err = h.BillingClient.GetOrganisation(r.Context(), orgID)
+	}
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return

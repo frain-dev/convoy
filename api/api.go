@@ -661,15 +661,14 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			configRouter.Get("/auth", handler.GetAuthConfiguration)
 		})
 
-		// Billing routes - only registered when billing is enabled
-		if a.cfg.Billing.Enabled {
-			billingHandler := &handlers.BillingHandler{
-				Handler:       handler,
-				BillingClient: a.A.BillingClient,
-			}
+		billingHandler := &handlers.BillingHandler{
+			Handler:       handler,
+			BillingClient: a.A.BillingClient,
+		}
+		uiRouter.Route("/billing", func(billingRouter chi.Router) {
+			billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
 
-			uiRouter.Route("/billing", func(billingRouter chi.Router) {
-				billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
+			if a.cfg.Billing.Enabled {
 				billingRouter.Get("/config", billingHandler.GetBillingConfig)
 				billingRouter.Get("/plans", billingHandler.GetPlans)
 				billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
@@ -709,8 +708,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
 					billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
 				})
-			})
-		}
+			}
+		})
 	})
 
 	// Portal Link API.

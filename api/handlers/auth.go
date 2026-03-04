@@ -130,8 +130,6 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// When callback is hit by a browser (e.g. redirect_url points at API host:5005), redirect to the UI
-	// so the dashboard handles the token and shows the app instead of dumping JSON.
 	if util.AcceptsHTML(r) {
 		redirectTo := util.RequestOrigin(r) + "/ui/sso/callback"
 		if r.URL.RawQuery != "" {
