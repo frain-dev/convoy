@@ -70,7 +70,9 @@ export class SetupProjectComponent implements OnInit {
 	}
 
 	onProjectOnboardingComplete() {
-		this.generalService.showNotification({ message: `${this.privateService.getProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
+		const type = this.privateService.getProjectDetails?.type ?? this.projectType;
+		const label = type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Project';
+		this.generalService.showNotification({ message: `${label} Configuration Complete`, style: 'success', type: 'modal' });
 		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid);
 	}
 
@@ -85,37 +87,74 @@ export class SetupProjectComponent implements OnInit {
 
 	toggleFormsLoaders(loaderState: boolean) {
 		this.createSubscriptionForm.isCreatingSubscription = loaderState;
-		if (this.createEndpointForm) this.createEndpointForm.savingEndpoint = loaderState;
 		if (this.createSourceForm) this.createSourceForm.isloading = loaderState;
+	}
+
+	get canSave(): boolean {
+		if (this.isLoading) return false;
+		if (!this.createEndpointForm?.addNewEndpointForm?.valid) return false;
+		// Incoming: require source form valid (we create the source on Save and Proceed; no id until then)
+		if (this.projectType === 'incoming' && this.createSourceForm && !this.createSourceForm.sourceForm?.valid) return false;
+		if (this.projectType === 'outgoing' && this.connectPubSub && this.createSourceForm && !this.createSourceForm.sourceForm?.valid) return false;
+		if (!this.automaticSubscription && !this.createSubscriptionForm?.subscriptionForm?.valid) return false;
+		return true;
 	}
 
 	async saveProjectConfig() {
 		this.toggleFormsLoaders(true);
 		this.createSubscriptionForm.subscriptionForm.patchValue({ name: `${this.createEndpointForm.addNewEndpointForm.value.name}'s Subscription` });
+		if (this.projectType === 'outgoing') {
+			const fc = this.createSubscriptionForm.subscriptionForm.get('filter_config');
+			const et = fc?.get('event_types')?.value;
+			if (!et || (Array.isArray(et) && et.length === 0)) {
+				this.createSubscriptionForm.selectedEventTypes = ['*'];
+				fc?.patchValue({ event_types: ['*'] });
+			}
+		}
 		await this.createSubscriptionForm.runSubscriptionValidation();
 
-		if (this.createSubscriptionForm.subscriptionForm.get('name')?.invalid || this.createSubscriptionForm.subscriptionForm.get('retry_config')?.invalid || this.createSubscriptionForm.subscriptionForm.get('filter_config')?.invalid) {
+		const nameInvalid = this.createSubscriptionForm.subscriptionForm.get('name')?.invalid;
+		const retryInvalid = this.createSubscriptionForm.subscriptionForm.get('retry_config')?.invalid;
+		const filterInvalid = this.createSubscriptionForm.subscriptionForm.get('filter_config')?.invalid;
+		// Don't require source_id here for incoming: we create the source below and patch via onCreateSource
+		const sourceInvalid =
+			this.projectType === 'incoming' &&
+			this.createSourceForm?.sourceCreated &&
+			(this.createSubscriptionForm.subscriptionForm.get('source_id')?.invalid || !this.createSubscriptionForm.subscriptionForm.get('source_id')?.value);
+		if (nameInvalid || retryInvalid || filterInvalid || sourceInvalid) {
 			this.toggleFormsLoaders(false);
 			this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
 			return;
 		}
 
-		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
+		const endpointForm = this.createEndpointForm;
+		const needSaveEndpoint = endpointForm && !endpointForm.endpointCreated;
+		if (needSaveEndpoint) await this.createEndpointForm.saveEndpoint();
 		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
-
-		if (this.projectType === 'outgoing' && this.connectPubSub && !this.createSourceForm.sourceCreated) return;
-
-		// check subscription form validation
-		if (this.createSubscriptionForm.subscriptionForm.invalid) {
-			this.createSubscriptionForm.isCreatingSubscription = false;
-			return this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
+		if (this.createSourceForm?.sourceCreated && this.createSourceForm?.sourceData?.uid) {
+			this.createSubscriptionForm.subscriptionForm.patchValue({ source_id: this.createSourceForm.sourceData.uid });
 		}
 
-		// create subscription
+		// Incoming requires a source; block if we still don't have one after saveSource
+		if (this.projectType === 'incoming' && this.createSourceForm && !this.createSourceForm.sourceCreated) {
+			this.toggleFormsLoaders(false);
+			this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
+			return;
+		}
+		if (this.projectType === 'outgoing' && this.connectPubSub && !this.createSourceForm.sourceCreated) {
+			this.toggleFormsLoaders(false);
+			return;
+		}
+
+		if (this.createSubscriptionForm.subscriptionForm.invalid) {
+			this.createSubscriptionForm.isCreatingSubscription = false;
+			this.toggleFormsLoaders(false);
+			return this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
+		}
 		try {
 			this.createSubscriptionForm.saveSubscription(true);
 		} catch (error) {
-			console.log('🚀 ~ file: setup-project.component.ts:122 ~ SetupProjectComponent ~ saveProjectConfig ~ error:', error);
+			this.toggleFormsLoaders(false);
 		}
 	}
 }

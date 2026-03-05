@@ -1677,6 +1677,21 @@ func (mr *MockEndpointRepositoryMockRecorder) DeleteSecret(ctx, endpoint, secret
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSecret", reflect.TypeOf((*MockEndpointRepository)(nil).DeleteSecret), ctx, endpoint, secretID, projectID)
 }
 
+// FetchEndpointIDsByOwnerID mocks base method.
+func (m *MockEndpointRepository) FetchEndpointIDsByOwnerID(ctx context.Context, projectID, ownerID string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchEndpointIDsByOwnerID", ctx, projectID, ownerID)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchEndpointIDsByOwnerID indicates an expected call of FetchEndpointIDsByOwnerID.
+func (mr *MockEndpointRepositoryMockRecorder) FetchEndpointIDsByOwnerID(ctx, projectID, ownerID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchEndpointIDsByOwnerID", reflect.TypeOf((*MockEndpointRepository)(nil).FetchEndpointIDsByOwnerID), ctx, projectID, ownerID)
+}
+
 // FindEndpointByID mocks base method.
 func (m *MockEndpointRepository) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
 	m.ctrl.T.Helper()

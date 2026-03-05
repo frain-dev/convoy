@@ -296,6 +296,12 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			// this createProject service also updates the project as an active project in localstorage
 			const response = await this.createProjectService.createProject(projectData);
+			// Sync new project as active so UI (e.g. project selector) auto-selects it
+			const user = this.privateService.getUserProfile;
+			if (user?.uid) {
+				this.privateService.setUserProject(user.uid, response.data.project);
+			}
+			this.privateService.projectDetails = { data: response.data.project } as any;
 			await this.privateService.getProjectStat({ refresh: true });
 
 			this.privateService.getProjects({ refresh: true });

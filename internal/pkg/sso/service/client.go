@@ -98,6 +98,15 @@ func (c *Client) setAuthHeaders(req *http.Request, licenseKeyForHeader string) {
 func (c *Client) doRequest(req *http.Request, opName string) ([]byte, error) {
 	var lastErr error
 	for attempt := 0; attempt <= c.retryCount; attempt++ {
+		if attempt > 0 && req.GetBody != nil {
+			body, err := req.GetBody()
+			if err != nil {
+				lastErr = fmt.Errorf("reset request body: %w", err)
+				continue
+			}
+			req.Body = body
+		}
+
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
 			lastErr = err
@@ -113,6 +122,9 @@ func (c *Client) doRequest(req *http.Request, opName string) ([]byte, error) {
 		if err != nil {
 			lastErr = err
 			continue
+		}
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return nil, fmt.Errorf("%s: unexpected status %d: %s", opName, resp.StatusCode, string(rb))
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			lastErr = fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(rb))
@@ -146,6 +158,8 @@ func (c *Client) GetRedirectURL(ctx context.Context, licenseKey, host, redirectU
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "Convoy-SSO-Client/1.0")
 	c.setAuthHeaders(req, licenseKey)
 
 	rb, err := c.doRequest(req, "SSO redirect")
@@ -184,6 +198,8 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "Convoy-SSO-Client/1.0")
 	c.setAuthHeaders(req, c.licenseKey)
 
 	rb, err := c.doRequest(req, "SSO token validation")
@@ -242,6 +258,8 @@ func (c *Client) GetAdminPortalURL(ctx context.Context, licenseKey, returnURL, s
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "Convoy-SSO-Client/1.0")
 	c.setAuthHeaders(req, licenseKey)
 
 	rb, err := c.doRequest(req, "SSO admin portal")

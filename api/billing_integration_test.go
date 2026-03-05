@@ -255,6 +255,32 @@ func (s *BillingIntegrationTestSuite) Test_GetOrganisation() {
 	require.True(s.T(), response["status"].(bool))
 }
 
+func (s *BillingIntegrationTestSuite) Test_GetInternalOrganisationID() {
+	url := fmt.Sprintf("/ui/billing/organisations/%s/internal_id", s.DefaultOrg.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		s.T().Logf("Response body: %s", w.Body.String())
+	}
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(s.T(), err)
+
+	require.Equal(s.T(), "Internal organisation ID retrieved successfully", response["message"])
+	require.True(s.T(), response["status"].(bool))
+	data, ok := response["data"].(map[string]interface{})
+	require.True(s.T(), ok)
+	require.Contains(s.T(), data, "id")
+}
+
 func (s *BillingIntegrationTestSuite) Test_UpdateOrganisation() {
 	orgData := map[string]interface{}{
 		"name": "Updated Org",

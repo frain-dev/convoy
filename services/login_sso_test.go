@@ -82,17 +82,19 @@ func provideLoginUserSSOService(ctrl *gomock.Controller, t *testing.T) (*LoginUs
 
 func TestLoginUserSSOService_Run(t *testing.T) {
 	tests := []struct {
-		name       string
-		licenseKey string
-		host       string
-		wantErr    bool
-		wantErrMsg string
+		name        string
+		licenseKey  string
+		host        string
+		redirectURL string // empty means test uses default (host + /sso/redirect)
+		wantErr     bool
+		wantErrMsg  string
 	}{
 		{
-			name:       "should_get_redirect_url_successfully",
-			licenseKey: "test-license-key",
-			host:       "https://convoy.example.com",
-			wantErr:    false,
+			name:        "should_get_redirect_url_successfully",
+			licenseKey:  "test-license-key",
+			host:        "https://convoy.example.com",
+			redirectURL: "https://convoy.example.com/sso/callback",
+			wantErr:     false,
 		},
 		{
 			name:       "should_fail_without_license_key",
@@ -100,6 +102,13 @@ func TestLoginUserSSOService_Run(t *testing.T) {
 			host:       "https://convoy.example.com",
 			wantErr:    true,
 			wantErrMsg: "missing license key",
+		},
+		{
+			name:        "should_default_redirect_url_to_host_plus_sso_redirect_path",
+			licenseKey:  "test-license-key",
+			host:        "https://convoy.example.com",
+			redirectURL: "",
+			wantErr:     false,
 		},
 	}
 
@@ -109,7 +118,7 @@ func TestLoginUserSSOService_Run(t *testing.T) {
 			require.NoError(t, err)
 			cfg, err := config.Get()
 			require.NoError(t, err)
-			cfg.Auth.SSO.RedirectURL = "https://convoy.example.com/sso/callback"
+			cfg.Auth.SSO.RedirectURL = tc.redirectURL
 			require.NoError(t, config.Override(&cfg))
 
 			ctrl := gomock.NewController(t)

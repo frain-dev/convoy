@@ -17,7 +17,7 @@
 		<convoy-copy-button [text]="organisationId" notificationText="Organisation ID has been copied to your clipboard"></convoy-copy-button>
 	</div>
 	<div class="mt-12px" *ngIf="licenseService.hasOrgLicense(currentOrg)">
-		<span class="text-12 text-neutral-10">Licensed</span>
+		<span class="text-12 text-neutral-10">{{ licenseService.licensedOrgLabel }}</span>
 	</div>
 </form>
 

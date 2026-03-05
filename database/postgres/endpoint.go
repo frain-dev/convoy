@@ -89,6 +89,8 @@ const (
 
 	fetchEndpointsByOwnerId = baseEndpointFetch + ` AND e.project_id = $2 AND e.owner_id = $3 GROUP BY e.id ORDER BY e.id;`
 
+	fetchEndpointIDsByOwnerId = `SELECT e.id FROM convoy.endpoints e WHERE e.deleted_at IS NULL AND e.project_id = $1 AND e.owner_id = $2 ORDER BY e.id;`
+
 	fetchEndpointByTargetURL = `
     SELECT e.id, e.name, e.status, e.owner_id, e.url,
     e.description, e.http_timeout, e.rate_limit, e.rate_limit_duration,
@@ -490,6 +492,29 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID, ow
 	}
 
 	return e.scanEndpoints(rows)
+}
+
+func (e *endpointRepo) FetchEndpointIDsByOwnerID(ctx context.Context, projectID, ownerID string) ([]string, error) {
+	rows, err := e.db.GetReadDB().QueryContext(ctx, fetchEndpointIDsByOwnerId, projectID, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
 }
 
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {

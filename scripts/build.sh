@@ -22,6 +22,8 @@ buildConvoy() {
 	# Install dependencies
 	npm i
 
+	rm -rf .angular/cache dist
+
 	# Run production build
 	npm run build
 

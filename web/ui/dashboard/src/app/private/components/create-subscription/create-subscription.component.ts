@@ -385,7 +385,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	toggleFormsLoaders(loaderState: boolean) {
 		this.isCreatingSubscription = loaderState;
-		if (this.createEndpointForm) this.createEndpointForm.savingEndpoint = loaderState;
 		if (this.createSourceForm) this.createSourceForm.isloading = loaderState;
 	}
 
@@ -412,22 +411,13 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async saveSubscription(setup?: boolean) {
-		// create the endpoint and source first
 		this.toggleFormsLoaders(true);
 		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
 		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
 
-		// Validate form before submitting
-		if (this.subscriptionForm.invalid) {
-			console.error('Form is invalid:', this.subscriptionForm.errors);
-			return;
-		}
+		if (this.subscriptionForm.invalid) return;
 
-		// Check if event types are required and set
-		if (this.projectType === 'outgoing' && this.showConfig('events') && Object.keys(this.eventTypesFormGroup.controls).length === 0) {
-			console.error('Event types are required for outgoing projects');
-			return;
-		}
+		if (this.projectType === 'outgoing' && this.showConfig('events') && Object.keys(this.eventTypesFormGroup.controls).length === 0) return;
 
 		this.toggleFormsLoaders(true);
 

@@ -453,10 +453,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser)).Post("/google/setup", handler.GoogleOAuthSetup)
 		})
 
-		uiRouter.Route("/sso", func(ssoUiRouter chi.Router) {
-			ssoUiRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-			ssoUiRouter.Get("/callback", handler.RedeemSSOCallback)
-			ssoUiRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
+		uiRouter.Route("/saml", func(samlRouter chi.Router) {
+			samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+			samlRouter.Get("/login", handler.RedeemSSOCallback)
+			samlRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
 		})
 
 		uiRouter.Route("/users", func(userRouter chi.Router) {
@@ -658,15 +658,14 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			configRouter.Get("/auth", handler.GetAuthConfiguration)
 		})
 
-		// Billing routes - only registered when billing is enabled
-		if a.cfg.Billing.Enabled {
-			billingHandler := &handlers.BillingHandler{
-				Handler:       handler,
-				BillingClient: a.A.BillingClient,
-			}
+		billingHandler := &handlers.BillingHandler{
+			Handler:       handler,
+			BillingClient: a.A.BillingClient,
+		}
+		uiRouter.Route("/billing", func(billingRouter chi.Router) {
+			billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
 
-			uiRouter.Route("/billing", func(billingRouter chi.Router) {
-				billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
+			if a.cfg.Billing.Enabled {
 				billingRouter.Get("/config", billingHandler.GetBillingConfig)
 				billingRouter.Get("/plans", billingHandler.GetPlans)
 				billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
@@ -706,8 +705,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
 					billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
 				})
-			})
-		}
+			}
+		})
 	})
 
 	// Portal Link API.
@@ -1048,7 +1047,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 
 var guestRoutes = []string{
 	"/auth/sso",
-	"/sso/callback",
+	"/saml/login",
 	"/auth/login",
 	"/auth/register",
 	"/auth/token/refresh",
