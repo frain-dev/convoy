@@ -6,6 +6,8 @@ import {HTTP_RESPONSE} from 'src/app/models/global.model';
 	providedIn: 'root'
 })
 export class LicensesService {
+	readonly licensedOrgLabel = 'Pro';
+
 	constructor(private http: HttpService) {}
 
 	getLicenses(orgId?: string, instanceLevelOnly = false): Promise<HTTP_RESPONSE> {

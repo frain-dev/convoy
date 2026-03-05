@@ -34,7 +34,7 @@ const routes: Routes = [
 				loadComponent: () => import('./verify-email/verify-email.component').then(mod => mod.VerifyEmailComponent)
 			},
 			{
-				path: 'sso/callback',
+				path: 'saml',
 				loadComponent: () => import('./saml/saml.component').then(mod => mod.SamlComponent)
 			},
 

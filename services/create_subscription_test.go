@@ -321,6 +321,30 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 			},
 		},
 		{
+			name: "should error when source_id is blank for incoming project",
+			args: args{
+				ctx: ctx,
+				newSubscription: &models.CreateSubscription{
+					Name:       "sub 1",
+					SourceID:   "",
+					EndpointID: "endpoint-id-1",
+				},
+				project: &datastore.Project{UID: "12345", Type: datastore.IncomingProject},
+			},
+			dbFn: func(ss *CreateSubscriptionService) {
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
+					Times(1).Return(
+					&datastore.Endpoint{
+						ProjectID: "12345",
+					},
+					nil,
+				)
+			},
+			wantErr:    true,
+			wantErrMsg: "source_id is required for incoming projects",
+		},
+		{
 			name: "should fail to find source",
 			args: args{
 				ctx: ctx,
