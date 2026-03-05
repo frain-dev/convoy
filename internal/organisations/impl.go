@@ -311,10 +311,11 @@ func (s *Service) CountOrganisations(ctx context.Context) (int64, error) {
 	return count.Int64, nil
 }
 
-// CalculateUsage calculates usage metrics for an organisation
+// CalculateUsage calculates usage metrics for an organisation using a single combined query
 func (s *Service) CalculateUsage(ctx context.Context, orgID string, startTime, endTime time.Time) (*datastore.OrganisationUsage, error) {
 	usage := &datastore.OrganisationUsage{
 		OrganisationID: orgID,
+		Period:         startTime.Format("2006-01"),
 		CreatedAt:      time.Now(),
 	}
 
@@ -325,10 +326,10 @@ func (s *Service) CalculateUsage(ctx context.Context, orgID string, startTime, e
 		EndTime:        pgtype.Timestamptz{Time: endTime, Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to calculate ingress bytes")
-		return nil, util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to calculate ingress bytes: %w", err))
+		s.logger.WithError(err).Error("failed to calculate usage")
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
-	usage.Received.Bytes = ingressRow.RawBytes.Int64 + ingressRow.DataBytes.Int64
+	usage.Received.Bytes = ingressRow.RawBytes + ingressRow.DataBytes
 
 	// Calculate egress bytes
 	egressBytes, err := s.repo.CalculateEgressBytes(ctx, repo.CalculateEgressBytesParams{

@@ -117,6 +117,7 @@ const (
 
 	TokenCacheKey   CacheKey = "tokens"
 	ProjectCacheKey CacheKey = "projects"
+	UsageCacheKey   CacheKey = "usage"
 )
 
 // queues
