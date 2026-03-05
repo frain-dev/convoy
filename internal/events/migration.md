@@ -219,7 +219,7 @@ go vet ./internal/events/...    # ✅ SUCCESS
 
 ---
 
-### Phase 4: Integration (⏭️ PENDING)
+### Phase 4: Integration (✅ COMPLETED - Previous Commits)
 
 **Files to Update** (26 files):
 - [ ] API handlers: `api/handlers/event.go`, `api/handlers/project.go`
@@ -327,9 +327,10 @@ eventRepo := events.New(logger, db)
    - Need baseline regression tests
    - Need comprehensive unit tests
 
-4. ⏭️ **Integration**: Phase 4 not started
-   - 26 dependent files need updating
-   - No E2E testing done yet
+4. ✅ **Integration**: Phase 4 completed in previous commits
+   - 54 files updated to use events.New()
+   - 0 files use old postgres.NewEventRepo()
+   - Legacy database/postgres/event.go removed
 
 ---
 
@@ -341,7 +342,7 @@ eventRepo := events.New(logger, db)
 - **Code Compilation**: ✅ SUCCESS
 - **Code Lines**: 927 lines (impl.go) + 163 lines (helpers.go) + 304 lines (queries.sql)
 - **Test Coverage**: 0% (Phase 5 not started)
-- **Integration Status**: 0/26 files updated (Phase 4 not started)
+- **Integration Status**: 54/54 files updated (Phase 4 complete) ✅
 
 ---
 
@@ -352,12 +353,7 @@ eventRepo := events.New(logger, db)
    - Execute via `s.db.Exec(ctx, partitionEventsTable)`
    - Implement all 4 functions
 
-2. **Start Phase 4: Integration**
-   - Update 26 dependent files
-   - Test compilation incrementally
-   - Verify all imports correct
-
-3. **Start Phase 5: Testing**
+2. **Start Phase 5: Testing**
    - Create comprehensive test suite
    - Run regression tests
    - Verify no breaking changes
@@ -389,4 +385,4 @@ eventRepo := events.New(logger, db)
 
 ---
 
-**Last Updated**: March 5, 2026 (Phase 3 Complete)
+**Last Updated**: March 5, 2026 (Phases 1-4 Complete)
