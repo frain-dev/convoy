@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -25,7 +26,7 @@ const (
 type Service struct {
 	logger log.StdLogger
 	repo   repo.Querier
-	db     database.Database
+	db     *pgxpool.Pool
 }
 
 // Ensure Service implements datastore.EventRepository at compile time
@@ -36,7 +37,7 @@ func New(logger log.StdLogger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
-		db:     db,
+		db:     db.GetConn(),
 	}
 }
 
@@ -52,7 +53,7 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 	}
 
 	// Start transaction
-	tx, err := s.db.GetConn().Begin(ctx)
+	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -172,7 +173,7 @@ func (s *Service) FindFirstEventWithIdempotencyKey(ctx context.Context, projectI
 // UpdateEventEndpoints updates event endpoints with batch processing
 func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Event, endpoints []string) error {
 	// Start transaction
-	tx, err := s.db.GetConn().Begin(ctx)
+	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -495,7 +496,7 @@ func (s *Service) DeleteProjectTokenizedEvents(ctx context.Context, projectID st
 // CopyRows copies rows from events to events_search
 func (s *Service) CopyRows(ctx context.Context, projectID string, interval int) error {
 	// Start transaction
-	tx, err := s.db.GetConn().Begin(ctx)
+	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
