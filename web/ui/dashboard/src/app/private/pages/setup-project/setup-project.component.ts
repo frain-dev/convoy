@@ -95,7 +95,7 @@ export class SetupProjectComponent implements OnInit {
 		if (!this.createEndpointForm?.addNewEndpointForm?.valid) return false;
 		// Incoming: require source form valid (we create the source on Save and Proceed; no id until then)
 		if (this.projectType === 'incoming' && this.createSourceForm && !this.createSourceForm.sourceForm?.valid) return false;
-		if (this.projectType === 'outgoing' && this.connectPubSub && this.createSourceForm && !this.createSourceForm.sourceCreated) return false;
+		if (this.projectType === 'outgoing' && this.connectPubSub && this.createSourceForm && !this.createSourceForm.sourceForm?.valid) return false;
 		if (!this.automaticSubscription && !this.createSubscriptionForm?.subscriptionForm?.valid) return false;
 		return true;
 	}
