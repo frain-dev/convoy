@@ -90,6 +90,7 @@ export class BillingPageComponent implements OnInit {
   billingOverview: BillingOverview | null = null;
   usageRows: UsageRow[] = [];
   isLoadingBillingData = true;
+  isLoadingUsage = false;
 
   constructor(
     private fb: FormBuilder,
@@ -147,26 +148,24 @@ export class BillingPageComponent implements OnInit {
 
   private async loadBillingData() {
     this.isLoadingBillingData = true;
+    this.isLoadingUsage = true;
     try {
       const orgId = this.getOrganisationId();
-      const [usageResponse, paymentResponse] = await Promise.all([
-        this.httpService.request({
-          url: `/billing/organisations/${orgId}/usage`,
-          method: 'get',
-          hideNotification: true
-        }).catch(() => ({ data: null })),
-        this.httpService.request({
+      const paymentResponse = await this.httpService
+        .request({
           url: `/billing/organisations/${orgId}/payment_methods`,
           method: 'get',
           hideNotification: true
-        }).catch(() => ({ data: null }))
-      ]);
+        })
+        .catch(() => ({ data: null }));
 
-      const subscriptionResponse = await this.httpService.request({
-        url: `/billing/organisations/${orgId}/subscription`,
-        method: 'get',
-        hideNotification: true
-      }).catch(() => ({ data: null }));
+      const subscriptionResponse = await this.httpService
+        .request({
+          url: `/billing/organisations/${orgId}/subscription`,
+          method: 'get',
+          hideNotification: true
+        })
+        .catch(() => ({ data: null }));
 
       const hadSubscription = this.hasActiveSubscription(this.currentSubscription);
       const hasSubscription = this.hasActiveSubscription(subscriptionResponse.data);
@@ -176,7 +175,7 @@ export class BillingPageComponent implements OnInit {
 
       const overviewData = {
         subscription: subscriptionResponse.data,
-        usage: usageResponse.data,
+        usage: null as any,
         payment: paymentResponse.data
       };
 
@@ -184,12 +183,7 @@ export class BillingPageComponent implements OnInit {
 
       if (overviewData) {
         this.billingOverview = this.overviewService.formatOverviewData(overviewData);
-
-        if (overviewData.usage) {
-          this.usageRows = this.usageService.formatUsageData(overviewData.usage);
-        } else {
-          this.usageRows = [];
-        }
+        this.usageRows = [];
 
         if (overviewData.payment && Array.isArray(overviewData.payment)) {
           this.paymentMethods = overviewData.payment.sort((a: PaymentMethod, b: PaymentMethod) => a.id.localeCompare(b.id));
@@ -213,11 +207,37 @@ export class BillingPageComponent implements OnInit {
       }
 
       this.isLoadingBillingData = false;
+      this.loadUsageSeparately();
       await this.loadOrganisationData();
     } catch (error) {
       console.error('Failed to load billing data:', error);
       this.isLoadingBillingData = false;
+      this.isLoadingUsage = false;
     }
+  }
+
+  private loadUsageSeparately() {
+    const orgId = this.getOrganisationId();
+    this.httpService
+      .request({
+        url: `/billing/organisations/${orgId}/usage`,
+        method: 'get',
+        hideNotification: true
+      })
+      .then(res => {
+        if (res?.data) {
+          this.usageRows = this.usageService.formatUsageData(res.data);
+        } else {
+          this.usageRows = [];
+        }
+      })
+      .catch(() => {
+        this.usageRows = [];
+      })
+      .finally(() => {
+        this.isLoadingUsage = false;
+        this.cdr.detectChanges();
+      });
   }
 
   private async loadOrganisationData() {
