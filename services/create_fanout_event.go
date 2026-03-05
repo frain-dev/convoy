@@ -75,17 +75,17 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 	}
 
 	startDb := time.Now()
-	endpoints, err := e.EndpointRepo.FindEndpointsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
+	endpointIDs, err := e.EndpointRepo.FetchEndpointIDsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoints by owner id")
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 	log.FromContext(ctx).WithFields(log.Fields{
 		"duration":  time.Since(startDb),
-		"endpoints": len(endpoints),
+		"endpoints": len(endpointIDs),
 	}).Debug("endpoint lookup completed")
 
-	if len(endpoints) == 0 {
+	if len(endpointIDs) == 0 {
 		startPortal := time.Now()
 		_, err = e.PortalLinkRepo.GetPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 		if err != nil {
@@ -111,7 +111,7 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 		AcknowledgedAt: time.Now(),
 	}
 
-	event, err = createEvent(ctx, endpoints, ev, e.Project, e.Queue)
+	event, err = createEvent(ctx, endpointIDs, ev, e.Project, e.Queue)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create fanout event")
 		return nil, err
@@ -120,13 +120,7 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 	return event, nil
 }
 
-func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *newEvent, project *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
-	endpointIDs := make([]string, 0, len(endpoints))
-
-	for _, endpoint := range endpoints {
-		endpointIDs = append(endpointIDs, endpoint.UID)
-	}
-
+func createEvent(ctx context.Context, endpointIDs []string, newMessage *newEvent, project *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
 	jobId := queue.JobId{ProjectID: project.UID, ResourceID: newMessage.UID}.FanOutJobId()
 	event := &datastore.Event{
 		UID:              newMessage.UID,
