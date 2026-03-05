@@ -131,6 +131,9 @@ export class SetupProjectComponent implements OnInit {
 		const needSaveEndpoint = endpointForm && !endpointForm.endpointCreated;
 		if (needSaveEndpoint) await this.createEndpointForm.saveEndpoint();
 		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
+		if (this.createSourceForm?.sourceCreated && this.createSourceForm?.sourceData?.uid) {
+			this.createSubscriptionForm.subscriptionForm.patchValue({ source_id: this.createSourceForm.sourceData.uid });
+		}
 
 		// Incoming requires a source; block if we still don't have one after saveSource
 		if (this.projectType === 'incoming' && this.createSourceForm && !this.createSourceForm.sourceCreated) {
