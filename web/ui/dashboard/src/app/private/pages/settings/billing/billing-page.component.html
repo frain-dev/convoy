@@ -7,7 +7,7 @@
 </app-billing-overview>
 <app-billing-usage 
   [usageRows]="usageRows"
-  [isFetchingUsage]="isLoadingBillingData">
+  [isFetchingUsage]="isLoadingUsage">
 </app-billing-usage>
 <app-billing-invoices></app-billing-invoices>
 
@@ -339,11 +339,12 @@
 
   <div class="manage-plan-content">
     <h3 class="text-20 font-medium mb-24px">Manage your plan</h3>
+    <p class="text-14 text-neutral-11 mb-16px">Click a plan card or the Select button to choose a plan, then click Upgrade to continue.</p>
     
     <!-- Plan Cards -->
     <div class="flex gap-16px mb-40px" *ngIf="!isLoadingPlans">
       <div 
-        class="plan-card flex-1" 
+        class="plan-card flex-1 cursor-pointer" 
         [class.plan-card-selected]="selectedPlan === plan.id" 
         (click)="selectPlan(plan.id)"
         *ngFor="let plan of plans">
@@ -367,9 +368,9 @@
           convoy-button 
           [fill]="selectedPlan === plan.id ? 'solid' : 'outline'" 
           [color]="selectedPlan === plan.id ? 'primary' : 'neutral'" 
-          [disabled]="selectedPlan !== plan.id || isCurrentPlan(plan.id) || isLoadingCheckout"
+          [disabled]="isCurrentPlan(plan.id) || (selectedPlan === plan.id && isLoadingCheckout)"
           class="plan-card-button" 
-          (click)="selectedPlan === plan.id && !isCurrentPlan(plan.id) ? onUpgradePlan() : selectPlan(plan.id); $event.stopPropagation()">
+          (click)="onPlanCardButtonClick(plan.id); $event.stopPropagation()">
           {{ getButtonText(plan.id) }}
         </button>
       </div>
