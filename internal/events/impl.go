@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/frain-dev/convoy/config"
@@ -59,24 +60,24 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 	}
 	defer tx.Rollback(ctx)
 
-	qtx := s.repo.WithTx(tx)
+	qtx := repo.New(tx)
 
 	// Create event params
 	params := repo.CreateEventParams{
-		ID:               event.UID,
-		EventType:        string(event.EventType),
-		Endpoints:        endpointsToString(event.Endpoints),
-		ProjectID:        event.ProjectID,
+		ID:               common.StringToPgText(event.UID),
+		EventType:        common.StringToPgText(string(event.EventType)),
+		Endpoints:        common.StringToPgText(endpointsToString(event.Endpoints)),
+		ProjectID:        common.StringToPgText(event.ProjectID),
 		SourceID:         common.StringPtrToPgText(sourceID),
 		Headers:          headersToJSONB(event.Headers),
-		Raw:              event.Raw,
+		Raw:              common.StringToPgText(event.Raw),
 		Data:             event.Data,
-		URLQueryParams:   event.URLQueryParams,
-		IdempotencyKey:   event.IdempotencyKey,
-		IsDuplicateEvent: event.IsDuplicateEvent,
+		UrlQueryParams:   common.StringToPgText(event.URLQueryParams),
+		IdempotencyKey:   common.StringToPgText(event.IdempotencyKey),
+		IsDuplicateEvent: common.BoolToPgBool(event.IsDuplicateEvent),
 		AcknowledgedAt:   common.NullTimeToPgTimestamptz(event.AcknowledgedAt),
 		Metadata:         common.StringToPgText(event.Metadata),
-		Status:           string(event.Status),
+		Status:           common.StringToPgText(string(event.Status)),
 	}
 
 	// Insert event
@@ -94,7 +95,11 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 		}
 
 		for _, endpointID := range endpoints[i:end] {
-			err = qtx.CreateEventEndpoints(ctx, event.UID, endpointID)
+			endpointParams := repo.CreateEventEndpointsParams{
+				EventID:    common.StringToPgText(event.UID),
+				EndpointID: common.StringToPgText(endpointID),
+			}
+			err = qtx.CreateEventEndpoints(ctx, endpointParams)
 			if err != nil {
 				return err
 			}
@@ -106,7 +111,11 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 
 // FindEventByID finds an event by ID
 func (s *Service) FindEventByID(ctx context.Context, projectID, id string) (*datastore.Event, error) {
-	row, err := s.repo.FindEventByID(ctx, id, projectID)
+	params := repo.FindEventByIDParams{
+		ID:        common.StringToPgText(id),
+		ProjectID: common.StringToPgText(projectID),
+	}
+	row, err := s.repo.FindEventByID(ctx, params)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrEventNotFound
@@ -119,7 +128,11 @@ func (s *Service) FindEventByID(ctx context.Context, projectID, id string) (*dat
 
 // FindEventsByIDs finds multiple events by IDs
 func (s *Service) FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]datastore.Event, error) {
-	rows, err := s.repo.FindEventsByIDs(ctx, ids, projectID)
+	params := repo.FindEventsByIDsParams{
+		EventIds:  ids,
+		ProjectID: common.StringToPgText(projectID),
+	}
+	rows, err := s.repo.FindEventsByIDs(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -138,15 +151,19 @@ func (s *Service) FindEventsByIDs(ctx context.Context, projectID string, ids []s
 
 // FindEventsByIdempotencyKey finds events with a specific idempotency key
 func (s *Service) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) ([]datastore.Event, error) {
-	rows, err := s.repo.FindEventsByIdempotencyKey(ctx, idempotencyKey, projectID)
+	params := repo.FindEventsByIdempotencyKeyParams{
+		IdempotencyKey: common.StringToPgText(idempotencyKey),
+		ProjectID:      common.StringToPgText(projectID),
+	}
+	ids, err := s.repo.FindEventsByIdempotencyKey(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
-	events := make([]datastore.Event, 0, len(rows))
-	for _, row := range rows {
+	events := make([]datastore.Event, 0, len(ids))
+	for _, id := range ids {
 		// These rows only have ID, need to fetch full event
-		event, err := s.FindEventByID(ctx, projectID, row.ID)
+		event, err := s.FindEventByID(ctx, projectID, id)
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +175,11 @@ func (s *Service) FindEventsByIdempotencyKey(ctx context.Context, projectID, ide
 
 // FindFirstEventWithIdempotencyKey finds the first non-duplicate event
 func (s *Service) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) (*datastore.Event, error) {
-	row, err := s.repo.FindFirstEventWithIdempotencyKey(ctx, idempotencyKey, projectID)
+	params := repo.FindFirstEventWithIdempotencyKeyParams{
+		IdempotencyKey: common.StringToPgText(idempotencyKey),
+		ProjectID:      common.StringToPgText(projectID),
+	}
+	id, err := s.repo.FindFirstEventWithIdempotencyKey(ctx, params)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrEventNotFound
@@ -167,7 +188,7 @@ func (s *Service) FindFirstEventWithIdempotencyKey(ctx context.Context, projectI
 	}
 
 	// Fetch full event details
-	return s.FindEventByID(ctx, projectID, row.ID)
+	return s.FindEventByID(ctx, projectID, id)
 }
 
 // UpdateEventEndpoints updates event endpoints with batch processing
@@ -179,10 +200,15 @@ func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Eve
 	}
 	defer tx.Rollback(ctx)
 
-	qtx := s.repo.WithTx(tx)
+	qtx := repo.New(tx)
 
 	// Update endpoints array
-	err = qtx.UpdateEventEndpoints(ctx, endpointsToString(event.Endpoints), event.ProjectID, event.UID)
+	updateParams := repo.UpdateEventEndpointsParams{
+		Endpoints: common.StringToPgText(endpointsToString(event.Endpoints)),
+		ProjectID: common.StringToPgText(event.ProjectID),
+		ID:        common.StringToPgText(event.UID),
+	}
+	err = qtx.UpdateEventEndpoints(ctx, updateParams)
 	if err != nil {
 		return err
 	}
@@ -195,7 +221,11 @@ func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Eve
 		}
 
 		for _, endpointID := range endpoints[i:end] {
-			err = qtx.CreateEventEndpoints(ctx, event.UID, endpointID)
+			createParams := repo.CreateEventEndpointsParams{
+				EventID:    common.StringToPgText(event.UID),
+				EndpointID: common.StringToPgText(endpointID),
+			}
+			err = qtx.CreateEventEndpoints(ctx, createParams)
 			if err != nil {
 				return err
 			}
@@ -207,12 +237,21 @@ func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Eve
 
 // UpdateEventStatus updates event status
 func (s *Service) UpdateEventStatus(ctx context.Context, event *datastore.Event, status datastore.EventStatus) error {
-	return s.repo.UpdateEventStatus(ctx, string(status), event.ProjectID, event.UID)
+	params := repo.UpdateEventStatusParams{
+		Status:    common.StringToPgText(string(status)),
+		ProjectID: common.StringToPgText(event.ProjectID),
+		ID:        common.StringToPgText(event.UID),
+	}
+	return s.repo.UpdateEventStatus(ctx, params)
 }
 
 // CountProjectMessages counts total events in a project
 func (s *Service) CountProjectMessages(ctx context.Context, projectID string) (int64, error) {
-	return s.repo.CountProjectMessages(ctx, projectID)
+	count, err := s.repo.CountProjectMessages(ctx, common.StringToPgText(projectID))
+	if err != nil {
+		return 0, err
+	}
+	return count.Int64, nil
 }
 
 // CountEvents counts events with filters
@@ -220,16 +259,20 @@ func (s *Service) CountEvents(ctx context.Context, projectID string, filter *dat
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
 	params := repo.CountEventsParams{
-		ProjectID:      projectID,
-		StartDate:      startDate,
-		EndDate:        endDate,
-		HasEndpointIds: len(filter.EndpointIDs) > 0,
+		ProjectID:      common.StringToPgText(projectID),
+		StartDate:      common.TimeToPgTimestamptz(startDate),
+		EndDate:        common.TimeToPgTimestamptz(endDate),
+		HasEndpointIds: common.BoolToPgBool(len(filter.EndpointIDs) > 0),
 		EndpointIds:    filter.EndpointIDs,
-		HasSourceID:    !util.IsStringEmpty(filter.SourceID),
-		SourceID:       filter.SourceID,
+		HasSourceID:    common.BoolToPgBool(!util.IsStringEmpty(filter.SourceID)),
+		SourceID:       common.StringToPgText(filter.SourceID),
 	}
 
-	return s.repo.CountEvents(ctx, params)
+	count, err := s.repo.CountEvents(ctx, params)
+	if err != nil {
+		return 0, err
+	}
+	return count.Int64, nil
 }
 
 // LoadEventsPaged is the most complex method - handles bidirectional pagination with dual query paths
@@ -317,25 +360,25 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 	}
 
 	params := repo.LoadEventsPagedExistsParams{
-		HasEndpointOrOwnerFilter: !util.IsStringEmpty(filter.OwnerID) || len(filter.EndpointIDs) > 0,
-		HasOwnerID:               !util.IsStringEmpty(filter.OwnerID),
-		OwnerID:                  filter.OwnerID,
-		HasEndpointIds:           len(filter.EndpointIDs) > 0,
+		HasEndpointOrOwnerFilter: common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID) || len(filter.EndpointIDs) > 0),
+		HasOwnerID:               common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID)),
+		OwnerID:                  common.StringToPgText(filter.OwnerID),
+		HasEndpointIds:           common.BoolToPgBool(len(filter.EndpointIDs) > 0),
 		EndpointIds:              filter.EndpointIDs,
-		ProjectID:                projectID,
-		HasIdempotencyKey:        !util.IsStringEmpty(filter.IdempotencyKey),
-		IdempotencyKey:           filter.IdempotencyKey,
-		StartDate:                startDate,
-		EndDate:                  endDate,
-		HasSourceIds:             len(filter.SourceIDs) > 0,
+		ProjectID:                common.StringToPgText(projectID),
+		HasIdempotencyKey:        common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
+		IdempotencyKey:           common.StringToPgText(filter.IdempotencyKey),
+		StartDate:                common.TimeToPgTimestamptz(startDate),
+		EndDate:                  common.TimeToPgTimestamptz(endDate),
+		HasSourceIds:             common.BoolToPgBool(len(filter.SourceIDs) > 0),
 		SourceIds:                filter.SourceIDs,
-		HasBrokerMessageID:       !util.IsStringEmpty(filter.BrokerMessageId),
-		BrokerMessageID:          filter.BrokerMessageId,
-		HasCursor:                hasCursor && cursorLte,
-		Cursor:                   cursor,
-		CursorGte:                hasCursor && cursorGte,
-		SortAsc:                  sortAsc,
-		Limit:                    int32(filter.Pageable.Limit()),
+		HasBrokerMessageID:       common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
+		BrokerMessageID:          common.StringToPgText(filter.BrokerMessageId),
+		HasCursor:                common.BoolToPgBool(hasCursor && cursorLte),
+		Cursor:                   common.StringToPgText(cursor),
+		CursorGte:                common.BoolToPgBool(hasCursor && cursorGte),
+		SortAsc:                  common.BoolToPgBool(sortAsc),
+		PageLimit:                pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
 	}
 
 	rows, err := s.repo.LoadEventsPagedExists(ctx, params)
@@ -378,24 +421,24 @@ func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, f
 	}
 
 	params := repo.LoadEventsPagedSearchParams{
-		ProjectID:          projectID,
-		HasIdempotencyKey:  !util.IsStringEmpty(filter.IdempotencyKey),
-		IdempotencyKey:     filter.IdempotencyKey,
-		StartDate:          startDate,
-		EndDate:            endDate,
-		HasSourceIds:       len(filter.SourceIDs) > 0,
+		SortAsc:            common.BoolToPgBool(sortAsc),
+		ProjectID:          common.StringToPgText(projectID),
+		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
+		IdempotencyKey:     common.StringToPgText(filter.IdempotencyKey),
+		StartDate:          common.TimeToPgTimestamptz(startDate),
+		EndDate:            common.TimeToPgTimestamptz(endDate),
+		HasSourceIds:       common.BoolToPgBool(len(filter.SourceIDs) > 0),
 		SourceIds:          filter.SourceIDs,
-		HasEndpointIds:     len(filter.EndpointIDs) > 0,
+		HasEndpointIds:     common.BoolToPgBool(len(filter.EndpointIDs) > 0),
 		EndpointIds:        filter.EndpointIDs,
-		HasBrokerMessageID: !util.IsStringEmpty(filter.BrokerMessageId),
-		BrokerMessageID:    filter.BrokerMessageId,
-		HasQuery:           !util.IsStringEmpty(filter.Query),
-		Query:              filter.Query,
-		HasCursor:          hasCursor && cursorLte,
-		Cursor:             cursor,
-		CursorGte:          hasCursor && cursorGte,
-		SortAsc:            sortAsc,
-		Limit:              int32(filter.Pageable.Limit()),
+		HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
+		BrokerMessageID:    common.StringToPgText(filter.BrokerMessageId),
+		HasQuery:           common.BoolToPgBool(!util.IsStringEmpty(filter.Query)),
+		Query:              common.StringToPgText(filter.Query),
+		HasCursor:          common.BoolToPgBool(hasCursor && cursorLte),
+		Cursor:             common.StringToPgText(cursor),
+		CursorGte:          common.BoolToPgBool(hasCursor && cursorGte),
+		PageLimit:          pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
 	}
 
 	rows, err := s.repo.LoadEventsPagedSearch(ctx, params)
@@ -421,19 +464,19 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 
 	if useExistsPath {
 		params := repo.CountPrevEventsExistsParams{
-			ProjectID:          projectID,
-			HasIdempotencyKey:  !util.IsStringEmpty(filter.IdempotencyKey),
-			IdempotencyKey:     filter.IdempotencyKey,
-			StartDate:          startDate,
-			EndDate:            endDate,
-			HasSourceIds:       len(filter.SourceIDs) > 0,
+			ProjectID:          common.StringToPgText(projectID),
+			HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
+			IdempotencyKey:     common.StringToPgText(filter.IdempotencyKey),
+			StartDate:          common.TimeToPgTimestamptz(startDate),
+			EndDate:            common.TimeToPgTimestamptz(endDate),
+			HasSourceIds:       common.BoolToPgBool(len(filter.SourceIDs) > 0),
 			SourceIds:          filter.SourceIDs,
-			HasEndpointIds:     len(filter.EndpointIDs) > 0,
+			HasEndpointIds:     common.BoolToPgBool(len(filter.EndpointIDs) > 0),
 			EndpointIds:        filter.EndpointIDs,
-			HasBrokerMessageID: !util.IsStringEmpty(filter.BrokerMessageId),
-			BrokerMessageID:    filter.BrokerMessageId,
-			SortAsc:            sortAsc,
-			Cursor:             cursor,
+			HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
+			BrokerMessageID:    common.StringToPgText(filter.BrokerMessageId),
+			SortAsc:            common.BoolToPgBool(sortAsc),
+			Cursor:             common.StringToPgText(cursor),
 		}
 
 		exists, err := s.repo.CountPrevEventsExists(ctx, params)
@@ -449,21 +492,21 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 
 	// Search path
 	params := repo.CountPrevEventsSearchParams{
-		ProjectID:          projectID,
-		HasIdempotencyKey:  !util.IsStringEmpty(filter.IdempotencyKey),
-		IdempotencyKey:     filter.IdempotencyKey,
-		StartDate:          startDate,
-		EndDate:            endDate,
-		HasSourceIds:       len(filter.SourceIDs) > 0,
+		ProjectID:          common.StringToPgText(projectID),
+		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
+		IdempotencyKey:     common.StringToPgText(filter.IdempotencyKey),
+		StartDate:          common.TimeToPgTimestamptz(startDate),
+		EndDate:            common.TimeToPgTimestamptz(endDate),
+		HasSourceIds:       common.BoolToPgBool(len(filter.SourceIDs) > 0),
 		SourceIds:          filter.SourceIDs,
-		HasEndpointIds:     len(filter.EndpointIDs) > 0,
+		HasEndpointIds:     common.BoolToPgBool(len(filter.EndpointIDs) > 0),
 		EndpointIds:        filter.EndpointIDs,
-		HasBrokerMessageID: !util.IsStringEmpty(filter.BrokerMessageId),
-		BrokerMessageID:    filter.BrokerMessageId,
-		HasQuery:           !util.IsStringEmpty(filter.Query),
-		Query:              filter.Query,
-		SortAsc:            sortAsc,
-		Cursor:             cursor,
+		HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
+		BrokerMessageID:    common.StringToPgText(filter.BrokerMessageId),
+		HasQuery:           common.BoolToPgBool(!util.IsStringEmpty(filter.Query)),
+		Query:              common.StringToPgText(filter.Query),
+		SortAsc:            common.BoolToPgBool(sortAsc),
+		Cursor:             common.StringToPgText(cursor),
 	}
 
 	exists, err := s.repo.CountPrevEventsSearch(ctx, params)
@@ -482,15 +525,25 @@ func (s *Service) DeleteProjectEvents(ctx context.Context, projectID string, fil
 	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
 
 	if hardDelete {
-		return s.repo.HardDeleteProjectEvents(ctx, projectID, startDate, endDate)
+		params := repo.HardDeleteProjectEventsParams{
+			ProjectID: common.StringToPgText(projectID),
+			StartDate: common.TimeToPgTimestamptz(startDate),
+			EndDate:   common.TimeToPgTimestamptz(endDate),
+		}
+		return s.repo.HardDeleteProjectEvents(ctx, params)
 	}
 
-	return s.repo.SoftDeleteProjectEvents(ctx, projectID, startDate, endDate)
+	params := repo.SoftDeleteProjectEventsParams{
+		ProjectID: common.StringToPgText(projectID),
+		StartDate: common.TimeToPgTimestamptz(startDate),
+		EndDate:   common.TimeToPgTimestamptz(endDate),
+	}
+	return s.repo.SoftDeleteProjectEvents(ctx, params)
 }
 
 // DeleteProjectTokenizedEvents deletes tokenized events
 func (s *Service) DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *datastore.EventFilter) error {
-	return s.repo.HardDeleteTokenizedEvents(ctx, projectID)
+	return s.repo.HardDeleteTokenizedEvents(ctx, common.StringToPgText(projectID))
 }
 
 // CopyRows copies rows from events to events_search
@@ -502,18 +555,22 @@ func (s *Service) CopyRows(ctx context.Context, projectID string, interval int) 
 	}
 	defer tx.Rollback(ctx)
 
-	qtx := s.repo.WithTx(tx)
+	qtx := repo.New(tx)
 
 	// If interval is not default, hard delete tokenized events first
 	if interval != config.DefaultSearchTokenizationInterval {
-		err = qtx.HardDeleteTokenizedEvents(ctx, projectID)
+		err = qtx.HardDeleteTokenizedEvents(ctx, common.StringToPgText(projectID))
 		if err != nil {
 			return err
 		}
 	}
 
 	// Call PL/pgSQL function to copy rows
-	err = qtx.CopyRowsFromEventsToEventsSearch(ctx, projectID, int32(interval))
+	params := repo.CopyRowsFromEventsToEventsSearchParams{
+		ProjectID: projectID,
+		BatchSize: int32(interval),
+	}
+	err = qtx.CopyRowsFromEventsToEventsSearch(ctx, params)
 	if err != nil {
 		return err
 	}
@@ -531,22 +588,26 @@ func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt
 
 // PartitionEventsTable partitions the events table
 func (s *Service) PartitionEventsTable(ctx context.Context) error {
-	return s.repo.PartitionEventsTable(ctx)
+	// Not implemented - partition functions are commented out in queries.sql
+	return errors.New("PartitionEventsTable not implemented - partition functions commented out in queries.sql")
 }
 
 // UnPartitionEventsTable un-partitions the events table
 func (s *Service) UnPartitionEventsTable(ctx context.Context) error {
-	return s.repo.UnPartitionEventsTable(ctx)
+	// Not implemented - partition functions are commented out in queries.sql
+	return errors.New("UnPartitionEventsTable not implemented - partition functions commented out in queries.sql")
 }
 
 // PartitionEventsSearchTable partitions the events_search table
 func (s *Service) PartitionEventsSearchTable(ctx context.Context) error {
-	return s.repo.PartitionEventsSearchTable(ctx)
+	// Not implemented - partition functions are commented out in queries.sql
+	return errors.New("PartitionEventsSearchTable not implemented - partition functions commented out in queries.sql")
 }
 
 // UnPartitionEventsSearchTable un-partitions the events_search table
 func (s *Service) UnPartitionEventsSearchTable(ctx context.Context) error {
-	return s.repo.UnPartitionEventsSearchTable(ctx)
+	// Not implemented - partition functions are commented out in queries.sql
+	return errors.New("UnPartitionEventsSearchTable not implemented - partition functions commented out in queries.sql")
 }
 
 // Helper: getCreatedDateFilter converts Unix timestamps to time.Time
