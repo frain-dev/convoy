@@ -711,6 +711,16 @@ export class BillingPageComponent implements OnInit {
     this.selectedPlan = planId;
   }
 
+  /** Handle plan card button: Select selects the plan; Upgrade/Subscribe triggers checkout. */
+  onPlanCardButtonClick(planId: string): void {
+    if (this.isCurrentPlan(planId)) return;
+    if (this.selectedPlan === planId) {
+      this.onUpgradePlan();
+    } else {
+      this.selectPlan(planId);
+    }
+  }
+
   getFeaturesByCategory(category: 'core' | 'security' | 'support'): any[] {
     if (this.plans.length === 0) return [];
 
