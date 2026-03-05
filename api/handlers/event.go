@@ -134,7 +134,7 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -189,7 +189,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		h.A.Logger.WithError(err).Error("failed to retrieve project for fanout event")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -262,7 +262,7 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -342,7 +342,7 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Router			/v1/projects/{projectID}/events/batchreplay [post]
 func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEvent
-	p, err := h.retrieveProject(r)
+	p, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -424,7 +424,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -475,7 +475,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEvent
-	p, err := h.retrieveProject(r)
+	p, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -520,7 +520,7 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		return &datastore.Event{}, err
 	}

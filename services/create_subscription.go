@@ -42,6 +42,9 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 	}
 
 	if s.Project.Type == datastore.IncomingProject {
+		if util.IsStringEmpty(s.NewSubscription.SourceID) {
+			return nil, &ServiceError{ErrMsg: "source_id is required for incoming projects"}
+		}
 		_, err = s.SourceRepo.FindSourceByID(ctx, s.Project.UID, s.NewSubscription.SourceID)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to find source by id")

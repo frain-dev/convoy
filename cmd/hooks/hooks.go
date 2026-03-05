@@ -202,17 +202,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Rate = rateLimiter
 
-		// Create license service client if custom config provided, otherwise licenser will use defaults
-		var licenseClient *service.Client
-		if cfg.LicenseService.Host != "" || cfg.LicenseService.ValidatePath != "" || cfg.LicenseService.Timeout != 0 || cfg.LicenseService.RetryCount != 0 {
-			licenseClient = service.NewClient(service.Config{
-				Host:         cfg.LicenseService.Host,
-				ValidatePath: cfg.LicenseService.ValidatePath,
-				Timeout:      cfg.LicenseService.Timeout,
-				RetryCount:   cfg.LicenseService.RetryCount,
-				Logger:       lo,
-			})
-		}
+		licenseClient := service.NewClient(service.Config{
+			Host:         cfg.LicenseService.Host,
+			ValidatePath: cfg.LicenseService.ValidatePath,
+			Timeout:      cfg.LicenseService.Timeout,
+			RetryCount:   cfg.LicenseService.RetryCount,
+			Logger:       lo,
+		})
 
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			LicenseService: service.LicenserConfig{

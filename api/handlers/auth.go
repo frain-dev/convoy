@@ -57,6 +57,11 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 		licenseKey = result.LicenseKey
 	}
 
+	// Use request origin (browser/frontend host) for SSO redirect so callback URL matches where the user is visiting.
+	host := util.RequestOrigin(r)
+	if host == "" {
+		host = configuration.Host
+	}
 	lu := services.LoginUserSSOService{
 		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
@@ -64,7 +69,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    h.A.ConfigRepo,
 		LicenseKey:    licenseKey,
-		Host:          configuration.Host,
+		Host:          host,
 		Licenser:      h.A.Licenser,
 	}
 

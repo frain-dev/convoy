@@ -693,6 +693,28 @@ func overrideFields(ov, nv reflect.Value) {
 
 type ConfigFunc func(c *Configuration) error
 
+func applyServiceDefaults(c *Configuration) {
+	def := DefaultConfiguration.SSOService
+	if c.SSOService.Host == "" {
+		c.SSOService.Host = def.Host
+	}
+	if c.SSOService.RedirectPath == "" {
+		c.SSOService.RedirectPath = def.RedirectPath
+	}
+	if c.SSOService.TokenPath == "" {
+		c.SSOService.TokenPath = def.TokenPath
+	}
+	if c.SSOService.AdminPortalPath == "" {
+		c.SSOService.AdminPortalPath = def.AdminPortalPath
+	}
+	if c.SSOService.Timeout == 0 {
+		c.SSOService.Timeout = def.Timeout
+	}
+	if c.SSOService.RetryCount == 0 {
+		c.SSOService.RetryCount = def.RetryCount
+	}
+}
+
 // LoadConfig is used to load the configuration from either the json config file
 // or the environment variables.
 func LoadConfig(p string, opts ...ConfigFunc) error {
@@ -710,6 +732,7 @@ func LoadConfig(p string, opts ...ConfigFunc) error {
 		if err := json.NewDecoder(f).Decode(&c); err != nil {
 			return err
 		}
+		applyServiceDefaults(&c)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		log.WithError(err).Fatal("failed to check if config file exists")
 	}
