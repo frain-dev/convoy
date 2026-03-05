@@ -14,10 +14,10 @@ type Querier interface {
 	// Filters Queries
 	// This file contains SQLc queries for the filters service
 	CreateFilter(ctx context.Context, arg CreateFilterParams) error
-	DeleteFilter(ctx context.Context, dollar_1 pgtype.Text) (int64, error)
-	FindFilterByID(ctx context.Context, dollar_1 pgtype.Text) (FindFilterByIDRow, error)
+	DeleteFilter(ctx context.Context, id pgtype.Text) (int64, error)
+	FindFilterByID(ctx context.Context, id pgtype.Text) (FindFilterByIDRow, error)
 	FindFilterBySubscriptionAndEventType(ctx context.Context, arg FindFilterBySubscriptionAndEventTypeParams) (FindFilterBySubscriptionAndEventTypeRow, error)
-	FindFiltersBySubscriptionID(ctx context.Context, dollar_1 pgtype.Text) ([]FindFiltersBySubscriptionIDRow, error)
+	FindFiltersBySubscriptionID(ctx context.Context, subscriptionID pgtype.Text) ([]FindFiltersBySubscriptionIDRow, error)
 	UpdateFilter(ctx context.Context, arg UpdateFilterParams) (int64, error)
 }
 

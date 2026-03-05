@@ -52,32 +52,32 @@ func (s *Service) rowToAPIKey(row interface{}) datastore.APIKey {
 	switch r := row.(type) {
 	case repo.FindAPIKeyByIDRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FindAPIKeyByMaskIDRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FindAPIKeyByHashRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FindAPIKeyByProjectIDRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FetchAPIKeysPaginatedRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	default:
@@ -121,15 +121,15 @@ func (s *Service) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 
 	// Create API key
 	err := s.repo.CreateAPIKey(ctx, repo.CreateAPIKeyParams{
-		ID:           apiKey.UID,
-		Name:         apiKey.Name,
-		KeyType:      string(apiKey.Type),
-		MaskID:       apiKey.MaskID,
+		ID:           pgtype.Text{String: apiKey.UID, Valid: true},
+		Name:         pgtype.Text{String: apiKey.Name, Valid: true},
+		KeyType:      pgtype.Text{String: string(apiKey.Type), Valid: true},
+		MaskID:       pgtype.Text{String: apiKey.MaskID, Valid: true},
 		RoleType:     roleType,
 		RoleProject:  roleProject,
 		RoleEndpoint: roleEndpoint,
-		Hash:         apiKey.Hash,
-		Salt:         apiKey.Salt,
+		Hash:         pgtype.Text{String: apiKey.Hash, Valid: true},
+		Salt:         pgtype.Text{String: apiKey.Salt, Valid: true},
 		UserID:       userID,
 		ExpiresAt:    common.NullTimeToPgTimestamptz(apiKey.ExpiresAt),
 	})
@@ -153,8 +153,8 @@ func (s *Service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 
 	// Update API key
 	err := s.repo.UpdateAPIKey(ctx, repo.UpdateAPIKeyParams{
-		ID:           apiKey.UID,
-		Name:         apiKey.Name,
+		ID:           pgtype.Text{String: apiKey.UID, Valid: true},
+		Name:         pgtype.Text{String: apiKey.Name, Valid: true},
 		RoleType:     roleType,
 		RoleProject:  roleProject,
 		RoleEndpoint: roleEndpoint,
@@ -170,7 +170,7 @@ func (s *Service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 
 // GetAPIKeyByID retrieves an API key by its ID
 func (s *Service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByID(ctx, id)
+	row, err := s.repo.FindAPIKeyByID(ctx, pgtype.Text{String: id, Valid: true})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -186,7 +186,7 @@ func (s *Service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIK
 // GetAPIKeyByMaskID retrieves an API key by its mask ID
 // CRITICAL: This method is used for API key authentication in NativeRealm
 func (s *Service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByMaskID(ctx, maskID)
+	row, err := s.repo.FindAPIKeyByMaskID(ctx, pgtype.Text{String: maskID, Valid: true})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -201,7 +201,7 @@ func (s *Service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datast
 
 // GetAPIKeyByHash retrieves an API key by its hash
 func (s *Service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByHash(ctx, hash)
+	row, err := s.repo.FindAPIKeyByHash(ctx, pgtype.Text{String: hash, Valid: true})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -303,12 +303,12 @@ func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Filter
 	var prevRowCount datastore.PrevRowCount
 	if len(apiKeys) > 0 {
 		count, err2 := s.repo.CountPrevAPIKeys(ctx, repo.CountPrevAPIKeysParams{
-			Cursor:         first.UID,
+			Cursor:         pgtype.Text{String: first.UID, Valid: true},
 			ProjectID:      projectID,
 			EndpointID:     endpointID,
 			UserID:         userID,
 			KeyType:        keyType,
-			HasEndpointIds: hasEndpointIdsFilter,
+			HasEndpointIds: pgtype.Bool{Bool: hasEndpointIdsFilter, Valid: true},
 			EndpointIds:    filter.EndpointIDs,
 		})
 		if err2 != nil {

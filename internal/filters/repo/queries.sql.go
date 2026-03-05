@@ -22,30 +22,30 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type CreateFilterParams struct {
-	Column1 pgtype.Text
-	Column2 pgtype.Text
-	Column3 pgtype.Text
-	Column4 []byte
-	Column5 []byte
-	Column6 []byte
-	Column7 []byte
-	Column8 pgtype.Timestamptz
-	Column9 pgtype.Timestamptz
+	ID             pgtype.Text
+	SubscriptionID pgtype.Text
+	EventType      pgtype.Text
+	Headers        []byte
+	Body           []byte
+	RawHeaders     []byte
+	RawBody        []byte
+	CreatedAt      pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
 }
 
 // Filters Queries
 // This file contains SQLc queries for the filters service
 func (q *Queries) CreateFilter(ctx context.Context, arg CreateFilterParams) error {
 	_, err := q.db.Exec(ctx, createFilter,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-		arg.Column5,
-		arg.Column6,
-		arg.Column7,
-		arg.Column8,
-		arg.Column9,
+		arg.ID,
+		arg.SubscriptionID,
+		arg.EventType,
+		arg.Headers,
+		arg.Body,
+		arg.RawHeaders,
+		arg.RawBody,
+		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
 	return err
 }
@@ -55,8 +55,8 @@ DELETE FROM convoy.filters
 WHERE id = $1
 `
 
-func (q *Queries) DeleteFilter(ctx context.Context, dollar_1 pgtype.Text) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteFilter, dollar_1)
+func (q *Queries) DeleteFilter(ctx context.Context, id pgtype.Text) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteFilter, id)
 	if err != nil {
 		return 0, err
 	}
@@ -84,8 +84,8 @@ type FindFilterByIDRow struct {
 	UpdatedAt      pgtype.Timestamptz
 }
 
-func (q *Queries) FindFilterByID(ctx context.Context, dollar_1 pgtype.Text) (FindFilterByIDRow, error) {
-	row := q.db.QueryRow(ctx, findFilterByID, dollar_1)
+func (q *Queries) FindFilterByID(ctx context.Context, id pgtype.Text) (FindFilterByIDRow, error) {
+	row := q.db.QueryRow(ctx, findFilterByID, id)
 	var i FindFilterByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -111,8 +111,8 @@ WHERE subscription_id = $1 AND event_type = $2
 `
 
 type FindFilterBySubscriptionAndEventTypeParams struct {
-	Column1 pgtype.Text
-	Column2 pgtype.Text
+	SubscriptionID pgtype.Text
+	EventType      pgtype.Text
 }
 
 type FindFilterBySubscriptionAndEventTypeRow struct {
@@ -128,7 +128,7 @@ type FindFilterBySubscriptionAndEventTypeRow struct {
 }
 
 func (q *Queries) FindFilterBySubscriptionAndEventType(ctx context.Context, arg FindFilterBySubscriptionAndEventTypeParams) (FindFilterBySubscriptionAndEventTypeRow, error) {
-	row := q.db.QueryRow(ctx, findFilterBySubscriptionAndEventType, arg.Column1, arg.Column2)
+	row := q.db.QueryRow(ctx, findFilterBySubscriptionAndEventType, arg.SubscriptionID, arg.EventType)
 	var i FindFilterBySubscriptionAndEventTypeRow
 	err := row.Scan(
 		&i.ID,
@@ -166,8 +166,8 @@ type FindFiltersBySubscriptionIDRow struct {
 	UpdatedAt      pgtype.Timestamptz
 }
 
-func (q *Queries) FindFiltersBySubscriptionID(ctx context.Context, dollar_1 pgtype.Text) ([]FindFiltersBySubscriptionIDRow, error) {
-	rows, err := q.db.Query(ctx, findFiltersBySubscriptionID, dollar_1)
+func (q *Queries) FindFiltersBySubscriptionID(ctx context.Context, subscriptionID pgtype.Text) ([]FindFiltersBySubscriptionIDRow, error) {
+	rows, err := q.db.Query(ctx, findFiltersBySubscriptionID, subscriptionID)
 	if err != nil {
 		return nil, err
 	}
@@ -199,34 +199,34 @@ func (q *Queries) FindFiltersBySubscriptionID(ctx context.Context, dollar_1 pgty
 const updateFilter = `-- name: UpdateFilter :execrows
 UPDATE convoy.filters
 SET
-    headers = $2,
-    body = $3,
-    raw_headers = $4,
-    raw_body = $5,
-    event_type = $6,
-    updated_at = $7
-WHERE id = $1
+    headers = $1,
+    body = $2,
+    raw_headers = $3,
+    raw_body = $4,
+    event_type = $5,
+    updated_at = $6
+WHERE id = $7
 `
 
 type UpdateFilterParams struct {
-	Column1 pgtype.Text
-	Column2 []byte
-	Column3 []byte
-	Column4 []byte
-	Column5 []byte
-	Column6 pgtype.Text
-	Column7 pgtype.Timestamptz
+	Headers    []byte
+	Body       []byte
+	RawHeaders []byte
+	RawBody    []byte
+	EventType  pgtype.Text
+	UpdatedAt  pgtype.Timestamptz
+	ID         pgtype.Text
 }
 
 func (q *Queries) UpdateFilter(ctx context.Context, arg UpdateFilterParams) (int64, error) {
 	result, err := q.db.Exec(ctx, updateFilter,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-		arg.Column5,
-		arg.Column6,
-		arg.Column7,
+		arg.Headers,
+		arg.Body,
+		arg.RawHeaders,
+		arg.RawBody,
+		arg.EventType,
+		arg.UpdatedAt,
+		arg.ID,
 	)
 	if err != nil {
 		return 0, err

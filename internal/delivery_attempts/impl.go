@@ -45,13 +45,13 @@ func (s *Service) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.
 
 	// Convert datastore.DeliveryAttempt to SQLc params
 	params := repo.CreateDeliveryAttemptParams{
-		ID:              attempt.UID,
-		Url:             attempt.URL,
-		Method:          attempt.Method,
-		ApiVersion:      attempt.APIVersion,
-		EndpointID:      attempt.EndpointID,
-		EventDeliveryID: attempt.EventDeliveryId,
-		ProjectID:       attempt.ProjectId,
+		ID:              pgtype.Text{String: attempt.UID, Valid: true},
+		Url:             pgtype.Text{String: attempt.URL, Valid: true},
+		Method:          pgtype.Text{String: attempt.Method, Valid: true},
+		ApiVersion:      pgtype.Text{String: attempt.APIVersion, Valid: true},
+		EndpointID:      pgtype.Text{String: attempt.EndpointID, Valid: true},
+		EventDeliveryID: pgtype.Text{String: attempt.EventDeliveryId, Valid: true},
+		ProjectID:       pgtype.Text{String: attempt.ProjectId, Valid: true},
 		IpAddress:       pgtype.Text{String: attempt.IPAddress, Valid: attempt.IPAddress != ""},
 		HttpStatus:      pgtype.Text{String: attempt.HttpResponseCode, Valid: attempt.HttpResponseCode != ""},
 		Error:           pgtype.Text{String: attempt.Error, Valid: attempt.Error != ""},
@@ -92,8 +92,8 @@ func (s *Service) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.
 
 func (s *Service) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId, id string) (*datastore.DeliveryAttempt, error) {
 	row, err := s.repo.FindDeliveryAttemptById(ctx, repo.FindDeliveryAttemptByIdParams{
-		ID:              id,
-		EventDeliveryID: eventDeliveryId,
+		ID:              pgtype.Text{String: id, Valid: true},
+		EventDeliveryID: pgtype.Text{String: eventDeliveryId, Valid: true},
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -107,7 +107,7 @@ func (s *Service) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId, 
 }
 
 func (s *Service) FindDeliveryAttempts(ctx context.Context, eventDeliveryId string) ([]datastore.DeliveryAttempt, error) {
-	rows, err := s.repo.FindDeliveryAttempts(ctx, eventDeliveryId)
+	rows, err := s.repo.FindDeliveryAttempts(ctx, pgtype.Text{String: eventDeliveryId, Valid: true})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to find delivery attempts")
 		return nil, util.NewServiceError(500, fmt.Errorf("failed to find delivery attempts: %w", err))
@@ -139,13 +139,13 @@ func (s *Service) DeleteProjectDeliveriesAttempts(ctx context.Context, projectID
 
 	if hardDelete {
 		result, err = s.repo.HardDeleteProjectDeliveryAttempts(ctx, repo.HardDeleteProjectDeliveryAttemptsParams{
-			ProjectID:      projectID,
+			ProjectID:      pgtype.Text{String: projectID, Valid: true},
 			CreatedAtStart: pgtype.Timestamptz{Time: start, Valid: true},
 			CreatedAtEnd:   pgtype.Timestamptz{Time: end, Valid: true},
 		})
 	} else {
 		result, err = s.repo.SoftDeleteProjectDeliveryAttempts(ctx, repo.SoftDeleteProjectDeliveryAttemptsParams{
-			ProjectID:      projectID,
+			ProjectID:      pgtype.Text{String: projectID, Valid: true},
 			CreatedAtStart: pgtype.Timestamptz{Time: start, Valid: true},
 			CreatedAtEnd:   pgtype.Timestamptz{Time: end, Valid: true},
 		})
@@ -167,7 +167,7 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 	resultsMap := make(map[string]circuit_breaker.PollResult)
 
 	// First, get counts for all endpoints within the lookback duration
-	rows, err := s.repo.GetFailureAndSuccessCounts(ctx, int32(lookBackDuration))
+	rows, err := s.repo.GetFailureAndSuccessCounts(ctx, pgtype.Int4{Int32: int32(lookBackDuration), Valid: true})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to get failure and success counts")
 		return nil, util.NewServiceError(500, fmt.Errorf("failed to get counts: %w", err))
@@ -177,8 +177,8 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 		resultsMap[row.Key] = circuit_breaker.PollResult{
 			Key:       row.Key,
 			TenantId:  row.TenantID,
-			Failures:  uint64(row.Failures),
-			Successes: uint64(row.Successes),
+			Failures:  uint64(row.Failures.Int64),
+			Successes: uint64(row.Successes.Int64),
 		}
 	}
 
@@ -189,7 +189,7 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 		delete(resultsMap, endpointID)
 
 		row, err := s.repo.GetFailureAndSuccessCountsWithResetTime(ctx, repo.GetFailureAndSuccessCountsWithResetTimeParams{
-			EndpointID: endpointID,
+			EndpointID: pgtype.Text{String: endpointID, Valid: true},
 			ResetTime:  pgtype.Timestamptz{Time: resetTime, Valid: true},
 		})
 		if err != nil {
@@ -204,8 +204,8 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 		resultsMap[endpointID] = circuit_breaker.PollResult{
 			Key:       row.Key,
 			TenantId:  row.TenantID,
-			Failures:  uint64(row.Failures),
-			Successes: uint64(row.Successes),
+			Failures:  uint64(row.Failures.Int64),
+			Successes: uint64(row.Successes.Int64),
 		}
 	}
 
