@@ -132,11 +132,11 @@ func (s *Service) CreateMetaEvent(ctx context.Context, metaEvent *datastore.Meta
 	}
 
 	err = s.repo.CreateMetaEvent(ctx, repo.CreateMetaEventParams{
-		ID:        metaEvent.UID,
-		EventType: metaEvent.EventType,
-		ProjectID: metaEvent.ProjectID,
+		ID:        pgtype.Text{String: metaEvent.UID, Valid: true},
+		EventType: pgtype.Text{String: metaEvent.EventType, Valid: true},
+		ProjectID: pgtype.Text{String: metaEvent.ProjectID, Valid: true},
 		Metadata:  metadataBytes,
-		Status:    string(metaEvent.Status),
+		Status:    pgtype.Text{String: string(metaEvent.Status), Valid: true},
 	})
 
 	if err != nil {
@@ -150,8 +150,8 @@ func (s *Service) CreateMetaEvent(ctx context.Context, metaEvent *datastore.Meta
 // FindMetaEventByID retrieves a meta event by its ID
 func (s *Service) FindMetaEventByID(ctx context.Context, projectID, id string) (*datastore.MetaEvent, error) {
 	row, err := s.repo.FindMetaEventByID(ctx, repo.FindMetaEventByIDParams{
-		ID:        id,
-		ProjectID: projectID,
+		ID:        pgtype.Text{String: id, Valid: true},
+		ProjectID: pgtype.Text{String: projectID, Valid: true},
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -184,12 +184,12 @@ func (s *Service) LoadMetaEventsPaged(ctx context.Context, projectID string, fil
 
 	// Query with unified pagination
 	rows, err := s.repo.FetchMetaEventsPaginated(ctx, repo.FetchMetaEventsPaginatedParams{
-		Direction: direction,
-		ProjectID: projectID,
+		Direction: pgtype.Text{String: direction, Valid: true},
+		ProjectID: pgtype.Text{String: projectID, Valid: true},
 		StartDate: pgtype.Timestamptz{Time: startDate, Valid: true},
 		EndDate:   pgtype.Timestamptz{Time: endDate, Valid: true},
 		Cursor:    cursor,
-		LimitVal:  int64(filter.Pageable.Limit()),
+		LimitVal:  pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
 	})
 
 	if err != nil {
@@ -225,10 +225,10 @@ func (s *Service) LoadMetaEventsPaged(ctx context.Context, projectID string, fil
 	var prevRowCount datastore.PrevRowCount
 	if len(metaEvents) > 0 {
 		count, err2 := s.repo.CountPrevMetaEvents(ctx, repo.CountPrevMetaEventsParams{
-			ProjectID: projectID,
+			ProjectID: pgtype.Text{String: projectID, Valid: true},
 			StartDate: pgtype.Timestamptz{Time: startDate, Valid: true},
 			EndDate:   pgtype.Timestamptz{Time: endDate, Valid: true},
-			Cursor:    first.UID,
+			Cursor:    pgtype.Text{String: first.UID, Valid: true},
 		})
 		if err2 != nil {
 			s.logger.WithError(err2).Error("failed to count prev meta events")
@@ -280,12 +280,12 @@ func (s *Service) UpdateMetaEvent(ctx context.Context, projectID string, metaEve
 	}
 
 	result, err := s.repo.UpdateMetaEvent(ctx, repo.UpdateMetaEventParams{
-		ID:        metaEvent.UID,
-		ProjectID: projectID,
-		EventType: metaEvent.EventType,
+		ID:        pgtype.Text{String: metaEvent.UID, Valid: true},
+		ProjectID: pgtype.Text{String: projectID, Valid: true},
+		EventType: pgtype.Text{String: metaEvent.EventType, Valid: true},
 		Metadata:  metadataBytes,
 		Attempt:   attemptBytes,
-		Status:    string(metaEvent.Status),
+		Status:    pgtype.Text{String: string(metaEvent.Status), Valid: true},
 	})
 
 	if err != nil {

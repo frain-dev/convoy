@@ -205,29 +205,29 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		retainedEvents                         pgtype.Int4
 		createdAt, updatedAt, deletedAt        pgtype.Timestamptz
 		// Config fields
-		searchPolicy                                    pgtype.Text
-		strategyType, signatureHeader                   string
-		signatureVersions                               []byte
-		maxPayloadReadSize                              int32
-		multipleEndpointSubscriptions                   bool
-		replayAttacks                                   bool
-		ratelimitCount                                  int32
-		ratelimitDuration                               int32
-		strategyDuration                                int32
-		strategyRetryCount                              int32
-		disableEndpoint                                 bool
-		sslEnforceSecureEndpoints                       pgtype.Bool
-		metaEventsEnabled                               bool
-		metaEventsType, metaEventsEventType             pgtype.Text
-		metaEventsUrl, metaEventsSecret                 pgtype.Text
-		metaEventsPubSub                                []byte
-		cbSampleRate                                    int32
-		cbErrorTimeout                                  int32
-		cbFailureThreshold                              int32
-		cbSuccessThreshold                              int32
-		cbObservabilityWindow                           int32
-		cbMinimumRequestCount                           int32
-		cbConsecutiveFailureThreshold                   int32
+		searchPolicy                        pgtype.Text
+		strategyType, signatureHeader       string
+		signatureVersions                   []byte
+		maxPayloadReadSize                  int32
+		multipleEndpointSubscriptions       bool
+		replayAttacks                       bool
+		ratelimitCount                      int32
+		ratelimitDuration                   int32
+		strategyDuration                    int32
+		strategyRetryCount                  int32
+		disableEndpoint                     bool
+		sslEnforceSecureEndpoints           pgtype.Bool
+		metaEventsEnabled                   bool
+		metaEventsType, metaEventsEventType pgtype.Text
+		metaEventsUrl, metaEventsSecret     pgtype.Text
+		metaEventsPubSub                    []byte
+		cbSampleRate                        int32
+		cbErrorTimeout                      int32
+		cbFailureThreshold                  int32
+		cbSuccessThreshold                  int32
+		cbObservabilityWindow               int32
+		cbMinimumRequestCount               int32
+		cbConsecutiveFailureThreshold       int32
 	)
 
 	switch r := row.(type) {

@@ -22,11 +22,11 @@ type Querier interface {
 	// ===========================================================================
 	CreateOrganisationMember(ctx context.Context, arg CreateOrganisationMemberParams) error
 	DeleteOrganisationMember(ctx context.Context, arg DeleteOrganisationMemberParams) error
-	FetchAnyOrganisationAdminByUserID(ctx context.Context, dollar_1 pgtype.Text) (FetchAnyOrganisationAdminByUserIDRow, error)
+	FetchAnyOrganisationAdminByUserID(ctx context.Context, userID pgtype.Text) (FetchAnyOrganisationAdminByUserIDRow, error)
 	// ===========================================================================
 	// Admin-Specific Queries
 	// ===========================================================================
-	FetchInstanceAdminByUserID(ctx context.Context, dollar_1 pgtype.Text) (FetchInstanceAdminByUserIDRow, error)
+	FetchInstanceAdminByUserID(ctx context.Context, userID pgtype.Text) (FetchInstanceAdminByUserIDRow, error)
 	// ===========================================================================
 	// Fetch Single Member Queries (with User Metadata)
 	// ===========================================================================
@@ -43,9 +43,9 @@ type Querier interface {
 	// ===========================================================================
 	// Project Queries
 	// ===========================================================================
-	FindUserProjects(ctx context.Context, dollar_1 pgtype.Text) ([]FindUserProjectsRow, error)
-	HasInstanceAdminAccess(ctx context.Context, dollar_1 pgtype.Text) (pgtype.Bool, error)
-	IsFirstInstanceAdmin(ctx context.Context, dollar_1 pgtype.Text) (bool, error)
+	FindUserProjects(ctx context.Context, userID pgtype.Text) ([]FindUserProjectsRow, error)
+	HasInstanceAdminAccess(ctx context.Context, userID pgtype.Text) (pgtype.Bool, error)
+	IsFirstInstanceAdmin(ctx context.Context, userID pgtype.Text) (bool, error)
 	UpdateOrganisationMember(ctx context.Context, arg UpdateOrganisationMemberParams) error
 }
 

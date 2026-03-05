@@ -48,28 +48,28 @@ INSERT INTO convoy.organisation_invites (
 `
 
 type CreateOrganisationInviteParams struct {
-	Column1 pgtype.Text
-	Column2 pgtype.Text
-	Column3 pgtype.Text
-	Column4 pgtype.Text
-	Column5 pgtype.Text
-	Column6 pgtype.Text
-	Column7 pgtype.Text
-	Column8 pgtype.Text
-	Column9 pgtype.Timestamptz
+	ID             pgtype.Text
+	OrganisationID pgtype.Text
+	InviteeEmail   pgtype.Text
+	Token          pgtype.Text
+	RoleType       pgtype.Text
+	RoleProject    pgtype.Text
+	RoleEndpoint   pgtype.Text
+	Status         pgtype.Text
+	ExpiresAt      pgtype.Timestamptz
 }
 
 func (q *Queries) CreateOrganisationInvite(ctx context.Context, arg CreateOrganisationInviteParams) error {
 	_, err := q.db.Exec(ctx, createOrganisationInvite,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-		arg.Column5,
-		arg.Column6,
-		arg.Column7,
-		arg.Column8,
-		arg.Column9,
+		arg.ID,
+		arg.OrganisationID,
+		arg.InviteeEmail,
+		arg.Token,
+		arg.RoleType,
+		arg.RoleProject,
+		arg.RoleEndpoint,
+		arg.Status,
+		arg.ExpiresAt,
 	)
 	return err
 }
@@ -80,8 +80,8 @@ SET deleted_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
 `
 
-func (q *Queries) DeleteOrganisationInvite(ctx context.Context, dollar_1 pgtype.Text) error {
-	_, err := q.db.Exec(ctx, deleteOrganisationInvite, dollar_1)
+func (q *Queries) DeleteOrganisationInvite(ctx context.Context, id pgtype.Text) error {
+	_, err := q.db.Exec(ctx, deleteOrganisationInvite, id)
 	return err
 }
 
@@ -116,8 +116,8 @@ type FetchOrganisationInviteByIDRow struct {
 	ExpiresAt      pgtype.Timestamptz
 }
 
-func (q *Queries) FetchOrganisationInviteByID(ctx context.Context, dollar_1 pgtype.Text) (FetchOrganisationInviteByIDRow, error) {
-	row := q.db.QueryRow(ctx, fetchOrganisationInviteByID, dollar_1)
+func (q *Queries) FetchOrganisationInviteByID(ctx context.Context, id pgtype.Text) (FetchOrganisationInviteByIDRow, error) {
+	row := q.db.QueryRow(ctx, fetchOrganisationInviteByID, id)
 	var i FetchOrganisationInviteByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -166,8 +166,8 @@ type FetchOrganisationInviteByTokenRow struct {
 	ExpiresAt      pgtype.Timestamptz
 }
 
-func (q *Queries) FetchOrganisationInviteByToken(ctx context.Context, dollar_1 pgtype.Text) (FetchOrganisationInviteByTokenRow, error) {
-	row := q.db.QueryRow(ctx, fetchOrganisationInviteByToken, dollar_1)
+func (q *Queries) FetchOrganisationInviteByToken(ctx context.Context, token pgtype.Text) (FetchOrganisationInviteByTokenRow, error) {
+	row := q.db.QueryRow(ctx, fetchOrganisationInviteByToken, token)
 	var i FetchOrganisationInviteByTokenRow
 	err := row.Scan(
 		&i.ID,
@@ -296,35 +296,35 @@ func (q *Queries) FetchOrganisationInvitesPaginated(ctx context.Context, arg Fet
 const updateOrganisationInvite = `-- name: UpdateOrganisationInvite :exec
 UPDATE convoy.organisation_invites
 SET
-    role_type = $2,
-    role_project = $3,
-    role_endpoint = $4,
-    status = $5,
-    expires_at = $6,
+    role_type = $1,
+    role_project = $2,
+    role_endpoint = $3,
+    status = $4,
+    expires_at = $5,
     updated_at = NOW(),
-    deleted_at = $7
-WHERE id = $1 AND deleted_at IS NULL
+    deleted_at = $6
+WHERE id = $7 AND deleted_at IS NULL
 `
 
 type UpdateOrganisationInviteParams struct {
-	Column1 pgtype.Text
-	Column2 pgtype.Text
-	Column3 pgtype.Text
-	Column4 pgtype.Text
-	Column5 pgtype.Text
-	Column6 pgtype.Timestamptz
-	Column7 pgtype.Timestamptz
+	RoleType     pgtype.Text
+	RoleProject  pgtype.Text
+	RoleEndpoint pgtype.Text
+	Status       pgtype.Text
+	ExpiresAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
+	ID           pgtype.Text
 }
 
 func (q *Queries) UpdateOrganisationInvite(ctx context.Context, arg UpdateOrganisationInviteParams) error {
 	_, err := q.db.Exec(ctx, updateOrganisationInvite,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-		arg.Column5,
-		arg.Column6,
-		arg.Column7,
+		arg.RoleType,
+		arg.RoleProject,
+		arg.RoleEndpoint,
+		arg.Status,
+		arg.ExpiresAt,
+		arg.DeletedAt,
+		arg.ID,
 	)
 	return err
 }

@@ -40,11 +40,11 @@ func New(logger log.StdLogger, db database.Database) *Service {
 // rowToBatchRetry converts an SQLc-generated row struct to datastore.BatchRetry
 func rowToBatchRetry(row interface{}) (*datastore.BatchRetry, error) {
 	var (
-		id, projectID, status string
+		id, projectID, status                      string
 		totalEvents, processedEvents, failedEvents int32
-		filter []byte
-		createdAt, updatedAt, completedAt pgtype.Timestamptz
-		errorMsg pgtype.Text
+		filter                                     []byte
+		createdAt, updatedAt, completedAt          pgtype.Timestamptz
+		errorMsg                                   pgtype.Text
 	)
 
 	switch r := row.(type) {
@@ -85,27 +85,6 @@ func rowToBatchRetry(row interface{}) (*datastore.BatchRetry, error) {
 }
 
 // Legacy rowToBatchRetry - keeping for reference but not used
-func rowToBatchRetryOld(row repo.FindBatchRetryByIDRow) (*datastore.BatchRetry, error) {
-	filter, err := common.JSONBToRetryFilter(row.Filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse filter: %w", err)
-	}
-
-	return &datastore.BatchRetry{
-		ID:              row.ID,
-		ProjectID:       row.ProjectID,
-		Status:          datastore.BatchRetryStatus(row.Status),
-		TotalEvents:     int(row.TotalEvents),
-		ProcessedEvents: int(row.ProcessedEvents),
-		FailedEvents:    int(row.FailedEvents),
-		Filter:          filter,
-		CreatedAt:       row.CreatedAt.Time,
-		UpdatedAt:       row.UpdatedAt.Time,
-		CompletedAt:     common.PgTimestamptzToNullTime(row.CompletedAt),
-		Error:           row.Error.String,
-	}, nil
-}
-
 // ============================================================================
 // Service Implementation
 // ============================================================================

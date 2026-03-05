@@ -44,9 +44,9 @@ func New(logger log.StdLogger, db database.Database) *Service {
 // rowToEventTypeFilter converts SQLc-generated row types to datastore.EventTypeFilter
 func rowToEventTypeFilter(row interface{}) (*datastore.EventTypeFilter, error) {
 	var (
-		id, subscriptionID, eventType string
+		id, subscriptionID, eventType      string
 		headers, body, rawHeaders, rawBody []byte
-		createdAt, updatedAt pgtype.Timestamptz
+		createdAt, updatedAt               pgtype.Timestamptz
 	)
 
 	switch r := row.(type) {
@@ -103,40 +103,6 @@ func rowToEventTypeFilter(row interface{}) (*datastore.EventTypeFilter, error) {
 }
 
 // Legacy rowToEventTypeFilter - keeping for reference but not used
-func rowToEventTypeFilterOld(row repo.FindFilterByIDRow) (*datastore.EventTypeFilter, error) {
-	headers, err := common.JSONBToM(row.Headers)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal headers: %w", err)
-	}
-
-	body, err := common.JSONBToM(row.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal body: %w", err)
-	}
-
-	rawHeaders, err := common.JSONBToM(row.RawHeaders)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal raw_headers: %w", err)
-	}
-
-	rawBody, err := common.JSONBToM(row.RawBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal raw_body: %w", err)
-	}
-
-	return &datastore.EventTypeFilter{
-		UID:            row.ID,
-		SubscriptionID: row.SubscriptionID,
-		EventType:      row.EventType,
-		Headers:        headers,
-		Body:           body,
-		RawHeaders:     rawHeaders,
-		RawBody:        rawBody,
-		CreatedAt:      row.CreatedAt.Time,
-		UpdatedAt:      row.UpdatedAt.Time,
-	}, nil
-}
-
 // ============================================================================
 // Service Implementation
 // ============================================================================

@@ -458,11 +458,9 @@ func TestCountEvents(t *testing.T) {
 		t.Logf("Test setup - ProjectID: %s, EndpointID: %s, SourceID: %s", project.UID, endpoint.UID, source.UID)
 
 		// Create test events
-		eventIDs := []string{}
 		for i := 0; i < 3; i++ {
 			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
 			require.NoError(t, service.CreateEvent(ctx, event))
-			eventIDs = append(eventIDs, event.UID)
 			t.Logf("Created event %d - EventID: %s", i+1, event.UID)
 		}
 
@@ -482,11 +480,9 @@ func TestCountEvents(t *testing.T) {
 		t.Logf("Test setup - ProjectID: %s, EndpointID: %s, SourceID: %s", project.UID, endpoint2.UID, source.UID)
 
 		// Create events for endpoint2
-		eventIDs := []string{}
 		for i := 0; i < 2; i++ {
 			event := createTestEvent(t, project.UID, []string{endpoint2.UID}, source.UID)
 			require.NoError(t, service.CreateEvent(ctx, event))
-			eventIDs = append(eventIDs, event.UID)
 			t.Logf("Created event %d - EventID: %s for EndpointID: %s", i+1, event.UID, endpoint2.UID)
 		}
 
@@ -557,12 +553,10 @@ func TestLoadEventsPaged(t *testing.T) {
 
 		// Create test events
 		numEvents := 15
-		eventIDs := []string{}
 		for i := 0; i < numEvents; i++ {
 			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
 			time.Sleep(1 * time.Millisecond)
 			require.NoError(t, service.CreateEvent(ctx, event))
-			eventIDs = append(eventIDs, event.UID)
 		}
 		t.Logf("Created %d events", numEvents)
 		filter := &datastore.Filter{

@@ -10,25 +10,25 @@ INSERT INTO convoy.organisation_invites (
     status,
     expires_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    @id, @organisation_id, @invitee_email, @token, @role_type, @role_project, @role_endpoint, @status, @expires_at
 );
 
 -- name: UpdateOrganisationInvite :exec
 UPDATE convoy.organisation_invites
 SET
-    role_type = $2,
-    role_project = $3,
-    role_endpoint = $4,
-    status = $5,
-    expires_at = $6,
+    role_type = @role_type,
+    role_project = @role_project,
+    role_endpoint = @role_endpoint,
+    status = @status,
+    expires_at = @expires_at,
     updated_at = NOW(),
-    deleted_at = $7
-WHERE id = $1 AND deleted_at IS NULL;
+    deleted_at = @deleted_at
+WHERE id = @id AND deleted_at IS NULL;
 
 -- name: DeleteOrganisationInvite :exec
 UPDATE convoy.organisation_invites
 SET deleted_at = NOW()
-WHERE id = $1 AND deleted_at IS NULL;
+WHERE id = @id AND deleted_at IS NULL;
 
 -- name: FetchOrganisationInviteByID :one
 SELECT
@@ -44,7 +44,7 @@ SELECT
     updated_at,
     expires_at
 FROM convoy.organisation_invites
-WHERE id = $1 AND deleted_at IS NULL;
+WHERE id = @id AND deleted_at IS NULL;
 
 -- name: FetchOrganisationInviteByToken :one
 SELECT
@@ -60,7 +60,7 @@ SELECT
     updated_at,
     expires_at
 FROM convoy.organisation_invites
-WHERE token = $1 AND deleted_at IS NULL;
+WHERE token = @token AND deleted_at IS NULL;
 
 -- name: FetchOrganisationInvitesPaginated :many
 WITH filtered_invites AS (

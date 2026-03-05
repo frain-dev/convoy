@@ -97,12 +97,12 @@ INSERT INTO convoy.organisation_members (
 `
 
 type CreateOrganisationMemberParams struct {
-	Column1 pgtype.Text
-	Column2 pgtype.Text
-	Column3 pgtype.Text
-	Column4 pgtype.Text
-	Column5 pgtype.Text
-	Column6 pgtype.Text
+	ID             pgtype.Text
+	OrganisationID pgtype.Text
+	UserID         pgtype.Text
+	RoleType       pgtype.Text
+	RoleProject    pgtype.Text
+	RoleEndpoint   pgtype.Text
 }
 
 // Organisation Members SQLc Queries
@@ -112,12 +112,12 @@ type CreateOrganisationMemberParams struct {
 // ===========================================================================
 func (q *Queries) CreateOrganisationMember(ctx context.Context, arg CreateOrganisationMemberParams) error {
 	_, err := q.db.Exec(ctx, createOrganisationMember,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-		arg.Column5,
-		arg.Column6,
+		arg.ID,
+		arg.OrganisationID,
+		arg.UserID,
+		arg.RoleType,
+		arg.RoleProject,
+		arg.RoleEndpoint,
 	)
 	return err
 }
@@ -129,12 +129,12 @@ WHERE id = $1 AND organisation_id = $2 AND deleted_at IS NULL
 `
 
 type DeleteOrganisationMemberParams struct {
-	Column1 pgtype.Text
-	Column2 pgtype.Text
+	ID             pgtype.Text
+	OrganisationID pgtype.Text
 }
 
 func (q *Queries) DeleteOrganisationMember(ctx context.Context, arg DeleteOrganisationMemberParams) error {
-	_, err := q.db.Exec(ctx, deleteOrganisationMember, arg.Column1, arg.Column2)
+	_, err := q.db.Exec(ctx, deleteOrganisationMember, arg.ID, arg.OrganisationID)
 	return err
 }
 
@@ -175,8 +175,8 @@ type FetchAnyOrganisationAdminByUserIDRow struct {
 	UpdatedAt             pgtype.Timestamptz
 }
 
-func (q *Queries) FetchAnyOrganisationAdminByUserID(ctx context.Context, dollar_1 pgtype.Text) (FetchAnyOrganisationAdminByUserIDRow, error) {
-	row := q.db.QueryRow(ctx, fetchAnyOrganisationAdminByUserID, dollar_1)
+func (q *Queries) FetchAnyOrganisationAdminByUserID(ctx context.Context, userID pgtype.Text) (FetchAnyOrganisationAdminByUserIDRow, error) {
+	row := q.db.QueryRow(ctx, fetchAnyOrganisationAdminByUserID, userID)
 	var i FetchAnyOrganisationAdminByUserIDRow
 	err := row.Scan(
 		&i.ID,
@@ -236,8 +236,8 @@ type FetchInstanceAdminByUserIDRow struct {
 // ===========================================================================
 // Admin-Specific Queries
 // ===========================================================================
-func (q *Queries) FetchInstanceAdminByUserID(ctx context.Context, dollar_1 pgtype.Text) (FetchInstanceAdminByUserIDRow, error) {
-	row := q.db.QueryRow(ctx, fetchInstanceAdminByUserID, dollar_1)
+func (q *Queries) FetchInstanceAdminByUserID(ctx context.Context, userID pgtype.Text) (FetchInstanceAdminByUserIDRow, error) {
+	row := q.db.QueryRow(ctx, fetchInstanceAdminByUserID, userID)
 	var i FetchInstanceAdminByUserIDRow
 	err := row.Scan(
 		&i.ID,
@@ -277,8 +277,8 @@ WHERE o.id = $1 AND o.organisation_id = $2 AND o.deleted_at IS NULL
 `
 
 type FetchOrganisationMemberByIDParams struct {
-	Column1 pgtype.Text
-	Column2 pgtype.Text
+	ID             pgtype.Text
+	OrganisationID pgtype.Text
 }
 
 type FetchOrganisationMemberByIDRow struct {
@@ -300,7 +300,7 @@ type FetchOrganisationMemberByIDRow struct {
 // Fetch Single Member Queries (with User Metadata)
 // ===========================================================================
 func (q *Queries) FetchOrganisationMemberByID(ctx context.Context, arg FetchOrganisationMemberByIDParams) (FetchOrganisationMemberByIDRow, error) {
-	row := q.db.QueryRow(ctx, fetchOrganisationMemberByID, arg.Column1, arg.Column2)
+	row := q.db.QueryRow(ctx, fetchOrganisationMemberByID, arg.ID, arg.OrganisationID)
 	var i FetchOrganisationMemberByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -339,8 +339,8 @@ WHERE o.user_id = $1 AND o.organisation_id = $2 AND o.deleted_at IS NULL
 `
 
 type FetchOrganisationMemberByUserIDParams struct {
-	Column1 pgtype.Text
-	Column2 pgtype.Text
+	UserID         pgtype.Text
+	OrganisationID pgtype.Text
 }
 
 type FetchOrganisationMemberByUserIDRow struct {
@@ -359,7 +359,7 @@ type FetchOrganisationMemberByUserIDRow struct {
 }
 
 func (q *Queries) FetchOrganisationMemberByUserID(ctx context.Context, arg FetchOrganisationMemberByUserIDParams) (FetchOrganisationMemberByUserIDRow, error) {
-	row := q.db.QueryRow(ctx, fetchOrganisationMemberByUserID, arg.Column1, arg.Column2)
+	row := q.db.QueryRow(ctx, fetchOrganisationMemberByUserID, arg.UserID, arg.OrganisationID)
 	var i FetchOrganisationMemberByUserIDRow
 	err := row.Scan(
 		&i.ID,
@@ -616,8 +616,8 @@ type FindUserProjectsRow struct {
 // ===========================================================================
 // Project Queries
 // ===========================================================================
-func (q *Queries) FindUserProjects(ctx context.Context, dollar_1 pgtype.Text) ([]FindUserProjectsRow, error) {
-	rows, err := q.db.Query(ctx, findUserProjects, dollar_1)
+func (q *Queries) FindUserProjects(ctx context.Context, userID pgtype.Text) ([]FindUserProjectsRow, error) {
+	rows, err := q.db.Query(ctx, findUserProjects, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -660,8 +660,8 @@ SELECT EXISTS (
 )
 `
 
-func (q *Queries) HasInstanceAdminAccess(ctx context.Context, dollar_1 pgtype.Text) (pgtype.Bool, error) {
-	row := q.db.QueryRow(ctx, hasInstanceAdminAccess, dollar_1)
+func (q *Queries) HasInstanceAdminAccess(ctx context.Context, userID pgtype.Text) (pgtype.Bool, error) {
+	row := q.db.QueryRow(ctx, hasInstanceAdminAccess, userID)
 	var column_1 pgtype.Bool
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -716,8 +716,8 @@ SELECT EXISTS (
 )
 `
 
-func (q *Queries) IsFirstInstanceAdmin(ctx context.Context, dollar_1 pgtype.Text) (bool, error) {
-	row := q.db.QueryRow(ctx, isFirstInstanceAdmin, dollar_1)
+func (q *Queries) IsFirstInstanceAdmin(ctx context.Context, userID pgtype.Text) (bool, error) {
+	row := q.db.QueryRow(ctx, isFirstInstanceAdmin, userID)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
@@ -726,26 +726,26 @@ func (q *Queries) IsFirstInstanceAdmin(ctx context.Context, dollar_1 pgtype.Text
 const updateOrganisationMember = `-- name: UpdateOrganisationMember :exec
 UPDATE convoy.organisation_members
 SET
-    role_type = $2,
-    role_project = $3,
-    role_endpoint = $4,
+    role_type = $1,
+    role_project = $2,
+    role_endpoint = $3,
     updated_at = NOW()
-WHERE id = $1 AND deleted_at IS NULL
+WHERE id = $4 AND deleted_at IS NULL
 `
 
 type UpdateOrganisationMemberParams struct {
-	Column1 pgtype.Text
-	Column2 pgtype.Text
-	Column3 pgtype.Text
-	Column4 pgtype.Text
+	RoleType     pgtype.Text
+	RoleProject  pgtype.Text
+	RoleEndpoint pgtype.Text
+	ID           pgtype.Text
 }
 
 func (q *Queries) UpdateOrganisationMember(ctx context.Context, arg UpdateOrganisationMemberParams) error {
 	_, err := q.db.Exec(ctx, updateOrganisationMember,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
+		arg.RoleType,
+		arg.RoleProject,
+		arg.RoleEndpoint,
+		arg.ID,
 	)
 	return err
 }
