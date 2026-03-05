@@ -42,10 +42,12 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 			var org *datastore.Organisation
 			var err error
 
+			// Try to get project from context (set by RequireEnabledProject middleware)
 			var project *datastore.Project
 			if cachedProject := r.Context().Value(convoy.ProjectCtx); cachedProject != nil {
 				project = cachedProject.(*datastore.Project)
 			} else if projectID := chi.URLParam(r, "projectID"); projectID != "" {
+				// Fallback: try to fetch project from URL parameter
 				project, err = h.retrieveProject(r)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("failed to retrieve project", http.StatusBadRequest))
@@ -53,19 +55,9 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 				}
 			}
 
+			// Fetch organization based on whether we have a project
 			if project != nil {
-				var project *datastore.Project
-
-				if cachedProject := r.Context().Value(convoy.ProjectCtx); cachedProject != nil {
-					project = cachedProject.(*datastore.Project)
-				} else {
-					project, err = h.retrieveProject(r)
-					if err != nil {
-						_ = render.Render(w, r, util.NewErrorResponse("failed to retrieve project", http.StatusBadRequest))
-						return
-					}
-				}
-
+				// We have a project - fetch org from context or by project's organization ID
 				if cachedOrg := r.Context().Value(convoy.OrganisationCtx); cachedOrg != nil {
 					org = cachedOrg.(*datastore.Organisation)
 				} else {
@@ -84,6 +76,7 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 					r = r.WithContext(ctx)
 				}
 			} else {
+				// No project - fetch org directly from context or by orgID parameter
 				if cachedOrg := r.Context().Value(convoy.OrganisationCtx); cachedOrg != nil {
 					org = cachedOrg.(*datastore.Organisation)
 				} else {

@@ -112,7 +112,8 @@ const (
 	UpdateOrganisationStatus         TaskName = "UpdateOrganisationStatus"
 	RefreshMetricsMaterializedViews  TaskName = "RefreshMetricsMaterializedViews"
 
-	TokenCacheKey CacheKey = "tokens"
+	TokenCacheKey   CacheKey = "tokens"
+	ProjectCacheKey CacheKey = "projects"
 )
 
 // queues
