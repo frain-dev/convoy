@@ -3,7 +3,6 @@ package organisations
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -311,63 +310,28 @@ func (s *Service) CountOrganisations(ctx context.Context) (int64, error) {
 	return count, nil
 }
 
-// CalculateUsage calculates usage metrics for an organisation
+// CalculateUsage calculates usage metrics for an organisation using a single combined query
 func (s *Service) CalculateUsage(ctx context.Context, orgID string, startTime, endTime time.Time) (*datastore.OrganisationUsage, error) {
 	usage := &datastore.OrganisationUsage{
 		OrganisationID: orgID,
+		Period:         startTime.Format("2006-01"),
 		CreatedAt:      time.Now(),
 	}
 
-	// Calculate ingress bytes (raw + data bytes)
-	ingressRow, err := s.repo.CalculateIngressBytes(ctx, repo.CalculateIngressBytesParams{
+	row, err := s.repo.CalculateUsageCombined(ctx, repo.CalculateUsageCombinedParams{
 		OrganisationID: orgID,
 		CreatedAt:      pgtype.Timestamptz{Time: startTime, Valid: true},
 		CreatedAt_2:    pgtype.Timestamptz{Time: endTime, Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to calculate ingress bytes")
-		return nil, util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to calculate ingress bytes: %w", err))
+		s.logger.WithError(err).Error("failed to calculate usage")
+		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
-	usage.Received.Bytes = ingressRow.RawBytes.Int64 + ingressRow.DataBytes.Int64
 
-	// Calculate egress bytes
-	egressBytes, err := s.repo.CalculateEgressBytes(ctx, repo.CalculateEgressBytesParams{
-		OrganisationID: orgID,
-		CreatedAt:      pgtype.Timestamptz{Time: startTime, Valid: true},
-		CreatedAt_2:    pgtype.Timestamptz{Time: endTime, Valid: true},
-	})
-	if err != nil {
-		s.logger.WithError(err).Error("failed to calculate egress bytes")
-		return nil, util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to calculate egress bytes: %w", err))
-	}
-	usage.Sent.Bytes = egressBytes
-
-	// Count events
-	eventCount, err := s.repo.CountOrgEvents(ctx, repo.CountOrgEventsParams{
-		OrganisationID: orgID,
-		CreatedAt:      pgtype.Timestamptz{Time: startTime, Valid: true},
-		CreatedAt_2:    pgtype.Timestamptz{Time: endTime, Valid: true},
-	})
-	if err != nil {
-		s.logger.WithError(err).Error("failed to count events")
-		return nil, util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to count events: %w", err))
-	}
-	usage.Received.Volume = eventCount
-
-	// Count deliveries
-	deliveryCount, err := s.repo.CountOrgDeliveries(ctx, repo.CountOrgDeliveriesParams{
-		OrganisationID: orgID,
-		CreatedAt:      pgtype.Timestamptz{Time: startTime, Valid: true},
-		CreatedAt_2:    pgtype.Timestamptz{Time: endTime, Valid: true},
-	})
-	if err != nil {
-		s.logger.WithError(err).Error("failed to count deliveries")
-		return nil, util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to count deliveries: %w", err))
-	}
-	usage.Sent.Volume = deliveryCount
-
-	// Format period as YYYY-MM
-	usage.Period = startTime.Format("2006-01")
+	usage.Received.Bytes = row.RawBytes + row.DataBytes
+	usage.Sent.Bytes = row.EgressBytes
+	usage.Received.Volume = row.EventCount
+	usage.Sent.Volume = row.DeliveryCount
 
 	return usage, nil
 }

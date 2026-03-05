@@ -12,10 +12,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"golang.org/x/sync/singleflight"
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/users"
@@ -23,6 +26,9 @@ import (
 )
 
 var ErrHostRequiredForBilling = errors.New("organisation host (assigned domain) is required for billing. Please set the assigned domain in the configuration")
+
+// usageCachePopulateGroup coalesces concurrent populateUsageCache calls for the same org+period
+var usageCachePopulateGroup singleflight.Group
 
 type BillingHandler struct {
 	*Handler
@@ -173,6 +179,8 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Billing configuration retrieved", response, http.StatusOK))
 }
 
+const usageCacheTTL = 10 * time.Minute
+
 func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
@@ -188,17 +196,67 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
+	period := startOfMonth.Format("2006-01")
 
-	// Calculate usage from actual Convoy data using repository
-	orgRepo := organisations.New(h.A.Logger, h.A.DB)
-	usage, err := orgRepo.CalculateUsage(r.Context(), orgID, startOfMonth, endOfMonth)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("failed to calculate usage: %s", err.Error()), http.StatusInternalServerError))
-		return
+	var usage *datastore.OrganisationUsage
+	if h.A.Cache != nil {
+		cacheKey := convoy.UsageCacheKey.Get(orgID + ":" + period)
+		var cached datastore.OrganisationUsage
+		cacheErr := h.A.Cache.Get(r.Context(), cacheKey.String(), &cached)
+		if cacheErr == nil && cached.OrganisationID != "" {
+			usage = &cached
+			usageResponse := formatUsageResponse(usage)
+			_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", usageResponse, http.StatusOK))
+			// Refresh cache async so next request gets fresh data (singleflight prevents duplicate concurrent populates)
+			go h.scheduleUsageCachePopulate(orgID, startOfMonth, endOfMonth, period)
+			return
+		}
+		// Cache miss: return zeros immediately, populate cache async
+		usage = &datastore.OrganisationUsage{
+			OrganisationID: orgID,
+			Period:         period,
+			CreatedAt:      now,
+		}
+		go h.scheduleUsageCachePopulate(orgID, startOfMonth, endOfMonth, period)
+	} else {
+		orgRepo := organisations.New(h.A.Logger, h.A.DB)
+		var err error
+		usage, err = orgRepo.CalculateUsage(r.Context(), orgID, startOfMonth, endOfMonth)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("failed to calculate usage: %s", err.Error()), http.StatusInternalServerError))
+			return
+		}
 	}
 
-	// Format response
-	usageResponse := map[string]interface{}{
+	usageResponse := formatUsageResponse(usage)
+	_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", usageResponse, http.StatusOK))
+}
+
+// scheduleUsageCachePopulate runs populateUsageCache with singleflight so concurrent
+// requests for the same org+period coalesce into one DB call.
+func (h *BillingHandler) scheduleUsageCachePopulate(orgID string, startOfMonth, endOfMonth time.Time, period string) {
+	key := orgID + ":" + period
+	_, _, _ = usageCachePopulateGroup.Do(key, func() (interface{}, error) {
+		h.populateUsageCache(context.Background(), orgID, startOfMonth, endOfMonth, period)
+		return nil, nil
+	})
+}
+
+func (h *BillingHandler) populateUsageCache(ctx context.Context, orgID string, startOfMonth, endOfMonth time.Time, period string) {
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	usage, err := orgRepo.CalculateUsage(ctx, orgID, startOfMonth, endOfMonth)
+	if err != nil {
+		h.A.Logger.WithError(err).Error("failed to populate usage cache")
+		return
+	}
+	cacheKey := convoy.UsageCacheKey.Get(orgID + ":" + period)
+	if setErr := h.A.Cache.Set(ctx, cacheKey.String(), usage, usageCacheTTL); setErr != nil {
+		h.A.Logger.WithError(setErr).Error("failed to set usage cache")
+	}
+}
+
+func formatUsageResponse(usage *datastore.OrganisationUsage) map[string]interface{} {
+	return map[string]interface{}{
 		"organisation_id": usage.OrganisationID,
 		"period":          usage.Period,
 		"received": map[string]interface{}{
@@ -211,8 +269,6 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 		},
 		"created_at": usage.CreatedAt,
 	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", usageResponse, http.StatusOK))
 }
 
 func (h *BillingHandler) GetInvoices(w http.ResponseWriter, r *http.Request) {
