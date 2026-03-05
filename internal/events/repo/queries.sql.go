@@ -523,7 +523,7 @@ const loadEventsPagedExists = `-- name: LoadEventsPagedExists :many
 SELECT
     ev.id, ev.project_id, ev.event_type, ev.is_duplicate_event,
     COALESCE(ev.source_id, '') AS source_id,
-    ev.headers, ev.raw, ev.data, ev.created_at,
+    ev.endpoints, ev.headers, ev.raw, ev.data, ev.created_at,
     COALESCE(ev.idempotency_key, '') AS idempotency_key,
     COALESCE(ev.url_query_params, '') AS url_query_params,
     ev.updated_at, ev.deleted_at, ev.acknowledged_at, ev.metadata, ev.status,
@@ -595,6 +595,7 @@ type LoadEventsPagedExistsRow struct {
 	EventType          string
 	IsDuplicateEvent   pgtype.Bool
 	SourceID           pgtype.Text
+	Endpoints          pgtype.Text
 	Headers            []byte
 	Raw                string
 	Data               []byte
@@ -650,6 +651,7 @@ func (q *Queries) LoadEventsPagedExists(ctx context.Context, arg LoadEventsPaged
 			&i.EventType,
 			&i.IsDuplicateEvent,
 			&i.SourceID,
+			&i.Endpoints,
 			&i.Headers,
 			&i.Raw,
 			&i.Data,
@@ -680,7 +682,7 @@ WITH events AS (
     SELECT
         ev.id, ev.project_id, ev.event_type, ev.is_duplicate_event,
         COALESCE(ev.source_id, '') AS source_id,
-        ev.headers, ev.raw, ev.data, ev.created_at,
+        ev.endpoints, ev.headers, ev.raw, ev.data, ev.created_at,
         COALESCE(ev.idempotency_key, '') AS idempotency_key,
         COALESCE(ev.url_query_params, '') AS url_query_params,
         ev.updated_at, ev.deleted_at, ev.acknowledged_at, ev.metadata AS metadata, ev.status AS status,
@@ -715,7 +717,7 @@ WITH events AS (
         CASE WHEN NOT $1::boolean THEN ev.id END DESC
     LIMIT $18 -- limit
 )
-SELECT id, project_id, event_type, is_duplicate_event, source_id, headers, raw, data, created_at,
+SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints, headers, raw, data, created_at,
        idempotency_key, url_query_params, updated_at, deleted_at, acknowledged_at, metadata, status,
        "source_metadata.id", "source_metadata.name"
 FROM events
@@ -753,6 +755,7 @@ type LoadEventsPagedSearchRow struct {
 	EventType          string
 	IsDuplicateEvent   pgtype.Bool
 	SourceID           pgtype.Text
+	Endpoints          pgtype.Text
 	Headers            []byte
 	Raw                string
 	Data               []byte
@@ -805,6 +808,7 @@ func (q *Queries) LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPaged
 			&i.EventType,
 			&i.IsDuplicateEvent,
 			&i.SourceID,
+			&i.Endpoints,
 			&i.Headers,
 			&i.Raw,
 			&i.Data,

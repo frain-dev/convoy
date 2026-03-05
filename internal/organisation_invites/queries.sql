@@ -76,7 +76,7 @@ WITH filtered_invites AS (
         updated_at,
         expires_at
     FROM convoy.organisation_invites
-    WHERE organisation_id = @org_id
+    WHERE organisation_id = @organisation_id
         AND status = @status
         AND deleted_at IS NULL
         -- Cursor-based pagination
@@ -99,7 +99,10 @@ WITH filtered_invites AS (
     LIMIT @limit_val
 )
 -- Final select: reverse order for backward pagination
-SELECT * FROM filtered_invites
+SELECT
+    id, organisation_id, invitee_email, status, role_type, role_project,
+    role_endpoint, created_at, updated_at, expires_at
+FROM filtered_invites
 ORDER BY
     CASE
         WHEN @direction::text = 'prev' THEN id

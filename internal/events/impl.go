@@ -204,7 +204,7 @@ func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Eve
 
 	// Update endpoints array
 	updateParams := repo.UpdateEventEndpointsParams{
-		Endpoints: common.StringToPgText(endpointsToString(event.Endpoints)),
+		Endpoints: common.StringToPgText(endpointsToString(endpoints)),
 		ProjectID: common.StringToPgText(event.ProjectID),
 		ID:        common.StringToPgText(event.UID),
 	}
@@ -319,15 +319,14 @@ func (s *Service) LoadEventsPaged(ctx context.Context, projectID string, filter 
 		ids[i] = events[i].UID
 	}
 
-	// Trim LIMIT+1 for hasNext detection
-	if len(events) > filter.Pageable.PerPage {
-		events = events[:len(events)-1]
-		ids = ids[:len(ids)-1]
-	}
-
-	// Build pagination metadata
+	// Build pagination metadata with untrimmed ids (Build needs the extra item to detect hasNext)
 	pagination := &datastore.PaginationData{PrevRowCount: rowCount}
 	pagination = pagination.Build(filter.Pageable, ids)
+
+	// Trim LIMIT+1 after building pagination (hasNext detection is done, now remove the extra item)
+	if len(events) > filter.Pageable.PerPage {
+		events = events[:len(events)-1]
+	}
 
 	return events, *pagination, nil
 }
@@ -612,7 +611,21 @@ func (s *Service) UnPartitionEventsSearchTable(ctx context.Context) error {
 
 // Helper: getCreatedDateFilter converts Unix timestamps to time.Time
 func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
-	return time.Unix(startDate, 0), time.Unix(endDate, 0)
+	start := time.Unix(startDate, 0)
+	end := time.Unix(endDate, 0)
+
+	// If no start date provided, use beginning of time (Unix epoch)
+	if startDate == 0 {
+		start = time.Unix(0, 0)
+	}
+
+	// If no end date provided, use far future date
+	if endDate == 0 {
+		// Use year 2100 as a reasonable far future date
+		end = time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC)
+	}
+
+	return start, end
 }
 
 // Partition SQL constants - define and execute PL/pgSQL functions for table partitioning

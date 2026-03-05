@@ -195,7 +195,10 @@ WITH filtered_api_keys AS (
     LIMIT @limit_val
 )
 -- Final select: reverse order for backward pagination to maintain DESC ordering
-SELECT * FROM filtered_api_keys
+SELECT
+    id, name, key_type, mask_id, role_type, role_project, role_endpoint,
+    hash, salt, user_id, created_at, updated_at, expires_at, deleted_at
+FROM filtered_api_keys
 ORDER BY
     CASE WHEN @direction::text = 'prev' THEN id END DESC,
     CASE WHEN @direction::text = 'next' THEN id END DESC;

@@ -286,7 +286,15 @@ WITH filtered_sources AS (
     LIMIT @limit_val
 )
 -- Final select: reverse order for backward pagination to get DESC order
-SELECT * FROM filtered_sources
+SELECT
+    id, name, type, pub_sub, mask_id, provider, is_disabled, forward_headers,
+    idempotency_keys, project_id, body_function, header_function,
+    source_verifier_id, custom_response_body, custom_response_content_type,
+    verifier_type, verifier_basic_username, verifier_basic_password,
+    verifier_api_key_header_name, verifier_api_key_header_value,
+    verifier_hmac_hash, verifier_hmac_header, verifier_hmac_secret,
+    verifier_hmac_encoding, created_at, updated_at
+FROM filtered_sources
 ORDER BY
     CASE
         WHEN @direction::text = 'prev' THEN id

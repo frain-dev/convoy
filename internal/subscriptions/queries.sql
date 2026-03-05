@@ -499,7 +499,25 @@ WITH filtered_subscriptions AS (
     LIMIT @limit_val
 )
 -- Final select: reverse order for backward pagination to get DESC order
-SELECT * FROM filtered_subscriptions
+SELECT
+    id, name, type, project_id, created_at, updated_at, function, delivery_mode,
+    endpoint_id, device_id, source_id, alert_config_count, alert_config_threshold,
+    retry_config_type, retry_config_duration, retry_config_retry_count,
+    filter_config_event_types, filter_config_filter_raw_headers,
+    filter_config_filter_raw_body, filter_config_filter_is_flattened,
+    filter_config_filter_headers, filter_config_filter_body,
+    rate_limit_config_count, rate_limit_config_duration,
+    endpoint_metadata_id, endpoint_metadata_name, endpoint_metadata_project_id,
+    endpoint_metadata_support_email, endpoint_metadata_url, endpoint_metadata_status,
+    endpoint_metadata_owner_id, endpoint_metadata_secrets,
+    device_metadata_id, device_metadata_status, device_metadata_host_name,
+    source_metadata_id, source_metadata_name, source_metadata_type,
+    source_metadata_mask_id, source_metadata_project_id, source_metadata_is_disabled,
+    source_verifier_type, source_verifier_basic_username, source_verifier_basic_password,
+    source_verifier_api_key_header_name, source_verifier_api_key_header_value,
+    source_verifier_hmac_hash, source_verifier_hmac_header,
+    source_verifier_hmac_secret, source_verifier_hmac_encoding
+FROM filtered_subscriptions
 ORDER BY
     CASE
         WHEN @direction::text = 'prev' THEN id
@@ -575,12 +593,16 @@ WHERE id > @cursor
 ORDER BY id
 LIMIT @limit_val;
 
--- name: FetchUpdatedSubscriptions :many
--- Fetch subscriptions that have been updated since last sync
--- Uses VALUES clause for input map (id, last_updated_at pairs)
--- @values_clause will be substituted with the actual VALUES
-WITH input_map(id, last_updated_at) AS (
-    VALUES (@subscription_id_1, @updated_at_1::timestamptz)
+-- FetchUpdatedSubscriptions - DISABLED: Dynamic query template
+-- This query uses dynamic VALUES clause that must be built at runtime
+-- TODO: Implement using pgx batch or manually in Go code
+-- -- name: FetchUpdatedSubscriptions :many
+-- WITH input_map(id, last_updated_at) AS (
+--     VALUES (@subscription_id_1, @updated_at_1::timestamptz)
+-- ),
+WITH disabled_query AS (SELECT 1 WHERE false),
+input_map(id, last_updated_at) AS (
+    SELECT ''::text, NOW()::timestamptz WHERE false
 ),
 updated_existing AS (
     SELECT
@@ -623,9 +645,19 @@ new_subscriptions AS (
         AND s.project_id = ANY(@project_ids::text[])
         AND s.deleted_at IS NULL
 )
-SELECT * FROM updated_existing
+SELECT
+    name, id, type, project_id, endpoint_id, function, updated_at,
+    filter_config_event_types, filter_config_filter_headers,
+    filter_config_filter_body, filter_config_filter_is_flattened,
+    filter_config_filter_raw_headers, filter_config_filter_raw_body
+FROM updated_existing
 UNION ALL
-SELECT * FROM new_subscriptions
+SELECT
+    name, id, type, project_id, endpoint_id, function, updated_at,
+    filter_config_event_types, filter_config_filter_headers,
+    filter_config_filter_body, filter_config_filter_is_flattened,
+    filter_config_filter_raw_headers, filter_config_filter_raw_body
+FROM new_subscriptions
 ORDER BY id
 LIMIT @limit_val;
 

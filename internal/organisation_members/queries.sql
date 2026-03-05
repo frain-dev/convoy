@@ -226,7 +226,11 @@ WITH filtered_members AS (
         CASE WHEN @direction::text = 'prev' THEN o.id END ASC
     LIMIT @limit_val
 )
-SELECT * FROM filtered_members
+SELECT
+    id, organisation_id, user_id, role_type, role_project, role_endpoint,
+    user_metadata_user_id, user_metadata_first_name, user_metadata_last_name,
+    user_metadata_email, created_at, updated_at
+FROM filtered_members
 ORDER BY
     CASE WHEN @direction::text = 'prev' THEN id END DESC,
     CASE WHEN @direction::text = 'next' THEN id END DESC;
@@ -271,7 +275,10 @@ WITH user_organisations AS (
         CASE WHEN @direction::text = 'prev' THEN o.id END ASC
     LIMIT @limit_val
 )
-SELECT * FROM user_organisations
+SELECT
+    id, name, owner_id, custom_domain, assigned_domain, license_data,
+    created_at, updated_at, deleted_at
+FROM user_organisations
 ORDER BY
     CASE WHEN @direction::text = 'prev' THEN id END DESC,
     CASE WHEN @direction::text = 'next' THEN id END DESC;
