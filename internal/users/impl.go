@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/frain-dev/convoy/database"
@@ -84,7 +85,7 @@ func (s *Service) UpdateUser(ctx context.Context, user *datastore.User) error {
 // ============================================================================
 
 func (s *Service) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
-	row, err := s.repo.FindUserByID(ctx, id)
+	row, err := s.repo.FindUserByID(ctx, pgtype.Text{String: id, Valid: true})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -93,11 +94,11 @@ func (s *Service) FindUserByID(ctx context.Context, id string) (*datastore.User,
 		return nil, err
 	}
 
-	return rowToUser(row), nil
+	return rowToUserFromFindByID(row), nil
 }
 
 func (s *Service) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
-	row, err := s.repo.FindUserByEmail(ctx, email)
+	row, err := s.repo.FindUserByEmail(ctx, pgtype.Text{String: email, Valid: true})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -106,11 +107,11 @@ func (s *Service) FindUserByEmail(ctx context.Context, email string) (*datastore
 		return nil, err
 	}
 
-	return rowToUser(row), nil
+	return rowToUserFromFindByEmail(row), nil
 }
 
 func (s *Service) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
-	row, err := s.repo.FindUserByToken(ctx, token)
+	row, err := s.repo.FindUserByToken(ctx, pgtype.Text{String: token, Valid: true})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -119,11 +120,11 @@ func (s *Service) FindUserByToken(ctx context.Context, token string) (*datastore
 		return nil, err
 	}
 
-	return rowToUser(row), nil
+	return rowToUserFromFindByToken(row), nil
 }
 
 func (s *Service) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
-	row, err := s.repo.FindUserByEmailVerificationToken(ctx, token)
+	row, err := s.repo.FindUserByEmailVerificationToken(ctx, pgtype.Text{String: token, Valid: true})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -132,7 +133,7 @@ func (s *Service) FindUserByEmailVerificationToken(ctx context.Context, token st
 		return nil, err
 	}
 
-	return rowToUser(row), nil
+	return rowToUserFromFindByEmailVerificationToken(row), nil
 }
 
 // ============================================================================
@@ -146,7 +147,7 @@ func (s *Service) CountUsers(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 
-	return count, nil
+	return count.Int64, nil
 }
 
 // ============================================================================
@@ -156,29 +157,29 @@ func (s *Service) CountUsers(ctx context.Context) (int64, error) {
 // userToCreateParams converts datastore.User to repo.CreateUserParams
 func userToCreateParams(user *datastore.User) repo.CreateUserParams {
 	return repo.CreateUserParams{
-		ID:                         user.UID,
-		FirstName:                  user.FirstName,
-		LastName:                   user.LastName,
-		Email:                      user.Email,
-		Password:                   user.Password,
-		EmailVerified:              user.EmailVerified,
+		ID:                         pgtype.Text{String: user.UID, Valid: true},
+		FirstName:                  pgtype.Text{String: user.FirstName, Valid: true},
+		LastName:                   pgtype.Text{String: user.LastName, Valid: true},
+		Email:                      pgtype.Text{String: user.Email, Valid: true},
+		Password:                   pgtype.Text{String: user.Password, Valid: true},
+		EmailVerified:              pgtype.Bool{Bool: user.EmailVerified, Valid: true},
 		ResetPasswordToken:         common.StringToPgText(user.ResetPasswordToken),
 		EmailVerificationToken:     common.StringToPgText(user.EmailVerificationToken),
 		ResetPasswordExpiresAt:     common.TimeToPgTimestamptz(user.ResetPasswordExpiresAt),
 		EmailVerificationExpiresAt: common.TimeToPgTimestamptz(user.EmailVerificationExpiresAt),
-		AuthType:                   user.AuthType,
+		AuthType:                   pgtype.Text{String: user.AuthType, Valid: true},
 	}
 }
 
 // userToUpdateParams converts datastore.User to repo.UpdateUserParams
 func userToUpdateParams(user *datastore.User) repo.UpdateUserParams {
 	return repo.UpdateUserParams{
-		ID:                         user.UID,
-		FirstName:                  user.FirstName,
-		LastName:                   user.LastName,
-		Email:                      user.Email,
-		Password:                   user.Password,
-		EmailVerified:              user.EmailVerified,
+		ID:                         pgtype.Text{String: user.UID, Valid: true},
+		FirstName:                  pgtype.Text{String: user.FirstName, Valid: true},
+		LastName:                   pgtype.Text{String: user.LastName, Valid: true},
+		Email:                      pgtype.Text{String: user.Email, Valid: true},
+		Password:                   pgtype.Text{String: user.Password, Valid: true},
+		EmailVerified:              pgtype.Bool{Bool: user.EmailVerified, Valid: true},
 		ResetPasswordToken:         common.StringToPgText(user.ResetPasswordToken),
 		EmailVerificationToken:     common.StringToPgText(user.EmailVerificationToken),
 		ResetPasswordExpiresAt:     common.TimeToPgTimestamptz(user.ResetPasswordExpiresAt),
@@ -186,8 +187,68 @@ func userToUpdateParams(user *datastore.User) repo.UpdateUserParams {
 	}
 }
 
-// rowToUser converts repo.ConvoyUser to datastore.User
-func rowToUser(row repo.ConvoyUser) *datastore.User {
+// rowToUserFromFindByID converts repo.FindUserByIDRow to datastore.User
+func rowToUserFromFindByID(row repo.FindUserByIDRow) *datastore.User {
+	return &datastore.User{
+		UID:                        row.ID,
+		FirstName:                  row.FirstName,
+		LastName:                   row.LastName,
+		Email:                      row.Email,
+		Password:                   row.Password,
+		EmailVerified:              row.EmailVerified,
+		ResetPasswordToken:         common.PgTextToString(row.ResetPasswordToken),
+		EmailVerificationToken:     common.PgTextToString(row.EmailVerificationToken),
+		CreatedAt:                  common.PgTimestamptzToTime(row.CreatedAt),
+		UpdatedAt:                  common.PgTimestamptzToTime(row.UpdatedAt),
+		DeletedAt:                  common.PgTimestamptzToNullTime(row.DeletedAt),
+		ResetPasswordExpiresAt:     common.PgTimestamptzToTime(row.ResetPasswordExpiresAt),
+		EmailVerificationExpiresAt: common.PgTimestamptzToTime(row.EmailVerificationExpiresAt),
+		AuthType:                   row.AuthType,
+	}
+}
+
+// rowToUserFromFindByEmail converts repo.FindUserByEmailRow to datastore.User
+func rowToUserFromFindByEmail(row repo.FindUserByEmailRow) *datastore.User {
+	return &datastore.User{
+		UID:                        row.ID,
+		FirstName:                  row.FirstName,
+		LastName:                   row.LastName,
+		Email:                      row.Email,
+		Password:                   row.Password,
+		EmailVerified:              row.EmailVerified,
+		ResetPasswordToken:         common.PgTextToString(row.ResetPasswordToken),
+		EmailVerificationToken:     common.PgTextToString(row.EmailVerificationToken),
+		CreatedAt:                  common.PgTimestamptzToTime(row.CreatedAt),
+		UpdatedAt:                  common.PgTimestamptzToTime(row.UpdatedAt),
+		DeletedAt:                  common.PgTimestamptzToNullTime(row.DeletedAt),
+		ResetPasswordExpiresAt:     common.PgTimestamptzToTime(row.ResetPasswordExpiresAt),
+		EmailVerificationExpiresAt: common.PgTimestamptzToTime(row.EmailVerificationExpiresAt),
+		AuthType:                   row.AuthType,
+	}
+}
+
+// rowToUserFromFindByToken converts repo.FindUserByTokenRow to datastore.User
+func rowToUserFromFindByToken(row repo.FindUserByTokenRow) *datastore.User {
+	return &datastore.User{
+		UID:                        row.ID,
+		FirstName:                  row.FirstName,
+		LastName:                   row.LastName,
+		Email:                      row.Email,
+		Password:                   row.Password,
+		EmailVerified:              row.EmailVerified,
+		ResetPasswordToken:         common.PgTextToString(row.ResetPasswordToken),
+		EmailVerificationToken:     common.PgTextToString(row.EmailVerificationToken),
+		CreatedAt:                  common.PgTimestamptzToTime(row.CreatedAt),
+		UpdatedAt:                  common.PgTimestamptzToTime(row.UpdatedAt),
+		DeletedAt:                  common.PgTimestamptzToNullTime(row.DeletedAt),
+		ResetPasswordExpiresAt:     common.PgTimestamptzToTime(row.ResetPasswordExpiresAt),
+		EmailVerificationExpiresAt: common.PgTimestamptzToTime(row.EmailVerificationExpiresAt),
+		AuthType:                   row.AuthType,
+	}
+}
+
+// rowToUserFromFindByEmailVerificationToken converts repo.FindUserByEmailVerificationTokenRow to datastore.User
+func rowToUserFromFindByEmailVerificationToken(row repo.FindUserByEmailVerificationTokenRow) *datastore.User {
 	return &datastore.User{
 		UID:                        row.ID,
 		FirstName:                  row.FirstName,

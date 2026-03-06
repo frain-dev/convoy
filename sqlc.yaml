@@ -20,11 +20,10 @@ servers:
 #          pointer: false
 
 sql:
-  - schema: ./sql
-    queries: ./internal/portal_links/queries.sql
+  - queries: ./internal/portal_links/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -32,11 +31,13 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/api_keys/queries.sql
+        overrides:
+          - column: "convoy.portal_links.auth_type"
+            go_type: "string"
+  - queries: ./internal/api_keys/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -44,11 +45,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/organisations/queries.sql
+  - queries: ./internal/organisations/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -56,11 +56,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/organisation_members/queries.sql
+  - queries: ./internal/organisation_members/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -68,11 +67,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/organisation_invites/queries.sql
+  - queries: ./internal/organisation_invites/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -80,11 +78,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/delivery_attempts/queries.sql
+  - queries: ./internal/delivery_attempts/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -92,11 +89,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/configuration/queries.sql
+  - queries: ./internal/configuration/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -104,11 +100,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/projects/queries.sql
+  - queries: ./internal/projects/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -116,11 +111,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/sources/queries.sql
+  - queries: ./internal/sources/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -128,11 +122,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/filters/repo/queries.sql
+  - queries: ./internal/filters/repo/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -140,11 +133,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/batch_retries/queries.sql
+  - queries: ./internal/batch_retries/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -152,11 +144,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/subscriptions/queries.sql
+  - queries: ./internal/subscriptions/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -164,11 +155,13 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/users/queries.sql
+        overrides:
+          - column: "convoy.subscriptions.delivery_mode"
+            go_type: "string"
+  - queries: ./internal/users/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -176,11 +169,10 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/meta_events/queries.sql
+  - queries: ./internal/meta_events/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
@@ -188,15 +180,25 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
-  - schema: ./sql
-    queries: ./internal/event_types/queries.sql
+  - queries: ./internal/event_types/queries.sql
     engine: postgresql
     database:
-      managed: true
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
     gen:
       go:
         package: "repo"
         out: "./internal/event_types/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true
+  - queries: ./internal/events/queries.sql
+    engine: postgresql
+    database:
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/events/repo"
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true

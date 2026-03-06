@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -203,7 +204,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 
 	cf := services.CreateFanoutEventService{
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
-		EventRepo:      postgres.NewEventRepo(h.A.DB),
+		EventRepo:      events.New(h.A.Logger, h.A.DB),
 		PortalLinkRepo: portal_links.New(h.A.Logger, h.A.DB),
 		Queue:          h.A.Queue,
 		NewMessage:     &newMessage,
@@ -362,7 +363,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	bs := services.BatchReplayEventService{
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
 		Queue:        h.A.Queue,
-		EventRepo:    postgres.NewEventRepo(h.A.DB),
+		EventRepo:    events.New(h.A.Logger, h.A.DB),
 		Filter:       data.Filter,
 	}
 
@@ -458,7 +459,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		data.Filter.Query = "" // event payload search is not allowed
 	}
 
-	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
+	eventsPaged, paginationData, err := events.New(h.A.Logger, h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
@@ -508,7 +509,7 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 		data.Filter.EndpointIDs = endpointIDs
 	}
 
-	count, err := postgres.NewEventRepo(h.A.DB).CountEvents(r.Context(), p.UID, data.Filter)
+	count, err := events.New(h.A.Logger, h.A.DB).CountEvents(r.Context(), p.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -525,6 +526,6 @@ func (h *Handler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
 	}
 
 	eventID := chi.URLParam(r, "eventID")
-	eventRepo := postgres.NewEventRepo(h.A.DB)
+	eventRepo := events.New(h.A.Logger, h.A.DB)
 	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
 }

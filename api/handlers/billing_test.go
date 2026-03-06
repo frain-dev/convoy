@@ -61,9 +61,9 @@ func TestGetInternalOrganisationID_BillingDisabled_DoesNotCallBilling(t *testing
 
 func TestIsBillingOrgNotFound(t *testing.T) {
 	tests := []struct {
-		name  string
-		err   error
-		want  bool
+		name string
+		err  error
+		want bool
 	}{
 		{
 			name: "nil error",

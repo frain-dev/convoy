@@ -10,37 +10,37 @@ INSERT INTO convoy.organisations (
     assigned_domain,
     license_data
 ) VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6
+    @id,
+    @name,
+    @owner_id,
+    @custom_domain,
+    @assigned_domain,
+    @license_data
 );
 
 -- name: UpdateOrganisation :execresult
 UPDATE convoy.organisations
 SET
-    name = $2,
-    custom_domain = $3,
-    assigned_domain = $4,
-    disabled_at = $5,
-    license_data = $6,
+    name = @name,
+    custom_domain = @custom_domain,
+    assigned_domain = @assigned_domain,
+    disabled_at = @disabled_at,
+    license_data = @license_data,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = @id
   AND deleted_at IS NULL;
 
 -- name: UpdateOrganisationLicenseData :execresult
 UPDATE convoy.organisations
-SET license_data = $2,
+SET license_data = @license_data,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = @id
   AND deleted_at IS NULL;
 
 -- name: DeleteOrganisation :execresult
 UPDATE convoy.organisations
 SET deleted_at = NOW()
-WHERE id = $1
+WHERE id = @id
   AND deleted_at IS NULL;
 
 -- name: FetchOrganisationByID :one
@@ -56,7 +56,7 @@ SELECT
     deleted_at,
     disabled_at
 FROM convoy.organisations
-WHERE id = $1
+WHERE id = @id
   AND deleted_at IS NULL;
 
 -- name: FetchOrganisationByCustomDomain :one
@@ -72,7 +72,7 @@ SELECT
     deleted_at,
     disabled_at
 FROM convoy.organisations
-WHERE custom_domain = $1
+WHERE custom_domain = @custom_domain
   AND deleted_at IS NULL;
 
 -- name: FetchOrganisationByAssignedDomain :one
@@ -88,7 +88,7 @@ SELECT
     deleted_at,
     disabled_at
 FROM convoy.organisations
-WHERE assigned_domain = $1
+WHERE assigned_domain = @assigned_domain
   AND deleted_at IS NULL;
 
 -- name: CountOrganisations :one
@@ -134,7 +134,10 @@ WITH filtered_organisations AS (
     LIMIT @limit_val
 )
 -- Final select: reverse order for backward pagination
-SELECT * FROM filtered_organisations
+SELECT
+    id, owner_id, name, custom_domain, assigned_domain, license_data,
+    created_at, updated_at, deleted_at, disabled_at
+FROM filtered_organisations
 ORDER BY
     CASE WHEN @direction::text = 'prev' THEN id END DESC,
     CASE WHEN @direction::text = 'next' THEN id END DESC;
@@ -162,9 +165,9 @@ SELECT
     COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS data_bytes
 FROM convoy.events e
 JOIN convoy.projects p ON p.id = e.project_id
-WHERE p.organisation_id = $1
-  AND e.created_at >= $2
-  AND e.created_at <= $3
+WHERE p.organisation_id = @organisation_id
+  AND e.created_at >= @start_time
+  AND e.created_at <= @end_time
   AND e.deleted_at IS NULL
   AND p.deleted_at IS NULL;
 
@@ -173,19 +176,19 @@ SELECT COALESCE(SUM(LENGTH(e.raw)), 0) + COALESCE(SUM(OCTET_LENGTH(e.data::text)
 FROM convoy.event_deliveries d
 JOIN convoy.events e ON e.id = d.event_id
 JOIN convoy.projects p ON p.id = e.project_id
-WHERE p.organisation_id = $1
+WHERE p.organisation_id = @organisation_id
   AND d.status = 'Success'
-  AND d.created_at >= $2
-  AND d.created_at <= $3
+  AND d.created_at >= @start_time
+  AND d.created_at <= @end_time
   AND p.deleted_at IS NULL;
 
 -- name: CountOrgEvents :one
 SELECT COUNT(*) AS count
 FROM convoy.events e
 JOIN convoy.projects p ON p.id = e.project_id
-WHERE p.organisation_id = $1
-  AND e.created_at >= $2
-  AND e.created_at <= $3
+WHERE p.organisation_id = @organisation_id
+  AND e.created_at >= @start_time
+  AND e.created_at <= @end_time
   AND e.deleted_at IS NULL
   AND p.deleted_at IS NULL;
 
@@ -194,8 +197,8 @@ SELECT COUNT(*) AS count
 FROM convoy.event_deliveries d
 JOIN convoy.events e ON e.id = d.event_id
 JOIN convoy.projects p ON p.id = e.project_id
-WHERE p.organisation_id = $1
+WHERE p.organisation_id = @organisation_id
   AND d.status = 'Success'
-  AND d.created_at >= $2
-  AND d.created_at <= $3
+  AND d.created_at >= @start_time
+  AND d.created_at <= @end_time
   AND p.deleted_at IS NULL;

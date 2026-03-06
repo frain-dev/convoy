@@ -14,22 +14,22 @@ INSERT INTO convoy.organisation_members (
     role_project,
     role_endpoint
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
+    @id, @organisation_id, @user_id, @role_type, @role_project, @role_endpoint
 );
 
 -- name: UpdateOrganisationMember :exec
 UPDATE convoy.organisation_members
 SET
-    role_type = $2,
-    role_project = $3,
-    role_endpoint = $4,
+    role_type = @role_type,
+    role_project = @role_project,
+    role_endpoint = @role_endpoint,
     updated_at = NOW()
-WHERE id = $1 AND deleted_at IS NULL;
+WHERE id = @id AND deleted_at IS NULL;
 
 -- name: DeleteOrganisationMember :exec
 UPDATE convoy.organisation_members
 SET deleted_at = NOW()
-WHERE id = $1 AND organisation_id = $2 AND deleted_at IS NULL;
+WHERE id = @id AND organisation_id = @organisation_id AND deleted_at IS NULL;
 
 -- ===========================================================================
 -- Fetch Single Member Queries (with User Metadata)
@@ -51,7 +51,7 @@ SELECT
     o.updated_at
 FROM convoy.organisation_members o
 LEFT JOIN convoy.users u ON o.user_id = u.id
-WHERE o.id = $1 AND o.organisation_id = $2 AND o.deleted_at IS NULL;
+WHERE o.id = @id AND o.organisation_id = @organisation_id AND o.deleted_at IS NULL;
 
 -- name: FetchOrganisationMemberByUserID :one
 SELECT
@@ -69,7 +69,7 @@ SELECT
     o.updated_at
 FROM convoy.organisation_members o
 LEFT JOIN convoy.users u ON o.user_id = u.id
-WHERE o.user_id = $1 AND o.organisation_id = $2 AND o.deleted_at IS NULL;
+WHERE o.user_id = @user_id AND o.organisation_id = @organisation_id AND o.deleted_at IS NULL;
 
 -- ===========================================================================
 -- Admin-Specific Queries
@@ -91,7 +91,7 @@ SELECT
     o.updated_at
 FROM convoy.organisation_members o
 LEFT JOIN convoy.users u ON o.user_id = u.id
-WHERE o.user_id = $1
+WHERE o.user_id = @user_id
     AND o.role_type = 'instance_admin'
     AND o.deleted_at IS NULL
 LIMIT 1;
@@ -112,7 +112,7 @@ SELECT
     o.updated_at
 FROM convoy.organisation_members o
 LEFT JOIN convoy.users u ON o.user_id = u.id
-WHERE o.user_id = $1
+WHERE o.user_id = @user_id
     AND o.role_type = 'organisation_admin'
     AND o.deleted_at IS NULL
 LIMIT 1;
@@ -132,20 +132,20 @@ WHERE o.role_type = 'organisation_admin'
 -- name: HasInstanceAdminAccess :one
 SELECT EXISTS (
     SELECT 1 FROM convoy.organisation_members o
-    WHERE o.user_id = $1
+    WHERE o.user_id = @user_id
         AND o.role_type = 'instance_admin'
         AND o.deleted_at IS NULL
 ) OR NOT EXISTS (
     SELECT 1 FROM convoy.organisation_members o
     WHERE o.role_type = 'instance_admin'
         AND o.deleted_at IS NULL
-        AND o.user_id != $1
+        AND o.user_id != @user_id
 );
 
 -- name: IsFirstInstanceAdmin :one
 SELECT EXISTS (
     SELECT 1 FROM convoy.organisation_members o1
-    WHERE o1.user_id = $1
+    WHERE o1.user_id = @user_id
         AND o1.deleted_at IS NULL
         AND (
             -- Case 1: User is first local instance admin
@@ -226,7 +226,11 @@ WITH filtered_members AS (
         CASE WHEN @direction::text = 'prev' THEN o.id END ASC
     LIMIT @limit_val
 )
-SELECT * FROM filtered_members
+SELECT
+    id, organisation_id, user_id, role_type, role_project, role_endpoint,
+    user_metadata_user_id, user_metadata_first_name, user_metadata_last_name,
+    user_metadata_email, created_at, updated_at
+FROM filtered_members
 ORDER BY
     CASE WHEN @direction::text = 'prev' THEN id END DESC,
     CASE WHEN @direction::text = 'next' THEN id END DESC;
@@ -271,7 +275,10 @@ WITH user_organisations AS (
         CASE WHEN @direction::text = 'prev' THEN o.id END ASC
     LIMIT @limit_val
 )
-SELECT * FROM user_organisations
+SELECT
+    id, name, owner_id, custom_domain, assigned_domain, license_data,
+    created_at, updated_at, deleted_at
+FROM user_organisations
 ORDER BY
     CASE WHEN @direction::text = 'prev' THEN id END DESC,
     CASE WHEN @direction::text = 'next' THEN id END DESC;
@@ -302,6 +309,6 @@ SELECT
     p.updated_at
 FROM convoy.organisation_members m
 RIGHT JOIN convoy.projects p ON p.organisation_id = m.organisation_id
-WHERE m.user_id = $1
+WHERE m.user_id = @user_id
     AND m.deleted_at IS NULL
     AND p.deleted_at IS NULL;

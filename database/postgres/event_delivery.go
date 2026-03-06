@@ -34,6 +34,8 @@ var (
 )
 
 const (
+	PartitionSize = 30_000 // Batch size for event_endpoints inserts
+
 	createEventDelivery = `
     INSERT INTO convoy.event_deliveries (
         id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,

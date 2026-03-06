@@ -7,7 +7,7 @@ INSERT INTO convoy.filters (
     headers, body, raw_headers, raw_body,
     created_at, updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+VALUES (@id, @subscription_id, @event_type, @headers, @body, @raw_headers, @raw_body, @created_at, @updated_at);
 
 -- name: FindFilterByID :one
 SELECT
@@ -15,7 +15,7 @@ SELECT
     headers, body, raw_headers, raw_body,
     created_at, updated_at
 FROM convoy.filters
-WHERE id = $1;
+WHERE id = @id;
 
 -- name: FindFiltersBySubscriptionID :many
 SELECT
@@ -23,7 +23,7 @@ SELECT
     headers, body, raw_headers, raw_body,
     created_at, updated_at
 FROM convoy.filters
-WHERE subscription_id = $1
+WHERE subscription_id = @subscription_id
 ORDER BY created_at DESC;
 
 -- name: FindFilterBySubscriptionAndEventType :one
@@ -32,19 +32,19 @@ SELECT
     headers, body, raw_headers, raw_body,
     created_at, updated_at
 FROM convoy.filters
-WHERE subscription_id = $1 AND event_type = $2;
+WHERE subscription_id = @subscription_id AND event_type = @event_type;
 
 -- name: UpdateFilter :execrows
 UPDATE convoy.filters
 SET
-    headers = $2,
-    body = $3,
-    raw_headers = $4,
-    raw_body = $5,
-    event_type = $6,
-    updated_at = $7
-WHERE id = $1;
+    headers = @headers,
+    body = @body,
+    raw_headers = @raw_headers,
+    raw_body = @raw_body,
+    event_type = @event_type,
+    updated_at = @updated_at
+WHERE id = @id;
 
 -- name: DeleteFilter :execrows
 DELETE FROM convoy.filters
-WHERE id = $1;
+WHERE id = @id;

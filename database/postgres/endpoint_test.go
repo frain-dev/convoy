@@ -16,6 +16,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -286,7 +287,7 @@ func Test_LoadEndpointsPaged_Encrypted(t *testing.T) {
 func runLoadEndpointsPagedTest(t *testing.T, db database.Database) {
 
 	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(nil), db)
 
 	project := seedProject(t, db)
 
@@ -335,7 +336,7 @@ func Test_FindEndpointsByID_Encrypted(t *testing.T) {
 func runFindEndpointsByIDTest(t *testing.T, db database.Database) {
 
 	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(nil), db)
 
 	project := seedProject(t, db)
 	ids := []string{}
@@ -404,7 +405,7 @@ func Test_FindEndpointsByAppID_Encrypted(t *testing.T) {
 
 func runFindEndpointsByAppIDTest(t *testing.T, db database.Database) {
 	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(nil), db)
 
 	project := seedProject(t, db)
 	appID := "vvbbbb"
@@ -472,7 +473,7 @@ func Test_FindEndpointsByOwnerID_Encrypted(t *testing.T) {
 func runFindEndpointsByOwnerIDTest(t *testing.T, db database.Database) {
 
 	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(nil), db)
 
 	project := seedProject(t, db)
 	ownerID := "owner-ffdjj"
@@ -567,7 +568,7 @@ func Test_FindEndpointByID_Encrypted(t *testing.T) {
 
 func runFindEndpointByIDTest(t *testing.T, db database.Database) {
 	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(nil), db)
 
 	_, err := endpointRepo.FindEndpointByID(context.Background(), ulid.Make().String(), "")
 	require.Equal(t, datastore.ErrEndpointNotFound, err)
