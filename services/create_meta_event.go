@@ -63,7 +63,7 @@ func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data i
 		NumTrials:       0,
 		RetryLimit:      project.Config.Strategy.RetryCount,
 		Data:            mpByte,
-		Raw:             string(mpByte),
+		Raw:             "", // Skip Raw duplication - Data field is canonical (reduces payload size)
 		IntervalSeconds: project.Config.Strategy.Duration,
 		Strategy:        project.Config.Strategy.Type,
 		NextSendTime:    time.Now(),

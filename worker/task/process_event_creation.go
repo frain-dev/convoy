@@ -736,7 +736,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		UID:              eventParams.UID,
 		EventType:        datastore.EventType(eventParams.EventType),
 		Data:             eventParams.Data,
-		Raw:              string(eventParams.Data),
+		Raw:              "", // Skip Raw duplication - Data field is canonical (reduces payload size)
 		IdempotencyKey:   eventParams.IdempotencyKey,
 		IsDuplicateEvent: isDuplicate,
 		Headers:          getCustomHeaders(eventParams.CustomHeaders),
