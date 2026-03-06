@@ -318,6 +318,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 		ProjectID: project.UID,
 		EventType: datastore.EventType("test.event"),
 		Data:      []byte(`{"test": "data"}`),
+		Raw:       `{"test": "data"}`,
 	}
 	err := eventRepo.CreateEvent(ctx, event)
 	require.NoError(t, err)

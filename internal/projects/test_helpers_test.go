@@ -292,6 +292,7 @@ func seedEvent(t *testing.T, db database.Database, project *datastore.Project, e
 		Endpoints: endpoints,
 		EventType: datastore.EventType("test.event"),
 		Data:      []byte(`{"test": "data"}`),
+		Raw:       `{"test": "data"}`,
 	}
 
 	err := eventRepo.CreateEvent(context.Background(), event)
