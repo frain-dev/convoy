@@ -420,7 +420,7 @@ func (s *Service) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) 
 		orgID = f.OrgID
 	}
 
-	rows, err := s.repo.FetchProjects(ctx, common.StringToPgText(orgID))
+	rows, err := s.repo.FetchProjects(ctx, common.StringToPgTextFilter(orgID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to load projects")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
