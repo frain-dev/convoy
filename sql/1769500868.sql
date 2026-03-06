@@ -118,8 +118,3 @@ LIMIT 1000;
 
 CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_event_endpoint_backlog_metrics_mv_unique 
 ON convoy.event_endpoint_backlog_metrics_mv(project_id, source_id, endpoint_id);
-
-REFRESH MATERIALIZED VIEW convoy.event_queue_metrics_mv;
-REFRESH MATERIALIZED VIEW convoy.event_delivery_queue_metrics_mv;
-REFRESH MATERIALIZED VIEW convoy.event_queue_backlog_metrics_mv;
-REFRESH MATERIALIZED VIEW convoy.event_endpoint_backlog_metrics_mv;
