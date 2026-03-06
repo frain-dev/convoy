@@ -6,8 +6,10 @@ import (
 )
 
 const (
-	AuthUserCtx ContextKey = "authUser"
-	PageableCtx ContextKey = "pageable"
+	AuthUserCtx     ContextKey = "authUser"
+	PageableCtx     ContextKey = "pageable"
+	ProjectCtx      ContextKey = "project"
+	OrganisationCtx ContextKey = "organisation"
 )
 
 type ContextKey string

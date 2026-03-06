@@ -271,8 +271,6 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	router.Route("/sso", func(ssoRouter chi.Router) {
 		ssoRouter.Use(middleware.JsonResponse)
 		ssoRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-		ssoRouter.Get("/callback", handler.RedeemSSOCallback)
-		ssoRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
 	})
 
 	// Ingestion API.
@@ -455,8 +453,6 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		uiRouter.Route("/saml", func(samlRouter chi.Router) {
 			samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-			samlRouter.Get("/login", handler.RedeemSSOCallback)
-			samlRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
 		})
 
 		uiRouter.Route("/users", func(userRouter chi.Router) {
@@ -688,9 +684,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
 					billingSubRouter.Get("/", billingHandler.GetSubscriptions)
-					billingSubRouter.Post("/onboard", billingHandler.OnboardSubscription)
-					billingSubRouter.Put("/{subscriptionID}/upgrade", billingHandler.UpgradeSubscription)
-					billingSubRouter.Delete("/{subscriptionID}", billingHandler.DeleteSubscription)
+					billingSubRouter.Post("/", billingHandler.CreateSubscription)
 				})
 
 				billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
@@ -703,7 +697,6 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
 					billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
 					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
-					billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
 				})
 			}
 		})

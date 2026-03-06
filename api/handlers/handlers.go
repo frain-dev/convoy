@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/subomi/requestmigrations"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
@@ -257,4 +258,8 @@ func (h *Handler) CanManageEndpoint() func(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func (h *Handler) isOrganisationDisabled(org *datastore.Organisation) bool {
+	return false
 }
