@@ -221,7 +221,7 @@ type FetchPortalLinkByIdRow struct {
 	Name              string
 	Token             string
 	Endpoints         pgtype.Text
-	AuthType          interface{}
+	AuthType          string
 	CanManageEndpoint pgtype.Bool
 	OwnerID           pgtype.Text
 	EndpointCount     pgtype.Int8
@@ -283,7 +283,7 @@ type FetchPortalLinkByMaskIdRow struct {
 	Name              string
 	Token             string
 	Endpoints         pgtype.Text
-	AuthType          interface{}
+	AuthType          string
 	CanManageEndpoint pgtype.Bool
 	OwnerID           pgtype.Text
 	EndpointCount     pgtype.Int8
@@ -351,7 +351,7 @@ type FetchPortalLinkByOwnerIDRow struct {
 	Name              string
 	Token             string
 	Endpoints         pgtype.Text
-	AuthType          interface{}
+	AuthType          string
 	CanManageEndpoint pgtype.Bool
 	OwnerID           pgtype.Text
 	EndpointCount     pgtype.Int8
@@ -416,7 +416,7 @@ type FetchPortalLinkByTokenRow struct {
 	Name              string
 	Token             string
 	Endpoints         pgtype.Text
-	AuthType          interface{}
+	AuthType          string
 	CanManageEndpoint pgtype.Bool
 	OwnerID           pgtype.Text
 	EndpointCount     pgtype.Int8
@@ -481,7 +481,7 @@ type FetchPortalLinksByOwnerIDRow struct {
 	Name              string
 	Token             string
 	Endpoints         pgtype.Text
-	AuthType          interface{}
+	AuthType          string
 	CanManageEndpoint pgtype.Bool
 	OwnerID           pgtype.Text
 	EndpointCount     pgtype.Int8
@@ -607,7 +607,7 @@ type FetchPortalLinksPaginatedRow struct {
 	Name              string
 	Token             string
 	Endpoints         pgtype.Text
-	AuthType          interface{}
+	AuthType          string
 	CanManageEndpoint pgtype.Bool
 	OwnerID           pgtype.Text
 	EndpointCount     pgtype.Int8

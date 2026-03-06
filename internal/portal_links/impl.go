@@ -372,7 +372,7 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 
 	// Generate auth key if auth type is refresh token
 	var authKey string
-	if datastore.PortalAuthType(row.AuthType.(string)) == datastore.PortalAuthTypeRefreshToken {
+	if datastore.PortalAuthType(row.AuthType) == datastore.PortalAuthTypeRefreshToken {
 		portalToken, err := generateToken(portalLinkID)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to generate auth token")
@@ -448,7 +448,7 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 
 	// Generate auth key if auth type is refresh token
 	var authKey string
-	if datastore.PortalAuthType(row.AuthType.(string)) == datastore.PortalAuthTypeRefreshToken {
+	if datastore.PortalAuthType(row.AuthType) == datastore.PortalAuthTypeRefreshToken {
 		portalToken, err := generateToken(row.ID)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to generate auth token")
@@ -780,7 +780,7 @@ func (s *Service) FindPortalLinkByMaskId(ctx context.Context, maskId string) (*d
 		Name:              row.Name,
 		Token:             row.Token,
 		Endpoints:         endpoints,
-		AuthType:          datastore.PortalAuthType(row.AuthType.(string)),
+		AuthType:          datastore.PortalAuthType(row.AuthType),
 		OwnerID:           common.PgTextToString(row.OwnerID),
 		EndpointCount:     int(row.EndpointCount.Int64),
 		TokenSalt:         row.TokenSalt.String,

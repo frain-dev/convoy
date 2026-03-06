@@ -316,7 +316,7 @@ type FetchCLISubscriptionsRow struct {
 	CreatedAt                       pgtype.Timestamptz
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
-	DeliveryMode                    interface{}
+	DeliveryMode                    string
 	EndpointID                      pgtype.Text
 	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text
@@ -622,7 +622,7 @@ type FetchSubscriptionByDeviceIDRow struct {
 	CreatedAt                     pgtype.Timestamptz
 	UpdatedAt                     pgtype.Timestamptz
 	Function                      pgtype.Text
-	DeliveryMode                  interface{}
+	DeliveryMode                  string
 	EndpointID                    pgtype.Text
 	DeviceID                      pgtype.Text
 	SourceID                      pgtype.Text
@@ -753,7 +753,7 @@ type FetchSubscriptionByIDRow struct {
 	CreatedAt                       pgtype.Timestamptz
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
-	DeliveryMode                    interface{}
+	DeliveryMode                    string
 	EndpointID                      pgtype.Text
 	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text
@@ -932,7 +932,7 @@ type FetchSubscriptionsByEndpointIDRow struct {
 	CreatedAt                       pgtype.Timestamptz
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
-	DeliveryMode                    interface{}
+	DeliveryMode                    string
 	EndpointID                      pgtype.Text
 	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text
@@ -1121,7 +1121,7 @@ type FetchSubscriptionsBySourceIDRow struct {
 	CreatedAt                       pgtype.Timestamptz
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
-	DeliveryMode                    interface{}
+	DeliveryMode                    string
 	EndpointID                      pgtype.Text
 	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text
@@ -1457,7 +1457,7 @@ type FetchSubscriptionsPaginatedRow struct {
 	CreatedAt                       pgtype.Timestamptz
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
-	DeliveryMode                    interface{}
+	DeliveryMode                    string
 	EndpointID                      pgtype.Text
 	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text

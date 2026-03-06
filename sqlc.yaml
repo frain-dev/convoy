@@ -31,6 +31,9 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
+        overrides:
+          - column: "convoy.portal_links.auth_type"
+            go_type: "string"
   - queries: ./internal/api_keys/queries.sql
     engine: postgresql
     database:
@@ -152,6 +155,9 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
+        overrides:
+          - column: "convoy.subscriptions.delivery_mode"
+            go_type: "string"
   - queries: ./internal/users/queries.sql
     engine: postgresql
     database:

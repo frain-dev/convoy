@@ -173,15 +173,12 @@ func pgTimestamptzToTime(ts pgtype.Timestamptz) time.Time {
 	return common.PgTimestamptzToTime(ts)
 }
 
-// deliveryModeToString converts interface{} delivery mode to string
-func deliveryModeToString(dm interface{}) string {
-	if dm == nil {
+// deliveryModeToString converts string delivery mode to datastore type
+func deliveryModeToString(dm string) string {
+	if dm == "" {
 		return string(datastore.AtLeastOnceDeliveryMode)
 	}
-	if str, ok := dm.(string); ok {
-		return str
-	}
-	return string(datastore.AtLeastOnceDeliveryMode)
+	return dm
 }
 
 // stringToDeliveryMode converts string to datastore.DeliveryMode
@@ -320,7 +317,7 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		endpointID, deviceID, sourceID                                  string
 		createdAt, updatedAt                                            pgtype.Timestamptz
 		function                                                        pgtype.Text
-		deliveryMode                                                    interface{}
+		deliveryMode                                                    string
 		alertConfigCount                                                int32
 		alertConfigThreshold                                            string
 		retryConfigType                                                 string
