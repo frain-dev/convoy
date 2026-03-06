@@ -380,6 +380,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, ui
 		UID:            uid,
 		EventType:      datastore.EventType(eventType),
 		Data:           data,
+		Raw:            string(data),
 		Endpoints:      []string{endpoint.UID},
 		Headers:        httpheader.HTTPHeader{},
 		ProjectID:      projectID,
