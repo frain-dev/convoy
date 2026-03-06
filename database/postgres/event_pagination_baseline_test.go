@@ -10,11 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
 )
 
 // Test Case 1: Empty search query uses EXISTS path
