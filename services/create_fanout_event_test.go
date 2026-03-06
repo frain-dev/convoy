@@ -213,6 +213,9 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 			}
 
 			event.AcknowledgedAt = null.Time{}
+
+			event.Raw = string(event.Data)
+
 			require.Equal(t, tc.wantEvent, event)
 		})
 	}
