@@ -178,9 +178,11 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 
 	var newMessage models.FanoutEvent
 	err := util.ReadJSON(r, &newMessage)
+	afterRead := time.Now()
 	if err != nil {
 		h.A.Logger.WithError(err).WithFields(log.Fields{
 			"body_size_bytes": bodySize,
+			"read_duration":   afterRead.Sub(start).Milliseconds(),
 		}).Error("failed to read fanout event json")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -188,10 +190,11 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 
 	h.A.Logger.WithFields(log.Fields{
 		"body_size_bytes": bodySize,
-		"duration":        time.Since(start).String(),
-	}).Error("[NOT ERROR] read fanout event json")
+		"duration":        afterRead.Sub(start).Milliseconds(),
+	}).Debug("read fanout event json completed")
 
 	err = newMessage.Validate()
+	afterValidation := time.Now()
 	if err != nil {
 		h.A.Logger.WithError(err).WithFields(log.Fields{
 			"owner_id":        newMessage.OwnerID,
@@ -203,6 +206,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	project, err := h.getProjectFromContext(r)
+	afterProject := time.Now()
 	if err != nil {
 		h.A.Logger.WithError(err).Error("failed to retrieve project for fanout event")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -226,6 +230,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	event, err := cf.Run(r.Context())
+	afterService := time.Now()
 	if err != nil {
 		h.A.Logger.WithError(err).WithFields(log.Fields{
 			"project_id":      project.UID,
@@ -237,22 +242,23 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	duration := time.Since(start)
+	// Log detailed timing breakdown for performance monitoring
+	h.A.Logger.WithFields(log.Fields{
+		"project_id":          project.UID,
+		"event_id":            event.UID,
+		"body_size_bytes":     bodySize,
+		"read_parse_duration": afterRead.Sub(start).Milliseconds(),
+		"validation_duration": afterValidation.Sub(afterRead).Milliseconds(),
+		"project_duration":    afterProject.Sub(afterValidation).Milliseconds(),
+		"service_duration":    afterService.Sub(afterProject).Milliseconds(),
+		"total_duration":      duration.Milliseconds(),
+		"endpoints_count":     len(event.Endpoints),
+		"is_duplicate":        event.IsDuplicateEvent,
+	}).Info("fanout event timing breakdown")
+
 	if event.IsDuplicateEvent {
-		h.A.Logger.WithFields(log.Fields{
-			"project_id":      project.UID,
-			"event_id":        event.UID,
-			"duration":        duration,
-			"body_size_bytes": bodySize,
-		}).Info("duplicate fanout event received")
 		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", nil, http.StatusCreated))
 	} else {
-		h.A.Logger.WithFields(log.Fields{
-			"project_id":      project.UID,
-			"event_id":        event.UID,
-			"duration":        duration,
-			"endpoints":       len(event.Endpoints),
-			"body_size_bytes": bodySize,
-		}).Info("fanout event queued successfully")
 		_ = render.Render(w, r, util.NewServerResponse("Endpoint fanout event queued successfully", nil, http.StatusCreated))
 	}
 }

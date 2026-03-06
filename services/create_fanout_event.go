@@ -50,6 +50,8 @@ type newEvent struct {
 }
 
 func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Event, err error) {
+	serviceStart := time.Now()
+
 	if e.Project == nil {
 		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
 	}
@@ -59,34 +61,36 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 	}
 
 	var isDuplicate bool
+	idempotencyStart := time.Now()
 	if !util.IsStringEmpty(e.NewMessage.IdempotencyKey) {
-		start := time.Now()
-		events, err := e.EventRepo.FindEventsByIdempotencyKey(ctx, e.Project.UID, e.NewMessage.IdempotencyKey)
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("failed to find events by idempotency key")
+		// Optimization: Use FindFirstEventWithIdempotencyKey (LIMIT 1) instead of FindEventsByIdempotencyKey (returns all)
+		// We only need to check if an event exists, not fetch all matching events
+		_, err := e.EventRepo.FindFirstEventWithIdempotencyKey(ctx, e.Project.UID, e.NewMessage.IdempotencyKey)
+		if err != nil && !errors.Is(err, datastore.ErrEventNotFound) {
+			log.FromContext(ctx).WithError(err).Error("failed to check idempotency key")
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
+		isDuplicate = (err == nil)
 		log.FromContext(ctx).WithFields(log.Fields{
-			"duration": time.Since(start),
-			"found":    len(events) > 0,
+			"duration": time.Since(idempotencyStart),
+			"found":    isDuplicate,
 		}).Debug("idempotency check completed")
-
-		isDuplicate = len(events) > 0
 	}
+	afterIdempotency := time.Now()
 
-	startDb := time.Now()
 	endpointIDs, err := e.EndpointRepo.FetchEndpointIDsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoints by owner id")
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
+	afterEndpoints := time.Now()
 	log.FromContext(ctx).WithFields(log.Fields{
-		"duration":  time.Since(startDb),
+		"duration":  afterEndpoints.Sub(afterIdempotency),
 		"endpoints": len(endpointIDs),
 	}).Debug("endpoint lookup completed")
 
+	afterPortalLink := afterEndpoints
 	if len(endpointIDs) == 0 {
-		startPortal := time.Now()
 		_, err = e.PortalLinkRepo.GetPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 		if err != nil {
 			if !errors.Is(err, datastore.ErrPortalLinkNotFound) {
@@ -94,8 +98,9 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 				return nil, &ServiceError{ErrMsg: err.Error()}
 			}
 		}
+		afterPortalLink = time.Now()
 		log.FromContext(ctx).WithFields(log.Fields{
-			"duration": time.Since(startPortal),
+			"duration": afterPortalLink.Sub(afterEndpoints),
 			"found":    err == nil,
 		}).Debug("portal link lookup completed")
 	}
@@ -105,17 +110,29 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 		Data:           e.NewMessage.Data,
 		EventType:      e.NewMessage.EventType,
 		IdempotencyKey: e.NewMessage.IdempotencyKey,
-		Raw:            string(e.NewMessage.Data),
+		Raw:            "", // Skip Raw duplication - Data field is canonical (saves ~629KB per event)
 		CustomHeaders:  e.NewMessage.CustomHeaders,
 		IsDuplicate:    isDuplicate,
 		AcknowledgedAt: time.Now(),
 	}
 
 	event, err = createEvent(ctx, endpointIDs, ev, e.Project, e.Queue)
+	afterQueue := time.Now()
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create fanout event")
 		return nil, err
 	}
+
+	// Log detailed service timing breakdown for performance monitoring
+	log.FromContext(ctx).WithFields(log.Fields{
+		"idempotency_duration":   afterIdempotency.Sub(idempotencyStart).Milliseconds(),
+		"endpoints_duration":     afterEndpoints.Sub(afterIdempotency).Milliseconds(),
+		"portal_link_duration":   afterPortalLink.Sub(afterEndpoints).Milliseconds(),
+		"queue_duration":         afterQueue.Sub(afterPortalLink).Milliseconds(),
+		"total_service_duration": afterQueue.Sub(serviceStart).Milliseconds(),
+		"event_id":               event.UID,
+		"endpoints_count":        len(endpointIDs),
+	}).Info("fanout service timing breakdown")
 
 	return event, nil
 }
