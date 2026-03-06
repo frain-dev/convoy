@@ -199,3 +199,50 @@ WHERE p.organisation_id = $1
   AND d.created_at >= $2
   AND d.created_at <= $3
   AND p.deleted_at IS NULL;
+
+-- name: CalculateUsageCombined :one
+WITH org_projects AS (
+  SELECT id FROM convoy.projects
+  WHERE organisation_id = $1 AND deleted_at IS NULL
+),
+ingress AS (
+  SELECT
+    COALESCE(SUM(LENGTH(e.raw)), 0)::bigint AS raw_bytes,
+    COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0)::bigint AS data_bytes
+  FROM convoy.events e
+  WHERE e.project_id IN (SELECT id FROM org_projects)
+    AND e.created_at >= $2 AND e.created_at <= $3
+    AND e.deleted_at IS NULL
+),
+egress AS (
+  SELECT COALESCE(SUM(LENGTH(e.raw)), 0) + COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS bytes
+  FROM convoy.event_deliveries d
+  JOIN convoy.events e ON e.id = d.event_id
+  WHERE d.project_id IN (SELECT id FROM org_projects)
+    AND d.status = 'Success'
+    AND d.created_at >= $2 AND d.created_at <= $3
+),
+event_count AS (
+  SELECT COUNT(*)::bigint AS count
+  FROM convoy.events e
+  WHERE e.project_id IN (SELECT id FROM org_projects)
+    AND e.created_at >= $2 AND e.created_at <= $3
+    AND e.deleted_at IS NULL
+),
+delivery_count AS (
+  SELECT COUNT(*)::bigint AS count
+  FROM convoy.event_deliveries d
+  WHERE d.project_id IN (SELECT id FROM org_projects)
+    AND d.status = 'Success'
+    AND d.created_at >= $2 AND d.created_at <= $3
+)
+SELECT
+  i.raw_bytes,
+  i.data_bytes,
+  COALESCE(e.bytes, 0)::bigint AS egress_bytes,
+  ec.count AS event_count,
+  dc.count AS delivery_count
+FROM ingress i
+CROSS JOIN egress e
+CROSS JOIN event_count ec
+CROSS JOIN delivery_count dc;
