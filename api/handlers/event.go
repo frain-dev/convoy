@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/io"
+	internalio "github.com/frain-dev/convoy/internal/io"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -172,11 +172,9 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
-	// Wrap the request body to count bytes
+	// Wrap the request body to count bytes in real-time
 	var bodySize int
-	r.Body = io.NewCountingReadCloser(r.Body, func(count int) {
-		bodySize = count
-	})
+	r.Body = internalio.NewCountingReadCloser(r.Body, &bodySize)
 
 	var newMessage models.FanoutEvent
 	err := util.ReadJSON(r, &newMessage)
@@ -188,7 +186,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	h.A.Logger.WithError(err).WithFields(log.Fields{
+	h.A.Logger.WithFields(log.Fields{
 		"body_size_bytes": bodySize,
 		"duration":        time.Since(start).String(),
 	}).Error("[NOT ERROR] read fanout event json")
