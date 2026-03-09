@@ -1,15 +1,42 @@
 [changelog]
-header = ""
+header = "# Convoy Changes\n\n"
 body = """
-# {{ version | trim_start_matches(pat="v") }}
+## {{ version | trim_start_matches(pat="v") }}
+{% set features = commits | filter(attribute="group", value="Features") %}
+{% if features | length > 0 -%}
+### Features
 
-{% for group, commits in commits | group_by(attribute="group") -%}
-### {{ group | upper_first }}
-
-{% for commit in commits -%}
+{% for commit in features -%}
 - {{ commit.message | split(pat="\n") | first }}
 {% endfor %}
+{%- endif -%}
+
+{% set improvements = commits | filter(attribute="group", value="Improvements") %}
+{% if improvements | length > 0 -%}
+### Improvements
+
+{% for commit in improvements -%}
+- {{ commit.message | split(pat="\n") | first }}
 {% endfor %}
+{%- endif -%}
+
+{% set bug_fixes = commits | filter(attribute="group", value="Bug Fixes") %}
+{% if bug_fixes | length > 0 -%}
+### Bug Fixes
+
+{% for commit in bug_fixes -%}
+- {{ commit.message | split(pat="\n") | first }}
+{% endfor %}
+{%- endif -%}
+
+{% set others = commits | filter(attribute="group", value="Others") %}
+{% if others | length > 0 -%}
+### Others
+
+{% for commit in others -%}
+- {{ commit.message | split(pat="\n") | first }}
+{% endfor %}
+{% endif -%}
 """
 trim = true
 
@@ -22,5 +49,5 @@ commit_parsers = [
   { message = "^feat", group = "Features" },
   { message = "^(fix|bugfix)", group = "Bug Fixes" },
   { message = "^(perf|refactor|chore|build|ci|docs|test)", group = "Improvements" },
-  { message = ".*", group = "Other" },
+  { message = ".*", group = "Others" },
 ]
