@@ -121,15 +121,15 @@ func (s *Service) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 
 	// Create API key
 	err := s.repo.CreateAPIKey(ctx, repo.CreateAPIKeyParams{
-		ID:           pgtype.Text{String: apiKey.UID, Valid: true},
-		Name:         pgtype.Text{String: apiKey.Name, Valid: true},
-		KeyType:      pgtype.Text{String: string(apiKey.Type), Valid: true},
-		MaskID:       pgtype.Text{String: apiKey.MaskID, Valid: true},
+		ID:           common.StringToPgTextFilter(apiKey.UID),
+		Name:         common.StringToPgTextFilter(apiKey.Name),
+		KeyType:      common.StringToPgTextFilter(string(apiKey.Type)),
+		MaskID:       common.StringToPgTextFilter(apiKey.MaskID),
 		RoleType:     roleType,
 		RoleProject:  roleProject,
 		RoleEndpoint: roleEndpoint,
-		Hash:         pgtype.Text{String: apiKey.Hash, Valid: true},
-		Salt:         pgtype.Text{String: apiKey.Salt, Valid: true},
+		Hash:         common.StringToPgTextFilter(apiKey.Hash),
+		Salt:         common.StringToPgTextFilter(apiKey.Salt),
 		UserID:       userID,
 		ExpiresAt:    common.NullTimeToPgTimestamptz(apiKey.ExpiresAt),
 	})
@@ -153,8 +153,8 @@ func (s *Service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 
 	// Update API key
 	err := s.repo.UpdateAPIKey(ctx, repo.UpdateAPIKeyParams{
-		ID:           pgtype.Text{String: apiKey.UID, Valid: true},
-		Name:         pgtype.Text{String: apiKey.Name, Valid: true},
+		ID:           common.StringToPgTextFilter(apiKey.UID),
+		Name:         common.StringToPgTextFilter(apiKey.Name),
 		RoleType:     roleType,
 		RoleProject:  roleProject,
 		RoleEndpoint: roleEndpoint,
@@ -170,7 +170,7 @@ func (s *Service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 
 // GetAPIKeyByID retrieves an API key by its ID
 func (s *Service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByID(ctx, pgtype.Text{String: id, Valid: true})
+	row, err := s.repo.FindAPIKeyByID(ctx, common.StringToPgTextFilter(id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -186,7 +186,7 @@ func (s *Service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIK
 // GetAPIKeyByMaskID retrieves an API key by its mask ID
 // CRITICAL: This method is used for API key authentication in NativeRealm
 func (s *Service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByMaskID(ctx, pgtype.Text{String: maskID, Valid: true})
+	row, err := s.repo.FindAPIKeyByMaskID(ctx, common.StringToPgTextFilter(maskID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -201,7 +201,7 @@ func (s *Service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datast
 
 // GetAPIKeyByHash retrieves an API key by its hash
 func (s *Service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByHash(ctx, pgtype.Text{String: hash, Valid: true})
+	row, err := s.repo.FindAPIKeyByHash(ctx, common.StringToPgTextFilter(hash))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -303,7 +303,7 @@ func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Filter
 	var prevRowCount datastore.PrevRowCount
 	if len(apiKeys) > 0 {
 		count, err2 := s.repo.CountPrevAPIKeys(ctx, repo.CountPrevAPIKeysParams{
-			Cursor:         pgtype.Text{String: first.UID, Valid: true},
+			Cursor:         common.StringToPgTextFilter(first.UID),
 			ProjectID:      projectID,
 			EndpointID:     endpointID,
 			UserID:         userID,

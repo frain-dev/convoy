@@ -72,7 +72,7 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 		ProjectID:        common.StringToPgText(event.ProjectID),
 		SourceID:         common.StringPtrToPgText(sourceID),
 		Headers:          headersToJSONB(event.Headers),
-		Raw:              common.StringToPgText(event.Raw),
+		Raw:              common.StringToPgTextFilter(event.Raw),
 		Data:             event.Data,
 		UrlQueryParams:   pgtype.Text{String: event.URLQueryParams, Valid: true},
 		IdempotencyKey:   common.StringToPgText(event.IdempotencyKey),
