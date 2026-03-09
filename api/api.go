@@ -318,37 +318,34 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 					// TODO(subomi): left this here temporarily till the data plane is stable.
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-						eventRouter.Route("/", func(writeEventRouter chi.Router) {
-							eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
+						// Read-only routes
+						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+						eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
-							// TODO(all): should the InstrumentPath change?
-							eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation(),
+						// Write routes with shared middleware - using Group to avoid duplication
+						eventRouter.Group(func(r chi.Router) {
+							r.Use(
+								handler.RequireEnabledProject(),
+								handler.RequireEnabledOrganisation(),
 								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
-								Post("/", handler.CreateEndpointEvent)
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate),
+							)
 
-							eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation(),
-								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
-								Post("/fanout", handler.CreateEndpointFanoutEvent)
+							r.Post("/", handler.CreateEndpointEvent)
+							r.Post("/fanout", handler.CreateEndpointFanoutEvent)
+							r.Post("/broadcast", handler.CreateBroadcastEvent)
+							r.Post("/dynamic", handler.CreateDynamicEvent)
+						})
 
-							eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation(),
-								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
-								Post("/broadcast", handler.CreateBroadcastEvent)
+						// Batch replay route (different middleware - no rate limiting)
+						eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).
+							Post("/batchreplay", handler.BatchReplayEvents)
 
-							eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation(),
-								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
-								Post("/dynamic", handler.CreateDynamicEvent)
-
-							eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchreplay", handler.BatchReplayEvents)
-
-							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-								eventSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/replay", handler.ReplayEndpointEvent)
-								eventSubRouter.Get("/", handler.GetEndpointEvent)
-							})
+						// Event ID subroutes
+						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+							eventSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).
+								Put("/replay", handler.ReplayEndpointEvent)
+							eventSubRouter.Get("/", handler.GetEndpointEvent)
 						})
 					})
 
@@ -456,10 +453,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser)).Post("/google/setup", handler.GoogleOAuthSetup)
 		})
 
-		uiRouter.Route("/sso", func(ssoUiRouter chi.Router) {
-			ssoUiRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-			ssoUiRouter.Get("/callback", handler.RedeemSSOCallback)
-			ssoUiRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
+		uiRouter.Route("/saml", func(samlRouter chi.Router) {
+			samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+			samlRouter.Get("/login", handler.RedeemSSOCallback)
+			samlRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
 		})
 
 		uiRouter.Route("/users", func(userRouter chi.Router) {
@@ -661,15 +658,14 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			configRouter.Get("/auth", handler.GetAuthConfiguration)
 		})
 
-		// Billing routes - only registered when billing is enabled
-		if a.cfg.Billing.Enabled {
-			billingHandler := &handlers.BillingHandler{
-				Handler:       handler,
-				BillingClient: a.A.BillingClient,
-			}
+		billingHandler := &handlers.BillingHandler{
+			Handler:       handler,
+			BillingClient: a.A.BillingClient,
+		}
+		uiRouter.Route("/billing", func(billingRouter chi.Router) {
+			billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
 
-			uiRouter.Route("/billing", func(billingRouter chi.Router) {
-				billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
+			if a.cfg.Billing.Enabled {
 				billingRouter.Get("/config", billingHandler.GetBillingConfig)
 				billingRouter.Get("/plans", billingHandler.GetPlans)
 				billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
@@ -709,8 +705,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
 					billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
 				})
-			})
-		}
+			}
+		})
 	})
 
 	// Portal Link API.
@@ -1051,7 +1047,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 
 var guestRoutes = []string{
 	"/auth/sso",
-	"/sso/callback",
+	"/saml/login",
 	"/auth/login",
 	"/auth/register",
 	"/auth/token/refresh",

@@ -99,9 +99,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 		lo.SetLevel(lvl)
 
-		lo.Debugf("redis dsn: %s", cfg.Redis.BuildDsn())
-		lo.Debugf("postgres dsn: %s", cfg.Database.BuildDsn())
-
 		postgresDB, err := postgres.NewDB(cfg)
 		if err != nil {
 			return errors.New("failed to connect to postgres with err: " + err.Error())
@@ -205,17 +202,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Rate = rateLimiter
 
-		// Create license service client if custom config provided, otherwise licenser will use defaults
-		var licenseClient *service.Client
-		if cfg.LicenseService.Host != "" || cfg.LicenseService.ValidatePath != "" || cfg.LicenseService.Timeout != 0 || cfg.LicenseService.RetryCount != 0 {
-			licenseClient = service.NewClient(service.Config{
-				Host:         cfg.LicenseService.Host,
-				ValidatePath: cfg.LicenseService.ValidatePath,
-				Timeout:      cfg.LicenseService.Timeout,
-				RetryCount:   cfg.LicenseService.RetryCount,
-				Logger:       lo,
-			})
-		}
+		licenseClient := service.NewClient(service.Config{
+			Host:         cfg.LicenseService.Host,
+			ValidatePath: cfg.LicenseService.ValidatePath,
+			Timeout:      cfg.LicenseService.Timeout,
+			RetryCount:   cfg.LicenseService.RetryCount,
+			Logger:       lo,
+		})
 
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			LicenseService: service.LicenserConfig{
@@ -950,7 +943,8 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 		return fmt.Errorf("failed to create user - %w", err)
 	}
 
-	a.Logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
+	a.Logger.Infof("Created Superuser with username: %s", defaultUser.Email)
+	fmt.Printf("Superuser created successfully:\n  Username: %s\n  Password: %s\n", defaultUser.Email, p.Plaintext)
 
 	return nil
 }

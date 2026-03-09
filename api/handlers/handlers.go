@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -79,10 +80,30 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 		}
 
 		projectID := apiKey.Role.Project
-		project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
-		if err != nil {
-			return nil, err
+
+		var p datastore.Project
+
+		cacheKey := convoy.ProjectCacheKey.Get(projectID)
+		cacheErr := h.A.Cache.Get(r.Context(), cacheKey.String(), &p)
+
+		// If cache hit with valid data, return it
+		if cacheErr == nil && p.UID != "" {
+			h.A.Logger.Info("found item in cache")
+			return &p, nil
 		}
+
+		// Cache miss - fetch from database
+		pp, fetchErr := projectRepo.FetchProjectByID(r.Context(), projectID)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+
+		cacheErr = h.A.Cache.Set(r.Context(), cacheKey.String(), &pp, time.Hour)
+		if cacheErr != nil {
+			h.A.Logger.WithError(cacheErr).Error("failed to cache item")
+		}
+
+		return pp, nil
 	case h.IsReqWithPortalLinkToken(authUser):
 		if len(authUser.Credential.Token) > 0 { // this is the legacy static token type
 			svc := portal_links.New(h.A.Logger, h.A.DB)
@@ -126,6 +147,19 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	}
 
 	return project, nil
+}
+
+// getProjectFromContext retrieves the project from context if available,
+// otherwise falls back to retrieveProject(). This avoids redundant database
+// queries when middleware has already loaded the project.
+func (h *Handler) getProjectFromContext(r *http.Request) (*datastore.Project, error) {
+	// First check if project is already in context (set by RequireEnabledProject middleware)
+	if cachedProject := r.Context().Value(convoy.ProjectCtx); cachedProject != nil {
+		return cachedProject.(*datastore.Project), nil
+	}
+
+	// Fall back to retrieveProject for cases without middleware
+	return h.retrieveProject(r)
 }
 
 func (h *Handler) retrieveHost() (string, error) {

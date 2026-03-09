@@ -1,4 +1,4 @@
-package e2e
+package backup
 
 import (
 	"context"
@@ -28,7 +28,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	ctx := context.Background()
 
 	// Get MinIO client from test infrastructure
-	minioClient, minioEndpoint, err := infra.NewMinIOClient(t)
+	minioClient, minioEndpoint, err := (*infra.NewMinIOClient)(t)
 	require.NoError(t, err, "failed to create MinIO client")
 
 	// Get database and repositories

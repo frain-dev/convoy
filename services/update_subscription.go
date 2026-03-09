@@ -54,6 +54,9 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		}
 
 		if project.Type == datastore.IncomingProject {
+			if util.IsStringEmpty(s.Update.SourceID) {
+				return nil, &ServiceError{ErrMsg: "source_id is required for incoming projects"}
+			}
 			_, err2 = s.SourceRepo.FindSourceByID(ctx, project.UID, s.Update.SourceID)
 			if err2 != nil {
 				log.FromContext(ctx).WithError(err2).Error("failed to find source by id")

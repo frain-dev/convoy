@@ -60,26 +60,44 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 
 	var isDuplicate bool
 	if !util.IsStringEmpty(e.NewMessage.IdempotencyKey) {
+		start := time.Now()
 		events, err := e.EventRepo.FindEventsByIdempotencyKey(ctx, e.Project.UID, e.NewMessage.IdempotencyKey)
 		if err != nil {
+			log.FromContext(ctx).WithError(err).Error("failed to find events by idempotency key")
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
+		log.FromContext(ctx).WithFields(log.Fields{
+			"duration": time.Since(start),
+			"found":    len(events) > 0,
+		}).Debug("idempotency check completed")
 
 		isDuplicate = len(events) > 0
 	}
 
-	endpoints, err := e.EndpointRepo.FindEndpointsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
+	startDb := time.Now()
+	endpointIDs, err := e.EndpointRepo.FetchEndpointIDsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to find endpoints by owner id")
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
+	log.FromContext(ctx).WithFields(log.Fields{
+		"duration":  time.Since(startDb),
+		"endpoints": len(endpointIDs),
+	}).Debug("endpoint lookup completed")
 
-	if len(endpoints) == 0 {
+	if len(endpointIDs) == 0 {
+		startPortal := time.Now()
 		_, err = e.PortalLinkRepo.GetPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 		if err != nil {
 			if !errors.Is(err, datastore.ErrPortalLinkNotFound) {
+				log.FromContext(ctx).WithError(err).Error("failed to find portal link by owner id")
 				return nil, &ServiceError{ErrMsg: err.Error()}
 			}
 		}
+		log.FromContext(ctx).WithFields(log.Fields{
+			"duration": time.Since(startPortal),
+			"found":    err == nil,
+		}).Debug("portal link lookup completed")
 	}
 
 	ev := &newEvent{
@@ -93,21 +111,16 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 		AcknowledgedAt: time.Now(),
 	}
 
-	event, err = createEvent(ctx, endpoints, ev, e.Project, e.Queue)
+	event, err = createEvent(ctx, endpointIDs, ev, e.Project, e.Queue)
 	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to create fanout event")
 		return nil, err
 	}
 
 	return event, nil
 }
 
-func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *newEvent, project *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
-	endpointIDs := make([]string, 0, len(endpoints))
-
-	for _, endpoint := range endpoints {
-		endpointIDs = append(endpointIDs, endpoint.UID)
-	}
-
+func createEvent(ctx context.Context, endpointIDs []string, newMessage *newEvent, project *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
 	jobId := queue.JobId{ProjectID: project.UID, ResourceID: newMessage.UID}.FanOutJobId()
 	event := &datastore.Event{
 		UID:              newMessage.UID,
@@ -142,10 +155,15 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		ID:      jobId,
 		Payload: eventByte,
 	}
+	startQueue := time.Now()
 	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Error occurred sending new event to the queue %s", err)
+		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
+	log.FromContext(ctx).WithFields(log.Fields{
+		"duration": time.Since(startQueue),
+	}).Debug("event written to queue")
 
 	return event, nil
 }

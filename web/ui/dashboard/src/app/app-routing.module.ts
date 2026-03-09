@@ -4,6 +4,14 @@ import { IframeGuard } from './guards/iframe/iframe.guard';
 
 const routes: Routes = [
 	{
+		path: 'saml',
+		loadComponent: () => import('./public/saml/saml.component').then(mod => mod.SamlComponent)
+	},
+	{
+		path: 'sso/callback',
+		loadComponent: () => import('./public/saml/saml.component').then(mod => mod.SamlComponent)
+	},
+	{
 		path: '',
 		loadChildren: () => import('./private/private.module').then(m => m.PrivateModule),
 		canActivate: [IframeGuard]

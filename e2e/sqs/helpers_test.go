@@ -1,0 +1,799 @@
+package sqs
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
+
+	convoy "github.com/frain-dev/convoy-go/v2"
+
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/internal/subscriptions"
+	"github.com/frain-dev/convoy/pkg/log"
+)
+
+// EventManifest tracks received webhooks for verification
+type EventManifest struct {
+	endpoints     map[string]int
+	events        map[string]int
+	endpointsLock sync.RWMutex
+	eventsLock    sync.RWMutex
+}
+
+func NewEventManifest() *EventManifest {
+	return &EventManifest{
+		endpoints: make(map[string]int),
+		events:    make(map[string]int),
+	}
+}
+
+func (m *EventManifest) IncEndpoint(k string) {
+	m.endpointsLock.Lock()
+	defer m.endpointsLock.Unlock()
+	m.endpoints[k]++
+}
+
+func (m *EventManifest) ReadEndpoint(k string) int {
+	m.endpointsLock.RLock()
+	defer m.endpointsLock.RUnlock()
+	return m.endpoints[k]
+}
+
+func (m *EventManifest) IncEvent(k string) {
+	m.eventsLock.Lock()
+	defer m.eventsLock.Unlock()
+	m.events[k]++
+}
+
+func (m *EventManifest) ReadEvent(k string) int {
+	m.eventsLock.RLock()
+	defer m.eventsLock.RUnlock()
+	return m.events[k]
+}
+
+func (m *EventManifest) Reset() {
+	m.endpointsLock.Lock()
+	m.eventsLock.Lock()
+	defer m.endpointsLock.Unlock()
+	defer m.eventsLock.Unlock()
+	m.endpoints = make(map[string]int)
+	m.events = make(map[string]int)
+}
+
+// StartMockWebhookServer starts a mock HTTP server that receives and tracks webhooks
+func StartMockWebhookServer(t *testing.T, manifest *EventManifest, done chan bool, counter *atomic.Int64, port int) {
+	t.Helper()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
+		endpoint := fmt.Sprintf("http://localhost:%d/webhook", port)
+		manifest.IncEndpoint(endpoint)
+
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		reqBody, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Logf("Error reading webhook body: %v", err)
+			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
+		}
+
+		// Parse the webhook payload based on content type
+		contentType := r.Header.Get("Content-Type")
+		var payload map[string]interface{}
+
+		if contentType == "application/x-www-form-urlencoded" {
+			// For form-encoded payloads, just track the raw body
+			// Convoy sends form data, not JSON for form endpoints
+			manifest.IncEvent(string(reqBody))
+			t.Logf("Received form-encoded webhook on %s: %s", endpoint, string(reqBody))
+		} else {
+			// For JSON payloads, parse and track
+			if err := json.Unmarshal(reqBody, &payload); err != nil {
+				t.Logf("Error parsing webhook JSON: %v", err)
+				http.Error(w, "Bad request", http.StatusBadRequest)
+				return
+			}
+			eventJSON, _ := json.Marshal(payload)
+			manifest.IncEvent(string(eventJSON))
+			t.Logf("Received JSON webhook on %s: %s", endpoint, string(reqBody))
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+
+		// Decrement counter
+		current := counter.Add(-1)
+		if current <= 0 {
+			select {
+			case done <- true:
+			default:
+			}
+		}
+	})
+
+	server := &http.Server{
+		ReadHeaderTimeout: 10 * time.Second,
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           mux,
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			t.Logf("Mock webhook server error on port %d: %v", port, err)
+		}
+	}()
+
+	// Cleanup
+	t.Cleanup(func() {
+		server.Close()
+	})
+
+	// Give server time to start
+	time.Sleep(100 * time.Millisecond)
+}
+
+// CreateEndpointViaSDK creates an endpoint using the Convoy Go SDK
+func CreateEndpointViaSDK(t *testing.T, c *convoy.Client, port int, ownerID string) *convoy.EndpointResponse {
+	t.Helper()
+
+	baseURL := fmt.Sprintf("http://localhost:%d/webhook", port)
+
+	body := &convoy.CreateEndpointRequest{
+		Name:         "endpoint-" + ulid.Make().String(),
+		URL:          baseURL,
+		Secret:       "endpoint-secret",
+		SupportEmail: "test@example.com",
+		OwnerID:      ownerID,
+	}
+
+	endpoint, err := c.Endpoints.Create(t.Context(), body, &convoy.EndpointParams{})
+	require.NoError(t, err)
+	require.NotEmpty(t, endpoint.UID)
+
+	return endpoint
+}
+
+// WaitForWebhooks waits for all expected webhooks to arrive
+func WaitForWebhooks(t *testing.T, done chan bool, timeout time.Duration) {
+	t.Helper()
+
+	select {
+	case <-done:
+		t.Log("All webhooks received")
+	case <-time.After(timeout):
+		t.Fatal("Timeout waiting for webhooks")
+	}
+}
+
+// VerifyWebhookDelivery verifies that webhooks were delivered correctly
+func VerifyWebhookDelivery(t *testing.T, manifest *EventManifest, expectedEndpoints, expectedEvents []string) {
+	t.Helper()
+
+	// Verify endpoints received webhooks
+	for _, endpoint := range expectedEndpoints {
+		hits := manifest.ReadEndpoint(endpoint)
+		require.Greater(t, hits, 0, "Endpoint %s should have received webhooks", endpoint)
+	}
+
+	// Verify events were delivered
+	for _, eventData := range expectedEvents {
+		// Find matching event in manifest
+		found := false
+		for key, count := range manifest.events {
+			if contains(key, eventData) {
+				require.Greater(t, count, 0, "Event %s should have been delivered", eventData)
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Event %s was not found in delivered events", eventData)
+		}
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(substr) == 0 || (len(s) >= len(substr) && (s == substr || containsSubstring(s, substr)))
+}
+
+func containsSubstring(s, substr string) bool {
+	if len(substr) > len(s) {
+		return false
+	}
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
+// CreateSubscriptionWithFilter creates a subscription with advanced filtering
+func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx context.Context,
+	project *datastore.Project, endpoint *convoy.EndpointResponse, eventTypes []string,
+	bodyFilter, headerFilter map[string]interface{}, function *string, sourceID *string) *datastore.Subscription {
+	t.Helper()
+
+	var nullFunc null.String
+	if function != nil {
+		nullFunc = null.StringFrom(*function)
+	}
+
+	subscription := &datastore.Subscription{
+		UID:        ulid.Make().String(),
+		ProjectID:  project.UID,
+		Name:       fmt.Sprintf("subscription-%s", ulid.Make().String()),
+		Type:       datastore.SubscriptionTypeAPI,
+		EndpointID: endpoint.UID,
+		FilterConfig: &datastore.FilterConfiguration{
+			EventTypes: eventTypes,
+		},
+		Function: nullFunc,
+	}
+
+	// Set source ID if provided (for broadcast messages with source filter)
+	if sourceID != nil {
+		subscription.SourceID = *sourceID
+	}
+
+	// Add advanced filters if provided
+	if bodyFilter != nil || headerFilter != nil {
+		subscription.FilterConfig.Filter = datastore.FilterSchema{
+			Body:    bodyFilter,
+			Headers: headerFilter,
+		}
+	}
+
+	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	err := subRepo.CreateSubscription(ctx, project.UID, subscription)
+	require.NoError(t, err)
+
+	return subscription
+}
+
+// AssertEventCreated verifies that an event was created in the database
+// Optional timeWindow parameter specifies the lookback window (defaults to 2 minutes if not provided)
+func AssertEventCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventType string, timeWindow ...time.Duration) *datastore.Event {
+	t.Helper()
+
+	// Use default 2-minute window if not specified
+	lookback := 2 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	// Use a short retry loop to account for async processing
+	var event *datastore.Event
+	var err error
+	dbConn := db.GetDB()
+
+	for i := 0; i < 15; i++ {
+		// Query events directly from the events table
+		query := `
+			SELECT id, project_id, event_type, source_id, headers, raw, data,
+				   created_at, updated_at, deleted_at, acknowledged_at,
+				   idempotency_key, url_query_params, is_duplicate_event
+			FROM convoy.events
+			WHERE project_id = $1
+			  AND event_type = $2
+			  AND deleted_at IS NULL
+			  AND created_at >= $3
+			  AND created_at <= $4
+			ORDER BY created_at DESC
+			LIMIT 1
+		`
+
+		startTime := time.Now().Add(-lookback)
+		endTime := time.Now().Add(1 * time.Minute)
+
+		var e datastore.Event
+		err = dbConn.QueryRowContext(ctx, query, projectID, eventType, startTime, endTime).Scan(
+			&e.UID,
+			&e.ProjectID,
+			&e.EventType,
+			&e.SourceID,
+			&e.Headers,
+			&e.Raw,
+			&e.Data,
+			&e.CreatedAt,
+			&e.UpdatedAt,
+			&e.DeletedAt,
+			&e.AcknowledgedAt,
+			&e.IdempotencyKey,
+			&e.URLQueryParams,
+			&e.IsDuplicateEvent,
+		)
+
+		if err == nil {
+			t.Logf("✓ Found event: ID=%s, Type=%s, CreatedAt=%s (attempt %d)", e.UID, e.EventType, e.CreatedAt, i+1)
+			event = &e
+			break
+		}
+
+		if err != sql.ErrNoRows {
+			t.Logf("ERROR querying events (attempt %d): %v", i+1, err)
+		} else {
+			t.Logf("No event found yet for project %s with type %s (attempt %d)", projectID, eventType, i+1)
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	require.NoError(t, err)
+	require.NotNil(t, event, "Event with type %s should have been created", eventType)
+	require.Equal(t, eventType, string(event.EventType))
+
+	return event
+}
+
+// AssertMultipleEventsCreated verifies that multiple events were created in the database
+// and returns all matching events. The expectedCount parameter specifies how many events are expected.
+func AssertMultipleEventsCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventType string, expectedCount int, timeWindow ...time.Duration) []*datastore.Event {
+	t.Helper()
+
+	// Use default 2-minute window if not specified
+	lookback := 2 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	var events []*datastore.Event
+	dbConn := db.GetDB()
+
+	for i := 0; i < 30; i++ {
+		query := `
+			SELECT id, project_id, event_type, source_id, headers, raw, data,
+				   created_at, updated_at, deleted_at, acknowledged_at,
+				   idempotency_key, url_query_params, is_duplicate_event
+			FROM convoy.events
+			WHERE project_id = $1
+			  AND event_type = $2
+			  AND deleted_at IS NULL
+			  AND created_at >= $3
+			  AND created_at <= $4
+			ORDER BY created_at ASC
+		`
+
+		startTime := time.Now().Add(-lookback)
+		endTime := time.Now().Add(1 * time.Minute)
+
+		rows, err := dbConn.QueryContext(ctx, query, projectID, eventType, startTime, endTime)
+		if err != nil {
+			t.Logf("ERROR querying events (attempt %d): %v", i+1, err)
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		if rows.Err() != nil {
+			err = rows.Close()
+			if err != nil {
+				return nil
+			}
+
+			t.Logf("ERROR scanning events (attempt %d): %v", i+1, rows.Err())
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		events = nil // Reset for each attempt
+		for rows.Next() {
+			var e datastore.Event
+			err := rows.Scan(
+				&e.UID,
+				&e.ProjectID,
+				&e.EventType,
+				&e.SourceID,
+				&e.Headers,
+				&e.Raw,
+				&e.Data,
+				&e.CreatedAt,
+				&e.UpdatedAt,
+				&e.DeletedAt,
+				&e.AcknowledgedAt,
+				&e.IdempotencyKey,
+				&e.URLQueryParams,
+				&e.IsDuplicateEvent,
+			)
+			if err != nil {
+				rows.Close()
+				t.Logf("ERROR scanning event (attempt %d): %v", i+1, err)
+				break
+			}
+			events = append(events, &e)
+		}
+		rows.Close()
+
+		if len(events) >= expectedCount {
+			t.Logf("✓ Found %d events of type %s (attempt %d)", len(events), eventType, i+1)
+			break
+		}
+
+		t.Logf("Found %d/%d events for project %s with type %s (attempt %d)", len(events), expectedCount, projectID, eventType, i+1)
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	require.GreaterOrEqual(t, len(events), expectedCount, "Expected at least %d events with type %s", expectedCount, eventType)
+	return events
+}
+
+// AssertEventDeliveryCreated verifies that an event delivery was created
+// Optional timeWindow parameter specifies the lookback window (defaults to 2 minutes if not provided)
+func AssertEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID, endpointID string, timeWindow ...time.Duration) *datastore.EventDelivery {
+	t.Helper()
+
+	// Use default 2-minute window if not specified
+	lookback := 2 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	// Use a short retry loop to account for async processing
+	var eventDelivery *datastore.EventDelivery
+	var err error
+	dbConn := db.GetDB()
+
+	for i := 0; i < 20; i++ {
+		// Query event deliveries directly from the table
+		query := `
+			SELECT id, project_id, event_id, endpoint_id,
+				   COALESCE(device_id, '') as device_id,
+				   COALESCE(subscription_id, '') as subscription_id,
+				   headers, attempts, status,
+				   COALESCE(metadata::TEXT, '{}')::jsonb as metadata,
+				   COALESCE(cli_metadata::TEXT, '{}')::jsonb as cli_metadata,
+				   COALESCE(description, '') as description,
+				   created_at, updated_at, deleted_at, acknowledged_at
+			FROM convoy.event_deliveries
+			WHERE project_id = $1
+			  AND event_id = $2
+			  AND endpoint_id = $3
+			  AND deleted_at IS NULL
+			  AND created_at >= $4
+			  AND created_at <= $5
+			ORDER BY created_at DESC
+			LIMIT 1
+		`
+
+		startTime := time.Now().Add(-lookback)
+		endTime := time.Now().Add(1 * time.Minute)
+
+		var ed datastore.EventDelivery
+		err = dbConn.QueryRowContext(ctx, query, projectID, eventID, endpointID, startTime, endTime).Scan(
+			&ed.UID,
+			&ed.ProjectID,
+			&ed.EventID,
+			&ed.EndpointID,
+			&ed.DeviceID,
+			&ed.SubscriptionID,
+			&ed.Headers,
+			&ed.DeliveryAttempts,
+			&ed.Status,
+			&ed.Metadata,
+			&ed.CLIMetadata,
+			&ed.Description,
+			&ed.CreatedAt,
+			&ed.UpdatedAt,
+			&ed.DeletedAt,
+			&ed.AcknowledgedAt,
+		)
+
+		if err == nil {
+			t.Logf("✓ Found event delivery: ID=%s, EventID=%s, EndpointID=%s, Status=%s (attempt %d)", ed.UID, ed.EventID, ed.EndpointID, ed.Status, i+1)
+			eventDelivery = &ed
+			break
+		}
+
+		if err != sql.ErrNoRows {
+			t.Logf("ERROR querying event deliveries (attempt %d): %v", i+1, err)
+		} else {
+			t.Logf("No event delivery found yet for event %s, endpoint %s (attempt %d)", eventID, endpointID, i+1)
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	require.NoError(t, err)
+	require.NotNil(t, eventDelivery, "Event delivery should have been created")
+	require.Equal(t, eventID, eventDelivery.EventID)
+	require.Equal(t, endpointID, eventDelivery.EndpointID)
+
+	return eventDelivery
+}
+
+// AssertNoEventDeliveryCreated verifies that NO event delivery was created for a specific
+// event and endpoint within a time window. This is used in negative test cases to verify
+// that filtering logic (event types, body filters, headers) correctly prevents delivery creation.
+//
+// The function filters by both eventID AND endpointID to ensure test isolation when multiple
+// endpoints exist in the same project.
+//
+// Optional timeWindow parameter specifies the lookback window (defaults to 5 minutes if not provided)
+func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID, endpointID string, timeWindow ...time.Duration) {
+	t.Helper()
+
+	// Use default 5-minute window if not specified (larger window for negative tests)
+	lookback := 5 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+
+	// Wait a bit to ensure no delivery is created
+	time.Sleep(2 * time.Second)
+
+	now := time.Now()
+	searchParams := datastore.SearchParams{
+		CreatedAtStart: now.Add(-lookback).Unix(),
+		CreatedAtEnd:   now.Add(1 * time.Minute).Unix(),
+	}
+	pageable := datastore.Pageable{
+		PerPage:   10,
+		Direction: datastore.Next,
+	}
+
+	deliveries, _, err := eventDeliveryRepo.LoadEventDeliveriesPaged(
+		ctx, projectID, []string{endpointID}, eventID, "",
+		nil, searchParams, pageable, "", "", "",
+	)
+	require.NoError(t, err)
+	require.Empty(t, deliveries, "No event delivery should have been created")
+}
+
+// AssertDeliveryAttemptCreated verifies that at least one delivery attempt was created
+// for the specified event delivery. Returns the most recent delivery attempt for
+// additional assertions (HTTP status, error details, etc.).
+//
+// This helper uses a retry loop (20 attempts, 200ms apart) to account for async
+// delivery attempt creation after webhook delivery completes.
+func AssertDeliveryAttemptCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, eventDeliveryID string) *datastore.DeliveryAttempt {
+	t.Helper()
+
+	attemptsService := delivery_attempts.New(nil, db)
+
+	// Retry loop - delivery attempts may take time to be created
+	var attempts []datastore.DeliveryAttempt
+	var err error
+	for i := 0; i < 20; i++ {
+		attempts, err = attemptsService.FindDeliveryAttempts(ctx, eventDeliveryID)
+		if err == nil && len(attempts) > 0 {
+			t.Logf("✓ Found %d delivery attempt(s) for delivery %s (attempt %d)",
+				len(attempts), eventDeliveryID, i+1)
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	require.NoError(t, err, "Failed to query delivery attempts")
+	require.NotEmpty(t, attempts, "At least one delivery attempt should have been created")
+
+	// Return the most recent attempt
+	return &attempts[len(attempts)-1]
+}
+
+// SQS Helper Functions
+
+// CreateSQSSource creates an SQS source for E2E testing
+func CreateSQSSource(t *testing.T, db *postgres.Postgres, ctx context.Context, project *datastore.Project, endpoint, queueName string, workers int, bodyFunction, headerFunction *string) *datastore.Source {
+	t.Helper()
+	source := &datastore.Source{
+		UID:          ulid.Make().String(),
+		ProjectID:    project.UID,
+		MaskID:       ulid.Make().String(),
+		Name:         fmt.Sprintf("sqs-source-%s", ulid.Make().String()),
+		Type:         datastore.PubSubSource,
+		Provider:     datastore.GithubSourceProvider,
+		IsDisabled:   false,
+		BodyFunction: bodyFunction,
+		Verifier: &datastore.VerifierConfig{
+			Type: datastore.NoopVerifier,
+		},
+		HeaderFunction: headerFunction,
+		PubSub: &datastore.PubSubConfig{
+			Type:    datastore.SqsPubSub,
+			Workers: workers,
+			Sqs: &datastore.SQSPubSubConfig{
+				AccessKeyID:   "test",
+				SecretKey:     "test",
+				DefaultRegion: "us-east-1",
+				QueueName:     queueName,
+				Endpoint:      endpoint,
+			},
+		},
+	}
+
+	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	err := sourceRepo.CreateSource(ctx, source)
+	require.NoError(t, err)
+
+	return source
+}
+
+// CreateSQSQueue creates an SQS queue in LocalStack and returns the queue URL
+func CreateSQSQueue(t *testing.T, endpoint, queueName string) string {
+	t.Helper()
+
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Create queue
+	result, err := svc.CreateQueue(&sqs.CreateQueueInput{
+		QueueName: aws.String(queueName),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result.QueueUrl)
+
+	return *result.QueueUrl
+}
+
+// GetSQSQueueURL retrieves the queue URL for a given queue name
+func GetSQSQueueURL(t *testing.T, endpoint, queueName string) string {
+	t.Helper()
+
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	result, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
+		QueueName: aws.String(queueName),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result.QueueUrl)
+
+	return *result.QueueUrl
+}
+
+// PublishSingleSQSMessage publishes a single-type message to SQS
+func PublishSingleSQSMessage(t *testing.T, endpoint, queueURL, endpointID, eventType string, data map[string]interface{}) error {
+	t.Helper()
+	// Create message body
+	messageBody := map[string]interface{}{
+		"endpoint_id":     endpointID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Send message with attributes
+	_, err = svc.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    aws.String(queueURL),
+		MessageBody: aws.String(string(bodyJSON)),
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"x-convoy-message-type": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("single"),
+			},
+		},
+	})
+
+	return err
+}
+
+// PublishFanoutSQSMessage publishes a fanout-type message to SQS
+func PublishFanoutSQSMessage(t *testing.T, endpoint, queueURL, ownerID, eventType string, data map[string]interface{}) error {
+	t.Helper()
+	// Create message body
+	messageBody := map[string]interface{}{
+		"owner_id":        ownerID,
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Send message with attributes
+	_, err = svc.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    aws.String(queueURL),
+		MessageBody: aws.String(string(bodyJSON)),
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"x-convoy-message-type": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("fanout"),
+			},
+		},
+	})
+
+	return err
+}
+
+// PublishBroadcastSQSMessage publishes a broadcast-type message to SQS
+func PublishBroadcastSQSMessage(t *testing.T, endpoint, queueURL, eventType string, data map[string]interface{}) error {
+	t.Helper()
+	// Create message body
+	messageBody := map[string]interface{}{
+		"event_type":      eventType,
+		"data":            data,
+		"idempotency_key": ulid.Make().String(),
+	}
+
+	bodyJSON, err := json.Marshal(messageBody)
+	require.NoError(t, err)
+
+	// Create AWS session
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-1"),
+		Endpoint:    aws.String(endpoint),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+		DisableSSL:  aws.Bool(true),
+	})
+	require.NoError(t, err)
+
+	svc := sqs.New(sess)
+
+	// Send message with attributes
+	_, err = svc.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    aws.String(queueURL),
+		MessageBody: aws.String(string(bodyJSON)),
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"x-convoy-message-type": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("broadcast"),
+			},
+		},
+	})
+
+	return err
+}

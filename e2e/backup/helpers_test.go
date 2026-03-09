@@ -1,4 +1,4 @@
-package e2e
+package backup
 
 import (
 	"context"
@@ -464,4 +464,136 @@ func getExportPath(baseDir, orgID, projectID, tableName string) string {
 // getMinIOPrefix constructs the MinIO prefix for listing objects
 func getMinIOPrefix(orgID, projectID string) string {
 	return fmt.Sprintf("convoy/export/orgs/%s/projects/%s/", orgID, projectID)
+}
+
+// Common Database Assertion Helpers
+
+// AssertNoEventDeliveryCreated verifies that NO event delivery was created for a specific
+// event and endpoint within a time window. This is used in negative test cases to verify
+// that filtering logic (event types, body filters, headers) correctly prevents delivery creation.
+//
+// The function filters by both eventID AND endpointID to ensure test isolation when multiple
+// endpoints exist in the same project.
+//
+// Optional timeWindow parameter specifies the lookback window (defaults to 5 minutes if not provided)
+func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventID, endpointID string, timeWindow ...time.Duration) {
+	t.Helper()
+
+	// Use default 5-minute window if not specified (larger window for negative tests)
+	lookback := 5 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+
+	// Wait a bit to ensure no delivery is created
+	time.Sleep(2 * time.Second)
+
+	now := time.Now()
+	searchParams := datastore.SearchParams{
+		CreatedAtStart: now.Add(-lookback).Unix(),
+		CreatedAtEnd:   now.Add(1 * time.Minute).Unix(),
+	}
+	pageable := datastore.Pageable{
+		PerPage:   10,
+		Direction: datastore.Next,
+	}
+
+	deliveries, _, err := eventDeliveryRepo.LoadEventDeliveriesPaged(
+		ctx, projectID, []string{endpointID}, eventID, "",
+		nil, searchParams, pageable, "", "", "",
+	)
+	require.NoError(t, err)
+	require.Empty(t, deliveries, "No event delivery should have been created")
+}
+
+// AssertMultipleEventsCreated verifies that multiple events were created in the database
+// and returns all matching events. The expectedCount parameter specifies how many events are expected.
+func AssertMultipleEventsCreated(t *testing.T, db *postgres.Postgres, ctx context.Context, projectID, eventType string, expectedCount int, timeWindow ...time.Duration) []*datastore.Event {
+	t.Helper()
+
+	// Use default 2-minute window if not specified
+	lookback := 2 * time.Minute
+	if len(timeWindow) > 0 && timeWindow[0] > 0 {
+		lookback = timeWindow[0]
+	}
+
+	var events []*datastore.Event
+	dbConn := db.GetDB()
+
+	for i := 0; i < 30; i++ {
+		query := `
+			SELECT id, project_id, event_type, source_id, headers, raw, data,
+				   created_at, updated_at, deleted_at, acknowledged_at,
+				   idempotency_key, url_query_params, is_duplicate_event
+			FROM convoy.events
+			WHERE project_id = $1
+			  AND event_type = $2
+			  AND deleted_at IS NULL
+			  AND created_at >= $3
+			  AND created_at <= $4
+			ORDER BY created_at ASC
+		`
+
+		startTime := time.Now().Add(-lookback)
+		endTime := time.Now().Add(1 * time.Minute)
+
+		rows, err := dbConn.QueryContext(ctx, query, projectID, eventType, startTime, endTime)
+		if err != nil {
+			t.Logf("ERROR querying events (attempt %d): %v", i+1, err)
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		if rows.Err() != nil {
+			err = rows.Close()
+			if err != nil {
+				return nil
+			}
+
+			t.Logf("ERROR scanning events (attempt %d): %v", i+1, rows.Err())
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		events = nil // Reset for each attempt
+		for rows.Next() {
+			var e datastore.Event
+			err := rows.Scan(
+				&e.UID,
+				&e.ProjectID,
+				&e.EventType,
+				&e.SourceID,
+				&e.Headers,
+				&e.Raw,
+				&e.Data,
+				&e.CreatedAt,
+				&e.UpdatedAt,
+				&e.DeletedAt,
+				&e.AcknowledgedAt,
+				&e.IdempotencyKey,
+				&e.URLQueryParams,
+				&e.IsDuplicateEvent,
+			)
+			if err != nil {
+				rows.Close()
+				t.Logf("ERROR scanning event (attempt %d): %v", i+1, err)
+				break
+			}
+			events = append(events, &e)
+		}
+		rows.Close()
+
+		if len(events) >= expectedCount {
+			t.Logf("✓ Found %d events of type %s (attempt %d)", len(events), eventType, i+1)
+			break
+		}
+
+		t.Logf("Found %d/%d events for project %s with type %s (attempt %d)", len(events), expectedCount, projectID, eventType, i+1)
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	require.GreaterOrEqual(t, len(events), expectedCount, "Expected at least %d events with type %s", expectedCount, eventType)
+	return events
 }

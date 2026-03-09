@@ -6,14 +6,18 @@ import {HTTP_RESPONSE} from 'src/app/models/global.model';
 	providedIn: 'root'
 })
 export class LicensesService {
+	readonly licensedOrgLabel = 'Pro';
+
 	constructor(private http: HttpService) {}
 
-	getLicenses(orgId?: string): Promise<HTTP_RESPONSE> {
+	getLicenses(orgId?: string, instanceLevelOnly = false): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
-			const fromStorage = this.http.getOrganisation();
-			const org = orgId ?? fromStorage?.uid;
 			const query: Record<string, string> = {};
-			if (org) query['orgID'] = org;
+			if (!instanceLevelOnly) {
+				const fromStorage = this.http.getOrganisation();
+				const org = orgId ?? fromStorage?.uid;
+				if (org) query['orgID'] = org;
+			}
 			const queryUndefined = Object.keys(query).length === 0 ? undefined : query;
 			try {
 				const response = await this.http.request({
@@ -28,10 +32,10 @@ export class LicensesService {
 		});
 	}
 
-
-	async setLicenses() {
+	/** Call from login/signup (public pages) so the request uses instance-level only (no orgID). */
+	async setLicenses(instanceLevelOnly = false) {
 		try {
-			const response = await this.getLicenses();
+			const response = await this.getLicenses(undefined, instanceLevelOnly);
 			localStorage.setItem('licenses', JSON.stringify(response.data));
 		} catch {}
 	}
