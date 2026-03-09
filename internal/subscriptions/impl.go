@@ -15,6 +15,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/subscriptions/repo"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
@@ -110,9 +111,8 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 		Name:                          pgtype.Text{String: subscription.Name, Valid: true},
 		Type:                          pgtype.Text{String: string(subscription.Type), Valid: true},
 		ProjectID:                     pgtype.Text{String: subscription.ProjectID, Valid: true},
-		EndpointID:                    stringToPgText(subscription.EndpointID),
-		DeviceID:                      stringToPgText(subscription.DeviceID),
-		SourceID:                      stringToPgText(subscription.SourceID),
+		EndpointID:                    common.StringToPgText(subscription.EndpointID),
+		SourceID:                      pgtype.Text{String: subscription.SourceID, Valid: false},
 		AlertConfigCount:              pgtype.Int4{Int32: alertCount, Valid: true},
 		AlertConfigThreshold:          pgtype.Text{String: alertThreshold, Valid: true},
 		RetryConfigType:               pgtype.Text{String: retryType, Valid: true},
@@ -126,8 +126,8 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 		FilterConfigFilterRawBody:     filterParams.rawBody,
 		RateLimitConfigCount:          pgtype.Int4{Int32: rateLimitCount, Valid: true},
 		RateLimitConfigDuration:       pgtype.Int4{Int32: rateLimitDuration, Valid: true},
-		Function:                      stringToPgText(subscription.Function.String),
-		DeliveryMode:                  stringToPgText(string(subscription.DeliveryMode)),
+		Function:                      common.StringToPgText(subscription.Function.String),
+		DeliveryMode:                  common.StringToPgText(string(subscription.DeliveryMode)),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to create subscription")
@@ -160,7 +160,7 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 	}
 
 	// Create filters for each event type
-	err = qtx.InsertSubscriptionEventTypeFilters(ctx, stringToPgText(subscription.UID))
+	err = qtx.InsertSubscriptionEventTypeFilters(ctx, common.StringToPgText(subscription.UID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to insert event type filters")
 		return &ServiceError{ErrMsg: "failed to create subscription filters", Err: err}
@@ -220,8 +220,8 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 		ID:                            pgtype.Text{String: subscription.UID, Valid: true},
 		ProjectID:                     pgtype.Text{String: projectID, Valid: true},
 		Name:                          pgtype.Text{String: subscription.Name, Valid: true},
-		EndpointID:                    stringToPgText(subscription.EndpointID),
-		SourceID:                      stringToPgText(subscription.SourceID),
+		EndpointID:                    common.StringToPgText(subscription.EndpointID),
+		SourceID:                      common.StringToPgText(subscription.SourceID),
 		AlertConfigCount:              pgtype.Int4{Int32: alertCount, Valid: true},
 		AlertConfigThreshold:          pgtype.Text{String: alertThreshold, Valid: true},
 		RetryConfigType:               pgtype.Text{String: retryType, Valid: true},
@@ -235,8 +235,8 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 		FilterConfigFilterRawBody:     filterParams.rawBody,
 		RateLimitConfigCount:          pgtype.Int4{Int32: rateLimitCount, Valid: true},
 		RateLimitConfigDuration:       pgtype.Int4{Int32: rateLimitDuration, Valid: true},
-		Function:                      stringToPgText(subscription.Function.String),
-		DeliveryMode:                  stringToPgText(string(subscription.DeliveryMode)),
+		Function:                      common.StringToPgText(subscription.Function.String),
+		DeliveryMode:                  common.StringToPgText(string(subscription.DeliveryMode)),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to update subscription")
@@ -281,7 +281,7 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 	}
 
 	// Create filters for each event type
-	err = qtx.InsertSubscriptionEventTypeFilters(ctx, stringToPgText(subscription.UID))
+	err = qtx.InsertSubscriptionEventTypeFilters(ctx, common.StringToPgText(subscription.UID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to insert event type filters")
 		return &ServiceError{ErrMsg: "failed to create subscription filters", Err: err}
@@ -320,7 +320,7 @@ func (s *Service) FindSubscriptionByID(ctx context.Context, projectID, subscript
 func (s *Service) FindSubscriptionsBySourceID(ctx context.Context, projectID, sourceID string) ([]datastore.Subscription, error) {
 	rows, err := s.repo.FetchSubscriptionsBySourceID(ctx, repo.FetchSubscriptionsBySourceIDParams{
 		ProjectID: pgtype.Text{String: projectID, Valid: true},
-		SourceID:  stringToPgText(sourceID),
+		SourceID:  common.StringToPgText(sourceID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -347,7 +347,7 @@ func (s *Service) FindSubscriptionsBySourceID(ctx context.Context, projectID, so
 func (s *Service) FindSubscriptionsByEndpointID(ctx context.Context, projectID, endpointID string) ([]datastore.Subscription, error) {
 	rows, err := s.repo.FetchSubscriptionsByEndpointID(ctx, repo.FetchSubscriptionsByEndpointIDParams{
 		ProjectID:  pgtype.Text{String: projectID, Valid: true},
-		EndpointID: stringToPgText(endpointID),
+		EndpointID: common.StringToPgText(endpointID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -373,7 +373,7 @@ func (s *Service) FindSubscriptionsByEndpointID(ctx context.Context, projectID, 
 
 func (s *Service) FindSubscriptionByDeviceID(ctx context.Context, projectID, deviceID string, subscriptionType datastore.SubscriptionType) (*datastore.Subscription, error) {
 	row, err := s.repo.FetchSubscriptionByDeviceID(ctx, repo.FetchSubscriptionByDeviceIDParams{
-		DeviceID:         stringToPgText(deviceID),
+		DeviceID:         common.StringToPgText(deviceID),
 		ProjectID:        pgtype.Text{String: projectID, Valid: true},
 		SubscriptionType: pgtype.Text{String: string(subscriptionType), Valid: true},
 	})
@@ -544,8 +544,8 @@ func (s *Service) FetchSubscriptionsForBroadcast(ctx context.Context, projectID,
 				UID:        row.ID,
 				Type:       datastore.SubscriptionType(row.Type),
 				ProjectID:  row.ProjectID,
-				EndpointID: pgTextToString(row.EndpointID),
-				Function:   null.NewString(pgTextToString(row.Function), row.Function.Valid),
+				EndpointID: common.PgTextToString(row.EndpointID),
+				Function:   null.NewString(common.PgTextToString(row.Function), row.Function.Valid),
 				FilterConfig: paramsToFilterConfig(
 					row.FilterConfigEventTypes,
 					row.FilterConfigFilterHeaders,
@@ -601,9 +601,9 @@ func (s *Service) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []st
 				UID:        row.ID,
 				Type:       datastore.SubscriptionType(row.Type),
 				ProjectID:  row.ProjectID,
-				EndpointID: pgTextToString(row.EndpointID),
-				Function:   null.NewString(pgTextToString(row.Function), row.Function.Valid),
-				UpdatedAt:  pgTimestamptzToTime(row.UpdatedAt),
+				EndpointID: common.PgTextToString(row.EndpointID),
+				Function:   null.NewString(common.PgTextToString(row.Function), row.Function.Valid),
+				UpdatedAt:  common.PgTimestamptzToTime(row.UpdatedAt),
 				FilterConfig: paramsToFilterConfig(
 					row.FilterConfigEventTypes,
 					row.FilterConfigFilterHeaders,
@@ -646,7 +646,7 @@ func (s *Service) FetchDeletedSubscriptions(ctx context.Context, projectIDs []st
 		sub := &datastore.Subscription{
 			UID:       row.ID,
 			ProjectID: row.ProjectID,
-			DeletedAt: null.NewTime(pgTimestamptzToTime(row.DeletedAt), row.DeletedAt.Valid),
+			DeletedAt: null.NewTime(common.PgTimestamptzToTime(row.DeletedAt), row.DeletedAt.Valid),
 			FilterConfig: &datastore.FilterConfiguration{
 				EventTypes: row.FilterConfigEventTypes,
 			},
@@ -794,17 +794,17 @@ LIMIT $%d`, valuesSQL, argIdx, argIdx, argIdx+1)
 			Name:            name,
 			Type:            datastore.SubscriptionType(subType),
 			ProjectID:       projectID,
-			EndpointID:      pgTextToString(endpointID),
-			DeviceID:        pgTextToString(deviceID),
-			SourceID:        pgTextToString(sourceID),
-			Function:        null.NewString(pgTextToString(function), function.Valid),
-			DeliveryMode:    datastore.DeliveryMode(pgTextToString(deliveryMode)),
+			EndpointID:      common.PgTextToString(endpointID),
+			DeviceID:        common.PgTextToString(deviceID),
+			SourceID:        common.PgTextToString(sourceID),
+			Function:        null.NewString(common.PgTextToString(function), function.Valid),
+			DeliveryMode:    datastore.DeliveryMode(common.PgTextToString(deliveryMode)),
 			AlertConfig:     paramsToAlertConfig(alertCount, alertThreshold),
 			RetryConfig:     paramsToRetryConfig(retryType, retryDuration, retryRetryCount),
 			FilterConfig:    paramsToFilterConfig(eventTypes, filterHeaders, filterBody, filterIsFlattened, filterRawHeaders, filterRawBody),
 			RateLimitConfig: paramsToRateLimitConfig(rateLimitCount, rateLimitDuration),
-			CreatedAt:       pgTimestamptzToTime(createdAt),
-			UpdatedAt:       pgTimestamptzToTime(updatedAt),
+			CreatedAt:       common.PgTimestamptzToTime(createdAt),
+			UpdatedAt:       common.PgTimestamptzToTime(updatedAt),
 		}
 
 		subs = append(subs, sub)
@@ -852,9 +852,9 @@ func (s *Service) FetchNewSubscriptions(ctx context.Context, projectIDs, knownSu
 			UID:        row.ID,
 			Type:       datastore.SubscriptionType(row.Type),
 			ProjectID:  row.ProjectID,
-			EndpointID: pgTextToString(row.EndpointID),
-			Function:   null.NewString(pgTextToString(row.Function), row.Function.Valid),
-			UpdatedAt:  pgTimestamptzToTime(row.UpdatedAt),
+			EndpointID: common.PgTextToString(row.EndpointID),
+			Function:   null.NewString(common.PgTextToString(row.Function), row.Function.Valid),
+			UpdatedAt:  common.PgTimestamptzToTime(row.UpdatedAt),
 			FilterConfig: paramsToFilterConfig(
 				row.FilterConfigEventTypes,
 				row.FilterConfigFilterHeaders,
@@ -877,7 +877,7 @@ func (s *Service) FetchNewSubscriptions(ctx context.Context, projectIDs, knownSu
 func (s *Service) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID, subscriptionID string) (int64, error) {
 	count, err := s.repo.CountEndpointSubscriptions(ctx, repo.CountEndpointSubscriptionsParams{
 		ProjectID:             pgtype.Text{String: projectID, Valid: true},
-		EndpointID:            stringToPgText(endpointID),
+		EndpointID:            common.StringToPgText(endpointID),
 		ExcludeSubscriptionID: pgtype.Text{String: subscriptionID, Valid: true},
 	})
 	if err != nil {

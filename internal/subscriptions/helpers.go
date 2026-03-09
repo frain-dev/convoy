@@ -2,7 +2,6 @@ package subscriptions
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"gopkg.in/guregu/null.v4"
@@ -157,21 +156,6 @@ func pgJSONToM(data []byte) datastore.M {
 // ============================================================================
 // Type Conversion Helpers (using common helpers)
 // ============================================================================
-
-// pgTextToString converts pgtype.Text to string
-func pgTextToString(pt pgtype.Text) string {
-	return common.PgTextToString(pt)
-}
-
-// stringToPgText converts string to pgtype.Text
-func stringToPgText(s string) pgtype.Text {
-	return common.StringToPgText(s)
-}
-
-// pgTimestamptzToTime converts pgtype.Timestamptz to time.Time
-func pgTimestamptzToTime(ts pgtype.Timestamptz) time.Time {
-	return common.PgTimestamptzToTime(ts)
-}
 
 // deliveryModeToString converts string delivery mode to datastore type
 func deliveryModeToString(dm string) string {
@@ -349,9 +333,9 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 	switch r := row.(type) {
 	case repo.FetchSubscriptionByIDRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
-		endpointID = pgTextToString(r.EndpointID)
-		deviceID = pgTextToString(r.DeviceID)
-		sourceID = pgTextToString(r.SourceID)
+		endpointID = common.PgTextToString(r.EndpointID)
+		deviceID = common.PgTextToString(r.DeviceID)
+		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
 		deliveryMode = r.DeliveryMode
@@ -362,38 +346,38 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		filterConfigFilterIsFlattened = r.FilterConfigFilterIsFlattened
 		filterConfigFilterHeaders, filterConfigFilterBody = r.FilterConfigFilterHeaders, r.FilterConfigFilterBody
 		rateLimitConfigCount, rateLimitConfigDuration = r.RateLimitConfigCount, r.RateLimitConfigDuration
-		endpointMetadataID = pgTextToString(r.EndpointMetadataID)
-		endpointMetadataName = pgTextToString(r.EndpointMetadataName)
-		endpointMetadataProjectID = pgTextToString(r.EndpointMetadataProjectID)
-		endpointMetadataSupportEmail = pgTextToString(r.EndpointMetadataSupportEmail)
-		endpointMetadataUrl = pgTextToString(r.EndpointMetadataUrl)
-		endpointMetadataStatus = pgTextToString(r.EndpointMetadataStatus)
-		endpointMetadataOwnerID = pgTextToString(r.EndpointMetadataOwnerID)
+		endpointMetadataID = common.PgTextToString(r.EndpointMetadataID)
+		endpointMetadataName = common.PgTextToString(r.EndpointMetadataName)
+		endpointMetadataProjectID = common.PgTextToString(r.EndpointMetadataProjectID)
+		endpointMetadataSupportEmail = common.PgTextToString(r.EndpointMetadataSupportEmail)
+		endpointMetadataUrl = common.PgTextToString(r.EndpointMetadataUrl)
+		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
+		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = pgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = pgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = pgTextToString(r.DeviceMetadataHostName)
-		sourceMetadataID = pgTextToString(r.SourceMetadataID)
-		sourceMetadataName = pgTextToString(r.SourceMetadataName)
-		sourceMetadataType = pgTextToString(r.SourceMetadataType)
-		sourceMetadataMaskID = pgTextToString(r.SourceMetadataMaskID)
-		sourceMetadataProjectID = pgTextToString(r.SourceMetadataProjectID)
+		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
+		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
+		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
+		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
+		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
+		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
+		sourceMetadataMaskID = common.PgTextToString(r.SourceMetadataMaskID)
+		sourceMetadataProjectID = common.PgTextToString(r.SourceMetadataProjectID)
 		sourceMetadataIsDisabled = r.SourceMetadataIsDisabled.Bool
-		sourceVerifierType = pgTextToString(r.SourceVerifierType)
-		sourceVerifierBasicUsername = pgTextToString(r.SourceVerifierBasicUsername)
-		sourceVerifierBasicPassword = pgTextToString(r.SourceVerifierBasicPassword)
-		sourceVerifierAPIKeyHeaderName = pgTextToString(r.SourceVerifierApiKeyHeaderName)
-		sourceVerifierAPIKeyHeaderValue = pgTextToString(r.SourceVerifierApiKeyHeaderValue)
-		sourceVerifierHmacHash = pgTextToString(r.SourceVerifierHmacHash)
-		sourceVerifierHmacHeader = pgTextToString(r.SourceVerifierHmacHeader)
-		sourceVerifierHmacSecret = pgTextToString(r.SourceVerifierHmacSecret)
-		sourceVerifierHmacEncoding = pgTextToString(r.SourceVerifierHmacEncoding)
+		sourceVerifierType = common.PgTextToString(r.SourceVerifierType)
+		sourceVerifierBasicUsername = common.PgTextToString(r.SourceVerifierBasicUsername)
+		sourceVerifierBasicPassword = common.PgTextToString(r.SourceVerifierBasicPassword)
+		sourceVerifierAPIKeyHeaderName = common.PgTextToString(r.SourceVerifierApiKeyHeaderName)
+		sourceVerifierAPIKeyHeaderValue = common.PgTextToString(r.SourceVerifierApiKeyHeaderValue)
+		sourceVerifierHmacHash = common.PgTextToString(r.SourceVerifierHmacHash)
+		sourceVerifierHmacHeader = common.PgTextToString(r.SourceVerifierHmacHeader)
+		sourceVerifierHmacSecret = common.PgTextToString(r.SourceVerifierHmacSecret)
+		sourceVerifierHmacEncoding = common.PgTextToString(r.SourceVerifierHmacEncoding)
 
 	case repo.FetchSubscriptionsBySourceIDRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
-		endpointID = pgTextToString(r.EndpointID)
-		deviceID = pgTextToString(r.DeviceID)
-		sourceID = pgTextToString(r.SourceID)
+		endpointID = common.PgTextToString(r.EndpointID)
+		deviceID = common.PgTextToString(r.DeviceID)
+		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
 		deliveryMode = r.DeliveryMode
@@ -404,38 +388,38 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		filterConfigFilterIsFlattened = r.FilterConfigFilterIsFlattened
 		filterConfigFilterHeaders, filterConfigFilterBody = r.FilterConfigFilterHeaders, r.FilterConfigFilterBody
 		rateLimitConfigCount, rateLimitConfigDuration = r.RateLimitConfigCount, r.RateLimitConfigDuration
-		endpointMetadataID = pgTextToString(r.EndpointMetadataID)
-		endpointMetadataName = pgTextToString(r.EndpointMetadataName)
-		endpointMetadataProjectID = pgTextToString(r.EndpointMetadataProjectID)
-		endpointMetadataSupportEmail = pgTextToString(r.EndpointMetadataSupportEmail)
-		endpointMetadataUrl = pgTextToString(r.EndpointMetadataUrl)
-		endpointMetadataStatus = pgTextToString(r.EndpointMetadataStatus)
-		endpointMetadataOwnerID = pgTextToString(r.EndpointMetadataOwnerID)
+		endpointMetadataID = common.PgTextToString(r.EndpointMetadataID)
+		endpointMetadataName = common.PgTextToString(r.EndpointMetadataName)
+		endpointMetadataProjectID = common.PgTextToString(r.EndpointMetadataProjectID)
+		endpointMetadataSupportEmail = common.PgTextToString(r.EndpointMetadataSupportEmail)
+		endpointMetadataUrl = common.PgTextToString(r.EndpointMetadataUrl)
+		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
+		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = pgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = pgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = pgTextToString(r.DeviceMetadataHostName)
-		sourceMetadataID = pgTextToString(r.SourceMetadataID)
-		sourceMetadataName = pgTextToString(r.SourceMetadataName)
-		sourceMetadataType = pgTextToString(r.SourceMetadataType)
-		sourceMetadataMaskID = pgTextToString(r.SourceMetadataMaskID)
-		sourceMetadataProjectID = pgTextToString(r.SourceMetadataProjectID)
+		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
+		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
+		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
+		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
+		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
+		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
+		sourceMetadataMaskID = common.PgTextToString(r.SourceMetadataMaskID)
+		sourceMetadataProjectID = common.PgTextToString(r.SourceMetadataProjectID)
 		sourceMetadataIsDisabled = r.SourceMetadataIsDisabled.Bool
-		sourceVerifierType = pgTextToString(r.SourceVerifierType)
-		sourceVerifierBasicUsername = pgTextToString(r.SourceVerifierBasicUsername)
-		sourceVerifierBasicPassword = pgTextToString(r.SourceVerifierBasicPassword)
-		sourceVerifierAPIKeyHeaderName = pgTextToString(r.SourceVerifierApiKeyHeaderName)
-		sourceVerifierAPIKeyHeaderValue = pgTextToString(r.SourceVerifierApiKeyHeaderValue)
-		sourceVerifierHmacHash = pgTextToString(r.SourceVerifierHmacHash)
-		sourceVerifierHmacHeader = pgTextToString(r.SourceVerifierHmacHeader)
-		sourceVerifierHmacSecret = pgTextToString(r.SourceVerifierHmacSecret)
-		sourceVerifierHmacEncoding = pgTextToString(r.SourceVerifierHmacEncoding)
+		sourceVerifierType = common.PgTextToString(r.SourceVerifierType)
+		sourceVerifierBasicUsername = common.PgTextToString(r.SourceVerifierBasicUsername)
+		sourceVerifierBasicPassword = common.PgTextToString(r.SourceVerifierBasicPassword)
+		sourceVerifierAPIKeyHeaderName = common.PgTextToString(r.SourceVerifierApiKeyHeaderName)
+		sourceVerifierAPIKeyHeaderValue = common.PgTextToString(r.SourceVerifierApiKeyHeaderValue)
+		sourceVerifierHmacHash = common.PgTextToString(r.SourceVerifierHmacHash)
+		sourceVerifierHmacHeader = common.PgTextToString(r.SourceVerifierHmacHeader)
+		sourceVerifierHmacSecret = common.PgTextToString(r.SourceVerifierHmacSecret)
+		sourceVerifierHmacEncoding = common.PgTextToString(r.SourceVerifierHmacEncoding)
 
 	case repo.FetchSubscriptionsByEndpointIDRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
-		endpointID = pgTextToString(r.EndpointID)
-		deviceID = pgTextToString(r.DeviceID)
-		sourceID = pgTextToString(r.SourceID)
+		endpointID = common.PgTextToString(r.EndpointID)
+		deviceID = common.PgTextToString(r.DeviceID)
+		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
 		deliveryMode = r.DeliveryMode
@@ -446,38 +430,38 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		filterConfigFilterIsFlattened = r.FilterConfigFilterIsFlattened
 		filterConfigFilterHeaders, filterConfigFilterBody = r.FilterConfigFilterHeaders, r.FilterConfigFilterBody
 		rateLimitConfigCount, rateLimitConfigDuration = r.RateLimitConfigCount, r.RateLimitConfigDuration
-		endpointMetadataID = pgTextToString(r.EndpointMetadataID)
-		endpointMetadataName = pgTextToString(r.EndpointMetadataName)
-		endpointMetadataProjectID = pgTextToString(r.EndpointMetadataProjectID)
-		endpointMetadataSupportEmail = pgTextToString(r.EndpointMetadataSupportEmail)
-		endpointMetadataUrl = pgTextToString(r.EndpointMetadataUrl)
-		endpointMetadataStatus = pgTextToString(r.EndpointMetadataStatus)
-		endpointMetadataOwnerID = pgTextToString(r.EndpointMetadataOwnerID)
+		endpointMetadataID = common.PgTextToString(r.EndpointMetadataID)
+		endpointMetadataName = common.PgTextToString(r.EndpointMetadataName)
+		endpointMetadataProjectID = common.PgTextToString(r.EndpointMetadataProjectID)
+		endpointMetadataSupportEmail = common.PgTextToString(r.EndpointMetadataSupportEmail)
+		endpointMetadataUrl = common.PgTextToString(r.EndpointMetadataUrl)
+		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
+		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = pgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = pgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = pgTextToString(r.DeviceMetadataHostName)
-		sourceMetadataID = pgTextToString(r.SourceMetadataID)
-		sourceMetadataName = pgTextToString(r.SourceMetadataName)
-		sourceMetadataType = pgTextToString(r.SourceMetadataType)
-		sourceMetadataMaskID = pgTextToString(r.SourceMetadataMaskID)
-		sourceMetadataProjectID = pgTextToString(r.SourceMetadataProjectID)
+		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
+		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
+		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
+		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
+		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
+		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
+		sourceMetadataMaskID = common.PgTextToString(r.SourceMetadataMaskID)
+		sourceMetadataProjectID = common.PgTextToString(r.SourceMetadataProjectID)
 		sourceMetadataIsDisabled = r.SourceMetadataIsDisabled.Bool
-		sourceVerifierType = pgTextToString(r.SourceVerifierType)
-		sourceVerifierBasicUsername = pgTextToString(r.SourceVerifierBasicUsername)
-		sourceVerifierBasicPassword = pgTextToString(r.SourceVerifierBasicPassword)
-		sourceVerifierAPIKeyHeaderName = pgTextToString(r.SourceVerifierApiKeyHeaderName)
-		sourceVerifierAPIKeyHeaderValue = pgTextToString(r.SourceVerifierApiKeyHeaderValue)
-		sourceVerifierHmacHash = pgTextToString(r.SourceVerifierHmacHash)
-		sourceVerifierHmacHeader = pgTextToString(r.SourceVerifierHmacHeader)
-		sourceVerifierHmacSecret = pgTextToString(r.SourceVerifierHmacSecret)
-		sourceVerifierHmacEncoding = pgTextToString(r.SourceVerifierHmacEncoding)
+		sourceVerifierType = common.PgTextToString(r.SourceVerifierType)
+		sourceVerifierBasicUsername = common.PgTextToString(r.SourceVerifierBasicUsername)
+		sourceVerifierBasicPassword = common.PgTextToString(r.SourceVerifierBasicPassword)
+		sourceVerifierAPIKeyHeaderName = common.PgTextToString(r.SourceVerifierApiKeyHeaderName)
+		sourceVerifierAPIKeyHeaderValue = common.PgTextToString(r.SourceVerifierApiKeyHeaderValue)
+		sourceVerifierHmacHash = common.PgTextToString(r.SourceVerifierHmacHash)
+		sourceVerifierHmacHeader = common.PgTextToString(r.SourceVerifierHmacHeader)
+		sourceVerifierHmacSecret = common.PgTextToString(r.SourceVerifierHmacSecret)
+		sourceVerifierHmacEncoding = common.PgTextToString(r.SourceVerifierHmacEncoding)
 
 	case repo.FetchSubscriptionByDeviceIDRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
-		endpointID = pgTextToString(r.EndpointID)
-		deviceID = pgTextToString(r.DeviceID)
-		sourceID = pgTextToString(r.SourceID)
+		endpointID = common.PgTextToString(r.EndpointID)
+		deviceID = common.PgTextToString(r.DeviceID)
+		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
 		deliveryMode = r.DeliveryMode
@@ -488,15 +472,15 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		filterConfigFilterIsFlattened = r.FilterConfigFilterIsFlattened
 		filterConfigFilterHeaders, filterConfigFilterBody = r.FilterConfigFilterHeaders, r.FilterConfigFilterBody
 		rateLimitConfigCount, rateLimitConfigDuration = r.RateLimitConfigCount, r.RateLimitConfigDuration
-		deviceMetadataID = pgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = pgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = pgTextToString(r.DeviceMetadataHostName)
+		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
+		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
+		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
 
 	case repo.FetchCLISubscriptionsRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
-		endpointID = pgTextToString(r.EndpointID)
-		deviceID = pgTextToString(r.DeviceID)
-		sourceID = pgTextToString(r.SourceID)
+		endpointID = common.PgTextToString(r.EndpointID)
+		deviceID = common.PgTextToString(r.DeviceID)
+		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
 		deliveryMode = r.DeliveryMode
@@ -507,38 +491,38 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		filterConfigFilterIsFlattened = r.FilterConfigFilterIsFlattened
 		filterConfigFilterHeaders, filterConfigFilterBody = r.FilterConfigFilterHeaders, r.FilterConfigFilterBody
 		rateLimitConfigCount, rateLimitConfigDuration = r.RateLimitConfigCount, r.RateLimitConfigDuration
-		endpointMetadataID = pgTextToString(r.EndpointMetadataID)
-		endpointMetadataName = pgTextToString(r.EndpointMetadataName)
-		endpointMetadataProjectID = pgTextToString(r.EndpointMetadataProjectID)
-		endpointMetadataSupportEmail = pgTextToString(r.EndpointMetadataSupportEmail)
-		endpointMetadataUrl = pgTextToString(r.EndpointMetadataUrl)
-		endpointMetadataStatus = pgTextToString(r.EndpointMetadataStatus)
-		endpointMetadataOwnerID = pgTextToString(r.EndpointMetadataOwnerID)
+		endpointMetadataID = common.PgTextToString(r.EndpointMetadataID)
+		endpointMetadataName = common.PgTextToString(r.EndpointMetadataName)
+		endpointMetadataProjectID = common.PgTextToString(r.EndpointMetadataProjectID)
+		endpointMetadataSupportEmail = common.PgTextToString(r.EndpointMetadataSupportEmail)
+		endpointMetadataUrl = common.PgTextToString(r.EndpointMetadataUrl)
+		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
+		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = pgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = pgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = pgTextToString(r.DeviceMetadataHostName)
-		sourceMetadataID = pgTextToString(r.SourceMetadataID)
-		sourceMetadataName = pgTextToString(r.SourceMetadataName)
-		sourceMetadataType = pgTextToString(r.SourceMetadataType)
-		sourceMetadataMaskID = pgTextToString(r.SourceMetadataMaskID)
-		sourceMetadataProjectID = pgTextToString(r.SourceMetadataProjectID)
+		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
+		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
+		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
+		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
+		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
+		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
+		sourceMetadataMaskID = common.PgTextToString(r.SourceMetadataMaskID)
+		sourceMetadataProjectID = common.PgTextToString(r.SourceMetadataProjectID)
 		sourceMetadataIsDisabled = r.SourceMetadataIsDisabled.Bool
-		sourceVerifierType = pgTextToString(r.SourceVerifierType)
-		sourceVerifierBasicUsername = pgTextToString(r.SourceVerifierBasicUsername)
-		sourceVerifierBasicPassword = pgTextToString(r.SourceVerifierBasicPassword)
-		sourceVerifierAPIKeyHeaderName = pgTextToString(r.SourceVerifierApiKeyHeaderName)
-		sourceVerifierAPIKeyHeaderValue = pgTextToString(r.SourceVerifierApiKeyHeaderValue)
-		sourceVerifierHmacHash = pgTextToString(r.SourceVerifierHmacHash)
-		sourceVerifierHmacHeader = pgTextToString(r.SourceVerifierHmacHeader)
-		sourceVerifierHmacSecret = pgTextToString(r.SourceVerifierHmacSecret)
-		sourceVerifierHmacEncoding = pgTextToString(r.SourceVerifierHmacEncoding)
+		sourceVerifierType = common.PgTextToString(r.SourceVerifierType)
+		sourceVerifierBasicUsername = common.PgTextToString(r.SourceVerifierBasicUsername)
+		sourceVerifierBasicPassword = common.PgTextToString(r.SourceVerifierBasicPassword)
+		sourceVerifierAPIKeyHeaderName = common.PgTextToString(r.SourceVerifierApiKeyHeaderName)
+		sourceVerifierAPIKeyHeaderValue = common.PgTextToString(r.SourceVerifierApiKeyHeaderValue)
+		sourceVerifierHmacHash = common.PgTextToString(r.SourceVerifierHmacHash)
+		sourceVerifierHmacHeader = common.PgTextToString(r.SourceVerifierHmacHeader)
+		sourceVerifierHmacSecret = common.PgTextToString(r.SourceVerifierHmacSecret)
+		sourceVerifierHmacEncoding = common.PgTextToString(r.SourceVerifierHmacEncoding)
 
 	case repo.FetchSubscriptionsPaginatedRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
-		endpointID = pgTextToString(r.EndpointID)
-		deviceID = pgTextToString(r.DeviceID)
-		sourceID = pgTextToString(r.SourceID)
+		endpointID = common.PgTextToString(r.EndpointID)
+		deviceID = common.PgTextToString(r.DeviceID)
+		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
 		deliveryMode = r.DeliveryMode
@@ -549,32 +533,32 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		filterConfigFilterIsFlattened = r.FilterConfigFilterIsFlattened
 		filterConfigFilterHeaders, filterConfigFilterBody = r.FilterConfigFilterHeaders, r.FilterConfigFilterBody
 		rateLimitConfigCount, rateLimitConfigDuration = r.RateLimitConfigCount, r.RateLimitConfigDuration
-		endpointMetadataID = pgTextToString(r.EndpointMetadataID)
-		endpointMetadataName = pgTextToString(r.EndpointMetadataName)
-		endpointMetadataProjectID = pgTextToString(r.EndpointMetadataProjectID)
-		endpointMetadataSupportEmail = pgTextToString(r.EndpointMetadataSupportEmail)
-		endpointMetadataUrl = pgTextToString(r.EndpointMetadataUrl)
-		endpointMetadataStatus = pgTextToString(r.EndpointMetadataStatus)
-		endpointMetadataOwnerID = pgTextToString(r.EndpointMetadataOwnerID)
+		endpointMetadataID = common.PgTextToString(r.EndpointMetadataID)
+		endpointMetadataName = common.PgTextToString(r.EndpointMetadataName)
+		endpointMetadataProjectID = common.PgTextToString(r.EndpointMetadataProjectID)
+		endpointMetadataSupportEmail = common.PgTextToString(r.EndpointMetadataSupportEmail)
+		endpointMetadataUrl = common.PgTextToString(r.EndpointMetadataUrl)
+		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
+		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = pgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = pgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = pgTextToString(r.DeviceMetadataHostName)
-		sourceMetadataID = pgTextToString(r.SourceMetadataID)
-		sourceMetadataName = pgTextToString(r.SourceMetadataName)
-		sourceMetadataType = pgTextToString(r.SourceMetadataType)
-		sourceMetadataMaskID = pgTextToString(r.SourceMetadataMaskID)
-		sourceMetadataProjectID = pgTextToString(r.SourceMetadataProjectID)
+		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
+		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
+		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
+		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
+		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
+		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
+		sourceMetadataMaskID = common.PgTextToString(r.SourceMetadataMaskID)
+		sourceMetadataProjectID = common.PgTextToString(r.SourceMetadataProjectID)
 		sourceMetadataIsDisabled = r.SourceMetadataIsDisabled.Bool
-		sourceVerifierType = pgTextToString(r.SourceVerifierType)
-		sourceVerifierBasicUsername = pgTextToString(r.SourceVerifierBasicUsername)
-		sourceVerifierBasicPassword = pgTextToString(r.SourceVerifierBasicPassword)
-		sourceVerifierAPIKeyHeaderName = pgTextToString(r.SourceVerifierApiKeyHeaderName)
-		sourceVerifierAPIKeyHeaderValue = pgTextToString(r.SourceVerifierApiKeyHeaderValue)
-		sourceVerifierHmacHash = pgTextToString(r.SourceVerifierHmacHash)
-		sourceVerifierHmacHeader = pgTextToString(r.SourceVerifierHmacHeader)
-		sourceVerifierHmacSecret = pgTextToString(r.SourceVerifierHmacSecret)
-		sourceVerifierHmacEncoding = pgTextToString(r.SourceVerifierHmacEncoding)
+		sourceVerifierType = common.PgTextToString(r.SourceVerifierType)
+		sourceVerifierBasicUsername = common.PgTextToString(r.SourceVerifierBasicUsername)
+		sourceVerifierBasicPassword = common.PgTextToString(r.SourceVerifierBasicPassword)
+		sourceVerifierAPIKeyHeaderName = common.PgTextToString(r.SourceVerifierApiKeyHeaderName)
+		sourceVerifierAPIKeyHeaderValue = common.PgTextToString(r.SourceVerifierApiKeyHeaderValue)
+		sourceVerifierHmacHash = common.PgTextToString(r.SourceVerifierHmacHash)
+		sourceVerifierHmacHeader = common.PgTextToString(r.SourceVerifierHmacHeader)
+		sourceVerifierHmacSecret = common.PgTextToString(r.SourceVerifierHmacSecret)
+		sourceVerifierHmacEncoding = common.PgTextToString(r.SourceVerifierHmacEncoding)
 
 	default:
 		return nil, nil
@@ -589,10 +573,10 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		EndpointID:   endpointID,
 		DeviceID:     deviceID,
 		SourceID:     sourceID,
-		Function:     null.NewString(pgTextToString(function), function.Valid),
+		Function:     null.NewString(common.PgTextToString(function), function.Valid),
 		DeliveryMode: stringToDeliveryMode(deliveryModeToString(deliveryMode)),
-		CreatedAt:    pgTimestamptzToTime(createdAt),
-		UpdatedAt:    pgTimestamptzToTime(updatedAt),
+		CreatedAt:    common.PgTimestamptzToTime(createdAt),
+		UpdatedAt:    common.PgTimestamptzToTime(updatedAt),
 	}
 
 	// Convert configs
