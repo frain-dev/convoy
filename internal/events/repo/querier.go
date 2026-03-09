@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	CopyRowsFromEventsToEventsSearch(ctx context.Context, arg CopyRowsFromEventsToEventsSearchParams) error
 	CountEvents(ctx context.Context, arg CountEventsParams) (pgtype.Int8, error)
+	CountExportedEvents(ctx context.Context, arg CountExportedEventsParams) (pgtype.Int8, error)
 	// Check if there are events before cursor (for HasPrevPage) - EXISTS path
 	CountPrevEventsExists(ctx context.Context, arg CountPrevEventsExistsParams) (bool, error)
 	// Check if there are events before cursor (for HasPrevPage) - Search path
@@ -25,6 +26,7 @@ type Querier interface {
 	// ============================================================================
 	CreateEvent(ctx context.Context, arg CreateEventParams) error
 	CreateEventEndpoints(ctx context.Context, arg CreateEventEndpointsParams) error
+	ExportEvents(ctx context.Context, arg ExportEventsParams) ([]ExportEventsRow, error)
 	FindEventByID(ctx context.Context, arg FindEventByIDParams) (FindEventByIDRow, error)
 	// ============================================================================
 	// Group 2: Batch Reads & Counting (5 queries)
@@ -43,6 +45,7 @@ type Querier interface {
 	// limit
 	// Full-text search pagination using CTE + JOIN + GROUP BY
 	// Uses convoy.events_search table for search_token matching
+	// Note: events_search doesn't have acknowledged_at, metadata, status columns
 	LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPagedSearchParams) ([]LoadEventsPagedSearchRow, error)
 	// ============================================================================
 	// Group 4: Deletion & Maintenance (4 queries)

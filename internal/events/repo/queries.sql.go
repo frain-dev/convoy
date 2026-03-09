@@ -26,16 +26,16 @@ func (q *Queries) CopyRowsFromEventsToEventsSearch(ctx context.Context, arg Copy
 }
 
 const countEvents = `-- name: CountEvents :one
-SELECT COUNT(DISTINCT(ev.id))
+SELECT COUNT(DISTINCT (ev.id))
 FROM convoy.events ev
-LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-LEFT JOIN convoy.endpoints e ON ee.endpoint_id = e.id
+         LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+         LEFT JOIN convoy.endpoints e ON ee.endpoint_id = e.id
 WHERE ev.project_id = $1
-    AND ev.created_at >= $2
-    AND ev.created_at <= $3
-    AND ev.deleted_at IS NULL
-    AND (CASE WHEN $4::boolean THEN e.id = ANY($5::text[]) ELSE true END)
-    AND (CASE WHEN $6::boolean THEN ev.source_id = $7 ELSE true END)
+  AND ev.created_at >= $2
+  AND ev.created_at <= $3
+  AND ev.deleted_at IS NULL
+  AND (CASE WHEN $4::BOOLEAN THEN e.id = ANY ($5::TEXT[]) ELSE true END)
+  AND (CASE WHEN $6::BOOLEAN THEN ev.source_id = $7 ELSE true END)
 `
 
 type CountEventsParams struct {
@@ -63,28 +63,55 @@ func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (pgtyp
 	return count, err
 }
 
+const countExportedEvents = `-- name: CountExportedEvents :one
+SELECT COUNT(*) as count FROM convoy.events AS ed
+WHERE project_id = $1
+  AND created_at < $2
+  AND (id > $3 OR $3 = '')
+  AND deleted_at IS NULL
+`
+
+type CountExportedEventsParams struct {
+	ProjectID pgtype.Text
+	CreatedAt pgtype.Timestamptz
+	Cursor    pgtype.Text
+}
+
+func (q *Queries) CountExportedEvents(ctx context.Context, arg CountExportedEventsParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, countExportedEvents, arg.ProjectID, arg.CreatedAt, arg.Cursor)
+	var count pgtype.Int8
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countPrevEventsExists = `-- name: CountPrevEventsExists :one
-SELECT EXISTS(
-    SELECT 1
-    FROM convoy.events ev
-    LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
-    WHERE ev.deleted_at IS NULL
-        AND ev.project_id = $1
-        AND (CASE WHEN $2::boolean THEN ev.idempotency_key = $3 ELSE true END) -- has_idempotency_key
-        AND ev.created_at >= $4
-        AND ev.created_at <= $5
-        -- Source filter
-        AND (CASE WHEN $6::boolean THEN ev.source_id = ANY($7::text[]) ELSE true END) -- has_source_ids
-        -- Endpoint filter
-        AND (CASE WHEN $8::boolean THEN ee.endpoint_id = ANY($9::text[]) ELSE true END) -- has_endpoint_ids
-        -- Broker message ID filter
-        AND (CASE WHEN $10::boolean THEN ev.headers -> 'x-broker-message-id' ->> 0 = $11 ELSE true END) -- has_broker_message_id
-        -- Cursor check (> for ASC, < for DESC indicated by sort_asc)
-        AND (CASE
-            WHEN $12::boolean THEN ev.id < $13  -- sort_asc = true means check for < cursor
-            ELSE ev.id > $13                     -- sort_asc = false means check for > cursor
-        END)
-)
+SELECT EXISTS(SELECT 1
+              FROM convoy.events ev
+                       LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+              WHERE ev.deleted_at IS NULL
+                AND ev.project_id = $1
+                AND (CASE
+                         WHEN $2::BOOLEAN THEN ev.idempotency_key = $3
+                         ELSE true END) -- has_idempotency_key
+                AND ev.created_at >= $4
+                AND ev.created_at <= $5
+                -- Source filter
+                AND (CASE
+                         WHEN $6::BOOLEAN THEN ev.source_id = ANY ($7::TEXT[])
+                         ELSE true END) -- has_source_ids
+                -- Endpoint filter
+                AND (CASE
+                         WHEN $8::BOOLEAN THEN ee.endpoint_id = ANY ($9::TEXT[])
+                         ELSE true END) -- has_endpoint_ids
+                -- Broker message ID filter
+                AND (CASE
+                         WHEN $10::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $11
+                         ELSE true END) -- has_broker_message_id
+                -- Cursor check (> for ASC, < for DESC indicated by sort_asc)
+                AND (CASE
+                         WHEN $12::BOOLEAN THEN ev.id < $13 -- sort_asc = true means check for < cursor
+                         ELSE ev.id > $13 -- sort_asc = false means check for > cursor
+                  END))
 `
 
 type CountPrevEventsExistsParams struct {
@@ -126,29 +153,37 @@ func (q *Queries) CountPrevEventsExists(ctx context.Context, arg CountPrevEvents
 }
 
 const countPrevEventsSearch = `-- name: CountPrevEventsSearch :one
-SELECT EXISTS(
-    SELECT 1
-    FROM convoy.events_search ev
-    LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
-    WHERE ev.deleted_at IS NULL
-        AND ev.project_id = $1
-        AND (CASE WHEN $2::boolean THEN ev.idempotency_key = $3 ELSE true END) -- has_idempotency_key
-        AND ev.created_at >= $4
-        AND ev.created_at <= $5
-        -- Source filter
-        AND (CASE WHEN $6::boolean THEN ev.source_id = ANY($7::text[]) ELSE true END) -- has_source_ids
-        -- Endpoint filter
-        AND (CASE WHEN $8::boolean THEN ee.endpoint_id = ANY($9::text[]) ELSE true END) -- has_endpoint_ids
-        -- Broker message ID filter
-        AND (CASE WHEN $10::boolean THEN ev.headers -> 'x-broker-message-id' ->> 0 = $11 ELSE true END) -- has_broker_message_id
-        -- Search query filter
-        AND (CASE WHEN $12::boolean THEN ev.search_token @@ websearch_to_tsquery('simple', $13) ELSE true END) -- has_query
-        -- Cursor check (> for ASC, < for DESC)
-        AND (CASE
-            WHEN $14::boolean THEN ev.id < $15  -- sort_asc = true means check for < cursor
-            ELSE ev.id > $15                     -- sort_asc = false means check for > cursor
-        END)
-)
+SELECT EXISTS(SELECT 1
+              FROM convoy.events_search ev
+                       LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+              WHERE ev.deleted_at IS NULL
+                AND ev.project_id = $1
+                AND (CASE
+                         WHEN $2::BOOLEAN THEN ev.idempotency_key = $3
+                         ELSE true END) -- has_idempotency_key
+                AND ev.created_at >= $4
+                AND ev.created_at <= $5
+                -- Source filter
+                AND (CASE
+                         WHEN $6::BOOLEAN THEN ev.source_id = ANY ($7::TEXT[])
+                         ELSE true END) -- has_source_ids
+                -- Endpoint filter
+                AND (CASE
+                         WHEN $8::BOOLEAN THEN ee.endpoint_id = ANY ($9::TEXT[])
+                         ELSE true END) -- has_endpoint_ids
+                -- Broker message ID filter
+                AND (CASE
+                         WHEN $10::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $11
+                         ELSE true END) -- has_broker_message_id
+                -- Search query filter
+                AND (CASE
+                         WHEN $12::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', $13)
+                         ELSE true END) -- has_query
+                -- Cursor check (> for ASC, < for DESC)
+                AND (CASE
+                         WHEN $14::BOOLEAN THEN ev.id < $15 -- sort_asc = true means check for < cursor
+                         ELSE ev.id > $15 -- sort_asc = false means check for > cursor
+                  END))
 `
 
 type CountPrevEventsSearchParams struct {
@@ -196,7 +231,8 @@ func (q *Queries) CountPrevEventsSearch(ctx context.Context, arg CountPrevEvents
 const countProjectMessages = `-- name: CountProjectMessages :one
 SELECT COUNT(project_id)
 FROM convoy.events
-WHERE project_id = $1 AND deleted_at IS NULL
+WHERE project_id = $1
+  AND deleted_at IS NULL
 `
 
 func (q *Queries) CountProjectMessages(ctx context.Context, projectID pgtype.Text) (pgtype.Int8, error) {
@@ -209,16 +245,12 @@ func (q *Queries) CountProjectMessages(ctx context.Context, projectID pgtype.Tex
 const createEvent = `-- name: CreateEvent :exec
 
 
-INSERT INTO convoy.events (
-    id, event_type, endpoints, project_id, source_id,
-    headers, raw, data, url_query_params, idempotency_key,
-    is_duplicate_event, acknowledged_at, metadata, status
-)
-VALUES (
-    $1, $2, $3, $4, $5,
-    $6, $7, $8, $9, $10,
-    $11, $12, $13, $14
-)
+INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id,
+                           headers, raw, data, url_query_params, idempotency_key,
+                           is_duplicate_event, acknowledged_at, metadata, status)
+VALUES ($1, $2, $3, $4, $5,
+        $6, $7, $8, $9, $10,
+        $11, $12, $13, $14)
 `
 
 type CreateEventParams struct {
@@ -279,19 +311,79 @@ func (q *Queries) CreateEventEndpoints(ctx context.Context, arg CreateEventEndpo
 	return err
 }
 
+const exportEvents = `-- name: ExportEvents :many
+SELECT ed.id,
+       TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
+FROM convoy.events AS ed
+WHERE project_id = $1
+  AND created_at < $2
+  AND (id > $3 OR $3 = '')
+  AND deleted_at IS NULL
+ORDER BY id
+LIMIT $4
+`
+
+type ExportEventsParams struct {
+	ProjectID pgtype.Text
+	CreatedAt pgtype.Timestamptz
+	Cursor    pgtype.Text
+	PageLimit pgtype.Int8
+}
+
+type ExportEventsRow struct {
+	ID         string
+	JsonOutput []byte
+}
+
+func (q *Queries) ExportEvents(ctx context.Context, arg ExportEventsParams) ([]ExportEventsRow, error) {
+	rows, err := q.db.Query(ctx, exportEvents,
+		arg.ProjectID,
+		arg.CreatedAt,
+		arg.Cursor,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExportEventsRow
+	for rows.Next() {
+		var i ExportEventsRow
+		if err := rows.Scan(&i.ID, &i.JsonOutput); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findEventByID = `-- name: FindEventByID :one
-SELECT
-    ev.id, ev.event_type, ev.endpoints, ev.project_id, ev.raw, ev.data,
-    ev.headers, ev.is_duplicate_event,
-    COALESCE(ev.source_id, '') AS source_id,
-    COALESCE(ev.idempotency_key, '') AS idempotency_key,
-    COALESCE(ev.url_query_params, '') AS url_query_params,
-    ev.created_at, ev.updated_at, ev.acknowledged_at, ev.metadata, ev.status,
-    COALESCE(s.id, '') AS "source_metadata.id",
-    COALESCE(s.name, '') AS "source_metadata.name"
+SELECT ev.id,
+       ev.event_type,
+       ev.endpoints,
+       ev.project_id,
+       ev.raw,
+       ev.data,
+       ev.headers,
+       ev.is_duplicate_event,
+       COALESCE(ev.source_id, '')        AS source_id,
+       COALESCE(ev.idempotency_key, '')  AS idempotency_key,
+       COALESCE(ev.url_query_params, '') AS url_query_params,
+       ev.created_at,
+       ev.updated_at,
+       ev.acknowledged_at,
+       ev.metadata,
+       ev.status,
+       COALESCE(s.id, '')                AS "source_metadata.id",
+       COALESCE(s.name, '')              AS "source_metadata.name"
 FROM convoy.events ev
-LEFT JOIN convoy.sources s ON s.id = ev.source_id
-WHERE ev.id = $1 AND ev.project_id = $2 AND ev.deleted_at IS NULL
+         LEFT JOIN convoy.sources s ON s.id = ev.source_id
+WHERE ev.id = $1
+  AND ev.project_id = $2
+  AND ev.deleted_at IS NULL
 `
 
 type FindEventByIDParams struct {
@@ -348,21 +440,29 @@ func (q *Queries) FindEventByID(ctx context.Context, arg FindEventByIDParams) (F
 
 const findEventsByIDs = `-- name: FindEventsByIDs :many
 
-SELECT
-    ev.id, ev.project_id, ev.is_duplicate_event, ev.event_type AS event_type,
-    COALESCE(ev.source_id, '') AS source_id,
-    COALESCE(ev.idempotency_key, '') AS idempotency_key,
-    COALESCE(ev.url_query_params, '') AS url_query_params,
-    ev.headers, ev.raw, ev.data, ev.created_at, ev.updated_at, ev.deleted_at, ev.acknowledged_at,
-    COALESCE(s.id, '') AS "source_metadata.id",
-    COALESCE(s.name, '') AS "source_metadata.name"
+SELECT ev.id,
+       ev.project_id,
+       ev.is_duplicate_event,
+       ev.event_type                     AS event_type,
+       COALESCE(ev.source_id, '')        AS source_id,
+       COALESCE(ev.idempotency_key, '')  AS idempotency_key,
+       COALESCE(ev.url_query_params, '') AS url_query_params,
+       ev.headers,
+       ev.raw,
+       ev.data,
+       ev.created_at,
+       ev.updated_at,
+       ev.deleted_at,
+       ev.acknowledged_at,
+       COALESCE(s.id, '')                AS "source_metadata.id",
+       COALESCE(s.name, '')              AS "source_metadata.name"
 FROM convoy.events ev
-LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
-LEFT JOIN convoy.sources s ON s.id = ev.source_id
+         LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+         LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+         LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ev.deleted_at IS NULL
-    AND ev.id = ANY($1::text[])
-    AND ev.project_id = $2
+  AND ev.id = ANY ($1::TEXT[])
+  AND ev.project_id = $2
 `
 
 type FindEventsByIDsParams struct {
@@ -433,8 +533,8 @@ const findEventsByIdempotencyKey = `-- name: FindEventsByIdempotencyKey :many
 SELECT id
 FROM convoy.events
 WHERE idempotency_key = $1
-    AND project_id = $2
-    AND deleted_at IS NULL
+  AND project_id = $2
+  AND deleted_at IS NULL
 `
 
 type FindEventsByIdempotencyKeyParams struct {
@@ -466,9 +566,9 @@ const findFirstEventWithIdempotencyKey = `-- name: FindFirstEventWithIdempotency
 SELECT id
 FROM convoy.events
 WHERE idempotency_key = $1
-    AND is_duplicate_event IS FALSE
-    AND project_id = $2
-    AND deleted_at IS NULL
+  AND is_duplicate_event IS FALSE
+  AND project_id = $2
+  AND deleted_at IS NULL
 ORDER BY created_at
 LIMIT 1
 `
@@ -486,15 +586,14 @@ func (q *Queries) FindFirstEventWithIdempotencyKey(ctx context.Context, arg Find
 }
 
 const hardDeleteProjectEvents = `-- name: HardDeleteProjectEvents :exec
-DELETE FROM convoy.events
+DELETE
+FROM convoy.events
 WHERE project_id = $1
-    AND created_at >= $2
-    AND created_at <= $3
-    AND NOT EXISTS (
-        SELECT 1
-        FROM convoy.event_deliveries
-        WHERE event_id = convoy.events.id
-    )
+  AND created_at >= $2
+  AND created_at <= $3
+  AND NOT EXISTS (SELECT 1
+                  FROM convoy.event_deliveries
+                  WHERE event_id = convoy.events.id)
 `
 
 type HardDeleteProjectEventsParams struct {
@@ -509,7 +608,8 @@ func (q *Queries) HardDeleteProjectEvents(ctx context.Context, arg HardDeletePro
 }
 
 const hardDeleteTokenizedEvents = `-- name: HardDeleteTokenizedEvents :exec
-DELETE FROM convoy.events_search
+DELETE
+FROM convoy.events_search
 WHERE project_id = $1
 `
 
@@ -520,50 +620,64 @@ func (q *Queries) HardDeleteTokenizedEvents(ctx context.Context, projectID pgtyp
 
 const loadEventsPagedExists = `-- name: LoadEventsPagedExists :many
 
-SELECT
-    ev.id, ev.project_id, ev.event_type, ev.is_duplicate_event,
-    COALESCE(ev.source_id, '') AS source_id,
-    ev.endpoints, ev.headers, ev.raw, ev.data, ev.created_at,
-    COALESCE(ev.idempotency_key, '') AS idempotency_key,
-    COALESCE(ev.url_query_params, '') AS url_query_params,
-    ev.updated_at, ev.deleted_at, ev.acknowledged_at, ev.metadata, ev.status,
-    COALESCE(s.id, '') AS "source_metadata.id",
-    COALESCE(s.name, '') AS "source_metadata.name"
+SELECT ev.id,
+       ev.project_id,
+       ev.event_type,
+       ev.is_duplicate_event,
+       COALESCE(ev.source_id, '')        AS source_id,
+       ev.endpoints,
+       ev.headers,
+       ev.raw,
+       ev.data,
+       ev.created_at,
+       COALESCE(ev.idempotency_key, '')  AS idempotency_key,
+       COALESCE(ev.url_query_params, '') AS url_query_params,
+       ev.updated_at,
+       ev.deleted_at,
+       ev.acknowledged_at,
+       ev.metadata,
+       ev.status,
+       COALESCE(s.id, '')                AS "source_metadata.id",
+       COALESCE(s.name, '')              AS "source_metadata.name"
 FROM convoy.events ev
-LEFT JOIN convoy.sources s ON s.id = ev.source_id
+         LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ev.deleted_at IS NULL
-    -- EXISTS subquery for endpoint/owner filters (enables index usage)
-    AND (
-        CASE
-            WHEN $1::boolean THEN -- has_endpoint_or_owner_filter
-                EXISTS (
-                    SELECT 1
+  -- EXISTS subquery for endpoint/owner filters (enables index usage)
+  AND (
+    CASE
+        WHEN $1::BOOLEAN THEN -- has_endpoint_or_owner_filter
+            EXISTS (SELECT 1
                     FROM convoy.events_endpoints ee
-                    JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+                             JOIN convoy.endpoints e ON e.id = ee.endpoint_id
                     WHERE ee.event_id = ev.id
-                        AND (CASE WHEN $2::boolean THEN e.owner_id = $3 ELSE true END) -- has_owner_id
-                        AND (CASE WHEN $4::boolean THEN ee.endpoint_id = ANY($5::text[]) ELSE true END) -- has_endpoint_ids
-                )
-            ELSE true
+                      AND (CASE WHEN $2::BOOLEAN THEN e.owner_id = $3 ELSE true END) -- has_owner_id
+                      AND (CASE
+                               WHEN $4::BOOLEAN THEN ee.endpoint_id = ANY ($5::TEXT[])
+                               ELSE true END) -- has_endpoint_ids
+            )
+        ELSE true
         END
     )
-    -- Base filters
-    AND ev.project_id = $6
-    AND (CASE WHEN $7::boolean THEN ev.idempotency_key = $8 ELSE true END) -- has_idempotency_key
-    AND ev.created_at >= $9
-    AND ev.created_at <= $10
-    -- Source filter
-    AND (CASE WHEN $11::boolean THEN ev.source_id = ANY($12::text[]) ELSE true END) -- has_source_ids
-    -- Broker message ID filter
-    AND (CASE WHEN $13::boolean THEN ev.headers -> 'x-broker-message-id' ->> 0 = $14 ELSE true END) -- has_broker_message_id
-    -- Cursor pagination
-    AND (CASE WHEN $15::boolean THEN ev.id <= $16 ELSE true END) -- has_cursor (for DESC forward or ASC backward)
-    AND (CASE WHEN $17::boolean THEN ev.id >= $16 ELSE true END) -- cursor_gte (for ASC forward or DESC backward)
-ORDER BY
-    CASE WHEN $18::boolean THEN ev.created_at END ASC,  -- sort_asc
-    CASE WHEN $18::boolean THEN ev.id END ASC,
-    CASE WHEN NOT $18::boolean THEN ev.created_at END DESC,
-    CASE WHEN NOT $18::boolean THEN ev.id END DESC
+  -- Base filters
+  AND ev.project_id = $6
+  AND (CASE
+           WHEN $7::BOOLEAN THEN ev.idempotency_key = $8
+           ELSE true END)                                                                              -- has_idempotency_key
+  AND ev.created_at >= $9
+  AND ev.created_at <= $10
+  -- Source filter
+  AND (CASE WHEN $11::BOOLEAN THEN ev.source_id = ANY ($12::TEXT[]) ELSE true END) -- has_source_ids
+  -- Broker message ID filter
+  AND (CASE
+           WHEN $13::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $14
+           ELSE true END)                                                                              -- has_broker_message_id
+  -- Cursor pagination
+  AND (CASE WHEN $15::BOOLEAN THEN ev.id <= $16 ELSE true END)                             -- has_cursor (for DESC forward or ASC backward)
+  AND (CASE WHEN $17::BOOLEAN THEN ev.id >= $16 ELSE true END)                             -- cursor_gte (for ASC forward or DESC backward)
+ORDER BY CASE WHEN $18::BOOLEAN THEN ev.created_at END ASC, -- sort_asc
+         CASE WHEN $18::BOOLEAN THEN ev.id END ASC,
+         CASE WHEN NOT $18::BOOLEAN THEN ev.created_at END DESC,
+         CASE WHEN NOT $18::BOOLEAN THEN ev.id END DESC
 LIMIT $19
 `
 
@@ -678,54 +792,87 @@ func (q *Queries) LoadEventsPagedExists(ctx context.Context, arg LoadEventsPaged
 
 const loadEventsPagedSearch = `-- name: LoadEventsPagedSearch :many
 
-WITH events AS (
-    SELECT
-        ev.id, ev.project_id, ev.event_type, ev.is_duplicate_event,
-        COALESCE(ev.source_id, '') AS source_id,
-        ev.endpoints, ev.headers, ev.raw, ev.data, ev.created_at,
-        COALESCE(ev.idempotency_key, '') AS idempotency_key,
-        COALESCE(ev.url_query_params, '') AS url_query_params,
-        ev.updated_at, ev.deleted_at, ev.acknowledged_at, ev.metadata AS metadata, ev.status AS status,
-        COALESCE(s.id, '') AS "source_metadata.id",
-        COALESCE(s.name, '') AS "source_metadata.name"
-    FROM convoy.events_search ev
-    LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-    LEFT JOIN convoy.sources s ON s.id = ev.source_id
-    LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
-    WHERE ev.deleted_at IS NULL
-        -- Base filters
-        AND ev.project_id = $2
-        AND (CASE WHEN $3::boolean THEN ev.idempotency_key = $4 ELSE true END) -- has_idempotency_key
-        AND ev.created_at >= $5
-        AND ev.created_at <= $6
-        -- Source filter
-        AND (CASE WHEN $7::boolean THEN ev.source_id = ANY($8::text[]) ELSE true END) -- has_source_ids
-        -- Endpoint filter
-        AND (CASE WHEN $9::boolean THEN ee.endpoint_id = ANY($10::text[]) ELSE true END) -- has_endpoint_ids
-        -- Broker message ID filter
-        AND (CASE WHEN $11::boolean THEN ev.headers -> 'x-broker-message-id' ->> 0 = $12 ELSE true END) -- has_broker_message_id
-        -- Search query filter
-        AND (CASE WHEN $13::boolean THEN ev.search_token @@ websearch_to_tsquery('simple', $14) ELSE true END) -- has_query
-        -- Cursor pagination
-        AND (CASE WHEN $15::boolean THEN ev.id <= $16 ELSE true END) -- has_cursor (for DESC forward or ASC backward)
-        AND (CASE WHEN $17::boolean THEN ev.id >= $16 ELSE true END) -- cursor_gte (for ASC forward or DESC backward)
-    GROUP BY ev.id, s.id
-    ORDER BY
-        CASE WHEN $1::boolean THEN ev.created_at END ASC,  -- sort_asc
-        CASE WHEN $1::boolean THEN ev.id END ASC,
-        CASE WHEN NOT $1::boolean THEN ev.created_at END DESC,
-        CASE WHEN NOT $1::boolean THEN ev.id END DESC
-    LIMIT $18 -- limit
+WITH events AS (SELECT ev.id,
+                       ev.project_id,
+                       ev.event_type,
+                       ev.is_duplicate_event,
+                       COALESCE(ev.source_id, '')        AS source_id,
+                       ev.endpoints,
+                       ev.headers,
+                       ev.raw,
+                       ev.data,
+                       ev.created_at,
+                       COALESCE(ev.idempotency_key, '')  AS idempotency_key,
+                       COALESCE(ev.url_query_params, '') AS url_query_params,
+                       ev.updated_at,
+                       ev.deleted_at,
+                       NULL::TIMESTAMPTZ                 AS acknowledged_at,
+                       ''::TEXT                          AS metadata,
+                       ''::TEXT                          AS status,
+                       COALESCE(s.id, '')                AS "source_metadata.id",
+                       COALESCE(s.name, '')              AS "source_metadata.name"
+                FROM convoy.events_search ev
+                         LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+                         LEFT JOIN convoy.sources s ON s.id = ev.source_id
+                         LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+                WHERE ev.deleted_at IS NULL
+                  -- Base filters
+                  AND ev.project_id = $2
+                  AND (CASE
+                           WHEN $3::BOOLEAN THEN ev.idempotency_key = $4
+                           ELSE true END)                                                  -- has_idempotency_key
+                  AND ev.created_at >= $5
+                  AND ev.created_at <= $6
+                  -- Source filter
+                  AND (CASE
+                           WHEN $7::BOOLEAN THEN ev.source_id = ANY ($8::TEXT[])
+                           ELSE true END)                                                  -- has_source_ids
+                  -- Endpoint filter
+                  AND (CASE
+                           WHEN $9::BOOLEAN THEN ee.endpoint_id = ANY ($10::TEXT[])
+                           ELSE true END)                                                  -- has_endpoint_ids
+                  -- Broker message ID filter
+                  AND (CASE
+                           WHEN $11::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $12
+                           ELSE true END)                                                  -- has_broker_message_id
+                  -- Search query filter
+                  AND (CASE
+                           WHEN $13::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', $14)
+                           ELSE true END)                                                  -- has_query
+                  -- Cursor pagination
+                  AND (CASE WHEN $15::BOOLEAN THEN ev.id <= $16 ELSE true END) -- has_cursor (for DESC forward or ASC backward)
+                  AND (CASE WHEN $17::BOOLEAN THEN ev.id >= $16 ELSE true END) -- cursor_gte (for ASC forward or DESC backward)
+                GROUP BY ev.id, s.id
+                ORDER BY CASE WHEN $1::BOOLEAN THEN ev.created_at END ASC, -- sort_asc
+                         CASE WHEN $1::BOOLEAN THEN ev.id END ASC,
+                         CASE WHEN NOT $1::BOOLEAN THEN ev.created_at END DESC,
+                         CASE WHEN NOT $1::BOOLEAN THEN ev.id END DESC
+                LIMIT $18 -- limit
 )
-SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints, headers, raw, data, created_at,
-       idempotency_key, url_query_params, updated_at, deleted_at, acknowledged_at, metadata, status,
-       "source_metadata.id", "source_metadata.name"
+SELECT id,
+       project_id,
+       event_type,
+       is_duplicate_event,
+       source_id,
+       endpoints,
+       headers,
+       raw,
+       data,
+       created_at,
+       idempotency_key,
+       url_query_params,
+       updated_at,
+       deleted_at,
+       acknowledged_at,
+       metadata,
+       status,
+       "source_metadata.id",
+       "source_metadata.name"
 FROM events
-ORDER BY
-    CASE WHEN $1::boolean THEN created_at END ASC,  -- sort_asc
-    CASE WHEN $1::boolean THEN id END ASC,
-    CASE WHEN NOT $1::boolean THEN created_at END DESC,
-    CASE WHEN NOT $1::boolean THEN id END DESC
+ORDER BY CASE WHEN $1::BOOLEAN THEN created_at END ASC, -- sort_asc
+         CASE WHEN $1::BOOLEAN THEN id END ASC,
+         CASE WHEN NOT $1::BOOLEAN THEN created_at END DESC,
+         CASE WHEN NOT $1::BOOLEAN THEN id END DESC
 `
 
 type LoadEventsPagedSearchParams struct {
@@ -774,6 +921,7 @@ type LoadEventsPagedSearchRow struct {
 // limit
 // Full-text search pagination using CTE + JOIN + GROUP BY
 // Uses convoy.events_search table for search_token matching
+// Note: events_search doesn't have acknowledged_at, metadata, status columns
 func (q *Queries) LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPagedSearchParams) ([]LoadEventsPagedSearchRow, error) {
 	rows, err := q.db.Query(ctx, loadEventsPagedSearch,
 		arg.SortAsc,
@@ -838,9 +986,9 @@ const softDeleteProjectEvents = `-- name: SoftDeleteProjectEvents :exec
 UPDATE convoy.events
 SET deleted_at = NOW()
 WHERE project_id = $1
-    AND created_at >= $2
-    AND created_at <= $3
-    AND deleted_at IS NULL
+  AND created_at >= $2
+  AND created_at <= $3
+  AND deleted_at IS NULL
 `
 
 type SoftDeleteProjectEventsParams struct {
@@ -860,7 +1008,8 @@ func (q *Queries) SoftDeleteProjectEvents(ctx context.Context, arg SoftDeletePro
 const updateEventEndpoints = `-- name: UpdateEventEndpoints :exec
 UPDATE convoy.events
 SET endpoints = $1
-WHERE project_id = $2 AND id = $3
+WHERE project_id = $2
+  AND id = $3
 `
 
 type UpdateEventEndpointsParams struct {
@@ -877,7 +1026,8 @@ func (q *Queries) UpdateEventEndpoints(ctx context.Context, arg UpdateEventEndpo
 const updateEventStatus = `-- name: UpdateEventStatus :exec
 UPDATE convoy.events
 SET status = $1
-WHERE project_id = $2 AND id = $3
+WHERE project_id = $2
+  AND id = $3
 `
 
 type UpdateEventStatusParams struct {

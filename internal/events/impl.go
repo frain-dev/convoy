@@ -3,7 +3,9 @@ package events
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -577,12 +579,89 @@ func (s *Service) CopyRows(ctx context.Context, projectID string, interval int) 
 	return tx.Commit(ctx)
 }
 
-// ExportRecords exports events to a writer
+// ExportRecords exports events to a writer as a JSON array
+// It processes records in batches to avoid memory issues with large datasets
 func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
-	// TODO: Implement using pgx instead of sqlx
-	// This is a rarely used function for data export
-	// For now, return an error indicating it needs implementation
-	return 0, errors.New("ExportRecords not yet implemented for pgx - use legacy implementation")
+	// Count total exportable events (with empty cursor for initial count)
+	count, err := s.repo.CountExportedEvents(ctx, repo.CountExportedEventsParams{
+		ProjectID: common.StringToPgText(projectID),
+		CreatedAt: common.TimeToPgTimestamptz(createdAt),
+		Cursor:    common.StringToPgTextFilter(""), // Use Filter to keep Valid=true for SQL comparison
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	count64 := common.PgInt8ToInt64(count)
+
+	if count64 == 0 { // nothing to export, write empty JSON array
+		_, err = w.Write([]byte(`[]`))
+		if err != nil {
+			return 0, err
+		}
+		return 0, nil
+	}
+
+	var (
+		batchSize  = 3000
+		numDocs    int64
+		numBatches = int(math.Ceil(float64(count64) / float64(batchSize)))
+		lastID     string
+	)
+
+	// Write opening bracket for JSON array
+	_, err = w.Write([]byte(`[`))
+	if err != nil {
+		return 0, err
+	}
+
+	isFirstRecord := true
+
+	for i := 0; i < numBatches; i++ {
+		// Fetch batch of events as JSON
+		params := repo.ExportEventsParams{
+			ProjectID: common.StringToPgText(projectID),
+			CreatedAt: common.TimeToPgTimestamptz(createdAt),
+			Cursor:    common.StringToPgTextFilter(lastID), // Use Filter to keep Valid=true for SQL comparison
+			PageLimit: pgtype.Int8{Int64: int64(batchSize), Valid: true},
+		}
+
+		rows, exportErr := s.repo.ExportEvents(ctx, params)
+		if exportErr != nil {
+			return 0, fmt.Errorf("failed to query batch %d: %w", i, exportErr)
+		}
+
+		// Write each JSON record to the writer
+		for _, row := range rows {
+			// Add a comma separator between records (not before the first record)
+			if !isFirstRecord {
+				_, writeErr := w.Write([]byte(`,`))
+				if writeErr != nil {
+					return 0, writeErr
+				}
+			}
+			isFirstRecord = false
+
+			// Write the JSON record
+			_, writeErr := w.Write(row.JsonOutput)
+			if writeErr != nil {
+				return 0, writeErr
+			}
+
+			numDocs++
+
+			// Use the ID directly for cursor pagination (no JSON parsing needed)
+			lastID = row.ID
+		}
+	}
+
+	// Write a closing bracket for JSON array
+	_, err = w.Write([]byte(`]`))
+	if err != nil {
+		return 0, err
+	}
+
+	return numDocs, nil
 }
 
 // PartitionEventsTable partitions the events table

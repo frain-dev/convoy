@@ -92,6 +92,18 @@ func NullTimeToPgTimestamptz(t null.Time) pgtype.Timestamptz {
 }
 
 // ============================================================================
+// Int conversions
+// ============================================================================
+
+// PgInt8ToInt64 converts int8 from pgx to int64.
+func PgInt8ToInt64(t pgtype.Int8) int64 {
+	if t.Valid {
+		return t.Int64
+	}
+	return 0
+}
+
+// ============================================================================
 // Boolean conversions
 // ============================================================================
 
