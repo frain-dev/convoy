@@ -28,8 +28,6 @@
 - chore(build): run all test with race flag (#2578)
 - refactor(dataplane): add sqlc for event types (#2557)
 - refactor(controlplane): streamline test dependencies (#2588)
-- chore(release): prepare v26.2.0
-- chore(release): prepare v26.2.0
 
 ### Bug Fixes
 
