@@ -1,15 +1,12 @@
+# Convoy Changes
 
-# 26.2.0
-
-### Bug Fixes
-
-- fix(dataplane): fix rabbitmq reconnection issue (#2547)
-- fix build step in release.Dockerfile (#2576)
+## 26.2.0
 
 ### Features
 
 - feat(controlplane): org-level SSO and license data sync (#2560)
 - feat(controlplane): billing-backed license, project limits, and SSO/license sync (#2572)
+- feat(controlplane): workspace slug SSO flow and other fixes (#2583)
 
 ### Improvements
 
@@ -28,8 +25,25 @@
 - refactor(infra): add sql migration linter (#2569)
 - refactor(infra): add caddy as reverse proxy for local installation (#2570)
 - chore(build): update docker-compose files (#2577)
+- chore(build): run all test with race flag (#2578)
+- refactor(dataplane): add sqlc for event types (#2557)
+- refactor(controlplane): streamline test dependencies (#2588)
+- chore(release): prepare v26.2.0
+- chore(release): prepare v26.2.0
 
-### Other
+### Bug Fixes
+
+- fix(dataplane): fix rabbitmq reconnection issue (#2547)
+- fix build step in release.Dockerfile (#2576)
+- fix docker-compose start script (#2584)
+- fix: guard subscription filter_config and source_metadata for null safety (#2585)
+- fix(controlplane): fix events with no subscriptions (#2575)
+- fix(controlplane): change query for fetching endpoint IDs (#2591)
+- fix(controlplane): SSO redirect, billing resilience, login UX, and config simplification (#2589)
+- fix(dataplane): fanout event fix (#2592)
+- fix(controlplane): remove Pro badge and improve Manage plans dialog UX (#2593)
+
+### Others
 
 - License service integration (#2528)
 - Add condition to skip job on pull requests
@@ -43,6 +57,7 @@
 - Delete .github/workflows/codeql.yml
 - Rename codeql-advanced.yml to codeql.yml
 - improve redis sentinel implementation (#2573)
+- add logger to fanout endpoint (#2587)
 
 # 26.1.1
 
