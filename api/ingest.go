@@ -213,7 +213,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		EventType:        datastore.EventType(maskID),
 		SourceID:         source.UID,
 		ProjectID:        source.ProjectID,
-		Raw:              string(payload),
+		Raw:              "", // Skip Raw duplication - Data field is canonical (reduces payload size)
 		Data:             payload,
 		IsDuplicateEvent: isDuplicate,
 		URLQueryParams:   r.URL.RawQuery,
