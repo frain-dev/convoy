@@ -845,6 +845,16 @@ func (e *Event) GetRawHeadersJSON() ([]byte, error) {
 	return json.Marshal(e.GetRawHeaders())
 }
 
+// GetRaw returns the raw event data. For backward compatibility, it returns
+// the Raw field if populated (old events), otherwise it computes it from Data
+// on-demand (new events with Raw field optimization).
+func (e *Event) GetRaw() string {
+	if e.Raw != "" {
+		return e.Raw // Return existing value (old events)
+	}
+	return string(e.Data) // Compute on-demand for new events
+}
+
 type (
 	SubscriptionType    string
 	EventStatus         string

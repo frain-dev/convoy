@@ -99,7 +99,7 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		Headers:          getCustomHeaders(dynamicEvent.CustomHeaders),
 		IsDuplicateEvent: isDuplicate,
 		Metadata:         string(m),
-		Raw:              string(dynamicEvent.Data),
+		Raw:              "", // Skip Raw duplication - Data field is canonical (reduces payload size)
 		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
 
