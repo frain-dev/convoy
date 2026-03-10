@@ -85,7 +85,7 @@ func (s *Service) UpdateUser(ctx context.Context, user *datastore.User) error {
 // ============================================================================
 
 func (s *Service) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
-	row, err := s.repo.FindUserByID(ctx, pgtype.Text{String: id, Valid: true})
+	row, err := s.repo.FindUserByID(ctx, common.StringToPgText(id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -98,7 +98,7 @@ func (s *Service) FindUserByID(ctx context.Context, id string) (*datastore.User,
 }
 
 func (s *Service) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
-	row, err := s.repo.FindUserByEmail(ctx, pgtype.Text{String: email, Valid: true})
+	row, err := s.repo.FindUserByEmail(ctx, common.StringToPgText(email))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -111,7 +111,7 @@ func (s *Service) FindUserByEmail(ctx context.Context, email string) (*datastore
 }
 
 func (s *Service) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
-	row, err := s.repo.FindUserByToken(ctx, pgtype.Text{String: token, Valid: true})
+	row, err := s.repo.FindUserByToken(ctx, common.StringToPgText(token))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -124,7 +124,7 @@ func (s *Service) FindUserByToken(ctx context.Context, token string) (*datastore
 }
 
 func (s *Service) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
-	row, err := s.repo.FindUserByEmailVerificationToken(ctx, pgtype.Text{String: token, Valid: true})
+	row, err := s.repo.FindUserByEmailVerificationToken(ctx, common.StringToPgText(token))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -157,31 +157,31 @@ func (s *Service) CountUsers(ctx context.Context) (int64, error) {
 // userToCreateParams converts datastore.User to repo.CreateUserParams
 func userToCreateParams(user *datastore.User) repo.CreateUserParams {
 	return repo.CreateUserParams{
-		ID:                         pgtype.Text{String: user.UID, Valid: true},
-		FirstName:                  pgtype.Text{String: user.FirstName, Valid: true},
-		LastName:                   pgtype.Text{String: user.LastName, Valid: true},
-		Email:                      pgtype.Text{String: user.Email, Valid: true},
-		Password:                   pgtype.Text{String: user.Password, Valid: true},
+		ID:                         common.StringToPgText(user.UID),
+		FirstName:                  common.StringToPgText(user.FirstName),
+		LastName:                   common.StringToPgText(user.LastName),
+		Email:                      common.StringToPgText(user.Email),
+		Password:                   common.StringToPgText(user.Password),
 		EmailVerified:              pgtype.Bool{Bool: user.EmailVerified, Valid: true},
-		ResetPasswordToken:         common.StringToPgText(user.ResetPasswordToken),
-		EmailVerificationToken:     common.StringToPgText(user.EmailVerificationToken),
+		ResetPasswordToken:         common.StringToPgTextNullable(user.ResetPasswordToken),
+		EmailVerificationToken:     common.StringToPgTextNullable(user.EmailVerificationToken),
 		ResetPasswordExpiresAt:     common.TimeToPgTimestamptz(user.ResetPasswordExpiresAt),
 		EmailVerificationExpiresAt: common.TimeToPgTimestamptz(user.EmailVerificationExpiresAt),
-		AuthType:                   pgtype.Text{String: user.AuthType, Valid: true},
+		AuthType:                   common.StringToPgText(user.AuthType),
 	}
 }
 
 // userToUpdateParams converts datastore.User to repo.UpdateUserParams
 func userToUpdateParams(user *datastore.User) repo.UpdateUserParams {
 	return repo.UpdateUserParams{
-		ID:                         pgtype.Text{String: user.UID, Valid: true},
-		FirstName:                  pgtype.Text{String: user.FirstName, Valid: true},
-		LastName:                   pgtype.Text{String: user.LastName, Valid: true},
-		Email:                      pgtype.Text{String: user.Email, Valid: true},
-		Password:                   pgtype.Text{String: user.Password, Valid: true},
+		ID:                         common.StringToPgText(user.UID),
+		FirstName:                  common.StringToPgText(user.FirstName),
+		LastName:                   common.StringToPgText(user.LastName),
+		Email:                      common.StringToPgText(user.Email),
+		Password:                   common.StringToPgText(user.Password),
 		EmailVerified:              pgtype.Bool{Bool: user.EmailVerified, Valid: true},
-		ResetPasswordToken:         common.StringToPgText(user.ResetPasswordToken),
-		EmailVerificationToken:     common.StringToPgText(user.EmailVerificationToken),
+		ResetPasswordToken:         common.StringToPgTextNullable(user.ResetPasswordToken),
+		EmailVerificationToken:     common.StringToPgTextNullable(user.EmailVerificationToken),
 		ResetPasswordExpiresAt:     common.TimeToPgTimestamptz(user.ResetPasswordExpiresAt),
 		EmailVerificationExpiresAt: common.TimeToPgTimestamptz(user.EmailVerificationExpiresAt),
 	}

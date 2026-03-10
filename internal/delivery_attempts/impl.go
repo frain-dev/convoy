@@ -15,6 +15,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/delivery_attempts/repo"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -45,13 +46,13 @@ func (s *Service) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.
 
 	// Convert datastore.DeliveryAttempt to SQLc params
 	params := repo.CreateDeliveryAttemptParams{
-		ID:              pgtype.Text{String: attempt.UID, Valid: true},
-		Url:             pgtype.Text{String: attempt.URL, Valid: true},
-		Method:          pgtype.Text{String: attempt.Method, Valid: true},
-		ApiVersion:      pgtype.Text{String: attempt.APIVersion, Valid: true},
-		EndpointID:      pgtype.Text{String: attempt.EndpointID, Valid: true},
-		EventDeliveryID: pgtype.Text{String: attempt.EventDeliveryId, Valid: true},
-		ProjectID:       pgtype.Text{String: attempt.ProjectId, Valid: true},
+		ID:              common.StringToPgText(attempt.UID),
+		Url:             common.StringToPgText(attempt.URL),
+		Method:          common.StringToPgText(attempt.Method),
+		ApiVersion:      common.StringToPgText(attempt.APIVersion),
+		EndpointID:      common.StringToPgText(attempt.EndpointID),
+		EventDeliveryID: common.StringToPgText(attempt.EventDeliveryId),
+		ProjectID:       common.StringToPgText(attempt.ProjectId),
 		IpAddress:       pgtype.Text{String: attempt.IPAddress, Valid: attempt.IPAddress != ""},
 		HttpStatus:      pgtype.Text{String: attempt.HttpResponseCode, Valid: attempt.HttpResponseCode != ""},
 		Error:           pgtype.Text{String: attempt.Error, Valid: attempt.Error != ""},
@@ -92,8 +93,8 @@ func (s *Service) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.
 
 func (s *Service) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId, id string) (*datastore.DeliveryAttempt, error) {
 	row, err := s.repo.FindDeliveryAttemptById(ctx, repo.FindDeliveryAttemptByIdParams{
-		ID:              pgtype.Text{String: id, Valid: true},
-		EventDeliveryID: pgtype.Text{String: eventDeliveryId, Valid: true},
+		ID:              common.StringToPgText(id),
+		EventDeliveryID: common.StringToPgText(eventDeliveryId),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -107,7 +108,7 @@ func (s *Service) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId, 
 }
 
 func (s *Service) FindDeliveryAttempts(ctx context.Context, eventDeliveryId string) ([]datastore.DeliveryAttempt, error) {
-	rows, err := s.repo.FindDeliveryAttempts(ctx, pgtype.Text{String: eventDeliveryId, Valid: true})
+	rows, err := s.repo.FindDeliveryAttempts(ctx, common.StringToPgText(eventDeliveryId))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to find delivery attempts")
 		return nil, util.NewServiceError(500, fmt.Errorf("failed to find delivery attempts: %w", err))
@@ -139,13 +140,13 @@ func (s *Service) DeleteProjectDeliveriesAttempts(ctx context.Context, projectID
 
 	if hardDelete {
 		result, err = s.repo.HardDeleteProjectDeliveryAttempts(ctx, repo.HardDeleteProjectDeliveryAttemptsParams{
-			ProjectID:      pgtype.Text{String: projectID, Valid: true},
+			ProjectID:      common.StringToPgText(projectID),
 			CreatedAtStart: pgtype.Timestamptz{Time: start, Valid: true},
 			CreatedAtEnd:   pgtype.Timestamptz{Time: end, Valid: true},
 		})
 	} else {
 		result, err = s.repo.SoftDeleteProjectDeliveryAttempts(ctx, repo.SoftDeleteProjectDeliveryAttemptsParams{
-			ProjectID:      pgtype.Text{String: projectID, Valid: true},
+			ProjectID:      common.StringToPgText(projectID),
 			CreatedAtStart: pgtype.Timestamptz{Time: start, Valid: true},
 			CreatedAtEnd:   pgtype.Timestamptz{Time: end, Valid: true},
 		})
@@ -189,7 +190,7 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 		delete(resultsMap, endpointID)
 
 		row, err := s.repo.GetFailureAndSuccessCountsWithResetTime(ctx, repo.GetFailureAndSuccessCountsWithResetTimeParams{
-			EndpointID: pgtype.Text{String: endpointID, Valid: true},
+			EndpointID: common.StringToPgText(endpointID),
 			ResetTime:  pgtype.Timestamptz{Time: resetTime, Valid: true},
 		})
 		if err != nil {

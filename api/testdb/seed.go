@@ -346,6 +346,10 @@ func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID
 
 // SeedProject seed default project
 func SeedProject(db database.Database, uid, name, orgID string, projectType datastore.ProjectType, cfg *datastore.ProjectConfig) (*datastore.Project, error) {
+	if uid == "" {
+		uid = ulid.Make().String()
+	}
+
 	if orgID == "" {
 		orgID = ulid.Make().String()
 	}

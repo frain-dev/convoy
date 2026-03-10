@@ -25,24 +25,24 @@ func isStringEmpty(s string) bool {
 // String to pgtype.Text conversions
 // ============================================================================
 
-// StringToPgText converts a string to pgtype.Text.
+// StringToPgTextNullable converts a string to pgtype.Text.
 // Empty strings are represented as invalid (NULL in database).
-func StringToPgText(s string) pgtype.Text {
+func StringToPgTextNullable(s string) pgtype.Text {
 	if isStringEmpty(s) {
 		return pgtype.Text{String: "", Valid: false}
 	}
 	return pgtype.Text{String: s, Valid: true}
 }
 
-// StringToPgTextFilter converts a string to pgtype.Text for filtering.
-// Unlike StringToPgText, empty strings are still valid (for filter queries).
-func StringToPgTextFilter(s string) pgtype.Text {
+// StringToPgText converts a string to pgtype.Text for filtering.
+// Unlike StringToPgTextNullable, empty strings are still valid (for filter queries).
+func StringToPgText(s string) pgtype.Text {
 	return pgtype.Text{String: s, Valid: true}
 }
 
-// StringPtrToPgText converts a string pointer to pgtype.Text.
+// StringPtrToPgTextNullable converts a string pointer to pgtype.Text.
 // Nil pointers or empty strings are represented as invalid (NULL in database).
-func StringPtrToPgText(s *string) pgtype.Text {
+func StringPtrToPgTextNullable(s *string) pgtype.Text {
 	if s == nil || isStringEmpty(*s) {
 		return pgtype.Text{String: "", Valid: false}
 	}

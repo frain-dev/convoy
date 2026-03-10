@@ -36,7 +36,6 @@ type Querier interface {
 	FetchDeletedSubscriptions(ctx context.Context, arg FetchDeletedSubscriptionsParams) ([]FetchDeletedSubscriptionsRow, error)
 	// Fetch new subscriptions created after last sync time
 	FetchNewSubscriptions(ctx context.Context, arg FetchNewSubscriptionsParams) ([]FetchNewSubscriptionsRow, error)
-	FetchSubscriptionByDeviceID(ctx context.Context, arg FetchSubscriptionByDeviceIDParams) (FetchSubscriptionByDeviceIDRow, error)
 	// ============================================================================
 	// FETCH Operations
 	// ============================================================================

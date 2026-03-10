@@ -64,7 +64,7 @@ func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (pgtyp
 }
 
 const countExportedEvents = `-- name: CountExportedEvents :one
-SELECT COUNT(*) as count FROM convoy.events AS ed
+SELECT COUNT(*) as count FROM convoy.events
 WHERE project_id = $1
   AND created_at < $2
   AND (id > $3 OR $3 = '')
@@ -806,9 +806,9 @@ WITH events AS (SELECT ev.id,
                        COALESCE(ev.url_query_params, '') AS url_query_params,
                        ev.updated_at,
                        ev.deleted_at,
-                       NULL::TIMESTAMPTZ                 AS acknowledged_at,
-                       ''::TEXT                          AS metadata,
-                       ''::TEXT                          AS status,
+                       ev.acknowledged_at,
+                       ev.metadata                       AS metadata,
+                       ev.status                         AS status,
                        COALESCE(s.id, '')                AS "source_metadata.id",
                        COALESCE(s.name, '')              AS "source_metadata.name"
                 FROM convoy.events_search ev
@@ -921,7 +921,6 @@ type LoadEventsPagedSearchRow struct {
 // limit
 // Full-text search pagination using CTE + JOIN + GROUP BY
 // Uses convoy.events_search table for search_token matching
-// Note: events_search doesn't have acknowledged_at, metadata, status columns
 func (q *Queries) LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPagedSearchParams) ([]LoadEventsPagedSearchRow, error) {
 	rows, err := q.db.Query(ctx, loadEventsPagedSearch,
 		arg.SortAsc,

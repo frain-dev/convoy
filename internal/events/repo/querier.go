@@ -45,7 +45,6 @@ type Querier interface {
 	// limit
 	// Full-text search pagination using CTE + JOIN + GROUP BY
 	// Uses convoy.events_search table for search_token matching
-	// Note: events_search doesn't have acknowledged_at, metadata, status columns
 	LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPagedSearchParams) ([]LoadEventsPagedSearchRow, error)
 	// ============================================================================
 	// Group 4: Deletion & Maintenance (4 queries)

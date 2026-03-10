@@ -102,7 +102,6 @@ func rowToEventTypeFilter(row interface{}) (*datastore.EventTypeFilter, error) {
 	}, nil
 }
 
-// Legacy rowToEventTypeFilter - keeping for reference but not used
 // ============================================================================
 // Service Implementation
 // ============================================================================
@@ -166,9 +165,9 @@ func (s *Service) CreateFilter(ctx context.Context, filter *datastore.EventTypeF
 
 	// Create filter
 	err = s.repo.CreateFilter(ctx, repo.CreateFilterParams{
-		ID:             pgtype.Text{String: filter.UID, Valid: true},
-		SubscriptionID: pgtype.Text{String: filter.SubscriptionID, Valid: true},
-		EventType:      pgtype.Text{String: filter.EventType, Valid: true},
+		ID:             common.StringToPgText(filter.UID),
+		SubscriptionID: common.StringToPgText(filter.SubscriptionID),
+		EventType:      common.StringToPgText(filter.EventType),
 		Headers:        headersJSON,
 		Body:           bodyJSON,
 		RawHeaders:     rawHeadersJSON,
@@ -258,9 +257,9 @@ func (s *Service) CreateFilters(ctx context.Context, filters []datastore.EventTy
 
 		// Create filter
 		err = qtx.CreateFilter(ctx, repo.CreateFilterParams{
-			ID:             pgtype.Text{String: filter.UID, Valid: true},
-			SubscriptionID: pgtype.Text{String: filter.SubscriptionID, Valid: true},
-			EventType:      pgtype.Text{String: filter.EventType, Valid: true},
+			ID:             common.StringToPgText(filter.UID),
+			SubscriptionID: common.StringToPgText(filter.SubscriptionID),
+			EventType:      common.StringToPgText(filter.EventType),
 			Headers:        headersJSON,
 			Body:           bodyJSON,
 			RawHeaders:     rawHeadersJSON,
@@ -330,12 +329,12 @@ func (s *Service) UpdateFilter(ctx context.Context, filter *datastore.EventTypeF
 
 	// Update filter
 	rowsAffected, err := s.repo.UpdateFilter(ctx, repo.UpdateFilterParams{
-		ID:         pgtype.Text{String: filter.UID, Valid: true},
+		ID:         common.StringToPgText(filter.UID),
 		Headers:    headersJSON,
 		Body:       bodyJSON,
 		RawHeaders: rawHeadersJSON,
 		RawBody:    rawBodyJSON,
-		EventType:  pgtype.Text{String: filter.EventType, Valid: true},
+		EventType:  common.StringToPgText(filter.EventType),
 		UpdatedAt:  pgtype.Timestamptz{Time: time.Now(), Valid: true},
 	})
 
@@ -412,12 +411,12 @@ func (s *Service) UpdateFilters(ctx context.Context, filters []datastore.EventTy
 
 		// Update filter
 		rowsAffected, err := qtx.UpdateFilter(ctx, repo.UpdateFilterParams{
-			ID:         pgtype.Text{String: filter.UID, Valid: true},
+			ID:         common.StringToPgText(filter.UID),
 			Headers:    headersJSON,
 			Body:       bodyJSON,
 			RawHeaders: rawHeadersJSON,
 			RawBody:    rawBodyJSON,
-			EventType:  pgtype.Text{String: filter.EventType, Valid: true},
+			EventType:  common.StringToPgText(filter.EventType),
 			UpdatedAt:  pgtype.Timestamptz{Time: filter.UpdatedAt, Valid: true},
 		})
 
@@ -442,7 +441,7 @@ func (s *Service) UpdateFilters(ctx context.Context, filters []datastore.EventTy
 
 // DeleteFilter deletes a filter by ID
 func (s *Service) DeleteFilter(ctx context.Context, filterID string) error {
-	rowsAffected, err := s.repo.DeleteFilter(ctx, pgtype.Text{String: filterID, Valid: true})
+	rowsAffected, err := s.repo.DeleteFilter(ctx, common.StringToPgText(filterID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to delete filter")
 		return util.NewServiceError(http.StatusInternalServerError, errors.New("filter could not be deleted"))
@@ -457,7 +456,7 @@ func (s *Service) DeleteFilter(ctx context.Context, filterID string) error {
 
 // FindFilterByID retrieves a filter by its ID
 func (s *Service) FindFilterByID(ctx context.Context, filterID string) (*datastore.EventTypeFilter, error) {
-	row, err := s.repo.FindFilterByID(ctx, pgtype.Text{String: filterID, Valid: true})
+	row, err := s.repo.FindFilterByID(ctx, common.StringToPgText(filterID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrFilterNotFound
@@ -477,7 +476,7 @@ func (s *Service) FindFilterByID(ctx context.Context, filterID string) (*datasto
 
 // FindFiltersBySubscriptionID retrieves all filters for a subscription
 func (s *Service) FindFiltersBySubscriptionID(ctx context.Context, subscriptionID string) ([]datastore.EventTypeFilter, error) {
-	rows, err := s.repo.FindFiltersBySubscriptionID(ctx, pgtype.Text{String: subscriptionID, Valid: true})
+	rows, err := s.repo.FindFiltersBySubscriptionID(ctx, common.StringToPgText(subscriptionID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to find filters by subscription id")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -499,8 +498,8 @@ func (s *Service) FindFiltersBySubscriptionID(ctx context.Context, subscriptionI
 // FindFilterBySubscriptionAndEventType retrieves a filter by subscription and event type
 func (s *Service) FindFilterBySubscriptionAndEventType(ctx context.Context, subscriptionID, eventType string) (*datastore.EventTypeFilter, error) {
 	row, err := s.repo.FindFilterBySubscriptionAndEventType(ctx, repo.FindFilterBySubscriptionAndEventTypeParams{
-		SubscriptionID: pgtype.Text{String: subscriptionID, Valid: true},
-		EventType:      pgtype.Text{String: eventType, Valid: true},
+		SubscriptionID: common.StringToPgText(subscriptionID),
+		EventType:      common.StringToPgText(eventType),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -147,9 +147,9 @@ func (s *Service) CreateOrganisationMember(ctx context.Context, member *datastor
 	roleTypePg, roleProjectPg, roleEndpointPg := common.RoleToParams(member.Role)
 
 	err := s.repo.CreateOrganisationMember(ctx, repo.CreateOrganisationMemberParams{
-		ID:             pgtype.Text{String: member.UID, Valid: true},
-		OrganisationID: pgtype.Text{String: member.OrganisationID, Valid: true},
-		UserID:         pgtype.Text{String: member.UserID, Valid: true},
+		ID:             common.StringToPgText(member.UID),
+		OrganisationID: common.StringToPgText(member.OrganisationID),
+		UserID:         common.StringToPgText(member.UserID),
 		RoleType:       roleTypePg,
 		RoleProject:    roleProjectPg,
 		RoleEndpoint:   roleEndpointPg,
@@ -172,7 +172,7 @@ func (s *Service) UpdateOrganisationMember(ctx context.Context, member *datastor
 	roleTypePg, roleProjectPg, roleEndpointPg := common.RoleToParams(member.Role)
 
 	err := s.repo.UpdateOrganisationMember(ctx, repo.UpdateOrganisationMemberParams{
-		ID:           pgtype.Text{String: member.UID, Valid: true},
+		ID:           common.StringToPgText(member.UID),
 		RoleType:     roleTypePg,
 		RoleProject:  roleProjectPg,
 		RoleEndpoint: roleEndpointPg,
@@ -189,8 +189,8 @@ func (s *Service) UpdateOrganisationMember(ctx context.Context, member *datastor
 // DeleteOrganisationMember soft deletes an organisation member
 func (s *Service) DeleteOrganisationMember(ctx context.Context, memberID, orgID string) error {
 	err := s.repo.DeleteOrganisationMember(ctx, repo.DeleteOrganisationMemberParams{
-		ID:             pgtype.Text{String: memberID, Valid: true},
-		OrganisationID: pgtype.Text{String: orgID, Valid: true},
+		ID:             common.StringToPgText(memberID),
+		OrganisationID: common.StringToPgText(orgID),
 	})
 
 	if err != nil {
@@ -204,8 +204,8 @@ func (s *Service) DeleteOrganisationMember(ctx context.Context, memberID, orgID 
 // FetchOrganisationMemberByID retrieves an organisation member by ID
 func (s *Service) FetchOrganisationMemberByID(ctx context.Context, memberID, organisationID string) (*datastore.OrganisationMember, error) {
 	row, err := s.repo.FetchOrganisationMemberByID(ctx, repo.FetchOrganisationMemberByIDParams{
-		ID:             pgtype.Text{String: memberID, Valid: true},
-		OrganisationID: pgtype.Text{String: organisationID, Valid: true},
+		ID:             common.StringToPgText(memberID),
+		OrganisationID: common.StringToPgText(organisationID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -222,8 +222,8 @@ func (s *Service) FetchOrganisationMemberByID(ctx context.Context, memberID, org
 // FetchOrganisationMemberByUserID retrieves an organisation member by user ID
 func (s *Service) FetchOrganisationMemberByUserID(ctx context.Context, userID, organisationID string) (*datastore.OrganisationMember, error) {
 	row, err := s.repo.FetchOrganisationMemberByUserID(ctx, repo.FetchOrganisationMemberByUserIDParams{
-		UserID:         pgtype.Text{String: userID, Valid: true},
-		OrganisationID: pgtype.Text{String: organisationID, Valid: true},
+		UserID:         common.StringToPgText(userID),
+		OrganisationID: common.StringToPgText(organisationID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -239,7 +239,7 @@ func (s *Service) FetchOrganisationMemberByUserID(ctx context.Context, userID, o
 
 // FetchInstanceAdminByUserID retrieves an instance admin by user ID
 func (s *Service) FetchInstanceAdminByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
-	row, err := s.repo.FetchInstanceAdminByUserID(ctx, pgtype.Text{String: userID, Valid: true})
+	row, err := s.repo.FetchInstanceAdminByUserID(ctx, common.StringToPgText(userID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgMemberNotFound
@@ -254,7 +254,7 @@ func (s *Service) FetchInstanceAdminByUserID(ctx context.Context, userID string)
 
 // FetchAnyOrganisationAdminByUserID retrieves any organisation admin by user ID
 func (s *Service) FetchAnyOrganisationAdminByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
-	row, err := s.repo.FetchAnyOrganisationAdminByUserID(ctx, pgtype.Text{String: userID, Valid: true})
+	row, err := s.repo.FetchAnyOrganisationAdminByUserID(ctx, common.StringToPgText(userID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgMemberNotFound
@@ -291,7 +291,7 @@ func (s *Service) CountOrganisationAdminUsers(ctx context.Context) (int64, error
 
 // HasInstanceAdminAccess checks if a user has instance admin access
 func (s *Service) HasInstanceAdminAccess(ctx context.Context, userID string) (bool, error) {
-	result, err := s.repo.HasInstanceAdminAccess(ctx, pgtype.Text{String: userID, Valid: true})
+	result, err := s.repo.HasInstanceAdminAccess(ctx, common.StringToPgText(userID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to check instance admin access")
 		return false, util.NewServiceError(http.StatusInternalServerError, err)
@@ -302,7 +302,7 @@ func (s *Service) HasInstanceAdminAccess(ctx context.Context, userID string) (bo
 
 // IsFirstInstanceAdmin checks if a user is the first instance admin
 func (s *Service) IsFirstInstanceAdmin(ctx context.Context, userID string) (bool, error) {
-	isFirst, err := s.repo.IsFirstInstanceAdmin(ctx, pgtype.Text{String: userID, Valid: true})
+	isFirst, err := s.repo.IsFirstInstanceAdmin(ctx, common.StringToPgText(userID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to check if user is first instance admin")
 		return false, util.NewServiceError(http.StatusInternalServerError, err)
@@ -321,10 +321,10 @@ func (s *Service) LoadOrganisationMembersPaged(ctx context.Context, organisation
 
 	// Query organisation members with pagination
 	rows, err := s.repo.FetchOrganisationMembersPaginated(ctx, repo.FetchOrganisationMembersPaginatedParams{
-		Direction:      pgtype.Text{String: direction, Valid: true},
-		OrganisationID: pgtype.Text{String: organisationID, Valid: true},
-		UserID:         pgtype.Text{String: userID, Valid: true},
-		Cursor:         pgtype.Text{String: pageable.Cursor(), Valid: true},
+		Direction:      common.StringToPgText(direction),
+		OrganisationID: common.StringToPgText(organisationID),
+		UserID:         common.StringToPgText(userID),
+		Cursor:         common.StringToPgText(pageable.Cursor()),
 		LimitVal:       pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
@@ -355,8 +355,8 @@ func (s *Service) LoadOrganisationMembersPaged(ctx context.Context, organisation
 	if len(members) > 0 {
 		first := members[0]
 		count, err2 := s.repo.CountPrevOrganisationMembers(ctx, repo.CountPrevOrganisationMembersParams{
-			OrganisationID: pgtype.Text{String: organisationID, Valid: true},
-			Cursor:         pgtype.Text{String: first.UID, Valid: true},
+			OrganisationID: common.StringToPgText(organisationID),
+			Cursor:         common.StringToPgText(first.UID),
 		})
 		if err2 != nil {
 			s.logger.WithError(err2).Error("failed to count prev organisation members")
@@ -382,9 +382,9 @@ func (s *Service) LoadUserOrganisationsPaged(ctx context.Context, userID string,
 
 	// Query user organisations with pagination
 	rows, err := s.repo.FetchUserOrganisationsPaginated(ctx, repo.FetchUserOrganisationsPaginatedParams{
-		Direction: pgtype.Text{String: direction, Valid: true},
-		UserID:    pgtype.Text{String: userID, Valid: true},
-		Cursor:    pgtype.Text{String: pageable.Cursor(), Valid: true},
+		Direction: common.StringToPgText(direction),
+		UserID:    common.StringToPgText(userID),
+		Cursor:    common.StringToPgText(pageable.Cursor()),
 		LimitVal:  pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
@@ -415,8 +415,8 @@ func (s *Service) LoadUserOrganisationsPaged(ctx context.Context, userID string,
 	if len(organisations) > 0 {
 		first := organisations[0]
 		count, err2 := s.repo.CountPrevUserOrganisations(ctx, repo.CountPrevUserOrganisationsParams{
-			UserID: pgtype.Text{String: userID, Valid: true},
-			Cursor: pgtype.Text{String: first.UID, Valid: true},
+			UserID: common.StringToPgText(userID),
+			Cursor: common.StringToPgText(first.UID),
 		})
 		if err2 != nil {
 			s.logger.WithError(err2).Error("failed to count prev user organisations")
@@ -434,7 +434,7 @@ func (s *Service) LoadUserOrganisationsPaged(ctx context.Context, userID string,
 
 // FindUserProjects retrieves all projects for a user
 func (s *Service) FindUserProjects(ctx context.Context, userID string) ([]datastore.Project, error) {
-	rows, err := s.repo.FindUserProjects(ctx, pgtype.Text{String: userID, Valid: true})
+	rows, err := s.repo.FindUserProjects(ctx, common.StringToPgText(userID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to find user projects")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)

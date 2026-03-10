@@ -300,16 +300,16 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 		params := extractVerifierParams(source.Verifier)
 
 		err = qtx.CreateSourceVerifier(ctx, repo.CreateSourceVerifierParams{
-			ID:                pgtype.Text{String: verifierID, Valid: true},
-			Type:              pgtype.Text{String: string(source.Verifier.Type), Valid: true},
-			BasicUsername:     common.StringToPgText(params.basicUser),
-			BasicPassword:     common.StringToPgText(params.basicPass),
-			ApiKeyHeaderName:  common.StringToPgText(params.apiKeyHeader),
-			ApiKeyHeaderValue: common.StringToPgText(params.apiKeyValue),
-			HmacHash:          common.StringToPgText(params.hmacHash),
-			HmacHeader:        common.StringToPgText(params.hmacHeader),
-			HmacSecret:        common.StringToPgText(params.hmacSecret),
-			HmacEncoding:      common.StringToPgText(params.hmacEncoding),
+			ID:                common.StringToPgText(verifierID),
+			Type:              common.StringToPgText(string(source.Verifier.Type)),
+			BasicUsername:     common.StringToPgTextNullable(params.basicUser),
+			BasicPassword:     common.StringToPgTextNullable(params.basicPass),
+			ApiKeyHeaderName:  common.StringToPgTextNullable(params.apiKeyHeader),
+			ApiKeyHeaderValue: common.StringToPgTextNullable(params.apiKeyValue),
+			HmacHash:          common.StringToPgTextNullable(params.hmacHash),
+			HmacHeader:        common.StringToPgTextNullable(params.hmacHeader),
+			HmacSecret:        common.StringToPgTextNullable(params.hmacSecret),
+			HmacEncoding:      common.StringToPgTextNullable(params.hmacEncoding),
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to create source verifier")
@@ -321,21 +321,21 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 
 	// Create source
 	err = qtx.CreateSource(ctx, repo.CreateSourceParams{
-		ID:                        pgtype.Text{String: source.UID, Valid: true},
-		SourceVerifierID:          common.StringToPgText(source.VerifierID),
-		Name:                      pgtype.Text{String: source.Name, Valid: true},
-		Type:                      pgtype.Text{String: string(source.Type), Valid: true},
-		MaskID:                    pgtype.Text{String: source.MaskID, Valid: true},
-		Provider:                  pgtype.Text{String: string(source.Provider), Valid: true},
+		ID:                        common.StringToPgText(source.UID),
+		SourceVerifierID:          common.StringToPgTextNullable(source.VerifierID),
+		Name:                      common.StringToPgText(source.Name),
+		Type:                      common.StringToPgText(string(source.Type)),
+		MaskID:                    common.StringToPgText(source.MaskID),
+		Provider:                  common.StringToPgText(string(source.Provider)),
 		IsDisabled:                pgtype.Bool{Bool: source.IsDisabled, Valid: true},
 		ForwardHeaders:            stringsToPgArray(source.ForwardHeaders),
-		ProjectID:                 pgtype.Text{String: source.ProjectID, Valid: true},
+		ProjectID:                 common.StringToPgText(source.ProjectID),
 		PubSub:                    pubSubToPgJSON(source.PubSub),
-		CustomResponseBody:        common.StringToPgText(source.CustomResponse.Body),
-		CustomResponseContentType: common.StringToPgText(source.CustomResponse.ContentType),
+		CustomResponseBody:        common.StringToPgTextNullable(source.CustomResponse.Body),
+		CustomResponseContentType: common.StringToPgTextNullable(source.CustomResponse.ContentType),
 		IdempotencyKeys:           stringsToPgArray(source.IdempotencyKeys),
-		BodyFunction:              common.StringPtrToPgText(source.BodyFunction),
-		HeaderFunction:            common.StringPtrToPgText(source.HeaderFunction),
+		BodyFunction:              common.StringPtrToPgTextNullable(source.BodyFunction),
+		HeaderFunction:            common.StringPtrToPgTextNullable(source.HeaderFunction),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to create source")
@@ -367,20 +367,20 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 
 	// Update source
 	result, err := qtx.UpdateSource(ctx, repo.UpdateSourceParams{
-		ID:                        pgtype.Text{String: source.UID, Valid: true},
-		Name:                      pgtype.Text{String: source.Name, Valid: true},
-		Type:                      pgtype.Text{String: string(source.Type), Valid: true},
-		MaskID:                    pgtype.Text{String: source.MaskID, Valid: true},
-		Provider:                  pgtype.Text{String: string(source.Provider), Valid: true},
+		ID:                        common.StringToPgText(source.UID),
+		Name:                      common.StringToPgText(source.Name),
+		Type:                      common.StringToPgText(string(source.Type)),
+		MaskID:                    common.StringToPgText(source.MaskID),
+		Provider:                  common.StringToPgText(string(source.Provider)),
 		IsDisabled:                pgtype.Bool{Bool: source.IsDisabled, Valid: true},
 		ForwardHeaders:            stringsToPgArray(source.ForwardHeaders),
-		ProjectID:                 pgtype.Text{String: projectID, Valid: true},
+		ProjectID:                 common.StringToPgText(projectID),
 		PubSub:                    pubSubToPgJSON(source.PubSub),
-		CustomResponseBody:        common.StringToPgText(source.CustomResponse.Body),
-		CustomResponseContentType: common.StringToPgText(source.CustomResponse.ContentType),
+		CustomResponseBody:        common.StringToPgTextNullable(source.CustomResponse.Body),
+		CustomResponseContentType: common.StringToPgTextNullable(source.CustomResponse.ContentType),
 		IdempotencyKeys:           stringsToPgArray(source.IdempotencyKeys),
-		BodyFunction:              common.StringPtrToPgText(source.BodyFunction),
-		HeaderFunction:            common.StringPtrToPgText(source.HeaderFunction),
+		BodyFunction:              common.StringPtrToPgTextNullable(source.BodyFunction),
+		HeaderFunction:            common.StringPtrToPgTextNullable(source.HeaderFunction),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to update source")
@@ -396,16 +396,16 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 		params := extractVerifierParams(source.Verifier)
 
 		result2, err := qtx.UpdateSourceVerifier(ctx, repo.UpdateSourceVerifierParams{
-			ID:                pgtype.Text{String: source.VerifierID, Valid: true},
-			Type:              pgtype.Text{String: string(source.Verifier.Type), Valid: true},
-			BasicUsername:     common.StringToPgText(params.basicUser),
-			BasicPassword:     common.StringToPgText(params.basicPass),
-			ApiKeyHeaderName:  common.StringToPgText(params.apiKeyHeader),
-			ApiKeyHeaderValue: common.StringToPgText(params.apiKeyValue),
-			HmacHash:          common.StringToPgText(params.hmacHash),
-			HmacHeader:        common.StringToPgText(params.hmacHeader),
-			HmacSecret:        common.StringToPgText(params.hmacSecret),
-			HmacEncoding:      common.StringToPgText(params.hmacEncoding),
+			ID:                common.StringToPgText(source.VerifierID),
+			Type:              common.StringToPgText(string(source.Verifier.Type)),
+			BasicUsername:     common.StringToPgTextNullable(params.basicUser),
+			BasicPassword:     common.StringToPgTextNullable(params.basicPass),
+			ApiKeyHeaderName:  common.StringToPgTextNullable(params.apiKeyHeader),
+			ApiKeyHeaderValue: common.StringToPgTextNullable(params.apiKeyValue),
+			HmacHash:          common.StringToPgTextNullable(params.hmacHash),
+			HmacHeader:        common.StringToPgTextNullable(params.hmacHeader),
+			HmacSecret:        common.StringToPgTextNullable(params.hmacSecret),
+			HmacEncoding:      common.StringToPgTextNullable(params.hmacEncoding),
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to update source verifier")
@@ -427,7 +427,7 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 
 // FindSourceByID retrieves a source by its ID
 func (s *Service) FindSourceByID(ctx context.Context, projectID, id string) (*datastore.Source, error) {
-	row, err := s.repo.FetchSourceByID(ctx, pgtype.Text{String: id, Valid: true})
+	row, err := s.repo.FetchSourceByID(ctx, common.StringToPgText(id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrSourceNotFound
@@ -442,8 +442,8 @@ func (s *Service) FindSourceByID(ctx context.Context, projectID, id string) (*da
 // FindSourceByName retrieves a source by its name and project ID
 func (s *Service) FindSourceByName(ctx context.Context, projectID, name string) (*datastore.Source, error) {
 	row, err := s.repo.FetchSourceByName(ctx, repo.FetchSourceByNameParams{
-		ProjectID: pgtype.Text{String: projectID, Valid: true},
-		Name:      pgtype.Text{String: name, Valid: true},
+		ProjectID: common.StringToPgText(projectID),
+		Name:      common.StringToPgText(name),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -458,7 +458,7 @@ func (s *Service) FindSourceByName(ctx context.Context, projectID, name string) 
 
 // FindSourceByMaskID retrieves a source by its mask ID
 func (s *Service) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
-	row, err := s.repo.FetchSourceByMaskID(ctx, pgtype.Text{String: maskID, Valid: true})
+	row, err := s.repo.FetchSourceByMaskID(ctx, common.StringToPgText(maskID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrSourceNotFound
@@ -483,8 +483,8 @@ func (s *Service) DeleteSourceByID(ctx context.Context, projectID, id, verifierI
 
 	// Delete source
 	result, err := qtx.DeleteSource(ctx, repo.DeleteSourceParams{
-		ID:        pgtype.Text{String: id, Valid: true},
-		ProjectID: pgtype.Text{String: projectID, Valid: true},
+		ID:        common.StringToPgText(id),
+		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to delete source")
@@ -497,7 +497,7 @@ func (s *Service) DeleteSourceByID(ctx context.Context, projectID, id, verifierI
 
 	// Delete verifier if present
 	if !util.IsStringEmpty(verifierID) {
-		err = qtx.DeleteSourceVerifier(ctx, pgtype.Text{String: verifierID, Valid: true})
+		err = qtx.DeleteSourceVerifier(ctx, common.StringToPgText(verifierID))
 		if err != nil {
 			s.logger.WithError(err).Error("failed to delete source verifier")
 			return &ServiceError{ErrMsg: "failed to delete source verifier", Err: err}
@@ -506,8 +506,8 @@ func (s *Service) DeleteSourceByID(ctx context.Context, projectID, id, verifierI
 
 	// Cascade delete subscriptions
 	err = qtx.DeleteSourceSubscriptions(ctx, repo.DeleteSourceSubscriptionsParams{
-		SourceID:  pgtype.Text{String: id, Valid: true},
-		ProjectID: pgtype.Text{String: projectID, Valid: true},
+		SourceID:  common.StringToPgText(id),
+		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to delete source subscriptions")
@@ -543,15 +543,15 @@ func (s *Service) LoadSourcesPaged(ctx context.Context, projectID string, filter
 
 	// Query sources with pagination
 	rows, err := s.repo.FetchSourcesPaginated(ctx, repo.FetchSourcesPaginatedParams{
-		Direction:         pgtype.Text{String: direction, Valid: true},
-		ProjectID:         pgtype.Text{String: projectID, Valid: true},
-		Cursor:            pgtype.Text{String: pageable.Cursor(), Valid: true},
+		Direction:         common.StringToPgText(direction),
+		ProjectID:         common.StringToPgText(projectID),
+		Cursor:            common.StringToPgText(pageable.Cursor()),
 		HasTypeFilter:     pgtype.Bool{Bool: hasTypeFilter, Valid: true},
-		TypeFilter:        pgtype.Text{String: string(filter.Type), Valid: true},
+		TypeFilter:        common.StringToPgText(string(filter.Type)),
 		HasProviderFilter: pgtype.Bool{Bool: hasProviderFilter, Valid: true},
-		ProviderFilter:    pgtype.Text{String: string(filter.Provider), Valid: true},
+		ProviderFilter:    common.StringToPgText(string(filter.Provider)),
 		HasQueryFilter:    pgtype.Bool{Bool: hasQueryFilter, Valid: true},
-		QueryFilter:       pgtype.Text{String: queryFilter, Valid: true},
+		QueryFilter:       common.StringToPgText(queryFilter),
 		LimitVal:          pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
@@ -586,14 +586,14 @@ func (s *Service) LoadSourcesPaged(ctx context.Context, projectID string, filter
 	if len(sources) > 0 {
 		first := sources[0]
 		count, err := s.repo.CountPrevSources(ctx, repo.CountPrevSourcesParams{
-			ProjectID:         pgtype.Text{String: projectID, Valid: true},
-			Cursor:            pgtype.Text{String: first.UID, Valid: true},
+			ProjectID:         common.StringToPgText(projectID),
+			Cursor:            common.StringToPgText(first.UID),
 			HasTypeFilter:     pgtype.Bool{Bool: hasTypeFilter, Valid: true},
-			TypeFilter:        pgtype.Text{String: string(filter.Type), Valid: true},
+			TypeFilter:        common.StringToPgText(string(filter.Type)),
 			HasProviderFilter: pgtype.Bool{Bool: hasProviderFilter, Valid: true},
-			ProviderFilter:    pgtype.Text{String: string(filter.Provider), Valid: true},
+			ProviderFilter:    common.StringToPgText(string(filter.Provider)),
 			HasQueryFilter:    pgtype.Bool{Bool: hasQueryFilter, Valid: true},
-			QueryFilter:       pgtype.Text{String: queryFilter, Valid: true},
+			QueryFilter:       common.StringToPgText(queryFilter),
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to count prev sources")
@@ -613,9 +613,9 @@ func (s *Service) LoadSourcesPaged(ctx context.Context, projectID string, filter
 func (s *Service) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIDs []string, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	// Query PubSub sources
 	rows, err := s.repo.FetchPubSubSourcesByProjectIDs(ctx, repo.FetchPubSubSourcesByProjectIDsParams{
-		SourceType: pgtype.Text{String: string(datastore.PubSubSource), Valid: true},
+		SourceType: common.StringToPgText(string(datastore.PubSubSource)),
 		ProjectIds: projectIDs,
-		Cursor:     pgtype.Text{String: pageable.Cursor(), Valid: true},
+		Cursor:     common.StringToPgText(pageable.Cursor()),
 		LimitVal:   pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {

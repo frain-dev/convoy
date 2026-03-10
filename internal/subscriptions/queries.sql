@@ -11,7 +11,6 @@ INSERT INTO convoy.subscriptions (
     type,
     project_id,
     endpoint_id,
-    device_id,
     source_id,
     alert_config_count,
     alert_config_threshold,
@@ -35,7 +34,6 @@ VALUES (
     @type,
     @project_id,
     @endpoint_id,
-    @device_id,
     @source_id,
     @alert_config_count,
     @alert_config_threshold,
@@ -140,7 +138,6 @@ SELECT
     s.function,
     s.delivery_mode,
     COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
     COALESCE(s.source_id, '') AS source_id,
     s.alert_config_count,
     s.alert_config_threshold,
@@ -163,9 +160,6 @@ SELECT
     COALESCE(em.status, '') AS endpoint_metadata_status,
     COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
     COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name,
     COALESCE(sm.id, '') AS source_metadata_id,
     COALESCE(sm.name, '') AS source_metadata_name,
     COALESCE(sm.type, '') AS source_metadata_type,
@@ -185,7 +179,6 @@ FROM convoy.subscriptions s
 LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
 LEFT JOIN convoy.sources sm ON s.source_id = sm.id
 LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-LEFT JOIN convoy.devices d ON s.device_id = d.id
 WHERE s.id = @id AND s.project_id = @project_id AND s.deleted_at IS NULL;
 
 -- name: FetchSubscriptionsBySourceID :many
@@ -199,7 +192,6 @@ SELECT
     s.function,
     s.delivery_mode,
     COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
     COALESCE(s.source_id, '') AS source_id,
     s.alert_config_count,
     s.alert_config_threshold,
@@ -222,9 +214,6 @@ SELECT
     COALESCE(em.status, '') AS endpoint_metadata_status,
     COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
     COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name,
     COALESCE(sm.id, '') AS source_metadata_id,
     COALESCE(sm.name, '') AS source_metadata_name,
     COALESCE(sm.type, '') AS source_metadata_type,
@@ -244,7 +233,6 @@ FROM convoy.subscriptions s
 LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
 LEFT JOIN convoy.sources sm ON s.source_id = sm.id
 LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-LEFT JOIN convoy.devices d ON s.device_id = d.id
 WHERE s.project_id = @project_id AND s.source_id = @source_id AND s.deleted_at IS NULL;
 
 -- name: FetchSubscriptionsByEndpointID :many
@@ -258,7 +246,6 @@ SELECT
     s.function,
     s.delivery_mode,
     COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
     COALESCE(s.source_id, '') AS source_id,
     s.alert_config_count,
     s.alert_config_threshold,
@@ -281,9 +268,6 @@ SELECT
     COALESCE(em.status, '') AS endpoint_metadata_status,
     COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
     COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name,
     COALESCE(sm.id, '') AS source_metadata_id,
     COALESCE(sm.name, '') AS source_metadata_name,
     COALESCE(sm.type, '') AS source_metadata_type,
@@ -303,41 +287,7 @@ FROM convoy.subscriptions s
 LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
 LEFT JOIN convoy.sources sm ON s.source_id = sm.id
 LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-LEFT JOIN convoy.devices d ON s.device_id = d.id
 WHERE s.project_id = @project_id AND s.endpoint_id = @endpoint_id AND s.deleted_at IS NULL;
-
--- name: FetchSubscriptionByDeviceID :one
-SELECT
-    s.id,
-    s.name,
-    s.type,
-    s.project_id,
-    s.created_at,
-    s.updated_at,
-    s.function,
-    s.delivery_mode,
-    COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
-    COALESCE(s.source_id, '') AS source_id,
-    s.alert_config_count,
-    s.alert_config_threshold,
-    s.retry_config_type,
-    s.retry_config_duration,
-    s.retry_config_retry_count,
-    s.filter_config_event_types,
-    s.filter_config_filter_raw_headers,
-    s.filter_config_filter_raw_body,
-    s.filter_config_filter_is_flattened,
-    s.filter_config_filter_headers,
-    s.filter_config_filter_body,
-    s.rate_limit_config_count,
-    s.rate_limit_config_duration,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name
-FROM convoy.subscriptions s
-LEFT JOIN convoy.devices d ON s.device_id = d.id
-WHERE s.device_id = @device_id AND s.project_id = @project_id AND s.type = @subscription_type AND s.deleted_at IS NULL;
 
 -- name: FetchCLISubscriptions :many
 SELECT
@@ -350,7 +300,6 @@ SELECT
     s.function,
     s.delivery_mode,
     COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
     COALESCE(s.source_id, '') AS source_id,
     s.alert_config_count,
     s.alert_config_threshold,
@@ -373,9 +322,6 @@ SELECT
     COALESCE(em.status, '') AS endpoint_metadata_status,
     COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
     COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name,
     COALESCE(sm.id, '') AS source_metadata_id,
     COALESCE(sm.name, '') AS source_metadata_name,
     COALESCE(sm.type, '') AS source_metadata_type,
@@ -395,7 +341,6 @@ FROM convoy.subscriptions s
 LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
 LEFT JOIN convoy.sources sm ON s.source_id = sm.id
 LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-LEFT JOIN convoy.devices d ON s.device_id = d.id
 WHERE s.project_id = @project_id AND s.type = 'cli' AND s.deleted_at IS NULL;
 
 -- ============================================================================
@@ -417,7 +362,6 @@ WITH filtered_subscriptions AS (
         s.function,
         s.delivery_mode,
         COALESCE(s.endpoint_id, '') AS endpoint_id,
-        COALESCE(s.device_id, '') AS device_id,
         COALESCE(s.source_id, '') AS source_id,
         s.alert_config_count,
         s.alert_config_threshold,
@@ -440,9 +384,6 @@ WITH filtered_subscriptions AS (
         COALESCE(em.status, '') AS endpoint_metadata_status,
         COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
         COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-        COALESCE(d.id, '') AS device_metadata_id,
-        COALESCE(d.status, '') AS device_metadata_status,
-        COALESCE(d.host_name, '') AS device_metadata_host_name,
         COALESCE(sm.id, '') AS source_metadata_id,
         COALESCE(sm.name, '') AS source_metadata_name,
         COALESCE(sm.type, '') AS source_metadata_type,
@@ -462,7 +403,6 @@ WITH filtered_subscriptions AS (
     LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
     LEFT JOIN convoy.sources sm ON s.source_id = sm.id
     LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-    LEFT JOIN convoy.devices d ON s.device_id = d.id
     WHERE s.deleted_at IS NULL
         AND s.project_id = @project_id
         -- Cursor comparison: <= for forward (next), >= for backward (prev)
@@ -487,7 +427,7 @@ WITH filtered_subscriptions AS (
                 ELSE true
             END
         )
-    GROUP BY s.id, em.id, sm.id, sv.id, d.id
+    GROUP BY s.id, em.id, sm.id, sv.id
     -- Sort order: DESC for forward, ASC for backward (will be reversed in outer query for backward)
     ORDER BY
         CASE
@@ -501,7 +441,7 @@ WITH filtered_subscriptions AS (
 -- Final select: reverse order for backward pagination to get DESC order
 SELECT
     id, name, type, project_id, created_at, updated_at, function, delivery_mode,
-    endpoint_id, device_id, source_id, alert_config_count, alert_config_threshold,
+    endpoint_id, source_id, alert_config_count, alert_config_threshold,
     retry_config_type, retry_config_duration, retry_config_retry_count,
     filter_config_event_types, filter_config_filter_raw_headers,
     filter_config_filter_raw_body, filter_config_filter_is_flattened,
@@ -510,7 +450,6 @@ SELECT
     endpoint_metadata_id, endpoint_metadata_name, endpoint_metadata_project_id,
     endpoint_metadata_support_email, endpoint_metadata_url, endpoint_metadata_status,
     endpoint_metadata_owner_id, endpoint_metadata_secrets,
-    device_metadata_id, device_metadata_status, device_metadata_host_name,
     source_metadata_id, source_metadata_name, source_metadata_type,
     source_metadata_mask_id, source_metadata_project_id, source_metadata_is_disabled,
     source_verifier_type, source_verifier_basic_username, source_verifier_basic_password,
@@ -590,74 +529,6 @@ FROM convoy.subscriptions
 WHERE id > @cursor
     AND project_id = ANY(@project_ids::text[])
     AND deleted_at IS NULL
-ORDER BY id
-LIMIT @limit_val;
-
--- FetchUpdatedSubscriptions - DISABLED: Dynamic query template
--- This query uses dynamic VALUES clause that must be built at runtime
--- TODO: Implement using pgx batch or manually in Go code
--- -- name: FetchUpdatedSubscriptions :many
--- WITH input_map(id, last_updated_at) AS (
---     VALUES (@subscription_id_1, @updated_at_1::timestamptz)
--- ),
-WITH disabled_query AS (SELECT 1 WHERE false),
-input_map(id, last_updated_at) AS (
-    SELECT ''::text, NOW()::timestamptz WHERE false
-),
-updated_existing AS (
-    SELECT
-        s.name,
-        s.id,
-        s.type,
-        s.project_id,
-        s.endpoint_id,
-        s.function,
-        s.updated_at,
-        s.filter_config_event_types,
-        s.filter_config_filter_headers,
-        s.filter_config_filter_body,
-        s.filter_config_filter_is_flattened,
-        s.filter_config_filter_raw_headers,
-        s.filter_config_filter_raw_body
-    FROM convoy.subscriptions s
-    JOIN input_map m ON s.id = m.id
-    WHERE s.updated_at > m.last_updated_at
-        AND s.project_id = ANY(@project_ids::text[])
-        AND s.deleted_at IS NULL
-),
-new_subscriptions AS (
-    SELECT
-        s.name,
-        s.id,
-        s.type,
-        s.project_id,
-        s.endpoint_id,
-        s.function,
-        s.updated_at,
-        s.filter_config_event_types,
-        s.filter_config_filter_headers,
-        s.filter_config_filter_body,
-        s.filter_config_filter_is_flattened,
-        s.filter_config_filter_raw_headers,
-        s.filter_config_filter_raw_body
-    FROM convoy.subscriptions s
-    WHERE s.id NOT IN (SELECT id FROM input_map)
-        AND s.project_id = ANY(@project_ids::text[])
-        AND s.deleted_at IS NULL
-)
-SELECT
-    name, id, type, project_id, endpoint_id, function, updated_at,
-    filter_config_event_types, filter_config_filter_headers,
-    filter_config_filter_body, filter_config_filter_is_flattened,
-    filter_config_filter_raw_headers, filter_config_filter_raw_body
-FROM updated_existing
-UNION ALL
-SELECT
-    name, id, type, project_id, endpoint_id, function, updated_at,
-    filter_config_event_types, filter_config_filter_headers,
-    filter_config_filter_body, filter_config_filter_is_flattened,
-    filter_config_filter_raw_headers, filter_config_filter_raw_body
-FROM new_subscriptions
 ORDER BY id
 LIMIT @limit_val;
 

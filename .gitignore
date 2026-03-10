@@ -55,3 +55,4 @@ convoy-ce
 .cursor
 
 mise.local.toml
+api/ui/*

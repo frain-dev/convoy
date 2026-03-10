@@ -109,7 +109,6 @@ INSERT INTO convoy.subscriptions (
     type,
     project_id,
     endpoint_id,
-    device_id,
     source_id,
     alert_config_count,
     alert_config_threshold,
@@ -148,10 +147,9 @@ VALUES (
     $18,
     $19,
     $20,
-    $21,
     CASE
-        WHEN $22 = '' OR $22 IS NULL THEN 'at_least_once'::convoy.delivery_mode
-        ELSE $22::convoy.delivery_mode
+        WHEN $21 = '' OR $21 IS NULL THEN 'at_least_once'::convoy.delivery_mode
+        ELSE $21::convoy.delivery_mode
     END
 )
 `
@@ -162,7 +160,6 @@ type CreateSubscriptionParams struct {
 	Type                          pgtype.Text
 	ProjectID                     pgtype.Text
 	EndpointID                    pgtype.Text
-	DeviceID                      pgtype.Text
 	SourceID                      pgtype.Text
 	AlertConfigCount              pgtype.Int4
 	AlertConfigThreshold          pgtype.Text
@@ -192,7 +189,6 @@ func (q *Queries) CreateSubscription(ctx context.Context, arg CreateSubscription
 		arg.Type,
 		arg.ProjectID,
 		arg.EndpointID,
-		arg.DeviceID,
 		arg.SourceID,
 		arg.AlertConfigCount,
 		arg.AlertConfigThreshold,
@@ -259,7 +255,6 @@ SELECT
     s.function,
     s.delivery_mode,
     COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
     COALESCE(s.source_id, '') AS source_id,
     s.alert_config_count,
     s.alert_config_threshold,
@@ -282,9 +277,6 @@ SELECT
     COALESCE(em.status, '') AS endpoint_metadata_status,
     COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
     COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name,
     COALESCE(sm.id, '') AS source_metadata_id,
     COALESCE(sm.name, '') AS source_metadata_name,
     COALESCE(sm.type, '') AS source_metadata_type,
@@ -304,7 +296,6 @@ FROM convoy.subscriptions s
 LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
 LEFT JOIN convoy.sources sm ON s.source_id = sm.id
 LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-LEFT JOIN convoy.devices d ON s.device_id = d.id
 WHERE s.project_id = $1 AND s.type = 'cli' AND s.deleted_at IS NULL
 `
 
@@ -318,7 +309,6 @@ type FetchCLISubscriptionsRow struct {
 	Function                        pgtype.Text
 	DeliveryMode                    string
 	EndpointID                      pgtype.Text
-	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
@@ -341,9 +331,6 @@ type FetchCLISubscriptionsRow struct {
 	EndpointMetadataStatus          pgtype.Text
 	EndpointMetadataOwnerID         pgtype.Text
 	EndpointMetadataSecrets         []byte
-	DeviceMetadataID                pgtype.Text
-	DeviceMetadataStatus            pgtype.Text
-	DeviceMetadataHostName          pgtype.Text
 	SourceMetadataID                pgtype.Text
 	SourceMetadataName              pgtype.Text
 	SourceMetadataType              pgtype.Text
@@ -380,7 +367,6 @@ func (q *Queries) FetchCLISubscriptions(ctx context.Context, projectID pgtype.Te
 			&i.Function,
 			&i.DeliveryMode,
 			&i.EndpointID,
-			&i.DeviceID,
 			&i.SourceID,
 			&i.AlertConfigCount,
 			&i.AlertConfigThreshold,
@@ -403,9 +389,6 @@ func (q *Queries) FetchCLISubscriptions(ctx context.Context, projectID pgtype.Te
 			&i.EndpointMetadataStatus,
 			&i.EndpointMetadataOwnerID,
 			&i.EndpointMetadataSecrets,
-			&i.DeviceMetadataID,
-			&i.DeviceMetadataStatus,
-			&i.DeviceMetadataHostName,
 			&i.SourceMetadataID,
 			&i.SourceMetadataName,
 			&i.SourceMetadataType,
@@ -574,111 +557,6 @@ func (q *Queries) FetchNewSubscriptions(ctx context.Context, arg FetchNewSubscri
 	return items, nil
 }
 
-const fetchSubscriptionByDeviceID = `-- name: FetchSubscriptionByDeviceID :one
-SELECT
-    s.id,
-    s.name,
-    s.type,
-    s.project_id,
-    s.created_at,
-    s.updated_at,
-    s.function,
-    s.delivery_mode,
-    COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
-    COALESCE(s.source_id, '') AS source_id,
-    s.alert_config_count,
-    s.alert_config_threshold,
-    s.retry_config_type,
-    s.retry_config_duration,
-    s.retry_config_retry_count,
-    s.filter_config_event_types,
-    s.filter_config_filter_raw_headers,
-    s.filter_config_filter_raw_body,
-    s.filter_config_filter_is_flattened,
-    s.filter_config_filter_headers,
-    s.filter_config_filter_body,
-    s.rate_limit_config_count,
-    s.rate_limit_config_duration,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name
-FROM convoy.subscriptions s
-LEFT JOIN convoy.devices d ON s.device_id = d.id
-WHERE s.device_id = $1 AND s.project_id = $2 AND s.type = $3 AND s.deleted_at IS NULL
-`
-
-type FetchSubscriptionByDeviceIDParams struct {
-	DeviceID         pgtype.Text
-	ProjectID        pgtype.Text
-	SubscriptionType pgtype.Text
-}
-
-type FetchSubscriptionByDeviceIDRow struct {
-	ID                            string
-	Name                          string
-	Type                          string
-	ProjectID                     string
-	CreatedAt                     pgtype.Timestamptz
-	UpdatedAt                     pgtype.Timestamptz
-	Function                      pgtype.Text
-	DeliveryMode                  string
-	EndpointID                    pgtype.Text
-	DeviceID                      pgtype.Text
-	SourceID                      pgtype.Text
-	AlertConfigCount              int32
-	AlertConfigThreshold          string
-	RetryConfigType               string
-	RetryConfigDuration           int32
-	RetryConfigRetryCount         int32
-	FilterConfigEventTypes        []string
-	FilterConfigFilterRawHeaders  []byte
-	FilterConfigFilterRawBody     []byte
-	FilterConfigFilterIsFlattened pgtype.Bool
-	FilterConfigFilterHeaders     []byte
-	FilterConfigFilterBody        []byte
-	RateLimitConfigCount          int32
-	RateLimitConfigDuration       int32
-	DeviceMetadataID              pgtype.Text
-	DeviceMetadataStatus          pgtype.Text
-	DeviceMetadataHostName        pgtype.Text
-}
-
-func (q *Queries) FetchSubscriptionByDeviceID(ctx context.Context, arg FetchSubscriptionByDeviceIDParams) (FetchSubscriptionByDeviceIDRow, error) {
-	row := q.db.QueryRow(ctx, fetchSubscriptionByDeviceID, arg.DeviceID, arg.ProjectID, arg.SubscriptionType)
-	var i FetchSubscriptionByDeviceIDRow
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Type,
-		&i.ProjectID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Function,
-		&i.DeliveryMode,
-		&i.EndpointID,
-		&i.DeviceID,
-		&i.SourceID,
-		&i.AlertConfigCount,
-		&i.AlertConfigThreshold,
-		&i.RetryConfigType,
-		&i.RetryConfigDuration,
-		&i.RetryConfigRetryCount,
-		&i.FilterConfigEventTypes,
-		&i.FilterConfigFilterRawHeaders,
-		&i.FilterConfigFilterRawBody,
-		&i.FilterConfigFilterIsFlattened,
-		&i.FilterConfigFilterHeaders,
-		&i.FilterConfigFilterBody,
-		&i.RateLimitConfigCount,
-		&i.RateLimitConfigDuration,
-		&i.DeviceMetadataID,
-		&i.DeviceMetadataStatus,
-		&i.DeviceMetadataHostName,
-	)
-	return i, err
-}
-
 const fetchSubscriptionByID = `-- name: FetchSubscriptionByID :one
 
 SELECT
@@ -691,7 +569,6 @@ SELECT
     s.function,
     s.delivery_mode,
     COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
     COALESCE(s.source_id, '') AS source_id,
     s.alert_config_count,
     s.alert_config_threshold,
@@ -714,9 +591,6 @@ SELECT
     COALESCE(em.status, '') AS endpoint_metadata_status,
     COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
     COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name,
     COALESCE(sm.id, '') AS source_metadata_id,
     COALESCE(sm.name, '') AS source_metadata_name,
     COALESCE(sm.type, '') AS source_metadata_type,
@@ -736,7 +610,6 @@ FROM convoy.subscriptions s
 LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
 LEFT JOIN convoy.sources sm ON s.source_id = sm.id
 LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-LEFT JOIN convoy.devices d ON s.device_id = d.id
 WHERE s.id = $1 AND s.project_id = $2 AND s.deleted_at IS NULL
 `
 
@@ -755,7 +628,6 @@ type FetchSubscriptionByIDRow struct {
 	Function                        pgtype.Text
 	DeliveryMode                    string
 	EndpointID                      pgtype.Text
-	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
@@ -778,9 +650,6 @@ type FetchSubscriptionByIDRow struct {
 	EndpointMetadataStatus          pgtype.Text
 	EndpointMetadataOwnerID         pgtype.Text
 	EndpointMetadataSecrets         []byte
-	DeviceMetadataID                pgtype.Text
-	DeviceMetadataStatus            pgtype.Text
-	DeviceMetadataHostName          pgtype.Text
 	SourceMetadataID                pgtype.Text
 	SourceMetadataName              pgtype.Text
 	SourceMetadataType              pgtype.Text
@@ -814,7 +683,6 @@ func (q *Queries) FetchSubscriptionByID(ctx context.Context, arg FetchSubscripti
 		&i.Function,
 		&i.DeliveryMode,
 		&i.EndpointID,
-		&i.DeviceID,
 		&i.SourceID,
 		&i.AlertConfigCount,
 		&i.AlertConfigThreshold,
@@ -837,9 +705,6 @@ func (q *Queries) FetchSubscriptionByID(ctx context.Context, arg FetchSubscripti
 		&i.EndpointMetadataStatus,
 		&i.EndpointMetadataOwnerID,
 		&i.EndpointMetadataSecrets,
-		&i.DeviceMetadataID,
-		&i.DeviceMetadataStatus,
-		&i.DeviceMetadataHostName,
 		&i.SourceMetadataID,
 		&i.SourceMetadataName,
 		&i.SourceMetadataType,
@@ -870,7 +735,6 @@ SELECT
     s.function,
     s.delivery_mode,
     COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
     COALESCE(s.source_id, '') AS source_id,
     s.alert_config_count,
     s.alert_config_threshold,
@@ -893,9 +757,6 @@ SELECT
     COALESCE(em.status, '') AS endpoint_metadata_status,
     COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
     COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name,
     COALESCE(sm.id, '') AS source_metadata_id,
     COALESCE(sm.name, '') AS source_metadata_name,
     COALESCE(sm.type, '') AS source_metadata_type,
@@ -915,7 +776,6 @@ FROM convoy.subscriptions s
 LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
 LEFT JOIN convoy.sources sm ON s.source_id = sm.id
 LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-LEFT JOIN convoy.devices d ON s.device_id = d.id
 WHERE s.project_id = $1 AND s.endpoint_id = $2 AND s.deleted_at IS NULL
 `
 
@@ -934,7 +794,6 @@ type FetchSubscriptionsByEndpointIDRow struct {
 	Function                        pgtype.Text
 	DeliveryMode                    string
 	EndpointID                      pgtype.Text
-	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
@@ -957,9 +816,6 @@ type FetchSubscriptionsByEndpointIDRow struct {
 	EndpointMetadataStatus          pgtype.Text
 	EndpointMetadataOwnerID         pgtype.Text
 	EndpointMetadataSecrets         []byte
-	DeviceMetadataID                pgtype.Text
-	DeviceMetadataStatus            pgtype.Text
-	DeviceMetadataHostName          pgtype.Text
 	SourceMetadataID                pgtype.Text
 	SourceMetadataName              pgtype.Text
 	SourceMetadataType              pgtype.Text
@@ -996,7 +852,6 @@ func (q *Queries) FetchSubscriptionsByEndpointID(ctx context.Context, arg FetchS
 			&i.Function,
 			&i.DeliveryMode,
 			&i.EndpointID,
-			&i.DeviceID,
 			&i.SourceID,
 			&i.AlertConfigCount,
 			&i.AlertConfigThreshold,
@@ -1019,9 +874,6 @@ func (q *Queries) FetchSubscriptionsByEndpointID(ctx context.Context, arg FetchS
 			&i.EndpointMetadataStatus,
 			&i.EndpointMetadataOwnerID,
 			&i.EndpointMetadataSecrets,
-			&i.DeviceMetadataID,
-			&i.DeviceMetadataStatus,
-			&i.DeviceMetadataHostName,
 			&i.SourceMetadataID,
 			&i.SourceMetadataName,
 			&i.SourceMetadataType,
@@ -1059,7 +911,6 @@ SELECT
     s.function,
     s.delivery_mode,
     COALESCE(s.endpoint_id, '') AS endpoint_id,
-    COALESCE(s.device_id, '') AS device_id,
     COALESCE(s.source_id, '') AS source_id,
     s.alert_config_count,
     s.alert_config_threshold,
@@ -1082,9 +933,6 @@ SELECT
     COALESCE(em.status, '') AS endpoint_metadata_status,
     COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
     COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-    COALESCE(d.id, '') AS device_metadata_id,
-    COALESCE(d.status, '') AS device_metadata_status,
-    COALESCE(d.host_name, '') AS device_metadata_host_name,
     COALESCE(sm.id, '') AS source_metadata_id,
     COALESCE(sm.name, '') AS source_metadata_name,
     COALESCE(sm.type, '') AS source_metadata_type,
@@ -1104,7 +952,6 @@ FROM convoy.subscriptions s
 LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
 LEFT JOIN convoy.sources sm ON s.source_id = sm.id
 LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-LEFT JOIN convoy.devices d ON s.device_id = d.id
 WHERE s.project_id = $1 AND s.source_id = $2 AND s.deleted_at IS NULL
 `
 
@@ -1123,7 +970,6 @@ type FetchSubscriptionsBySourceIDRow struct {
 	Function                        pgtype.Text
 	DeliveryMode                    string
 	EndpointID                      pgtype.Text
-	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
@@ -1146,9 +992,6 @@ type FetchSubscriptionsBySourceIDRow struct {
 	EndpointMetadataStatus          pgtype.Text
 	EndpointMetadataOwnerID         pgtype.Text
 	EndpointMetadataSecrets         []byte
-	DeviceMetadataID                pgtype.Text
-	DeviceMetadataStatus            pgtype.Text
-	DeviceMetadataHostName          pgtype.Text
 	SourceMetadataID                pgtype.Text
 	SourceMetadataName              pgtype.Text
 	SourceMetadataType              pgtype.Text
@@ -1185,7 +1028,6 @@ func (q *Queries) FetchSubscriptionsBySourceID(ctx context.Context, arg FetchSub
 			&i.Function,
 			&i.DeliveryMode,
 			&i.EndpointID,
-			&i.DeviceID,
 			&i.SourceID,
 			&i.AlertConfigCount,
 			&i.AlertConfigThreshold,
@@ -1208,9 +1050,6 @@ func (q *Queries) FetchSubscriptionsBySourceID(ctx context.Context, arg FetchSub
 			&i.EndpointMetadataStatus,
 			&i.EndpointMetadataOwnerID,
 			&i.EndpointMetadataSecrets,
-			&i.DeviceMetadataID,
-			&i.DeviceMetadataStatus,
-			&i.DeviceMetadataHostName,
 			&i.SourceMetadataID,
 			&i.SourceMetadataName,
 			&i.SourceMetadataType,
@@ -1329,7 +1168,6 @@ WITH filtered_subscriptions AS (
         s.function,
         s.delivery_mode,
         COALESCE(s.endpoint_id, '') AS endpoint_id,
-        COALESCE(s.device_id, '') AS device_id,
         COALESCE(s.source_id, '') AS source_id,
         s.alert_config_count,
         s.alert_config_threshold,
@@ -1352,9 +1190,6 @@ WITH filtered_subscriptions AS (
         COALESCE(em.status, '') AS endpoint_metadata_status,
         COALESCE(em.owner_id, '') AS endpoint_metadata_owner_id,
         COALESCE(em.secrets, '[]'::jsonb) AS endpoint_metadata_secrets,
-        COALESCE(d.id, '') AS device_metadata_id,
-        COALESCE(d.status, '') AS device_metadata_status,
-        COALESCE(d.host_name, '') AS device_metadata_host_name,
         COALESCE(sm.id, '') AS source_metadata_id,
         COALESCE(sm.name, '') AS source_metadata_name,
         COALESCE(sm.type, '') AS source_metadata_type,
@@ -1374,7 +1209,6 @@ WITH filtered_subscriptions AS (
     LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
     LEFT JOIN convoy.sources sm ON s.source_id = sm.id
     LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-    LEFT JOIN convoy.devices d ON s.device_id = d.id
     WHERE s.deleted_at IS NULL
         AND s.project_id = $2
         -- Cursor comparison: <= for forward (next), >= for backward (prev)
@@ -1399,7 +1233,7 @@ WITH filtered_subscriptions AS (
                 ELSE true
             END
         )
-    GROUP BY s.id, em.id, sm.id, sv.id, d.id
+    GROUP BY s.id, em.id, sm.id, sv.id
     -- Sort order: DESC for forward, ASC for backward (will be reversed in outer query for backward)
     ORDER BY
         CASE
@@ -1412,7 +1246,7 @@ WITH filtered_subscriptions AS (
 )
 SELECT
     id, name, type, project_id, created_at, updated_at, function, delivery_mode,
-    endpoint_id, device_id, source_id, alert_config_count, alert_config_threshold,
+    endpoint_id, source_id, alert_config_count, alert_config_threshold,
     retry_config_type, retry_config_duration, retry_config_retry_count,
     filter_config_event_types, filter_config_filter_raw_headers,
     filter_config_filter_raw_body, filter_config_filter_is_flattened,
@@ -1421,7 +1255,6 @@ SELECT
     endpoint_metadata_id, endpoint_metadata_name, endpoint_metadata_project_id,
     endpoint_metadata_support_email, endpoint_metadata_url, endpoint_metadata_status,
     endpoint_metadata_owner_id, endpoint_metadata_secrets,
-    device_metadata_id, device_metadata_status, device_metadata_host_name,
     source_metadata_id, source_metadata_name, source_metadata_type,
     source_metadata_mask_id, source_metadata_project_id, source_metadata_is_disabled,
     source_verifier_type, source_verifier_basic_username, source_verifier_basic_password,
@@ -1459,7 +1292,6 @@ type FetchSubscriptionsPaginatedRow struct {
 	Function                        pgtype.Text
 	DeliveryMode                    string
 	EndpointID                      pgtype.Text
-	DeviceID                        pgtype.Text
 	SourceID                        pgtype.Text
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
@@ -1482,9 +1314,6 @@ type FetchSubscriptionsPaginatedRow struct {
 	EndpointMetadataStatus          pgtype.Text
 	EndpointMetadataOwnerID         pgtype.Text
 	EndpointMetadataSecrets         []byte
-	DeviceMetadataID                pgtype.Text
-	DeviceMetadataStatus            pgtype.Text
-	DeviceMetadataHostName          pgtype.Text
 	SourceMetadataID                pgtype.Text
 	SourceMetadataName              pgtype.Text
 	SourceMetadataType              pgtype.Text
@@ -1537,7 +1366,6 @@ func (q *Queries) FetchSubscriptionsPaginated(ctx context.Context, arg FetchSubs
 			&i.Function,
 			&i.DeliveryMode,
 			&i.EndpointID,
-			&i.DeviceID,
 			&i.SourceID,
 			&i.AlertConfigCount,
 			&i.AlertConfigThreshold,
@@ -1560,9 +1388,6 @@ func (q *Queries) FetchSubscriptionsPaginated(ctx context.Context, arg FetchSubs
 			&i.EndpointMetadataStatus,
 			&i.EndpointMetadataOwnerID,
 			&i.EndpointMetadataSecrets,
-			&i.DeviceMetadataID,
-			&i.DeviceMetadataStatus,
-			&i.DeviceMetadataHostName,
 			&i.SourceMetadataID,
 			&i.SourceMetadataName,
 			&i.SourceMetadataType,
