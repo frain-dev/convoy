@@ -330,7 +330,8 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		raw := opts.Event.Raw
+		// Use Event.Data as the canonical source - Event.Raw may be empty for optimization
+		raw := string(opts.Event.Data)
 		data := opts.Event.Data
 
 		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) && opts.Licenser.Transformations() {
@@ -736,7 +737,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		UID:              eventParams.UID,
 		EventType:        datastore.EventType(eventParams.EventType),
 		Data:             eventParams.Data,
-		Raw:              string(eventParams.Data),
+		Raw:              "", // Skip Raw duplication - Data field is canonical (reduces payload size)
 		IdempotencyKey:   eventParams.IdempotencyKey,
 		IsDuplicateEvent: isDuplicate,
 		Headers:          getCustomHeaders(eventParams.CustomHeaders),

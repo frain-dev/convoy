@@ -83,7 +83,7 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 		IdempotencyKey:   broadcastEvent.IdempotencyKey,
 		Headers:          getCustomHeaders(broadcastEvent.CustomHeaders),
 		IsDuplicateEvent: isDuplicate,
-		Raw:              string(broadcastEvent.Data),
+		Raw:              "", // Skip Raw duplication - Data field is canonical (reduces payload size)
 		Status:           datastore.PendingStatus,
 		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}

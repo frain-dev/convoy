@@ -83,7 +83,11 @@ jobs:
       - name: Extract version from CHANGELOG.md
         id: version
         run: |
-          VERSION="$(awk 'NR==1 {sub(/^# /,""); print $0}' CHANGELOG.md)"
+          VERSION="$(awk '/^## / {sub(/^## /,""); print; exit}' CHANGELOG.md)"
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract release version from CHANGELOG.md"
+            exit 1
+          fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Trigger tag-stable-release workflow
