@@ -98,6 +98,10 @@ jobs:
       - name: Go vet
         run: go vet ./...
 
+      - name: Set VERSION file for tag builds
+        if: ${{ github.ref_type == 'tag' }}
+        run: echo -n '${{ github.ref_name }}' > VERSION
+
       - name: Build app to make sure there are zero issues
         run: |
           export CGO_ENABLED=0
