@@ -13,11 +13,8 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-<<<<<<< feature/events-sqlc-migration
 	"github.com/frain-dev/convoy/internal/events"
-=======
 	internalio "github.com/frain-dev/convoy/internal/io"
->>>>>>> main
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
