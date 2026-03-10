@@ -334,7 +334,6 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 	case repo.FetchSubscriptionByIDRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
 		endpointID = common.PgTextToString(r.EndpointID)
-		deviceID = common.PgTextToString(r.DeviceID)
 		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
@@ -354,9 +353,6 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
 		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
 		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
 		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
 		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
@@ -376,7 +372,6 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 	case repo.FetchSubscriptionsBySourceIDRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
 		endpointID = common.PgTextToString(r.EndpointID)
-		deviceID = common.PgTextToString(r.DeviceID)
 		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
@@ -396,9 +391,6 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
 		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
 		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
 		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
 		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
@@ -418,7 +410,6 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 	case repo.FetchSubscriptionsByEndpointIDRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
 		endpointID = common.PgTextToString(r.EndpointID)
-		deviceID = common.PgTextToString(r.DeviceID)
 		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
@@ -438,9 +429,6 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
 		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
 		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
 		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
 		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
@@ -457,29 +445,9 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		sourceVerifierHmacSecret = common.PgTextToString(r.SourceVerifierHmacSecret)
 		sourceVerifierHmacEncoding = common.PgTextToString(r.SourceVerifierHmacEncoding)
 
-	case repo.FetchSubscriptionByDeviceIDRow:
-		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
-		endpointID = common.PgTextToString(r.EndpointID)
-		deviceID = common.PgTextToString(r.DeviceID)
-		sourceID = common.PgTextToString(r.SourceID)
-		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
-		function = r.Function
-		deliveryMode = r.DeliveryMode
-		alertConfigCount, alertConfigThreshold = r.AlertConfigCount, r.AlertConfigThreshold
-		retryConfigType, retryConfigDuration, retryConfigRetryCount = r.RetryConfigType, r.RetryConfigDuration, r.RetryConfigRetryCount
-		filterConfigEventTypes = r.FilterConfigEventTypes
-		filterConfigFilterRawHeaders, filterConfigFilterRawBody = r.FilterConfigFilterRawHeaders, r.FilterConfigFilterRawBody
-		filterConfigFilterIsFlattened = r.FilterConfigFilterIsFlattened
-		filterConfigFilterHeaders, filterConfigFilterBody = r.FilterConfigFilterHeaders, r.FilterConfigFilterBody
-		rateLimitConfigCount, rateLimitConfigDuration = r.RateLimitConfigCount, r.RateLimitConfigDuration
-		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
-
 	case repo.FetchCLISubscriptionsRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
 		endpointID = common.PgTextToString(r.EndpointID)
-		deviceID = common.PgTextToString(r.DeviceID)
 		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
@@ -499,9 +467,6 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
 		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
 		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
 		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
 		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
@@ -521,7 +486,6 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 	case repo.FetchSubscriptionsPaginatedRow:
 		id, name, subType, projectID = r.ID, r.Name, r.Type, r.ProjectID
 		endpointID = common.PgTextToString(r.EndpointID)
-		deviceID = common.PgTextToString(r.DeviceID)
 		sourceID = common.PgTextToString(r.SourceID)
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		function = r.Function
@@ -541,9 +505,6 @@ func rowToSubscription(row interface{}) (*datastore.Subscription, error) {
 		endpointMetadataStatus = common.PgTextToString(r.EndpointMetadataStatus)
 		endpointMetadataOwnerID = common.PgTextToString(r.EndpointMetadataOwnerID)
 		endpointMetadataSecrets = r.EndpointMetadataSecrets
-		deviceMetadataID = common.PgTextToString(r.DeviceMetadataID)
-		deviceMetadataStatus = common.PgTextToString(r.DeviceMetadataStatus)
-		deviceMetadataHostName = common.PgTextToString(r.DeviceMetadataHostName)
 		sourceMetadataID = common.PgTextToString(r.SourceMetadataID)
 		sourceMetadataName = common.PgTextToString(r.SourceMetadataName)
 		sourceMetadataType = common.PgTextToString(r.SourceMetadataType)
