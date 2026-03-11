@@ -479,10 +479,10 @@ func (mr *MockEventRepositoryMockRecorder) FindEventsByIDs(ctx, projectID, ids a
 }
 
 // FindEventsByIdempotencyKey mocks base method.
-func (m *MockEventRepository) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) ([]datastore.Event, error) {
+func (m *MockEventRepository) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindEventsByIdempotencyKey", ctx, projectID, idempotencyKey)
-	ret0, _ := ret[0].([]datastore.Event)
+	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

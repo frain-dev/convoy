@@ -22,6 +22,10 @@ import (
 )
 
 const (
+	createEventEndpointsSQL = "INSERT INTO convoy.events_endpoints (event_id, endpoint_id) VALUES ($1, $2) ON CONFLICT (endpoint_id, event_id) DO NOTHING"
+)
+
+const (
 	PartitionSize = 30_000 // Batch size for event_endpoints inserts
 )
 
@@ -88,7 +92,7 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 		return err
 	}
 
-	// Batch insert event_endpoints in 30K partitions
+	// Batch insert event_endpoints using pgx.Batch for efficiency
 	endpoints := event.Endpoints
 	for i := 0; i < len(endpoints); i += PartitionSize {
 		end := i + PartitionSize
@@ -96,16 +100,18 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 			end = len(endpoints)
 		}
 
+		batch := &pgx.Batch{}
 		for _, endpointID := range endpoints[i:end] {
-			endpointParams := repo.CreateEventEndpointsParams{
-				EventID:    common.StringToPgTextNullable(event.UID),
-				EndpointID: common.StringToPgTextNullable(endpointID),
-			}
-			err = qtx.CreateEventEndpoints(ctx, endpointParams)
-			if err != nil {
+			batch.Queue(createEventEndpointsSQL, event.UID, endpointID)
+		}
+		results := tx.SendBatch(ctx, batch)
+		for range endpoints[i:end] {
+			if _, err := results.Exec(); err != nil {
+				results.Close()
 				return err
 			}
 		}
+		results.Close()
 	}
 
 	return tx.Commit(ctx)
@@ -151,28 +157,13 @@ func (s *Service) FindEventsByIDs(ctx context.Context, projectID string, ids []s
 	return events, nil
 }
 
-// FindEventsByIdempotencyKey finds events with a specific idempotency key
-func (s *Service) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) ([]datastore.Event, error) {
+// FindEventsByIdempotencyKey checks if an event with the given idempotency key exists
+func (s *Service) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) (bool, error) {
 	params := repo.FindEventsByIdempotencyKeyParams{
 		IdempotencyKey: common.StringToPgTextNullable(idempotencyKey),
 		ProjectID:      common.StringToPgTextNullable(projectID),
 	}
-	ids, err := s.repo.FindEventsByIdempotencyKey(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	events := make([]datastore.Event, 0, len(ids))
-	for _, id := range ids {
-		// These rows only have ID, need to fetch full event
-		event, err := s.FindEventByID(ctx, projectID, id)
-		if err != nil {
-			return nil, err
-		}
-		events = append(events, *event)
-	}
-
-	return events, nil
+	return s.repo.FindEventsByIdempotencyKey(ctx, params)
 }
 
 // FindFirstEventWithIdempotencyKey finds the first non-duplicate event
@@ -181,7 +172,7 @@ func (s *Service) FindFirstEventWithIdempotencyKey(ctx context.Context, projectI
 		IdempotencyKey: common.StringToPgTextNullable(idempotencyKey),
 		ProjectID:      common.StringToPgTextNullable(projectID),
 	}
-	id, err := s.repo.FindFirstEventWithIdempotencyKey(ctx, params)
+	row, err := s.repo.FindFirstEventWithIdempotencyKey(ctx, params)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrEventNotFound
@@ -189,8 +180,7 @@ func (s *Service) FindFirstEventWithIdempotencyKey(ctx context.Context, projectI
 		return nil, err
 	}
 
-	// Fetch full event details
-	return s.FindEventByID(ctx, projectID, id)
+	return rowToEvent(row)
 }
 
 // UpdateEventEndpoints updates event endpoints with batch processing
@@ -215,23 +205,25 @@ func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Eve
 		return err
 	}
 
-	// Batch insert new event_endpoints in 30K partitions
+	// Batch insert new event_endpoints using pgx.Batch for efficiency
 	for i := 0; i < len(endpoints); i += PartitionSize {
 		end := i + PartitionSize
 		if end > len(endpoints) {
 			end = len(endpoints)
 		}
 
+		batch := &pgx.Batch{}
 		for _, endpointID := range endpoints[i:end] {
-			createParams := repo.CreateEventEndpointsParams{
-				EventID:    common.StringToPgTextNullable(event.UID),
-				EndpointID: common.StringToPgTextNullable(endpointID),
-			}
-			err = qtx.CreateEventEndpoints(ctx, createParams)
-			if err != nil {
+			batch.Queue(createEventEndpointsSQL, event.UID, endpointID)
+		}
+		results := tx.SendBatch(ctx, batch)
+		for range endpoints[i:end] {
+			if _, err := results.Exec(); err != nil {
+				results.Close()
 				return err
 			}
 		}
+		results.Close()
 	}
 
 	return tx.Commit(ctx)
@@ -335,30 +327,12 @@ func (s *Service) LoadEventsPaged(ctx context.Context, projectID string, filter 
 
 // loadEventsPagedExists handles EXISTS path pagination (no search query)
 func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, filter *datastore.Filter, startDate, endDate time.Time) ([]datastore.Event, error) {
-	// Determine cursor conditions based on direction and sort order
-	hasCursor := !util.IsStringEmpty(filter.Pageable.Cursor())
 	cursor := filter.Pageable.Cursor()
-	sortAsc := filter.Pageable.SortOrder() == "ASC"
-
-	// Cursor logic:
-	// Forward + DESC: id <= cursor (cursorLte=true, cursorGte=false)
-	// Forward + ASC: id >= cursor (cursorLte=false, cursorGte=true)
-	// Backward + DESC: id >= cursor (cursorLte=false, cursorGte=true)
-	// Backward + ASC: id <= cursor (cursorLte=true, cursorGte=false)
-	var cursorLte, cursorGte bool
-	if filter.Pageable.Direction == datastore.Next {
-		if sortAsc {
-			cursorGte = true // Forward + ASC: id >= cursor
-		} else {
-			cursorLte = true // Forward + DESC: id <= cursor
-		}
-	} else {
-		if sortAsc {
-			cursorLte = true // Backward + ASC: id <= cursor
-		} else {
-			cursorGte = true // Backward + DESC: id >= cursor
-		}
+	direction := "next"
+	if filter.Pageable.Direction == datastore.Prev {
+		direction = "prev"
 	}
+	sortOrder := filter.Pageable.SortOrder()
 
 	params := repo.LoadEventsPagedExistsParams{
 		HasEndpointOrOwnerFilter: common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID) || len(filter.EndpointIDs) > 0),
@@ -375,10 +349,9 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 		SourceIds:                filter.SourceIDs,
 		HasBrokerMessageID:       common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
 		BrokerMessageID:          common.StringToPgTextNullable(filter.BrokerMessageId),
-		HasCursor:                common.BoolToPgBool(hasCursor && cursorLte),
-		Cursor:                   common.StringToPgTextNullable(cursor),
-		CursorGte:                common.BoolToPgBool(hasCursor && cursorGte),
-		SortAsc:                  common.BoolToPgBool(sortAsc),
+		Cursor:                   common.StringToPgText(cursor),
+		Direction:                common.StringToPgText(direction),
+		SortOrder:                common.StringToPgText(sortOrder),
 		PageLimit:                pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
 	}
 
@@ -401,28 +374,14 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 
 // loadEventsPagedSearch handles CTE path pagination (with search query)
 func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, filter *datastore.Filter, startDate, endDate time.Time) ([]datastore.Event, error) {
-	// Determine cursor conditions
-	hasCursor := !util.IsStringEmpty(filter.Pageable.Cursor())
 	cursor := filter.Pageable.Cursor()
-	sortAsc := filter.Pageable.SortOrder() == "ASC"
-
-	var cursorLte, cursorGte bool
-	if filter.Pageable.Direction == datastore.Next {
-		if sortAsc {
-			cursorGte = true
-		} else {
-			cursorLte = true
-		}
-	} else {
-		if sortAsc {
-			cursorLte = true
-		} else {
-			cursorGte = true
-		}
+	direction := "next"
+	if filter.Pageable.Direction == datastore.Prev {
+		direction = "prev"
 	}
+	sortOrder := filter.Pageable.SortOrder()
 
 	params := repo.LoadEventsPagedSearchParams{
-		SortAsc:            common.BoolToPgBool(sortAsc),
 		ProjectID:          common.StringToPgTextNullable(projectID),
 		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
 		IdempotencyKey:     common.StringToPgTextNullable(filter.IdempotencyKey),
@@ -436,9 +395,9 @@ func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, f
 		BrokerMessageID:    common.StringToPgTextNullable(filter.BrokerMessageId),
 		HasQuery:           common.BoolToPgBool(!util.IsStringEmpty(filter.Query)),
 		Query:              common.StringToPgTextNullable(filter.Query),
-		HasCursor:          common.BoolToPgBool(hasCursor && cursorLte),
-		Cursor:             common.StringToPgTextNullable(cursor),
-		CursorGte:          common.BoolToPgBool(hasCursor && cursorGte),
+		Cursor:             common.StringToPgText(cursor),
+		Direction:          common.StringToPgText(direction),
+		SortOrder:          common.StringToPgText(sortOrder),
 		PageLimit:          pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
 	}
 
@@ -460,8 +419,9 @@ func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, f
 }
 
 // countPrevEvents checks if there are events before cursor (for HasPrevPage)
+// "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
 func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter *datastore.Filter, cursor string, startDate, endDate time.Time, useExistsPath bool) (datastore.PrevRowCount, error) {
-	sortAsc := filter.Pageable.SortOrder() == "ASC"
+	sortOrder := filter.Pageable.SortOrder()
 
 	if useExistsPath {
 		params := repo.CountPrevEventsExistsParams{
@@ -476,7 +436,7 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 			EndpointIds:        filter.EndpointIDs,
 			HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
 			BrokerMessageID:    common.StringToPgTextNullable(filter.BrokerMessageId),
-			SortAsc:            common.BoolToPgBool(sortAsc),
+			SortOrder:          common.StringToPgText(sortOrder),
 			Cursor:             common.StringToPgTextNullable(cursor),
 		}
 
@@ -506,7 +466,7 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 		BrokerMessageID:    common.StringToPgTextNullable(filter.BrokerMessageId),
 		HasQuery:           common.BoolToPgBool(!util.IsStringEmpty(filter.Query)),
 		Query:              common.StringToPgTextNullable(filter.Query),
-		SortAsc:            common.BoolToPgBool(sortAsc),
+		SortOrder:          common.StringToPgText(sortOrder),
 		Cursor:             common.StringToPgTextNullable(cursor),
 	}
 
@@ -542,9 +502,14 @@ func (s *Service) DeleteProjectEvents(ctx context.Context, projectID string, fil
 	return s.repo.SoftDeleteProjectEvents(ctx, params)
 }
 
-// DeleteProjectTokenizedEvents deletes tokenized events
+// DeleteProjectTokenizedEvents deletes tokenized events within the given date range
 func (s *Service) DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *datastore.EventFilter) error {
-	return s.repo.HardDeleteTokenizedEvents(ctx, common.StringToPgTextNullable(projectID))
+	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
+	return s.repo.HardDeleteTokenizedEvents(ctx, repo.HardDeleteTokenizedEventsParams{
+		ProjectID: common.StringToPgTextNullable(projectID),
+		StartDate: pgtype.Timestamptz{Time: startDate, Valid: true},
+		EndDate:   pgtype.Timestamptz{Time: endDate, Valid: true},
+	})
 }
 
 // CopyRows copies rows from events to events_search
@@ -558,9 +523,13 @@ func (s *Service) CopyRows(ctx context.Context, projectID string, interval int) 
 
 	qtx := repo.New(tx)
 
-	// If interval is not default, hard delete tokenized events first
+	// If interval is not default, hard delete ALL tokenized events first
 	if interval != config.DefaultSearchTokenizationInterval {
-		err = qtx.HardDeleteTokenizedEvents(ctx, common.StringToPgTextNullable(projectID))
+		err = qtx.HardDeleteTokenizedEvents(ctx, repo.HardDeleteTokenizedEventsParams{
+			ProjectID: common.StringToPgTextNullable(projectID),
+			StartDate: pgtype.Timestamptz{Time: time.Unix(0, 0), Valid: true},
+			EndDate:   pgtype.Timestamptz{Time: time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC), Valid: true},
+		})
 		if err != nil {
 			return err
 		}
@@ -689,22 +658,9 @@ func (s *Service) UnPartitionEventsSearchTable(ctx context.Context) error {
 }
 
 // Helper: getCreatedDateFilter converts Unix timestamps to time.Time
+// Matches old behavior: when 0, returns Unix epoch (1970-01-01)
 func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
-	start := time.Unix(startDate, 0)
-	end := time.Unix(endDate, 0)
-
-	// If no start date provided, use beginning of time (Unix epoch)
-	if startDate == 0 {
-		start = time.Unix(0, 0)
-	}
-
-	// If no end date provided, use far future date
-	if endDate == 0 {
-		// Use year 2100 as a reasonable far future date
-		end = time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC)
-	}
-
-	return start, end
+	return time.Unix(startDate, 0), time.Unix(endDate, 0)
 }
 
 // Partition SQL constants - define and execute PL/pgSQL functions for table partitioning

@@ -42,6 +42,7 @@ func rowToEvent(row interface{}) (*datastore.Event, error) {
 		return &datastore.Event{
 			UID:              r.ID,
 			EventType:        datastore.EventType(r.EventType),
+			Endpoints:        parseEndpoints(common.PgTextToString(r.Endpoints)),
 			ProjectID:        r.ProjectID,
 			SourceID:         common.PgTextToString(r.SourceID),
 			Headers:          parseHeaders(r.Headers),
@@ -50,9 +51,35 @@ func rowToEvent(row interface{}) (*datastore.Event, error) {
 			URLQueryParams:   common.PgTextToString(r.UrlQueryParams),
 			IdempotencyKey:   common.PgTextToString(r.IdempotencyKey),
 			IsDuplicateEvent: r.IsDuplicateEvent.Bool,
+			Status:           datastore.EventStatus(common.PgTextToString(r.Status)),
+			Metadata:         common.PgTextToString(r.Metadata),
 			CreatedAt:        common.PgTimestamptzToTime(r.CreatedAt),
 			UpdatedAt:        common.PgTimestamptzToTime(r.UpdatedAt),
 			DeletedAt:        common.PgTimestamptzToNullTime(r.DeletedAt),
+			AcknowledgedAt:   common.PgTimestamptzToNullTime(r.AcknowledgedAt),
+			Source: &datastore.Source{
+				UID:  common.PgTextToString(r.SourceMetadataID),
+				Name: common.PgTextToString(r.SourceMetadataName),
+			},
+		}, nil
+
+	case repo.FindFirstEventWithIdempotencyKeyRow:
+		return &datastore.Event{
+			UID:              r.ID,
+			EventType:        datastore.EventType(r.EventType),
+			Endpoints:        parseEndpoints(common.PgTextToString(r.Endpoints)),
+			ProjectID:        r.ProjectID,
+			SourceID:         common.PgTextToString(r.SourceID),
+			Headers:          parseHeaders(r.Headers),
+			Raw:              r.Raw,
+			Data:             r.Data,
+			URLQueryParams:   common.PgTextToString(r.UrlQueryParams),
+			IdempotencyKey:   common.PgTextToString(r.IdempotencyKey),
+			IsDuplicateEvent: r.IsDuplicateEvent.Bool,
+			Status:           datastore.EventStatus(common.PgTextToString(r.Status)),
+			Metadata:         common.PgTextToString(r.Metadata),
+			CreatedAt:        common.PgTimestamptzToTime(r.CreatedAt),
+			UpdatedAt:        common.PgTimestamptzToTime(r.UpdatedAt),
 			AcknowledgedAt:   common.PgTimestamptzToNullTime(r.AcknowledgedAt),
 			Source: &datastore.Source{
 				UID:  common.PgTextToString(r.SourceMetadataID),
@@ -116,22 +143,24 @@ func rowToEvent(row interface{}) (*datastore.Event, error) {
 }
 
 // endpointsToString converts []string to TEXT for storage
-// The legacy implementation stores it as a TEXT field (not JSONB array)
+// Uses PostgreSQL array format {a,b,c} for compatibility with legacy pq.StringArray data
 func endpointsToString(endpoints []string) string {
 	if len(endpoints) == 0 {
 		return ""
 	}
-	// Match legacy format: stored as comma-separated or the actual database format
-	// The database column is TEXT, matching pq.StringArray in sqlx
-	return strings.Join(endpoints, ",")
+	return "{" + strings.Join(endpoints, ",") + "}"
 }
 
 // parseEndpoints converts TEXT to []string
+// Handles both PostgreSQL array format {a,b,c} and plain comma-separated format
 func parseEndpoints(endpointsStr string) []string {
 	if endpointsStr == "" {
 		return []string{}
 	}
-	// Handle comma-separated format
+	// Handle PostgreSQL array format from pq.StringArray legacy data
+	if strings.HasPrefix(endpointsStr, "{") && strings.HasSuffix(endpointsStr, "}") {
+		endpointsStr = endpointsStr[1 : len(endpointsStr)-1]
+	}
 	return strings.Split(endpointsStr, ",")
 }
 

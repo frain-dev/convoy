@@ -327,9 +327,9 @@ func TestFindEventsByIdempotencyKey(t *testing.T) {
 		require.NoError(t, service.CreateEvent(ctx, event1))
 		require.NoError(t, service.CreateEvent(ctx, event2))
 
-		events, err := service.FindEventsByIdempotencyKey(ctx, project.UID, idempotencyKey)
+		exists, err := service.FindEventsByIdempotencyKey(ctx, project.UID, idempotencyKey)
 		require.NoError(t, err)
-		require.Len(t, events, 2)
+		require.True(t, exists)
 	})
 }
 
@@ -502,121 +502,259 @@ func TestLoadEventsPaged(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("LoadEventsPaged_FirstPage_DESC", func(t *testing.T) {
-		// Create isolated project for this test
 		project := seedTestProject(t, db)
 		endpoint := seedTestEndpoint(t, db, project.UID)
 		source := seedTestSource(t, db, project.UID)
 
-		t.Logf("Test setup - ProjectID: %s, EndpointID: %s, SourceID: %s", project.UID, endpoint.UID, source.UID)
-
-		// Create test events
+		// Create test events with deterministic ordering
 		numEvents := 15
-		eventIDs := []string{}
+		eventIDs := make([]string, 0, numEvents)
 		for i := 0; i < numEvents; i++ {
 			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
-			time.Sleep(1 * time.Millisecond) // Ensure unique timestamps
+			time.Sleep(1 * time.Millisecond) // Ensure unique ULID timestamps
 			require.NoError(t, service.CreateEvent(ctx, event))
 			eventIDs = append(eventIDs, event.UID)
 		}
-		t.Logf("Created %d events: %v", numEvents, eventIDs)
 
-		// Verify events were created
-		totalCount, err := service.CountProjectMessages(ctx, project.UID)
-		require.NoError(t, err)
-		t.Logf("Total events in project: %d", totalCount)
 		filter := &datastore.Filter{
 			Pageable: datastore.Pageable{
 				PerPage:   5,
 				Direction: datastore.Next,
-				Sort:      "desc",
-			},
-		}
-		t.Logf("Calling LoadEventsPaged - ProjectID: %s, PerPage: 5, Direction: next, Sort: desc", project.UID)
-		events, paginationData, err := service.LoadEventsPaged(ctx, project.UID, filter)
-		require.NoError(t, err)
-		t.Logf("LoadEventsPaged result - Events count: %d, HasNextPage: %t, PrevRowCount: %d",
-			len(events), paginationData.HasNextPage, paginationData.PrevRowCount.Count)
-		if len(events) > 0 {
-			t.Logf("First event ID: %s, Last event ID: %s", events[0].UID, events[len(events)-1].UID)
-		}
-		require.Len(t, events, 5, "Expected 5 events, got %d", len(events))
-		require.Equal(t, 0, paginationData.PrevRowCount.Count)
-		require.True(t, paginationData.HasNextPage)
-	})
-
-	t.Run("LoadEventsPaged_FirstPage_ASC", func(t *testing.T) {
-		// Create isolated project for this test
-		project := seedTestProject(t, db)
-		endpoint := seedTestEndpoint(t, db, project.UID)
-		source := seedTestSource(t, db, project.UID)
-
-		t.Logf("Test setup - ProjectID: %s, EndpointID: %s, SourceID: %s", project.UID, endpoint.UID, source.UID)
-
-		// Create test events
-		numEvents := 15
-		for i := 0; i < numEvents; i++ {
-			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
-			time.Sleep(1 * time.Millisecond)
-			require.NoError(t, service.CreateEvent(ctx, event))
-		}
-		t.Logf("Created %d events", numEvents)
-		filter := &datastore.Filter{
-			Pageable: datastore.Pageable{
-				PerPage:   5,
-				Direction: datastore.Next,
-				Sort:      "asc",
-			},
-		}
-		t.Logf("Calling LoadEventsPaged - ProjectID: %s, PerPage: 5, Direction: next, Sort: asc", project.UID)
-		events, paginationData, err := service.LoadEventsPaged(ctx, project.UID, filter)
-		require.NoError(t, err)
-		t.Logf("LoadEventsPaged result - Events count: %d, HasNextPage: %t", len(events), paginationData.HasNextPage)
-		require.Len(t, events, 5, "Expected 5 events, got %d", len(events))
-		require.Equal(t, 0, paginationData.PrevRowCount.Count)
-		require.True(t, paginationData.HasNextPage)
-	})
-
-	t.Run("LoadEventsPaged_BackwardPagination", func(t *testing.T) {
-		// Create isolated project for this test
-		project := seedTestProject(t, db)
-		endpoint := seedTestEndpoint(t, db, project.UID)
-		source := seedTestSource(t, db, project.UID)
-
-		t.Logf("Test setup - ProjectID: %s", project.UID)
-
-		// Create test events
-		numEvents := 15
-		for i := 0; i < numEvents; i++ {
-			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
-			time.Sleep(1 * time.Millisecond)
-			require.NoError(t, service.CreateEvent(ctx, event))
-		}
-		t.Logf("Created %d events", numEvents)
-		// First get the first page
-		filter := &datastore.Filter{
-			Pageable: datastore.Pageable{
-				PerPage:   5,
-				Direction: datastore.Next,
-				Sort:      "desc",
+				Sort:      "DESC",
 			},
 		}
 		events, paginationData, err := service.LoadEventsPaged(ctx, project.UID, filter)
 		require.NoError(t, err)
 		require.Len(t, events, 5)
+		require.Equal(t, 0, paginationData.PrevRowCount.Count)
+		require.True(t, paginationData.HasNextPage)
 
-		// Now get next page
-		filter.Pageable.NextCursor = paginationData.NextPageCursor
-		events2, paginationData2, err := service.LoadEventsPaged(ctx, project.UID, filter)
+		// DESC: first page should have the newest events (highest IDs)
+		for i := 1; i < len(events); i++ {
+			require.Greater(t, events[i-1].UID, events[i].UID, "DESC order: events[%d].UID (%s) should be > events[%d].UID (%s)", i-1, events[i-1].UID, i, events[i].UID)
+		}
+	})
+
+	t.Run("LoadEventsPaged_FirstPage_ASC", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+
+		numEvents := 15
+		eventIDs := make([]string, 0, numEvents)
+		for i := 0; i < numEvents; i++ {
+			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+			time.Sleep(1 * time.Millisecond)
+			require.NoError(t, service.CreateEvent(ctx, event))
+			eventIDs = append(eventIDs, event.UID)
+		}
+
+		filter := &datastore.Filter{
+			Pageable: datastore.Pageable{
+				PerPage:   5,
+				Direction: datastore.Next,
+				Sort:      "ASC",
+			},
+		}
+		events, paginationData, err := service.LoadEventsPaged(ctx, project.UID, filter)
 		require.NoError(t, err)
-		require.Len(t, events2, 5)
+		require.Len(t, events, 5)
+		require.Equal(t, 0, paginationData.PrevRowCount.Count)
+		require.True(t, paginationData.HasNextPage)
 
-		// Go back to previous page
+		// ASC: first page should have the oldest events (lowest IDs)
+		for i := 1; i < len(events); i++ {
+			require.Less(t, events[i-1].UID, events[i].UID, "ASC order: events[%d].UID (%s) should be < events[%d].UID (%s)", i-1, events[i-1].UID, i, events[i].UID)
+		}
+
+		// ASC first page should contain the earliest-created events
+		require.Equal(t, eventIDs[0], events[0].UID, "ASC first page should start with the oldest event")
+	})
+
+	t.Run("LoadEventsPaged_ASC_NextPage", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+
+		numEvents := 15
+		eventIDs := make([]string, 0, numEvents)
+		for i := 0; i < numEvents; i++ {
+			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+			time.Sleep(1 * time.Millisecond)
+			require.NoError(t, service.CreateEvent(ctx, event))
+			eventIDs = append(eventIDs, event.UID)
+		}
+
+		// Page 1 ASC
+		filter := &datastore.Filter{
+			Pageable: datastore.Pageable{
+				PerPage:   5,
+				Direction: datastore.Next,
+				Sort:      "ASC",
+			},
+		}
+		page1, pagination1, err := service.LoadEventsPaged(ctx, project.UID, filter)
+		require.NoError(t, err)
+		require.Len(t, page1, 5)
+		require.True(t, pagination1.HasNextPage)
+
+		// Page 2 ASC
+		filter.Pageable.NextCursor = pagination1.NextPageCursor
+		page2, pagination2, err := service.LoadEventsPaged(ctx, project.UID, filter)
+		require.NoError(t, err)
+		require.Len(t, page2, 5)
+		require.True(t, pagination2.HasNextPage)
+
+		// Page 2 should continue in ASC order after page 1
+		require.Greater(t, page2[0].UID, page1[len(page1)-1].UID,
+			"ASC page 2 first event (%s) should be after page 1 last event (%s)",
+			page2[0].UID, page1[len(page1)-1].UID)
+
+		// Page 2 events should also be in ASC order
+		for i := 1; i < len(page2); i++ {
+			require.Less(t, page2[i-1].UID, page2[i].UID, "ASC order on page 2")
+		}
+
+		// No overlap between pages
+		page1IDs := make(map[string]bool)
+		for _, e := range page1 {
+			page1IDs[e.UID] = true
+		}
+		for _, e := range page2 {
+			require.False(t, page1IDs[e.UID], "Page 2 event %s should not appear on page 1", e.UID)
+		}
+	})
+
+	t.Run("LoadEventsPaged_DESC_BackwardPagination", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+
+		numEvents := 15
+		for i := 0; i < numEvents; i++ {
+			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+			time.Sleep(1 * time.Millisecond)
+			require.NoError(t, service.CreateEvent(ctx, event))
+		}
+
+		// First get page 1 DESC
+		filter := &datastore.Filter{
+			Pageable: datastore.Pageable{
+				PerPage:   5,
+				Direction: datastore.Next,
+				Sort:      "DESC",
+			},
+		}
+		page1, pagination1, err := service.LoadEventsPaged(ctx, project.UID, filter)
+		require.NoError(t, err)
+		require.Len(t, page1, 5)
+
+		// Get page 2 DESC
+		filter.Pageable.NextCursor = pagination1.NextPageCursor
+		page2, pagination2, err := service.LoadEventsPaged(ctx, project.UID, filter)
+		require.NoError(t, err)
+		require.Len(t, page2, 5)
+
+		// Go back to page 1 (backward pagination)
 		filter.Pageable.Direction = datastore.Prev
-		filter.Pageable.PrevCursor = paginationData2.PrevPageCursor
-		eventsBack, _, err := service.LoadEventsPaged(ctx, project.UID, filter)
+		filter.Pageable.PrevCursor = pagination2.PrevPageCursor
+		pageBack, _, err := service.LoadEventsPaged(ctx, project.UID, filter)
 		require.NoError(t, err)
-		require.Len(t, eventsBack, 5)
-		require.Equal(t, events[0].UID, eventsBack[0].UID)
+		require.Len(t, pageBack, 5)
+
+		// Should get the same events as page 1, in the same DESC order
+		require.Equal(t, page1[0].UID, pageBack[0].UID, "Backward pagination should return to page 1")
+		for i := range page1 {
+			require.Equal(t, page1[i].UID, pageBack[i].UID, "Event %d should match", i)
+		}
+	})
+
+	t.Run("LoadEventsPaged_ASC_BackwardPagination", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+
+		numEvents := 15
+		for i := 0; i < numEvents; i++ {
+			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+			time.Sleep(1 * time.Millisecond)
+			require.NoError(t, service.CreateEvent(ctx, event))
+		}
+
+		// Page 1 ASC
+		filter := &datastore.Filter{
+			Pageable: datastore.Pageable{
+				PerPage:   5,
+				Direction: datastore.Next,
+				Sort:      "ASC",
+			},
+		}
+		page1, pagination1, err := service.LoadEventsPaged(ctx, project.UID, filter)
+		require.NoError(t, err)
+		require.Len(t, page1, 5)
+
+		// Page 2 ASC
+		filter.Pageable.NextCursor = pagination1.NextPageCursor
+		page2, pagination2, err := service.LoadEventsPaged(ctx, project.UID, filter)
+		require.NoError(t, err)
+		require.Len(t, page2, 5)
+
+		// Go back to page 1 (backward pagination with ASC sort)
+		filter.Pageable.Direction = datastore.Prev
+		filter.Pageable.PrevCursor = pagination2.PrevPageCursor
+		pageBack, _, err := service.LoadEventsPaged(ctx, project.UID, filter)
+		require.NoError(t, err)
+		require.Len(t, pageBack, 5)
+
+		// Should get the same events as page 1, in the same ASC order
+		require.Equal(t, page1[0].UID, pageBack[0].UID, "ASC backward pagination should return to page 1")
+		for i := range page1 {
+			require.Equal(t, page1[i].UID, pageBack[i].UID, "ASC event %d should match", i)
+		}
+	})
+
+	t.Run("LoadEventsPaged_ASC_vs_DESC_reversed", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+
+		numEvents := 5
+		for i := 0; i < numEvents; i++ {
+			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+			time.Sleep(1 * time.Millisecond)
+			require.NoError(t, service.CreateEvent(ctx, event))
+		}
+
+		// Get all events DESC
+		filterDESC := &datastore.Filter{
+			Pageable: datastore.Pageable{
+				PerPage:   10,
+				Direction: datastore.Next,
+				Sort:      "DESC",
+			},
+		}
+		descEvents, _, err := service.LoadEventsPaged(ctx, project.UID, filterDESC)
+		require.NoError(t, err)
+		require.Len(t, descEvents, numEvents)
+
+		// Get all events ASC
+		filterASC := &datastore.Filter{
+			Pageable: datastore.Pageable{
+				PerPage:   10,
+				Direction: datastore.Next,
+				Sort:      "ASC",
+			},
+		}
+		ascEvents, _, err := service.LoadEventsPaged(ctx, project.UID, filterASC)
+		require.NoError(t, err)
+		require.Len(t, ascEvents, numEvents)
+
+		// ASC and DESC should return the same events in reversed order
+		for i := 0; i < numEvents; i++ {
+			require.Equal(t, descEvents[i].UID, ascEvents[numEvents-1-i].UID,
+				"DESC[%d] (%s) should equal ASC[%d] (%s)",
+				i, descEvents[i].UID, numEvents-1-i, ascEvents[numEvents-1-i].UID)
+		}
 	})
 
 	t.Run("LoadEventsPaged_WithEndpointFilter", func(t *testing.T) {
@@ -641,7 +779,7 @@ func TestLoadEventsPaged(t *testing.T) {
 			Pageable: datastore.Pageable{
 				PerPage:   10,
 				Direction: datastore.Next,
-				Sort:      "desc",
+				Sort:      "DESC",
 			},
 		}
 		t.Logf("Calling LoadEventsPaged with EndpointFilter: %s", endpoint2.UID)
@@ -678,7 +816,7 @@ func TestLoadEventsPaged(t *testing.T) {
 			Pageable: datastore.Pageable{
 				PerPage:   10,
 				Direction: datastore.Next,
-				Sort:      "desc",
+				Sort:      "DESC",
 			},
 		}
 		t.Logf("Calling LoadEventsPaged with SourceFilter: %s", source2.UID)
@@ -721,7 +859,7 @@ func TestLoadEventsPaged(t *testing.T) {
 			Pageable: datastore.Pageable{
 				PerPage:   10,
 				Direction: datastore.Next,
-				Sort:      "desc",
+				Sort:      "DESC",
 			},
 		}
 		t.Logf("Calling LoadEventsPaged with DateRange: %s (Unix: %d) to %s (Unix: %d)",
@@ -749,7 +887,7 @@ func TestLoadEventsPaged(t *testing.T) {
 			Pageable: datastore.Pageable{
 				PerPage:   10,
 				Direction: datastore.Next,
-				Sort:      "desc",
+				Sort:      "DESC",
 			},
 		}
 		t.Logf("Calling LoadEventsPaged with non-existent endpoint: %s", nonExistentEndpoint)
@@ -780,7 +918,7 @@ func TestLoadEventsPaged(t *testing.T) {
 			Pageable: datastore.Pageable{
 				PerPage:   5,
 				Direction: datastore.Next,
-				Sort:      "desc",
+				Sort:      "DESC",
 			},
 		}
 		// Empty filter.Query means EXISTS path will be used

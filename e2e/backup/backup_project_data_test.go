@@ -223,8 +223,6 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	eventsData := readExportFile(t, eventsFiles[0])
 	var events []map[string]interface{}
 
-	t.Logf("eventsData: %s", eventsData)
-
 	err = json.Unmarshal(eventsData, &events)
 	require.NoError(t, err)
 	require.Len(t, events, 1, "should have 1 old event exported")

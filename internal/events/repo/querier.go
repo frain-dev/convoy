@@ -15,8 +15,10 @@ type Querier interface {
 	CountEvents(ctx context.Context, arg CountEventsParams) (pgtype.Int8, error)
 	CountExportedEvents(ctx context.Context, arg CountExportedEventsParams) (pgtype.Int8, error)
 	// Check if there are events before cursor (for HasPrevPage) - EXISTS path
+	// "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
 	CountPrevEventsExists(ctx context.Context, arg CountPrevEventsExistsParams) (bool, error)
 	// Check if there are events before cursor (for HasPrevPage) - Search path
+	// "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
 	CountPrevEventsSearch(ctx context.Context, arg CountPrevEventsSearchParams) (bool, error)
 	CountProjectMessages(ctx context.Context, projectID pgtype.Text) (pgtype.Int8, error)
 	// Events Repository SQL Queries
@@ -32,19 +34,24 @@ type Querier interface {
 	// Group 2: Batch Reads & Counting (5 queries)
 	// ============================================================================
 	FindEventsByIDs(ctx context.Context, arg FindEventsByIDsParams) ([]FindEventsByIDsRow, error)
-	FindEventsByIdempotencyKey(ctx context.Context, arg FindEventsByIdempotencyKeyParams) ([]string, error)
-	FindFirstEventWithIdempotencyKey(ctx context.Context, arg FindFirstEventWithIdempotencyKeyParams) (string, error)
+	FindEventsByIdempotencyKey(ctx context.Context, arg FindEventsByIdempotencyKeyParams) (bool, error)
+	FindFirstEventWithIdempotencyKey(ctx context.Context, arg FindFirstEventWithIdempotencyKeyParams) (FindFirstEventWithIdempotencyKeyRow, error)
 	HardDeleteProjectEvents(ctx context.Context, arg HardDeleteProjectEventsParams) error
-	HardDeleteTokenizedEvents(ctx context.Context, projectID pgtype.Text) error
+	HardDeleteTokenizedEvents(ctx context.Context, arg HardDeleteTokenizedEventsParams) error
 	// ============================================================================
 	// Group 3: Complex Pagination (5 queries) ⚠️ MOST CRITICAL
 	// ============================================================================
 	// Fast pagination using EXISTS subquery (no search query)
-	// Leverages idx_events_project_created_pagination index
+	// Uses CTE with direction-based sort for correct backward pagination
+	// @direction: 'next' or 'prev' (pagination direction)
+	// @sort_order: 'ASC' or 'DESC' (user-requested sort order)
+	// Outer sort: always the user-requested sort order (re-reverses backward fetches)
 	LoadEventsPagedExists(ctx context.Context, arg LoadEventsPagedExistsParams) ([]LoadEventsPagedExistsRow, error)
-	// limit
 	// Full-text search pagination using CTE + JOIN + GROUP BY
 	// Uses convoy.events_search table for search_token matching
+	// @direction: 'next' or 'prev' (pagination direction)
+	// @sort_order: 'ASC' or 'DESC' (user-requested sort order)
+	// Outer sort: always the user-requested sort order (re-reverses backward fetches)
 	LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPagedSearchParams) ([]LoadEventsPagedSearchRow, error)
 	// ============================================================================
 	// Group 4: Deletion & Maintenance (4 queries)

@@ -48,7 +48,7 @@ type EventRepository interface {
 	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
 	DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *EventFilter) error
-	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)
+	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (bool, error)
 	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
 	CopyRows(ctx context.Context, projectID string, interval int) error
 	PartitionEventsTable(ctx context.Context) error
