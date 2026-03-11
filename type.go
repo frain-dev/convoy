@@ -22,6 +22,8 @@ type QueueName string
 
 type CacheKey string
 
+var Version string
+
 //go:embed VERSION
 var F embed.FS
 
@@ -66,13 +68,14 @@ func readVersion(fs embed.FS) ([]byte, error) {
 // TODO(subomi): This needs to be refactored for everywhere we depend
 // on this code.
 func GetVersion() string {
+	if Version != "" {
+		return strings.TrimSpace(Version)
+	}
 	v := "0.1.0"
-
 	f, err := readVersion(F)
 	if err != nil {
 		return v
 	}
-
 	v = strings.TrimSpace(string(f))
 	return v
 }
