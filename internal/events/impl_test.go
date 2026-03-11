@@ -508,12 +508,10 @@ func TestLoadEventsPaged(t *testing.T) {
 
 		// Create test events with deterministic ordering
 		numEvents := 15
-		eventIDs := make([]string, 0, numEvents)
 		for i := 0; i < numEvents; i++ {
 			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
 			time.Sleep(1 * time.Millisecond) // Ensure unique ULID timestamps
 			require.NoError(t, service.CreateEvent(ctx, event))
-			eventIDs = append(eventIDs, event.UID)
 		}
 
 		filter := &datastore.Filter{
@@ -577,12 +575,10 @@ func TestLoadEventsPaged(t *testing.T) {
 		source := seedTestSource(t, db, project.UID)
 
 		numEvents := 15
-		eventIDs := make([]string, 0, numEvents)
 		for i := 0; i < numEvents; i++ {
 			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
 			time.Sleep(1 * time.Millisecond)
 			require.NoError(t, service.CreateEvent(ctx, event))
-			eventIDs = append(eventIDs, event.UID)
 		}
 
 		// Page 1 ASC
