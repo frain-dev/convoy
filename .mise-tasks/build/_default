@@ -10,4 +10,4 @@ set -e
 echo "🚧 Building Convoy..."
 
 APP_VERSION=$(cat ./VERSION)
-go build -ldflags="-X main.release=${APP_VERSION}" -o bin/convoy ./cmd/*.go
+go build -ldflags="-X github.com/frain-dev/convoy.Version=${APP_VERSION} -X main.release=${APP_VERSION}" -o bin/convoy ./cmd/*.go
