@@ -26,9 +26,15 @@ RUN go mod verify
 
 COPY . .
 
+# Optional: pass --build-arg VERSION=v1.2.3 to inject version at build time
+ARG VERSION
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go build -ldflags="-w -s" -o /go/bin/cmd ./cmd
+    if [ -n "$VERSION" ]; then \
+      go build -ldflags="-w -s -X github.com/frain-dev/convoy.Version=$VERSION" -o /go/bin/cmd ./cmd; \
+    else \
+      go build -ldflags="-w -s" -o /go/bin/cmd ./cmd; \
+    fi
 
 FROM alpine:3.23.3
 COPY --from=build-env /go/bin/cmd /

@@ -103,7 +103,11 @@ jobs:
           export CGO_ENABLED=0
           export GOOS=linux
           export GOARCH=${{ matrix.arch }}
-          go build -o convoy ./cmd
+          LDFLAGS=""
+          if [ "${{ needs.set-image-tag.outputs.release_kind }}" = "tag" ]; then
+            LDFLAGS="-ldflags=-X github.com/frain-dev/convoy.Version=${{ needs.set-image-tag.outputs.image_tag }}"
+          fi
+          go build $LDFLAGS -o convoy ./cmd
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3

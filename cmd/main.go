@@ -36,7 +36,7 @@ func main() {
 	}
 
 	app := &cli.App{}
-	app.Version = convoy.GetVersionFromFS(convoy.F)
+	app.Version = convoy.GetVersion()
 	db := &postgres.Postgres{}
 
 	c := cli.NewCli(app)
