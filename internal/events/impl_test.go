@@ -196,6 +196,15 @@ func createTestEvent(t *testing.T, projectID string, endpointIDs []string, sourc
 	}
 }
 
+// defaultSearchParams returns SearchParams covering a wide time range
+// to avoid the epoch-to-epoch filter issue when no dates are specified.
+func defaultSearchParams() datastore.SearchParams {
+	return datastore.SearchParams{
+		CreatedAtStart: time.Now().Add(-24 * time.Hour).Unix(),
+		CreatedAtEnd:   time.Now().Add(1 * time.Hour).Unix(),
+	}
+}
+
 func TestCreateEvent(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
@@ -465,7 +474,7 @@ func TestCountEvents(t *testing.T) {
 			t.Logf("Created event %d - EventID: %s", i+1, event.UID)
 		}
 
-		filter := &datastore.Filter{}
+		filter := &datastore.Filter{SearchParams: defaultSearchParams()}
 		count, err := service.CountEvents(ctx, project.UID, filter)
 		require.NoError(t, err)
 		t.Logf("CountEvents result - ProjectID: %s, Filter: empty, Count: %d, Expected: >=3", project.UID, count)
@@ -488,7 +497,8 @@ func TestCountEvents(t *testing.T) {
 		}
 
 		filter := &datastore.Filter{
-			EndpointIDs: []string{endpoint2.UID},
+			EndpointIDs:  []string{endpoint2.UID},
+			SearchParams: defaultSearchParams(),
 		}
 		count, err := service.CountEvents(ctx, project.UID, filter)
 		require.NoError(t, err)
@@ -515,6 +525,7 @@ func TestLoadEventsPaged(t *testing.T) {
 		}
 
 		filter := &datastore.Filter{
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   5,
 				Direction: datastore.Next,
@@ -548,6 +559,7 @@ func TestLoadEventsPaged(t *testing.T) {
 		}
 
 		filter := &datastore.Filter{
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   5,
 				Direction: datastore.Next,
@@ -583,6 +595,7 @@ func TestLoadEventsPaged(t *testing.T) {
 
 		// Page 1 ASC
 		filter := &datastore.Filter{
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   5,
 				Direction: datastore.Next,
@@ -635,6 +648,7 @@ func TestLoadEventsPaged(t *testing.T) {
 
 		// First get page 1 DESC
 		filter := &datastore.Filter{
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   5,
 				Direction: datastore.Next,
@@ -679,6 +693,7 @@ func TestLoadEventsPaged(t *testing.T) {
 
 		// Page 1 ASC
 		filter := &datastore.Filter{
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   5,
 				Direction: datastore.Next,
@@ -723,6 +738,7 @@ func TestLoadEventsPaged(t *testing.T) {
 
 		// Get all events DESC
 		filterDESC := &datastore.Filter{
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   10,
 				Direction: datastore.Next,
@@ -735,6 +751,7 @@ func TestLoadEventsPaged(t *testing.T) {
 
 		// Get all events ASC
 		filterASC := &datastore.Filter{
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   10,
 				Direction: datastore.Next,
@@ -771,7 +788,8 @@ func TestLoadEventsPaged(t *testing.T) {
 		t.Logf("Created 3 events for endpoint2: %v", eventIDs)
 
 		filter := &datastore.Filter{
-			EndpointIDs: []string{endpoint2.UID},
+			EndpointIDs:  []string{endpoint2.UID},
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   10,
 				Direction: datastore.Next,
@@ -808,7 +826,8 @@ func TestLoadEventsPaged(t *testing.T) {
 		t.Logf("Created 3 events for source2: %v", eventIDs)
 
 		filter := &datastore.Filter{
-			SourceID: source2.UID,
+			SourceID:     source2.UID,
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   10,
 				Direction: datastore.Next,
@@ -879,7 +898,8 @@ func TestLoadEventsPaged(t *testing.T) {
 		t.Logf("Test setup - ProjectID: %s (no events created)", project.UID)
 		nonExistentEndpoint := ulid.Make().String()
 		filter := &datastore.Filter{
-			EndpointIDs: []string{nonExistentEndpoint},
+			EndpointIDs:  []string{nonExistentEndpoint},
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   10,
 				Direction: datastore.Next,
@@ -911,6 +931,7 @@ func TestLoadEventsPaged(t *testing.T) {
 		t.Logf("Created 5 events")
 		// This should use EXISTS path (no search query)
 		filter := &datastore.Filter{
+			SearchParams: defaultSearchParams(),
 			Pageable: datastore.Pageable{
 				PerPage:   5,
 				Direction: datastore.Next,
