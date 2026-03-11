@@ -60,7 +60,7 @@ jobs:
               run: go mod download && go mod verify
 
             - name: Build app to make sure there are zero issues
-              run: go build -o convoy ./cmd
+              run: go build -ldflags="-X github.com/frain-dev/convoy.Version=test-${{ steps.get_version.outputs.tag }}" -o convoy ./cmd
 
             - name: Go vet
               run: go vet ./...
