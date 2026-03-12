@@ -425,19 +425,22 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 
 	if useExistsPath {
 		params := repo.CountPrevEventsExistsParams{
-			ProjectID:          common.StringToPgTextNullable(projectID),
-			HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
-			IdempotencyKey:     common.StringToPgTextNullable(filter.IdempotencyKey),
-			StartDate:          common.TimeToPgTimestamptz(startDate),
-			EndDate:            common.TimeToPgTimestamptz(endDate),
-			HasSourceIds:       common.BoolToPgBool(len(filter.SourceIDs) > 0),
-			SourceIds:          filter.SourceIDs,
-			HasEndpointIds:     common.BoolToPgBool(len(filter.EndpointIDs) > 0),
-			EndpointIds:        filter.EndpointIDs,
-			HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
-			BrokerMessageID:    common.StringToPgTextNullable(filter.BrokerMessageId),
-			SortOrder:          common.StringToPgText(sortOrder),
-			Cursor:             common.StringToPgTextNullable(cursor),
+			ProjectID:                common.StringToPgTextNullable(projectID),
+			HasIdempotencyKey:        common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
+			IdempotencyKey:           common.StringToPgTextNullable(filter.IdempotencyKey),
+			StartDate:                common.TimeToPgTimestamptz(startDate),
+			EndDate:                  common.TimeToPgTimestamptz(endDate),
+			HasSourceIds:             common.BoolToPgBool(len(filter.SourceIDs) > 0),
+			SourceIds:                filter.SourceIDs,
+			HasOwnerID:               common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID)),
+			OwnerID:                  common.StringToPgTextNullable(filter.OwnerID),
+			HasEndpointOrOwnerFilter: common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID) || len(filter.EndpointIDs) > 0),
+			HasEndpointIds:           common.BoolToPgBool(len(filter.EndpointIDs) > 0),
+			EndpointIds:              filter.EndpointIDs,
+			HasBrokerMessageID:       common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
+			BrokerMessageID:          common.StringToPgTextNullable(filter.BrokerMessageId),
+			SortOrder:                common.StringToPgText(sortOrder),
+			Cursor:                   common.StringToPgTextNullable(cursor),
 		}
 
 		exists, err := s.repo.CountPrevEventsExists(ctx, params)
@@ -658,8 +661,11 @@ func (s *Service) UnPartitionEventsSearchTable(ctx context.Context) error {
 }
 
 // Helper: getCreatedDateFilter converts Unix timestamps to time.Time
-// Matches old behavior: when 0, returns Unix epoch (1970-01-01)
+// When both are 0, defaults endDate to now so callers get all events.
 func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
+	if startDate == 0 && endDate == 0 {
+		return time.Unix(0, 0), time.Now()
+	}
 	return time.Unix(startDate, 0), time.Unix(endDate, 0)
 }
 

@@ -13,11 +13,6 @@ VALUES (@id, @event_type, @endpoints, @project_id, @source_id,
         @headers, @raw, @data, @url_query_params, @idempotency_key,
         @is_duplicate_event, @acknowledged_at, @metadata, @status);
 
--- name: CreateEventEndpoints :exec
-INSERT INTO convoy.events_endpoints (event_id, endpoint_id)
-VALUES (@event_id, @endpoint_id)
-ON CONFLICT (endpoint_id, event_id) DO NOTHING;
-
 -- name: UpdateEventEndpoints :exec
 UPDATE convoy.events
 SET endpoints = @endpoints
@@ -80,8 +75,6 @@ SELECT ev.id,
        COALESCE(s.id, '')                AS "source_metadata.id",
        COALESCE(s.name, '')              AS "source_metadata.name"
 FROM convoy.events ev
-         LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-         LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
          LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ev.deleted_at IS NULL
   AND ev.id = ANY (@event_ids::TEXT[])
@@ -310,7 +303,6 @@ ORDER BY
 -- "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
 SELECT EXISTS(SELECT 1
               FROM convoy.events ev
-                       LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
               WHERE ev.deleted_at IS NULL
                 AND ev.project_id = @project_id
                 AND (CASE
@@ -322,10 +314,22 @@ SELECT EXISTS(SELECT 1
                 AND (CASE
                          WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[])
                          ELSE true END)
-                -- Endpoint filter
-                AND (CASE
-                         WHEN @has_endpoint_ids::BOOLEAN THEN ee.endpoint_id = ANY (@endpoint_ids::TEXT[])
-                         ELSE true END)
+                -- Endpoint/owner filter (matches LoadEventsPagedExists)
+                AND (
+                    CASE
+                        WHEN @has_endpoint_or_owner_filter::BOOLEAN THEN
+                            EXISTS (SELECT 1
+                                    FROM convoy.events_endpoints ee
+                                             JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+                                    WHERE ee.event_id = ev.id
+                                      AND (CASE WHEN @has_owner_id::BOOLEAN THEN e.owner_id = @owner_id ELSE true END)
+                                      AND (CASE
+                                               WHEN @has_endpoint_ids::BOOLEAN THEN ee.endpoint_id = ANY (@endpoint_ids::TEXT[])
+                                               ELSE true END)
+                            )
+                        ELSE true
+                        END
+                    )
                 -- Broker message ID filter
                 AND (CASE
                          WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id

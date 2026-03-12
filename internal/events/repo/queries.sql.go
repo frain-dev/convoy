@@ -87,7 +87,6 @@ func (q *Queries) CountExportedEvents(ctx context.Context, arg CountExportedEven
 const countPrevEventsExists = `-- name: CountPrevEventsExists :one
 SELECT EXISTS(SELECT 1
               FROM convoy.events ev
-                       LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
               WHERE ev.deleted_at IS NULL
                 AND ev.project_id = $1
                 AND (CASE
@@ -99,34 +98,49 @@ SELECT EXISTS(SELECT 1
                 AND (CASE
                          WHEN $6::BOOLEAN THEN ev.source_id = ANY ($7::TEXT[])
                          ELSE true END)
-                -- Endpoint filter
-                AND (CASE
-                         WHEN $8::BOOLEAN THEN ee.endpoint_id = ANY ($9::TEXT[])
-                         ELSE true END)
+                -- Endpoint/owner filter (matches LoadEventsPagedExists)
+                AND (
+                    CASE
+                        WHEN $8::BOOLEAN THEN
+                            EXISTS (SELECT 1
+                                    FROM convoy.events_endpoints ee
+                                             JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+                                    WHERE ee.event_id = ev.id
+                                      AND (CASE WHEN $9::BOOLEAN THEN e.owner_id = $10 ELSE true END)
+                                      AND (CASE
+                                               WHEN $11::BOOLEAN THEN ee.endpoint_id = ANY ($12::TEXT[])
+                                               ELSE true END)
+                            )
+                        ELSE true
+                        END
+                    )
                 -- Broker message ID filter
                 AND (CASE
-                         WHEN $10::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $11
+                         WHEN $13::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $14
                          ELSE true END)
                 AND (CASE
-                         WHEN $12::text = 'DESC' THEN ev.id > $13
-                         WHEN $12::text = 'ASC' THEN ev.id < $13
-                         ELSE ev.id > $13 END))
+                         WHEN $15::text = 'DESC' THEN ev.id > $16
+                         WHEN $15::text = 'ASC' THEN ev.id < $16
+                         ELSE ev.id > $16 END))
 `
 
 type CountPrevEventsExistsParams struct {
-	ProjectID          pgtype.Text
-	HasIdempotencyKey  pgtype.Bool
-	IdempotencyKey     pgtype.Text
-	StartDate          pgtype.Timestamptz
-	EndDate            pgtype.Timestamptz
-	HasSourceIds       pgtype.Bool
-	SourceIds          []string
-	HasEndpointIds     pgtype.Bool
-	EndpointIds        []string
-	HasBrokerMessageID pgtype.Bool
-	BrokerMessageID    pgtype.Text
-	SortOrder          pgtype.Text
-	Cursor             pgtype.Text
+	ProjectID                pgtype.Text
+	HasIdempotencyKey        pgtype.Bool
+	IdempotencyKey           pgtype.Text
+	StartDate                pgtype.Timestamptz
+	EndDate                  pgtype.Timestamptz
+	HasSourceIds             pgtype.Bool
+	SourceIds                []string
+	HasEndpointOrOwnerFilter pgtype.Bool
+	HasOwnerID               pgtype.Bool
+	OwnerID                  pgtype.Text
+	HasEndpointIds           pgtype.Bool
+	EndpointIds              []string
+	HasBrokerMessageID       pgtype.Bool
+	BrokerMessageID          pgtype.Text
+	SortOrder                pgtype.Text
+	Cursor                   pgtype.Text
 }
 
 // Check if there are events before cursor (for HasPrevPage) - EXISTS path
@@ -140,6 +154,9 @@ func (q *Queries) CountPrevEventsExists(ctx context.Context, arg CountPrevEvents
 		arg.EndDate,
 		arg.HasSourceIds,
 		arg.SourceIds,
+		arg.HasEndpointOrOwnerFilter,
+		arg.HasOwnerID,
+		arg.OwnerID,
 		arg.HasEndpointIds,
 		arg.EndpointIds,
 		arg.HasBrokerMessageID,
@@ -295,22 +312,6 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error 
 	return err
 }
 
-const createEventEndpoints = `-- name: CreateEventEndpoints :exec
-INSERT INTO convoy.events_endpoints (event_id, endpoint_id)
-VALUES ($1, $2)
-ON CONFLICT (endpoint_id, event_id) DO NOTHING
-`
-
-type CreateEventEndpointsParams struct {
-	EventID    pgtype.Text
-	EndpointID pgtype.Text
-}
-
-func (q *Queries) CreateEventEndpoints(ctx context.Context, arg CreateEventEndpointsParams) error {
-	_, err := q.db.Exec(ctx, createEventEndpoints, arg.EventID, arg.EndpointID)
-	return err
-}
-
 const exportEvents = `-- name: ExportEvents :many
 SELECT ed.id,
        TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
@@ -460,8 +461,6 @@ SELECT ev.id,
        COALESCE(s.id, '')                AS "source_metadata.id",
        COALESCE(s.name, '')              AS "source_metadata.name"
 FROM convoy.events ev
-         LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-         LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
          LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ev.deleted_at IS NULL
   AND ev.id = ANY ($1::TEXT[])

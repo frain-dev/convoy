@@ -1033,25 +1033,21 @@ func TestPartitionFunctions(t *testing.T) {
 
 	t.Run("PartitionEventsTable", func(t *testing.T) {
 		err := service.PartitionEventsTable(ctx)
-		// May fail if already partitioned, just verify it doesn't panic
-		_ = err
+		require.NoError(t, err)
 	})
 
 	t.Run("UnPartitionEventsTable", func(t *testing.T) {
 		err := service.UnPartitionEventsTable(ctx)
-		// May fail if not partitioned, just verify it doesn't panic
-		_ = err
+		require.NoError(t, err)
 	})
 
 	t.Run("PartitionEventsSearchTable", func(t *testing.T) {
 		err := service.PartitionEventsSearchTable(ctx)
-		// May fail if already partitioned, just verify it doesn't panic
-		_ = err
+		require.NoError(t, err)
 	})
 
 	t.Run("UnPartitionEventsSearchTable", func(t *testing.T) {
 		err := service.UnPartitionEventsSearchTable(ctx)
-		// May fail if not partitioned, just verify it doesn't panic
-		_ = err
+		require.NoError(t, err)
 	})
 }
