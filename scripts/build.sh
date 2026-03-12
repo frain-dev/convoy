@@ -37,9 +37,9 @@ buildConvoy() {
 	VERSION="$(cat ./VERSION 2>/dev/null | tr -d '\n' | tr -d ' ')"
 	LDFLAGS=""
 	if [ -n "$VERSION" ]; then
-		LDFLAGS="-ldflags=-X github.com/frain-dev/convoy.Version=$VERSION"
+		LDFLAGS="-X github.com/frain-dev/convoy.Version=$VERSION"
 	fi
-	go build $LDFLAGS -o convoy ./cmd/*.go
+	go build ${LDFLAGS:+-ldflags="$LDFLAGS"} -o convoy ./cmd/*.go
 }
 
 buildConvoy
