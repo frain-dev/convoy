@@ -329,7 +329,7 @@ func (s *Service) CalculateUsage(ctx context.Context, orgID string, startTime, e
 		s.logger.WithError(err).Error("failed to calculate usage")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
-	usage.Received.Bytes = ingressRow.RawBytes + ingressRow.DataBytes
+	usage.Received.Bytes = ingressRow.RawBytes.Int64 + ingressRow.DataBytes.Int64
 
 	// Calculate egress bytes
 	egressBytes, err := s.repo.CalculateEgressBytes(ctx, repo.CalculateEgressBytesParams{
