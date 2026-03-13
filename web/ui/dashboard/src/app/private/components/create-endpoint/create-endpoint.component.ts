@@ -97,7 +97,7 @@ export class CreateEndpointComponent implements OnInit {
 		name: ['', Validators.required],
 		url: ['', Validators.compose([Validators.required, Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)])],
 		support_email: ['', Validators.email],
-		slack_webhook_url: ['', Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
+		slack_webhook_url: ['', Validators.pattern(`^$|^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
 		secret: [null],
 		http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
 		description: [null],
@@ -446,7 +446,7 @@ export class CreateEndpointComponent implements OnInit {
 			http_timeout: ['http_timeout'],
 			signature: ['advanced_signatures'],
 			rate_limit: ['rate_limit', 'rate_limit_duration'],
-			alert_config: ['support_email', 'slack_webhook_url'],
+			alert_config: [],
 			auth: authType === 'api_key' ? ['authentication.api_key.header_name', 'authentication.api_key.header_value'] : [],
 			mtls: []
 		};

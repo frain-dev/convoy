@@ -167,7 +167,9 @@ const (
         created_at <= $3
         %s
     GROUP BY
-        "data.group_only", "data.index";
+        "data.group_only", "data.index"
+    ORDER BY
+        "data.group_only" ASC;
     `
 
 	fetchEventDeliveries = `

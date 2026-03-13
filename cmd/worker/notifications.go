@@ -16,7 +16,7 @@ import (
 
 // EnqueueCircuitBreakerEmails enqueues notification emails to endpoint support email and project owner.
 // ownerEmail may be empty if unavailable. It is safe to call this with missing emails; those are skipped.
-func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datastore.Project, endpoint *datastore.Endpoint, ownerEmail string) error {
+func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datastore.Project, endpoint *datastore.Endpoint, ownerEmail string, failureRate float64) error {
 	// Endpoint support email
 	if endpoint != nil && endpoint.SupportEmail != "" {
 		emailMsg := &email.Message{
@@ -29,7 +29,7 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datast
 				"target_url":      endpoint.Url,
 				"failure_msg":     "Circuit breaker threshold exceeded",
 				"response_body":   "",
-				"failure_rate":    fmt.Sprintf("%.2f", endpoint.FailureRate),
+				"failure_rate":    fmt.Sprintf("%.2f%%", failureRate),
 				"status_code":     "0",
 				"endpoint_status": "inactive",
 			},
@@ -43,11 +43,11 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datast
 	if ownerEmail != "" {
 		nameParam := project.Name
 		targetURL := ""
-		failureRate := ""
+		failureRateStr := ""
 		if endpoint != nil {
 			nameParam = fmt.Sprintf("%s (%s)", endpoint.Name, project.Name)
 			targetURL = endpoint.Url
-			failureRate = fmt.Sprintf("%.2f", endpoint.FailureRate)
+			failureRateStr = fmt.Sprintf("%.2f", failureRate)
 		}
 
 		emailMsg := &email.Message{
@@ -60,7 +60,7 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datast
 				"target_url":      targetURL,
 				"failure_msg":     "Circuit breaker threshold exceeded",
 				"response_body":   "",
-				"failure_rate":    failureRate,
+				"failure_rate":    failureRateStr,
 				"status_code":     "0",
 				"endpoint_status": "inactive",
 			},

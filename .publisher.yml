@@ -20,6 +20,9 @@ builds:
     goarch:
       - amd64
       - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/frain-dev/convoy.Version=v{{ .Version }}
 
   - id: lib
     skip: true

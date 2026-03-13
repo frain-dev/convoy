@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Build image from PR
-        run: docker build -t convoy:smoke-test -f Dockerfile.dev .
+        run: docker build --build-arg VERSION=smoke-test -t convoy:smoke-test -f Dockerfile.dev .
 
       - name: Run smoke test
         run: ./configs/local/smoke-test.sh
