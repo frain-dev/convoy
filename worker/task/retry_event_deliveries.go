@@ -2,14 +2,15 @@ package task
 
 import (
 	"context"
+	"io"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -42,7 +43,7 @@ func RetryEventDeliveriesWithTracker(db database.Database, eventQueue queue.Queu
 	ctx := context.Background()
 
 	// Initialize repositories and queue once
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
 	var q *redisqueue.RedisQueue
 	q, ok := eventQueue.(*redisqueue.RedisQueue)
 	if !ok {
