@@ -202,3 +202,17 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
+  - queries: ./internal/event_deliveries/queries.sql
+    engine: postgresql
+    database:
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/event_deliveries/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true
+        overrides:
+          - column: "convoy.event_deliveries.delivery_mode"
+            go_type: "string"
