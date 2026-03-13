@@ -23,10 +23,17 @@ UPDATE convoy.batch_retries SET
 WHERE id = @id AND project_id = @project_id;
 
 -- name: FindBatchRetryByID :one
-SELECT * FROM convoy.batch_retries WHERE id = @id;
+SELECT
+    id, project_id, status, total_events, processed_events, failed_events,
+    filter, created_at, updated_at, completed_at, error
+FROM convoy.batch_retries
+WHERE id = @id;
 
 -- name: FindActiveBatchRetry :one
-SELECT * FROM convoy.batch_retries
+SELECT
+    id, project_id, status, total_events, processed_events, failed_events,
+    filter, created_at, updated_at, completed_at, error
+FROM convoy.batch_retries
 WHERE project_id = @project_id
 AND status IN (@status1, @status2)
 ORDER BY created_at DESC

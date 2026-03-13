@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 )
 
 // TestSignatureVersionSerialization tests that signature versions are correctly
@@ -226,22 +227,22 @@ func TestPgTextToSliceEmptyHandling(t *testing.T) {
 	}{
 		{
 			name:     "valid_non_empty",
-			input:    pgtype.Text{String: "a,b,c", Valid: true},
+			input:    common.StringToPgText("a,b,c"),
 			expected: []string{"a", "b", "c"},
 		},
 		{
 			name:     "valid_empty_string",
-			input:    pgtype.Text{String: "", Valid: true},
+			input:    common.StringToPgText(""),
 			expected: []string{},
 		},
 		{
 			name:     "invalid_null",
-			input:    pgtype.Text{String: "", Valid: false},
+			input:    common.StringToPgTextNullable(""),
 			expected: []string{},
 		},
 		{
 			name:     "single_value",
-			input:    pgtype.Text{String: "single", Valid: true},
+			input:    common.StringToPgText("single"),
 			expected: []string{"single"},
 		},
 	}
@@ -264,22 +265,22 @@ func TestSliceToPgTextConversion(t *testing.T) {
 		{
 			name:     "non_empty_slice",
 			input:    []string{"a", "b", "c"},
-			expected: pgtype.Text{String: "a,b,c", Valid: true},
+			expected: common.StringToPgText("a,b,c"),
 		},
 		{
 			name:     "empty_slice",
 			input:    []string{},
-			expected: pgtype.Text{String: "", Valid: false},
+			expected: common.StringToPgTextNullable(""),
 		},
 		{
 			name:     "nil_slice",
 			input:    nil,
-			expected: pgtype.Text{String: "", Valid: false},
+			expected: common.StringToPgTextNullable(""),
 		},
 		{
 			name:     "single_value",
 			input:    []string{"single"},
-			expected: pgtype.Text{String: "single", Valid: true},
+			expected: common.StringToPgText("single"),
 		},
 	}
 

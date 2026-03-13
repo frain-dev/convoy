@@ -38,27 +38,53 @@ func New(logger log.StdLogger, db database.Database) *Service {
 }
 
 // rowToBatchRetry converts an SQLc-generated row struct to datastore.BatchRetry
-func rowToBatchRetry(row repo.ConvoyBatchRetry) (*datastore.BatchRetry, error) {
-	filter, err := common.JSONBToRetryFilter(row.Filter)
+func rowToBatchRetry(row interface{}) (*datastore.BatchRetry, error) {
+	var (
+		id, projectID, status                      string
+		totalEvents, processedEvents, failedEvents int32
+		filter                                     []byte
+		createdAt, updatedAt, completedAt          pgtype.Timestamptz
+		errorMsg                                   pgtype.Text
+	)
+
+	switch r := row.(type) {
+	case repo.FindBatchRetryByIDRow:
+		id, projectID, status = r.ID, r.ProjectID, r.Status
+		totalEvents, processedEvents, failedEvents = r.TotalEvents, r.ProcessedEvents, r.FailedEvents
+		filter = r.Filter
+		createdAt, updatedAt, completedAt = r.CreatedAt, r.UpdatedAt, r.CompletedAt
+		errorMsg = r.Error
+	case repo.FindActiveBatchRetryRow:
+		id, projectID, status = r.ID, r.ProjectID, r.Status
+		totalEvents, processedEvents, failedEvents = r.TotalEvents, r.ProcessedEvents, r.FailedEvents
+		filter = r.Filter
+		createdAt, updatedAt, completedAt = r.CreatedAt, r.UpdatedAt, r.CompletedAt
+		errorMsg = r.Error
+	default:
+		return nil, fmt.Errorf("unsupported row type: %T", row)
+	}
+
+	retryFilter, err := common.JSONBToRetryFilter(filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse filter: %w", err)
 	}
 
 	return &datastore.BatchRetry{
-		ID:              row.ID,
-		ProjectID:       row.ProjectID,
-		Status:          datastore.BatchRetryStatus(row.Status),
-		TotalEvents:     int(row.TotalEvents),
-		ProcessedEvents: int(row.ProcessedEvents),
-		FailedEvents:    int(row.FailedEvents),
-		Filter:          filter,
-		CreatedAt:       row.CreatedAt.Time,
-		UpdatedAt:       row.UpdatedAt.Time,
-		CompletedAt:     common.PgTimestamptzToNullTime(row.CompletedAt),
-		Error:           row.Error.String,
+		ID:              id,
+		ProjectID:       projectID,
+		Status:          datastore.BatchRetryStatus(status),
+		TotalEvents:     int(totalEvents),
+		ProcessedEvents: int(processedEvents),
+		FailedEvents:    int(failedEvents),
+		Filter:          retryFilter,
+		CreatedAt:       createdAt.Time,
+		UpdatedAt:       updatedAt.Time,
+		CompletedAt:     common.PgTimestamptzToNullTime(completedAt),
+		Error:           errorMsg.String,
 	}, nil
 }
 
+// Legacy rowToBatchRetry - keeping for reference but not used
 // ============================================================================
 // Service Implementation
 // ============================================================================
@@ -78,17 +104,17 @@ func (s *Service) CreateBatchRetry(ctx context.Context, batchRetry *datastore.Ba
 	}
 
 	err = s.repo.CreateBatchRetry(ctx, repo.CreateBatchRetryParams{
-		ID:              batchRetry.ID,
-		ProjectID:       batchRetry.ProjectID,
-		Status:          string(batchRetry.Status),
-		TotalEvents:     int32(batchRetry.TotalEvents),
-		ProcessedEvents: int32(batchRetry.ProcessedEvents),
-		FailedEvents:    int32(batchRetry.FailedEvents),
+		ID:              common.StringToPgText(batchRetry.ID),
+		ProjectID:       common.StringToPgText(batchRetry.ProjectID),
+		Status:          common.StringToPgText(string(batchRetry.Status)),
+		TotalEvents:     pgtype.Int4{Int32: int32(batchRetry.TotalEvents), Valid: true},
+		ProcessedEvents: pgtype.Int4{Int32: int32(batchRetry.ProcessedEvents), Valid: true},
+		FailedEvents:    pgtype.Int4{Int32: int32(batchRetry.FailedEvents), Valid: true},
 		Filter:          filterBytes,
 		CreatedAt:       pgtype.Timestamptz{Time: batchRetry.CreatedAt, Valid: true},
 		UpdatedAt:       pgtype.Timestamptz{Time: batchRetry.UpdatedAt, Valid: true},
 		CompletedAt:     common.NullTimeToPgTimestamptz(batchRetry.CompletedAt),
-		Error:           common.StringToPgText(batchRetry.Error),
+		Error:           common.StringToPgTextNullable(batchRetry.Error),
 	})
 
 	if err != nil {
@@ -116,16 +142,16 @@ func (s *Service) UpdateBatchRetry(ctx context.Context, batchRetry *datastore.Ba
 	}
 
 	result, err := s.repo.UpdateBatchRetry(ctx, repo.UpdateBatchRetryParams{
-		ID:              batchRetry.ID,
-		ProjectID:       batchRetry.ProjectID,
-		Status:          string(batchRetry.Status),
-		TotalEvents:     int32(batchRetry.TotalEvents),
-		ProcessedEvents: int32(batchRetry.ProcessedEvents),
-		FailedEvents:    int32(batchRetry.FailedEvents),
+		ID:              common.StringToPgText(batchRetry.ID),
+		ProjectID:       common.StringToPgText(batchRetry.ProjectID),
+		Status:          common.StringToPgText(string(batchRetry.Status)),
+		TotalEvents:     pgtype.Int4{Int32: int32(batchRetry.TotalEvents), Valid: true},
+		ProcessedEvents: pgtype.Int4{Int32: int32(batchRetry.ProcessedEvents), Valid: true},
+		FailedEvents:    pgtype.Int4{Int32: int32(batchRetry.FailedEvents), Valid: true},
 		Filter:          filterBytes,
 		UpdatedAt:       pgtype.Timestamptz{Time: batchRetry.UpdatedAt, Valid: true},
 		CompletedAt:     common.NullTimeToPgTimestamptz(batchRetry.CompletedAt),
-		Error:           common.StringToPgText(batchRetry.Error),
+		Error:           common.StringToPgTextNullable(batchRetry.Error),
 	})
 
 	if err != nil {
@@ -144,7 +170,7 @@ func (s *Service) UpdateBatchRetry(ctx context.Context, batchRetry *datastore.Ba
 
 // FindBatchRetryByID retrieves a batch retry by its ID
 func (s *Service) FindBatchRetryByID(ctx context.Context, id string) (*datastore.BatchRetry, error) {
-	row, err := s.repo.FindBatchRetryByID(ctx, id)
+	row, err := s.repo.FindBatchRetryByID(ctx, common.StringToPgText(id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrBatchRetryNotFound
@@ -161,9 +187,9 @@ func (s *Service) FindBatchRetryByID(ctx context.Context, id string) (*datastore
 // FindActiveBatchRetry finds an active batch retry for a project (pending or processing status)
 func (s *Service) FindActiveBatchRetry(ctx context.Context, projectID string) (*datastore.BatchRetry, error) {
 	row, err := s.repo.FindActiveBatchRetry(ctx, repo.FindActiveBatchRetryParams{
-		ProjectID: projectID,
-		Status1:   string(datastore.BatchRetryStatusPending),
-		Status2:   string(datastore.BatchRetryStatusProcessing),
+		ProjectID: common.StringToPgText(projectID),
+		Status1:   common.StringToPgText(string(datastore.BatchRetryStatusPending)),
+		Status2:   common.StringToPgText(string(datastore.BatchRetryStatusProcessing)),
 	})
 
 	if err != nil {

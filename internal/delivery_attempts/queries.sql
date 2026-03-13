@@ -56,7 +56,11 @@ WITH att AS (
     ORDER BY created_at DESC
     LIMIT 10
 )
-SELECT * FROM att ORDER BY created_at ASC;
+SELECT
+    id, url, method, api_version, endpoint_id, event_delivery_id, project_id,
+    ip_address, request_http_header, response_http_header, http_status,
+    response_data, error, status, created_at, updated_at, deleted_at
+FROM att ORDER BY created_at ASC;
 
 -- name: SoftDeleteProjectDeliveryAttempts :execresult
 UPDATE convoy.delivery_attempts

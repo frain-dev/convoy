@@ -546,9 +546,9 @@ func AssertEventCreated(t *testing.T, db *postgres.Postgres, ctx context.Context
 	for i := 0; i < 15; i++ {
 		// Query events directly from the events table
 		query := `
-			SELECT id, project_id, event_type, source_id, headers, raw, data,
+			SELECT id, project_id, event_type, COALESCE(source_id, '') as source_id, headers, raw, data,
 				   created_at, updated_at, deleted_at, acknowledged_at,
-				   idempotency_key, url_query_params, is_duplicate_event
+				   COALESCE(idempotency_key, '') as idempotency_key, COALESCE(url_query_params, '') as url_query_params, is_duplicate_event
 			FROM convoy.events
 			WHERE project_id = $1
 			  AND event_type = $2
@@ -773,9 +773,9 @@ func AssertMultipleEventsCreated(t *testing.T, db *postgres.Postgres, ctx contex
 
 	for i := 0; i < 30; i++ {
 		query := `
-			SELECT id, project_id, event_type, source_id, headers, raw, data,
+			SELECT id, project_id, event_type, COALESCE(source_id, '') as source_id, headers, raw, data,
 				   created_at, updated_at, deleted_at, acknowledged_at,
-				   idempotency_key, url_query_params, is_duplicate_event
+				   COALESCE(idempotency_key, '') as idempotency_key, COALESCE(url_query_params, '') as url_query_params, is_duplicate_event
 			FROM convoy.events
 			WHERE project_id = $1
 			  AND event_type = $2
