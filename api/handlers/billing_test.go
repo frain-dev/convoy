@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/pkg/log"
 )
@@ -107,4 +109,27 @@ func TestIsBillingOrgNotFound(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestFormatUsageResponse(t *testing.T) {
+	now := time.Now()
+	usage := &datastore.OrganisationUsage{
+		OrganisationID: "org-123",
+		Period:         "2025-03",
+		Received:       datastore.UsageMetrics{Volume: 100, Bytes: 1024},
+		Sent:           datastore.UsageMetrics{Volume: 50, Bytes: 512},
+		CreatedAt:      now,
+	}
+	resp := formatUsageResponse(usage)
+	require.Equal(t, "org-123", resp["organisation_id"])
+	require.Equal(t, "2025-03", resp["period"])
+	require.Equal(t, now, resp["created_at"])
+	received, ok := resp["received"].(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, int64(100), received["volume"])
+	require.Equal(t, int64(1024), received["bytes"])
+	sent, ok := resp["sent"].(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, int64(50), sent["volume"])
+	require.Equal(t, int64(512), sent["bytes"])
 }
