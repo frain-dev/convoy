@@ -234,10 +234,13 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 
 // scheduleUsageCachePopulate runs populateUsageCache with singleflight so concurrent
 // requests for the same org+period coalesce into one DB call.
+// Background work outlives the request; use a fresh context with timeout.
 func (h *BillingHandler) scheduleUsageCachePopulate(orgID string, startOfMonth, endOfMonth time.Time, period string) {
 	key := orgID + ":" + period
 	_, _, _ = usageCachePopulateGroup.Do(key, func() (interface{}, error) {
-		h.populateUsageCache(context.Background(), orgID, startOfMonth, endOfMonth, period)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		h.populateUsageCache(ctx, orgID, startOfMonth, endOfMonth, period)
 		return nil, nil
 	})
 }
