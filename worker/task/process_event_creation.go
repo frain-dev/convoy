@@ -143,13 +143,11 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 		var isDuplicate bool
 		if len(event.IdempotencyKey) > 0 {
-			events, err := args.eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
+			isDuplicate, err = args.eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
 			if err != nil {
 				args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
 				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 			}
-
-			isDuplicate = len(events) > 0
 		}
 		event.IsDuplicateEvent = isDuplicate
 
@@ -701,12 +699,11 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 ) (*datastore.Event, error) {
 	var isDuplicate bool
 	if !util.IsStringEmpty(eventParams.IdempotencyKey) {
-		events, err := eventRepo.FindEventsByIdempotencyKey(ctx, project.UID, eventParams.IdempotencyKey)
+		var err error
+		isDuplicate, err = eventRepo.FindEventsByIdempotencyKey(ctx, project.UID, eventParams.IdempotencyKey)
 		if err != nil {
 			return nil, err
 		}
-
-		isDuplicate = len(events) > 0
 	}
 
 	if project == nil {

@@ -50,17 +50,23 @@ func rowToOrganisationInvite(row interface{}) datastore.OrganisationInvite {
 	case repo.FetchOrganisationInviteByIDRow:
 		id, organisationID, inviteeEmail, token = r.ID, r.OrganisationID, r.InviteeEmail, r.Token
 		status = r.Status
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
+		roleType = r.RoleType
+		roleProject = common.PgTextToString(r.RoleProject)
+		roleEndpoint = common.PgTextToString(r.RoleEndpoint)
 		createdAt, updatedAt, expiresAt = r.CreatedAt, r.UpdatedAt, r.ExpiresAt
 	case repo.FetchOrganisationInviteByTokenRow:
 		id, organisationID, inviteeEmail, token = r.ID, r.OrganisationID, r.InviteeEmail, r.Token
 		status = r.Status
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
+		roleType = r.RoleType
+		roleProject = common.PgTextToString(r.RoleProject)
+		roleEndpoint = common.PgTextToString(r.RoleEndpoint)
 		createdAt, updatedAt, expiresAt = r.CreatedAt, r.UpdatedAt, r.ExpiresAt
 	case repo.FetchOrganisationInvitesPaginatedRow:
 		id, organisationID, inviteeEmail = r.ID, r.OrganisationID, r.InviteeEmail
 		status = r.Status
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
+		roleType = r.RoleType
+		roleProject = common.PgTextToString(r.RoleProject)
+		roleEndpoint = common.PgTextToString(r.RoleEndpoint)
 		createdAt, updatedAt, expiresAt = r.CreatedAt, r.UpdatedAt, r.ExpiresAt
 		// Note: Token is not included in paginated results for security
 		token = ""
@@ -92,17 +98,17 @@ func (s *Service) CreateOrganisationInvite(ctx context.Context, iv *datastore.Or
 	}
 
 	// Convert role to database params
-	roleTypePg, roleProject, roleEndpoint := common.RoleToParams(iv.Role)
+	roleTypePg, roleProjectPg, roleEndpointPg := common.RoleToParams(iv.Role)
 
 	err := s.repo.CreateOrganisationInvite(ctx, repo.CreateOrganisationInviteParams{
-		ID:             iv.UID,
-		OrganisationID: iv.OrganisationID,
-		InviteeEmail:   iv.InviteeEmail,
-		Token:          iv.Token,
-		RoleType:       roleTypePg.String,
-		RoleProject:    roleProject,
-		RoleEndpoint:   roleEndpoint,
-		Status:         string(iv.Status),
+		ID:             common.StringToPgText(iv.UID),
+		OrganisationID: common.StringToPgText(iv.OrganisationID),
+		InviteeEmail:   common.StringToPgText(iv.InviteeEmail),
+		Token:          common.StringToPgText(iv.Token),
+		RoleType:       roleTypePg,
+		RoleProject:    roleProjectPg,
+		RoleEndpoint:   roleEndpointPg,
+		Status:         common.StringToPgText(string(iv.Status)),
 		ExpiresAt:      pgtype.Timestamptz{Time: iv.ExpiresAt, Valid: true},
 	})
 
@@ -121,14 +127,14 @@ func (s *Service) UpdateOrganisationInvite(ctx context.Context, iv *datastore.Or
 	}
 
 	// Convert role to database params
-	roleTypePg, roleProject, roleEndpoint := common.RoleToParams(iv.Role)
+	roleTypePg, roleProjectPg, roleEndpointPg := common.RoleToParams(iv.Role)
 
 	err := s.repo.UpdateOrganisationInvite(ctx, repo.UpdateOrganisationInviteParams{
-		ID:           iv.UID,
-		RoleType:     roleTypePg.String,
-		RoleProject:  roleProject,
-		RoleEndpoint: roleEndpoint,
-		Status:       string(iv.Status),
+		ID:           common.StringToPgText(iv.UID),
+		RoleType:     roleTypePg,
+		RoleProject:  roleProjectPg,
+		RoleEndpoint: roleEndpointPg,
+		Status:       common.StringToPgText(string(iv.Status)),
 		ExpiresAt:    pgtype.Timestamptz{Time: iv.ExpiresAt, Valid: true},
 		DeletedAt:    common.NullTimeToPgTimestamptz(iv.DeletedAt),
 	})
@@ -143,7 +149,7 @@ func (s *Service) UpdateOrganisationInvite(ctx context.Context, iv *datastore.Or
 
 // DeleteOrganisationInvite soft deletes an organisation invite by ID
 func (s *Service) DeleteOrganisationInvite(ctx context.Context, uid string) error {
-	err := s.repo.DeleteOrganisationInvite(ctx, uid)
+	err := s.repo.DeleteOrganisationInvite(ctx, common.StringToPgText(uid))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to delete organisation invite")
 		return util.NewServiceError(http.StatusInternalServerError, err)
@@ -154,7 +160,7 @@ func (s *Service) DeleteOrganisationInvite(ctx context.Context, uid string) erro
 
 // FetchOrganisationInviteByID retrieves an organisation invite by its ID
 func (s *Service) FetchOrganisationInviteByID(ctx context.Context, uid string) (*datastore.OrganisationInvite, error) {
-	row, err := s.repo.FetchOrganisationInviteByID(ctx, uid)
+	row, err := s.repo.FetchOrganisationInviteByID(ctx, common.StringToPgText(uid))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgInviteNotFound
@@ -169,7 +175,7 @@ func (s *Service) FetchOrganisationInviteByID(ctx context.Context, uid string) (
 
 // FetchOrganisationInviteByToken retrieves an organisation invite by its token
 func (s *Service) FetchOrganisationInviteByToken(ctx context.Context, token string) (*datastore.OrganisationInvite, error) {
-	row, err := s.repo.FetchOrganisationInviteByToken(ctx, token)
+	row, err := s.repo.FetchOrganisationInviteByToken(ctx, common.StringToPgText(token))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgInviteNotFound
@@ -192,11 +198,11 @@ func (s *Service) LoadOrganisationsInvitesPaged(ctx context.Context, orgID strin
 
 	// Query organisation invites with pagination
 	rows, err := s.repo.FetchOrganisationInvitesPaginated(ctx, repo.FetchOrganisationInvitesPaginatedParams{
-		Direction: direction,
-		OrgID:     orgID,
-		Status:    string(inviteStatus),
-		Cursor:    pageable.Cursor(),
-		LimitVal:  int64(pageable.Limit()),
+		Direction:      common.StringToPgText(direction),
+		OrganisationID: common.StringToPgText(orgID),
+		Status:         common.StringToPgText(string(inviteStatus)),
+		Cursor:         common.StringToPgText(pageable.Cursor()),
+		LimitVal:       pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to load organisation invites paged")
@@ -226,8 +232,8 @@ func (s *Service) LoadOrganisationsInvitesPaged(ctx context.Context, orgID strin
 	if len(invites) > 0 {
 		first := invites[0]
 		count, err := s.repo.CountPrevOrganisationInvites(ctx, repo.CountPrevOrganisationInvitesParams{
-			OrgID:  orgID,
-			Cursor: first.UID,
+			OrgID:  common.StringToPgText(orgID),
+			Cursor: common.StringToPgText(first.UID),
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to count prev organisation invites")

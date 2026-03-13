@@ -92,7 +92,9 @@ WITH filtered_meta_events AS (
     LIMIT @limit_val
 )
 -- Final select: reverse order for backward pagination to maintain DESC ordering
-SELECT * FROM filtered_meta_events
+SELECT
+    id, project_id, event_type, metadata, attempt, status, created_at, updated_at
+FROM filtered_meta_events
 ORDER BY
     CASE WHEN @direction::text = 'prev' THEN id END DESC,
     CASE WHEN @direction::text = 'next' THEN id END DESC;

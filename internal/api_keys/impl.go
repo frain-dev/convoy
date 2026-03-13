@@ -52,32 +52,32 @@ func (s *Service) rowToAPIKey(row interface{}) datastore.APIKey {
 	switch r := row.(type) {
 	case repo.FindAPIKeyByIDRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FindAPIKeyByMaskIDRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FindAPIKeyByHashRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FindAPIKeyByProjectIDRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FetchAPIKeysPaginatedRow:
 		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
-		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
-		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		roleType, roleProject, roleEndpoint = r.RoleType.String, r.RoleProject.String, r.RoleEndpoint.String
+		hash, salt, userID = r.Hash, r.Salt, r.UserID.String
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	default:
@@ -121,15 +121,15 @@ func (s *Service) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 
 	// Create API key
 	err := s.repo.CreateAPIKey(ctx, repo.CreateAPIKeyParams{
-		ID:           apiKey.UID,
-		Name:         apiKey.Name,
-		KeyType:      string(apiKey.Type),
-		MaskID:       apiKey.MaskID,
+		ID:           common.StringToPgText(apiKey.UID),
+		Name:         common.StringToPgText(apiKey.Name),
+		KeyType:      common.StringToPgText(string(apiKey.Type)),
+		MaskID:       common.StringToPgText(apiKey.MaskID),
 		RoleType:     roleType,
 		RoleProject:  roleProject,
 		RoleEndpoint: roleEndpoint,
-		Hash:         apiKey.Hash,
-		Salt:         apiKey.Salt,
+		Hash:         common.StringToPgText(apiKey.Hash),
+		Salt:         common.StringToPgText(apiKey.Salt),
 		UserID:       userID,
 		ExpiresAt:    common.NullTimeToPgTimestamptz(apiKey.ExpiresAt),
 	})
@@ -153,8 +153,8 @@ func (s *Service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 
 	// Update API key
 	err := s.repo.UpdateAPIKey(ctx, repo.UpdateAPIKeyParams{
-		ID:           apiKey.UID,
-		Name:         apiKey.Name,
+		ID:           common.StringToPgText(apiKey.UID),
+		Name:         common.StringToPgText(apiKey.Name),
 		RoleType:     roleType,
 		RoleProject:  roleProject,
 		RoleEndpoint: roleEndpoint,
@@ -170,7 +170,7 @@ func (s *Service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 
 // GetAPIKeyByID retrieves an API key by its ID
 func (s *Service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByID(ctx, id)
+	row, err := s.repo.FindAPIKeyByID(ctx, common.StringToPgText(id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -186,7 +186,7 @@ func (s *Service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIK
 // GetAPIKeyByMaskID retrieves an API key by its mask ID
 // CRITICAL: This method is used for API key authentication in NativeRealm
 func (s *Service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByMaskID(ctx, maskID)
+	row, err := s.repo.FindAPIKeyByMaskID(ctx, common.StringToPgText(maskID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -201,7 +201,7 @@ func (s *Service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datast
 
 // GetAPIKeyByHash retrieves an API key by its hash
 func (s *Service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByHash(ctx, hash)
+	row, err := s.repo.FindAPIKeyByHash(ctx, common.StringToPgText(hash))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -216,7 +216,7 @@ func (s *Service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.
 
 // GetAPIKeyByProjectID retrieves an API key by its project ID
 func (s *Service) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
-	row, err := s.repo.FindAPIKeyByProjectID(ctx, common.StringToPgTextFilter(projectID))
+	row, err := s.repo.FindAPIKeyByProjectID(ctx, common.StringToPgText(projectID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -256,15 +256,15 @@ func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Filter
 	hasEndpointIdsFilter := len(filter.EndpointIDs) > 0
 
 	// Convert filter strings to pgtype.Text
-	projectID := common.StringToPgTextFilter(filter.ProjectID)
-	endpointID := common.StringToPgTextFilter(filter.EndpointID)
-	userID := common.StringToPgTextFilter(filter.UserID)
-	keyType := common.StringToPgTextFilter(string(filter.KeyType))
+	projectID := common.StringToPgText(filter.ProjectID)
+	endpointID := common.StringToPgText(filter.EndpointID)
+	userID := common.StringToPgText(filter.UserID)
+	keyType := common.StringToPgText(string(filter.KeyType))
 
 	// Query with unified pagination
 	rows, err := s.repo.FetchAPIKeysPaginated(ctx, repo.FetchAPIKeysPaginatedParams{
 		Direction:      direction,
-		Cursor:         common.StringToPgTextFilter(pageable.Cursor()),
+		Cursor:         common.StringToPgText(pageable.Cursor()),
 		ProjectID:      projectID,
 		EndpointID:     endpointID,
 		UserID:         userID,
@@ -303,12 +303,12 @@ func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Filter
 	var prevRowCount datastore.PrevRowCount
 	if len(apiKeys) > 0 {
 		count, err2 := s.repo.CountPrevAPIKeys(ctx, repo.CountPrevAPIKeysParams{
-			Cursor:         first.UID,
+			Cursor:         common.StringToPgText(first.UID),
 			ProjectID:      projectID,
 			EndpointID:     endpointID,
 			UserID:         userID,
 			KeyType:        keyType,
-			HasEndpointIds: hasEndpointIdsFilter,
+			HasEndpointIds: pgtype.Bool{Bool: hasEndpointIdsFilter, Valid: true},
 			EndpointIds:    filter.EndpointIDs,
 		})
 		if err2 != nil {

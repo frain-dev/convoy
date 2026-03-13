@@ -56,7 +56,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), "project-id-1", "idem-key-1").Times(1).Return(nil, nil)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), "project-id-1", "idem-key-1").Times(1).Return(false, nil)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)

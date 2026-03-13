@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -35,7 +36,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 
@@ -148,7 +149,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 
@@ -221,6 +222,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	// Verify events export content
 	eventsData := readExportFile(t, eventsFiles[0])
 	var events []map[string]interface{}
+
 	err = json.Unmarshal(eventsData, &events)
 	require.NoError(t, err)
 	require.Len(t, events, 1, "should have 1 old event exported")
@@ -263,7 +265,7 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 	endpointRepo := postgres.NewEndpointRepo(db)
@@ -399,7 +401,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 
@@ -500,7 +502,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	db := env.App.DB
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 

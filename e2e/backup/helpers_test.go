@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -153,7 +154,7 @@ func seedEventWithTimestamp(t *testing.T, db database.Database, ctx context.Cont
 	// Create a source first (required for events)
 	source := seedSource(t, db, ctx, project)
 
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 
 	event := &datastore.Event{
 		UID:              ulid.Make().String(),

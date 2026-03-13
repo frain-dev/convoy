@@ -25,24 +25,24 @@ func isStringEmpty(s string) bool {
 // String to pgtype.Text conversions
 // ============================================================================
 
-// StringToPgText converts a string to pgtype.Text.
+// StringToPgTextNullable converts a string to pgtype.Text.
 // Empty strings are represented as invalid (NULL in database).
-func StringToPgText(s string) pgtype.Text {
+func StringToPgTextNullable(s string) pgtype.Text {
 	if isStringEmpty(s) {
 		return pgtype.Text{String: "", Valid: false}
 	}
 	return pgtype.Text{String: s, Valid: true}
 }
 
-// StringToPgTextFilter converts a string to pgtype.Text for filtering.
-// Unlike StringToPgText, empty strings are still valid (for filter queries).
-func StringToPgTextFilter(s string) pgtype.Text {
+// StringToPgText converts a string to pgtype.Text for filtering.
+// Unlike StringToPgTextNullable, empty strings are still valid (for filter queries).
+func StringToPgText(s string) pgtype.Text {
 	return pgtype.Text{String: s, Valid: true}
 }
 
-// StringPtrToPgText converts a string pointer to pgtype.Text.
+// StringPtrToPgTextNullable converts a string pointer to pgtype.Text.
 // Nil pointers or empty strings are represented as invalid (NULL in database).
-func StringPtrToPgText(s *string) pgtype.Text {
+func StringPtrToPgTextNullable(s *string) pgtype.Text {
 	if s == nil || isStringEmpty(*s) {
 		return pgtype.Text{String: "", Valid: false}
 	}
@@ -89,6 +89,18 @@ func PgTimestamptzToNullTime(t pgtype.Timestamptz) null.Time {
 // NullTimeToPgTimestamptz converts null.Time to pgtype.Timestamptz.
 func NullTimeToPgTimestamptz(t null.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: t.Time, Valid: t.Valid}
+}
+
+// ============================================================================
+// Int conversions
+// ============================================================================
+
+// PgInt8ToInt64 converts int8 from pgx to int64.
+func PgInt8ToInt64(t pgtype.Int8) int64 {
+	if t.Valid {
+		return t.Int64
+	}
+	return 0
 }
 
 // ============================================================================

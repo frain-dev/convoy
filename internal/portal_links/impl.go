@@ -22,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/portal_links/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -130,9 +131,9 @@ func (s *Service) updateEndpointOwnerIDs(ctx context.Context, qtx *repo.Queries,
 		// If endpoint's owner_id is blank, set it to portal link's owner_id
 		if util.IsStringEmpty(endpoint.OwnerID) {
 			err = qtx.UpdateEndpointOwnerID(ctx, repo.UpdateEndpointOwnerIDParams{
-				ID:        endpointID,
-				ProjectID: projectID,
-				OwnerID:   pgtype.Text{String: portalOwnerID, Valid: true},
+				ID:        common.StringToPgText(endpointID),
+				ProjectID: common.StringToPgText(projectID),
+				OwnerID:   common.StringToPgText(portalOwnerID),
 			})
 			if err != nil {
 				return &ServiceError{ErrMsg: fmt.Sprintf("failed to update endpoint %s owner_id", endpointID), Err: err}
@@ -143,8 +144,8 @@ func (s *Service) updateEndpointOwnerIDs(ctx context.Context, qtx *repo.Queries,
 
 		// Link endpoint to portal link
 		err = qtx.CreatePortalLinkEndpoint(ctx, repo.CreatePortalLinkEndpointParams{
-			PortalLinkID: portalLinkID,
-			EndpointID:   endpointID,
+			PortalLinkID: common.StringToPgText(portalLinkID),
+			EndpointID:   common.StringToPgText(endpointID),
 		})
 		if err != nil {
 			return &ServiceError{ErrMsg: "failed to link endpoint to portal link", Err: err}
@@ -176,12 +177,12 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 
 	// Create portal link
 	err = qtx.CreatePortalLink(ctx, repo.CreatePortalLinkParams{
-		ID:                uid,
-		ProjectID:         projectId,
-		Name:              request.Name,
-		Token:             token,
-		OwnerID:           pgtype.Text{String: request.OwnerID, Valid: true},
-		AuthType:          repo.ConvoyPortalAuthTypes(request.AuthType),
+		ID:                common.StringToPgText(uid),
+		ProjectID:         common.StringToPgText(projectId),
+		Name:              common.StringToPgText(request.Name),
+		Token:             common.StringToPgText(token),
+		OwnerID:           common.StringToPgText(request.OwnerID),
+		AuthType:          request.AuthType,
 		CanManageEndpoint: pgtype.Bool{Bool: request.CanManageEndpoint, Valid: true},
 		Endpoints:         stringsToPgText(request.Endpoints),
 	})
@@ -205,8 +206,8 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 
 		for _, endpoint := range endpoints {
 			err2 = qtx.CreatePortalLinkEndpoint(ctx, repo.CreatePortalLinkEndpointParams{
-				PortalLinkID: uid,
-				EndpointID:   endpoint.UID,
+				PortalLinkID: common.StringToPgText(uid),
+				EndpointID:   common.StringToPgText(endpoint.UID),
 			})
 			if err2 != nil {
 				return nil, &ServiceError{ErrMsg: "failed to link endpoint to portal link", Err: err2}
@@ -225,11 +226,11 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 
 		// Create a portal link auth token
 		err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
-			ID:             portalToken.UID,
-			PortalLinkID:   uid,
-			TokenMaskID:    pgtype.Text{String: portalToken.MaskId, Valid: true},
-			TokenHash:      pgtype.Text{String: portalToken.Hash, Valid: true},
-			TokenSalt:      pgtype.Text{String: portalToken.Salt, Valid: true},
+			ID:             common.StringToPgText(portalToken.UID),
+			PortalLinkID:   common.StringToPgText(uid),
+			TokenMaskID:    common.StringToPgText(portalToken.MaskId),
+			TokenHash:      common.StringToPgText(portalToken.Hash),
+			TokenSalt:      common.StringToPgText(portalToken.Salt),
 			TokenExpiresAt: pgtype.Timestamptz{Time: portalToken.ExpiresAt.Time, Valid: portalToken.ExpiresAt.Valid},
 		})
 		if err != nil {
@@ -281,13 +282,13 @@ func (s *Service) UpdatePortalLink(ctx context.Context, projectID string, portal
 
 	// Update portal link
 	err = qtx.UpdatePortalLink(ctx, repo.UpdatePortalLinkParams{
-		ID:                portalLink.UID,
-		ProjectID:         projectID,
+		ID:                common.StringToPgText(portalLink.UID),
+		ProjectID:         common.StringToPgText(projectID),
 		Endpoints:         stringsToPgText(request.Endpoints),
-		OwnerID:           pgtype.Text{String: request.OwnerID, Valid: true},
+		OwnerID:           common.StringToPgText(request.OwnerID),
 		CanManageEndpoint: pgtype.Bool{Bool: request.CanManageEndpoint, Valid: true},
-		Name:              request.Name,
-		AuthType:          repo.ConvoyPortalAuthTypes(request.AuthType),
+		Name:              common.StringToPgText(request.Name),
+		AuthType:          request.AuthType,
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to update portal link")
@@ -296,8 +297,8 @@ func (s *Service) UpdatePortalLink(ctx context.Context, projectID string, portal
 
 	// Delete existing endpoint links
 	err = qtx.DeletePortalLinkEndpoints(ctx, repo.DeletePortalLinkEndpointsParams{
-		PortalLinkID: portalLink.UID,
-		EndpointID:   "",
+		PortalLinkID: common.StringToPgText(portalLink.UID),
+		EndpointID:   common.StringToPgTextNullable(""),
 	})
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: "failed to delete portal link endpoints", Err: err}
@@ -317,8 +318,8 @@ func (s *Service) UpdatePortalLink(ctx context.Context, projectID string, portal
 
 		for _, endpoint := range endpoints {
 			err2 = qtx.CreatePortalLinkEndpoint(ctx, repo.CreatePortalLinkEndpointParams{
-				PortalLinkID: portalLink.UID,
-				EndpointID:   endpoint.UID,
+				PortalLinkID: common.StringToPgText(portalLink.UID),
+				EndpointID:   common.StringToPgText(endpoint.UID),
 			})
 			if err2 != nil {
 				return nil, &ServiceError{ErrMsg: "failed to link endpoint to portal link", Err: err2}
@@ -348,8 +349,8 @@ func (s *Service) UpdatePortalLink(ctx context.Context, projectID string, portal
 
 func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID string) (*datastore.PortalLink, error) {
 	row, err := s.repo.FetchPortalLinkById(ctx, repo.FetchPortalLinkByIdParams{
-		ID:        portalLinkID,
-		ProjectID: projectID,
+		ID:        common.StringToPgText(portalLinkID),
+		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -380,11 +381,11 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 
 		// Create a portal link auth token
 		err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
-			ID:             portalToken.UID,
-			PortalLinkID:   portalLinkID,
-			TokenMaskID:    pgtype.Text{String: portalToken.MaskId, Valid: true},
-			TokenHash:      pgtype.Text{String: portalToken.Hash, Valid: true},
-			TokenSalt:      pgtype.Text{String: portalToken.Salt, Valid: true},
+			ID:             common.StringToPgText(portalToken.UID),
+			PortalLinkID:   common.StringToPgText(portalLinkID),
+			TokenMaskID:    common.StringToPgText(portalToken.MaskId),
+			TokenHash:      common.StringToPgText(portalToken.Hash),
+			TokenSalt:      common.StringToPgText(portalToken.Salt),
 			TokenExpiresAt: pgtype.Timestamptz{Time: portalToken.ExpiresAt.Time, Valid: portalToken.ExpiresAt.Valid},
 		})
 		if err != nil {
@@ -408,7 +409,7 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 }
 
 func (s *Service) GetPortalLinkByToken(ctx context.Context, token string) (*datastore.PortalLink, error) {
-	row, err := s.repo.FetchPortalLinkByToken(ctx, token)
+	row, err := s.repo.FetchPortalLinkByToken(ctx, common.StringToPgText(token))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &ServiceError{ErrMsg: "portal link not found", Err: datastore.ErrPortalLinkNotFound}
@@ -424,8 +425,8 @@ func (s *Service) GetPortalLinkByToken(ctx context.Context, token string) (*data
 
 func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID string) (*datastore.PortalLink, error) {
 	row, err := s.repo.FetchPortalLinkByOwnerID(ctx, repo.FetchPortalLinkByOwnerIDParams{
-		OwnerID:   pgtype.Text{String: ownerID, Valid: true},
-		ProjectID: projectID,
+		OwnerID:   common.StringToPgText(ownerID),
+		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -456,11 +457,11 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 
 		// Create a portal link auth token
 		err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
-			ID:             portalToken.UID,
-			PortalLinkID:   row.ID,
-			TokenMaskID:    pgtype.Text{String: portalToken.MaskId, Valid: true},
-			TokenHash:      pgtype.Text{String: portalToken.Hash, Valid: true},
-			TokenSalt:      pgtype.Text{String: portalToken.Salt, Valid: true},
+			ID:             common.StringToPgText(portalToken.UID),
+			PortalLinkID:   common.StringToPgText(row.ID),
+			TokenMaskID:    common.StringToPgText(portalToken.MaskId),
+			TokenHash:      common.StringToPgText(portalToken.Hash),
+			TokenSalt:      common.StringToPgText(portalToken.Salt),
 			TokenExpiresAt: pgtype.Timestamptz{Time: portalToken.ExpiresAt.Time, Valid: portalToken.ExpiresAt.Valid},
 		})
 		if err != nil {
@@ -519,11 +520,11 @@ func (s *Service) RefreshPortalLinkAuthToken(ctx context.Context, projectID, por
 
 	// Create a portal link auth token
 	err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
-		ID:             ulid.Make().String(),
-		PortalLinkID:   portalLinkID,
-		TokenMaskID:    pgtype.Text{String: maskId, Valid: true},
-		TokenHash:      pgtype.Text{String: encodedKey, Valid: true},
-		TokenSalt:      pgtype.Text{String: salt, Valid: true},
+		ID:             common.StringToPgText(ulid.Make().String()),
+		PortalLinkID:   common.StringToPgText(portalLinkID),
+		TokenMaskID:    common.StringToPgText(maskId),
+		TokenHash:      common.StringToPgText(encodedKey),
+		TokenSalt:      common.StringToPgText(salt),
 		TokenExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if err != nil {
@@ -544,8 +545,8 @@ func (s *Service) RefreshPortalLinkAuthToken(ctx context.Context, projectID, por
 
 func (s *Service) RevokePortalLink(ctx context.Context, projectID, portalLinkID string) error {
 	result, err := s.repo.DeletePortalLink(ctx, repo.DeletePortalLinkParams{
-		ID:        portalLinkID,
-		ProjectID: projectID,
+		ID:        common.StringToPgText(portalLinkID),
+		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to revoke portal link")
@@ -577,12 +578,12 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 
 	// Query portal links with pagination
 	rows, err := s.repo.FetchPortalLinksPaginated(ctx, repo.FetchPortalLinksPaginatedParams{
-		Direction:         direction,
-		ProjectID:         projectID,
-		Cursor:            pageable.Cursor(),
-		HasEndpointFilter: len(endpointIDs) > 0,
+		Direction:         common.StringToPgText(direction),
+		ProjectID:         common.StringToPgText(projectID),
+		Cursor:            common.StringToPgText(pageable.Cursor()),
+		HasEndpointFilter: pgtype.Bool{Bool: len(endpointIDs) > 0, Valid: true},
 		EndpointIds:       endpointIDs,
-		LimitVal:          int64(pageable.Limit()),
+		LimitVal:          pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to load portal links paged")
@@ -612,9 +613,9 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 	if len(portalLinks) > 0 {
 		first := portalLinks[0]
 		count, err := s.repo.CountPrevPortalLinks(ctx, repo.CountPrevPortalLinksParams{
-			ProjectID:         projectID,
-			Cursor:            first.UID,
-			HasEndpointFilter: len(endpointIDs) > 0,
+			ProjectID:         common.StringToPgText(projectID),
+			Cursor:            common.StringToPgText(first.UID),
+			HasEndpointFilter: pgtype.Bool{Bool: len(endpointIDs) > 0, Valid: true},
 			EndpointIds:       endpointIDs,
 		})
 		if err != nil {
@@ -661,11 +662,11 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 			qtx := repo.New(tx)
 			for _, token := range authTokens {
 				err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
-					ID:             token.UID,
-					PortalLinkID:   token.PortalLinkID,
-					TokenMaskID:    pgtype.Text{String: token.MaskId, Valid: true},
-					TokenHash:      pgtype.Text{String: token.Hash, Valid: true},
-					TokenSalt:      pgtype.Text{String: token.Salt, Valid: true},
+					ID:             common.StringToPgText(token.UID),
+					PortalLinkID:   common.StringToPgText(token.PortalLinkID),
+					TokenMaskID:    common.StringToPgText(token.MaskId),
+					TokenHash:      common.StringToPgText(token.Hash),
+					TokenSalt:      common.StringToPgText(token.Salt),
 					TokenExpiresAt: pgtype.Timestamptz{Time: token.ExpiresAt.Time, Valid: token.ExpiresAt.Valid},
 				})
 				if err != nil {
@@ -685,7 +686,7 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 }
 
 func (s *Service) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) ([]datastore.PortalLink, error) {
-	rows, err := s.repo.FetchPortalLinksByOwnerID(ctx, pgtype.Text{String: ownerID, Valid: true})
+	rows, err := s.repo.FetchPortalLinksByOwnerID(ctx, common.StringToPgText(ownerID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &ServiceError{ErrMsg: "portal links not found", Err: datastore.ErrPortalLinkNotFound}
@@ -734,11 +735,11 @@ func (s *Service) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) 
 			qtx := repo.New(tx)
 			for _, token := range authTokens {
 				err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
-					ID:             token.UID,
-					PortalLinkID:   token.PortalLinkID,
-					TokenMaskID:    pgtype.Text{String: token.MaskId, Valid: true},
-					TokenHash:      pgtype.Text{String: token.Hash, Valid: true},
-					TokenSalt:      pgtype.Text{String: token.Salt, Valid: true},
+					ID:             common.StringToPgText(token.UID),
+					PortalLinkID:   common.StringToPgText(token.PortalLinkID),
+					TokenMaskID:    common.StringToPgText(token.MaskId),
+					TokenHash:      common.StringToPgText(token.Hash),
+					TokenSalt:      common.StringToPgText(token.Salt),
 					TokenExpiresAt: pgtype.Timestamptz{Time: token.ExpiresAt.Time, Valid: token.ExpiresAt.Valid},
 				})
 				if err != nil {
@@ -758,7 +759,7 @@ func (s *Service) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) 
 }
 
 func (s *Service) FindPortalLinkByMaskId(ctx context.Context, maskId string) (*datastore.PortalLink, error) {
-	row, err := s.repo.FetchPortalLinkByMaskId(ctx, pgtype.Text{String: maskId, Valid: true})
+	row, err := s.repo.FetchPortalLinkByMaskId(ctx, common.StringToPgText(maskId))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &ServiceError{ErrMsg: "portal link not found", Err: datastore.ErrPortalLinkNotFound}
@@ -780,12 +781,12 @@ func (s *Service) FindPortalLinkByMaskId(ctx context.Context, maskId string) (*d
 		Token:             row.Token,
 		Endpoints:         endpoints,
 		AuthType:          datastore.PortalAuthType(row.AuthType),
-		OwnerID:           row.OwnerID,
+		OwnerID:           common.PgTextToString(row.OwnerID),
 		EndpointCount:     int(row.EndpointCount.Int64),
 		TokenSalt:         row.TokenSalt.String,
 		TokenMaskId:       row.TokenMaskID.String,
 		TokenHash:         row.TokenHash.String,
-		CanManageEndpoint: row.CanManageEndpoint,
+		CanManageEndpoint: row.CanManageEndpoint.Bool,
 		TokenExpiresAt:    null.NewTime(row.TokenExpiresAt.Time, row.TokenExpiresAt.Valid),
 	}, nil
 }
@@ -797,7 +798,7 @@ func rowToPortalLink(row interface{}) datastore.PortalLink {
 	var (
 		id, projectID, name, token, ownerID string
 		endpoints                           pgtype.Text
-		authType                            repo.ConvoyPortalAuthTypes
+		authType                            interface{}
 		canManageEndpoint                   bool
 		endpointCount                       pgtype.Int8
 		createdAt, updatedAt                pgtype.Timestamptz
@@ -808,35 +809,40 @@ func rowToPortalLink(row interface{}) datastore.PortalLink {
 	case repo.FetchPortalLinkByIdRow:
 		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
 		endpoints, authType = r.Endpoints, r.AuthType
-		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		canManageEndpoint = r.CanManageEndpoint.Bool
+		ownerID = common.PgTextToString(r.OwnerID)
 		endpointCount = r.EndpointCount
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		endpointsMetadata = r.EndpointsMetadata
 	case repo.FetchPortalLinkByTokenRow:
 		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
 		endpoints, authType = r.Endpoints, r.AuthType
-		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		canManageEndpoint = r.CanManageEndpoint.Bool
+		ownerID = common.PgTextToString(r.OwnerID)
 		endpointCount = r.EndpointCount
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		endpointsMetadata = r.EndpointsMetadata
 	case repo.FetchPortalLinkByOwnerIDRow:
 		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
 		endpoints, authType = r.Endpoints, r.AuthType
-		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		canManageEndpoint = r.CanManageEndpoint.Bool
+		ownerID = common.PgTextToString(r.OwnerID)
 		endpointCount = r.EndpointCount
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		endpointsMetadata = r.EndpointsMetadata
 	case repo.FetchPortalLinksPaginatedRow:
 		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
 		endpoints, authType = r.Endpoints, r.AuthType
-		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		canManageEndpoint = r.CanManageEndpoint.Bool
+		ownerID = common.PgTextToString(r.OwnerID)
 		endpointCount = r.EndpointCount
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		endpointsMetadata = r.EndpointsMetadata
 	case repo.FetchPortalLinksByOwnerIDRow:
 		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
 		endpoints, authType = r.Endpoints, r.AuthType
-		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		canManageEndpoint = r.CanManageEndpoint.Bool
+		ownerID = common.PgTextToString(r.OwnerID)
 		endpointCount = r.EndpointCount
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		endpointsMetadata = r.EndpointsMetadata
@@ -856,7 +862,7 @@ func rowToPortalLink(row interface{}) datastore.PortalLink {
 		Name:              name,
 		Token:             token,
 		Endpoints:         endpointsSlice,
-		AuthType:          datastore.PortalAuthType(authType),
+		AuthType:          datastore.PortalAuthType(authType.(string)),
 		CanManageEndpoint: canManageEndpoint,
 		OwnerID:           ownerID,
 		EndpointCount:     int(endpointCount.Int64),

@@ -479,10 +479,10 @@ func (mr *MockEventRepositoryMockRecorder) FindEventsByIDs(ctx, projectID, ids a
 }
 
 // FindEventsByIdempotencyKey mocks base method.
-func (m *MockEventRepository) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) ([]datastore.Event, error) {
+func (m *MockEventRepository) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindEventsByIdempotencyKey", ctx, projectID, idempotencyKey)
-	ret0, _ := ret[0].([]datastore.Event)
+	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1965,21 +1965,6 @@ func (m *MockSubscriptionRepository) FindCLISubscriptions(ctx context.Context, p
 func (mr *MockSubscriptionRepositoryMockRecorder) FindCLISubscriptions(ctx, projectID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCLISubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindCLISubscriptions), ctx, projectID)
-}
-
-// FindSubscriptionByDeviceID mocks base method.
-func (m *MockSubscriptionRepository) FindSubscriptionByDeviceID(ctx context.Context, projectId, deviceID string, subscriptionType datastore.SubscriptionType) (*datastore.Subscription, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindSubscriptionByDeviceID", ctx, projectId, deviceID, subscriptionType)
-	ret0, _ := ret[0].(*datastore.Subscription)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FindSubscriptionByDeviceID indicates an expected call of FindSubscriptionByDeviceID.
-func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionByDeviceID(ctx, projectId, deviceID, subscriptionType any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionByDeviceID", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionByDeviceID), ctx, projectId, deviceID, subscriptionType)
 }
 
 // FindSubscriptionByID mocks base method.

@@ -65,13 +65,11 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 
 	var isDuplicate bool
 	if len(broadcastEvent.IdempotencyKey) > 0 {
-		events, err := args.eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
+		isDuplicate, err = args.eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
 		if err != nil {
 			args.tracerBackend.Capture(ctx, "broadcast.event.creation.error", attributes, startTime, time.Now())
 			return nil, &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
-
-		isDuplicate = len(events) > 0
 	}
 
 	event := &datastore.Event{

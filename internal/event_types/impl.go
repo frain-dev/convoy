@@ -12,6 +12,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/event_types/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -38,15 +39,6 @@ func New(logger log.StdLogger, db database.Database) *Service {
 		repo:   repo.New(db.GetConn()),
 		db:     db.GetConn(),
 	}
-}
-
-// Helper function to convert string to pgtype.Text (nullable)
-// Empty strings are converted to NULL
-func textToPgText(s string) pgtype.Text {
-	if s == "" {
-		return pgtype.Text{String: "", Valid: false}
-	}
-	return pgtype.Text{String: s, Valid: true}
 }
 
 // Helper function to convert row to ProjectEventType
@@ -107,11 +99,11 @@ func (s *Service) CreateEventType(ctx context.Context, eventType *datastore.Proj
 	}
 
 	err := s.repo.CreateEventType(ctx, repo.CreateEventTypeParams{
-		ID:          eventType.UID,
-		Name:        eventType.Name,
-		Description: textToPgText(eventType.Description),
-		Category:    textToPgText(eventType.Category),
-		ProjectID:   eventType.ProjectId,
+		ID:          common.StringToPgText(eventType.UID),
+		Name:        common.StringToPgText(eventType.Name),
+		Description: common.StringToPgText(eventType.Description),
+		Category:    common.StringToPgText(eventType.Category),
+		ProjectID:   common.StringToPgText(eventType.ProjectId),
 		JsonSchema:  eventType.JSONSchema,
 	})
 	if err != nil {
@@ -124,11 +116,11 @@ func (s *Service) CreateEventType(ctx context.Context, eventType *datastore.Proj
 
 func (s *Service) CreateDefaultEventType(ctx context.Context, projectId string) error {
 	err := s.repo.CreateDefaultEventType(ctx, repo.CreateDefaultEventTypeParams{
-		ID:          ulid.Make().String(),
-		Name:        "*",
-		Description: pgtype.Text{String: "", Valid: false}, // NULL
-		Category:    pgtype.Text{String: "", Valid: false}, // NULL
-		ProjectID:   projectId,
+		ID:          common.StringToPgText(ulid.Make().String()),
+		Name:        common.StringToPgText("*"),
+		Description: common.StringToPgTextNullable(""), // NULL
+		Category:    common.StringToPgTextNullable(""), // NULL
+		ProjectID:   common.StringToPgText(projectId),
 		JsonSchema:  []byte("{}"),
 	})
 	if err != nil {
@@ -145,11 +137,11 @@ func (s *Service) UpdateEventType(ctx context.Context, eventType *datastore.Proj
 	}
 
 	result, err := s.repo.UpdateEventType(ctx, repo.UpdateEventTypeParams{
-		Description: textToPgText(eventType.Description),
-		Category:    textToPgText(eventType.Category),
+		Description: common.StringToPgText(eventType.Description),
+		Category:    common.StringToPgText(eventType.Category),
 		JsonSchema:  eventType.JSONSchema,
-		ID:          eventType.UID,
-		ProjectID:   eventType.ProjectId,
+		ID:          common.StringToPgText(eventType.UID),
+		ProjectID:   common.StringToPgText(eventType.ProjectId),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to update event type")
@@ -165,8 +157,8 @@ func (s *Service) UpdateEventType(ctx context.Context, eventType *datastore.Proj
 
 func (s *Service) DeprecateEventType(ctx context.Context, id, projectId string) (*datastore.ProjectEventType, error) {
 	row, err := s.repo.DeprecateEventType(ctx, repo.DeprecateEventTypeParams{
-		ID:        id,
-		ProjectID: projectId,
+		ID:        common.StringToPgText(id),
+		ProjectID: common.StringToPgText(projectId),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -182,8 +174,8 @@ func (s *Service) DeprecateEventType(ctx context.Context, id, projectId string) 
 
 func (s *Service) FetchEventTypeById(ctx context.Context, id, projectId string) (*datastore.ProjectEventType, error) {
 	row, err := s.repo.FetchEventTypeByID(ctx, repo.FetchEventTypeByIDParams{
-		ID:        id,
-		ProjectID: projectId,
+		ID:        common.StringToPgText(id),
+		ProjectID: common.StringToPgText(projectId),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -199,8 +191,8 @@ func (s *Service) FetchEventTypeById(ctx context.Context, id, projectId string) 
 
 func (s *Service) FetchEventTypeByName(ctx context.Context, name, projectId string) (*datastore.ProjectEventType, error) {
 	row, err := s.repo.FetchEventTypeByName(ctx, repo.FetchEventTypeByNameParams{
-		Name:      name,
-		ProjectID: projectId,
+		Name:      common.StringToPgText(name),
+		ProjectID: common.StringToPgText(projectId),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -216,8 +208,8 @@ func (s *Service) FetchEventTypeByName(ctx context.Context, name, projectId stri
 
 func (s *Service) CheckEventTypeExists(ctx context.Context, name, projectId string) (bool, error) {
 	exists, err := s.repo.CheckEventTypeExists(ctx, repo.CheckEventTypeExistsParams{
-		Name:      name,
-		ProjectID: projectId,
+		Name:      common.StringToPgText(name),
+		ProjectID: common.StringToPgText(projectId),
 	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to check event type exists")
@@ -228,7 +220,7 @@ func (s *Service) CheckEventTypeExists(ctx context.Context, name, projectId stri
 }
 
 func (s *Service) FetchAllEventTypes(ctx context.Context, projectId string) ([]datastore.ProjectEventType, error) {
-	rows, err := s.repo.FetchAllEventTypes(ctx, projectId)
+	rows, err := s.repo.FetchAllEventTypes(ctx, common.StringToPgText(projectId))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to fetch all event types")
 		return nil, util.NewServiceError(500, err)

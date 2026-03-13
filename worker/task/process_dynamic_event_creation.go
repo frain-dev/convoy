@@ -69,13 +69,11 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 	var isDuplicate bool
 	if len(dynamicEvent.IdempotencyKey) > 0 {
-		events, err := args.eventRepo.FindEventsByIdempotencyKey(ctx, dynamicEvent.ProjectID, dynamicEvent.IdempotencyKey)
+		isDuplicate, err = args.eventRepo.FindEventsByIdempotencyKey(ctx, dynamicEvent.ProjectID, dynamicEvent.IdempotencyKey)
 		if err != nil {
 			args.tracerBackend.Capture(ctx, "dynamic.event.creation.error", attributes, startTime, time.Now())
 			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
-
-		isDuplicate = len(events) > 0
 	}
 
 	metadata := make(map[string]string)

@@ -24,6 +24,7 @@ import (
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/event_types"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisation_invites"
 	"github.com/frain-dev/convoy/internal/organisation_members"
@@ -345,6 +346,10 @@ func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID
 
 // SeedProject seed default project
 func SeedProject(db database.Database, uid, name, orgID string, projectType datastore.ProjectType, cfg *datastore.ProjectConfig) (*datastore.Project, error) {
+	if uid == "" {
+		uid = ulid.Make().String()
+	}
+
 	if orgID == "" {
 		orgID = ulid.Make().String()
 	}
@@ -379,6 +384,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, ui
 		UID:            uid,
 		EventType:      datastore.EventType(eventType),
 		Data:           data,
+		Raw:            string(data),
 		Endpoints:      []string{endpoint.UID},
 		Headers:        httpheader.HTTPHeader{},
 		ProjectID:      projectID,
@@ -387,7 +393,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, ui
 	}
 
 	// Seed Data.
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err

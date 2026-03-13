@@ -25,23 +25,23 @@ func TestStringToPgText(t *testing.T) {
 		{
 			name:     "non-empty string",
 			input:    "hello",
-			expected: pgtype.Text{String: "hello", Valid: true},
+			expected: StringToPgText("hello"),
 		},
 		{
 			name:     "empty string",
 			input:    "",
-			expected: pgtype.Text{String: "", Valid: false},
+			expected: StringToPgTextNullable(""),
 		},
 		{
 			name:     "whitespace only",
 			input:    "   ",
-			expected: pgtype.Text{String: "", Valid: false},
+			expected: StringToPgTextNullable(""),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := StringToPgText(tt.input)
+			result := StringToPgTextNullable(tt.input)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -56,18 +56,18 @@ func TestStringToPgTextFilter(t *testing.T) {
 		{
 			name:     "non-empty string",
 			input:    "hello",
-			expected: pgtype.Text{String: "hello", Valid: true},
+			expected: StringToPgText("hello"),
 		},
 		{
 			name:     "empty string is still valid for filters",
 			input:    "",
-			expected: pgtype.Text{String: "", Valid: true},
+			expected: StringToPgText(""),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := StringToPgTextFilter(tt.input)
+			result := StringToPgText(tt.input)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -81,12 +81,12 @@ func TestPgTextToNullString(t *testing.T) {
 	}{
 		{
 			name:     "valid text",
-			input:    pgtype.Text{String: "hello", Valid: true},
+			input:    StringToPgText("hello"),
 			expected: null.NewString("hello", true),
 		},
 		{
 			name:     "invalid text",
-			input:    pgtype.Text{String: "", Valid: false},
+			input:    StringToPgTextNullable(""),
 			expected: null.NewString("", false),
 		},
 	}
