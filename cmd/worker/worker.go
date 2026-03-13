@@ -28,6 +28,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/metrics/timeseries"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
@@ -305,6 +306,14 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	// Initialize OAuth2 token service
 	oauth2TokenService := services.NewOAuth2TokenService(a.Cache, lo)
 
+	// Initialize metrics recorder
+	var metricsRecorder timeseries.MetricsRecorder
+	if cfg.Metrics.IsEnabled && cfg.Metrics.Backend == config.TimeSeriesMetricsProvider {
+		metricsRecorder = timeseries.NewRedisMetricsRecorder(a.Redis, cfg.Metrics.TimeSeries)
+	} else {
+		metricsRecorder = timeseries.NewNoOpMetricsRecorder()
+	}
+
 	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
 		EndpointRepo:               endpointRepo,
 		EventDeliveryRepo:          eventDeliveryRepo,
@@ -320,22 +329,25 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
 		TracerBackend:              a.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,
+		MetricsRecorder:            metricsRecorder,
 	}
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
 
 	eventProcessorDeps := task.EventProcessorDeps{
-		EndpointRepo:       endpointRepo,
-		EventRepo:          eventRepo,
-		ProjectRepo:        projectRepo,
-		EventQueue:         a.Queue,
-		SubRepo:            subRepo,
-		FilterRepo:         filterRepo,
-		Licenser:           a.Licenser,
-		TracerBackend:      a.TracerBackend,
-		OAuth2TokenService: oauth2TokenService,
-		FeatureFlag:        featureFlag,
-		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
+		EndpointRepo:               endpointRepo,
+		EventRepo:                  eventRepo,
+		ProjectRepo:                projectRepo,
+		EventQueue:                 a.Queue,
+		SubRepo:                    subRepo,
+		FilterRepo:                 filterRepo,
+		Licenser:                   a.Licenser,
+		TracerBackend:              a.TracerBackend,
+		OAuth2TokenService:         oauth2TokenService,
+		FeatureFlag:                featureFlag,
+		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
+		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
+		MetricsRecorder:            metricsRecorder,
 	}
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
@@ -366,6 +378,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
+		MetricsRecorder:            metricsRecorder,
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 
@@ -396,7 +409,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(a.DB, billingClient, rd, lo), nil)
 	}
 
-	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
+	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, a.Redis, circuitBreakerManager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to register queue metrics: %w", err)
 	}

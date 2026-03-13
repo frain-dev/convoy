@@ -188,6 +188,7 @@ func ProcessBroadcastEventCreation(
 		deps.Licenser,
 		deps.TracerBackend,
 		deps.OAuth2TokenService,
+		deps.MetricsRecorder,
 	)
 }
 
