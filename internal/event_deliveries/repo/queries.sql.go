@@ -108,7 +108,6 @@ const countPrevEventDeliveries = `-- name: CountPrevEventDeliveries :one
 SELECT EXISTS(
     SELECT 1
     FROM convoy.event_deliveries ed
-    LEFT JOIN convoy.events ev ON ed.event_id = ev.id
     WHERE ed.deleted_at IS NULL
       AND (ed.project_id = $1 OR $1 = '')
       AND (ed.event_id = $2 OR $2 = '')
@@ -857,6 +856,7 @@ WITH filtered_deliveries AS (
       -- Subscription filter
       AND (CASE WHEN $11::BOOLEAN THEN ed.subscription_id = $12 ELSE true END)
       -- Broker message ID filter
+      -- TODO(perf): consider GIN index on metadata->>'broker_message_id' (cross-cutting concern across 9+ files)
       AND (CASE WHEN $13::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = $14 ELSE true END)
       -- Idempotency key filter
       AND (CASE WHEN $15::BOOLEAN THEN ed.idempotency_key = $16 ELSE true END)
@@ -952,6 +952,8 @@ type LoadEventDeliveriesPagedRow struct {
 // ============================================================================
 // Group 4: Pagination
 // ============================================================================
+// TODO(perf): this query fetches all columns including large JSONB blobs (metadata, headers, cli_metadata).
+// Consider a "slim" paginated query variant that omits heavy columns for list views.
 func (q *Queries) LoadEventDeliveriesPaged(ctx context.Context, arg LoadEventDeliveriesPagedParams) ([]LoadEventDeliveriesPagedRow, error) {
 	rows, err := q.db.Query(ctx, loadEventDeliveriesPaged,
 		arg.SortOrder,

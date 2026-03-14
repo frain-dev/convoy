@@ -170,6 +170,8 @@ WHERE (project_id = @project_id OR @project_id = '')
 -- Group 4: Pagination
 -- ============================================================================
 
+-- TODO(perf): this query fetches all columns including large JSONB blobs (metadata, headers, cli_metadata).
+-- Consider a "slim" paginated query variant that omits heavy columns for list views.
 -- name: LoadEventDeliveriesPaged :many
 WITH filtered_deliveries AS (
     SELECT
@@ -215,6 +217,7 @@ WITH filtered_deliveries AS (
       -- Subscription filter
       AND (CASE WHEN @has_subscription_id::BOOLEAN THEN ed.subscription_id = @subscription_id ELSE true END)
       -- Broker message ID filter
+      -- TODO(perf): consider GIN index on metadata->>'broker_message_id' (cross-cutting concern across 9+ files)
       AND (CASE WHEN @has_broker_message_id::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id ELSE true END)
       -- Idempotency key filter
       AND (CASE WHEN @has_idempotency_key::BOOLEAN THEN ed.idempotency_key = @idempotency_key ELSE true END)
@@ -251,7 +254,6 @@ ORDER BY
 SELECT EXISTS(
     SELECT 1
     FROM convoy.event_deliveries ed
-    LEFT JOIN convoy.events ev ON ed.event_id = ev.id
     WHERE ed.deleted_at IS NULL
       AND (ed.project_id = @project_id OR @project_id = '')
       AND (ed.event_id = @event_id OR @event_id = '')
