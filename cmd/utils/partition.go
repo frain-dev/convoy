@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -39,7 +39,7 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 			}
 
 			eventsRepo := events.New(a.Logger, a.DB)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
+			eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
 			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
 
 			// if the table name isn't supplied, then we will run all of them at the same time
@@ -123,7 +123,7 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 			}
 
 			eventsRepo := events.New(a.Logger, a.DB)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
+			eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
 			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
 
 			// if the table name isn't supplied, then we will run all of them at the same time

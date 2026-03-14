@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
@@ -925,7 +926,7 @@ func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 
 	// Run retry in background goroutine - don't block the response
 	go func() {
-		task.RetryEventDeliveriesWithTracker(h.A.DB, h.A.Queue, statuses, retryRequest.Time, retryRequest.EventID, batchID, tracker)
+		task.RetryEventDeliveriesWithTracker(h.A.Logger, h.A.DB, h.A.Queue, statuses, retryRequest.Time, retryRequest.EventID, batchID, tracker)
 	}()
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries retry initiated successfully", map[string]interface{}{
@@ -993,7 +994,7 @@ func (h *Handler) CountRetryEventDeliveries(w http.ResponseWriter, r *http.Reque
 		CreatedAtEnd:   now.Unix(),
 	}
 
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
+	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 
 	// Count across all statuses
 	var totalCount int64

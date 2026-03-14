@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -73,7 +74,7 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fr := services.RetryEventDeliveryService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB),
+		EventDeliveryRepo: event_deliveries.New(h.A.Logger, h.A.DB),
 		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB),
 		Queue:             h.A.Queue,
 		EventDelivery:     eventDelivery,
@@ -154,7 +155,7 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 
 	br := services.BatchRetryEventDeliveryService{
 		BatchRetryRepo:    batch_retries.New(nil, h.A.DB),
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB),
+		EventDeliveryRepo: event_deliveries.New(h.A.Logger, h.A.DB),
 		Queue:             h.A.Queue,
 		Filter:            data.Filter,
 		ProjectID:         project.UID,
@@ -199,7 +200,7 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 	}
 
 	fr := services.ForceResendEventDeliveriesService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB),
+		EventDeliveryRepo: event_deliveries.New(h.A.Logger, h.A.DB),
 		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB),
 		Queue:             h.A.Queue,
 		IDs:               eventDeliveryIDs.IDs,
@@ -279,7 +280,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	f := data.Filter
 
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(h.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType, f.BrokerMessageId)
+	ed, paginationData, err := event_deliveries.New(h.A.Logger, h.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType, f.BrokerMessageId)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
@@ -332,7 +333,7 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 	}
 
 	f := data.Filter
-	count, err := postgres.NewEventDeliveryRepo(h.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
+	count, err := event_deliveries.New(h.A.Logger, h.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event deliveries")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -349,6 +350,6 @@ func (h *Handler) retrieveEventDelivery(r *http.Request) (*datastore.EventDelive
 	}
 
 	eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
+	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 	return eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
 }
