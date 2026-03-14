@@ -24,6 +24,7 @@ import (
 const (
 	PartitionSize = 30_000
 
+	// NOTE: keep in sync with queries.sql CreateEventDelivery — pgx.Batch requires raw SQL strings.
 	createEventDeliverySQL = `INSERT INTO convoy.event_deliveries (
         id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
         metadata, cli_metadata, description, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
@@ -253,7 +254,13 @@ func (s *Service) FindDiscardedEventDeliveries(ctx context.Context, projectID, d
 }
 
 func (s *Service) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
-	rows, err := s.repo.FindStuckEventDeliveriesByStatus(ctx, common.StringToPgText(string(status)))
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	rows, err := repo.New(tx).FindStuckEventDeliveriesByStatus(ctx, common.StringToPgText(string(status)))
 	if err != nil {
 		return nil, err
 	}
@@ -266,6 +273,11 @@ func (s *Service) FindStuckEventDeliveriesByStatus(ctx context.Context, status d
 		}
 		deliveries = append(deliveries, *d)
 	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
 	return deliveries, nil
 }
 
@@ -289,7 +301,6 @@ func (s *Service) UpdateEventDeliveryMetadata(ctx context.Context, projectID str
 
 func (s *Service) CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string,
 	status []datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
-
 	start, end := getCreatedDateFilter(params.CreatedAtStart, params.CreatedAtEnd)
 
 	statuses := make([]string, len(status))
@@ -418,7 +429,6 @@ func (s *Service) LoadEventDeliveriesPaged(
 func (s *Service) countPrevDeliveries(ctx context.Context, projectID, eventID, eventType string,
 	endpointIDs, statuses []string, subscriptionID, brokerMessageId, idempotencyKey, cursor string,
 	start, end time.Time, sortOrder string) (datastore.PrevRowCount, error) {
-
 	params := repo.CountPrevEventDeliveriesParams{
 		ProjectID:          common.StringToPgText(projectID),
 		EventID:            common.StringToPgText(eventID),
@@ -455,13 +465,7 @@ func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID st
 
 	hasEndpoints := common.BoolToPgBool(len(endpointIds) > 0)
 
-	intervalParams := struct {
-		ProjectID      pgtype.Text
-		StartDate      pgtype.Timestamptz
-		EndDate        pgtype.Timestamptz
-		HasEndpointIds pgtype.Bool
-		EndpointIds    []string
-	}{
+	intervalParams := repo.LoadEventDeliveryIntervalsDailyParams{
 		ProjectID:      common.StringToPgTextNullable(projectID),
 		StartDate:      common.TimeToPgTimestamptz(start),
 		EndDate:        common.TimeToPgTimestamptz(end),
@@ -469,75 +473,65 @@ func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID st
 		EndpointIds:    endpointIds,
 	}
 
-	var intervals []datastore.EventInterval
+	// intervalRow is a common shape for all interval query results.
+	type intervalRow struct {
+		DataIndex     pgtype.Numeric
+		DataTotalTime pgtype.Text
+		Count         pgtype.Int8
+	}
+
+	var rawRows []intervalRow
 
 	switch period {
 	case datastore.Daily:
-		rows, err := s.repo.LoadEventDeliveryIntervalsDaily(ctx, repo.LoadEventDeliveryIntervalsDailyParams(intervalParams))
+		rows, err := s.repo.LoadEventDeliveryIntervalsDaily(ctx, intervalParams)
 		if err != nil {
 			return nil, err
 		}
-		intervals = make([]datastore.EventInterval, 0, len(rows))
-		for _, r := range rows {
-			intervals = append(intervals, datastore.EventInterval{
-				Data: datastore.EventIntervalData{
-					Interval: numericToInt64(r.DataIndex),
-					Time:     common.PgTextToString(r.DataTotalTime),
-				},
-				Count: uint64(common.PgInt8ToInt64(r.Count)),
-			})
+		rawRows = make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
 		}
-
 	case datastore.Weekly:
 		rows, err := s.repo.LoadEventDeliveryIntervalsWeekly(ctx, repo.LoadEventDeliveryIntervalsWeeklyParams(intervalParams))
 		if err != nil {
 			return nil, err
 		}
-		intervals = make([]datastore.EventInterval, 0, len(rows))
-		for _, r := range rows {
-			intervals = append(intervals, datastore.EventInterval{
-				Data: datastore.EventIntervalData{
-					Interval: numericToInt64(r.DataIndex),
-					Time:     common.PgTextToString(r.DataTotalTime),
-				},
-				Count: uint64(common.PgInt8ToInt64(r.Count)),
-			})
+		rawRows = make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
 		}
-
 	case datastore.Monthly:
 		rows, err := s.repo.LoadEventDeliveryIntervalsMonthly(ctx, repo.LoadEventDeliveryIntervalsMonthlyParams(intervalParams))
 		if err != nil {
 			return nil, err
 		}
-		intervals = make([]datastore.EventInterval, 0, len(rows))
-		for _, r := range rows {
-			intervals = append(intervals, datastore.EventInterval{
-				Data: datastore.EventIntervalData{
-					Interval: numericToInt64(r.DataIndex),
-					Time:     common.PgTextToString(r.DataTotalTime),
-				},
-				Count: uint64(common.PgInt8ToInt64(r.Count)),
-			})
+		rawRows = make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
 		}
-
 	case datastore.Yearly:
 		rows, err := s.repo.LoadEventDeliveryIntervalsYearly(ctx, repo.LoadEventDeliveryIntervalsYearlyParams(intervalParams))
 		if err != nil {
 			return nil, err
 		}
-		intervals = make([]datastore.EventInterval, 0, len(rows))
-		for _, r := range rows {
-			intervals = append(intervals, datastore.EventInterval{
-				Data: datastore.EventIntervalData{
-					Interval: numericToInt64(r.DataIndex),
-					Time:     common.PgTextToString(r.DataTotalTime),
-				},
-				Count: uint64(common.PgInt8ToInt64(r.Count)),
-			})
+		rawRows = make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
 		}
-
 	default:
 		return nil, errors.New("specified data cannot be generated for period")
+	}
+
+	intervals := make([]datastore.EventInterval, 0, len(rawRows))
+	for _, r := range rawRows {
+		intervals = append(intervals, datastore.EventInterval{
+			Data: datastore.EventIntervalData{
+				Interval: numericToInt64(r.DataIndex),
+				Time:     common.PgTextToString(r.DataTotalTime),
+			},
+			Count: uint64(common.PgInt8ToInt64(r.Count)),
+		})
 	}
 
 	if len(intervals) < minLen {
