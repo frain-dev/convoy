@@ -355,7 +355,28 @@ WHERE project_id = @project_id
 
 -- name: ExportEventDeliveries :many
 SELECT ed.id,
-       TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
+       JSONB_BUILD_OBJECT(
+           'uid', ed.id,
+           'project_id', ed.project_id,
+           'event_id', ed.event_id,
+           'endpoint_id', ed.endpoint_id,
+           'device_id', ed.device_id,
+           'subscription_id', ed.subscription_id,
+           'headers', ed.headers,
+           'attempts', ed.attempts,
+           'status', ed.status,
+           'metadata', ed.metadata,
+           'cli_metadata', ed.cli_metadata,
+           'description', ed.description,
+           'url_query_params', ed.url_query_params,
+           'idempotency_key', ed.idempotency_key,
+           'event_type', ed.event_type,
+           'acknowledged_at', ed.acknowledged_at,
+           'latency_seconds', ed.latency_seconds,
+           'delivery_mode', ed.delivery_mode,
+           'created_at', ed.created_at,
+           'updated_at', ed.updated_at
+       ) AS json_output
 FROM convoy.event_deliveries AS ed
 WHERE project_id = @project_id
   AND created_at < @created_at
