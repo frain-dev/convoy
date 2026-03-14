@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"io"
 	"strings"
 	"sync"
 	"time"
@@ -19,11 +18,11 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func RetryEventDeliveries(db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId string) {
-	RetryEventDeliveriesWithTracker(db, eventQueue, statuses, lookBackDuration, eventId, "", nil)
+func RetryEventDeliveries(logger log.StdLogger, db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId string) {
+	RetryEventDeliveriesWithTracker(logger, db, eventQueue, statuses, lookBackDuration, eventId, "", nil)
 }
 
-func RetryEventDeliveriesWithTracker(db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId, batchID string, tracker *batch_tracker.BatchTracker) {
+func RetryEventDeliveriesWithTracker(logger log.StdLogger, db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId, batchID string, tracker *batch_tracker.BatchTracker) {
 	if len(statuses) == 1 && util.IsStringEmpty(string(statuses[0])) {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
@@ -43,7 +42,7 @@ func RetryEventDeliveriesWithTracker(db database.Database, eventQueue queue.Queu
 	ctx := context.Background()
 
 	// Initialize repositories and queue once
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
 	var q *redisqueue.RedisQueue
 	q, ok := eventQueue.(*redisqueue.RedisQueue)
 	if !ok {

@@ -926,7 +926,7 @@ func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 
 	// Run retry in background goroutine - don't block the response
 	go func() {
-		task.RetryEventDeliveriesWithTracker(h.A.DB, h.A.Queue, statuses, retryRequest.Time, retryRequest.EventID, batchID, tracker)
+		task.RetryEventDeliveriesWithTracker(h.A.Logger, h.A.DB, h.A.Queue, statuses, retryRequest.Time, retryRequest.EventID, batchID, tracker)
 	}()
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries retry initiated successfully", map[string]interface{}{
