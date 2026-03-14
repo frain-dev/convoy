@@ -62,6 +62,7 @@ LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ed.deleted_at IS NULL
   AND ed.id = @id AND ed.project_id = @project_id;
 
+-- Slim variant: omits description and does not JOIN endpoint/event/source/device tables.
 -- name: FindEventDeliveryByIDSlim :one
 SELECT
     id, project_id, event_id, subscription_id,
@@ -121,6 +122,7 @@ SELECT
     description, created_at, updated_at,
     COALESCE(event_type, '') AS event_type,
     COALESCE(device_id, '') AS device_id,
+    COALESCE(endpoint_id, '') AS endpoint_id,
     COALESCE(delivery_mode, 'at_least_once')::TEXT AS delivery_mode,
     acknowledged_at
 FROM convoy.event_deliveries

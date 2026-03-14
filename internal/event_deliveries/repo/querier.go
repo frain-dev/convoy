@@ -35,12 +35,15 @@ type Querier interface {
 	// Group 2: Find Operations
 	// ============================================================================
 	FindEventDeliveryByID(ctx context.Context, arg FindEventDeliveryByIDParams) (FindEventDeliveryByIDRow, error)
+	// Slim variant: omits description and does not JOIN endpoint/event/source/device tables.
 	FindEventDeliveryByIDSlim(ctx context.Context, arg FindEventDeliveryByIDSlimParams) (FindEventDeliveryByIDSlimRow, error)
 	FindStuckEventDeliveriesByStatus(ctx context.Context, status pgtype.Text) ([]FindStuckEventDeliveriesByStatusRow, error)
 	HardDeleteProjectEventDeliveries(ctx context.Context, arg HardDeleteProjectEventDeliveriesParams) error
 	// ============================================================================
 	// Group 4: Pagination
 	// ============================================================================
+	// TODO(perf): this query fetches all columns including large JSONB blobs (metadata, headers, cli_metadata).
+	// Consider a "slim" paginated query variant that omits heavy columns for list views.
 	LoadEventDeliveriesPaged(ctx context.Context, arg LoadEventDeliveriesPagedParams) ([]LoadEventDeliveriesPagedRow, error)
 	// ============================================================================
 	// Group 5: Intervals

@@ -312,6 +312,7 @@ SELECT
     description, created_at, updated_at,
     COALESCE(event_type, '') AS event_type,
     COALESCE(device_id, '') AS device_id,
+    COALESCE(endpoint_id, '') AS endpoint_id,
     COALESCE(delivery_mode, 'at_least_once')::TEXT AS delivery_mode,
     acknowledged_at
 FROM convoy.event_deliveries
@@ -347,6 +348,7 @@ type FindDiscardedEventDeliveriesRow struct {
 	UpdatedAt      pgtype.Timestamptz
 	EventType      pgtype.Text
 	DeviceID       pgtype.Text
+	EndpointID     pgtype.Text
 	DeliveryMode   pgtype.Text
 	AcknowledgedAt pgtype.Timestamptz
 }
@@ -382,6 +384,7 @@ func (q *Queries) FindDiscardedEventDeliveries(ctx context.Context, arg FindDisc
 			&i.UpdatedAt,
 			&i.EventType,
 			&i.DeviceID,
+			&i.EndpointID,
 			&i.DeliveryMode,
 			&i.AcknowledgedAt,
 		); err != nil {
@@ -728,6 +731,7 @@ type FindEventDeliveryByIDSlimRow struct {
 	AcknowledgedAt pgtype.Timestamptz
 }
 
+// Slim variant: omits description and does not JOIN endpoint/event/source/device tables.
 func (q *Queries) FindEventDeliveryByIDSlim(ctx context.Context, arg FindEventDeliveryByIDSlimParams) (FindEventDeliveryByIDSlimRow, error) {
 	row := q.db.QueryRow(ctx, findEventDeliveryByIDSlim, arg.ProjectID, arg.ID)
 	var i FindEventDeliveryByIDSlimRow
