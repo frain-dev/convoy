@@ -260,18 +260,36 @@ func (s *Service) FindStuckEventDeliveriesByStatus(ctx context.Context, status d
 	}
 	defer tx.Rollback(ctx)
 
-	rows, err := repo.New(tx).FindStuckEventDeliveriesByStatus(ctx, common.StringToPgText(string(status)))
+	txRepo := repo.New(tx)
+
+	rows, err := txRepo.FindStuckEventDeliveriesByStatus(ctx, common.StringToPgText(string(status)))
 	if err != nil {
 		return nil, err
 	}
 
 	deliveries := make([]datastore.EventDelivery, 0, len(rows))
+	ids := make([]string, 0, len(rows))
 	for _, row := range rows {
 		d, err := rowToEventDelivery(row)
 		if err != nil {
 			return nil, err
 		}
 		deliveries = append(deliveries, *d)
+		ids = append(ids, row.ID)
+	}
+
+	// Update status to Processing within the same transaction so other workers
+	// won't pick up these rows after the locks are released on commit.
+	if len(ids) > 0 {
+		err = txRepo.UpdateStatusOfEventDeliveries(ctx, repo.UpdateStatusOfEventDeliveriesParams{
+			Status:      common.StringToPgText(string(datastore.ProcessingEventStatus)),
+			Description: common.StringToPgText("re-queuing stuck delivery"),
+			ProjectID:   common.StringToPgText(""),
+			Ids:         ids,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
