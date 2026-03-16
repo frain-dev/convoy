@@ -334,7 +334,7 @@ func (l *Licenser) IsMultiUserMode(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	return limit > 1, nil
+	return limit == -1 || limit > 1, nil
 }
 
 // Implement license.Licenser interface methods
