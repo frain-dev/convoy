@@ -23,7 +23,7 @@ type Querier interface {
 	// ============================================================================
 	// Group 1: CRUD Operations
 	// ============================================================================
-	CreateEventDelivery(ctx context.Context, arg CreateEventDeliveryParams) error
+	CreateEventDelivery(ctx context.Context, arg []CreateEventDeliveryParams) *CreateEventDeliveryBatchResults
 	// ============================================================================
 	// Group 7: Export Operations
 	// ============================================================================

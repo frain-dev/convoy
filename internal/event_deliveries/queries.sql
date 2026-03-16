@@ -5,7 +5,7 @@
 -- Group 1: CRUD Operations
 -- ============================================================================
 
--- name: CreateEventDelivery :exec
+-- name: CreateEventDelivery :batchexec
 INSERT INTO convoy.event_deliveries (
     id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
     metadata, cli_metadata, description, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode

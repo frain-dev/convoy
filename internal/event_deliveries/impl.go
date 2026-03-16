@@ -21,15 +21,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-const (
-	PartitionSize = 30_000
-
-	// NOTE: keep in sync with queries.sql CreateEventDelivery — pgx.Batch requires raw SQL strings.
-	createEventDeliverySQL = `INSERT INTO convoy.event_deliveries (
-        id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
-        metadata, cli_metadata, description, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`
-)
+const PartitionSize = 30_000
 
 type Service struct {
 	logger log.StdLogger
@@ -54,26 +46,15 @@ func (s *Service) CreateEventDelivery(ctx context.Context, delivery *datastore.E
 		delivery.DeliveryMode = datastore.AtLeastOnceDeliveryMode
 	}
 
-	params := repo.CreateEventDeliveryParams{
-		ID:             common.StringToPgTextNullable(delivery.UID),
-		ProjectID:      common.StringToPgTextNullable(delivery.ProjectID),
-		EventID:        common.StringToPgTextNullable(delivery.EventID),
-		EndpointID:     common.StringPtrToPgTextNullable(emptyToNilStr(delivery.EndpointID)),
-		DeviceID:       common.StringPtrToPgTextNullable(emptyToNilStr(delivery.DeviceID)),
-		SubscriptionID: common.StringToPgTextNullable(delivery.SubscriptionID),
-		Headers:        headersToJSONB(delivery.Headers),
-		Status:         common.StringToPgText(string(delivery.Status)),
-		Metadata:       metadataToJSONB(delivery.Metadata),
-		CliMetadata:    cliMetadataToJSONB(delivery.CLIMetadata),
-		Description:    common.StringToPgText(delivery.Description),
-		UrlQueryParams: common.StringToPgText(delivery.URLQueryParams),
-		IdempotencyKey: common.StringToPgTextNullable(delivery.IdempotencyKey),
-		EventType:      common.StringToPgTextNullable(string(delivery.EventType)),
-		AcknowledgedAt: common.NullTimeToPgTimestamptz(delivery.AcknowledgedAt),
-		DeliveryMode:   string(delivery.DeliveryMode),
-	}
-
-	return s.repo.CreateEventDelivery(ctx, params)
+	params := deliveryToCreateParams(delivery)
+	var batchErr error
+	br := s.repo.CreateEventDelivery(ctx, []repo.CreateEventDeliveryParams{params})
+	br.Exec(func(_ int, err error) {
+		if err != nil {
+			batchErr = err
+		}
+	})
+	return batchErr
 }
 
 func (s *Service) CreateEventDeliveries(ctx context.Context, deliveries []*datastore.EventDelivery) error {
@@ -89,30 +70,25 @@ func (s *Service) CreateEventDeliveries(ctx context.Context, deliveries []*datas
 			end = len(deliveries)
 		}
 
-		batch := &pgx.Batch{}
-		for _, delivery := range deliveries[i:end] {
+		chunk := deliveries[i:end]
+		params := make([]repo.CreateEventDeliveryParams, len(chunk))
+		for j, delivery := range chunk {
 			if delivery.DeliveryMode == "" {
 				delivery.DeliveryMode = datastore.AtLeastOnceDeliveryMode
 			}
-
-			batch.Queue(createEventDeliverySQL,
-				delivery.UID, delivery.ProjectID, delivery.EventID,
-				emptyToNilStr(delivery.EndpointID), emptyToNilStr(delivery.DeviceID),
-				delivery.SubscriptionID, headersToJSONB(delivery.Headers), string(delivery.Status),
-				metadataToJSONB(delivery.Metadata), cliMetadataToJSONB(delivery.CLIMetadata),
-				delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey,
-				string(delivery.EventType), delivery.AcknowledgedAt, string(delivery.DeliveryMode),
-			)
+			params[j] = deliveryToCreateParams(delivery)
 		}
 
-		results := tx.SendBatch(ctx, batch)
-		for range deliveries[i:end] {
-			if _, err := results.Exec(); err != nil {
-				results.Close()
-				return err
+		var batchErr error
+		br := repo.New(tx).CreateEventDelivery(ctx, params)
+		br.Exec(func(_ int, err error) {
+			if err != nil && batchErr == nil {
+				batchErr = err
 			}
+		})
+		if batchErr != nil {
+			return batchErr
 		}
-		results.Close()
 	}
 
 	return tx.Commit(ctx)
@@ -654,6 +630,27 @@ func (s *Service) PartitionEventDeliveriesTable(ctx context.Context) error {
 func (s *Service) UnPartitionEventDeliveriesTable(ctx context.Context) error {
 	_, err := s.db.Exec(ctx, unPartitionEventDeliveriesTableSQL)
 	return err
+}
+
+func deliveryToCreateParams(delivery *datastore.EventDelivery) repo.CreateEventDeliveryParams {
+	return repo.CreateEventDeliveryParams{
+		ID:             common.StringToPgTextNullable(delivery.UID),
+		ProjectID:      common.StringToPgTextNullable(delivery.ProjectID),
+		EventID:        common.StringToPgTextNullable(delivery.EventID),
+		EndpointID:     common.StringPtrToPgTextNullable(emptyToNilStr(delivery.EndpointID)),
+		DeviceID:       common.StringPtrToPgTextNullable(emptyToNilStr(delivery.DeviceID)),
+		SubscriptionID: common.StringToPgTextNullable(delivery.SubscriptionID),
+		Headers:        headersToJSONB(delivery.Headers),
+		Status:         common.StringToPgText(string(delivery.Status)),
+		Metadata:       metadataToJSONB(delivery.Metadata),
+		CliMetadata:    cliMetadataToJSONB(delivery.CLIMetadata),
+		Description:    common.StringToPgText(delivery.Description),
+		UrlQueryParams: common.StringToPgText(delivery.URLQueryParams),
+		IdempotencyKey: common.StringToPgTextNullable(delivery.IdempotencyKey),
+		EventType:      common.StringToPgTextNullable(string(delivery.EventType)),
+		AcknowledgedAt: common.NullTimeToPgTimestamptz(delivery.AcknowledgedAt),
+		DeliveryMode:   string(delivery.DeliveryMode),
+	}
 }
 
 // emptyToNilStr returns nil for empty strings, pointer otherwise
