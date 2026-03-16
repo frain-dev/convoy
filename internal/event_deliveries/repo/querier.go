@@ -17,7 +17,7 @@ type Querier interface {
 	CountDeliveriesByStatus(ctx context.Context, arg CountDeliveriesByStatusParams) (pgtype.Int8, error)
 	CountEventDeliveries(ctx context.Context, arg CountEventDeliveriesParams) (pgtype.Int8, error)
 	CountExportedEventDeliveries(ctx context.Context, arg CountExportedEventDeliveriesParams) (pgtype.Int8, error)
-	CountPrevEventDeliveries(ctx context.Context, arg CountPrevEventDeliveriesParams) (bool, error)
+	CountPrevEventDeliveries(ctx context.Context, arg CountPrevEventDeliveriesParams) (pgtype.Int8, error)
 	// Event Deliveries Repository SQL Queries
 	// Migrated from database/postgres/event_delivery.go to sqlc
 	// ============================================================================

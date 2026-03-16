@@ -105,25 +105,23 @@ func (q *Queries) CountExportedEventDeliveries(ctx context.Context, arg CountExp
 }
 
 const countPrevEventDeliveries = `-- name: CountPrevEventDeliveries :one
-SELECT EXISTS(
-    SELECT 1
-    FROM convoy.event_deliveries ed
-    WHERE ed.deleted_at IS NULL
-      AND (ed.project_id = $1 OR $1 = '')
-      AND (ed.event_id = $2 OR $2 = '')
-      AND (ed.event_type = $3 OR $3 = '')
-      AND ed.created_at >= $4
-      AND ed.created_at <= $5
-      AND (CASE WHEN $6::BOOLEAN THEN ed.endpoint_id = ANY($7::TEXT[]) ELSE true END)
-      AND (CASE WHEN $8::BOOLEAN THEN ed.status = ANY($9::TEXT[]) ELSE true END)
-      AND (CASE WHEN $10::BOOLEAN THEN ed.subscription_id = $11 ELSE true END)
-      AND (CASE WHEN $12::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = $13 ELSE true END)
-      AND (CASE WHEN $14::BOOLEAN THEN ed.idempotency_key = $15 ELSE true END)
-      AND (CASE
-               WHEN $16::text = 'DESC' THEN ed.id > $17
-               WHEN $16::text = 'ASC' THEN ed.id < $17
-               ELSE ed.id > $17 END)
-)
+SELECT COALESCE(COUNT(*), 0) AS count
+FROM convoy.event_deliveries ed
+WHERE ed.deleted_at IS NULL
+  AND (ed.project_id = $1 OR $1 = '')
+  AND (ed.event_id = $2 OR $2 = '')
+  AND (ed.event_type = $3 OR $3 = '')
+  AND ed.created_at >= $4
+  AND ed.created_at <= $5
+  AND (CASE WHEN $6::BOOLEAN THEN ed.endpoint_id = ANY($7::TEXT[]) ELSE true END)
+  AND (CASE WHEN $8::BOOLEAN THEN ed.status = ANY($9::TEXT[]) ELSE true END)
+  AND (CASE WHEN $10::BOOLEAN THEN ed.subscription_id = $11 ELSE true END)
+  AND (CASE WHEN $12::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = $13 ELSE true END)
+  AND (CASE WHEN $14::BOOLEAN THEN ed.idempotency_key = $15 ELSE true END)
+  AND (CASE
+           WHEN $16::text = 'DESC' THEN ed.id > $17
+           WHEN $16::text = 'ASC' THEN ed.id < $17
+           ELSE ed.id > $17 END)
 `
 
 type CountPrevEventDeliveriesParams struct {
@@ -146,7 +144,7 @@ type CountPrevEventDeliveriesParams struct {
 	Cursor             pgtype.Text
 }
 
-func (q *Queries) CountPrevEventDeliveries(ctx context.Context, arg CountPrevEventDeliveriesParams) (bool, error) {
+func (q *Queries) CountPrevEventDeliveries(ctx context.Context, arg CountPrevEventDeliveriesParams) (pgtype.Int8, error) {
 	row := q.db.QueryRow(ctx, countPrevEventDeliveries,
 		arg.ProjectID,
 		arg.EventID,
@@ -166,66 +164,9 @@ func (q *Queries) CountPrevEventDeliveries(ctx context.Context, arg CountPrevEve
 		arg.SortOrder,
 		arg.Cursor,
 	)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
-const createEventDelivery = `-- name: CreateEventDelivery :exec
-
-
-INSERT INTO convoy.event_deliveries (
-    id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
-    metadata, cli_metadata, description, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
-)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
-        $9, $10, $11, $12, $13, $14, $15, $16)
-`
-
-type CreateEventDeliveryParams struct {
-	ID             pgtype.Text
-	ProjectID      pgtype.Text
-	EventID        pgtype.Text
-	EndpointID     pgtype.Text
-	DeviceID       pgtype.Text
-	SubscriptionID pgtype.Text
-	Headers        []byte
-	Status         pgtype.Text
-	Metadata       []byte
-	CliMetadata    []byte
-	Description    pgtype.Text
-	UrlQueryParams pgtype.Text
-	IdempotencyKey pgtype.Text
-	EventType      pgtype.Text
-	AcknowledgedAt pgtype.Timestamptz
-	DeliveryMode   interface{}
-}
-
-// Event Deliveries Repository SQL Queries
-// Migrated from database/postgres/event_delivery.go to sqlc
-// ============================================================================
-// Group 1: CRUD Operations
-// ============================================================================
-func (q *Queries) CreateEventDelivery(ctx context.Context, arg CreateEventDeliveryParams) error {
-	_, err := q.db.Exec(ctx, createEventDelivery,
-		arg.ID,
-		arg.ProjectID,
-		arg.EventID,
-		arg.EndpointID,
-		arg.DeviceID,
-		arg.SubscriptionID,
-		arg.Headers,
-		arg.Status,
-		arg.Metadata,
-		arg.CliMetadata,
-		arg.Description,
-		arg.UrlQueryParams,
-		arg.IdempotencyKey,
-		arg.EventType,
-		arg.AcknowledgedAt,
-		arg.DeliveryMode,
-	)
-	return err
+	var count pgtype.Int8
+	err := row.Scan(&count)
+	return count, err
 }
 
 const exportEventDeliveries = `-- name: ExportEventDeliveries :many

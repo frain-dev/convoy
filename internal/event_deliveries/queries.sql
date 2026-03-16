@@ -251,25 +251,23 @@ ORDER BY
     CASE WHEN @sort_order::text = 'ASC' THEN id END ASC;
 
 -- name: CountPrevEventDeliveries :one
-SELECT EXISTS(
-    SELECT 1
-    FROM convoy.event_deliveries ed
-    WHERE ed.deleted_at IS NULL
-      AND (ed.project_id = @project_id OR @project_id = '')
-      AND (ed.event_id = @event_id OR @event_id = '')
-      AND (ed.event_type = @event_type OR @event_type = '')
-      AND ed.created_at >= @start_date
-      AND ed.created_at <= @end_date
-      AND (CASE WHEN @has_endpoint_ids::BOOLEAN THEN ed.endpoint_id = ANY(@endpoint_ids::TEXT[]) ELSE true END)
-      AND (CASE WHEN @has_status::BOOLEAN THEN ed.status = ANY(@statuses::TEXT[]) ELSE true END)
-      AND (CASE WHEN @has_subscription_id::BOOLEAN THEN ed.subscription_id = @subscription_id ELSE true END)
-      AND (CASE WHEN @has_broker_message_id::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id ELSE true END)
-      AND (CASE WHEN @has_idempotency_key::BOOLEAN THEN ed.idempotency_key = @idempotency_key ELSE true END)
-      AND (CASE
-               WHEN @sort_order::text = 'DESC' THEN ed.id > @cursor
-               WHEN @sort_order::text = 'ASC' THEN ed.id < @cursor
-               ELSE ed.id > @cursor END)
-);
+SELECT COALESCE(COUNT(*), 0) AS count
+FROM convoy.event_deliveries ed
+WHERE ed.deleted_at IS NULL
+  AND (ed.project_id = @project_id OR @project_id = '')
+  AND (ed.event_id = @event_id OR @event_id = '')
+  AND (ed.event_type = @event_type OR @event_type = '')
+  AND ed.created_at >= @start_date
+  AND ed.created_at <= @end_date
+  AND (CASE WHEN @has_endpoint_ids::BOOLEAN THEN ed.endpoint_id = ANY(@endpoint_ids::TEXT[]) ELSE true END)
+  AND (CASE WHEN @has_status::BOOLEAN THEN ed.status = ANY(@statuses::TEXT[]) ELSE true END)
+  AND (CASE WHEN @has_subscription_id::BOOLEAN THEN ed.subscription_id = @subscription_id ELSE true END)
+  AND (CASE WHEN @has_broker_message_id::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id ELSE true END)
+  AND (CASE WHEN @has_idempotency_key::BOOLEAN THEN ed.idempotency_key = @idempotency_key ELSE true END)
+  AND (CASE
+           WHEN @sort_order::text = 'DESC' THEN ed.id > @cursor
+           WHEN @sort_order::text = 'ASC' THEN ed.id < @cursor
+           ELSE ed.id > @cursor END);
 
 -- ============================================================================
 -- Group 5: Intervals

@@ -443,15 +443,11 @@ func (s *Service) countPrevDeliveries(ctx context.Context, projectID, eventID, e
 		Cursor:             common.StringToPgTextNullable(cursor),
 	}
 
-	exists, err := s.repo.CountPrevEventDeliveries(ctx, params)
+	count, err := s.repo.CountPrevEventDeliveries(ctx, params)
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}
-	count := 0
-	if exists {
-		count = 1
-	}
-	return datastore.PrevRowCount{Count: count}, nil
+	return datastore.PrevRowCount{Count: int(count.Int64)}, nil
 }
 
 func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, endpointIds []string) ([]datastore.EventInterval, error) {
