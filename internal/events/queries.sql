@@ -13,6 +13,11 @@ VALUES (@id, @event_type, @endpoints, @project_id, @source_id,
         @headers, @raw, @data, @url_query_params, @idempotency_key,
         @is_duplicate_event, @acknowledged_at, @metadata, @status);
 
+-- name: CreateEventEndpoint :batchexec
+INSERT INTO convoy.events_endpoints (event_id, endpoint_id)
+VALUES (@event_id, @endpoint_id)
+ON CONFLICT (endpoint_id, event_id) DO NOTHING;
+
 -- name: UpdateEventEndpoints :exec
 UPDATE convoy.events
 SET endpoints = @endpoints

@@ -27,6 +27,7 @@ type Querier interface {
 	// Group 1: Simple CRUD Operations (5 queries)
 	// ============================================================================
 	CreateEvent(ctx context.Context, arg CreateEventParams) error
+	CreateEventEndpoint(ctx context.Context, arg []CreateEventEndpointParams) *CreateEventEndpointBatchResults
 	ExportEvents(ctx context.Context, arg ExportEventsParams) ([]ExportEventsRow, error)
 	FindEventByID(ctx context.Context, arg FindEventByIDParams) (FindEventByIDRow, error)
 	// ============================================================================
