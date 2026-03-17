@@ -81,7 +81,7 @@ export class BillingOverviewService {
 
     const currentPlan = data.subscription?.plan || { name: 'No plan', price: 0, currency: 'USD' };
 
-    const usage = data.usage || { period: '2024-01' };
+    const usage = data.usage || { period: this.getCurrentPeriod() };
     const usagePeriod = this.formatUsagePeriod(usage.period);
     const daysUntilReset = this.calculateDaysUntilReset(usage.period);
     // Find the default payment method, or fall back to the first one if no default is set
@@ -116,6 +116,13 @@ export class BillingOverviewService {
     const nextDay = nextDate.getDate();
 
     return `${currentMonth} ${currentDay.toString().padStart(2, '0')} - ${nextMonth} ${nextDay.toString().padStart(2, '0')}`;
+  }
+
+  private getCurrentPeriod(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    return `${year}-${month}`;
   }
 
   private calculateDaysUntilReset(period: string): number {
