@@ -277,6 +277,14 @@ func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID, subsc
 	}, nil
 }
 
+func (m *MockBillingClient) DeactivateOrganisation(ctx context.Context, orgID string) error {
+	if orgID == "" {
+		return &Error{Message: "organisation ID is required"}
+	}
+	m.ensureOrganisation(orgID)
+	return nil
+}
+
 func (m *MockBillingClient) GetSetupIntent(ctx context.Context, orgID string) (*Response[SetupIntent], error) {
 	if orgID == "" {
 		return nil, &Error{Message: "organisation ID is required"}

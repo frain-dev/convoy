@@ -23,6 +23,37 @@ export class SettingsService {
 		});
 	}
 
+	getOrganisation(requestDetails: { org_id: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/organisations/${requestDetails.org_id}`,
+					method: 'get',
+					hideNotification: true
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	updateOrganisationSlug(requestDetails: { org_id: string; body: { slug: string } }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/organisations/${requestDetails.org_id}/slug`,
+					method: 'put',
+					body: requestDetails.body,
+					hideNotification: true
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	deleteOrganisation(requestDetails: { org_id: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

@@ -500,6 +500,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
 				orgSubRouter.Get("/", handler.GetOrganisation)
 				orgSubRouter.With(handler.RequireEnabledOrganisation()).Put("/", handler.UpdateOrganisation)
+				orgSubRouter.With(handler.RequireEnabledOrganisation()).Put("/slug", handler.UpdateOrganisationSlug)
 				orgSubRouter.Delete("/", handler.DeleteOrganisation)
 				orgSubRouter.Get("/feature-flags", handler.GetOrganisationFeatureFlags)
 				orgSubRouter.With(handler.RequireEnabledOrganisation()).Put("/feature-flags", handler.UpdateOrganisationFeatureFlags)

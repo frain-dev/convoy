@@ -33,6 +33,7 @@ type Client interface {
 	OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error)
 	UpgradeSubscription(ctx context.Context, orgID, subscriptionID string, req UpgradeSubscriptionRequest) (*Response[Checkout], error)
 	DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error)
+	DeactivateOrganisation(ctx context.Context, orgID string) error
 	GetSetupIntent(ctx context.Context, orgID string) (*Response[SetupIntent], error)
 	CreateSetupIntent(ctx context.Context, orgID string, setupIntentData CreateSetupIntentRequest) (*Response[SetupIntent], error)
 	GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response[Invoice], error)
@@ -193,6 +194,11 @@ func (c *HTTPClient) UpgradeSubscription(ctx context.Context, orgID, subscriptio
 
 func (c *HTTPClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error) {
 	return makeRequest[interface{}](ctx, c.httpClient, c.config, "DELETE", fmt.Sprintf("/organisations/%s/subscriptions/%s", orgID, subscriptionID), nil)
+}
+
+func (c *HTTPClient) DeactivateOrganisation(ctx context.Context, orgID string) error {
+	_, err := makeRequest[interface{}](ctx, c.httpClient, c.config, "POST", fmt.Sprintf("/organisations/%s/deactivate", orgID), nil)
+	return err
 }
 
 func (c *HTTPClient) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response[interface{}], error) {

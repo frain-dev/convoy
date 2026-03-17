@@ -1,4 +1,4 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, ElementRef, inject, OnInit, ViewChild} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {SettingsService} from '../settings.service';
 import {GeneralService} from 'src/app/services/general/general.service';
@@ -15,7 +15,10 @@ import {LicensesService} from 'src/app/services/licenses/licenses.service';
 export class OrganisationSettingsComponent implements OnInit {
 	organisationId!: string;
 	organisationName!: string;
-	showDeleteModal = false;
+	currentWorkspaceSlug: string | null = null;
+	workspaceSlugInput = '';
+	workspaceSlugError = '';
+	isSavingSlug = false;
 	isEditingOrganisation = false;
 	isDeletingOrganisation = false;
 	configuringSSO = false;
@@ -24,6 +27,7 @@ export class OrganisationSettingsComponent implements OnInit {
 	editOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
+	@ViewChild('slugDialog') slugDialog!: ElementRef<HTMLDialogElement>;
 	private rbacService = inject(RbacService);
 
 	constructor(
@@ -66,28 +70,27 @@ export class OrganisationSettingsComponent implements OnInit {
 			this.editOrganisationForm.patchValue({
 				name: organisationDetails.name
 			});
+			this.currentWorkspaceSlug = typeof organisationDetails.slug === 'string' && organisationDetails.slug.length > 0 ? organisationDetails.slug : null;
+			this.loadWorkspaceSlug();
 			this.loadOrgLicenseForSSO();
 		}
 	}
 
-	/** Load this org's license features so Configure SSO visibility uses org license, not instance. */
+	private async loadWorkspaceSlug() {
+		if (!this.organisationId) return;
+		try {
+			const response = await this.settingService.getOrganisation({ org_id: this.organisationId });
+			const slug = response?.data?.slug;
+			this.currentWorkspaceSlug = typeof slug === 'string' && slug.length > 0 ? slug : null;
+		} catch {
+			// Keep existing value from local storage on fetch failure.
+		}
+	}
+
+	/** Load this org's license so Configure SSO visibility uses org license, not instance. */
 	private loadOrgLicenseForSSO() {
 		if (!this.organisationId) return;
-		this.licenseService
-			.getLicenses(this.organisationId)
-			.then((res) => {
-				const d = res?.data as Record<string, unknown> | undefined;
-				if (!d) {
-					this.orgHasEnterpriseSSO = false;
-					return;
-				}
-				const v = d['EnterpriseSSO'];
-				if (v === true) this.orgHasEnterpriseSSO = true;
-				else if (v && typeof v === 'object' && 'allowed' in v && (v as { allowed: boolean }).allowed === true)
-					this.orgHasEnterpriseSSO = true;
-				else this.orgHasEnterpriseSSO = false;
-			})
-			.catch(() => (this.orgHasEnterpriseSSO = false));
+		this.licenseService.hasEnterpriseSSO(this.organisationId).then((has) => (this.orgHasEnterpriseSSO = has));
 	}
 
 	async configureSSO() {
@@ -109,6 +112,59 @@ export class OrganisationSettingsComponent implements OnInit {
 		}
 	}
 
+	startEditingSlug(): void {
+		this.workspaceSlugInput = this.currentWorkspaceSlug ?? '';
+		this.workspaceSlugError = '';
+	}
+
+	cancelEditingSlug(): void {
+		this.workspaceSlugInput = '';
+		this.workspaceSlugError = '';
+	}
+
+	closeSlugDialog(): void {
+		this.cancelEditingSlug();
+		this.slugDialog?.nativeElement?.close();
+	}
+
+	async setWorkspaceSlug(): Promise<void> {
+		const slug = this.workspaceSlugInput.trim().toLowerCase();
+		if (!slug) {
+			this.workspaceSlugError = 'Enter a slug';
+			return;
+		}
+		if (slug.length < 2 || slug.length > 64) {
+			this.workspaceSlugError = 'Slug must be 2-64 characters';
+			return;
+		}
+		if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+			this.workspaceSlugError = 'Use only lowercase letters, numbers, and hyphens';
+			return;
+		}
+
+		this.workspaceSlugError = '';
+		this.isSavingSlug = true;
+		try {
+			const res = await this.settingService.updateOrganisationSlug({
+				org_id: this.organisationId,
+				body: { slug }
+			});
+			const data = res?.data as { slug?: string };
+			const newSlug = data?.slug ?? slug;
+			this.currentWorkspaceSlug = newSlug;
+			this.workspaceSlugInput = '';
+			this.closeSlugDialog();
+			this.generalService.showNotification({ style: 'success', message: this.currentWorkspaceSlug ? `Workspace slug set to "${this.currentWorkspaceSlug}".` : 'Workspace slug updated.' });
+		} catch (err: any) {
+			const msg = (typeof err === 'string' ? err : '') || err?.response?.data?.message || err?.message || '';
+			const msgLower = String(msg).toLowerCase();
+			const isDuplicateSlug = msgLower.includes('slug is already taken') || msgLower.includes('already taken');
+			this.workspaceSlugError = isDuplicateSlug ? 'This slug is already taken. Choose another.' : (msg || 'Failed to set slug.');
+		} finally {
+			this.isSavingSlug = false;
+		}
+	}
+
 	async deleteOrganisation() {
 		this.isDeletingOrganisation = true;
 		try {
@@ -119,7 +175,9 @@ export class OrganisationSettingsComponent implements OnInit {
 				window.location.reload();
 			});
 			this.isDeletingOrganisation = false;
-		} catch {
+		} catch (err: any) {
+			const msg = err?.response?.data?.message || err?.message || 'Failed to deactivate organisation.';
+			this.generalService.showNotification({ style: 'error', message: msg });
 			this.isDeletingOrganisation = false;
 		}
 	}
