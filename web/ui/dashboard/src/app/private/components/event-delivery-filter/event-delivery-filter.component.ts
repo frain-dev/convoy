@@ -279,6 +279,8 @@ export class EventDeliveryFilterComponent implements OnInit {
 		try {
 			const response = await this.privateService.getEventTypes();
 			this.eventTypes = response.data.event_types ? response.data.event_types : [];
+		} catch (error) {
+			// leave eventTypes unchanged; avoid unhandled rejection when called from ngOnInit without await
 		} finally {
 			this.loadingEventTypes = false;
 		}
