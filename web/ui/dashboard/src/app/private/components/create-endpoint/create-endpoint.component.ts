@@ -601,7 +601,11 @@ export class CreateEndpointComponent implements OnInit {
 		} catch (error: any) {
 			this.endpointCreated = false;
 			this.savingEndpoint = false;
-			const errorMessage = error?.error?.message || error?.message || 'Failed to save endpoint. Please try again.';
+			const errorMessage =
+				error?.response?.data?.message ??
+				error?.error?.message ??
+				error?.message ??
+				'Failed to save endpoint. Please try again.';
 			this.generalService.showNotification({ message: errorMessage, style: 'error' });
 			console.error('Error saving endpoint:', error);
 			return;

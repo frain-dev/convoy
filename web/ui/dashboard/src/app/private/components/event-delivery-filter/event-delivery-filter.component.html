@@ -196,18 +196,37 @@
 
 					<ng-container dropdownOptions>
 						<ul class="min-h-[100px] max-h-[200px] overflow-auto">
-							<li
-								convoy-dropdown-option
-								convoy-list-item
-								*ngFor="let type of eventTypes"
-								(click)="setEventType(type.name); toggleFilter('eventType', false)"
-								class="text-14 px-20px"
-								[ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams && queryParams.eventType === type.name }"
-							>
-								<button convoy-button color="neutral" fill="text" class="font-normal text-left w-full !justify-start text-12">
-									{{ type.name }}
-								</button>
-							</li>
+							<ng-container *ngIf="!loadingEventTypes">
+								<li
+									convoy-dropdown-option
+									convoy-list-item
+									*ngFor="let type of eventTypes"
+									(click)="setEventType(type.name); toggleFilter('eventType', false)"
+									class="text-14 px-20px"
+									[ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams && queryParams.eventType === type.name }"
+								>
+									<button convoy-button color="neutral" fill="text" class="font-normal text-left w-full !justify-start text-12">
+										{{ type.name }}
+									</button>
+								</li>
+								<li *ngIf="eventTypes?.length === 0" class="text-12 text-neutral-11 px-20px py-10px" convoy-list-item [hasBorder]="false">
+									No event types found
+								</li>
+							</ng-container>
+							<ng-container *ngIf="loadingEventTypes">
+								<li class="!px-10px py-10px" convoy-list-item [hasBorder]="false">
+									<convoy-skeleton-loader className="w-120px h-16px"></convoy-skeleton-loader>
+									<convoy-skeleton-loader className="w-20px h-16px"></convoy-skeleton-loader>
+								</li>
+								<li class="!px-10px py-10px" convoy-list-item [hasBorder]="false">
+									<convoy-skeleton-loader className="w-120px h-16px"></convoy-skeleton-loader>
+									<convoy-skeleton-loader className="w-20px h-16px"></convoy-skeleton-loader>
+								</li>
+								<li class="!px-10px py-10px" convoy-list-item [hasBorder]="false">
+									<convoy-skeleton-loader className="w-120px h-16px"></convoy-skeleton-loader>
+									<convoy-skeleton-loader className="w-20px h-16px"></convoy-skeleton-loader>
+								</li>
+							</ng-container>
 						</ul>
 
 					</ng-container>

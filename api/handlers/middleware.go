@@ -99,7 +99,7 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 				return
 			}
 
-			if h.isOrganisationDisabled(org) {
+			if h.A.Cfg.Billing.Enabled && h.isOrganisationDisabled(org) {
 				_ = render.Render(w, r, util.NewErrorResponse("This action is disabled for this organization. Please contact support or subscribe to a plan.", http.StatusForbidden))
 				return
 			}
