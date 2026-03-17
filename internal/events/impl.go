@@ -434,7 +434,7 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 	sortOrder := filter.Pageable.SortOrder()
 
 	if useExistsPath {
-		params := repo.CountPrevEventsExistsParams{
+		params := repo.CountPrevEventsParams{
 			ProjectID:                common.StringToPgTextNullable(projectID),
 			HasIdempotencyKey:        common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
 			IdempotencyKey:           common.StringToPgTextNullable(filter.IdempotencyKey),
@@ -453,15 +453,11 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 			Cursor:                   common.StringToPgTextNullable(cursor),
 		}
 
-		exists, err := s.repo.CountPrevEventsExists(ctx, params)
+		count, err := s.repo.CountPrevEvents(ctx, params)
 		if err != nil {
 			return datastore.PrevRowCount{}, err
 		}
-		count := 0
-		if exists {
-			count = 1
-		}
-		return datastore.PrevRowCount{Count: count}, nil
+		return datastore.PrevRowCount{Count: int(count.Int64)}, nil
 	}
 
 	// Search path
@@ -483,15 +479,11 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 		Cursor:             common.StringToPgTextNullable(cursor),
 	}
 
-	exists, err := s.repo.CountPrevEventsSearch(ctx, params)
+	count, err := s.repo.CountPrevEventsSearch(ctx, params)
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}
-	count := 0
-	if exists {
-		count = 1
-	}
-	return datastore.PrevRowCount{Count: count}, nil
+	return datastore.PrevRowCount{Count: int(count.Int64)}, nil
 }
 
 // DeleteProjectEvents soft or hard deletes events

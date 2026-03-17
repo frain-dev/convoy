@@ -14,12 +14,12 @@ type Querier interface {
 	CopyRowsFromEventsToEventsSearch(ctx context.Context, arg CopyRowsFromEventsToEventsSearchParams) error
 	CountEvents(ctx context.Context, arg CountEventsParams) (pgtype.Int8, error)
 	CountExportedEvents(ctx context.Context, arg CountExportedEventsParams) (pgtype.Int8, error)
-	// Check if there are events before cursor (for HasPrevPage) - EXISTS path
+	// Count events before cursor (for HasPrevPage) - EXISTS path
 	// "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
-	CountPrevEventsExists(ctx context.Context, arg CountPrevEventsExistsParams) (bool, error)
-	// Check if there are events before cursor (for HasPrevPage) - Search path
+	CountPrevEvents(ctx context.Context, arg CountPrevEventsParams) (pgtype.Int8, error)
+	// Count events before cursor (for HasPrevPage) - Search path
 	// "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
-	CountPrevEventsSearch(ctx context.Context, arg CountPrevEventsSearchParams) (bool, error)
+	CountPrevEventsSearch(ctx context.Context, arg CountPrevEventsSearchParams) (pgtype.Int8, error)
 	CountProjectMessages(ctx context.Context, projectID pgtype.Text) (pgtype.Int8, error)
 	// Events Repository SQL Queries
 	// Total: 19 queries organized into 5 groups
