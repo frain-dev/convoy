@@ -32,6 +32,21 @@ export class LicensesService {
 		});
 	}
 
+	/** Same check as Configure SSO: true when this org's license has enterprise_sso. Use to gate SSO/slug UI. */
+	async hasEnterpriseSSO(orgId?: string): Promise<boolean> {
+		try {
+			const res = await this.getLicenses(orgId);
+			const d = res?.data as Record<string, unknown> | undefined;
+			if (!d) return false;
+			const v = d['EnterpriseSSO'];
+			if (v === true) return true;
+			if (v && typeof v === 'object' && 'allowed' in v && (v as { allowed: boolean }).allowed === true) return true;
+			return false;
+		} catch {
+			return false;
+		}
+	}
+
 	/** Call from login/signup (public pages) so the request uses instance-level only (no orgID). */
 	async setLicenses(instanceLevelOnly = false) {
 		try {

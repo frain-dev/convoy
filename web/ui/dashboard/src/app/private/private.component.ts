@@ -67,8 +67,8 @@ export class PrivateComponent implements OnInit {
 		}
 
 		this.checkIfTokenIsExpired();
-		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganizations()]);
-		// Check instance admin access after organizations are loaded
+		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
+		await this.licenseService.setLicenses();
 		await this.checkInstanceAdminAccess();
 	}
 
@@ -138,7 +138,7 @@ export class PrivateComponent implements OnInit {
 			const response = await this.privateService.getOrganizations({ refresh });
 			this.organisations = response.data.content;
 			this.isLoadingOrganisations = false;
-			if (this.organisations?.length) this.checkForSelectedOrganisation();
+			if (this.organisations?.length) await this.checkForSelectedOrganisation();
 			return;
 		} catch (error) {
 			this.isLoadingOrganisations = false;
