@@ -7,6 +7,7 @@ import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dro
 import {EVENT_TYPE, FILTER_QUERY_PARAM} from 'src/app/models/event.model';
 import {ActivatedRoute} from '@angular/router';
 import {ListItemComponent} from 'src/app/components/list-item/list-item.component';
+import {SkeletonLoaderComponent} from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import {ProjectService} from '../../pages/project/project.service';
 import {SOURCE} from 'src/app/models/source.model';
 import {PrivateService} from '../../private.service';
@@ -18,7 +19,7 @@ import {LicensesService} from 'src/app/services/licenses/licenses.service';
 @Component({
 	selector: 'convoy-event-delivery-filter',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, DatePickerComponent, EndpointFilterComponent, DropdownComponent, DropdownOptionDirective, ListItemComponent, FormsModule],
+	imports: [CommonModule, ButtonComponent, DatePickerComponent, EndpointFilterComponent, DropdownComponent, DropdownOptionDirective, ListItemComponent, SkeletonLoaderComponent, FormsModule],
 	templateUrl: './event-delivery-filter.component.html',
 	styleUrls: ['./event-delivery-filter.component.scss']
 })
@@ -64,6 +65,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 	];
 
     eventTypes: EVENT_TYPE[] = [];
+	loadingEventTypes = false;
 	constructor(private route: ActivatedRoute, private _location: Location, public projectService: ProjectService, private privateService: PrivateService, private generalService: GeneralService, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
@@ -249,14 +251,8 @@ export class EventDeliveryFilterComponent implements OnInit {
 	}
 
 	isAnyFilterSelected(): Boolean {
-		return (
-			(this.queryParams &&
-				(Object.keys(this.queryParams).includes('sort') || !Object.keys(this.queryParams).includes('sort')) &&
-				(Object.keys(this.queryParams).includes('token') || !Object.keys(this.queryParams).includes('token')) &&
-				((Object.keys(this.queryParams).length > 0 && !Object.keys(this.queryParams).includes('sort') && !Object.keys(this.queryParams).includes('token')) ||
-					(Object.keys(this.queryParams).length > 1 && (Object.keys(this.queryParams).includes('sort') || Object.keys(this.queryParams).includes('token'))))) ||
-			false
-		);
+		const keys = Object.keys(this.queryParams || {}).filter(k => k !== 'sort' && k !== 'token');
+		return keys.length > 0;
 	}
 
 	async getSelectedEndpointData(): Promise<ENDPOINT> {
@@ -279,12 +275,12 @@ export class EventDeliveryFilterComponent implements OnInit {
 
     async getEventTypesForFilter() {
 		if (this.projectService.activeProjectDetails?.type === 'incoming') return;
+		this.loadingEventTypes = true;
 		try {
 			const response = await this.privateService.getEventTypes();
 			this.eventTypes = response.data.event_types ? response.data.event_types : [];
-			return;
-		} catch (error) {
-			return;
+		} finally {
+			this.loadingEventTypes = false;
 		}
 	}
 

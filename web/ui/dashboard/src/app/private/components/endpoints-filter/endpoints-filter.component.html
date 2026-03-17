@@ -23,9 +23,11 @@
 						{{ endpoint.title || endpoint.name }}
 					</button>
 				</li>
+				<li *ngIf="(endpoints$ | async)?.length === 0" class="text-12 text-neutral-11 px-20px py-10px" convoy-list-item [hasBorder]="false">
+					No endpoints found
+				</li>
 			</ng-container>
 
-			<!-- not in effect yet, unable to creat a loading state -->
 			<ng-container *ngIf="loadingFilterEndpoints">
 				<li class="!px-10px py-10px" convoy-list-item [hasBorder]="false">
 					<convoy-skeleton-loader className="w-120px h-16px"></convoy-skeleton-loader>
