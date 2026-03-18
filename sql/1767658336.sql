@@ -1,6 +1,6 @@
 -- +migrate Up notransaction
-SET lock_timeout = '2s';
-SET statement_timeout = '30s';
+SET lock_timeout = '2min';
+SET statement_timeout = '10min';
 
 -- Create indexes on event_deliveries to optimize materialized view queries
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_event_deliveries_status_processing_project_source_created 
@@ -138,6 +138,9 @@ REFRESH MATERIALIZED VIEW convoy.event_queue_metrics_mv;
 REFRESH MATERIALIZED VIEW convoy.event_delivery_queue_metrics_mv;
 REFRESH MATERIALIZED VIEW convoy.event_queue_backlog_metrics_mv;
 REFRESH MATERIALIZED VIEW convoy.event_endpoint_backlog_metrics_mv;
+
+RESET lock_timeout;
+RESET statement_timeout;
 
 -- +migrate Down
 

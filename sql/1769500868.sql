@@ -1,6 +1,6 @@
 -- +migrate Up notransaction
-SET lock_timeout = '2s';
-SET statement_timeout = '30s';
+SET lock_timeout = '2min';
+SET statement_timeout = '10min';
 
 DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_endpoint_backlog_metrics_mv_unique;
 DROP INDEX CONCURRENTLY IF EXISTS convoy.idx_event_queue_backlog_metrics_mv_unique;
@@ -11,6 +11,9 @@ DROP MATERIALIZED VIEW IF EXISTS convoy.event_endpoint_backlog_metrics_mv;
 DROP MATERIALIZED VIEW IF EXISTS convoy.event_queue_backlog_metrics_mv;
 DROP MATERIALIZED VIEW IF EXISTS convoy.event_delivery_queue_metrics_mv;
 DROP MATERIALIZED VIEW IF EXISTS convoy.event_queue_metrics_mv;
+
+RESET lock_timeout;
+RESET statement_timeout;
 
 -- +migrate Down
 

@@ -1,6 +1,6 @@
 -- +migrate Up
-SET lock_timeout = '2s';
-SET statement_timeout = '30s';
+SET lock_timeout = '2min';
+SET statement_timeout = '10min';
 -- Update copy_rows function to copy new columns (acknowledged_at, status, metadata)
 -- that were added to both events and events_search tables in earlier migrations
 -- +migrate StatementBegin
@@ -29,6 +29,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- +migrate StatementEnd
+
+RESET lock_timeout;
+RESET statement_timeout;
 
 -- +migrate Down
 -- Revert copy_rows function to not include new columns
