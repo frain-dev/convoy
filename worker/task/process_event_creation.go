@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -308,6 +309,13 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 							}).Info("OAuth2 authorization header retrieved and added to headers")
 						}
 					}
+				case datastore.BasicAuthentication:
+					headers = make(httpheader.HTTPHeader)
+					credentials := base64.StdEncoding.EncodeToString(
+						[]byte(endpoint.Authentication.BasicAuth.UserName + ":" + endpoint.Authentication.BasicAuth.Password),
+					)
+					headers["Authorization"] = []string{"Basic " + credentials}
+					headers.MergeHeaders(opts.Event.Headers)
 				default:
 					log.FromContext(ctx).WithFields(log.Fields{
 						"endpoint.id": endpoint.UID,
