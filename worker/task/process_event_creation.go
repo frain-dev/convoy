@@ -310,12 +310,19 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 						}
 					}
 				case datastore.BasicAuthentication:
-					headers = make(httpheader.HTTPHeader)
-					credentials := base64.StdEncoding.EncodeToString(
-						[]byte(endpoint.Authentication.BasicAuth.UserName + ":" + endpoint.Authentication.BasicAuth.Password),
-					)
-					headers["Authorization"] = []string{"Basic " + credentials}
-					headers.MergeHeaders(opts.Event.Headers)
+					basicAuthEnabled := opts.FeatureFlag.CanAccessOrgFeature(ctx, fflag.BasicAuthEndpoint, opts.FeatureFlagFetcher, opts.EarlyAdopterFeatureFetcher, opts.Project.OrganisationID)
+					if !basicAuthEnabled {
+						log.FromContext(ctx).Warn("Endpoint has Basic Auth configured but feature flag is disabled, skipping Basic Auth authentication")
+					} else if endpoint.Authentication.BasicAuth == nil {
+						log.FromContext(ctx).Error("Basic Auth config is nil")
+					} else {
+						headers = make(httpheader.HTTPHeader)
+						credentials := base64.StdEncoding.EncodeToString(
+							[]byte(endpoint.Authentication.BasicAuth.UserName + ":" + endpoint.Authentication.BasicAuth.Password),
+						)
+						headers["Authorization"] = []string{"Basic " + credentials}
+						headers.MergeHeaders(opts.Event.Headers)
+					}
 				default:
 					log.FromContext(ctx).WithFields(log.Fields{
 						"endpoint.id": endpoint.UID,
