@@ -34,7 +34,8 @@ const (
                 support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
                 authentication_type_api_key_header_value,
                 is_encrypted, secrets_cipher, authentication_type_api_key_header_value_cipher,
-                mtls_client_cert, mtls_client_cert_cipher, oauth2_config, oauth2_config_cipher, content_type
+                mtls_client_cert, mtls_client_cert_cipher, oauth2_config, oauth2_config_cipher,
+                basic_auth_config, basic_auth_config_cipher, content_type
             )
             VALUES
               (
@@ -47,7 +48,9 @@ const (
                CASE WHEN $19 THEN NULL ELSE $21::jsonb END,
                CASE WHEN $19 THEN pgp_sym_encrypt($21::TEXT, $20) END,
                CASE WHEN $19 THEN NULL ELSE $22::jsonb END,
-               CASE WHEN $19 THEN pgp_sym_encrypt($22::TEXT, $20) END, $23
+               CASE WHEN $19 THEN pgp_sym_encrypt($22::TEXT, $20) END,
+               CASE WHEN $19 THEN NULL ELSE $23::jsonb END,
+               CASE WHEN $19 THEN pgp_sym_encrypt($23::TEXT, $20) END, $24
               );
             `
 
@@ -76,6 +79,10 @@ const (
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.oauth2_config_cipher::bytea, $1)::jsonb
         ELSE e.oauth2_config
     END AS oauth2_config,
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
+        ELSE e.basic_auth_config
+    END AS basic_auth_config,
 	e.content_type
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
@@ -114,6 +121,10 @@ const (
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.oauth2_config_cipher::bytea, $3)::jsonb
         ELSE e.oauth2_config
     END AS oauth2_config,
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $3)::jsonb
+        ELSE e.basic_auth_config
+    END AS basic_auth_config,
 	e.content_type
     FROM convoy.endpoints AS e WHERE e.deleted_at IS NULL AND e.url = $1 AND e.project_id = $2;
     `
@@ -153,7 +164,14 @@ const (
 	oauth2_config_cipher = CASE
         WHEN is_encrypted THEN pgp_sym_encrypt($20::TEXT, $18)
     END,
-	updated_at = NOW(), content_type = $21
+    basic_auth_config = CASE
+        WHEN is_encrypted THEN NULL
+        ELSE $21::jsonb
+    END,
+	basic_auth_config_cipher = CASE
+        WHEN is_encrypted THEN pgp_sym_encrypt($21::TEXT, $18)
+    END,
+	updated_at = NOW(), content_type = $22
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
@@ -182,6 +200,10 @@ const (
         WHEN is_encrypted THEN pgp_sym_decrypt(oauth2_config_cipher::bytea, $4)::jsonb
         ELSE oauth2_config
     END AS oauth2_config,
+	CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(basic_auth_config_cipher::bytea, $4)::jsonb
+        ELSE basic_auth_config
+    END AS basic_auth_config,
 	content_type;
 	`
 
@@ -215,6 +237,10 @@ const (
         WHEN is_encrypted THEN pgp_sym_decrypt(mtls_client_cert_cipher::bytea, $4)::jsonb
         ELSE mtls_client_cert
     END AS mtls_client_cert,
+	CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(basic_auth_config_cipher::bytea, $4)::jsonb
+        ELSE basic_auth_config
+    END AS basic_auth_config,
 	content_type;
 	`
 
@@ -258,6 +284,10 @@ const (
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.oauth2_config_cipher::bytea, :encryption_key)::jsonb
         ELSE e.oauth2_config
     END AS oauth2_config,
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, :encryption_key)::jsonb
+        ELSE e.basic_auth_config
+    END AS basic_auth_config,
 	e.content_type
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
@@ -368,12 +398,24 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		oauth2Config = endpoint.Authentication.OAuth2
 	}
 
+	// Get BasicAuth config if authentication type is BasicAuth
+	var basicAuthConfig *datastore.BasicAuth
+	if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.BasicAuthentication {
+		basicAuthConfig = endpoint.Authentication.BasicAuth
+	}
+
+	var apiKeyHeaderName, apiKeyHeaderValue string
+	if ac.ApiKey != nil {
+		apiKeyHeaderName = ac.ApiKey.HeaderName
+		apiKeyHeaderValue = ac.ApiKey.HeaderValue
+	}
+
 	args := []interface{}{
 		endpoint.UID, endpoint.Name, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
-		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, isEncrypted, key,
-		endpoint.MtlsClientCert, oauth2Config, contentType,
+		projectID, ac.Type, apiKeyHeaderName, apiKeyHeaderValue, isEncrypted, key,
+		endpoint.MtlsClientCert, oauth2Config, basicAuthConfig, contentType,
 	}
 
 	result, err := e.db.GetDB().ExecContext(ctx, createEndpoint, args...)
@@ -432,6 +474,19 @@ func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID strin
 		}
 		endpoint.Authentication.OAuth2 = endpoint.OAuth2Config
 		endpoint.OAuth2Config = nil // Clear the temporary field
+	}
+
+	// Map BasicAuthConfig to Authentication.BasicAuth if present
+	if endpoint.BasicAuthConfig != nil {
+		if endpoint.Authentication == nil {
+			endpoint.Authentication = &datastore.EndpointAuthentication{
+				Type: datastore.BasicAuthentication,
+			}
+		} else {
+			endpoint.Authentication.Type = datastore.BasicAuthentication
+		}
+		endpoint.Authentication.BasicAuth = endpoint.BasicAuthConfig
+		endpoint.BasicAuthConfig = nil
 	}
 
 	return endpoint, nil
@@ -537,11 +592,23 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		oauth2Config = endpoint.Authentication.OAuth2
 	}
 
+	// Get BasicAuth config if authentication type is BasicAuth
+	var basicAuthConfig *datastore.BasicAuth
+	if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.BasicAuthentication {
+		basicAuthConfig = endpoint.Authentication.BasicAuth
+	}
+
+	var apiKeyHeaderName, apiKeyHeaderValue string
+	if ac.ApiKey != nil {
+		apiKeyHeaderName = ac.ApiKey.HeaderName
+		apiKeyHeaderValue = ac.ApiKey.HeaderValue
+	}
+
 	r, err := e.db.GetReadDB().ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Name, endpoint.Status, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
-		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets, key,
-		endpoint.MtlsClientCert, oauth2Config, contentType,
+		ac.Type, apiKeyHeaderName, apiKeyHeaderValue, endpoint.Secrets, key,
+		endpoint.MtlsClientCert, oauth2Config, basicAuthConfig, contentType,
 	)
 	if err != nil {
 		isEncErr, err2 := e.isEncryptionError(err)
@@ -818,6 +885,17 @@ func (e *endpointRepo) scanEndpoints(rows *sqlx.Rows) ([]datastore.Endpoint, err
 			}
 			endpoint.Authentication.OAuth2 = endpoint.OAuth2Config
 			endpoint.OAuth2Config = nil // Clear the temporary field
+		}
+
+		// Map BasicAuthConfig to Authentication.BasicAuth if present
+		if endpoint.BasicAuthConfig != nil {
+			if endpoint.Authentication == nil {
+				endpoint.Authentication = &datastore.EndpointAuthentication{
+					Type: datastore.BasicAuthentication,
+				}
+			}
+			endpoint.Authentication.BasicAuth = endpoint.BasicAuthConfig
+			endpoint.BasicAuthConfig = nil
 		}
 
 		endpoints = append(endpoints, endpoint)
