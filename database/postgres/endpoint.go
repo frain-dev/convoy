@@ -238,6 +238,10 @@ const (
         ELSE mtls_client_cert
     END AS mtls_client_cert,
 	CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(oauth2_config_cipher::bytea, $4)::jsonb
+        ELSE oauth2_config
+    END AS oauth2_config,
+	CASE
         WHEN is_encrypted THEN pgp_sym_decrypt(basic_auth_config_cipher::bytea, $4)::jsonb
         ELSE basic_auth_config
     END AS basic_auth_config,

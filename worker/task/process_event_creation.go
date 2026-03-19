@@ -315,6 +315,10 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 						log.FromContext(ctx).Warn("Endpoint has Basic Auth configured but feature flag is disabled, skipping Basic Auth authentication")
 					} else if endpoint.Authentication.BasicAuth == nil {
 						log.FromContext(ctx).Error("Basic Auth config is nil")
+					} else if endpoint.Authentication.BasicAuth.UserName == "" && endpoint.Authentication.BasicAuth.Password == "" {
+						log.FromContext(ctx).WithFields(log.Fields{
+							"endpoint.id": endpoint.UID,
+						}).Error("Basic Auth credentials are empty, skipping Basic Auth authentication")
 					} else {
 						headers = make(httpheader.HTTPHeader)
 						credentials := base64.StdEncoding.EncodeToString(
