@@ -7725,6 +7725,9 @@
                 "api_key": {
                     "$ref": "#/definitions/datastore.ApiKey"
                 },
+                "basic_auth": {
+                    "$ref": "#/definitions/datastore.BasicAuth"
+                },
                 "oauth2": {
                     "$ref": "#/definitions/datastore.OAuth2"
                 },
@@ -7737,11 +7740,13 @@
             "type": "string",
             "enum": [
                 "api_key",
-                "oauth2"
+                "oauth2",
+                "basic_auth"
             ],
             "x-enum-varnames": [
                 "APIKeyAuthentication",
-                "OAuth2Authentication"
+                "OAuth2Authentication",
+                "BasicAuthentication"
             ]
         },
         "datastore.EndpointStatus": {
@@ -9090,6 +9095,9 @@
             "properties": {
                 "api_key": {
                     "$ref": "#/definitions/models.ApiKey"
+                },
+                "basic_auth": {
+                    "$ref": "#/definitions/models.BasicAuth"
                 },
                 "oauth2": {
                     "$ref": "#/definitions/models.OAuth2"
