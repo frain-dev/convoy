@@ -110,6 +110,10 @@ export class CreateEndpointComponent implements OnInit {
 				header_name: [''],
 				header_value: ['']
 			}),
+			basic_auth: this.formBuilder.group({
+				username: [''],
+				password: ['']
+			}),
 			oauth2: this.formBuilder.group({
 				url: [''],
 				client_id: [''],
@@ -465,8 +469,8 @@ export class CreateEndpointComponent implements OnInit {
 			}
 		});
 		
-		// Also remove validators from API key fields if OAuth2 is selected
-		if (authType === 'oauth2') {
+		// Also remove validators from API key fields if OAuth2 or Basic Auth is selected
+		if (authType === 'oauth2' || authType === 'basic_auth') {
 			this.addNewEndpointForm.get('authentication.api_key.header_name')?.removeValidators(Validators.required);
 			this.addNewEndpointForm.get('authentication.api_key.header_name')?.updateValueAndValidity();
 			this.addNewEndpointForm.get('authentication.api_key.header_value')?.removeValidators(Validators.required);
@@ -523,12 +527,21 @@ export class CreateEndpointComponent implements OnInit {
 			if (!endpointValue.authentication?.api_key?.header_name && !endpointValue.authentication?.api_key?.header_value) {
 				delete endpointValue.authentication;
 			} else {
-				// Remove oauth2 if api_key is selected
+				// Remove oauth2 and basic_auth if api_key is selected
+				delete endpointValue.authentication.oauth2;
+				delete endpointValue.authentication.basic_auth;
+			}
+		} else if (authType === 'basic_auth') {
+			if (!endpointValue.authentication?.basic_auth?.username && !endpointValue.authentication?.basic_auth?.password) {
+				delete endpointValue.authentication;
+			} else {
+				delete endpointValue.authentication.api_key;
 				delete endpointValue.authentication.oauth2;
 			}
 		} else if (authType === 'oauth2') {
-			// Remove api_key if oauth2 is selected
+			// Remove api_key and basic_auth if oauth2 is selected
 			delete endpointValue.authentication.api_key;
+			delete endpointValue.authentication.basic_auth;
 			
 			// Clean up oauth2 based on authentication_type
 			const oauth2AuthType = endpointValue.authentication.oauth2?.authentication_type;
@@ -648,7 +661,7 @@ export class CreateEndpointComponent implements OnInit {
 		if (endpointDetails.owner_id) this.toggleConfigForm('owner_id');
 
 			if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
-			if (endpointDetails.authentication?.api_key?.header_value || endpointDetails.authentication?.api_key?.header_name || endpointDetails.authentication?.oauth2) {
+			if (endpointDetails.authentication?.api_key?.header_value || endpointDetails.authentication?.api_key?.header_name || endpointDetails.authentication?.oauth2 || endpointDetails.authentication?.basic_auth) {
 				this.toggleConfigForm('auth');
 			}
 			if (endpointDetails.http_timeout) this.toggleConfigForm('http_timeout');

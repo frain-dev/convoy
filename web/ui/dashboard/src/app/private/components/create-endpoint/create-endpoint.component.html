@@ -168,10 +168,11 @@
 							<div class="flex items-center gap-12px">
 								<div class="flex-1">
 									<convoy-select
-										[options]="privateService.getProjectDetails?.type === 'incoming' 
+										[options]="privateService.getProjectDetails?.type === 'incoming'
 											? [{ uid: 'api_key', name: 'API Key' }]
 											: [
 												{ uid: 'api_key', name: 'API Key' },
+												{ uid: 'basic_auth', name: 'Basic Auth' },
 												{ uid: 'oauth2', name: 'OAuth2' }
 											]"
 										name="auth_type"
@@ -204,6 +205,21 @@
 								<label for="header_value" convoy-label>API Key Value</label>
 								<input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
 								<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.api_key.header_value')?.touched && addNewEndpointForm.get('authentication.api_key.header_value')?.invalid">Endpoint auth API key value is required</convoy-input-error>
+							</convoy-input-field>
+						</div>
+						</ng-container>
+
+						<!-- Basic Auth Authentication -->
+						<ng-container *ngIf="selectedAuthType === 'basic_auth'" formGroupName="basic_auth">
+							<div class="grid grid-cols-2 gap-24px">
+							<convoy-input-field className="mb-0">
+								<label for="basic_auth_username" convoy-label>Username</label>
+								<input id="basic_auth_username" convoy-input autocomplete="username" formControlName="username" placeholder="Username" />
+							</convoy-input-field>
+
+							<convoy-input-field className="mb-0">
+								<label for="basic_auth_password" convoy-label>Password</label>
+								<input type="password" id="basic_auth_password" convoy-input autocomplete="current-password" formControlName="password" placeholder="Password" />
 							</convoy-input-field>
 						</div>
 						</ng-container>
