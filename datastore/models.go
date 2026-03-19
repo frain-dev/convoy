@@ -198,6 +198,7 @@ const (
 const (
 	APIKeyAuthentication EndpointAuthenticationType = "api_key"
 	OAuth2Authentication EndpointAuthenticationType = "oauth2"
+	BasicAuthentication  EndpointAuthenticationType = "basic_auth"
 )
 
 const (
@@ -442,6 +443,9 @@ type Endpoint struct {
 	// OAuth2 configuration (scanned from oauth2_config column)
 	OAuth2Config *OAuth2 `json:"-" db:"oauth2_config"`
 
+	// BasicAuth configuration (scanned from basic_auth_config column)
+	BasicAuthConfig *BasicAuth `json:"-" db:"basic_auth_config"`
+
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
@@ -466,7 +470,7 @@ type EndpointConfig struct {
 
 func (e *Endpoint) GetAuthConfig() EndpointAuthentication {
 	if e.Authentication != nil {
-		if e.Authentication.ApiKey != nil {
+		if e.Authentication.ApiKey != nil || e.Authentication.BasicAuth != nil {
 			return *e.Authentication
 		}
 	}
@@ -494,9 +498,10 @@ type Secret struct {
 }
 
 type EndpointAuthentication struct {
-	Type   EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key|oauth2)~unsupported authentication type"`
-	ApiKey *ApiKey                    `json:"api_key,omitempty" db:"api_key"`
-	OAuth2 *OAuth2                    `json:"oauth2,omitempty" db:"oauth2"`
+	Type      EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key|oauth2|basic_auth)~unsupported authentication type"`
+	ApiKey    *ApiKey                    `json:"api_key,omitempty" db:"api_key"`
+	OAuth2    *OAuth2                    `json:"oauth2,omitempty" db:"oauth2"`
+	BasicAuth *BasicAuth                 `json:"basic_auth,omitempty" db:"basic_auth"`
 }
 
 // MtlsClientCert holds the client certificate and key configuration for mTLS
@@ -1434,6 +1439,36 @@ type HMac struct {
 type BasicAuth struct {
 	UserName string `json:"username" db:"username" valid:"required" `
 	Password string `json:"password" db:"password" valid:"required"`
+}
+
+func (ba *BasicAuth) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, ba)
+}
+
+func (ba BasicAuth) Value() (driver.Value, error) {
+	if ba.UserName == "" && ba.Password == "" {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(ba)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type ApiKey struct {
