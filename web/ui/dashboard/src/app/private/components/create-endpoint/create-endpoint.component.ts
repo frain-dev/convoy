@@ -172,6 +172,7 @@ export class CreateEndpointComponent implements OnInit {
 	currentRoute = window.location.pathname.split('/').reverse()[0];
 	mtlsFeatureEnabled = false;
 	oauth2FeatureEnabled = false;
+	basicAuthFeatureEnabled = false;
 	organisationId!: string;
 	private rbacService = inject(RbacService);
 
@@ -191,6 +192,7 @@ export class CreateEndpointComponent implements OnInit {
 		this.getOrganisationId();
 		await this.checkMTLSFeatureFlag();
 		await this.checkOAuth2FeatureFlag();
+		await this.checkBasicAuthFeatureFlag();
 
 		if (this.type !== 'portal')
 			this.configurations.push(
@@ -443,6 +445,18 @@ export class CreateEndpointComponent implements OnInit {
 			this.oauth2FeatureEnabled = false;
 		}
 	}
+	async checkBasicAuthFeatureFlag() {
+		if (!this.organisationId) return;
+		try {
+			this.basicAuthFeatureEnabled = await this.settingsService.checkFeatureFlagEnabled({
+				org_id: this.organisationId,
+				feature_key: 'basic-auth-endpoint'
+			});
+		} catch (error) {
+			this.basicAuthFeatureEnabled = false;
+		}
+	}
+
 	async runEndpointValidation() {
 		const authType = this.selectedAuthType || this.addNewEndpointForm.get('authentication.type')?.value || 'api_key';
 		
