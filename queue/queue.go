@@ -63,3 +63,7 @@ func (j JobId) ReplayJobId() string {
 func (j JobId) MatchSubsJobId() string {
 	return fmt.Sprintf("match_subs:%s:%s", j.ProjectID, j.ResourceID)
 }
+
+func (j JobId) OnboardJobId() string {
+	return fmt.Sprintf("onboard:%s:%s", j.ProjectID, j.ResourceID)
+}
