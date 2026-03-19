@@ -112,6 +112,7 @@ const (
 	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"
 	MatchEventSubscriptionsProcessor TaskName = "MatchEventSubscriptionsProcessor"
 	BatchRetryProcessor              TaskName = "BatchRetryProcessor"
+	BulkOnboardProcessor             TaskName = "BulkOnboardProcessor"
 	UpdateOrganisationStatus         TaskName = "UpdateOrganisationStatus"
 	RefreshMetricsMaterializedViews  TaskName = "RefreshMetricsMaterializedViews"
 
