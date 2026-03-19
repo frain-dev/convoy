@@ -31,6 +31,7 @@ const (
 	CredentialEncryption FeatureFlagKey = "credential-encryption"
 	MTLS                 FeatureFlagKey = "mtls"
 	OAuthTokenExchange   FeatureFlagKey = "oauth-token-exchange"
+	BasicAuthEndpoint    FeatureFlagKey = "basic-auth-endpoint"
 )
 
 type (
@@ -52,6 +53,7 @@ var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
 	CredentialEncryption: disabled,
 	MTLS:                 disabled,
 	OAuthTokenExchange:   disabled,
+	BasicAuthEndpoint:    disabled,
 }
 
 type FFlag struct {
@@ -83,6 +85,8 @@ func NewFFlag(enableFeatureFlags []string) *FFlag {
 			f.Features[MTLS] = enabled
 		case string(OAuthTokenExchange):
 			f.Features[OAuthTokenExchange] = enabled
+		case string(BasicAuthEndpoint):
+			f.Features[BasicAuthEndpoint] = enabled
 		}
 	}
 
@@ -204,6 +208,7 @@ func CanAccessFeatureWithOrg(systemFFlag *FFlag, key FeatureFlagKey, data *Featu
 var EarlyAdopterFeatures = []FeatureFlagKey{
 	MTLS,
 	OAuthTokenExchange,
+	BasicAuthEndpoint,
 }
 
 // GetEarlyAdopterFeatures returns the list of features available under Early Adopter
