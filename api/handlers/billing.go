@@ -184,35 +184,13 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate current month period
-	now := time.Now()
-	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
-
-	// Calculate usage from actual Convoy data using repository
-	orgRepo := organisations.New(h.A.Logger, h.A.DB)
-	usage, err := orgRepo.CalculateUsage(r.Context(), orgID, startOfMonth, endOfMonth)
+	resp, err := h.BillingClient.GetUsage(r.Context(), orgID)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("failed to calculate usage: %s", err.Error()), http.StatusInternalServerError))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusServiceUnavailable))
 		return
 	}
 
-	// Format response
-	usageResponse := map[string]interface{}{
-		"organisation_id": usage.OrganisationID,
-		"period":          usage.Period,
-		"received": map[string]interface{}{
-			"volume": usage.Received.Volume,
-			"bytes":  usage.Received.Bytes,
-		},
-		"sent": map[string]interface{}{
-			"volume": usage.Sent.Volume,
-			"bytes":  usage.Sent.Bytes,
-		},
-		"created_at": usage.CreatedAt,
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", usageResponse, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse(resp.Message, resp.Data, http.StatusOK))
 }
 
 func (h *BillingHandler) GetInvoices(w http.ResponseWriter, r *http.Request) {
