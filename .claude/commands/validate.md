@@ -20,15 +20,22 @@ Validate Go code to ensure it's ready for review by running linting and vetting 
    golangci-lint run --config=.golangci.yml
    ```
 
-4. **Report results** in a summary table:
+4. **Run unit tests** (excludes e2e tests):
+   ```bash
+   go test -race -p 1 $(go list ./... | grep -v '/e2e') -v -timeout 30m
+   ```
+   This matches the `make test` target in the Makefile.
+
+5. **Report results** in a summary table:
 
    | Check | Result |
    |-------|--------|
    | `go vet ./...` | ✅ or ❌ |
    | `gofmt -s -l .` | ✅ or ❌ |
    | `golangci-lint run` | ✅ or ❌ (with issue count) |
+   | `go test` (unit) | ✅ or ❌ |
 
-5. If there are any issues, list them and offer to fix automatically fixable ones.
+6. If there are any issues, list them and offer to fix automatically fixable ones.
 
 ## Optional Arguments
 

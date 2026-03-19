@@ -13,6 +13,11 @@ VALUES (@id, @event_type, @endpoints, @project_id, @source_id,
         @headers, @raw, @data, @url_query_params, @idempotency_key,
         @is_duplicate_event, @acknowledged_at, @metadata, @status);
 
+-- name: CreateEventEndpoint :batchexec
+INSERT INTO convoy.events_endpoints (event_id, endpoint_id)
+VALUES (@event_id, @endpoint_id)
+ON CONFLICT (endpoint_id, event_id) DO NOTHING;
+
 -- name: UpdateEventEndpoints :exec
 UPDATE convoy.events
 SET endpoints = @endpoints
@@ -298,80 +303,80 @@ ORDER BY
     CASE WHEN @sort_order::text = 'DESC' THEN id END DESC,
     CASE WHEN @sort_order::text = 'ASC' THEN id END ASC;
 
--- name: CountPrevEventsExists :one
--- Check if there are events before cursor (for HasPrevPage) - EXISTS path
+-- name: CountPrevEvents :one
+-- Count events before cursor (for HasPrevPage) - EXISTS path
 -- "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
-SELECT EXISTS(SELECT 1
-              FROM convoy.events ev
-              WHERE ev.deleted_at IS NULL
-                AND ev.project_id = @project_id
-                AND (CASE
-                         WHEN @has_idempotency_key::BOOLEAN THEN ev.idempotency_key = @idempotency_key
-                         ELSE true END)
-                AND ev.created_at >= @start_date
-                AND ev.created_at <= @end_date
-                -- Source filter
-                AND (CASE
-                         WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[])
-                         ELSE true END)
-                -- Endpoint/owner filter (matches LoadEventsPagedExists)
-                AND (
-                    CASE
-                        WHEN @has_endpoint_or_owner_filter::BOOLEAN THEN
-                            EXISTS (SELECT 1
-                                    FROM convoy.events_endpoints ee
-                                             JOIN convoy.endpoints e ON e.id = ee.endpoint_id
-                                    WHERE ee.event_id = ev.id
-                                      AND (CASE WHEN @has_owner_id::BOOLEAN THEN e.owner_id = @owner_id ELSE true END)
-                                      AND (CASE
-                                               WHEN @has_endpoint_ids::BOOLEAN THEN ee.endpoint_id = ANY (@endpoint_ids::TEXT[])
-                                               ELSE true END)
-                            )
-                        ELSE true
-                        END
-                    )
-                -- Broker message ID filter
-                AND (CASE
-                         WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
-                         ELSE true END)
-                AND (CASE
-                         WHEN @sort_order::text = 'DESC' THEN ev.id > @cursor
-                         WHEN @sort_order::text = 'ASC' THEN ev.id < @cursor
-                         ELSE ev.id > @cursor END));
+SELECT COALESCE(COUNT(*), 0) AS count
+FROM convoy.events ev
+WHERE ev.deleted_at IS NULL
+  AND ev.project_id = @project_id
+  AND (CASE
+           WHEN @has_idempotency_key::BOOLEAN THEN ev.idempotency_key = @idempotency_key
+           ELSE true END)
+  AND ev.created_at >= @start_date
+  AND ev.created_at <= @end_date
+  -- Source filter
+  AND (CASE
+           WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[])
+           ELSE true END)
+  -- Endpoint/owner filter (matches LoadEventsPagedExists)
+  AND (
+      CASE
+          WHEN @has_endpoint_or_owner_filter::BOOLEAN THEN
+              EXISTS (SELECT 1
+                      FROM convoy.events_endpoints ee
+                               JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+                      WHERE ee.event_id = ev.id
+                        AND (CASE WHEN @has_owner_id::BOOLEAN THEN e.owner_id = @owner_id ELSE true END)
+                        AND (CASE
+                                 WHEN @has_endpoint_ids::BOOLEAN THEN ee.endpoint_id = ANY (@endpoint_ids::TEXT[])
+                                 ELSE true END)
+              )
+          ELSE true
+          END
+      )
+  -- Broker message ID filter
+  AND (CASE
+           WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
+           ELSE true END)
+  AND (CASE
+           WHEN @sort_order::text = 'DESC' THEN ev.id > @cursor
+           WHEN @sort_order::text = 'ASC' THEN ev.id < @cursor
+           ELSE ev.id > @cursor END);
 
 -- name: CountPrevEventsSearch :one
--- Check if there are events before cursor (for HasPrevPage) - Search path
+-- Count events before cursor (for HasPrevPage) - Search path
 -- "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
-SELECT EXISTS(SELECT 1
-              FROM convoy.events_search ev
-                       LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
-              WHERE ev.deleted_at IS NULL
-                AND ev.project_id = @project_id
-                AND (CASE
-                         WHEN @has_idempotency_key::BOOLEAN THEN ev.idempotency_key = @idempotency_key
-                         ELSE true END)
-                AND ev.created_at >= @start_date
-                AND ev.created_at <= @end_date
-                -- Source filter
-                AND (CASE
-                         WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[])
-                         ELSE true END)
-                -- Endpoint filter
-                AND (CASE
-                         WHEN @has_endpoint_ids::BOOLEAN THEN ee.endpoint_id = ANY (@endpoint_ids::TEXT[])
-                         ELSE true END)
-                -- Broker message ID filter
-                AND (CASE
-                         WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
-                         ELSE true END)
-                -- Search query filter
-                AND (CASE
-                         WHEN @has_query::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', @query)
-                         ELSE true END)
-                AND (CASE
-                         WHEN @sort_order::text = 'DESC' THEN ev.id > @cursor
-                         WHEN @sort_order::text = 'ASC' THEN ev.id < @cursor
-                         ELSE ev.id > @cursor END));
+SELECT COALESCE(COUNT(*), 0) AS count
+FROM convoy.events_search ev
+         LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+WHERE ev.deleted_at IS NULL
+  AND ev.project_id = @project_id
+  AND (CASE
+           WHEN @has_idempotency_key::BOOLEAN THEN ev.idempotency_key = @idempotency_key
+           ELSE true END)
+  AND ev.created_at >= @start_date
+  AND ev.created_at <= @end_date
+  -- Source filter
+  AND (CASE
+           WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[])
+           ELSE true END)
+  -- Endpoint filter
+  AND (CASE
+           WHEN @has_endpoint_ids::BOOLEAN THEN ee.endpoint_id = ANY (@endpoint_ids::TEXT[])
+           ELSE true END)
+  -- Broker message ID filter
+  AND (CASE
+           WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
+           ELSE true END)
+  -- Search query filter
+  AND (CASE
+           WHEN @has_query::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', @query)
+           ELSE true END)
+  AND (CASE
+           WHEN @sort_order::text = 'DESC' THEN ev.id > @cursor
+           WHEN @sort_order::text = 'ASC' THEN ev.id < @cursor
+           ELSE ev.id > @cursor END);
 
 -- ============================================================================
 -- Group 4: Deletion & Maintenance (4 queries)

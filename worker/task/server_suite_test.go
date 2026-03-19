@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"io"
 	"os"
 	"testing"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -121,7 +123,7 @@ func buildApplication(t *testing.T) *applicationHandler {
 	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
 	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
 	deliveryRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
 
 	app := &applicationHandler{

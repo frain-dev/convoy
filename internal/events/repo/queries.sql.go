@@ -84,47 +84,47 @@ func (q *Queries) CountExportedEvents(ctx context.Context, arg CountExportedEven
 	return count, err
 }
 
-const countPrevEventsExists = `-- name: CountPrevEventsExists :one
-SELECT EXISTS(SELECT 1
-              FROM convoy.events ev
-              WHERE ev.deleted_at IS NULL
-                AND ev.project_id = $1
-                AND (CASE
-                         WHEN $2::BOOLEAN THEN ev.idempotency_key = $3
-                         ELSE true END)
-                AND ev.created_at >= $4
-                AND ev.created_at <= $5
-                -- Source filter
-                AND (CASE
-                         WHEN $6::BOOLEAN THEN ev.source_id = ANY ($7::TEXT[])
-                         ELSE true END)
-                -- Endpoint/owner filter (matches LoadEventsPagedExists)
-                AND (
-                    CASE
-                        WHEN $8::BOOLEAN THEN
-                            EXISTS (SELECT 1
-                                    FROM convoy.events_endpoints ee
-                                             JOIN convoy.endpoints e ON e.id = ee.endpoint_id
-                                    WHERE ee.event_id = ev.id
-                                      AND (CASE WHEN $9::BOOLEAN THEN e.owner_id = $10 ELSE true END)
-                                      AND (CASE
-                                               WHEN $11::BOOLEAN THEN ee.endpoint_id = ANY ($12::TEXT[])
-                                               ELSE true END)
-                            )
-                        ELSE true
-                        END
-                    )
-                -- Broker message ID filter
-                AND (CASE
-                         WHEN $13::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $14
-                         ELSE true END)
-                AND (CASE
-                         WHEN $15::text = 'DESC' THEN ev.id > $16
-                         WHEN $15::text = 'ASC' THEN ev.id < $16
-                         ELSE ev.id > $16 END))
+const countPrevEvents = `-- name: CountPrevEvents :one
+SELECT COALESCE(COUNT(*), 0) AS count
+FROM convoy.events ev
+WHERE ev.deleted_at IS NULL
+  AND ev.project_id = $1
+  AND (CASE
+           WHEN $2::BOOLEAN THEN ev.idempotency_key = $3
+           ELSE true END)
+  AND ev.created_at >= $4
+  AND ev.created_at <= $5
+  -- Source filter
+  AND (CASE
+           WHEN $6::BOOLEAN THEN ev.source_id = ANY ($7::TEXT[])
+           ELSE true END)
+  -- Endpoint/owner filter (matches LoadEventsPagedExists)
+  AND (
+      CASE
+          WHEN $8::BOOLEAN THEN
+              EXISTS (SELECT 1
+                      FROM convoy.events_endpoints ee
+                               JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+                      WHERE ee.event_id = ev.id
+                        AND (CASE WHEN $9::BOOLEAN THEN e.owner_id = $10 ELSE true END)
+                        AND (CASE
+                                 WHEN $11::BOOLEAN THEN ee.endpoint_id = ANY ($12::TEXT[])
+                                 ELSE true END)
+              )
+          ELSE true
+          END
+      )
+  -- Broker message ID filter
+  AND (CASE
+           WHEN $13::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $14
+           ELSE true END)
+  AND (CASE
+           WHEN $15::text = 'DESC' THEN ev.id > $16
+           WHEN $15::text = 'ASC' THEN ev.id < $16
+           ELSE ev.id > $16 END)
 `
 
-type CountPrevEventsExistsParams struct {
+type CountPrevEventsParams struct {
 	ProjectID                pgtype.Text
 	HasIdempotencyKey        pgtype.Bool
 	IdempotencyKey           pgtype.Text
@@ -143,10 +143,10 @@ type CountPrevEventsExistsParams struct {
 	Cursor                   pgtype.Text
 }
 
-// Check if there are events before cursor (for HasPrevPage) - EXISTS path
+// Count events before cursor (for HasPrevPage) - EXISTS path
 // "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
-func (q *Queries) CountPrevEventsExists(ctx context.Context, arg CountPrevEventsExistsParams) (bool, error) {
-	row := q.db.QueryRow(ctx, countPrevEventsExists,
+func (q *Queries) CountPrevEvents(ctx context.Context, arg CountPrevEventsParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, countPrevEvents,
 		arg.ProjectID,
 		arg.HasIdempotencyKey,
 		arg.IdempotencyKey,
@@ -164,42 +164,42 @@ func (q *Queries) CountPrevEventsExists(ctx context.Context, arg CountPrevEvents
 		arg.SortOrder,
 		arg.Cursor,
 	)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
+	var count pgtype.Int8
+	err := row.Scan(&count)
+	return count, err
 }
 
 const countPrevEventsSearch = `-- name: CountPrevEventsSearch :one
-SELECT EXISTS(SELECT 1
-              FROM convoy.events_search ev
-                       LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
-              WHERE ev.deleted_at IS NULL
-                AND ev.project_id = $1
-                AND (CASE
-                         WHEN $2::BOOLEAN THEN ev.idempotency_key = $3
-                         ELSE true END)
-                AND ev.created_at >= $4
-                AND ev.created_at <= $5
-                -- Source filter
-                AND (CASE
-                         WHEN $6::BOOLEAN THEN ev.source_id = ANY ($7::TEXT[])
-                         ELSE true END)
-                -- Endpoint filter
-                AND (CASE
-                         WHEN $8::BOOLEAN THEN ee.endpoint_id = ANY ($9::TEXT[])
-                         ELSE true END)
-                -- Broker message ID filter
-                AND (CASE
-                         WHEN $10::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $11
-                         ELSE true END)
-                -- Search query filter
-                AND (CASE
-                         WHEN $12::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', $13)
-                         ELSE true END)
-                AND (CASE
-                         WHEN $14::text = 'DESC' THEN ev.id > $15
-                         WHEN $14::text = 'ASC' THEN ev.id < $15
-                         ELSE ev.id > $15 END))
+SELECT COALESCE(COUNT(*), 0) AS count
+FROM convoy.events_search ev
+         LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+WHERE ev.deleted_at IS NULL
+  AND ev.project_id = $1
+  AND (CASE
+           WHEN $2::BOOLEAN THEN ev.idempotency_key = $3
+           ELSE true END)
+  AND ev.created_at >= $4
+  AND ev.created_at <= $5
+  -- Source filter
+  AND (CASE
+           WHEN $6::BOOLEAN THEN ev.source_id = ANY ($7::TEXT[])
+           ELSE true END)
+  -- Endpoint filter
+  AND (CASE
+           WHEN $8::BOOLEAN THEN ee.endpoint_id = ANY ($9::TEXT[])
+           ELSE true END)
+  -- Broker message ID filter
+  AND (CASE
+           WHEN $10::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $11
+           ELSE true END)
+  -- Search query filter
+  AND (CASE
+           WHEN $12::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', $13)
+           ELSE true END)
+  AND (CASE
+           WHEN $14::text = 'DESC' THEN ev.id > $15
+           WHEN $14::text = 'ASC' THEN ev.id < $15
+           ELSE ev.id > $15 END)
 `
 
 type CountPrevEventsSearchParams struct {
@@ -220,9 +220,9 @@ type CountPrevEventsSearchParams struct {
 	Cursor             pgtype.Text
 }
 
-// Check if there are events before cursor (for HasPrevPage) - Search path
+// Count events before cursor (for HasPrevPage) - Search path
 // "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
-func (q *Queries) CountPrevEventsSearch(ctx context.Context, arg CountPrevEventsSearchParams) (bool, error) {
+func (q *Queries) CountPrevEventsSearch(ctx context.Context, arg CountPrevEventsSearchParams) (pgtype.Int8, error) {
 	row := q.db.QueryRow(ctx, countPrevEventsSearch,
 		arg.ProjectID,
 		arg.HasIdempotencyKey,
@@ -240,9 +240,9 @@ func (q *Queries) CountPrevEventsSearch(ctx context.Context, arg CountPrevEvents
 		arg.SortOrder,
 		arg.Cursor,
 	)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
+	var count pgtype.Int8
+	err := row.Scan(&count)
+	return count, err
 }
 
 const countProjectMessages = `-- name: CountProjectMessages :one

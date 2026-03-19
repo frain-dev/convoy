@@ -898,8 +898,14 @@ func TestE2E_GooglePubSub_Single_NoMatchingSubscription(t *testing.T) {
 	c := convoy.New(env.ServerURL+"/api/v1", env.APIKey, env.Project.UID)
 	db := env.App.DB.(*postgres.Postgres)
 
-	// Create endpoint but NO subscription
+	// Create endpoint with a subscription for a different event type
 	endpoint := CreateEndpointViaSDK(t, c, 19020, "owner-"+ulid.Make().String())
+
+	subscription := CreateSubscriptionWithFilter(
+		t, db, env.ctx, env.Project,
+		endpoint, []string{"other.event"}, nil, nil, nil, nil,
+	)
+	require.NotNil(t, subscription)
 
 	topicID := "test-topic-" + ulid.Make().String()
 	subscriptionID := "test-sub-" + ulid.Make().String()
@@ -914,9 +920,9 @@ func TestE2E_GooglePubSub_Single_NoMatchingSubscription(t *testing.T) {
 	data := map[string]interface{}{"test": "data"}
 	PublishSingleGooglePubSubMessage(t, env.PubSubEmulatorHost, env.ProjectID, topicID, endpoint.UID, "test.event", data)
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
 
-	// Verify event created but NO delivery
+	// Verify event created but NO delivery (event type doesn't match subscription)
 	event := AssertEventCreated(t, db, env.ctx, env.Project.UID, "test.event")
 	AssertNoEventDeliveryCreated(t, db, env.ctx, env.Project.UID, event.UID, endpoint.UID)
 }

@@ -2,6 +2,7 @@ package delivery_attempts
 
 import (
 	"context"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -342,7 +344,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	require.NoError(t, err)
 
 	// Now create event delivery with valid event_id and subscription_id
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
 
 	eventDelivery := &datastore.EventDelivery{
 		UID:            ulid.Make().String(),

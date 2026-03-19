@@ -7,9 +7,9 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -24,7 +24,7 @@ func createProjectService(h *Handler) (*services.ProjectService, error) {
 	apiKeyRepo := api_keys.New(h.A.Logger, h.A.DB)
 	projectRepo := projects.New(h.A.Logger, h.A.DB)
 	eventRepo := events.New(h.A.Logger, h.A.DB)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
+	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 	eventTypesRepo := event_types.New(h.A.Logger, h.A.DB)
 
 	projectService, err := services.NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, h.A.Licenser, eventTypesRepo)

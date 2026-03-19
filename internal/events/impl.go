@@ -22,10 +22,6 @@ import (
 )
 
 const (
-	createEventEndpointsSQL = "INSERT INTO convoy.events_endpoints (event_id, endpoint_id) VALUES ($1, $2) ON CONFLICT (endpoint_id, event_id) DO NOTHING"
-)
-
-const (
 	PartitionSize = 30_000 // Batch size for event_endpoints inserts
 )
 
@@ -92,7 +88,7 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 		return err
 	}
 
-	// Batch insert event_endpoints using pgx.Batch for efficiency
+	// Batch insert event_endpoints using sqlc batchexec
 	endpoints := event.Endpoints
 	for i := 0; i < len(endpoints); i += PartitionSize {
 		end := i + PartitionSize
@@ -100,18 +96,25 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 			end = len(endpoints)
 		}
 
-		batch := &pgx.Batch{}
-		for _, endpointID := range endpoints[i:end] {
-			batch.Queue(createEventEndpointsSQL, event.UID, endpointID)
-		}
-		results := tx.SendBatch(ctx, batch)
-		for range endpoints[i:end] {
-			if _, err := results.Exec(); err != nil {
-				results.Close()
-				return err
+		chunk := endpoints[i:end]
+		params := make([]repo.CreateEventEndpointParams, len(chunk))
+		for j, endpointID := range chunk {
+			params[j] = repo.CreateEventEndpointParams{
+				EventID:    common.StringToPgTextNullable(event.UID),
+				EndpointID: common.StringToPgTextNullable(endpointID),
 			}
 		}
-		results.Close()
+
+		var batchErr error
+		br := qtx.CreateEventEndpoint(ctx, params)
+		br.Exec(func(_ int, err error) {
+			if err != nil && batchErr == nil {
+				batchErr = err
+			}
+		})
+		if batchErr != nil {
+			return batchErr
+		}
 	}
 
 	return tx.Commit(ctx)
@@ -205,25 +208,32 @@ func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Eve
 		return err
 	}
 
-	// Batch insert new event_endpoints using pgx.Batch for efficiency
+	// Batch insert new event_endpoints using sqlc batchexec
 	for i := 0; i < len(endpoints); i += PartitionSize {
 		end := i + PartitionSize
 		if end > len(endpoints) {
 			end = len(endpoints)
 		}
 
-		batch := &pgx.Batch{}
-		for _, endpointID := range endpoints[i:end] {
-			batch.Queue(createEventEndpointsSQL, event.UID, endpointID)
-		}
-		results := tx.SendBatch(ctx, batch)
-		for range endpoints[i:end] {
-			if _, err := results.Exec(); err != nil {
-				results.Close()
-				return err
+		chunk := endpoints[i:end]
+		params := make([]repo.CreateEventEndpointParams, len(chunk))
+		for j, endpointID := range chunk {
+			params[j] = repo.CreateEventEndpointParams{
+				EventID:    common.StringToPgTextNullable(event.UID),
+				EndpointID: common.StringToPgTextNullable(endpointID),
 			}
 		}
-		results.Close()
+
+		var batchErr error
+		br := qtx.CreateEventEndpoint(ctx, params)
+		br.Exec(func(_ int, err error) {
+			if err != nil && batchErr == nil {
+				batchErr = err
+			}
+		})
+		if batchErr != nil {
+			return batchErr
+		}
 	}
 
 	return tx.Commit(ctx)
@@ -424,7 +434,7 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 	sortOrder := filter.Pageable.SortOrder()
 
 	if useExistsPath {
-		params := repo.CountPrevEventsExistsParams{
+		params := repo.CountPrevEventsParams{
 			ProjectID:                common.StringToPgTextNullable(projectID),
 			HasIdempotencyKey:        common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
 			IdempotencyKey:           common.StringToPgTextNullable(filter.IdempotencyKey),
@@ -443,15 +453,11 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 			Cursor:                   common.StringToPgTextNullable(cursor),
 		}
 
-		exists, err := s.repo.CountPrevEventsExists(ctx, params)
+		count, err := s.repo.CountPrevEvents(ctx, params)
 		if err != nil {
 			return datastore.PrevRowCount{}, err
 		}
-		count := 0
-		if exists {
-			count = 1
-		}
-		return datastore.PrevRowCount{Count: count}, nil
+		return datastore.PrevRowCount{Count: int(count.Int64)}, nil
 	}
 
 	// Search path
@@ -473,15 +479,11 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 		Cursor:             common.StringToPgTextNullable(cursor),
 	}
 
-	exists, err := s.repo.CountPrevEventsSearch(ctx, params)
+	count, err := s.repo.CountPrevEventsSearch(ctx, params)
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}
-	count := 0
-	if exists {
-		count = 1
-	}
-	return datastore.PrevRowCount{Count: count}, nil
+	return datastore.PrevRowCount{Count: int(count.Int64)}, nil
 }
 
 // DeleteProjectEvents soft or hard deletes events
