@@ -320,6 +320,9 @@
 					"api_key": {
 						"$ref": "#/components/schemas/datastore.ApiKey"
 					},
+					"basic_auth": {
+						"$ref": "#/components/schemas/datastore.BasicAuth"
+					},
 					"oauth2": {
 						"$ref": "#/components/schemas/datastore.OAuth2"
 					},
@@ -332,7 +335,8 @@
 			"datastore.EndpointAuthenticationType": {
 				"enum": [
 					"api_key",
-					"oauth2"
+					"oauth2",
+					"basic_auth"
 				],
 				"type": "string"
 			},
@@ -1612,6 +1616,9 @@
 				"properties": {
 					"api_key": {
 						"$ref": "#/components/schemas/models.ApiKey"
+					},
+					"basic_auth": {
+						"$ref": "#/components/schemas/models.BasicAuth"
 					},
 					"oauth2": {
 						"$ref": "#/components/schemas/models.OAuth2"

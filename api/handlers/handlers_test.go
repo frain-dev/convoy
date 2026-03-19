@@ -70,4 +70,3 @@ func TestIsOrganisationDisabled(t *testing.T) {
 		})
 	}
 }
-

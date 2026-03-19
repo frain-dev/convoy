@@ -204,6 +204,20 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 		return nil, err
 	}
 
+	// Check license + feature flag before allowing Basic Auth configuration
+	if auth != nil && auth.Type == datastore.BasicAuthentication {
+		// TODO: Replace with a.Licenser.BasicAuthEndpointAuth() once basic_auth_endpoint_auth entitlement is available
+		if !a.Licenser.OAuth2EndpointAuth() {
+			return nil, &ServiceError{ErrMsg: ErrBasicAuthFeatureUnavailable}
+		}
+
+		basicAuthEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.BasicAuthEndpoint, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, a.Project.OrganisationID)
+		if !basicAuthEnabled {
+			log.FromContext(ctx).Warn("Basic Auth configuration provided but feature flag not enabled, ignoring Basic Auth config")
+			auth = nil
+		}
+	}
+
 	// Check license before allowing OAuth2 configuration
 	if auth != nil && auth.Type == datastore.OAuth2Authentication {
 		if !a.Licenser.OAuth2EndpointAuth() {

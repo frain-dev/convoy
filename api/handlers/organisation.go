@@ -304,11 +304,13 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 	featureNames := map[fflag.FeatureFlagKey]string{
 		fflag.MTLS:               "mTLS",
 		fflag.OAuthTokenExchange: "OAuth Token Exchange",
+		fflag.BasicAuthEndpoint:  "Basic Auth Endpoint",
 	}
 
 	featureDescriptions := map[fflag.FeatureFlagKey]string{
 		fflag.MTLS:               "Mutual TLS support for secure endpoint communication",
 		fflag.OAuthTokenExchange: "OAuth token exchange functionality for endpoint authentication",
+		fflag.BasicAuthEndpoint:  "Basic authentication support for endpoint webhook delivery",
 	}
 
 	for _, featureKey := range features {
@@ -391,6 +393,9 @@ func (h *Handler) isEarlyAdopterFeatureLicensed(featureKey fflag.FeatureFlagKey)
 	case fflag.MTLS:
 		return h.A.Licenser.MutualTLS()
 	case fflag.OAuthTokenExchange:
+		return h.A.Licenser.OAuth2EndpointAuth()
+	case fflag.BasicAuthEndpoint:
+		// TODO: Replace with h.A.Licenser.BasicAuthEndpointAuth() once basic_auth_endpoint_auth entitlement is available
 		return h.A.Licenser.OAuth2EndpointAuth()
 	default:
 		return false

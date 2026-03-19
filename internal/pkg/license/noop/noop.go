@@ -74,6 +74,10 @@ func (Licenser) OAuth2EndpointAuth() bool {
 	return true
 }
 
+func (Licenser) BasicAuthEndpointAuth() bool {
+	return true
+}
+
 func (Licenser) RemoveEnabledProject(_ string) {}
 
 func (Licenser) ProjectEnabled(_ string) bool {

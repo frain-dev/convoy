@@ -123,6 +123,20 @@ func (mr *MockLicenserMockRecorder) AsynqMonitoring() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsynqMonitoring", reflect.TypeOf((*MockLicenser)(nil).AsynqMonitoring))
 }
 
+// BasicAuthEndpointAuth mocks base method.
+func (m *MockLicenser) BasicAuthEndpointAuth() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BasicAuthEndpointAuth")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// BasicAuthEndpointAuth indicates an expected call of BasicAuthEndpointAuth.
+func (mr *MockLicenserMockRecorder) BasicAuthEndpointAuth() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BasicAuthEndpointAuth", reflect.TypeOf((*MockLicenser)(nil).BasicAuthEndpointAuth))
+}
+
 // CanExportPrometheusMetrics mocks base method.
 func (m *MockLicenser) CanExportPrometheusMetrics() bool {
 	m.ctrl.T.Helper()
