@@ -138,13 +138,13 @@ func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Batch items and queue jobs
-	batchCount := 0
+	// Phase 1: Build all batch payloads (fail fast on encoding errors)
+	type batchJob struct {
+		job *queue.Job
+	}
+	var jobs []batchJob
 	for i := 0; i < len(items); i += onboardBatchSize {
-		end := i + onboardBatchSize
-		if end > len(items) {
-			end = len(items)
-		}
+		end := min(i+onboardBatchSize, len(items))
 
 		batchID := ulid.Make().String()
 		batch := task.BulkOnboardBatch{
@@ -159,18 +159,23 @@ func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		job := &queue.Job{
-			ID:      queue.JobId{ProjectID: project.UID, ResourceID: batchID}.OnboardJobId(),
-			Payload: payload,
-		}
+		jobs = append(jobs, batchJob{
+			job: &queue.Job{
+				ID:      queue.JobId{ProjectID: project.UID, ResourceID: batchID}.OnboardJobId(),
+				Payload: payload,
+			},
+		})
+	}
 
-		writeErr := h.A.Queue.Write(convoy.BulkOnboardProcessor, convoy.DefaultQueue, job)
+	// Phase 2: Enqueue all jobs
+	for _, j := range jobs {
+		writeErr := h.A.Queue.Write(convoy.BulkOnboardProcessor, convoy.DefaultQueue, j.job)
 		if writeErr != nil {
 			_ = render.Render(w, r, util.NewErrorResponse("Failed to queue batch", http.StatusInternalServerError))
 			return
 		}
-		batchCount++
 	}
+	batchCount := len(jobs)
 
 	resp := models.BulkOnboardAcceptedResponse{
 		BatchCount: batchCount,
