@@ -144,8 +144,6 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 func buildEndpoint(ctx context.Context, deps BulkOnboardDeps, project *datastore.Project, item BulkOnboardItem) (*datastore.Endpoint, error) {
 	uid := ulid.Make().String()
 
-	advancedSignatures := true
-
 	sc, err := util.GenerateSecret()
 	if err != nil {
 		return nil, err
@@ -159,7 +157,7 @@ func buildEndpoint(ctx context.Context, deps BulkOnboardDeps, project *datastore
 		AppID:              uid,
 		Status:             datastore.ActiveEndpointStatus,
 		ContentType:        "application/json",
-		AdvancedSignatures: advancedSignatures,
+		AdvancedSignatures: true,
 		Secrets: []datastore.Secret{
 			{
 				UID:       ulid.Make().String(),
@@ -212,15 +210,10 @@ func buildSubscription(ctx context.Context, projectID, endpointID string, item B
 		eventType = "*"
 	}
 
-	endpointPrefix := endpointID
-	if len(endpointPrefix) > 8 {
-		endpointPrefix = endpointPrefix[:8]
-	}
-
 	return &datastore.Subscription{
 		UID:          ulid.Make().String(),
 		ProjectID:    projectID,
-		Name:         fmt.Sprintf("%s-%s-subscription", item.Name, endpointPrefix),
+		Name:         fmt.Sprintf("%s-%s-subscription", item.Name, endpointID),
 		Type:         datastore.SubscriptionTypeAPI,
 		EndpointID:   endpointID,
 		DeliveryMode: datastore.AtLeastOnceDeliveryMode,
