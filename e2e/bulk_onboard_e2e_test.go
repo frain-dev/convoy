@@ -289,6 +289,14 @@ func TestE2E_BulkOnboard_ValidationFailure_Returns400(t *testing.T) {
 	defer resp.Body.Close()
 
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var apiResp onboardAPIResponse
+	err = json.Unmarshal(body, &apiResp)
+	require.NoError(t, err)
+	require.False(t, apiResp.Status, "validation failure response must have status: false")
 }
 
 func TestE2E_BulkOnboard_EmptyItems_Returns400(t *testing.T) {
