@@ -244,6 +244,10 @@ func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
 		}
 
 		items = append(items, item)
+
+		if len(items) > maxOnboardItems {
+			return nil, fmt.Errorf("CSV file exceeds maximum of %d items", maxOnboardItems)
+		}
 	}
 
 	if len(items) == 0 {
