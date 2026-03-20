@@ -12,6 +12,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
@@ -43,6 +44,11 @@ func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
+		return
+	}
+
+	if project.Type == datastore.IncomingProject {
+		_ = render.Render(w, r, util.NewErrorResponse("bulk onboard is only supported for outgoing projects", http.StatusBadRequest))
 		return
 	}
 
@@ -231,6 +237,10 @@ func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
 		}
 
 		items = append(items, item)
+	}
+
+	if len(items) == 0 {
+		return nil, fmt.Errorf("CSV file is empty or contains only a header row")
 	}
 
 	return items, nil
