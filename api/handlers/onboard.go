@@ -222,20 +222,20 @@ func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
 
 	expectedCols := len(header)
 	var items []models.OnboardItem
-	rowNum := 1
+	dataRow := 0
 	for {
 		record, readErr := reader.Read()
 		if readErr == io.EOF {
 			break
 		}
-		rowNum++
+		dataRow++
 		if readErr != nil {
-			log.WithError(readErr).Errorf("bulk onboard: failed to parse CSV row %d", rowNum)
-			return nil, fmt.Errorf("CSV row %d: failed to parse row", rowNum)
+			log.WithError(readErr).Errorf("bulk onboard: failed to parse CSV data row %d", dataRow)
+			return nil, fmt.Errorf("CSV (data row %d): failed to parse row", dataRow)
 		}
 
 		if len(record) != expectedCols {
-			return nil, fmt.Errorf("CSV row %d: expected %d columns but got %d", rowNum, expectedCols, len(record))
+			return nil, fmt.Errorf("CSV (data row %d): expected %d columns but got %d", dataRow, expectedCols, len(record))
 		}
 
 		item := models.OnboardItem{
