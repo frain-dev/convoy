@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/metrics/timeseries"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -71,6 +72,7 @@ type EventProcessorDeps struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	MetricsRecorder            timeseries.MetricsRecorder
 }
 
 func NewDefaultEventChannel() *DefaultEventChannel {
@@ -157,6 +159,11 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
+
+		// Record event created metric
+		if args.metricsRecorder != nil {
+			_ = args.metricsRecorder.RecordEventCreated(ctx, event.ProjectID, event.SourceID)
+		}
 	}
 
 	args.tracerBackend.Capture(ctx, "event.creation.success", attributes, startTime, time.Now())
@@ -234,6 +241,7 @@ func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.
 		deps.Licenser,
 		deps.TracerBackend,
 		deps.OAuth2TokenService,
+		deps.MetricsRecorder,
 	)
 }
 
@@ -249,6 +257,7 @@ type WriteEventDeliveriesToQueueOptions struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	MetricsRecorder            timeseries.MetricsRecorder
 }
 
 func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesToQueueOptions) error {
@@ -413,6 +422,24 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 	err := opts.EventDeliveryRepo.CreateEventDeliveries(ctx, eventDeliveries)
 	if err != nil {
 		return &EndpointError{Err: fmt.Errorf("CODE: 1008, err: %s", err.Error()), delay: defaultDelay}
+	}
+
+	// Record event delivery created metrics
+	if opts.MetricsRecorder != nil {
+		for _, ed := range eventDeliveries {
+			edMetrics := &timeseries.EventDeliveryMetrics{
+				ProjectID:   ed.ProjectID,
+				ProjectName: opts.Project.Name,
+				EndpointID:  ed.EndpointID,
+				EventID:     ed.EventID,
+				EventType:   string(ed.EventType),
+				SourceID:    opts.Event.SourceID,
+				OrgID:       opts.Project.OrganisationID,
+				OrgName:     opts.Project.OrganisationID, // Can be enhanced if org name is available
+				Status:      string(ed.Status),
+			}
+			_ = opts.MetricsRecorder.RecordEventDeliveryCreated(ctx, edMetrics)
+		}
 	}
 
 	for i, eventDelivery := range eventDeliveries {
