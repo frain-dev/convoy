@@ -22,7 +22,7 @@ import (
 )
 
 const maxOnboardItems = 1000
-const onboardBatchSize = 50
+const onboardBatchSize = 10
 
 // BulkOnboard
 //

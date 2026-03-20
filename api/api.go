@@ -285,7 +285,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
 		v1Router.Route("/v1", func(r chi.Router) {
-			r.Use(chiMiddleware.AllowContentType("application/json"))
+			r.Use(allowContentType)
 			r.Use(middleware.JsonResponse)
 			r.Use(middleware.RequireAuth())
 
@@ -396,11 +396,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						})
 					})
 
-					projectSubRouter.With(
-						handler.RequireEnabledProject(),
-						handler.RequireEnabledOrganisation(),
-						chiMiddleware.AllowContentType("application/json", "multipart/form-data"),
-					).Post("/onboard", handler.BulkOnboard)
+					projectSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/onboard", handler.BulkOnboard)
 
 					projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
 						sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSource)
@@ -625,11 +621,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 							})
 						})
 
-						projectSubRouter.With(
-							handler.RequireEnabledProject(),
-							handler.RequireEnabledOrganisation(),
-							chiMiddleware.AllowContentType("application/json", "multipart/form-data"),
-						).Post("/onboard", handler.BulkOnboard)
+						projectSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/onboard", handler.BulkOnboard)
 
 						projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
 							sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSource)
@@ -870,7 +862,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
 		v1Router.Route("/v1", func(r chi.Router) {
-			r.Use(chiMiddleware.AllowContentType("application/json"))
+			r.Use(allowContentType)
 			r.Use(middleware.JsonResponse)
 			r.Use(middleware.RequireAuth())
 
@@ -1095,4 +1087,24 @@ func shouldApplyCORS(r *http.Request) bool {
 	}
 
 	return false
+}
+
+// allowContentType is a middleware that enforces application/json for all routes
+// except /onboard, which also accepts multipart/form-data for CSV uploads.
+func allowContentType(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ct := r.Header.Get("Content-Type")
+
+		if strings.HasPrefix(ct, "multipart/form-data") && strings.HasSuffix(r.URL.Path, "/onboard") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if !strings.HasPrefix(ct, "application/json") && ct != "" {
+			w.WriteHeader(http.StatusUnsupportedMediaType)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
