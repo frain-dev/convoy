@@ -88,7 +88,22 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 				endpointID = endpoint.UID
 			}
 
-			subscription := buildSubscription(project.UID, endpointID, item)
+			// Enforce MultipleEndpointSubscriptions setting
+			if !project.Config.MultipleEndpointSubscriptions {
+				count, countErr := deps.SubRepo.CountEndpointSubscriptions(ctx, project.UID, endpointID, "")
+				if countErr != nil {
+					log.FromContext(ctx).WithError(countErr).Errorf("bulk onboard: failed to count subscriptions for endpoint %q", item.Name)
+					failCount++
+					continue
+				}
+				if count > 0 {
+					log.FromContext(ctx).Warnf("bulk onboard: subscription already exists for endpoint %s, skipping (MultipleEndpointSubscriptions disabled)", endpointID)
+					successCount++
+					continue
+				}
+			}
+
+			subscription := buildSubscription(project.UID, endpointID, item, deps.Licenser)
 			subErr := deps.SubRepo.CreateSubscription(ctx, project.UID, subscription)
 			if subErr != nil {
 				log.FromContext(ctx).WithError(subErr).Errorf("bulk onboard: failed to create subscription for endpoint %q", item.Name)
@@ -166,9 +181,14 @@ func buildEndpoint(ctx context.Context, deps BulkOnboardDeps, project *datastore
 	return endpoint, nil
 }
 
-func buildSubscription(projectID, endpointID string, item BulkOnboardItem) *datastore.Subscription {
+func buildSubscription(projectID, endpointID string, item BulkOnboardItem, licenser license.Licenser) *datastore.Subscription {
 	eventType := item.EventType
 	if eventType == "" {
+		eventType = "*"
+	}
+
+	if !licenser.AdvancedSubscriptions() && eventType != "*" {
+		log.Warnf("bulk onboard: advanced subscriptions not licensed, ignoring event type filter %q", eventType)
 		eventType = "*"
 	}
 
