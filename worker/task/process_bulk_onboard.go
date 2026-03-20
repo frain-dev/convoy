@@ -97,7 +97,10 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 				endpointCreated = true
 			}
 
-			// Enforce MultipleEndpointSubscriptions setting
+			// Enforce MultipleEndpointSubscriptions setting.
+			// Note: there is a TOCTOU race between CountEndpointSubscriptions and CreateSubscription,
+			// but this is acceptable as MultipleEndpointSubscriptions is a project config preference,
+			// not a hard uniqueness constraint.
 			if !project.Config.MultipleEndpointSubscriptions {
 				count, countErr := deps.SubRepo.CountEndpointSubscriptions(ctx, project.UID, endpointID, "")
 				if countErr != nil {
