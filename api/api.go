@@ -285,7 +285,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
 		v1Router.Route("/v1", func(r chi.Router) {
-			r.Use(chiMiddleware.AllowContentType("application/json", "multipart/form-data"))
+			r.Use(chiMiddleware.AllowContentType("application/json"))
 			r.Use(middleware.JsonResponse)
 			r.Use(middleware.RequireAuth())
 
@@ -396,7 +396,11 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						})
 					})
 
-					projectSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/onboard", handler.BulkOnboard)
+					projectSubRouter.With(
+						handler.RequireEnabledProject(),
+						handler.RequireEnabledOrganisation(),
+						chiMiddleware.AllowContentType("application/json", "multipart/form-data"),
+					).Post("/onboard", handler.BulkOnboard)
 
 					projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
 						sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSource)
@@ -621,7 +625,11 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 							})
 						})
 
-						projectSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/onboard", handler.BulkOnboard)
+						projectSubRouter.With(
+							handler.RequireEnabledProject(),
+							handler.RequireEnabledOrganisation(),
+							chiMiddleware.AllowContentType("application/json", "multipart/form-data"),
+						).Post("/onboard", handler.BulkOnboard)
 
 						projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
 							sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSource)
