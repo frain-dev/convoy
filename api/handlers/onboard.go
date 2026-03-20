@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
@@ -182,12 +183,14 @@ func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
 func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
 	err := r.ParseMultipartForm(10 << 20) // 10 MB
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse multipart form: %w", err)
+		log.WithError(err).Error("bulk onboard: failed to parse multipart form")
+		return nil, fmt.Errorf("failed to parse multipart form")
 	}
 
 	file, _, err := r.FormFile("file")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file field: %w", err)
+		log.WithError(err).Error("bulk onboard: failed to read file field")
+		return nil, fmt.Errorf("failed to read file field")
 	}
 	defer file.Close()
 
@@ -196,7 +199,8 @@ func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
 	// Read and validate header
 	header, err := reader.Read()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read CSV header: %w", err)
+		log.WithError(err).Error("bulk onboard: failed to read CSV header")
+		return nil, fmt.Errorf("failed to read CSV header")
 	}
 
 	colMap := make(map[string]int)
@@ -221,7 +225,8 @@ func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
 		}
 		rowNum++
 		if readErr != nil {
-			return nil, fmt.Errorf("CSV row %d: failed to parse row: %w", rowNum, readErr)
+			log.WithError(readErr).Errorf("bulk onboard: failed to parse CSV row %d", rowNum)
+			return nil, fmt.Errorf("CSV row %d: failed to parse row", rowNum)
 		}
 
 		if len(record) != expectedCols {

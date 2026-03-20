@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -62,11 +63,18 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 			return err
 		}
 
-		var successCount, failCount int
+		var successCount, skipCount, failCount int
 		for _, item := range batch.Items {
 			// Check for existing endpoint with the same URL
-			existingEndpoint, _ := deps.EndpointRepo.FindEndpointByTargetURL(ctx, project.UID, item.URL)
+			existingEndpoint, findErr := deps.EndpointRepo.FindEndpointByTargetURL(ctx, project.UID, item.URL)
 			var endpointID string
+			var endpointCreated bool
+
+			if findErr != nil && !errors.Is(findErr, datastore.ErrEndpointNotFound) {
+				log.FromContext(ctx).WithError(findErr).Errorf("bulk onboard: failed to look up endpoint by URL %q", item.URL)
+				failCount++
+				continue
+			}
 
 			if existingEndpoint != nil {
 				log.FromContext(ctx).Warnf("bulk onboard: endpoint with URL %q already exists (uid=%s), skipping creation", item.URL, existingEndpoint.UID)
@@ -86,6 +94,7 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 					continue
 				}
 				endpointID = endpoint.UID
+				endpointCreated = true
 			}
 
 			// Enforce MultipleEndpointSubscriptions setting
@@ -98,22 +107,30 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 				}
 				if count > 0 {
 					log.FromContext(ctx).Warnf("bulk onboard: subscription already exists for endpoint %s, skipping (MultipleEndpointSubscriptions disabled)", endpointID)
-					successCount++
+					skipCount++
 					continue
 				}
 			}
 
-			subscription := buildSubscription(project.UID, endpointID, item, deps.Licenser)
+			subscription := buildSubscription(ctx, project.UID, endpointID, item, deps.Licenser)
 			subErr := deps.SubRepo.CreateSubscription(ctx, project.UID, subscription)
 			if subErr != nil {
 				log.FromContext(ctx).WithError(subErr).Errorf("bulk onboard: failed to create subscription for endpoint %q", item.Name)
+				// Clean up orphaned endpoint if we just created it
+				if endpointCreated {
+					if delErr := deps.EndpointRepo.DeleteEndpoint(ctx, &datastore.Endpoint{UID: endpointID}, project.UID); delErr != nil {
+						log.FromContext(ctx).WithError(delErr).Errorf("bulk onboard: failed to clean up orphaned endpoint %s", endpointID)
+					}
+				}
 				failCount++
 				continue
 			}
 			successCount++
 		}
 
-		if successCount == 0 && failCount > 0 {
+		log.FromContext(ctx).Infof("bulk onboard batch %s: %d succeeded, %d skipped, %d failed", batch.BatchID, successCount, skipCount, failCount)
+
+		if successCount == 0 && skipCount == 0 && failCount > 0 {
 			return fmt.Errorf("bulk onboard batch %s: all %d items failed", batch.BatchID, failCount)
 		}
 
@@ -181,21 +198,26 @@ func buildEndpoint(ctx context.Context, deps BulkOnboardDeps, project *datastore
 	return endpoint, nil
 }
 
-func buildSubscription(projectID, endpointID string, item BulkOnboardItem, licenser license.Licenser) *datastore.Subscription {
+func buildSubscription(ctx context.Context, projectID, endpointID string, item BulkOnboardItem, licenser license.Licenser) *datastore.Subscription {
 	eventType := item.EventType
 	if eventType == "" {
 		eventType = "*"
 	}
 
 	if !licenser.AdvancedSubscriptions() && eventType != "*" {
-		log.Warnf("bulk onboard: advanced subscriptions not licensed, ignoring event type filter %q", eventType)
+		log.FromContext(ctx).Warnf("bulk onboard: advanced subscriptions not licensed, ignoring event type filter %q", eventType)
 		eventType = "*"
+	}
+
+	endpointPrefix := endpointID
+	if len(endpointPrefix) > 8 {
+		endpointPrefix = endpointPrefix[:8]
 	}
 
 	return &datastore.Subscription{
 		UID:          ulid.Make().String(),
 		ProjectID:    projectID,
-		Name:         fmt.Sprintf("%s-%s-subscription", item.Name, endpointID[:8]),
+		Name:         fmt.Sprintf("%s-%s-subscription", item.Name, endpointPrefix),
 		Type:         datastore.SubscriptionTypeAPI,
 		EndpointID:   endpointID,
 		DeliveryMode: datastore.AtLeastOnceDeliveryMode,
