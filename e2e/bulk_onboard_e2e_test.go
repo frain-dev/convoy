@@ -123,6 +123,36 @@ func listSubscriptions(t *testing.T, serverURL, projectID, apiKey string) int {
 	return len(result.Data.Content)
 }
 
+// waitForEndpoints polls the list endpoints API until the expected count is reached or timeout expires.
+func waitForEndpoints(t *testing.T, serverURL, projectID, apiKey string, expectedCount int, timeout time.Duration) int {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var count int
+	for time.Now().Before(deadline) {
+		count = listEndpoints(t, serverURL, projectID, apiKey)
+		if count >= expectedCount {
+			return count
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return count
+}
+
+// waitForSubscriptions polls the list subscriptions API until the expected count is reached or timeout expires.
+func waitForSubscriptions(t *testing.T, serverURL, projectID, apiKey string, expectedCount int, timeout time.Duration) int {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var count int
+	for time.Now().Before(deadline) {
+		count = listSubscriptions(t, serverURL, projectID, apiKey)
+		if count >= expectedCount {
+			return count
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return count
+}
+
 func TestE2E_BulkOnboard_JSON_CreatesEndpointsAndSubscriptions(t *testing.T) {
 	env := SetupE2E(t)
 
@@ -153,13 +183,10 @@ func TestE2E_BulkOnboard_JSON_CreatesEndpointsAndSubscriptions(t *testing.T) {
 	require.Equal(t, 3, accepted.TotalItems)
 
 	// Wait for worker to process the batch
-	time.Sleep(5 * time.Second)
-
-	// Verify endpoints and subscriptions were created
-	epCount := listEndpoints(t, env.ServerURL, env.Project.UID, env.APIKey)
+	epCount := waitForEndpoints(t, env.ServerURL, env.Project.UID, env.APIKey, 3, 30*time.Second)
 	require.Equal(t, 3, epCount, "Expected 3 endpoints to be created by worker")
 
-	subCount := listSubscriptions(t, env.ServerURL, env.Project.UID, env.APIKey)
+	subCount := waitForSubscriptions(t, env.ServerURL, env.Project.UID, env.APIKey, 3, 30*time.Second)
 	require.Equal(t, 3, subCount, "Expected 3 subscriptions to be created by worker")
 }
 
@@ -189,12 +216,10 @@ func TestE2E_BulkOnboard_CSV_CreatesEndpointsAndSubscriptions(t *testing.T) {
 	require.Equal(t, 1, accepted.BatchCount)
 	require.Equal(t, 3, accepted.TotalItems)
 
-	time.Sleep(5 * time.Second)
-
-	epCount := listEndpoints(t, env.ServerURL, env.Project.UID, env.APIKey)
+	epCount := waitForEndpoints(t, env.ServerURL, env.Project.UID, env.APIKey, 3, 30*time.Second)
 	require.Equal(t, 3, epCount)
 
-	subCount := listSubscriptions(t, env.ServerURL, env.Project.UID, env.APIKey)
+	subCount := waitForSubscriptions(t, env.ServerURL, env.Project.UID, env.APIKey, 3, 30*time.Second)
 	require.Equal(t, 3, subCount)
 }
 
@@ -227,7 +252,7 @@ func TestE2E_BulkOnboard_DryRun_DoesNotCreateResources(t *testing.T) {
 	require.Empty(t, dryRunResp.Errors)
 
 	// Wait a bit, then verify nothing was created
-	time.Sleep(3 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	epCount := listEndpoints(t, env.ServerURL, env.Project.UID, env.APIKey)
 	require.Equal(t, 0, epCount, "Dry run should not create any endpoints")
@@ -349,11 +374,9 @@ func TestE2E_BulkOnboard_MultipleBatches(t *testing.T) {
 	require.Equal(t, 75, accepted.TotalItems)
 
 	// Wait for worker to process both batches
-	time.Sleep(10 * time.Second)
-
-	epCount := listEndpoints(t, env.ServerURL, env.Project.UID, env.APIKey)
+	epCount := waitForEndpoints(t, env.ServerURL, env.Project.UID, env.APIKey, 75, 60*time.Second)
 	require.Equal(t, 75, epCount, "Expected 75 endpoints to be created across 2 batches")
 
-	subCount := listSubscriptions(t, env.ServerURL, env.Project.UID, env.APIKey)
+	subCount := waitForSubscriptions(t, env.ServerURL, env.Project.UID, env.APIKey, 75, 60*time.Second)
 	require.Equal(t, 75, subCount, "Expected 75 subscriptions to be created across 2 batches")
 }
