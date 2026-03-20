@@ -211,14 +211,21 @@ func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
 		}
 	}
 
+	expectedCols := len(header)
 	var items []models.OnboardItem
+	rowNum := 1
 	for {
 		record, readErr := reader.Read()
 		if readErr == io.EOF {
 			break
 		}
+		rowNum++
 		if readErr != nil {
-			return nil, fmt.Errorf("failed to read CSV row: %w", readErr)
+			return nil, fmt.Errorf("CSV row %d: failed to parse row: %w", rowNum, readErr)
+		}
+
+		if len(record) != expectedCols {
+			return nil, fmt.Errorf("CSV row %d: expected %d columns but got %d", rowNum, expectedCols, len(record))
 		}
 
 		item := models.OnboardItem{
