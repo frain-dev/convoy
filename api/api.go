@@ -862,7 +862,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
 		v1Router.Route("/v1", func(r chi.Router) {
-			r.Use(chiMiddleware.AllowContentType("application/json", "multipart/form-data"))
+			r.Use(chiMiddleware.AllowContentType("application/json"))
 			r.Use(middleware.JsonResponse)
 			r.Use(middleware.RequireAuth())
 
