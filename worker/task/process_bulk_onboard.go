@@ -61,25 +61,44 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 			return err
 		}
 
+		var successCount, failCount int
 		for _, item := range batch.Items {
-			endpoint, epErr := buildEndpoint(ctx, deps, project, item)
-			if epErr != nil {
-				log.FromContext(ctx).WithError(epErr).Errorf("bulk onboard: failed to build endpoint %q", item.Name)
-				continue
+			// Check for existing endpoint with the same URL
+			existingEndpoint, _ := deps.EndpointRepo.FindEndpointByTargetURL(ctx, project.UID, item.URL)
+			var endpointID string
+
+			if existingEndpoint != nil {
+				log.FromContext(ctx).Warnf("bulk onboard: endpoint with URL %q already exists (uid=%s), skipping creation", item.URL, existingEndpoint.UID)
+				endpointID = existingEndpoint.UID
+			} else {
+				endpoint, epErr := buildEndpoint(ctx, deps, project, item)
+				if epErr != nil {
+					log.FromContext(ctx).WithError(epErr).Errorf("bulk onboard: failed to build endpoint %q", item.Name)
+					failCount++
+					continue
+				}
+
+				epErr = deps.EndpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
+				if epErr != nil {
+					log.FromContext(ctx).WithError(epErr).Errorf("bulk onboard: failed to create endpoint %q", item.Name)
+					failCount++
+					continue
+				}
+				endpointID = endpoint.UID
 			}
 
-			epErr = deps.EndpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
-			if epErr != nil {
-				log.FromContext(ctx).WithError(epErr).Errorf("bulk onboard: failed to create endpoint %q", item.Name)
-				continue
-			}
-
-			subscription := buildSubscription(project.UID, endpoint.UID, item)
+			subscription := buildSubscription(project.UID, endpointID, item)
 			subErr := deps.SubRepo.CreateSubscription(ctx, project.UID, subscription)
 			if subErr != nil {
 				log.FromContext(ctx).WithError(subErr).Errorf("bulk onboard: failed to create subscription for endpoint %q", item.Name)
+				failCount++
 				continue
 			}
+			successCount++
+		}
+
+		if successCount == 0 && failCount > 0 {
+			return fmt.Errorf("bulk onboard batch %s: all %d items failed", batch.BatchID, failCount)
 		}
 
 		return nil
@@ -155,7 +174,7 @@ func buildSubscription(projectID, endpointID string, item BulkOnboardItem) *data
 	return &datastore.Subscription{
 		UID:          ulid.Make().String(),
 		ProjectID:    projectID,
-		Name:         item.Name + "-subscription",
+		Name:         fmt.Sprintf("%s-%s-subscription", item.Name, endpointID[:8]),
 		Type:         datastore.SubscriptionTypeAPI,
 		EndpointID:   endpointID,
 		DeliveryMode: datastore.AtLeastOnceDeliveryMode,
