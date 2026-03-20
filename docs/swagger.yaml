@@ -932,6 +932,33 @@ definitions:
         description: Specify a key for event deduplication
         type: string
     type: object
+  models.BulkOnboardAcceptedResponse:
+    properties:
+      batch_count:
+        type: integer
+      message:
+        type: string
+      total_items:
+        type: integer
+    type: object
+  models.BulkOnboardDryRunResponse:
+    properties:
+      errors:
+        items:
+          $ref: '#/definitions/models.OnboardValidationError'
+        type: array
+      total_rows:
+        type: integer
+      valid_count:
+        type: integer
+    type: object
+  models.BulkOnboardRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/models.OnboardItem'
+        type: array
+    type: object
   models.BulkUpdateFilterRequest:
     properties:
       body:
@@ -1668,6 +1695,28 @@ definitions:
       "y":
         description: Y coordinate (EC only)
         type: string
+    type: object
+  models.OnboardItem:
+    properties:
+      auth_password:
+        type: string
+      auth_username:
+        type: string
+      event_type:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  models.OnboardValidationError:
+    properties:
+      field:
+        type: string
+      message:
+        type: string
+      row:
+        type: integer
     type: object
   models.PagedResponse:
     properties:
@@ -4398,6 +4447,86 @@ paths:
       summary: Retry meta event
       tags:
       - Meta Events
+  /v1/projects/{projectID}/onboard:
+    post:
+      consumes:
+      - application/json
+      - multipart/form-data
+      description: This endpoint accepts a CSV file or JSON body to bulk-create endpoints
+        with subscriptions
+      operationId: BulkOnboard
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Validate without creating
+        in: query
+        name: dry_run
+        type: boolean
+      - description: Onboard Details (JSON)
+        in: body
+        name: onboard
+        schema:
+          $ref: '#/definitions/models.BulkOnboardRequest'
+      - description: CSV file upload
+        in: formData
+        name: file
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.BulkOnboardDryRunResponse'
+              type: object
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.BulkOnboardAcceptedResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Bulk onboard endpoints with subscriptions
+      tags:
+      - Onboard
   /v1/projects/{projectID}/portal-links:
     get:
       consumes:

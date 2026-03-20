@@ -53,6 +53,14 @@ test_e2e_fast:
 	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_DynamicEvent_MultipleEventTypes
 	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_ReplayEvent_JobID_Format
 	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_ReplayEvent_MultipleReplays
+	@echo "Running Bulk Onboard tests..."
+	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_JSON_CreatesEndpointsAndSubscriptions
+	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_CSV_CreatesEndpointsAndSubscriptions
+	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_DryRun_DoesNotCreateResources
+	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_DryRun_ReturnsValidationErrors
+	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_ValidationFailure_Returns400
+	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_EmptyItems_Returns400
+	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_MultipleBatches
 	@echo "Running Backup tests..."
 	@$(TEST_ENV) go test -race -v ./e2e/backup -timeout 15m
 	@echo "✅ Fast E2E tests passed!"

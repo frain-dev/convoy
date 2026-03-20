@@ -308,6 +308,32 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 	return u.String(), nil
 }
 
+// ValidateEndpointURL validates the URL format without performing an HTTPS ping.
+// This is used by bulk operations where pinging each endpoint would be too slow.
+func ValidateEndpointURL(rawURL string, enforceSecure bool) (string, error) {
+	if util.IsStringEmpty(rawURL) {
+		return "", ErrEndpointURLRequired
+	}
+
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+
+	switch u.Scheme {
+	case "http":
+		if enforceSecure {
+			return "", ErrHTTPSOnly
+		}
+	case "https":
+		// URL format is valid, skip ping
+	default:
+		return "", ErrInvalidEndpointScheme
+	}
+
+	return u.String(), nil
+}
+
 func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*datastore.EndpointAuthentication, error) {
 	if auth != nil && !util.IsStringEmpty(string(auth.Type)) {
 		if err := util.Validate(auth); err != nil {

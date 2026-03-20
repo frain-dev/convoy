@@ -392,6 +392,17 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
 
+	bulkOnboardDeps := task.BulkOnboardDeps{
+		EndpointRepo:               endpointRepo,
+		SubRepo:                    subRepo,
+		ProjectRepo:                projectRepo,
+		Licenser:                   a.Licenser,
+		FeatureFlag:                featureFlag,
+		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
+		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
+	}
+	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
+
 	var billingClient billing.Client
 	if cfg.Billing.Enabled {
 		billingClient = billing.NewClient(cfg.Billing)
