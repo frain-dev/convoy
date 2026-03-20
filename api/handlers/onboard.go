@@ -123,11 +123,11 @@ func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(validationErrors) > 0 {
-		_ = render.Render(w, r, util.NewServerResponse("Validation failed", models.BulkOnboardDryRunResponse{
+		_ = render.Render(w, r, util.NewErrorResponseWithData("Validation failed", http.StatusBadRequest, models.BulkOnboardDryRunResponse{
 			TotalRows:  len(items),
 			ValidCount: len(items) - countUniqueRows(validationErrors),
 			Errors:     validationErrors,
-		}, http.StatusBadRequest))
+		}))
 		return
 	}
 
