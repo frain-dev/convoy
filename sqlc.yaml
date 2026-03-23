@@ -20,6 +20,24 @@ servers:
 #          pointer: false
 
 sql:
+  - queries: ./internal/endpoints/queries.sql
+    engine: postgresql
+    database:
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/endpoints/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true
+        overrides:
+          - column: "convoy.endpoints.status"
+            go_type: "string"
+          - column: "convoy.endpoints.authentication_type"
+            go_type: "string"
+          - column: "convoy.endpoints.content_type"
+            go_type: "string"
   - queries: ./internal/portal_links/queries.sql
     engine: postgresql
     database:
