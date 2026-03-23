@@ -915,10 +915,11 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 		Name:      fmt.Sprintf("TestEndpoint-%s", endpointID),
 		ProjectID: s.DefaultProject.UID,
 		AppID:     appID,
+		Url:       "http://localhost:8889",
+		Status:    datastore.ActiveEndpointStatus,
 		Secrets: datastore.Secrets{
-			{UID: ulid.Make().String()},
+			{UID: ulid.Make().String(), Value: "1234"},
 		},
-		Status: datastore.ActiveEndpointStatus,
 	}
 
 	err := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)

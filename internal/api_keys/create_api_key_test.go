@@ -332,6 +332,7 @@ func TestCreateAPIKey_WithEndpointRole(t *testing.T) {
 		ProjectID: project.UID,
 		Name:      "Test Endpoint",
 		Url:       "https://example.com/webhook",
+		Status:    datastore.ActiveEndpointStatus,
 		Secrets: []datastore.Secret{
 			{Value: "test-secret"},
 		},

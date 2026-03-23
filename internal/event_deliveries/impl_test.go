@@ -138,9 +138,11 @@ func seedTestEndpoint(t *testing.T, db database.Database, projectID string) *dat
 		Url:          fmt.Sprintf("https://example.com/webhook/%s", endpointID),
 		Status:       datastore.ActiveEndpointStatus,
 		SupportEmail: fmt.Sprintf("test-%s@example.com", endpointID),
-		Secrets:      datastore.Secrets{},
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		Secrets: datastore.Secrets{
+			{UID: ulid.Make().String(), Value: "test-secret-value"},
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, projectID)
 	require.NoError(t, err)

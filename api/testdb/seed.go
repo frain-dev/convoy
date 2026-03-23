@@ -102,8 +102,10 @@ func SeedMultipleEndpoints(db database.Database, project *datastore.Project, cou
 			UID:       uid,
 			Name:      fmt.Sprintf("Test-%s", uid),
 			ProjectID: project.UID,
+			Url:       "http://localhost:8889",
+			Status:    datastore.ActiveEndpointStatus,
 			Secrets: datastore.Secrets{
-				{UID: ulid.Make().String()},
+				{UID: ulid.Make().String(), Value: "1234"},
 			},
 			AppID: ulid.Make().String(),
 		}

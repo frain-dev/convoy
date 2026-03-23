@@ -360,7 +360,9 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		UID:          "abc",
 		ProjectID:    s.DefaultProject.UID,
 		Name:         "test-app",
-		Secrets:      datastore.Secrets{},
+		Url:          "http://localhost:8889",
+		Status:       datastore.ActiveEndpointStatus,
+		Secrets:      datastore.Secrets{{UID: ulid.Make().String(), Value: "1234"}},
 		SupportEmail: "test@suport.com",
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -1110,10 +1112,11 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 		Name:      fmt.Sprintf("TestEndpoint-%s", endpointID),
 		ProjectID: s.DefaultProject.UID,
 		AppID:     appID,
+		Url:       "http://localhost:8889",
+		Status:    datastore.ActiveEndpointStatus,
 		Secrets: datastore.Secrets{
-			{UID: ulid.Make().String()},
+			{UID: ulid.Make().String(), Value: "1234"},
 		},
-		Status: datastore.ActiveEndpointStatus,
 	}
 
 	err := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)

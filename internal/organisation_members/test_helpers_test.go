@@ -191,7 +191,10 @@ func seedEndpoint(t *testing.T, db database.Database, projectID string) *datasto
 		ProjectID: projectID,
 		Name:      fmt.Sprintf("Test Endpoint %s", ulid.Make().String()),
 		Url:       "https://example.com/webhook",
-		Secrets:   make([]datastore.Secret, 0),
+		Status:    datastore.ActiveEndpointStatus,
+		Secrets: datastore.Secrets{
+			{UID: ulid.Make().String(), Value: "test-secret"},
+		},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

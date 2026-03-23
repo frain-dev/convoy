@@ -157,6 +157,7 @@ func seedEndpoint(t *testing.T, db database.Database, project *datastore.Project
 		RateLimitDuration:  60000, // 1 minute in milliseconds
 		HttpTimeout:        30000, // 30 seconds in milliseconds
 		AdvancedSignatures: false,
+		Status:             datastore.ActiveEndpointStatus,
 		Secrets: []datastore.Secret{
 			{Value: "test-secret"},
 		},
