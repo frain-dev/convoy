@@ -578,10 +578,8 @@ func TestLoadEndpointsPaged(t *testing.T) {
 		project := seedTestProject(t, db)
 
 		// Create 5 endpoints
-		var created []*datastore.Endpoint
 		for i := 0; i < 5; i++ {
-			ep := seedEndpoint(t, svc, project.UID)
-			created = append(created, ep)
+			seedEndpoint(t, svc, project.UID)
 		}
 
 		// First, get the first page to obtain a cursor
