@@ -197,6 +197,7 @@ func ProcessDynamicEventCreation(deps EventProcessorDeps) func(context.Context, 
 		deps.Licenser,
 		deps.TracerBackend,
 		deps.OAuth2TokenService,
+		deps.MetricsRecorder,
 	)
 }
 
