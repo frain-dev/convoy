@@ -7,8 +7,8 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -96,7 +96,7 @@ func TestUpdatePortalLink_WithNewEndpoints(t *testing.T) {
 	require.NotContains(t, updatedPortalLink.Endpoints, endpoint1.UID)
 
 	// Verify endpoints have correct owner_id
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 	updatedEndpoint2, err := endpointRepo.FindEndpointByID(ctx, endpoint2.UID, project.UID)
 	require.NoError(t, err)
 	require.Equal(t, ownerID, updatedEndpoint2.OwnerID)

@@ -17,6 +17,7 @@ import (
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/filters"
@@ -118,7 +119,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 
 	projectRepo := projects.New(a.Logger, a.DB)
 	metaEventRepo := meta_events.New(a.Logger, a.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.DB)
+	endpointRepo := endpoints.New(a.Logger, a.DB)
 	eventRepo := events.New(a.Logger, a.DB)
 	jobRepo := postgres.NewJobRepo(a.DB)
 	eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)

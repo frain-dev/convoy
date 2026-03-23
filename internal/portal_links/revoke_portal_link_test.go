@@ -7,8 +7,8 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -81,7 +81,7 @@ func TestRevokePortalLink_WithEndpoints(t *testing.T) {
 	require.Nil(t, portalLink)
 
 	// Verify endpoint still exists (should not be deleted)
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 	endpoint, err := endpointRepo.FindEndpointByID(ctx, endpoint1.UID, project.UID)
 	require.NoError(t, err)
 	require.NotNil(t, endpoint)

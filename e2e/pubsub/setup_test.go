@@ -22,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
@@ -310,7 +311,7 @@ func SetupE2EWithGooglePubSub(t *testing.T) *E2ETestEnvWithGooglePubSub {
 
 	// Set up repositories needed for source loading
 	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
-	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
+	endpointRepo := endpoints.New(baseEnv.App.Logger, baseEnv.App.DB)
 	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
 
 	// Create the source loader and table for pubsub ingest

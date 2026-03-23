@@ -9,8 +9,8 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	endpointsvc "github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -123,7 +123,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 
 	var endpoints int64
 	if len(endpointIDs) == 0 {
-		endpoints, err = postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(r.Context(), project.UID)
+		endpoints, err = endpointsvc.New(h.A.Logger, h.A.DB).CountProjectEndpoints(r.Context(), project.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to count project endpoints")
 			_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
@@ -181,7 +181,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 
 		var endpoints int64
 		if len(endpointIds) == 0 {
-			endpoints, err = postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(ctx, project.UID)
+			endpoints, err = endpointsvc.New(h.A.Logger, h.A.DB).CountProjectEndpoints(ctx, project.UID)
 			if err != nil {
 				log.WithError(err).Error("failed to count project endpoints")
 				return

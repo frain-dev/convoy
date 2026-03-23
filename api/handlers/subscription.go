@@ -8,8 +8,8 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -224,7 +224,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 
 	cs := services.CreateSubscriptionService{
 		SubRepo:         subscriptions.New(h.A.Logger, h.A.DB),
-		EndpointRepo:    postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo:    endpoints.New(h.A.Logger, h.A.DB),
 		SourceRepo:      sources.New(h.A.Logger, h.A.DB),
 		Licenser:        h.A.Licenser,
 		Project:         project,
@@ -374,7 +374,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 
 	us := services.UpdateSubscriptionService{
 		SubRepo:        subscriptions.New(h.A.Logger, h.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo:   endpoints.New(h.A.Logger, h.A.DB),
 		ProjectRepo:    projects.New(h.A.Logger, h.A.DB),
 		SourceRepo:     sources.New(h.A.Logger, h.A.DB),
 		Licenser:       h.A.Licenser,

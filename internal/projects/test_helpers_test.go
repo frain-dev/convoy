@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -254,7 +255,7 @@ func seedProjectWithCustomConfig(t *testing.T, db database.Database, org *datast
 func seedEndpoint(t *testing.T, db database.Database, project *datastore.Project, status datastore.EndpointStatus) *datastore.Endpoint {
 	t.Helper()
 
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 	endpoint := &datastore.Endpoint{
 		UID:               ulid.Make().String(),
 		ProjectID:         project.UID,

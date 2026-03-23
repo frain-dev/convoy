@@ -7,8 +7,8 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/log"
 )
@@ -66,7 +66,7 @@ func TestDeleteSource_CascadeToSubscriptions(t *testing.T) {
 	source := SeedSource(t, db, project, datastore.NoopVerifier)
 
 	// Create endpoint for subscription
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 	endpoint := &datastore.Endpoint{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
@@ -178,7 +178,7 @@ func TestDeleteSource_MultipleSubscriptions(t *testing.T) {
 	source := SeedSource(t, db, project, datastore.NoopVerifier)
 
 	// Create endpoint
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 	endpoint := &datastore.Endpoint{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,

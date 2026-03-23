@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -166,7 +167,7 @@ func seedEndpoint(t *testing.T, db database.Database, project *datastore.Project
 		HttpTimeout: 30,
 	}
 
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 	err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
 

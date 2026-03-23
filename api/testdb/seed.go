@@ -19,10 +19,10 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/events"
@@ -86,7 +86,7 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 	}
 
 	// Seed Data.
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 	err := endpointRepo.CreateEndpoint(context.TODO(), endpoint, g.UID)
 	if err != nil {
 		return &datastore.Endpoint{}, err
@@ -109,7 +109,7 @@ func SeedMultipleEndpoints(db database.Database, project *datastore.Project, cou
 		}
 
 		// Seed Data.
-		appRepo := postgres.NewEndpointRepo(db)
+		appRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 		err := appRepo.CreateEndpoint(context.TODO(), app, app.ProjectID)
 		if err != nil {
 			return err
@@ -127,7 +127,7 @@ func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value strin
 	e.Secrets = append(e.Secrets, sc)
 
 	// Seed Data.
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 	err := endpointRepo.UpdateEndpoint(context.TODO(), e, e.ProjectID)
 	if err != nil {
 		return nil, err

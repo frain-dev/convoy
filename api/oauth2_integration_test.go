@@ -28,6 +28,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -348,7 +349,7 @@ func (s *OAuth2IntegrationTestSuite) Test_OAuth2TokenService_Integration() {
 		},
 	}
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	err := endpointRepo.CreateEndpoint(context.Background(), endpoint, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 
@@ -417,7 +418,7 @@ func (s *OAuth2IntegrationTestSuite) Test_OAuth2TokenService_ClientAssertion_Int
 		},
 	}
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	err := endpointRepo.CreateEndpoint(context.Background(), endpoint, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 
@@ -498,7 +499,7 @@ func (s *OAuth2IntegrationTestSuite) Test_CreateEndpoint_WithOAuth2SharedSecret_
 	require.Equal(s.T(), datastore.SharedSecretAuth, endpoint.Authentication.OAuth2.AuthenticationType)
 
 	// Verify we can fetch the endpoint again and it's still decrypted correctly
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	fetchedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), fetchedEndpoint.Authentication.OAuth2)
@@ -574,7 +575,7 @@ func (s *OAuth2IntegrationTestSuite) Test_CreateEndpoint_WithOAuth2ClientAsserti
 	require.Equal(s.T(), signingKey.Kid, endpoint.Authentication.OAuth2.SigningKey.Kid)
 
 	// Verify we can fetch the endpoint again and it's still decrypted correctly
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	fetchedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), fetchedEndpoint.Authentication.OAuth2)

@@ -12,8 +12,8 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	endpointsvc "github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -88,7 +88,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.CreateEndpointService{
-		EndpointRepo:               postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo:               endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectRepo:                projects.New(h.A.Logger, h.A.DB),
 		Licenser:                   h.A.Licenser,
 		E:                          e,
@@ -223,7 +223,7 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		data.Filter.EndpointIDs = endpointIDs
 	}
 
-	endpoints, paginationData, err := postgres.NewEndpointRepo(h.A.DB).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
+	endpoints, paginationData, err := endpointsvc.New(h.A.Logger, h.A.DB).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
 	if err != nil {
 		h.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse("Failed to load endpoints", http.StatusBadRequest))
@@ -341,7 +341,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	ce := services.UpdateEndpointService{
 		Cache:                      h.A.Cache,
-		EndpointRepo:               postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo:               endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectRepo:                projects.New(h.A.Logger, h.A.DB),
 		Licenser:                   h.A.Licenser,
 		FeatureFlag:                h.A.FFlag,
@@ -406,7 +406,7 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewEndpointRepo(h.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
+	err = endpointsvc.New(h.A.Logger, h.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete endpoint", http.StatusBadRequest))
@@ -455,7 +455,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	xs := services.ExpireSecretService{
 		Queuer:       h.A.Queue,
 		Cache:        h.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectRepo:  projects.New(h.A.Logger, h.A.DB),
 		S:            e,
 		Endpoint:     endpoint,
@@ -495,7 +495,7 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ps := services.PauseEndpointService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -546,7 +546,7 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aes := services.ActivateEndpointService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -708,6 +708,6 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) retrieveEndpoint(ctx context.Context, endpointID, projectID string) (*datastore.Endpoint, error) {
-	endpointRepo := postgres.NewEndpointRepo(h.A.DB)
+	endpointRepo := endpointsvc.New(h.A.Logger, h.A.DB)
 	return endpointRepo.FindEndpointByID(ctx, endpointID, projectID)
 }

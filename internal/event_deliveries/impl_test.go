@@ -18,6 +18,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -127,7 +128,7 @@ func seedTestEndpoint(t *testing.T, db database.Database, projectID string) *dat
 	t.Helper()
 
 	ctx := context.Background()
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
 
 	endpointID := ulid.Make().String()
 	endpoint := &datastore.Endpoint{

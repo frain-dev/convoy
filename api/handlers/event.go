@@ -11,8 +11,8 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/events"
 	internalio "github.com/frain-dev/convoy/internal/io"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -222,7 +222,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	}).Info("processing fanout event")
 
 	cf := services.CreateFanoutEventService{
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo:   endpoints.New(h.A.Logger, h.A.DB),
 		EventRepo:      events.New(h.A.Logger, h.A.DB),
 		PortalLinkRepo: portal_links.New(h.A.Logger, h.A.DB),
 		Queue:          h.A.Queue,
@@ -335,7 +335,7 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs := services.ReplayEventService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo: endpoints.New(h.A.Logger, h.A.DB),
 		Queue:        h.A.Queue,
 		Event:        event,
 	}
@@ -385,7 +385,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bs := services.BatchReplayEventService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo: endpoints.New(h.A.Logger, h.A.DB),
 		Queue:        h.A.Queue,
 		EventRepo:    events.New(h.A.Logger, h.A.DB),
 		Filter:       data.Filter,

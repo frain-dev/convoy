@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
@@ -18,7 +18,7 @@ import (
 func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
 	sourceRepo := sources.New(a.Logger, a.DB)
 	projectRepo := projects.New(a.Logger, a.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.DB)
+	endpointRepo := endpoints.New(a.Logger, a.DB)
 	configRepo := configuration.New(a.Logger, a.DB)
 
 	lo := a.Logger.(*log.Logger)

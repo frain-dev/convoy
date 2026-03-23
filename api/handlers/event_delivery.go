@@ -9,9 +9,9 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -75,7 +75,7 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 	fr := services.RetryEventDeliveryService{
 		EventDeliveryRepo: event_deliveries.New(h.A.Logger, h.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo:      endpoints.New(h.A.Logger, h.A.DB),
 		Queue:             h.A.Queue,
 		EventDelivery:     eventDelivery,
 		Project:           project,
@@ -201,7 +201,7 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 
 	fr := services.ForceResendEventDeliveriesService{
 		EventDeliveryRepo: event_deliveries.New(h.A.Logger, h.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo:      endpoints.New(h.A.Logger, h.A.DB),
 		Queue:             h.A.Queue,
 		IDs:               eventDeliveryIDs.IDs,
 		Project:           project,
