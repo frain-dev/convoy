@@ -132,7 +132,7 @@ func (s *Service) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 }
 
 // FindEndpointByID retrieves a single endpoint by ID and project.
-func (s *Service) FindEndpointByID(ctx context.Context, id string, projectID string) (*datastore.Endpoint, error) {
+func (s *Service) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
 	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
@@ -190,7 +190,7 @@ func (s *Service) FindEndpointsByID(ctx context.Context, ids []string, projectID
 }
 
 // FindEndpointsByAppID retrieves all endpoints for a given app ID.
-func (s *Service) FindEndpointsByAppID(ctx context.Context, appID string, projectID string) ([]datastore.Endpoint, error) {
+func (s *Service) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
 	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
@@ -222,7 +222,7 @@ func (s *Service) FindEndpointsByAppID(ctx context.Context, appID string, projec
 }
 
 // FindEndpointsByOwnerID retrieves all endpoints for a given owner ID.
-func (s *Service) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
+func (s *Service) FindEndpointsByOwnerID(ctx context.Context, projectID, ownerID string) ([]datastore.Endpoint, error) {
 	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
@@ -254,7 +254,7 @@ func (s *Service) FindEndpointsByOwnerID(ctx context.Context, projectID string, 
 }
 
 // FetchEndpointIDsByOwnerID returns only the IDs of endpoints for a given owner.
-func (s *Service) FetchEndpointIDsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]string, error) {
+func (s *Service) FetchEndpointIDsByOwnerID(ctx context.Context, projectID, ownerID string) ([]string, error) {
 	return s.repo.FetchEndpointIDsByOwnerID(ctx, repo.FetchEndpointIDsByOwnerIDParams{
 		ProjectID: common.StringToPgTextNullable(projectID),
 		OwnerID:   common.StringToPgTextNullable(ownerID),
@@ -262,7 +262,7 @@ func (s *Service) FetchEndpointIDsByOwnerID(ctx context.Context, projectID strin
 }
 
 // FindEndpointByTargetURL retrieves an endpoint by its target URL within a project.
-func (s *Service) FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*datastore.Endpoint, error) {
+func (s *Service) FindEndpointByTargetURL(ctx context.Context, projectID, targetURL string) (*datastore.Endpoint, error) {
 	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
@@ -555,7 +555,7 @@ func (s *Service) LoadEndpointsPaged(ctx context.Context, projectID string, filt
 }
 
 // UpdateSecrets replaces all secrets on an endpoint.
-func (s *Service) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {
+func (s *Service) UpdateSecrets(ctx context.Context, endpointID, projectID string, secrets datastore.Secrets) error {
 	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return err
@@ -572,7 +572,7 @@ func (s *Service) UpdateSecrets(ctx context.Context, endpointID string, projectI
 }
 
 // DeleteSecret marks a single secret as deleted and persists the change.
-func (s *Service) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID string, projectID string) error {
+func (s *Service) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID, projectID string) error {
 	sc := endpoint.FindSecret(secretID)
 	if sc == nil {
 		return datastore.ErrSecretNotFound
