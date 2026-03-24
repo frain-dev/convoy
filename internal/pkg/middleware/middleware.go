@@ -34,6 +34,31 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
+// safeHeaders contains a conservative allow-list of HTTP header names (lowercase)
+// whose values are considered safe to log in clear text. All headers not present
+// in this map will have their values redacted before logging.
+var safeHeaders = map[string]struct{}{
+	"content-type":   {},
+	"content-length": {},
+	"user-agent":     {},
+	"accept":         {},
+	"accept-encoding": {},
+	"accept-language": {},
+	"host":           {},
+	"x-request-id":   {},
+}
+
+// sensitiveHeaders contains header names (lowercase) that should always be
+// redacted, even if they are accidentally added to safeHeaders.
+var sensitiveHeaders = map[string]struct{}{
+	"authorization": {},
+	"proxy-authorization": {},
+	"cookie":        {},
+	"set-cookie":    {},
+	"x-api-key":     {},
+	"x-auth-token":  {},
+}
+
 var (
 	ErrValidLicenseRequired = errors.New("access to this resource requires a valid license")
 
@@ -439,7 +464,8 @@ func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t ti
 		"status":  w.Status(),
 		"byes":    w.BytesWritten(),
 		"latency": time.Since(t),
-		"body":    wbuf.String(),
+		// Do not log response body content to avoid leaking sensitive data.
+		"body": "***",
 	}
 
 	if len(w.Header()) > 0 {
@@ -468,6 +494,12 @@ func headerFields(header http.Header) map[string]string {
 	for k, v := range header {
 		k = strings.ToLower(k)
 		if len(v) == 0 {
+			continue
+		}
+
+		// Always redact explicitly sensitive headers, regardless of allow-list.
+		if _, isSensitive := sensitiveHeaders[k]; isSensitive {
+			headerField[k] = "***"
 			continue
 		}
 
