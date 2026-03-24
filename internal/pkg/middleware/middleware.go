@@ -41,6 +41,20 @@ var (
 	skipLoggingPaths = []string{
 		"/billing/organisations/",
 	}
+
+	// sensitiveHeaders is the set of lowercased header names whose values must
+	// never appear in logs, even transiently.
+	sensitiveHeaders = map[string]struct{}{
+		"authorization":                {},
+		"proxy-authorization":          {},
+		"cookie":                       {},
+		"set-cookie":                   {},
+		"x-convoy-signature":           {}, // outbound HMAC set by dispatcher
+		"x-hub-signature":              {}, // GitHub legacy
+		"x-hub-signature-256":          {}, // GitHub SHA-256
+		"x-shopify-hmac-sha256":        {}, // Shopify
+		"x-twitter-webhooks-signature": {}, // Twitter
+	}
 )
 
 // shouldSkipLogging checks if the given path should be excluded from logging
@@ -442,16 +456,18 @@ func headerFields(header http.Header) map[string]string {
 
 	for k, v := range header {
 		k = strings.ToLower(k)
-		switch {
-		case len(v) == 0:
+		if len(v) == 0 {
 			continue
-		case len(v) == 1:
-			headerField[k] = v[0]
-		default:
-			headerField[k] = fmt.Sprintf("[%s]", strings.Join(v, "], ["))
 		}
-		if k == "authorization" || k == "cookie" || k == "set-cookie" {
+		// Redact before any raw value is stored — severs CodeQL taint flow.
+		if _, sensitive := sensitiveHeaders[k]; sensitive {
 			headerField[k] = "***"
+			continue
+		}
+		if len(v) == 1 {
+			headerField[k] = v[0]
+		} else {
+			headerField[k] = fmt.Sprintf("[%s]", strings.Join(v, "], ["))
 		}
 	}
 
