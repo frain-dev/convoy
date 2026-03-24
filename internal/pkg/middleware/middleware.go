@@ -59,13 +59,13 @@ var (
 	// safeHeaders is the set of lowercased header names whose values are
 	// considered safe to log in clear text. All other headers are redacted.
 	safeHeaders = map[string]struct{}{
-		"content-type":     {},
-		"user-agent":       {},
-		"accept":           {},
-		"accept-encoding":  {},
-		"accept-language":  {},
-		"cache-control":    {},
-		"pragma":           {},
+		"content-type":              {},
+		"user-agent":                {},
+		"accept":                    {},
+		"accept-encoding":           {},
+		"accept-language":           {},
+		"cache-control":             {},
+		"pragma":                    {},
 		"upgrade-insecure-requests": {},
 	}
 )
