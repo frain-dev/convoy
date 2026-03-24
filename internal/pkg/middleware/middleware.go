@@ -377,8 +377,8 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 					logArgs = append(logArgs, "organisation_id", orgID)
 				}
 
-				// lgtm[go/clear-text-logging] - header values are sanitized by headerFields() before reaching logArgs
-				a.Logger.Log(r.Context(), lvl, fmt.Sprintf("%v", requestFields["requestURL"]), logArgs...)
+				// Use a constant log message; request details (including URL) are carried only in structured fields.
+				a.Logger.Log(r.Context(), lvl, "http_request", logArgs...)
 			}()
 
 			requestID := middleware.GetReqID(r.Context())
