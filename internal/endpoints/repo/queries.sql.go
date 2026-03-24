@@ -1161,7 +1161,7 @@ func (q *Queries) UpdateEndpoint(ctx context.Context, arg UpdateEndpointParams) 
 	)
 }
 
-const updateEndpointSecrets = `-- name: UpdateEndpointSecrets :one
+const updateEndpointSecrets = `-- name: UpdateEndpointSecrets :execresult
 UPDATE convoy.endpoints SET
     secrets_cipher = CASE
         WHEN is_encrypted THEN pgp_sym_encrypt($1::TEXT, $2)
@@ -1172,34 +1172,6 @@ UPDATE convoy.endpoints SET
     END,
     updated_at = NOW()
 WHERE id = $3 AND project_id = $4 AND deleted_at IS NULL
-RETURNING
-    id, name, status, owner_id, url, description,
-    http_timeout, rate_limit, rate_limit_duration, advanced_signatures,
-    slack_webhook_url, support_email, app_id, project_id,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(secrets_cipher::bytea, $2)::jsonb
-        ELSE secrets
-    END AS secrets,
-    created_at, updated_at,
-    COALESCE(authentication_type, '') AS authentication_type,
-    COALESCE(authentication_type_api_key_header_name, '') AS authentication_type_api_key_header_name,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $2)::TEXT
-        ELSE authentication_type_api_key_header_value
-    END AS authentication_type_api_key_header_value,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(mtls_client_cert_cipher::bytea, $2)::jsonb
-        ELSE mtls_client_cert
-    END AS mtls_client_cert,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(oauth2_config_cipher::bytea, $2)::jsonb
-        ELSE oauth2_config
-    END AS oauth2_config,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(basic_auth_config_cipher::bytea, $2)::jsonb
-        ELSE basic_auth_config
-    END AS basic_auth_config,
-    content_type
 `
 
 type UpdateEndpointSecretsParams struct {
@@ -1209,170 +1181,26 @@ type UpdateEndpointSecretsParams struct {
 	ProjectID     pgtype.Text
 }
 
-type UpdateEndpointSecretsRow struct {
-	ID                                  string
-	Name                                string
-	Status                              string
-	OwnerID                             pgtype.Text
-	Url                                 string
-	Description                         pgtype.Text
-	HttpTimeout                         int32
-	RateLimit                           int32
-	RateLimitDuration                   int32
-	AdvancedSignatures                  bool
-	SlackWebhookUrl                     pgtype.Text
-	SupportEmail                        pgtype.Text
-	AppID                               pgtype.Text
-	ProjectID                           string
-	Secrets                             []byte
-	CreatedAt                           pgtype.Timestamptz
-	UpdatedAt                           pgtype.Timestamptz
-	AuthenticationType                  pgtype.Text
-	AuthenticationTypeApiKeyHeaderName  pgtype.Text
-	AuthenticationTypeApiKeyHeaderValue pgtype.Text
-	MtlsClientCert                      []byte
-	Oauth2Config                        []byte
-	BasicAuthConfig                     []byte
-	ContentType                         string
-}
-
-func (q *Queries) UpdateEndpointSecrets(ctx context.Context, arg UpdateEndpointSecretsParams) (UpdateEndpointSecretsRow, error) {
-	row := q.db.QueryRow(ctx, updateEndpointSecrets,
+func (q *Queries) UpdateEndpointSecrets(ctx context.Context, arg UpdateEndpointSecretsParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, updateEndpointSecrets,
 		arg.SecretsText,
 		arg.EncryptionKey,
 		arg.ID,
 		arg.ProjectID,
 	)
-	var i UpdateEndpointSecretsRow
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Status,
-		&i.OwnerID,
-		&i.Url,
-		&i.Description,
-		&i.HttpTimeout,
-		&i.RateLimit,
-		&i.RateLimitDuration,
-		&i.AdvancedSignatures,
-		&i.SlackWebhookUrl,
-		&i.SupportEmail,
-		&i.AppID,
-		&i.ProjectID,
-		&i.Secrets,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.AuthenticationType,
-		&i.AuthenticationTypeApiKeyHeaderName,
-		&i.AuthenticationTypeApiKeyHeaderValue,
-		&i.MtlsClientCert,
-		&i.Oauth2Config,
-		&i.BasicAuthConfig,
-		&i.ContentType,
-	)
-	return i, err
 }
 
-const updateEndpointStatus = `-- name: UpdateEndpointStatus :one
+const updateEndpointStatus = `-- name: UpdateEndpointStatus :execresult
 UPDATE convoy.endpoints SET status = $1
 WHERE id = $2 AND project_id = $3 AND deleted_at IS NULL
-RETURNING
-    id, name, status, owner_id, url, description,
-    http_timeout, rate_limit, rate_limit_duration, advanced_signatures,
-    slack_webhook_url, support_email, app_id, project_id,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(secrets_cipher::bytea, $4)::jsonb
-        ELSE secrets
-    END AS secrets,
-    created_at, updated_at,
-    COALESCE(authentication_type, '') AS authentication_type,
-    COALESCE(authentication_type_api_key_header_name, '') AS authentication_type_api_key_header_name,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::TEXT
-        ELSE authentication_type_api_key_header_value
-    END AS authentication_type_api_key_header_value,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(mtls_client_cert_cipher::bytea, $4)::jsonb
-        ELSE mtls_client_cert
-    END AS mtls_client_cert,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(oauth2_config_cipher::bytea, $4)::jsonb
-        ELSE oauth2_config
-    END AS oauth2_config,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(basic_auth_config_cipher::bytea, $4)::jsonb
-        ELSE basic_auth_config
-    END AS basic_auth_config,
-    content_type
 `
 
 type UpdateEndpointStatusParams struct {
-	Status        pgtype.Text
-	ID            pgtype.Text
-	ProjectID     pgtype.Text
-	EncryptionKey pgtype.Text
+	Status    pgtype.Text
+	ID        pgtype.Text
+	ProjectID pgtype.Text
 }
 
-type UpdateEndpointStatusRow struct {
-	ID                                  string
-	Name                                string
-	Status                              string
-	OwnerID                             pgtype.Text
-	Url                                 string
-	Description                         pgtype.Text
-	HttpTimeout                         int32
-	RateLimit                           int32
-	RateLimitDuration                   int32
-	AdvancedSignatures                  bool
-	SlackWebhookUrl                     pgtype.Text
-	SupportEmail                        pgtype.Text
-	AppID                               pgtype.Text
-	ProjectID                           string
-	Secrets                             []byte
-	CreatedAt                           pgtype.Timestamptz
-	UpdatedAt                           pgtype.Timestamptz
-	AuthenticationType                  pgtype.Text
-	AuthenticationTypeApiKeyHeaderName  pgtype.Text
-	AuthenticationTypeApiKeyHeaderValue pgtype.Text
-	MtlsClientCert                      []byte
-	Oauth2Config                        []byte
-	BasicAuthConfig                     []byte
-	ContentType                         string
-}
-
-func (q *Queries) UpdateEndpointStatus(ctx context.Context, arg UpdateEndpointStatusParams) (UpdateEndpointStatusRow, error) {
-	row := q.db.QueryRow(ctx, updateEndpointStatus,
-		arg.Status,
-		arg.ID,
-		arg.ProjectID,
-		arg.EncryptionKey,
-	)
-	var i UpdateEndpointStatusRow
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Status,
-		&i.OwnerID,
-		&i.Url,
-		&i.Description,
-		&i.HttpTimeout,
-		&i.RateLimit,
-		&i.RateLimitDuration,
-		&i.AdvancedSignatures,
-		&i.SlackWebhookUrl,
-		&i.SupportEmail,
-		&i.AppID,
-		&i.ProjectID,
-		&i.Secrets,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.AuthenticationType,
-		&i.AuthenticationTypeApiKeyHeaderName,
-		&i.AuthenticationTypeApiKeyHeaderValue,
-		&i.MtlsClientCert,
-		&i.Oauth2Config,
-		&i.BasicAuthConfig,
-		&i.ContentType,
-	)
-	return i, err
+func (q *Queries) UpdateEndpointStatus(ctx context.Context, arg UpdateEndpointStatusParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, updateEndpointStatus, arg.Status, arg.ID, arg.ProjectID)
 }

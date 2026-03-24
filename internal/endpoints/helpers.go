@@ -155,34 +155,6 @@ func rowToEndpoint(row any) (*datastore.Endpoint, error) {
 			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
 			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
 		}
-	case repo.UpdateEndpointStatusRow:
-		f = endpointFields{
-			ID: r.ID, Name: r.Name, Status: r.Status, OwnerID: r.OwnerID,
-			Url: r.Url, Description: r.Description, HttpTimeout: r.HttpTimeout,
-			RateLimit: r.RateLimit, RateLimitDuration: r.RateLimitDuration,
-			AdvancedSignatures: r.AdvancedSignatures, SlackWebhookUrl: r.SlackWebhookUrl,
-			SupportEmail: r.SupportEmail, AppID: r.AppID, ProjectID: r.ProjectID,
-			Secrets: r.Secrets, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
-			AuthenticationType:                  r.AuthenticationType,
-			AuthenticationTypeApiKeyHeaderName:  r.AuthenticationTypeApiKeyHeaderName,
-			AuthenticationTypeApiKeyHeaderValue: r.AuthenticationTypeApiKeyHeaderValue,
-			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
-			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
-		}
-	case repo.UpdateEndpointSecretsRow:
-		f = endpointFields{
-			ID: r.ID, Name: r.Name, Status: r.Status, OwnerID: r.OwnerID,
-			Url: r.Url, Description: r.Description, HttpTimeout: r.HttpTimeout,
-			RateLimit: r.RateLimit, RateLimitDuration: r.RateLimitDuration,
-			AdvancedSignatures: r.AdvancedSignatures, SlackWebhookUrl: r.SlackWebhookUrl,
-			SupportEmail: r.SupportEmail, AppID: r.AppID, ProjectID: r.ProjectID,
-			Secrets: r.Secrets, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
-			AuthenticationType:                  r.AuthenticationType,
-			AuthenticationTypeApiKeyHeaderName:  r.AuthenticationTypeApiKeyHeaderName,
-			AuthenticationTypeApiKeyHeaderValue: r.AuthenticationTypeApiKeyHeaderValue,
-			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
-			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
-		}
 	default:
 		return nil, fmt.Errorf("unsupported row type: %T", row)
 	}
@@ -294,9 +266,9 @@ func validateAndSetContentType(contentType string) (string, error) {
 
 // marshalAuthFields extracts authentication configuration from an endpoint and
 // returns the individual database column values.
-func marshalAuthFields(endpoint *datastore.Endpoint) (apiKeyHeaderName, apiKeyHeaderValue string, oauth2Config, basicAuthConfig []byte) {
+func marshalAuthFields(endpoint *datastore.Endpoint) (apiKeyHeaderName, apiKeyHeaderValue string, oauth2Config, basicAuthConfig []byte, err error) {
 	if endpoint.Authentication == nil {
-		return "", "", nil, nil
+		return "", "", nil, nil, nil
 	}
 
 	auth := endpoint.Authentication
@@ -309,34 +281,33 @@ func marshalAuthFields(endpoint *datastore.Endpoint) (apiKeyHeaderName, apiKeyHe
 		}
 	case datastore.OAuth2Authentication:
 		if auth.OAuth2 != nil {
-			data, err := json.Marshal(auth.OAuth2)
-			if err == nil {
-				oauth2Config = data
+			oauth2Config, err = json.Marshal(auth.OAuth2)
+			if err != nil {
+				return "", "", nil, nil, fmt.Errorf("failed to marshal oauth2 config: %w", err)
 			}
 		}
 	case datastore.BasicAuthentication:
 		if auth.BasicAuth != nil {
-			data, err := json.Marshal(auth.BasicAuth)
-			if err == nil {
-				basicAuthConfig = data
+			basicAuthConfig, err = json.Marshal(auth.BasicAuth)
+			if err != nil {
+				return "", "", nil, nil, fmt.Errorf("failed to marshal basic auth config: %w", err)
 			}
 		}
 	}
 
-	return apiKeyHeaderName, apiKeyHeaderValue, oauth2Config, basicAuthConfig
+	return apiKeyHeaderName, apiKeyHeaderValue, oauth2Config, basicAuthConfig, nil
 }
 
 // secretsToJSON marshals the given secrets to JSON bytes.
-// Returns nil if marshalling fails or if secrets is empty.
-func secretsToJSON(secrets datastore.Secrets) []byte {
+func secretsToJSON(secrets datastore.Secrets) ([]byte, error) {
 	if len(secrets) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	data, err := json.Marshal(secrets)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to marshal secrets: %w", err)
 	}
 
-	return data
+	return data, nil
 }

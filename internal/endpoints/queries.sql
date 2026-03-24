@@ -250,39 +250,11 @@ UPDATE convoy.endpoints SET
     updated_at = NOW(), content_type = @content_type
 WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL;
 
--- name: UpdateEndpointStatus :one
+-- name: UpdateEndpointStatus :execresult
 UPDATE convoy.endpoints SET status = @status
-WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL
-RETURNING
-    id, name, status, owner_id, url, description,
-    http_timeout, rate_limit, rate_limit_duration, advanced_signatures,
-    slack_webhook_url, support_email, app_id, project_id,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(secrets_cipher::bytea, @encryption_key)::jsonb
-        ELSE secrets
-    END AS secrets,
-    created_at, updated_at,
-    COALESCE(authentication_type, '') AS authentication_type,
-    COALESCE(authentication_type_api_key_header_name, '') AS authentication_type_api_key_header_name,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, @encryption_key)::TEXT
-        ELSE authentication_type_api_key_header_value
-    END AS authentication_type_api_key_header_value,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(mtls_client_cert_cipher::bytea, @encryption_key)::jsonb
-        ELSE mtls_client_cert
-    END AS mtls_client_cert,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(oauth2_config_cipher::bytea, @encryption_key)::jsonb
-        ELSE oauth2_config
-    END AS oauth2_config,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(basic_auth_config_cipher::bytea, @encryption_key)::jsonb
-        ELSE basic_auth_config
-    END AS basic_auth_config,
-    content_type;
+WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL;
 
--- name: UpdateEndpointSecrets :one
+-- name: UpdateEndpointSecrets :execresult
 UPDATE convoy.endpoints SET
     secrets_cipher = CASE
         WHEN is_encrypted THEN pgp_sym_encrypt(@secrets_text::TEXT, @encryption_key)
@@ -292,35 +264,7 @@ UPDATE convoy.endpoints SET
         ELSE @secrets_text::jsonb
     END,
     updated_at = NOW()
-WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL
-RETURNING
-    id, name, status, owner_id, url, description,
-    http_timeout, rate_limit, rate_limit_duration, advanced_signatures,
-    slack_webhook_url, support_email, app_id, project_id,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(secrets_cipher::bytea, @encryption_key)::jsonb
-        ELSE secrets
-    END AS secrets,
-    created_at, updated_at,
-    COALESCE(authentication_type, '') AS authentication_type,
-    COALESCE(authentication_type_api_key_header_name, '') AS authentication_type_api_key_header_name,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, @encryption_key)::TEXT
-        ELSE authentication_type_api_key_header_value
-    END AS authentication_type_api_key_header_value,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(mtls_client_cert_cipher::bytea, @encryption_key)::jsonb
-        ELSE mtls_client_cert
-    END AS mtls_client_cert,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(oauth2_config_cipher::bytea, @encryption_key)::jsonb
-        ELSE oauth2_config
-    END AS oauth2_config,
-    CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(basic_auth_config_cipher::bytea, @encryption_key)::jsonb
-        ELSE basic_auth_config
-    END AS basic_auth_config,
-    content_type;
+WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL;
 
 -- name: DeleteEndpoint :exec
 UPDATE convoy.endpoints SET deleted_at = NOW()

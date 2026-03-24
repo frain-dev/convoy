@@ -30,8 +30,8 @@ type Querier interface {
 	FindEndpointsByIDs(ctx context.Context, arg FindEndpointsByIDsParams) ([]FindEndpointsByIDsRow, error)
 	FindEndpointsByOwnerID(ctx context.Context, arg FindEndpointsByOwnerIDParams) ([]FindEndpointsByOwnerIDRow, error)
 	UpdateEndpoint(ctx context.Context, arg UpdateEndpointParams) (pgconn.CommandTag, error)
-	UpdateEndpointSecrets(ctx context.Context, arg UpdateEndpointSecretsParams) (UpdateEndpointSecretsRow, error)
-	UpdateEndpointStatus(ctx context.Context, arg UpdateEndpointStatusParams) (UpdateEndpointStatusRow, error)
+	UpdateEndpointSecrets(ctx context.Context, arg UpdateEndpointSecretsParams) (pgconn.CommandTag, error)
+	UpdateEndpointStatus(ctx context.Context, arg UpdateEndpointStatusParams) (pgconn.CommandTag, error)
 }
 
 var _ Querier = (*Queries)(nil)

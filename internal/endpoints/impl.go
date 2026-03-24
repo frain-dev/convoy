@@ -45,7 +45,7 @@ var _ datastore.EndpointRepository = (*Service)(nil)
 func New(logger log.StdLogger, db database.Database) *Service {
 	km, err := keys.Get()
 	if err != nil {
-		log.Fatal(err)
+		panic(fmt.Sprintf("endpoints: failed to initialize key manager: %v", err))
 	}
 	return &Service{
 		logger: logger,
@@ -77,7 +77,15 @@ func (s *Service) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 		return err
 	}
 
-	apiKeyHeaderName, apiKeyHeaderValue, oauth2Config, basicAuthConfig := marshalAuthFields(endpoint)
+	apiKeyHeaderName, apiKeyHeaderValue, oauth2Config, basicAuthConfig, err := marshalAuthFields(endpoint)
+	if err != nil {
+		return err
+	}
+
+	secretsJSON, err := secretsToJSON(endpoint.Secrets)
+	if err != nil {
+		return err
+	}
 
 	var mtlsClientCert []byte
 	if endpoint.MtlsClientCert != nil {
@@ -92,7 +100,7 @@ func (s *Service) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 		Name:                                common.StringToPgTextNullable(endpoint.Name),
 		Status:                              common.StringToPgTextNullable(string(endpoint.Status)),
 		IsEncrypted:                         common.BoolToPgBool(isEncrypted),
-		Secrets:                             secretsToJSON(endpoint.Secrets),
+		Secrets:                             secretsJSON,
 		OwnerID:                             common.StringToPgTextNullable(endpoint.OwnerID),
 		Url:                                 common.StringToPgTextNullable(endpoint.Url),
 		Description:                         common.StringToPgTextNullable(endpoint.Description),
@@ -299,9 +307,15 @@ func (s *Service) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 		return err
 	}
 
-	apiKeyHeaderName, apiKeyHeaderValue, oauth2Config, basicAuthConfig := marshalAuthFields(endpoint)
+	apiKeyHeaderName, apiKeyHeaderValue, oauth2Config, basicAuthConfig, err := marshalAuthFields(endpoint)
+	if err != nil {
+		return err
+	}
 
-	secretsJSON := secretsToJSON(endpoint.Secrets)
+	secretsJSON, err := secretsToJSON(endpoint.Secrets)
+	if err != nil {
+		return err
+	}
 	var secretsText string
 	if secretsJSON != nil {
 		secretsText = string(secretsJSON)
@@ -359,26 +373,12 @@ func (s *Service) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 
 // UpdateEndpointStatus updates only the status of an endpoint.
 func (s *Service) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) error {
-	key, err := s.km.GetCurrentKeyFromCache()
-	if err != nil {
-		return err
-	}
-
-	_, err = s.repo.UpdateEndpointStatus(ctx, repo.UpdateEndpointStatusParams{
-		Status:        common.StringToPgTextNullable(string(status)),
-		ID:            common.StringToPgTextNullable(endpointID),
-		ProjectID:     common.StringToPgTextNullable(projectID),
-		EncryptionKey: common.StringToPgTextNullable(key),
+	_, err := s.repo.UpdateEndpointStatus(ctx, repo.UpdateEndpointStatusParams{
+		Status:    common.StringToPgTextNullable(string(status)),
+		ID:        common.StringToPgTextNullable(endpointID),
+		ProjectID: common.StringToPgTextNullable(projectID),
 	})
-	if err != nil {
-		isEncErr, err2 := s.isEncryptionError(ctx, err)
-		if isEncErr && err2 != nil {
-			return err2
-		}
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // DeleteEndpoint soft-deletes an endpoint and its associated subscriptions
@@ -561,8 +561,13 @@ func (s *Service) UpdateSecrets(ctx context.Context, endpointID, projectID strin
 		return err
 	}
 
+	secretsJSON, err := secretsToJSON(secrets)
+	if err != nil {
+		return err
+	}
+
 	_, err = s.repo.UpdateEndpointSecrets(ctx, repo.UpdateEndpointSecretsParams{
-		SecretsText:   common.StringToPgText(string(secretsToJSON(secrets))),
+		SecretsText:   common.StringToPgText(string(secretsJSON)),
 		EncryptionKey: common.StringToPgTextNullable(key),
 		ID:            common.StringToPgTextNullable(endpointID),
 		ProjectID:     common.StringToPgTextNullable(projectID),
