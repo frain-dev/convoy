@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel"
@@ -10,7 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/telemetry"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
 )
@@ -24,11 +25,11 @@ type Consumer struct {
 	queue      queue.Queuer
 	mux        *asynq.ServeMux
 	srv        *asynq.Server
-	log        log.StdLogger
+	log        log.Logger
 	jobTracker JobTracker // optional, used only in E2E tests
 }
 
-func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.StdLogger, level log.Level) *Consumer {
+func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.Logger, level slog.Level) *Consumer {
 	lo.Infof("The consumer pool size has been set to %d.", consumerPoolSize)
 
 	var opts asynq.RedisConnOpt
@@ -115,7 +116,7 @@ func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) 
 
 		err := h.ProcessTask(newCtx, t)
 		if err != nil {
-			c.log.WithError(err).WithField("job", t.Type()).Error("job failed")
+			c.log.Error("job failed", "error", err, "job", t.Type())
 			return err
 		}
 
@@ -132,18 +133,16 @@ func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) 
 	})
 }
 
-func getLogLevel(lvl log.Level) asynq.LogLevel {
+func getLogLevel(lvl slog.Level) asynq.LogLevel {
 	switch lvl {
-	case log.DebugLevel:
+	case slog.LevelDebug:
 		return asynq.DebugLevel
-	case log.InfoLevel:
+	case slog.LevelInfo:
 		return asynq.InfoLevel
-	case log.WarnLevel:
+	case slog.LevelWarn:
 		return asynq.WarnLevel
-	case log.ErrorLevel:
+	case slog.LevelError:
 		return asynq.ErrorLevel
-	case log.FatalLevel:
-		return asynq.FatalLevel
 	default:
 		return asynq.InfoLevel
 	}

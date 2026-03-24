@@ -8,10 +8,10 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -22,7 +22,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // TestDispatcherMTLSIntegration tests the complete mTLS transport path:
@@ -138,7 +138,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		dispatcher, err := NewDispatcher(
 			licenser,
 			fflag.NewFFlag([]string{}),
-			LoggerOption(log.NewLogger(os.Stdout)),
+			LoggerOption(log.New("convoy", slog.LevelInfo)),
 			TLSConfigOption(true, licenser, tlsConfig),
 		)
 		require.NoError(t, err)
@@ -202,7 +202,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		dispatcher, err := NewDispatcher(
 			licenser,
 			fflag.NewFFlag([]string{}),
-			LoggerOption(log.NewLogger(os.Stdout)),
+			LoggerOption(log.New("convoy", slog.LevelInfo)),
 			TLSConfigOption(true, licenser, tlsConfig),
 		)
 		require.NoError(t, err)
@@ -296,7 +296,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		dispatcher, err := NewDispatcher(
 			licenser,
 			fflag.NewFFlag([]string{}),
-			LoggerOption(log.NewLogger(os.Stdout)),
+			LoggerOption(log.New("convoy", slog.LevelInfo)),
 			TLSConfigOption(true, licenser, tlsConfig),
 		)
 		require.NoError(t, err)
@@ -359,7 +359,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		dispatcher, err := NewDispatcher(
 			licenser,
 			fflag.NewFFlag([]string{}),
-			LoggerOption(log.NewLogger(os.Stdout)),
+			LoggerOption(log.New("convoy", slog.LevelInfo)),
 			TLSConfigOption(true, licenser, tlsConfig),
 		)
 		require.NoError(t, err)

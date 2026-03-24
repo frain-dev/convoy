@@ -7,13 +7,13 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, oldKey, newKey string, timeout int) error {
+func RotateEncryptionKey(lo log.Logger, db database.Database, km KeyManager, oldKey, newKey string, timeout int) error {
 	tx, err := db.GetDB().Beginx()
 	if err != nil {
-		lo.WithError(err).Error("failed to begin transaction")
+		lo.Error("failed to begin transaction", "error", err)
 		return err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -25,14 +25,14 @@ func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, 
 		err = lockTable(ctx, tx, table, timeout)
 		if err != nil {
 			rollback(lo, tx)
-			lo.WithError(err).Error("failed to lock table")
+			lo.Error("failed to lock table", "error", err)
 			return err
 		}
 
 		isEncrypted, err := checkEncryptionStatus(ctx, tx, table)
 		if err != nil {
 			rollback(lo, tx)
-			lo.WithError(err).Error("failed to check encryption status")
+			lo.Error("failed to check encryption status", "error", err)
 			return err
 		}
 
@@ -47,7 +47,7 @@ func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, 
 			err = reEncryptColumn(ctx, tx, table, cipherColumn, oldKey, newKey)
 			if err != nil {
 				rollback(lo, tx)
-				lo.WithError(err).Error("failed to re-encrypt column")
+				lo.Error("failed to re-encrypt column", "error", err)
 				return err
 			}
 		}
@@ -61,7 +61,7 @@ func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, 
 
 	err = tx.Commit()
 	if err != nil {
-		lo.WithError(err).Error("failed to commit transaction")
+		lo.Error("failed to commit transaction", "error", err)
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 

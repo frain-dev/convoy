@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -12,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
@@ -45,7 +45,7 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 
 	iv, err := pis.InviteRepo.FetchOrganisationInviteByToken(ctx, pis.Token)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation member invite by token and email")
+		slog.ErrorContext(ctx, "failed to fetch organisation member invite by token and email", "error", err)
 		return &ServiceError{ErrMsg: "failed to fetch organisation member invite", Err: err}
 	}
 
@@ -63,7 +63,7 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 		err = pis.InviteRepo.UpdateOrganisationInvite(ctx, iv)
 		if err != nil {
 			errMsg := "failed to update declined organisation invite"
-			log.FromContext(ctx).WithError(err).Error(errMsg)
+			slog.ErrorContext(ctx, errMsg, "error", err)
 			return &ServiceError{ErrMsg: errMsg, Err: err}
 		}
 		return nil
@@ -78,7 +78,7 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 			}
 		} else {
 			errMsg := "failed to find user by email"
-			log.FromContext(ctx).WithError(err).Error(errMsg)
+			slog.ErrorContext(ctx, errMsg, "error", err)
 			return &ServiceError{ErrMsg: errMsg, Err: err}
 		}
 	}
@@ -86,7 +86,7 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 	org, err := pis.OrgRepo.FetchOrganisationByID(ctx, iv.OrganisationID)
 	if err != nil {
 		errMsg := "failed to fetch organisation by id"
-		log.FromContext(ctx).WithError(err).Error(errMsg)
+		slog.ErrorContext(ctx, errMsg, "error", err)
 		return &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
@@ -100,7 +100,7 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 	err = pis.InviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
 		errMsg := "failed to update accepted organisation invite"
-		log.FromContext(ctx).WithError(err).Error(errMsg)
+		slog.ErrorContext(ctx, errMsg, "error", err)
 		return &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
@@ -114,14 +114,14 @@ func (pis *ProcessInviteService) createNewUser(ctx context.Context, newUser *mod
 
 	err := util.Validate(newUser)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate new user information")
+		slog.ErrorContext(ctx, "failed to validate new user information", "error", err)
 		return nil, &ServiceError{ErrMsg: err.Error(), Err: nil}
 	}
 
 	p := datastore.Password{Plaintext: newUser.Password}
 	err = p.GenerateHash()
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate user password hash")
+		slog.ErrorContext(ctx, "failed to generate user password hash", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create organisation member invite", Err: err}
 	}
 
@@ -138,7 +138,7 @@ func (pis *ProcessInviteService) createNewUser(ctx context.Context, newUser *mod
 	err = pis.UserRepo.CreateUser(ctx, user)
 	if err != nil {
 		errMsg := "failed to create user"
-		log.FromContext(ctx).WithError(err).Error(errMsg)
+		slog.ErrorContext(ctx, errMsg, "error", err)
 		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 

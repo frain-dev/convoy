@@ -1,14 +1,14 @@
 package circuit_breaker
 
 import (
-	"os"
+	"log/slog"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
@@ -104,12 +104,12 @@ func TestNewCircuitBreakerFromStore(t *testing.T) {
 		return data
 	}
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 
 	tests := []struct {
 		name        string
 		input       []byte
-		logger      *log.Logger
+		logger      log.Logger
 		wantErr     bool
 		errContains string
 		validate    func(*testing.T, *CircuitBreaker)

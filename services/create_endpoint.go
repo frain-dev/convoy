@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -21,13 +22,13 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/net"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 // createOAuth2TokenGetter creates an OAuth2TokenGetter for ping validation.
 // It uses a noop cache since this is a one-time validation.
-func createOAuth2TokenGetter(auth *models.EndpointAuthentication, endpointURL, existingEndpointID string, logger log.StdLogger) net.OAuth2TokenGetter {
+func createOAuth2TokenGetter(auth *models.EndpointAuthentication, endpointURL, existingEndpointID string, logger log.Logger) net.OAuth2TokenGetter {
 	if auth == nil || auth.Type != datastore.OAuth2Authentication || auth.OAuth2 == nil {
 		return nil
 	}
@@ -36,7 +37,7 @@ func createOAuth2TokenGetter(auth *models.EndpointAuthentication, endpointURL, e
 }
 
 // createOAuth2TokenGetterFromDatastore creates an OAuth2TokenGetter from a datastore OAuth2 config.
-func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL, existingEndpointID string, logger log.StdLogger) net.OAuth2TokenGetter {
+func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL, existingEndpointID string, logger log.Logger) net.OAuth2TokenGetter {
 	if oauth2 == nil {
 		return nil
 	}
@@ -71,7 +72,7 @@ type CreateEndpointService struct {
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 	DB                         database.Database
-	Logger                     log.StdLogger
+	Logger                     log.Logger
 	E                          models.CreateEndpoint
 	ProjectID                  string
 }
@@ -170,7 +171,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 		basicAuthEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.BasicAuthEndpoint, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !basicAuthEnabled {
-			log.FromContext(ctx).Warn("Basic Auth configuration provided but feature flag not enabled, ignoring Basic Auth config")
+			slog.WarnContext(ctx, "Basic Auth configuration provided but feature flag not enabled, ignoring Basic Auth config")
 			auth = nil
 		}
 	}
@@ -184,7 +185,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		// Check feature flag for OAuth2 using project's organisation ID
 		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !oauth2Enabled {
-			log.FromContext(ctx).Warn("OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
+			slog.WarnContext(ctx, "OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
 			// Remove OAuth2 authentication if feature flag is disabled
 			auth = nil
 		}
@@ -202,7 +203,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		// Validate both fields provided together
 		mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !mtlsEnabled {
-			log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
+			slog.WarnContext(ctx, "mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
 		} else {
 			cc := a.E.MtlsClientCert
 			if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
@@ -221,7 +222,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 	err = a.EndpointRepo.CreateEndpoint(ctx, endpoint, a.ProjectID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create endpoint")
+		slog.ErrorContext(ctx, "failed to create endpoint", "error", err)
 		if errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailableUpgradeOrRevert) {
 			return nil, &ServiceError{ErrMsg: err.Error(), Err: err}
 		}
@@ -278,7 +279,7 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			cert, certErr := config.LoadClientCertificate(mtlsClientCert.ClientCert, mtlsClientCert.ClientKey)
 			if certErr != nil {
 				// Log warning but don't fail - validation will happen later
-				log.FromContext(ctx).WithError(certErr).Warn("failed to load mTLS cert for ping, will validate later")
+				slog.WarnContext(ctx, "failed to load mTLS cert for ping, will validate later", "error", certErr)
 			} else {
 				mtlsCert = cert
 			}
@@ -295,9 +296,9 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		})
 		if pingErr != nil {
 			if cfg.Dispatcher.SkipPingValidation {
-				log.FromContext(ctx).Warnf("failed to ping tls endpoint (validation skipped): %v", pingErr)
+				slog.WarnContext(ctx, fmt.Sprintf("failed to ping tls endpoint (validation skipped): %v", pingErr))
 			} else {
-				log.FromContext(ctx).Errorf("failed to ping tls endpoint: %v", pingErr)
+				slog.ErrorContext(ctx, fmt.Sprintf("failed to ping tls endpoint: %v", pingErr))
 				return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
 			}
 		}

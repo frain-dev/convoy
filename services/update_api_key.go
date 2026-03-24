@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -25,7 +25,7 @@ func (ss *UpdateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, erro
 
 	err := ss.Role.Validate("api key")
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("invalid api key role")
+		slog.ErrorContext(ctx, "invalid api key role", "error", err)
 		return nil, &ServiceError{ErrMsg: "invalid api key role", Err: err}
 	}
 
@@ -36,14 +36,14 @@ func (ss *UpdateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, erro
 
 	apiKey, err := ss.APIKeyRepo.GetAPIKeyByID(ctx, ss.UID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to fetch api key")
+		slog.ErrorContext(ctx, "failed to fetch api key", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch api key", Err: err}
 	}
 
 	apiKey.Role = *ss.Role
 	err = ss.APIKeyRepo.UpdateAPIKey(ctx, apiKey)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update api key")
+		slog.ErrorContext(ctx, "failed to update api key", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to update api key", Err: err}
 	}
 

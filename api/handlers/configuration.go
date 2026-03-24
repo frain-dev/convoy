@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -47,13 +47,13 @@ func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse configuration request: %v", err)
+		h.A.Logger.Errorf("Failed to parse configuration request: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	if err := newConfig.Validate(); err != nil {
-		h.A.Logger.WithError(err).Errorf("Configuration validation failed: %v", err)
+		h.A.Logger.Errorf("Configuration validation failed: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid configuration provided", http.StatusBadRequest))
 		return
 	}
@@ -80,13 +80,13 @@ func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse configuration update request: %v", err)
+		h.A.Logger.Errorf("Failed to parse configuration update request: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	if err := newConfig.Validate(); err != nil {
-		h.A.Logger.WithError(err).Errorf("Configuration update validation failed: %v", err)
+		h.A.Logger.Errorf("Configuration update validation failed: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid configuration provided", http.StatusBadRequest))
 		return
 	}
@@ -113,7 +113,7 @@ func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Get()
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
+		slog.ErrorContext(r.Context(), "failed to load configuration", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load configuration", http.StatusBadRequest))
 		return
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,7 +26,7 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // MinIO Operations
@@ -112,7 +113,7 @@ func findExportFiles(t *testing.T, baseDir, tableName string) []string {
 func seedSource(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project) *datastore.Source {
 	t.Helper()
 
-	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	sourceRepo := sources.New(log.New("convoy", slog.LevelError), db)
 
 	source := &datastore.Source{
 		UID:       ulid.Make().String(),
@@ -155,7 +156,7 @@ func seedEventWithTimestamp(t *testing.T, db database.Database, ctx context.Cont
 	// Create a source first (required for events)
 	source := seedSource(t, db, ctx, project)
 
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
+	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
 
 	event := &datastore.Event{
 		UID:              ulid.Make().String(),
@@ -191,7 +192,7 @@ func seedEventWithTimestamp(t *testing.T, db database.Database, ctx context.Cont
 func seedSubscription(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
 	t.Helper()
 
-	subscriptionRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subscriptionRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
 
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
@@ -237,7 +238,7 @@ func seedEventDeliveryWithTimestamp(t *testing.T, db database.Database, ctx cont
 	project := &datastore.Project{UID: event.ProjectID}
 	subscription := seedSubscription(t, db, ctx, project, endpoint)
 
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
 
 	eventDelivery := &datastore.EventDelivery{
 		UID:            ulid.Make().String(),
@@ -320,7 +321,7 @@ func seedDeliveryAttemptWithTimestamp(t *testing.T, db database.Database, ctx co
 func createMinIOConfig(t *testing.T, db database.Database, ctx context.Context, endpoint string) *datastore.Configuration {
 	t.Helper()
 
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
+	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
 
 	// Load existing configuration (created by test setup)
 	config, err := configRepo.LoadConfiguration(ctx)
@@ -359,7 +360,7 @@ func createMinIOConfig(t *testing.T, db database.Database, ctx context.Context, 
 func createOnPremConfig(t *testing.T, db database.Database, ctx context.Context, exportPath string) *datastore.Configuration {
 	t.Helper()
 
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
+	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
 
 	// Load existing configuration (created by test setup)
 	config, err := configRepo.LoadConfiguration(ctx)
@@ -487,7 +488,7 @@ func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx conte
 		lookback = timeWindow[0]
 	}
 
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
 
 	// Wait a bit to ensure no delivery is created
 	time.Sleep(2 * time.Second)

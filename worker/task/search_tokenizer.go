@@ -16,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/pkg/log"
+	"log/slog"
 )
 
 func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, redis *rdb.Redis) func(context.Context, *asynq.Task) error {
@@ -41,7 +41,7 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 
 			ok, err := mutex.UnlockContext(tctx)
 			if !ok || err != nil {
-				log.WithError(err).Error("failed to release lock")
+				slog.Error("failed to release lock", "error", err)
 			}
 		}()
 
@@ -53,12 +53,12 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 		for _, p := range projectEvents {
 			err = tokenize(ctx, eventRepo, jobRepo, p.Id, config.DefaultSearchTokenizationInterval)
 			if err != nil {
-				log.WithError(err).Errorf("failed to tokenize events for project with id %s", p.Id)
+				slog.Error(fmt.Sprintf("failed to tokenize events for project with id %s: %v", p.Id, err))
 				continue
 			}
-			log.Debugf("done tokenizing events for %+v with %v events", p.Id, p.EventsCount)
+			slog.Debug(fmt.Sprintf("done tokenizing events for %+v with %v events", p.Id, p.EventsCount))
 		}
-		log.Debug("done tokenizing events in the interval")
+		slog.Debug("done tokenizing events in the interval")
 
 		return nil
 	}
@@ -69,7 +69,7 @@ func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.Job
 		var params datastore.SearchIndexParams
 		err := json.Unmarshal(t.Payload(), &params)
 		if err != nil {
-			log.WithError(err).Error("failed to unmarshal tokenizer handler payload")
+			slog.Error("failed to unmarshal tokenizer handler payload", "error", err)
 			return &EndpointError{Err: err, delay: time.Second * 30}
 		}
 
@@ -77,7 +77,7 @@ func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.Job
 		if err != nil {
 			return err
 		}
-		log.Debugf("done tokenizing events in the last %d hours for project with id %s", params.Interval, params.ProjectID)
+		slog.Debug(fmt.Sprintf("done tokenizing events in the last %d hours for project with id %s", params.Interval, params.ProjectID))
 
 		return nil
 	}

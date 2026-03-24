@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const (
@@ -30,7 +30,7 @@ type Client struct {
 	timeout      time.Duration
 	retryCount   int
 	httpClient   *http.Client
-	logger       log.StdLogger
+	logger       log.Logger
 }
 
 // Config holds configuration for the license service client
@@ -39,7 +39,7 @@ type Config struct {
 	ValidatePath string
 	Timeout      time.Duration
 	RetryCount   int
-	Logger       log.StdLogger
+	Logger       log.Logger
 }
 
 // NewClient creates a new license service client
@@ -109,7 +109,7 @@ func (c *Client) ValidateLicense(ctx context.Context, licenseKey string) (*Licen
 		if err != nil {
 			lastErr = fmt.Errorf("request failed: %w", err)
 			if c.logger != nil {
-				c.logger.WithError(err).Warnf("License validation attempt %d failed, retrying...", attempt+1)
+				c.logger.Warnf("License validation attempt %d failed, retrying...: %v", attempt+1, err)
 			}
 			continue
 		}

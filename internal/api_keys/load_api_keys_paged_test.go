@@ -2,8 +2,7 @@ package api_keys
 
 import (
 	"fmt"
-	"io"
-	"os"
+	"log/slog"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -13,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // ============================================================================
@@ -191,7 +190,7 @@ func TestLoadAPIKeysPaged_FilterByProject(t *testing.T) {
 	user, org, project1 := seedTestData(t, db)
 
 	// Create a second project
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project2 := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -269,7 +268,7 @@ func TestLoadAPIKeysPaged_FilterByUser(t *testing.T) {
 	user1, _, project := seedTestData(t, db)
 
 	// Create a second user
-	userRepo := users.New(log.NewLogger(io.Discard), db)
+	userRepo := users.New(log.New("convoy", slog.LevelError), db)
 	user2 := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "User",
@@ -409,7 +408,7 @@ func TestLoadAPIKeysPaged_MultipleFilters(t *testing.T) {
 	user1, _, project := seedTestData(t, db)
 
 	// Create a second user
-	userRepo := users.New(log.NewLogger(io.Discard), db)
+	userRepo := users.New(log.New("convoy", slog.LevelError), db)
 	user2 := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "User",

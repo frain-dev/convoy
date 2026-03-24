@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -18,7 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/users"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func captureStdout(fn func()) string {
@@ -130,7 +131,7 @@ func TestCircuitBreakersUpdate_Integration(t *testing.T) {
 	org := &datastore.Organisation{UID: "cli-org-1", Name: "CLI Org 1", OwnerID: user.UID}
 	_ = orgRepo.CreateOrganisation(ctx, org)
 
-	projectRepo := projects.New(log.NewLogger(os.Stdout), app.Database)
+	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), app.Database)
 	pc := datastore.DefaultProjectConfig
 	pc.CircuitBreaker = &datastore.CircuitBreakerConfiguration{
 		SampleRate:                  30,

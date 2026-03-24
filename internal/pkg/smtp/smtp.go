@@ -3,13 +3,13 @@ package smtp
 import (
 	"bytes"
 	"fmt"
+	"log/slog"
 
 	"gopkg.in/gomail.v2"
 
 	_ "embed"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -37,27 +37,27 @@ func NewSMTP(cfg *config.SMTPConfiguration) (SmtpClient, error) {
 	errMsg := "Missing SMTP Config - %s"
 	if util.IsStringEmpty(cfg.URL) {
 		err = fmt.Errorf(errMsg, "URL")
-		log.WithError(err).Error()
+		slog.Error("smtp error", "error", err)
 	}
 
 	if cfg.Port == 0 {
 		err = fmt.Errorf(errMsg, "Port")
-		log.WithError(err).Error()
+		slog.Error("smtp error", "error", err)
 	}
 
 	if util.IsStringEmpty(cfg.Username) {
 		err = fmt.Errorf(errMsg, "username")
-		log.WithError(err).Error()
+		slog.Error("smtp error", "error", err)
 	}
 
 	if util.IsStringEmpty(cfg.Password) {
 		err = fmt.Errorf(errMsg, "password")
-		log.WithError(err).Error()
+		slog.Error("smtp error", "error", err)
 	}
 
 	if util.IsStringEmpty(cfg.From) {
 		err = fmt.Errorf(errMsg, "from")
-		log.WithError(err).Error()
+		slog.Error("smtp error", "error", err)
 	}
 
 	return &SMTPClient{

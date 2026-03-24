@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 const MaxPasswordLength = 72
@@ -40,14 +40,14 @@ func (u *UpdatePasswordService) Run(ctx context.Context) (*datastore.User, error
 	err = p.GenerateHash()
 
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate hash")
+		slog.ErrorContext(ctx, "failed to generate hash", "error", err)
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	u.User.Password = string(p.Hash)
 	err = u.UserRepo.UpdateUser(ctx, u.User)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("an error occurred while updating user")
+		slog.ErrorContext(ctx, "an error occurred while updating user", "error", err)
 		return nil, &ServiceError{ErrMsg: "an error occurred while updating user", Err: err}
 	}
 

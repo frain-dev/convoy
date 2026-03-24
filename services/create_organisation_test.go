@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *datastore.OrganisationRequest, user *datastore.User) *CreateOrganisationService {
@@ -22,7 +23,7 @@ func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *datastore
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 		Licenser:      mocks.NewMockLicenser(ctrl),
-		Logger:        log.FromContext(context.Background()),
+		Logger:        log.New("convoy", slog.LevelInfo),
 		NewOrg:        newOrg,
 		User:          user,
 	}
@@ -195,7 +196,7 @@ func TestRunBillingOrganisationSync(t *testing.T) {
 			CreateOrganisationLicenseKey: "test-license-key-from-billing",
 		}
 
-		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.FromContext(ctx))
+		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.New("convoy", slog.LevelInfo))
 
 		require.NotEmpty(t, capturedLicenseData, "UpdateOrganisationLicenseData should be called with encrypted payload")
 		payload, err := license.DecryptLicenseData(org.UID, capturedLicenseData)
@@ -213,6 +214,6 @@ func TestRunBillingOrganisationSync(t *testing.T) {
 		mockBilling := &billing.MockBillingClient{}
 		// CreateOrganisationLicenseKey and GetOrganisationLicenseKey left empty
 
-		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.FromContext(ctx))
+		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.New("convoy", slog.LevelInfo))
 	})
 }

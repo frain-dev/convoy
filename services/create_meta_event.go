@@ -3,13 +3,13 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
@@ -81,7 +81,7 @@ func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data i
 
 	err = m.metaEventRepo.CreateMetaEvent(ctx, metaEvent)
 	if err != nil {
-		log.WithError(err).Error("failed to create meta event")
+		slog.Error("failed to create meta event", "error", err)
 		return err
 	}
 

@@ -8,6 +8,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -19,12 +20,12 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func provideOAuth2TokenService() (*OAuth2TokenService, cache.Cache) {
 	memCache := mcache.NewMemoryCache()
-	logger := log.NewLogger(nil)
+	logger := log.New("convoy", slog.LevelError)
 	return NewOAuth2TokenService(memCache, logger), memCache
 }
 

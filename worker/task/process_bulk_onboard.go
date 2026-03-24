@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -14,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
 )
@@ -52,14 +52,14 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 			// Fallback to JSON
 			err = json.Unmarshal(t.Payload(), &batch)
 			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to decode bulk onboard payload")
+				slog.ErrorContext(ctx, "failed to decode bulk onboard payload", "error", err)
 				return err
 			}
 		}
 
 		project, err := deps.ProjectRepo.FetchProjectByID(ctx, batch.ProjectID)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Errorf("failed to fetch project %s for bulk onboard", batch.ProjectID)
+			slog.ErrorContext(ctx, fmt.Sprintf("failed to fetch project %s for bulk onboard: %v", batch.ProjectID, err))
 			return err
 		}
 
@@ -71,25 +71,25 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 			var endpointCreated bool
 
 			if findErr != nil && !errors.Is(findErr, datastore.ErrEndpointNotFound) {
-				log.FromContext(ctx).WithError(findErr).Errorf("bulk onboard: failed to look up endpoint by URL %q", item.URL)
+				slog.ErrorContext(ctx, fmt.Sprintf("bulk onboard: failed to look up endpoint by URL %q: %v", item.URL, findErr))
 				failCount++
 				continue
 			}
 
 			if existingEndpoint != nil {
-				log.FromContext(ctx).Warnf("bulk onboard: endpoint with URL %q already exists (uid=%s), skipping creation", item.URL, existingEndpoint.UID)
+				slog.WarnContext(ctx, fmt.Sprintf("bulk onboard: endpoint with URL %q already exists (uid=%s), skipping creation", item.URL, existingEndpoint.UID))
 				endpointID = existingEndpoint.UID
 			} else {
 				endpoint, epErr := buildEndpoint(ctx, deps, project, item)
 				if epErr != nil {
-					log.FromContext(ctx).WithError(epErr).Errorf("bulk onboard: failed to build endpoint %q", item.Name)
+					slog.ErrorContext(ctx, fmt.Sprintf("bulk onboard: failed to build endpoint %q: %v", item.Name, epErr))
 					failCount++
 					continue
 				}
 
 				epErr = deps.EndpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 				if epErr != nil {
-					log.FromContext(ctx).WithError(epErr).Errorf("bulk onboard: failed to create endpoint %q", item.Name)
+					slog.ErrorContext(ctx, fmt.Sprintf("bulk onboard: failed to create endpoint %q: %v", item.Name, epErr))
 					failCount++
 					continue
 				}
@@ -104,12 +104,12 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 			if !project.Config.MultipleEndpointSubscriptions {
 				count, countErr := deps.SubRepo.CountEndpointSubscriptions(ctx, project.UID, endpointID, "")
 				if countErr != nil {
-					log.FromContext(ctx).WithError(countErr).Errorf("bulk onboard: failed to count subscriptions for endpoint %q", item.Name)
+					slog.ErrorContext(ctx, fmt.Sprintf("bulk onboard: failed to count subscriptions for endpoint %q: %v", item.Name, countErr))
 					failCount++
 					continue
 				}
 				if count > 0 {
-					log.FromContext(ctx).Warnf("bulk onboard: subscription already exists for endpoint %s, skipping (MultipleEndpointSubscriptions disabled)", endpointID)
+					slog.WarnContext(ctx, fmt.Sprintf("bulk onboard: subscription already exists for endpoint %s, skipping (MultipleEndpointSubscriptions disabled)", endpointID))
 					skipCount++
 					continue
 				}
@@ -118,11 +118,11 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 			subscription := buildSubscription(ctx, project.UID, endpointID, item, deps.Licenser)
 			subErr := deps.SubRepo.CreateSubscription(ctx, project.UID, subscription)
 			if subErr != nil {
-				log.FromContext(ctx).WithError(subErr).Errorf("bulk onboard: failed to create subscription for endpoint %q", item.Name)
+				slog.ErrorContext(ctx, fmt.Sprintf("bulk onboard: failed to create subscription for endpoint %q: %v", item.Name, subErr))
 				// Clean up orphaned endpoint if we just created it
 				if endpointCreated {
 					if delErr := deps.EndpointRepo.DeleteEndpoint(ctx, &datastore.Endpoint{UID: endpointID}, project.UID); delErr != nil {
-						log.FromContext(ctx).WithError(delErr).Errorf("bulk onboard: failed to clean up orphaned endpoint %s", endpointID)
+						slog.ErrorContext(ctx, fmt.Sprintf("bulk onboard: failed to clean up orphaned endpoint %s: %v", endpointID, delErr))
 					}
 				}
 				failCount++
@@ -131,7 +131,7 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 			successCount++
 		}
 
-		log.FromContext(ctx).Infof("bulk onboard batch %s: %d succeeded, %d skipped, %d failed", batch.BatchID, successCount, skipCount, failCount)
+		slog.InfoContext(ctx, fmt.Sprintf("bulk onboard batch %s: %d succeeded, %d skipped, %d failed", batch.BatchID, successCount, skipCount, failCount))
 
 		if successCount == 0 && skipCount == 0 && failCount > 0 {
 			return fmt.Errorf("bulk onboard batch %s: all %d items failed", batch.BatchID, failCount)
@@ -188,11 +188,11 @@ func buildEndpoint(ctx context.Context, deps BulkOnboardDeps, project *datastore
 					},
 				}
 			} else {
-				log.FromContext(ctx).Warnf("bulk onboard: basic auth feature flag not enabled for org %s, skipping auth for endpoint %q",
-					project.OrganisationID, item.Name)
+				slog.WarnContext(ctx, fmt.Sprintf("bulk onboard: basic auth feature flag not enabled for org %s, skipping auth for endpoint %q",
+					project.OrganisationID, item.Name))
 			}
 		} else {
-			log.FromContext(ctx).Warnf("bulk onboard: basic auth not licensed, skipping auth for endpoint %q", item.Name)
+			slog.WarnContext(ctx, fmt.Sprintf("bulk onboard: basic auth not licensed, skipping auth for endpoint %q", item.Name))
 		}
 	}
 
@@ -206,7 +206,7 @@ func buildSubscription(ctx context.Context, projectID, endpointID string, item B
 	}
 
 	if !licenser.AdvancedSubscriptions() && eventType != "*" {
-		log.FromContext(ctx).Warnf("bulk onboard: advanced subscriptions not licensed, ignoring event type filter %q", eventType)
+		slog.WarnContext(ctx, fmt.Sprintf("bulk onboard: advanced subscriptions not licensed, ignoring event type filter %q", eventType))
 		eventType = "*"
 	}
 

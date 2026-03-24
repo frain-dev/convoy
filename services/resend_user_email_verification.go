@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -33,7 +33,7 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 
 	err := u.UserRepo.UpdateUser(ctx, u.User)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update user")
+		slog.ErrorContext(ctx, "failed to update user", "error", err)
 		return &ServiceError{ErrMsg: "failed to update user", Err: err}
 	}
 

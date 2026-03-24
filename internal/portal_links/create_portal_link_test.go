@@ -3,6 +3,7 @@ package portal_links
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -35,7 +36,7 @@ func SeedPortalLink(db database.Database, project *datastore.Project, ownerId st
 		CanManageEndpoint: true,
 	}
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	portalLinkRepo := New(logger, db)
 	p, err := portalLinkRepo.CreatePortalLink(context.TODO(), project.UID, portalLink)
 	if err != nil {
@@ -48,7 +49,8 @@ func SeedPortalLink(db database.Database, project *datastore.Project, ownerId st
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	testEnv = res
@@ -56,7 +58,8 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)
@@ -103,7 +106,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func seedTestData(t *testing.T, db database.Database) *datastore.Project {
 	t.Helper()
 	ctx := context.Background()
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 
 	// Create user
 	userRepo := users.New(logger, db)
@@ -127,7 +130,7 @@ func seedTestData(t *testing.T, db database.Database) *datastore.Project {
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -171,7 +174,7 @@ func TestCreatePortalLink_ValidRequest(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	request := &datastore.CreatePortalLinkRequest{
@@ -200,7 +203,7 @@ func TestCreatePortalLink_WithEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -243,7 +246,7 @@ func TestCreatePortalLink_WithEndpoints_AlreadyHaveOwnerID(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -271,7 +274,7 @@ func TestCreatePortalLink_WithEndpoints_DifferentOwnerID_ShouldFail(t *testing.T
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -299,7 +302,7 @@ func TestCreatePortalLink_WithOwnerID_NoEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -338,7 +341,7 @@ func TestCreatePortalLink_WithRefreshTokenAuthType(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	request := &datastore.CreatePortalLinkRequest{
@@ -364,7 +367,7 @@ func TestCreatePortalLink_WithStaticTokenAuthType_NoAuthKey(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	request := &datastore.CreatePortalLinkRequest{
@@ -389,7 +392,7 @@ func TestCreatePortalLink_EmptyOwnerID_ShouldFail(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	request := &datastore.CreatePortalLinkRequest{
@@ -412,7 +415,7 @@ func TestCreatePortalLink_InvalidRequest_MissingName(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	request := &datastore.CreatePortalLinkRequest{
@@ -434,7 +437,7 @@ func TestCreatePortalLink_InvalidRequest_InvalidAuthType(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	request := &datastore.CreatePortalLinkRequest{
@@ -455,7 +458,7 @@ func TestCreatePortalLink_EndpointNotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	request := &datastore.CreatePortalLinkRequest{
@@ -477,7 +480,7 @@ func TestCreatePortalLink_MultipleEndpoints_SomeInvalid(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -504,7 +507,7 @@ func TestCreatePortalLink_VerifyTokenGenerated(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	request := &datastore.CreatePortalLinkRequest{
@@ -537,7 +540,7 @@ func TestCreatePortalLink_VerifyDatabasePersistence(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	request := &datastore.CreatePortalLinkRequest{

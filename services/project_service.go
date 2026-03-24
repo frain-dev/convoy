@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -106,7 +106,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 
 	err = ps.projectRepo.CreateProject(ctx, project)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create project")
+		slog.ErrorContext(ctx, "failed to create project", "error", err)
 		if errors.Is(err, datastore.ErrDuplicateProjectName) {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -116,7 +116,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 
 	err = ps.eventTypesRepo.CreateDefaultEventType(ctx, project.UID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create default event types")
+		slog.ErrorContext(ctx, "failed to create default event types", "error", err)
 	}
 
 	newAPIKey := &datastore.APIKey{
@@ -193,7 +193,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 
 	err := ps.projectRepo.UpdateProject(ctx, project)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to to update project")
+		slog.ErrorContext(ctx, "failed to to update project", "error", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 

@@ -3,11 +3,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func AddConfigCommand() *cobra.Command {
@@ -21,12 +21,14 @@ func AddConfigCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
-				log.Fatalf("Error getting config: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error getting config: %v\n", err)
+				os.Exit(1)
 			}
 
 			data, err := json.MarshalIndent(cfg, "", "    ")
 			if err != nil {
-				log.Fatalf("Error printing config: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error printing config: %v\n", err)
+				os.Exit(1)
 			}
 
 			fmt.Println(string(data))

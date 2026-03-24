@@ -1,21 +1,21 @@
 package portal_links
 
 import (
-	"os"
+	"log/slog"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestLoadPortalLinksPaged_Success_EmptyList(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Load portal links (should be empty)
@@ -38,7 +38,7 @@ func TestLoadPortalLinksPaged_Success_MultiplePortalLinks(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Create multiple portal links
@@ -83,7 +83,7 @@ func TestLoadPortalLinksPaged_WithPagination(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Create 15 portal links
@@ -140,7 +140,7 @@ func TestLoadPortalLinksPaged_FilterByEndpoint(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	ownerID1 := ulid.Make().String()
@@ -193,7 +193,7 @@ func TestLoadPortalLinksPaged_FilterByMultipleEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	ownerID1 := ulid.Make().String()
@@ -264,7 +264,7 @@ func TestLoadPortalLinksPaged_WithRefreshTokenAuthType_GeneratesAuthTokens(t *te
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Create portal link with RefreshToken auth type
@@ -326,7 +326,7 @@ func TestLoadPortalLinksPaged_PreviousPage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Create 15 portal links
@@ -386,7 +386,7 @@ func TestLoadPortalLinksPaged_EmptyFilter(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Create portal links
@@ -421,7 +421,7 @@ func TestFindPortalLinksByOwnerID_WithRefreshTokenAuthType_GeneratesAuthTokens(t
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()

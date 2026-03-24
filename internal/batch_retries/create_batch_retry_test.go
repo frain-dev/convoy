@@ -3,6 +3,7 @@ package batch_retries
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -20,7 +21,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -82,12 +83,12 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func createBatchRetryService(t *testing.T, db database.Database) *Service {
 	t.Helper()
-	return New(log.NewLogger(os.Stdout), db)
+	return New(log.New("convoy", slog.LevelInfo), db)
 }
 
 func seedProjectForBatchRetry(t *testing.T, db database.Database) *datastore.Project {
 	ctx := context.Background()
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 
 	// Create user
 	userRepo := users.New(logger, db)
@@ -111,7 +112,7 @@ func seedProjectForBatchRetry(t *testing.T, db database.Database) *datastore.Pro
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),

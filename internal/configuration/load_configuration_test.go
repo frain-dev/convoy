@@ -1,20 +1,20 @@
 package configuration
 
 import (
-	"os"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestLoadConfiguration_S3Storage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed configuration with S3 storage
 	seeded := seedConfiguration(t, db, datastore.S3)
@@ -36,7 +36,7 @@ func TestLoadConfiguration_OnPremStorage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed configuration with OnPrem storage
 	seeded := seedConfiguration(t, db, datastore.OnPrem)
@@ -56,7 +56,7 @@ func TestLoadConfiguration_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Try to load configuration when none exists
 	_, err := service.LoadConfiguration(ctx)
@@ -68,7 +68,7 @@ func TestLoadConfiguration_VerifyRetentionPolicy(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed configuration
 	seeded := seedConfiguration(t, db, datastore.S3)
@@ -85,7 +85,7 @@ func TestLoadConfiguration_VerifyS3FieldsReconstructed(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed configuration with S3 storage
 	seedConfiguration(t, db, datastore.S3)
@@ -113,7 +113,7 @@ func TestLoadConfiguration_VerifyOnPremFieldsReconstructed(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed configuration with OnPrem storage
 	seedConfiguration(t, db, datastore.OnPrem)
@@ -138,7 +138,7 @@ func TestLoadConfiguration_VerifyBooleanConversion(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed configuration
 	seedConfiguration(t, db, datastore.S3)
@@ -155,7 +155,7 @@ func TestLoadConfiguration_OnlyOneConfiguration(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed multiple configurations (only last one should be loadable due to LIMIT 1)
 	cfg1 := seedConfiguration(t, db, datastore.S3)
@@ -175,7 +175,7 @@ func TestLoadConfiguration_VerifyTimestamps(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed configuration
 	seedConfiguration(t, db, datastore.S3)
@@ -192,7 +192,7 @@ func TestLoadConfiguration_CompleteDataIntegrity(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed configuration
 	seeded := seedConfiguration(t, db, datastore.S3)

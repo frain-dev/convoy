@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/config"
@@ -8,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
+	"log/slog"
 )
 
 func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
@@ -19,13 +20,13 @@ func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			timeout, err := cmd.Flags().GetInt("timeout")
 			if err != nil {
-				log.WithError(err).Errorln("failed to get timeout")
+				slog.Error("failed to get timeout", "error", err)
 				return err
 			}
 
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Error("Error fetching the config.")
+				slog.Error("Error fetching the config.", "error", err)
 				return err
 			}
 
@@ -48,18 +49,18 @@ func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
 				return ErrEncryptionKeyCannotBeEmpty
 			}
 
-			log.Infof("Reverting encryption with the current encryption key...")
+			slog.Info(fmt.Sprintf("Reverting encryption with the current encryption key..."))
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
-				log.WithError(err).Error("Error connecting to database.")
+				slog.Error("Error connecting to database.", "error", err)
 				return err
 			}
 			defer db.Close()
 
 			err = keys.RevertEncryption(a.Logger, db, currentKey, timeout)
 			if err != nil {
-				log.WithError(err).Error("Error reverting the encryption key.")
+				slog.Error("Error reverting the encryption key.", "error", err)
 			}
 			return err
 		},

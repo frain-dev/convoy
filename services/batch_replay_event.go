@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -19,7 +19,7 @@ type BatchReplayEventService struct {
 func (e *BatchReplayEventService) Run(ctx context.Context) (int, int, error) {
 	events, _, err := e.EventRepo.LoadEventsPaged(ctx, e.Filter.Project.UID, e.Filter)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to fetch events")
+		slog.ErrorContext(ctx, "failed to fetch events", "error", err)
 		return 0, 0, &ServiceError{ErrMsg: "failed to fetch event deliveries", Err: err}
 	}
 
@@ -34,7 +34,7 @@ func (e *BatchReplayEventService) Run(ctx context.Context) (int, int, error) {
 		err = rs.Run(ctx)
 		if err != nil {
 			failures++
-			log.FromContext(ctx).WithError(err).Error("an item in the batch replay failed")
+			slog.ErrorContext(ctx, "an item in the batch replay failed", "error", err)
 		}
 	}
 

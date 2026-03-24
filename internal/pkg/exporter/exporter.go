@@ -5,11 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -95,7 +94,7 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 		}
 
 		ex.result[table] = *result
-		log.Printf("exported %v record(s) from %v", ex.result[table].NumDocs, table)
+		slog.Info(fmt.Sprintf("exported %v record(s) from %v", ex.result[table].NumDocs, table))
 	}
 
 	return ex.result, nil
@@ -134,7 +133,7 @@ func (ex *Exporter) exportTable(ctx context.Context, table tablename, expDate ti
 
 	numDocs, err := repo.ExportRecords(ctx, ex.project.UID, expDate, writer)
 	if err != nil {
-		log.WithError(err).Error("failed to export records")
+		slog.Error("failed to export records", "error", err)
 		return result, err
 	}
 

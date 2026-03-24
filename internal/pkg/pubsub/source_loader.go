@@ -5,7 +5,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const (
@@ -17,10 +17,10 @@ type SourceLoader struct {
 	sourceRepo   datastore.SourceRepository
 	projectRepo  datastore.ProjectRepository
 
-	log log.StdLogger
+	log log.Logger
 }
 
-func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datastore.SourceRepository, projectRepo datastore.ProjectRepository, log log.StdLogger) *SourceLoader {
+func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datastore.SourceRepository, projectRepo datastore.ProjectRepository, log log.Logger) *SourceLoader {
 	return &SourceLoader{
 		endpointRepo: endpointRepo,
 		sourceRepo:   sourceRepo,
@@ -36,7 +36,7 @@ func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table
 
 	sources, err := s.fetchProjectSources(ctx)
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch sources")
+		s.log.Error("failed to fetch sources", "error", err)
 		return err
 	}
 
@@ -118,7 +118,7 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) ([]datastore.Sou
 	var sources []datastore.Source
 	sources, err = s.fetchSources(ctx, sources, ids, "")
 	if err != nil {
-		s.log.WithError(err).Error("failed to load sources")
+		s.log.Error("failed to load sources", "error", err)
 		return nil, err
 	}
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -15,7 +17,6 @@ import (
 	tracer2 "github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/frain-dev/convoy/retrystrategies"
@@ -34,7 +35,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 		err := msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
-			log.WithError(err).Error("failed to unmarshal process process meta event payload")
+			slog.Error("failed to unmarshal process process meta event payload", "error", err)
 			err := json.Unmarshal(t.Payload(), &data)
 			if err != nil {
 				return &EndpointError{Err: err, delay: defaultDelay}
@@ -43,13 +44,13 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 		metaEvent, err := metaEventRepo.FindMetaEventByID(ctx, data.ProjectID, data.MetaEventID)
 		if err != nil {
-			log.WithError(err).Error("failed to find meta event by id")
+			slog.Error("failed to find meta event by id", "error", err)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		project, err := projectRepo.FetchProjectByID(ctx, data.ProjectID)
 		if err != nil {
-			log.WithError(err).Error("failed to find project by id")
+			slog.Error("failed to find project by id", "error", err)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
@@ -61,12 +62,12 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 		metaEvent.Status = datastore.ProcessingEventStatus
 		err = metaEventRepo.UpdateMetaEvent(ctx, metaEvent.ProjectID, metaEvent)
 		if err != nil {
-			log.WithError(err).Error("failed to update meta event status")
+			slog.Error("failed to update meta event status", "error", err)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 		cfg, err := config.Get()
 		if err != nil {
-			log.WithError(err).Error("failed to get config")
+			slog.Error("failed to get config", "error", err)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 		metaEvent.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
@@ -88,7 +89,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 		}
 
 		if err != nil {
-			log.WithError(err).Error("failed to dispatch meta event request")
+			slog.Error("failed to dispatch meta event request", "error", err)
 			metaEvent.Status = datastore.RetryEventStatus
 			nextTime := time.Now().Add(delayDuration)
 			metaEvent.Metadata.NextSendTime = nextTime
@@ -99,12 +100,12 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 			err = metaEventRepo.UpdateMetaEvent(ctx, project.UID, metaEvent)
 			if err != nil {
-				log.WithError(err).Error("failed to update meta event")
+				slog.Error("failed to update meta event", "error", err)
 			}
 
 			if metaEvent.Metadata.NumTrials < metaEvent.Metadata.RetryLimit {
-				log.FromContext(ctx).Info("%s next retry time meta events is %s (strategy = %s, delay = %d, attempts = %d/%d)\n",
-					metaEvent.UID, nextTime.Format(time.ANSIC), metaEvent.Metadata.Strategy, metaEvent.Metadata.IntervalSeconds, metaEvent.Metadata.NumTrials, metaEvent.Metadata.RetryLimit)
+				slog.InfoContext(ctx, fmt.Sprintf("%s next retry time meta events is %s (strategy = %s, delay = %d, attempts = %d/%d)",
+					metaEvent.UID, nextTime.Format(time.ANSIC), metaEvent.Metadata.Strategy, metaEvent.Metadata.IntervalSeconds, metaEvent.Metadata.NumTrials, metaEvent.Metadata.RetryLimit))
 				return &EndpointError{Err: ErrMetaEventDeliveryFailed, delay: delayDuration}
 			}
 
@@ -114,7 +115,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 		metaEvent.Status = datastore.SuccessEventStatus
 		err = metaEventRepo.UpdateMetaEvent(ctx, project.UID, metaEvent)
 		if err != nil {
-			log.WithError(err).Error("failed to update meta event")
+			slog.Error("failed to update meta event", "error", err)
 		}
 
 		return nil
@@ -140,7 +141,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 
 	header, err := sig.ComputeHeaderValue()
 	if err != nil {
-		log.WithError(err).Error("error occurred generating hmac")
+		slog.Error("error occurred generating hmac", "error", err)
 		return nil, err
 	}
 
@@ -163,16 +164,14 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 		body = resp.Body
 	}
 	duration := time.Since(start)
-	requestLogger := log.WithFields(log.Fields{
-		"status":   status,
-		"uri":      url,
-		"method":   convoy.HttpPost,
-		"duration": duration,
-	})
+	logAttrs := []any{"status", status,
+		"uri", url,
+		"method", convoy.HttpPost,
+		"duration", duration}
 
 	if statusCode >= 200 && statusCode <= 299 {
-		requestLogger.Infof("%s", metaEvent.UID)
-		log.Infof("%s sent", metaEvent.UID)
+		slog.Info(fmt.Sprintf("%s", metaEvent.UID), logAttrs...)
+		slog.Info(fmt.Sprintf("%s sent", metaEvent.UID))
 		return resp, nil
 	}
 
@@ -189,6 +188,6 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 	endTime := time.Now()
 	tracerBackend.Capture(ctx, "meta_event_delivery", attributes, startTime, endTime)
 
-	requestLogger.Errorf("%s", metaEvent.UID)
+	slog.Error(fmt.Sprintf("%s", metaEvent.UID), logAttrs...)
 	return resp, errors.New(resp.Error)
 }

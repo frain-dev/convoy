@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -14,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/sources"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -66,7 +66,7 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 
 	org, err := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
+		slog.ErrorContext(r.Context(), "failed to find organisation by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -117,7 +117,7 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 
 	org, err := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
+		slog.ErrorContext(r.Context(), "failed to find organisation by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -194,7 +194,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 
 	org, err := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
+		slog.ErrorContext(r.Context(), "failed to find organisation by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -280,7 +280,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	data := q.Transform(r)
 	sourcesData, paginationData, err := sources.New(h.A.Logger, h.A.DB).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
 	if err != nil {
-		log.WithError(err).Error("an error occurred while fetching sources")
+		slog.Error("an error occurred while fetching sources", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusBadRequest))
 		return
 	}
@@ -352,7 +352,7 @@ func (h *Handler) TestSourceFunction(w http.ResponseWriter, r *http.Request) {
 	transformer := transform.NewTransformer()
 	mutatedPayload, consoleLog, err := transformer.Transform(test.Function, test.Payload)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to transform function")
+		slog.ErrorContext(r.Context(), "failed to transform function", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}

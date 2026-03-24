@@ -21,13 +21,13 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/projects/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 // Service implements the ProjectRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier
 	db     *pgxpool.Pool
 	hook   *hooks.Hook
@@ -37,7 +37,7 @@ type Service struct {
 var _ datastore.ProjectRepository = (*Service)(nil)
 
 // New creates a new Project Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -370,7 +370,7 @@ func (s *Service) CreateProject(ctx context.Context, project *datastore.Project)
 
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 	defer tx.Rollback(ctx)
@@ -383,7 +383,7 @@ func (s *Service) CreateProject(ctx context.Context, project *datastore.Project)
 
 	err = qtx.CreateProjectConfiguration(ctx, configParams)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create project configuration")
+		s.logger.Error("failed to create project configuration", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -401,12 +401,12 @@ func (s *Service) CreateProject(ctx context.Context, project *datastore.Project)
 		if strings.Contains(err.Error(), "duplicate") {
 			return datastore.ErrDuplicateProjectName
 		}
-		s.logger.WithError(err).Error("failed to create project")
+		s.logger.Error("failed to create project", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -422,7 +422,7 @@ func (s *Service) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) 
 
 	rows, err := s.repo.FetchProjects(ctx, common.StringToPgText(orgID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load projects")
+		s.logger.Error("failed to load projects", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -430,7 +430,7 @@ func (s *Service) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) 
 	for _, row := range rows {
 		project, err := rowToProject(row)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to convert row to project")
+			s.logger.Error("failed to convert row to project", "error", err)
 			return nil, util.NewServiceError(http.StatusInternalServerError, err)
 		}
 		projects = append(projects, project)
@@ -453,13 +453,13 @@ func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project)
 
 	changelog, err := diff.Diff(existing, project)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to generate diff")
+		s.logger.Error("failed to generate diff", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 	defer tx.Rollback(ctx)
@@ -474,7 +474,7 @@ func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project)
 		RetainedEvents: pgtype.Int4{Int32: int32(project.RetainedEvents), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update project")
+		s.logger.Error("failed to update project", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -486,7 +486,7 @@ func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project)
 	configParams := projectConfigToUpdateParams(project.ProjectConfigID, project.Config)
 	result, err = qtx.UpdateProjectConfiguration(ctx, configParams)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update project configuration")
+		s.logger.Error("failed to update project configuration", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -503,13 +503,13 @@ func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project)
 			Statuses:  []string{string(datastore.InactiveEndpointStatus)},
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to update endpoint statuses")
+			s.logger.Error("failed to update endpoint statuses", "error", err)
 			return util.NewServiceError(http.StatusInternalServerError, err)
 		}
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -526,13 +526,13 @@ func (s *Service) FetchProjectByID(ctx context.Context, id string) (*datastore.P
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrProjectNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch project by id")
+		s.logger.Error("failed to fetch project by id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	project, err := rowToProject(row)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to convert row to project")
+		s.logger.Error("failed to convert row to project", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -547,7 +547,7 @@ func (s *Service) FillProjectsStatistics(ctx context.Context, project *datastore
 
 	stats, err := s.repo.FetchProjectStatistics(ctx, common.StringToPgTextNullable(project.UID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to fetch project statistics")
+		s.logger.Error("failed to fetch project statistics", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -565,7 +565,7 @@ func (s *Service) FillProjectsStatistics(ctx context.Context, project *datastore
 func (s *Service) DeleteProject(ctx context.Context, uid string) error {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 	defer tx.Rollback(ctx)
@@ -577,31 +577,31 @@ func (s *Service) DeleteProject(ctx context.Context, uid string) error {
 	// Soft delete project
 	_, err = qtx.DeleteProject(ctx, uidPgText)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete project")
+		s.logger.Error("failed to delete project", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	// Cascade deletes
 	_, err = qtx.DeleteProjectEndpoints(ctx, uidPgText)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete project endpoints")
+		s.logger.Error("failed to delete project endpoints", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	_, err = qtx.DeleteProjectEvents(ctx, uidPgText)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete project events")
+		s.logger.Error("failed to delete project events", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	_, err = qtx.DeleteProjectSubscriptions(ctx, uidPgText)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete project subscriptions")
+		s.logger.Error("failed to delete project subscriptions", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -612,7 +612,7 @@ func (s *Service) DeleteProject(ctx context.Context, uid string) error {
 func (s *Service) GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]datastore.ProjectEvents, error) {
 	rows, err := s.repo.GetProjectsWithEventsInInterval(ctx, pgtype.Int4{Int32: int32(interval), Valid: true})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to get projects with events in interval")
+		s.logger.Error("failed to get projects with events in interval", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -631,7 +631,7 @@ func (s *Service) GetProjectsWithEventsInTheInterval(ctx context.Context, interv
 func (s *Service) CountProjects(ctx context.Context) (int64, error) {
 	count, err := s.repo.CountProjects(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to count projects")
+		s.logger.Error("failed to count projects", "error", err)
 		return 0, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 

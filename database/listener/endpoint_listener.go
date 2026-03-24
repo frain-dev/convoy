@@ -2,9 +2,10 @@ package listener
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
 )
@@ -33,11 +34,11 @@ func (e *EndpointListener) AfterDelete(ctx context.Context, data, _ interface{})
 func (e *EndpointListener) metaEvent(ctx context.Context, eventType datastore.HookEventType, data interface{}) {
 	endpoint, ok := data.(*datastore.Endpoint)
 	if !ok {
-		log.Errorf("invalid type for event - %s", eventType)
+		slog.Error(fmt.Sprintf("invalid type for event - %s", eventType))
 		return
 	}
 
 	if err := e.mEvent.Run(ctx, string(eventType), endpoint.ProjectID, endpoint); err != nil {
-		log.WithError(err).Error("endpoint meta event failed")
+		slog.Error("endpoint meta event failed", "error", err)
 	}
 }

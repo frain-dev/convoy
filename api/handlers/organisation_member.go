@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -11,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -35,7 +35,7 @@ func (h *Handler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request)
 
 	members, paginationData, err := organisation_members.New(h.A.Logger, h.A.DB).LoadOrganisationMembersPaged(r.Context(), org.UID, userID, pageable)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to fetch organisation members")
+		slog.ErrorContext(r.Context(), "failed to fetch organisation members", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -54,7 +54,7 @@ func (h *Handler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) 
 
 	member, err := organisation_members.New(h.A.Logger, h.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
+		slog.ErrorContext(r.Context(), "failed to find organisation member by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -91,7 +91,7 @@ func (h *Handler) UpdateOrganisationMember(w http.ResponseWriter, r *http.Reques
 
 	member, err := organisation_members.New(h.A.Logger, h.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
+		slog.ErrorContext(r.Context(), "failed to find organisation member by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

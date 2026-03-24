@@ -1,7 +1,7 @@
 package portal_links
 
 import (
-	"os"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -9,14 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestRefreshPortalLinkAuthToken_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Create a portal link
@@ -45,7 +45,7 @@ func TestRefreshPortalLinkAuthToken_MultipleRefreshes(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Create a portal link
@@ -77,7 +77,7 @@ func TestRefreshPortalLinkAuthToken_VerifyExpiryTime(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Create a portal link
@@ -114,7 +114,7 @@ func TestRefreshPortalLinkAuthToken_PortalLinkNotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Try to refresh auth token for non-existent portal link
@@ -129,7 +129,7 @@ func TestRefreshPortalLinkAuthToken_WrongProject(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	// Create a portal link

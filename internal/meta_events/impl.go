@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/meta_events/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -26,7 +26,7 @@ var (
 
 // Service implements the meta event Service using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier  // SQLc-generated interface
 	db     *pgxpool.Pool // Connection pool
 }
@@ -35,7 +35,7 @@ type Service struct {
 var _ datastore.MetaEventRepository = (*Service)(nil)
 
 // New creates a new meta event Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -70,7 +70,7 @@ func (s *Service) rowToMetaEvent(row interface{}) (datastore.MetaEvent, error) {
 	if len(metadata) > 0 && string(metadata) != "null" {
 		var m datastore.Metadata
 		if err := json.Unmarshal(metadata, &m); err != nil {
-			s.logger.WithError(err).Error("failed to unmarshal metadata")
+			s.logger.Error("failed to unmarshal metadata", "error", err)
 			return datastore.MetaEvent{}, err
 		}
 		metadataPtr = &m
@@ -81,7 +81,7 @@ func (s *Service) rowToMetaEvent(row interface{}) (datastore.MetaEvent, error) {
 	if len(attempt) > 0 && string(attempt) != "null" {
 		var a datastore.MetaEventAttempt
 		if err := json.Unmarshal(attempt, &a); err != nil {
-			s.logger.WithError(err).Error("failed to unmarshal attempt")
+			s.logger.Error("failed to unmarshal attempt", "error", err)
 			return datastore.MetaEvent{}, err
 		}
 		attemptPtr = &a
@@ -128,7 +128,7 @@ func (s *Service) CreateMetaEvent(ctx context.Context, metaEvent *datastore.Meta
 	// Convert metadata to JSONB
 	metadataBytes, err := metadataToJSONB(metaEvent.Metadata)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to marshal metadata")
+		s.logger.Error("failed to marshal metadata", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -141,7 +141,7 @@ func (s *Service) CreateMetaEvent(ctx context.Context, metaEvent *datastore.Meta
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create meta event")
+		s.logger.Error("failed to create meta event", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -158,7 +158,7 @@ func (s *Service) FindMetaEventByID(ctx context.Context, projectID, id string) (
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrMetaEventNotFound
 		}
-		s.logger.WithError(err).Error("failed to find meta event by id")
+		s.logger.Error("failed to find meta event by id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -194,7 +194,7 @@ func (s *Service) LoadMetaEventsPaged(ctx context.Context, projectID string, fil
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load meta events paged")
+		s.logger.Error("failed to load meta events paged", "error", err)
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -232,7 +232,7 @@ func (s *Service) LoadMetaEventsPaged(ctx context.Context, projectID string, fil
 			Cursor:    common.StringToPgText(first.UID),
 		})
 		if err2 != nil {
-			s.logger.WithError(err2).Error("failed to count prev meta events")
+			s.logger.Error("failed to count prev meta events", "error", err2)
 			return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err2)
 		}
 		prevRowCount.Count = int(count.Int64)
@@ -269,14 +269,14 @@ func (s *Service) UpdateMetaEvent(ctx context.Context, projectID string, metaEve
 	// Convert metadata to JSONB
 	metadataBytes, err := metadataToJSONB(metaEvent.Metadata)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to marshal metadata")
+		s.logger.Error("failed to marshal metadata", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	// Convert attempt to JSONB
 	attemptBytes, err := attemptToJSONB(metaEvent.Attempt)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to marshal attempt")
+		s.logger.Error("failed to marshal attempt", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -290,7 +290,7 @@ func (s *Service) UpdateMetaEvent(ctx context.Context, projectID string, metaEve
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update meta event")
+		s.logger.Error("failed to update meta event", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 

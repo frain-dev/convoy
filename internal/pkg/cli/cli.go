@@ -11,7 +11,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -21,7 +21,7 @@ type App struct {
 	DB       database.Database
 	Redis    redis.UniversalClient
 	Queue    queue.Queuer
-	Logger   log.StdLogger
+	Logger   logger.Logger
 	Cache    cache.Cache
 	Rate     limiter.RateLimiter
 	Licenser license.Licenser

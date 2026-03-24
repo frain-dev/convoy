@@ -2,13 +2,13 @@ package listener
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
 )
@@ -52,14 +52,14 @@ func NewEventDeliveryListener(queue queue.Queuer, projectRepo datastore.ProjectR
 func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data, _ interface{}) {
 	eventDelivery, ok := data.(*datastore.EventDelivery)
 	if !ok {
-		log.Error("invalid type for event - eventdelivery.updated")
+		slog.Error("invalid type for event - eventdelivery.updated")
 		return
 	}
 
 	mEventDelivery := getMetaEventDelivery(eventDelivery)
 	attempts, err := e.attemptsRepo.FindDeliveryAttempts(ctx, mEventDelivery.UID)
 	if err != nil {
-		log.WithError(err).Error("event delivery meta event failed")
+		slog.Error("event delivery meta event failed", "error", err)
 	}
 
 	if len(attempts) > 0 {
@@ -69,14 +69,14 @@ func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data, _ interfa
 	if eventDelivery.Status == datastore.SuccessEventStatus {
 		err = e.mEvent.Run(ctx, string(datastore.EventDeliverySuccess), eventDelivery.ProjectID, mEventDelivery)
 		if err != nil {
-			log.WithError(err).Error("event delivery meta event failed")
+			slog.Error("event delivery meta event failed", "error", err)
 		}
 	}
 
 	if eventDelivery.Status == datastore.FailureEventStatus {
 		err = e.mEvent.Run(ctx, string(datastore.EventDeliveryFailed), eventDelivery.ProjectID, mEventDelivery)
 		if err != nil {
-			log.WithError(err).Error("event delivery meta event failed")
+			slog.Error("event delivery meta event failed", "error", err)
 		}
 	}
 }

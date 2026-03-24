@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -15,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -76,7 +76,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			if err != nil {
 				if errors.Is(err, datastore.ErrDuplicateEmail) {
 					// user already exists
-					log.WithError(err).Error("bootstrap failed: user already exists")
+					slog.Error("bootstrap failed: user already exists", "error", err)
 					return nil
 				}
 
@@ -114,7 +114,8 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			case "json":
 				data, err := json.MarshalIndent(jsUser, "", "    ")
 				if err != nil {
-					log.Fatalf("Error printing config: %v\n", err)
+					slog.Error("Error printing config", "error", err)
+					return err
 				}
 
 				fmt.Println(string(data))

@@ -1,12 +1,13 @@
 package retry
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
+	"os"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/worker/task"
 )
 
@@ -24,11 +25,13 @@ func AddRetryCommand(a *cli.App) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
-				log.Fatalf("Error getting config: %v", err)
+				fmt.Fprintf(os.Stderr, "Error getting config: %v\n", err)
+				os.Exit(1)
 			}
 
 			if len(cfg.Redis.BuildDsn()) == 0 {
-				log.WithError(err).Fatal("Queue type error: Command is available for redis queue only.")
+				fmt.Fprintf(os.Stderr, "Queue type error: Command is available for redis queue only: %v\n", err)
+				os.Exit(1)
 			}
 
 			statuses := []datastore.EventDeliveryStatus{datastore.EventDeliveryStatus(status)}

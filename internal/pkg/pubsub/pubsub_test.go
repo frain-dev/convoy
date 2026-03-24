@@ -1,7 +1,7 @@
 package pubsub
 
 //func provideSourcePool() *SourcePool {
-//	logger := log.NewLogger(io.Discard)
+//	logger := log.New("convoy", slog.LevelError)
 //	return NewSourcePool(logger)
 //}
 //

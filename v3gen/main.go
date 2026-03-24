@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const (
@@ -23,7 +24,7 @@ const (
 )
 
 func main() {
-	var l = log.NewLogger(os.Stdout)
+	var l = log.New("v3gen", slog.LevelInfo)
 	docV2, err := loadV2()
 	if err != nil {
 		l.Fatal("loadV2 failed: " + err.Error())

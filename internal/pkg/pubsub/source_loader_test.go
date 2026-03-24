@@ -5,7 +5,7 @@ package pubsub
 //	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 //	projectRepo := mocks.NewMockProjectRepository(ctrl)
 //	queue := mocks.NewMockQueuer(ctrl)
-//	logger := log.NewLogger(io.Discard)
+//	logger := log.New("convoy", slog.LevelError)
 //
 //	sourceLoader := NewSourceLoader(endpointRepo, sourceRepo, projectRepo, queue, logger)
 //	return sourceLoader

@@ -2,6 +2,8 @@ package configuration
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -13,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -22,7 +24,8 @@ var testEnv *testenv.Environment
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	testEnv = res
@@ -30,7 +33,8 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)
@@ -99,7 +103,7 @@ func seedConfiguration(t *testing.T, db database.Database, storageType datastore
 		}
 	}
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 	err := service.CreateConfiguration(context.Background(), cfg)
 	require.NoError(t, err)
 
@@ -110,7 +114,7 @@ func TestCreateConfiguration_WithS3Storage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -158,7 +162,7 @@ func TestCreateConfiguration_WithOnPremStorage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -208,7 +212,7 @@ func TestCreateConfiguration_WithMinimalFields(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -241,7 +245,7 @@ func TestCreateConfiguration_NilConfiguration(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	err := service.CreateConfiguration(ctx, nil)
 	require.Error(t, err)
@@ -252,7 +256,7 @@ func TestCreateConfiguration_S3StorageNormalization(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -291,7 +295,7 @@ func TestCreateConfiguration_OnPremStorageNormalization(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -331,7 +335,7 @@ func TestCreateConfiguration_VerifyTimestamps(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),

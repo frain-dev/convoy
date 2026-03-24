@@ -12,9 +12,9 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/queue/redis"
+	"log/slog"
 )
 
 func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
@@ -40,7 +40,7 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 			// Release the lock so other processes or threads can obtain a lock.
 			ok, err := mutex.UnlockContext(tctx)
 			if !ok || err != nil {
-				log.WithError(err).Error("failed to release lock")
+				slog.Error("failed to release lock", "error", err)
 			}
 		}()
 
@@ -57,14 +57,14 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 		var q *redis.RedisQueue
 		q, ok := r.(*redis.RedisQueue)
 		if !ok {
-			log.FromContext(ctx).WithError(err).Errorf("invalid queue type: %T", r)
+			slog.ErrorContext(ctx, fmt.Sprintf("invalid queue type: %T: %v", r, err))
 			return errors.New("invalid queue type")
 		}
 
 		for _, qu := range queues {
 			_, err := q.Inspector().DeleteAllArchivedTasks(qu)
 			if err != nil {
-				log.FromContext(ctx).WithError(err).Errorf("failed to delete archived task from queue - %s", qu)
+				slog.ErrorContext(ctx, fmt.Sprintf("failed to delete archived task from queue - %s: %v", qu, err))
 				continue
 			}
 		}

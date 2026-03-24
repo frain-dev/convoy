@@ -16,8 +16,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/constants"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
+	"log/slog"
 )
 
 var (
@@ -342,7 +342,7 @@ type endpointRepo struct {
 func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
 	km, err := keys.Get()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
 	}
 	return &endpointRepo{db: db, hook: db.GetHook(), km: km}
 }

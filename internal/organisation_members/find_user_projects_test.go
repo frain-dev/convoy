@@ -1,7 +1,7 @@
 package organisation_members
 
 import (
-	"os"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/projects"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func Test_FindUserProjects_SingleProject(t *testing.T) {
@@ -138,7 +138,7 @@ func Test_FindUserProjects_ExcludesDeletedMembers(t *testing.T) {
 func Test_FindUserProjects_ExcludesDeletedProjects(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	service := createOrgMemberService(t, db)
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed data
 	user := seedUser(t, db, "")

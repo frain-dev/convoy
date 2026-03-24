@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -10,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -53,7 +54,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 
 	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)
 	if err != nil {
-		log.FromContext(ctx).Errorf("Error occurred sending new dynamic event to the queue %s", err)
+		slog.ErrorContext(ctx, fmt.Sprintf("Error occurred sending new dynamic event to the queue %s", err))
 		return &ServiceError{ErrMsg: "failed to create dynamic event"}
 	}
 

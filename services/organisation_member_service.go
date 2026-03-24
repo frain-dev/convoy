@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -34,7 +34,7 @@ func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Contex
 
 	err = role.Validate("organisation member")
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate organisation member role update")
+		slog.ErrorContext(ctx, "failed to validate organisation member role update", "error", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
@@ -49,7 +49,7 @@ func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Contex
 
 	err = om.orgMemberRepo.CreateOrganisationMember(ctx, member)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create organisation member")
+		slog.ErrorContext(ctx, "failed to create organisation member", "error", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member"))
 	}
 
@@ -69,13 +69,13 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 
 	err = organisationMember.Role.Validate("organisation member")
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate organisation member role update")
+		slog.ErrorContext(ctx, "failed to validate organisation member role update", "error", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	err = om.orgMemberRepo.UpdateOrganisationMember(ctx, organisationMember)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to to update organisation member")
+		slog.ErrorContext(ctx, "failed to to update organisation member", "error", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update organisation member"))
 	}
 
@@ -85,7 +85,7 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 func (om *OrganisationMemberService) DeleteOrganisationMember(ctx context.Context, memberID string, org *datastore.Organisation) error {
 	member, err := om.orgMemberRepo.FetchOrganisationMemberByID(ctx, memberID, org.UID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to find organisation member by id")
+		slog.ErrorContext(ctx, "failed to find organisation member by id", "error", err)
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to find organisation member by id"))
 	}
 
@@ -95,7 +95,7 @@ func (om *OrganisationMemberService) DeleteOrganisationMember(ctx context.Contex
 
 	err = om.orgMemberRepo.DeleteOrganisationMember(ctx, memberID, org.UID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to delete organisation member")
+		slog.ErrorContext(ctx, "failed to delete organisation member", "error", err)
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete organisation member"))
 	}
 	return err

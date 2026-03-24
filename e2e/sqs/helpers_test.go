@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
-	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -29,7 +29,7 @@ import (
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // EventManifest tracks received webhooks for verification
@@ -268,7 +268,7 @@ func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx conte
 		}
 	}
 
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
 	err := subRepo.CreateSubscription(ctx, project.UID, subscription)
 	require.NoError(t, err)
 
@@ -541,7 +541,7 @@ func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx conte
 		lookback = timeWindow[0]
 	}
 
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
 
 	// Wait a bit to ensure no delivery is created
 	time.Sleep(2 * time.Second)
@@ -626,7 +626,7 @@ func CreateSQSSource(t *testing.T, db *postgres.Postgres, ctx context.Context, p
 		},
 	}
 
-	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	sourceRepo := sources.New(log.New("convoy", slog.LevelError), db)
 	err := sourceRepo.CreateSource(ctx, source)
 	require.NoError(t, err)
 

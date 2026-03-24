@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -25,7 +26,6 @@ import (
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
@@ -66,7 +66,7 @@ func (h *Handler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) 
 
 	organisations, paginationData, err := organisation_members.New(h.A.Logger, h.A.DB).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to fetch user organisations")
+		slog.ErrorContext(r.Context(), "failed to fetch user organisations", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -79,7 +79,7 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newOrg datastore.OrganisationRequest
 	err := util.ReadJSON(r, &newOrg)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse organisation creation request: %v", err)
+		h.A.Logger.Errorf("Failed to parse organisation creation request: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -118,7 +118,7 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var orgUpdate datastore.OrganisationRequest
 	err := util.ReadJSON(r, &orgUpdate)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse organisation update request: %v", err)
+		h.A.Logger.Errorf("Failed to parse organisation update request: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -165,7 +165,7 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 
 	if h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil {
 		if err = h.A.BillingClient.DeactivateOrganisation(r.Context(), org.UID); err != nil {
-			log.FromContext(r.Context()).WithError(err).Error("failed to deactivate organisation in billing")
+			slog.ErrorContext(r.Context(), "failed to deactivate organisation in billing", "error", err)
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
@@ -174,7 +174,7 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	err = orgRepo.DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to delete organisation")
+		slog.ErrorContext(r.Context(), "failed to delete organisation", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -230,7 +230,7 @@ func (h *Handler) UpdateOrganisationSlug(w http.ResponseWriter, r *http.Request)
 			_ = render.Render(w, r, util.NewErrorResponse("Slug is already taken", http.StatusConflict))
 			return
 		}
-		log.FromContext(r.Context()).WithError(err).Error("failed to update organisation slug in billing")
+		slog.ErrorContext(r.Context(), "failed to update organisation slug in billing", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -242,7 +242,7 @@ func (h *Handler) UpdateOrganisationFeatureFlags(w http.ResponseWriter, r *http.
 	var featureFlagsUpdate datastore.UpdateOrganisationFeatureFlags
 	err := util.ReadJSON(r, &featureFlagsUpdate)
 	if err != nil {
-		h.A.Logger.WithError(err).Error("Failed to parse feature flags update request")
+		h.A.Logger.Error("Failed to parse feature flags update request", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -499,7 +499,7 @@ func (h *Handler) GetOrganisationOverrides(w http.ResponseWriter, r *http.Reques
 	for i := range overrides {
 		featureFlag, err := postgres.FetchFeatureFlagByID(r.Context(), h.A.DB, overrides[i].FeatureFlagID)
 		if err != nil {
-			log.FromContext(r.Context()).WithError(err).Warnf("Failed to fetch feature flag for override: %s", overrides[i].FeatureFlagID)
+			slog.WarnContext(r.Context(), fmt.Sprintf("Failed to fetch feature flag for override: %s: %v", overrides[i].FeatureFlagID, err))
 			continue
 		}
 
@@ -740,7 +740,7 @@ func (h *Handler) UpdateOrganisationCircuitBreakerConfig(w http.ResponseWriter, 
 		project.Config.CircuitBreaker = config
 		err = projectRepo.UpdateProject(r.Context(), project)
 		if err != nil {
-			log.FromContext(r.Context()).WithError(err).Errorf("Failed to update circuit breaker config for project %s", project.UID)
+			slog.ErrorContext(r.Context(), fmt.Sprintf("Failed to update circuit breaker config for project %s: %v", project.UID, err))
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
@@ -867,7 +867,7 @@ func (h *Handler) UpdateProjectCircuitBreakerConfig(w http.ResponseWriter, r *ht
 	project.Config.CircuitBreaker = config
 	err = projectRepo.UpdateProject(r.Context(), project)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Errorf("Failed to update circuit breaker config for project %s", project.UID)
+		slog.ErrorContext(r.Context(), fmt.Sprintf("Failed to update circuit breaker config for project %s: %v", project.UID, err))
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -1078,7 +1078,7 @@ func (h *Handler) CountRetryEventDeliveries(w http.ResponseWriter, r *http.Reque
 		// This method accepts multiple statuses, so we can pass all at once
 		totalCount, err = eventDeliveryRepo.CountEventDeliveries(r.Context(), "", []string{}, eventID, statuses, searchParams)
 		if err != nil {
-			log.FromContext(r.Context()).WithError(err).Error("failed to count event deliveries")
+			slog.ErrorContext(r.Context(), "failed to count event deliveries", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
 			return
 		}
@@ -1087,7 +1087,7 @@ func (h *Handler) CountRetryEventDeliveries(w http.ResponseWriter, r *http.Reque
 		for _, deliveryStatus := range statuses {
 			count, err := eventDeliveryRepo.CountDeliveriesByStatus(r.Context(), "", deliveryStatus, searchParams)
 			if err != nil {
-				log.FromContext(r.Context()).WithError(err).Error("failed to count event deliveries")
+				slog.ErrorContext(r.Context(), "failed to count event deliveries", "error", err)
 				_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
 				return
 			}
@@ -1122,7 +1122,7 @@ func (h *Handler) GetBatchProgress(w http.ResponseWriter, r *http.Request) {
 
 	// Sync counters before retrieving to get latest progress
 	if err := tracker.SyncCounters(r.Context(), batchID); err != nil {
-		log.FromContext(r.Context()).WithError(err).Warn("failed to sync batch counters, continuing with cached data")
+		slog.WarnContext(r.Context(), "failed to sync batch counters, continuing with cached data", "error", err)
 	}
 
 	progress, err := tracker.GetBatch(r.Context(), batchID)
@@ -1150,7 +1150,7 @@ func (h *Handler) ListBatchProgress(w http.ResponseWriter, r *http.Request) {
 
 	batches, err := tracker.ListBatches(r.Context())
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to list batches")
+		slog.ErrorContext(r.Context(), "failed to list batches", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to list batches: "+err.Error(), http.StatusInternalServerError))
 		return
 	}
@@ -1158,7 +1158,7 @@ func (h *Handler) ListBatchProgress(w http.ResponseWriter, r *http.Request) {
 	// Sync counters for all batches to get latest progress
 	for _, batch := range batches {
 		if err := tracker.SyncCounters(r.Context(), batch.BatchID); err != nil {
-			log.FromContext(r.Context()).WithError(err).Warnf("failed to sync counters for batch %s", batch.BatchID)
+			slog.WarnContext(r.Context(), fmt.Sprintf("failed to sync counters for batch %s: %v", batch.BatchID, err))
 		}
 		// Re-fetch to get synced data
 		if syncedBatch, err := tracker.GetBatch(r.Context(), batch.BatchID); err == nil {
@@ -1190,7 +1190,7 @@ func (h *Handler) DeleteBatchProgress(w http.ResponseWriter, r *http.Request) {
 	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
 
 	if err := tracker.DeleteBatch(r.Context(), batchID); err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to delete batch")
+		slog.ErrorContext(r.Context(), "failed to delete batch", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete batch: "+err.Error(), http.StatusInternalServerError))
 		return
 	}

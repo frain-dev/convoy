@@ -3,13 +3,13 @@ package tracer
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var (
@@ -60,7 +60,7 @@ func Init(tCfg config.TracerConfiguration, componentName string, licenser licens
 	case config.DatadogTracerProvider:
 		dt := NewDatadogTracer(tCfg.Datadog, licenser)
 		if !licenser.DatadogTracing() {
-			log.Error(ErrTracerFeatureUnavailable.Error())
+			slog.Error(ErrTracerFeatureUnavailable.Error())
 			return dt, nil
 		}
 		if tCfg.Datadog == (config.DatadogConfiguration{}) {

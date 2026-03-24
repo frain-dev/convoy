@@ -30,7 +30,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/testenv"
@@ -52,7 +52,8 @@ func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "TestMain: Failed to launch test infrastructure: %v\n", err)
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	_, _ = fmt.Fprintf(os.Stderr, "TestMain: E2E infrastructure launched successfully\n")
@@ -63,7 +64,8 @@ func TestMain(m *testing.M) {
 
 	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Cleaning up...\n")
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)
@@ -96,7 +98,6 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 
 	// Create logger
 	logger := testenv.NewLogger(t)
-	logger.SetLevel(log.ErrorLevel)
 
 	// Reload config for each test to ensure clean state
 	err := config.LoadConfig("")
@@ -238,7 +239,7 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	go func() {
 		err := cmdserver.StartConvoyServer(app)
 		if err != nil {
-			logger.WithError(err).Error("Server error")
+			logger.Error("Server error", "error", err)
 		}
 	}()
 
@@ -252,14 +253,14 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 		worker, err := cmdworker.NewWorker(workerCtx, app, cfg)
 		if err != nil {
 			t.Logf("Worker initialization error for test %s: %v", t.Name(), err)
-			logger.WithError(err).Error("Worker initialization error")
+			logger.Error("Worker initialization error", "error", err)
 			return
 		}
 		err = worker.Run(workerCtx, nil)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				t.Logf("Worker error for test %s: %v", t.Name(), err)
-				logger.WithError(err).Error("Worker error")
+				logger.Error("Worker error", "error", err)
 			} else {
 				t.Logf("Worker context canceled (expected during cleanup)")
 			}
@@ -326,7 +327,6 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 
 	// Create logger
 	logger := testenv.NewLogger(t)
-	logger.SetLevel(log.ErrorLevel)
 
 	// Reload config for each test to ensure clean state
 	err := config.LoadConfig("")
@@ -464,7 +464,7 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 	go func() {
 		err := cmdserver.StartConvoyServer(app)
 		if err != nil {
-			logger.WithError(err).Error("Server error")
+			logger.Error("Server error", "error", err)
 		}
 	}()
 

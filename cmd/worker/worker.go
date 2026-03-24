@@ -40,7 +40,7 @@ import (
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/services"
@@ -50,13 +50,12 @@ import (
 
 type Worker struct {
 	consumer *worker.Consumer
-	logger   *log.Logger
+	logger   log.Logger
 }
 
 // NewWorker initializes all worker components and returns a Worker instance.
 func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Worker, error) {
-	lo := a.Logger.(*log.Logger)
-	lo.SetPrefix("worker")
+	lo := a.Logger
 
 	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
 	if km.IsSet() {
@@ -74,7 +73,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 
 	sc, err := smtp.NewClient(&cfg.SMTP)
 	if err != nil {
-		lo.WithError(err).Error("Failed to create smtp client")
+		lo.Error("Failed to create smtp client", "error", err)
 		return nil, err
 	}
 
@@ -99,7 +98,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 
 	q := redisQueue.NewQueue(opts)
 
-	ctx = log.NewContext(ctx, lo, log.Fields{})
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
 		return nil, err
@@ -213,7 +211,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 			cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
 				project, err := projectRepo.FetchProjectByID(ctx, projectID)
 				if err != nil {
-					lo.WithError(err).Warnf("Failed to fetch project %s for circuit breaker config, using default", projectID)
+					lo.Warnf("Failed to fetch project %s for circuit breaker config, using default: %v", projectID, err)
 					return &masterDefaults
 				}
 				if project.Config.CircuitBreaker == nil {

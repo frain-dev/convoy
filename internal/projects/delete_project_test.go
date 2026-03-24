@@ -1,7 +1,7 @@
 package projects
 
 import (
-	"os"
+	"log/slog"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -11,7 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestDeleteProject(t *testing.T) {
@@ -92,13 +92,13 @@ func TestDeleteProject_CascadeDeletes(t *testing.T) {
 	require.Nil(t, fetchedEndpoint)
 
 	// Verify events are soft deleted
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
+	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
 	fetchedEvent, err := eventRepo.FindEventByID(ctx, project.UID, event.UID)
 	require.Error(t, err)
 	require.Nil(t, fetchedEvent)
 
 	// Verify subscriptions are soft deleted
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
 	fetchedSub, err := subRepo.FindSubscriptionByID(ctx, project.UID, subscription.UID)
 	require.Error(t, err)
 	require.Nil(t, fetchedSub)

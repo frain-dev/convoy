@@ -2,7 +2,8 @@ package task
 
 import (
 	"context"
-	"io"
+	"fmt"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -21,7 +22,7 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -32,7 +33,8 @@ var (
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	infra = res
@@ -40,14 +42,15 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)
 }
 
 type testInstance struct {
-	Logger     *log.Logger
+	Logger     log.Logger
 	Conn       *pgxpool.Pool
 	Config     config.Configuration
 	KeyManager keys.KeyManager
@@ -62,7 +65,6 @@ func newInfra(t *testing.T) *testInstance {
 	ctx := t.Context()
 
 	logger := testenv.NewLogger(t)
-	logger.SetLevel(log.FatalLevel)
 
 	err := config.LoadConfig("")
 	require.NoError(t, err)
@@ -87,20 +89,24 @@ func newInfra(t *testing.T) *testInstance {
 	// Load CA cert for TLS operations
 	err = config.LoadCaCert("", "")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 
 	km, err := keys.NewLocalKeyManager("test")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 	if km.IsSet() {
 		if _, err = km.GetCurrentKeyFromCache(); err != nil {
-			log.Fatal(err)
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
 		}
 	}
 	if err = keys.Set(km); err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 
 	return &testInstance{
@@ -120,11 +126,11 @@ func buildApplication(t *testing.T) *applicationHandler {
 	tl := newInfra(t)
 	db := tl.Database
 
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
-	deliveryRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
+	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
+	deliveryRepo := delivery_attempts.New(log.New("convoy", slog.LevelInfo), db)
 
 	app := &applicationHandler{
 		projectRepo:       projectRepo,

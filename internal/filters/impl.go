@@ -18,13 +18,13 @@ import (
 	"github.com/frain-dev/convoy/internal/filters/repo"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 // Service implements the FilterRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier
 	db     *pgxpool.Pool
 }
@@ -33,7 +33,7 @@ type Service struct {
 var _ datastore.FilterRepository = (*Service)(nil)
 
 // New creates a new Filter Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -128,13 +128,13 @@ func (s *Service) CreateFilter(ctx context.Context, filter *datastore.EventTypeF
 	// Flatten body and headers for matching
 	flatBody, err := common.FlattenM(filter.Body)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to flatten body filter")
+		s.logger.Error("failed to flatten body filter", "error", err)
 		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten body filter: %w", err))
 	}
 
 	flatHeaders, err := common.FlattenM(filter.Headers)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to flatten header filter")
+		s.logger.Error("failed to flatten header filter", "error", err)
 		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten header filter: %w", err))
 	}
 
@@ -177,7 +177,7 @@ func (s *Service) CreateFilter(ctx context.Context, filter *datastore.EventTypeF
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create filter")
+		s.logger.Error("failed to create filter", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, errors.New("filter could not be created"))
 	}
 
@@ -193,7 +193,7 @@ func (s *Service) CreateFilters(ctx context.Context, filters []datastore.EventTy
 	// Start transaction
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 	defer tx.Rollback(ctx)
@@ -220,13 +220,13 @@ func (s *Service) CreateFilters(ctx context.Context, filters []datastore.EventTy
 		// Flatten body and headers for matching
 		flatBody, err := common.FlattenM(filter.Body)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to flatten body filter")
+			s.logger.Error("failed to flatten body filter", "error", err)
 			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten body filter: %w", err))
 		}
 
 		flatHeaders, err := common.FlattenM(filter.Headers)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to flatten header filter")
+			s.logger.Error("failed to flatten header filter", "error", err)
 			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten header filter: %w", err))
 		}
 
@@ -269,14 +269,14 @@ func (s *Service) CreateFilters(ctx context.Context, filters []datastore.EventTy
 		})
 
 		if err != nil {
-			s.logger.WithError(err).Error("failed to create filter")
+			s.logger.Error("failed to create filter", "error", err)
 			return util.NewServiceError(http.StatusInternalServerError, errors.New("filter could not be created"))
 		}
 	}
 
 	// Commit transaction
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -292,13 +292,13 @@ func (s *Service) UpdateFilter(ctx context.Context, filter *datastore.EventTypeF
 	// Flatten body and headers for matching
 	flatBody, err := common.FlattenM(filter.Body)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to flatten body filter")
+		s.logger.Error("failed to flatten body filter", "error", err)
 		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten body filter: %w", err))
 	}
 
 	flatHeaders, err := common.FlattenM(filter.Headers)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to flatten header filter")
+		s.logger.Error("failed to flatten header filter", "error", err)
 		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten header filter: %w", err))
 	}
 
@@ -339,7 +339,7 @@ func (s *Service) UpdateFilter(ctx context.Context, filter *datastore.EventTypeF
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update filter")
+		s.logger.Error("failed to update filter", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, errors.New("filter could not be updated"))
 	}
 
@@ -359,7 +359,7 @@ func (s *Service) UpdateFilters(ctx context.Context, filters []datastore.EventTy
 	// Start transaction
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 	defer tx.Rollback(ctx)
@@ -373,13 +373,13 @@ func (s *Service) UpdateFilters(ctx context.Context, filters []datastore.EventTy
 		// Flatten body and headers for matching
 		flatBody, err := common.FlattenM(filter.Body)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to flatten body filter")
+			s.logger.Error("failed to flatten body filter", "error", err)
 			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten body filter: %w", err))
 		}
 
 		flatHeaders, err := common.FlattenM(filter.Headers)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to flatten header filter")
+			s.logger.Error("failed to flatten header filter", "error", err)
 			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten header filter: %w", err))
 		}
 
@@ -421,7 +421,7 @@ func (s *Service) UpdateFilters(ctx context.Context, filters []datastore.EventTy
 		})
 
 		if err != nil {
-			s.logger.WithError(err).Errorf("failed to update filter %s", filter.UID)
+			s.logger.Errorf("failed to update filter %s: %v", filter.UID, err)
 			return util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to update filter %s", filter.UID))
 		}
 
@@ -432,7 +432,7 @@ func (s *Service) UpdateFilters(ctx context.Context, filters []datastore.EventTy
 
 	// Commit transaction
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -443,7 +443,7 @@ func (s *Service) UpdateFilters(ctx context.Context, filters []datastore.EventTy
 func (s *Service) DeleteFilter(ctx context.Context, filterID string) error {
 	rowsAffected, err := s.repo.DeleteFilter(ctx, common.StringToPgText(filterID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete filter")
+		s.logger.Error("failed to delete filter", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, errors.New("filter could not be deleted"))
 	}
 
@@ -461,13 +461,13 @@ func (s *Service) FindFilterByID(ctx context.Context, filterID string) (*datasto
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrFilterNotFound
 		}
-		s.logger.WithError(err).Error("failed to find filter by id")
+		s.logger.Error("failed to find filter by id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	filter, err := rowToEventTypeFilter(row)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to convert row to filter")
+		s.logger.Error("failed to convert row to filter", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -478,7 +478,7 @@ func (s *Service) FindFilterByID(ctx context.Context, filterID string) (*datasto
 func (s *Service) FindFiltersBySubscriptionID(ctx context.Context, subscriptionID string) ([]datastore.EventTypeFilter, error) {
 	rows, err := s.repo.FindFiltersBySubscriptionID(ctx, common.StringToPgText(subscriptionID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to find filters by subscription id")
+		s.logger.Error("failed to find filters by subscription id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -486,7 +486,7 @@ func (s *Service) FindFiltersBySubscriptionID(ctx context.Context, subscriptionI
 	for _, row := range rows {
 		filter, err := rowToEventTypeFilter(row)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to convert row to filter")
+			s.logger.Error("failed to convert row to filter", "error", err)
 			return nil, util.NewServiceError(http.StatusInternalServerError, err)
 		}
 		filters = append(filters, *filter)
@@ -505,13 +505,13 @@ func (s *Service) FindFilterBySubscriptionAndEventType(ctx context.Context, subs
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrFilterNotFound
 		}
-		s.logger.WithError(err).Error("failed to find filter by subscription and event type")
+		s.logger.Error("failed to find filter by subscription and event type", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	filter, err := rowToEventTypeFilter(row)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to convert row to filter")
+		s.logger.Error("failed to convert row to filter", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 

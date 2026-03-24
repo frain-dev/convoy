@@ -8,16 +8,16 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const NULL = "NULL"
 
-func InitEncryption(lo log.StdLogger, db database.Database, km KeyManager, encryptionKey string, timeout int) error {
+func InitEncryption(lo log.Logger, db database.Database, km KeyManager, encryptionKey string, timeout int) error {
 	// Start a transaction
 	tx, err := db.GetDB().Beginx()
 	if err != nil {
-		lo.WithError(err).Error("failed to begin transaction")
+		lo.Error("failed to begin transaction", "error", err)
 		return err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -28,14 +28,14 @@ func InitEncryption(lo log.StdLogger, db database.Database, km KeyManager, encry
 
 		if err := lockTable(ctx, tx, table, timeout); err != nil {
 			rollback(lo, tx)
-			lo.WithError(err).Error("failed to lock table")
+			lo.Error("failed to lock table", "error", err)
 			return err
 		}
 
 		isEncrypted, err := checkEncryptionStatus(ctx, tx, table)
 		if err != nil {
 			rollback(lo, tx)
-			lo.WithError(err).Error("failed to check encryption status")
+			lo.Error("failed to check encryption status", "error", err)
 			return err
 		}
 
@@ -47,21 +47,21 @@ func InitEncryption(lo log.StdLogger, db database.Database, km KeyManager, encry
 		for column, cipherColumn := range columns {
 			if err := encryptColumn(lo, ctx, tx, table, column, cipherColumn, encryptionKey); err != nil {
 				rollback(lo, tx)
-				lo.WithError(err).Error("failed to encrypt column")
+				lo.Error("failed to encrypt column", "error", err)
 				return fmt.Errorf("failed to encrypt column %s: %w", columns, err)
 			}
 		}
 
 		if err := markTableEncrypted(ctx, tx, table); err != nil {
 			rollback(lo, tx)
-			lo.WithError(err).Error("failed to mark table")
+			lo.Error("failed to mark table", "error", err)
 			return fmt.Errorf("failed to mark encryption status for table %s: %w", table, err)
 		}
 	}
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
-		lo.WithError(err).Error("failed to commit transaction")
+		lo.Error("failed to commit transaction", "error", err)
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
@@ -69,10 +69,10 @@ func InitEncryption(lo log.StdLogger, db database.Database, km KeyManager, encry
 	return nil
 }
 
-func rollback(lo log.StdLogger, tx *sqlx.Tx) {
+func rollback(lo log.Logger, tx *sqlx.Tx) {
 	rErr := tx.Rollback()
 	if rErr != nil {
-		lo.WithError(rErr).Error("failed to rollback transaction")
+		lo.Error("failed to rollback transaction", "error", rErr)
 	}
 }
 
@@ -106,7 +106,7 @@ func lockTable(ctx context.Context, tx *sqlx.Tx, table string, timeout int) erro
 }
 
 // encryptColumn encrypts the specified column in the table.
-func encryptColumn(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
+func encryptColumn(lo log.Logger, ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
 	// Encrypt the column data and store it in the _cipher column
 	columnZero, err := getColumnZero(lo, ctx, tx, table, column)
 	if err != nil {
@@ -124,7 +124,7 @@ func encryptColumn(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, co
 	return nil
 }
 
-func getColumnZero(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
+func getColumnZero(lo log.Logger, ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
 	query := `SELECT is_nullable, data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2;`
 	var isNullable, columnType string
 	err := tx.QueryRowContext(ctx, query, table, column).Scan(&isNullable, &columnType)

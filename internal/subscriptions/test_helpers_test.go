@@ -3,7 +3,7 @@ package subscriptions
 import (
 	"context"
 	"fmt"
-	"io"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -21,7 +21,7 @@ import (
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -32,7 +32,8 @@ var testEnv *testenv.Environment
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	testEnv = res
@@ -40,7 +41,8 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)
@@ -86,7 +88,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context, *Service) {
 	err = keys.Set(km)
 	require.NoError(t, err)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	service := New(logger, db)
 
 	return db, ctx, service
@@ -104,7 +106,7 @@ func seedUser(t *testing.T, db database.Database) *datastore.User {
 		Email:     fmt.Sprintf("test-%s@user.com", uid),
 	}
 
-	userRepo := users.New(log.NewLogger(io.Discard), db)
+	userRepo := users.New(log.New("convoy", slog.LevelError), db)
 	err := userRepo.CreateUser(context.Background(), user)
 	require.NoError(t, err)
 
@@ -123,7 +125,7 @@ func seedOrganisation(t *testing.T, db database.Database, user *datastore.User) 
 		AssignedDomain: null.NewString("test.convoy.io", true),
 	}
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	orgRepo := organisations.New(logger, db)
 	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
@@ -144,7 +146,7 @@ func seedProject(t *testing.T, db database.Database, org *datastore.Organisation
 		Config:         &projectConfig,
 	}
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	projectRepo := projects.New(logger, db)
 	err := projectRepo.CreateProject(context.Background(), project)
 	require.NoError(t, err)
@@ -194,7 +196,7 @@ func seedSource(t *testing.T, db database.Database, project *datastore.Project) 
 		},
 	}
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	sourceRepo := sources.New(logger, db)
 	err := sourceRepo.CreateSource(context.Background(), source)
 	require.NoError(t, err)

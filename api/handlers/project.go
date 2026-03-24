@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -13,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/projects"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -55,7 +55,7 @@ func (h *Handler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
 
 	err = projects.New(h.A.Logger, h.A.DB).FillProjectsStatistics(r.Context(), project)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to count project statistics")
+		slog.ErrorContext(r.Context(), "failed to count project statistics", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to count project statistics", http.StatusBadRequest))
 		return
 	}
@@ -77,7 +77,7 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	err = projects.New(h.A.Logger, h.A.DB).DeleteProject(r.Context(), project.UID)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to delete project")
+		slog.ErrorContext(r.Context(), "failed to delete project", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete project", http.StatusBadRequest))
 		return
 	}
@@ -92,7 +92,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var newProject models.CreateProject
 	err := util.ReadJSON(r, &newProject)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse project creation request: %v", err)
+		h.A.Logger.Errorf("Failed to parse project creation request: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -115,7 +115,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := newProject.Validate(); err != nil {
-		h.A.Logger.WithError(err).Errorf("Project creation validation failed: %v", err)
+		h.A.Logger.Errorf("Project creation validation failed: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
@@ -173,7 +173,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateProject
 	err := util.ReadJSON(r, &update)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse project update request: %v", err)
+		h.A.Logger.Errorf("Failed to parse project update request: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -190,7 +190,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := update.Validate(); err != nil {
-		h.A.Logger.WithError(err).Errorf("Project update validation failed: %v", err)
+		h.A.Logger.Errorf("Project update validation failed: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
@@ -221,7 +221,7 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
 	projectsList, err := projects.New(h.A.Logger, h.A.DB).LoadProjects(r.Context(), filter)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to load projects")
+		slog.ErrorContext(r.Context(), "failed to load projects", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching projects", http.StatusBadRequest))
 		return
 	}

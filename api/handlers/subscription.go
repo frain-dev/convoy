@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -15,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -81,7 +81,7 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 
 	subsList, paginationData, err := subscriptions.New(h.A.Logger, h.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
+		slog.ErrorContext(r.Context(), "an error occurred while fetching subscriptions", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching subscriptions", http.StatusInternalServerError))
 		return
 	}
@@ -149,7 +149,7 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 
 	subscription, err := subscriptions.New(h.A.Logger, h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
+		slog.ErrorContext(r.Context(), "failed to find subscription", "error", err)
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
 			return
@@ -233,7 +233,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 
 	subscription, err := cs.Run(r.Context())
 	if err != nil {
-		h.A.Logger.WithError(err).Error("failed to create subscription")
+		h.A.Logger.Error("failed to create subscription", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -265,7 +265,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 
 	sub, err := subscriptions.New(h.A.Logger, h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
+		slog.ErrorContext(r.Context(), "failed to find subscription", "error", err)
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
 			return
@@ -296,7 +296,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 
 	err = subscriptions.New(h.A.Logger, h.A.DB).DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to delete subscription")
+		slog.ErrorContext(r.Context(), "failed to delete subscription", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete subscription", http.StatusBadRequest))
 		return
 	}
@@ -329,7 +329,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateSubscription
 	err = util.ReadJSON(r, &update)
 	if err != nil {
-		h.A.Logger.WithError(err).Error(err.Error())
+		h.A.Logger.Error(err.Error(), "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -357,7 +357,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 
 		sub, err := subscriptions.New(h.A.Logger, h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 		if err != nil {
-			log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
+			slog.ErrorContext(r.Context(), "failed to find subscription", "error", err)
 			if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 				_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
 				return
@@ -428,14 +428,14 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
 	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body, false)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
+		slog.ErrorContext(r.Context(), "failed to validate subscription filter", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))
 		return
 	}
 
 	isHeaderValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Headers, test.Schema.Headers, false)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
+		slog.ErrorContext(r.Context(), "failed to validate subscription filter", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))
 		return
 	}
@@ -475,7 +475,7 @@ func (h *Handler) TestSubscriptionFunction(w http.ResponseWriter, r *http.Reques
 	transformer := transform.NewTransformer()
 	mutatedPayload, consoleLog, err := transformer.Transform(test.Function, test.Payload)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to transform function")
+		slog.ErrorContext(r.Context(), "failed to transform function", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}

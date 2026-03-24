@@ -12,9 +12,9 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
+	"log/slog"
 )
 
 var (
@@ -144,9 +144,7 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	subscriptions = append(subscriptions, eventTypeSubs...)
 	subscriptions = append(subscriptions, matchAllSubs...)
 
-	log.FromContext(ctx).WithFields(log.Fields{
-		"event.id": broadcastEvent.UID,
-	}).Debug("matching subscriptions using filter")
+	slog.DebugContext(ctx, "matching subscriptions using filter", "event.id", broadcastEvent.UID)
 
 	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, args.subRepo, args.filterRepo, args.licenser, subscriptions, true)
 	if err != nil {

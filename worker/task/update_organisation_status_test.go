@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 	"errors"
-	"os"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -19,7 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type UpdateOrganisationStatusIntegrationTestSuite struct {
@@ -81,7 +81,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 
 	org2.DisabledAt = null.NewTime(time.Now(), true)
-	orgRepo := organisations.New(log.NewLogger(os.Stdout), u.ConvoyApp.database)
+	orgRepo := organisations.New(log.New("convoy", slog.LevelInfo), u.ConvoyApp.database)
 	err = orgRepo.UpdateOrganisation(context.Background(), org2)
 	require.NoError(u.T(), err)
 
@@ -110,7 +110,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	)
 	require.NoError(u.T(), err)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
 
 	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
@@ -131,7 +131,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 
 	org.DisabledAt = null.NewTime(time.Now(), true)
-	orgRepo := organisations.New(log.NewLogger(os.Stdout), u.ConvoyApp.database)
+	orgRepo := organisations.New(log.New("convoy", slog.LevelInfo), u.ConvoyApp.database)
 	err = orgRepo.UpdateOrganisation(context.Background(), org)
 	require.NoError(u.T(), err)
 
@@ -157,7 +157,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	)
 	require.NoError(u.T(), err)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
 
 	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
@@ -173,7 +173,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	org, err := testdb.SeedDefaultOrganisation(u.ConvoyApp.database, u.DefaultUser)
 	require.NoError(u.T(), err)
 
-	orgRepo := organisations.New(log.NewLogger(os.Stdout), u.ConvoyApp.database)
+	orgRepo := organisations.New(log.New("convoy", slog.LevelInfo), u.ConvoyApp.database)
 
 	testClient := newTestBillingClient()
 	testClient.subscriptions[u.DefaultOrg.UID] = billing.BillingSubscription{
@@ -197,7 +197,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	)
 	require.NoError(u.T(), err)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
 
 	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
@@ -224,7 +224,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	)
 	require.NoError(u.T(), err)
 
-	logger := log.NewLogger(nil)
+	logger := log.New("convoy", slog.LevelError)
 	testClient := newTestBillingClient()
 	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
 
@@ -263,14 +263,14 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	)
 	require.NoError(u.T(), err)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
 
 	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 	err = fn(context.Background(), task)
 	require.NoError(u.T(), err)
 
-	orgRepo := organisations.New(log.NewLogger(os.Stdout), u.ConvoyApp.database)
+	orgRepo := organisations.New(log.New("convoy", slog.LevelInfo), u.ConvoyApp.database)
 	updatedOrg2, err := orgRepo.FetchOrganisationByID(context.Background(), org2.UID)
 	require.NoError(u.T(), err)
 	require.False(u.T(), updatedOrg2.DisabledAt.Valid, "org2 should be enabled despite org1 error")

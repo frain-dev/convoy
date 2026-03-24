@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"errors"
-	"os"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/pkg/constants"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoint, Endpoint *datastore.Endpoint, Project *datastore.Project) *UpdateEndpointService {
@@ -28,7 +28,7 @@ func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoi
 		FeatureFlag:                fflag.NoopFflag(),
 		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),
 		EarlyAdopterFeatureFetcher: mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),
-		Logger:                     log.NewLogger(os.Stdout),
+		Logger:                     log.New("convoy", slog.LevelInfo),
 		E:                          e,
 		Endpoint:                   Endpoint,
 		Project:                    Project,

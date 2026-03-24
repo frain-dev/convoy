@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -15,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	objectstore "github.com/frain-dev/convoy/internal/pkg/object-store"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository,
@@ -41,7 +41,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 
 			ok, _err := mutex.UnlockContext(_ctx)
 			if !ok || _err != nil {
-				log.WithError(_err).Error("failed to release lock")
+				slog.Error("failed to release lock", "error", _err)
 			}
 		}()
 
@@ -61,7 +61,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 		}
 
 		if len(projects) == 0 {
-			log.Warn("no existing projects, retention policy job exiting")
+			slog.Warn("no existing projects, retention policy job exiting")
 			return nil
 		}
 
@@ -73,7 +73,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 
 			result, innerErr := e.Export(ctx)
 			if innerErr != nil {
-				log.WithError(innerErr).Errorf("Failed to archive project id's (%s) events ", p.UID)
+				slog.Error(fmt.Sprintf("Failed to archive project id's (%s) events : %v", p.UID, innerErr))
 			}
 
 			// upload to object storage.
@@ -92,7 +92,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 		}
 
-		log.Printf("Backup Project Data job took %f minutes to run", time.Since(c).Minutes())
+		slog.Info(fmt.Sprintf("Backup Project Data job took %f minutes to run", time.Since(c).Minutes()))
 		return nil
 	}
 }
@@ -119,7 +119,7 @@ func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner) func
 
 			ok, _err := mutex.UnlockContext(_lockCtx)
 			if !ok || _err != nil {
-				log.FromContext(ctx).WithError(_err).Error("failed to release lock")
+				slog.ErrorContext(ctx, "failed to release lock", "error", _err)
 			}
 		}()
 
@@ -129,7 +129,7 @@ func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner) func
 			return err
 		}
 
-		log.FromContext(ctx).Infof("Retention job took %f minutes to run", time.Since(c).Minutes())
+		slog.InfoContext(ctx, fmt.Sprintf("Retention job took %f minutes to run", time.Since(c).Minutes()))
 		return nil
 	}
 }

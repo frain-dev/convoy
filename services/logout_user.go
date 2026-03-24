@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type LogoutUserService struct {
@@ -17,13 +17,13 @@ type LogoutUserService struct {
 func (u *LogoutUserService) Run(ctx context.Context) error {
 	verified, err := u.JWT.ValidateAccessToken(u.Token)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate token")
+		slog.ErrorContext(ctx, "failed to validate token", "error", err)
 		return &ServiceError{ErrMsg: "failed to validate token", Err: err}
 	}
 
 	err = u.JWT.BlacklistToken(verified, u.Token)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to blacklist token")
+		slog.ErrorContext(ctx, "failed to blacklist token", "error", err)
 		return &ServiceError{ErrMsg: "failed to blacklist token", Err: err}
 	}
 

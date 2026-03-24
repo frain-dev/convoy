@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
 )
@@ -83,7 +83,7 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	metadata["dynamicPayload"] = string(payload)
 	m, err := json.Marshal(metadata)
 	if err != nil {
-		log.WithError(err).Error("failed to marshal metadata for event")
+		slog.Error("failed to marshal metadata for event", "error", err)
 		args.tracerBackend.Capture(ctx, "dynamic.event.creation.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
@@ -240,7 +240,7 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 
 		err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 		if err != nil {
-			log.WithError(err).Error("failed to create endpoint")
+			slog.Error("failed to create endpoint", "error", err)
 			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 

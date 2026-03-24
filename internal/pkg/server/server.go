@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -45,7 +45,7 @@ func (s *Server) SetHandler(handler http.Handler) {
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.WithError(err).Fatal("failed to start server")
+		slog.Error("failed to start server", "error", err)
 	}
 
 	if cfg.EnableProfiling {
@@ -73,7 +73,7 @@ func (s *Server) Listen() {
 		// serve connections
 		err := s.s.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.WithError(err).Fatal("failed to listen")
+			slog.Error("failed to listen", "error", err)
 		}
 	}()
 
@@ -85,7 +85,7 @@ func (s *Server) ListenAndServeTLS(certFile, keyFile string) {
 		// serve connections
 		err := s.s.ListenAndServeTLS(certFile, keyFile)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.WithError(err).Fatal("failed to listen")
+			slog.Error("failed to listen", "error", err)
 		}
 	}()
 
@@ -98,16 +98,16 @@ func (s *Server) gracefulShutdown() {
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 
-	log.Info("Stopping server")
+	slog.Info("Stopping server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := s.s.Shutdown(ctx); err != nil {
-		log.WithError(err).Fatal("Server Shutdown")
+		slog.Error("Server Shutdown", "error", err)
 	}
 
-	log.Info("Server exiting")
+	slog.Info("Server exiting")
 
 	time.Sleep(2 * time.Second) // allow all pending connections to close themselves
 }

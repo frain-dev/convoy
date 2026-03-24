@@ -1,13 +1,14 @@
 package worker
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -27,7 +28,7 @@ func (tq *testQueue) Options() queue.QueueOptions { return queue.QueueOptions{} 
 
 func TestEnqueueCircuitBreakerEmails(t *testing.T) {
 	q := &testQueue{}
-	lo := log.NewLogger(nil)
+	lo := log.New("convoy", slog.LevelError)
 
 	project := &datastore.Project{Name: "P1", LogoURL: "http://logo"}
 	endpoint := &datastore.Endpoint{Name: "E1", Url: "http://e1", SupportEmail: "ep@x.y", FailureRate: 42}

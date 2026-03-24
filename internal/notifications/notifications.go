@@ -10,10 +10,10 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	"log/slog"
 )
 
 type NotificationType string
@@ -96,13 +96,13 @@ func SendEndpointNotification(
 			payload.Text = text
 			v.Payload = payload
 		default:
-			log.Error("Invalid notification type")
+			slog.Error("Invalid notification type")
 			continue
 		}
 
 		buf, err := msgpack.EncodeMsgPack(v)
 		if err != nil {
-			log.WithError(err).Errorf("Failed to marshal %v notification payload", v.NotificationType)
+			slog.Error(fmt.Sprintf("Failed to marshal %v notification payload: %v", v.NotificationType, err))
 			continue
 		}
 
@@ -113,7 +113,7 @@ func SendEndpointNotification(
 
 		err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 		if err != nil {
-			log.WithError(err).Error("Failed to write new notification to the queue")
+			slog.Error("Failed to write new notification to the queue", "error", err)
 		}
 	}
 

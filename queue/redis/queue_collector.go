@@ -1,13 +1,14 @@
 package redis
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
+	"log/slog"
 )
 
 // Namespace used in fully qualified metrics names.
@@ -53,7 +54,7 @@ func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 	if err != nil {
 		// Only log non-expected errors (queues are created dynamically, so NOT_FOUND is normal)
 		if !strings.Contains(err.Error(), "NOT_FOUND") && !strings.Contains(err.Error(), "does not exist") {
-			log.Errorf("an error occurred while fetching queue info for %s: %+v", convoy.CreateEventQueue, err)
+			slog.Error(fmt.Sprintf("an error occurred while fetching queue info for %s: %+v", convoy.CreateEventQueue, err))
 		}
 		// Send zero value instead of returning to prevent blocking the endpoint
 		ch <- prometheus.MustNewConstMetric(
@@ -75,7 +76,7 @@ func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 	if err != nil {
 		// Only log non-expected errors (queues are created dynamically, so NOT_FOUND is normal)
 		if !strings.Contains(err.Error(), "NOT_FOUND") && !strings.Contains(err.Error(), "does not exist") {
-			log.Errorf("an error occurred while fetching queue info for %s: %+v", convoy.EventWorkflowQueue, err)
+			slog.Error(fmt.Sprintf("an error occurred while fetching queue info for %s: %+v", convoy.EventWorkflowQueue, err))
 		}
 		// Send zero value instead of returning to prevent blocking the endpoint
 		ch <- prometheus.MustNewConstMetric(

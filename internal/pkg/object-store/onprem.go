@@ -1,9 +1,9 @@
 package objectstore
 
 import (
+	"fmt"
+	"log/slog"
 	"os"
-
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type OnPremClient struct {
@@ -21,6 +21,6 @@ func (o *OnPremClient) Save(filename string) error {
 	if _, err := os.Stat(filename); err != nil {
 		return err
 	}
-	log.Printf("Successfully saved %q \n", filename)
+	slog.Info(fmt.Sprintf("Successfully saved %q \n", filename))
 	return nil
 }

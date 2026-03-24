@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"os"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -20,7 +20,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/net"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -152,7 +152,7 @@ func TestProcessMetaEvent(t *testing.T) {
 			dispatcher, err := net.NewDispatcher(
 				licenser,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
-				net.LoggerOption(log.NewLogger(os.Stdout)),
+				net.LoggerOption(log.New("convoy", slog.LevelInfo)),
 				net.ProxyOption("nil"),
 			)
 			require.NoError(t, err)

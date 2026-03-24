@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
-	"os"
+	"log/slog"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -19,15 +19,15 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
 
 func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.Redis) func(context.Context, *asynq.Task) error {
-	sourceRepo := sources.New(log.NewLogger(os.Stdout), db)
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	sourceRepo := sources.New(log.New("convoy", slog.LevelInfo), db)
+	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
 	endpointRepo := postgres.NewEndpointRepo(db)
 
 	pool := goredis.NewPool(redis.Client())
@@ -51,7 +51,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.
 
 			ok, err := mutex.UnlockContext(tctx)
 			if !ok || err != nil {
-				log.WithError(err).Error("failed to release lock")
+				slog.Error("failed to release lock", "error", err)
 			}
 		}()
 
@@ -60,7 +60,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.
 
 		sources, _, err := sourceRepo.LoadSourcesPaged(context.Background(), "", f, p)
 		if err != nil {
-			log.Error("Failed to load sources paged")
+			slog.Error("Failed to load sources paged")
 			return err
 		}
 
@@ -75,21 +75,21 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.
 				if crcExpiry.After(expiry) {
 					subscriptions, err := subRepo.FindSubscriptionsBySourceID(ctx, source.ProjectID, source.UID)
 					if err != nil {
-						log.Error("Failed to load sources paged")
+						slog.Error("Failed to load sources paged")
 						return err
 					}
 
 					for _, s := range subscriptions {
 						app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, s.ProjectID)
 						if err != nil {
-							log.Error("Failed to load sources paged")
+							slog.Error("Failed to load sources paged")
 							return err
 						}
 
 						if !util.IsStringEmpty(app.SupportEmail) {
 							err = sendNotificationEmail(source, app, queue)
 							if err != nil {
-								log.Error("failed to send notification")
+								slog.Error("failed to send notification")
 								return err
 							}
 						}
@@ -114,7 +114,7 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 
 	bytes, err := msgpack.EncodeMsgPack(em)
 	if err != nil {
-		log.WithError(err).Error("failed to marshal notification payload")
+		slog.Error("failed to marshal notification payload", "error", err)
 		return err
 	}
 
@@ -125,7 +125,7 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 
 	err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 	if err != nil {
-		log.WithError(err).Error("failed to write new notification to the queue")
+		slog.Error("failed to write new notification to the queue", "error", err)
 		return err
 	}
 	return nil

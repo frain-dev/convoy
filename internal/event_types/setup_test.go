@@ -3,6 +3,7 @@ package event_types
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -80,12 +81,12 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func createEventTypeService(t *testing.T, db database.Database) *Service {
 	t.Helper()
-	return New(log.NewLogger(os.Stdout), db)
+	return New(log.New("convoy", slog.LevelInfo), db)
 }
 
 func seedTestData(t *testing.T, db database.Database) (*datastore.User, *datastore.Organisation, *datastore.Project) {
 	ctx := context.Background()
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 
 	// Create user
 	userRepo := users.New(logger, db)

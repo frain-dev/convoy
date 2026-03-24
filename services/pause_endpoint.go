@@ -3,9 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type PauseEndpointService struct {
@@ -17,7 +17,7 @@ type PauseEndpointService struct {
 func (s *PauseEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
 	endpoint, err := s.EndpointRepo.FindEndpointByID(ctx, s.EndpointId, s.ProjectID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to find endpoint")
+		slog.ErrorContext(ctx, "failed to find endpoint", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to find endpoint", Err: err}
 	}
 
@@ -32,7 +32,7 @@ func (s *PauseEndpointService) Run(ctx context.Context) (*datastore.Endpoint, er
 
 	err = s.EndpointRepo.UpdateEndpointStatus(ctx, s.ProjectID, endpoint.UID, endpoint.Status)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update endpoint status")
+		slog.ErrorContext(ctx, "failed to update endpoint status", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to update endpoint status", Err: err}
 	}
 

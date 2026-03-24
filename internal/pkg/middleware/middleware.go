@@ -11,12 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"log/slog"
+
 	"github.com/felixge/httpsnoop"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/riandyrn/otelchi"
-	"github.com/sirupsen/logrus"
 
 	sdktrace "go.opentelemetry.io/otel/trace"
 
@@ -31,7 +32,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -161,7 +161,7 @@ func SetupCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cfg, err := config.Get()
 		if err != nil {
-			log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
+			slog.ErrorContext(r.Context(), "failed to load configuration", "error", err)
 			return
 		}
 
@@ -191,14 +191,14 @@ func RequireAuth() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			creds, err := GetAuthFromRequest(r)
 			if err != nil {
-				log.FromContext(r.Context()).WithError(err).Error("failed to get auth from request")
+				slog.ErrorContext(r.Context(), "failed to get auth from request", "error", err)
 				_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
 				return
 			}
 
 			rc, err := realm_chain.Get()
 			if err != nil {
-				log.FromContext(r.Context()).WithError(err).Error("failed to get realm chain")
+				slog.ErrorContext(r.Context(), "failed to get realm chain", "error", err)
 				_ = render.Render(w, r, util.NewErrorResponse("internal server error", http.StatusInternalServerError))
 				return
 			}
@@ -350,32 +350,25 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 			ww.Tee(wbuf)
 
 			defer func() {
-				lvl, err := statusLevel(ww.Status()).ToLogrusLevel()
-				if err != nil {
-					log.FromContext(r.Context()).WithError(err).Error("Failed to generate status level")
-				}
+				lvl := statusLevel(ww.Status())
 
 				requestFields := requestLogFields(r)
-				responseFields := responseLogFields(ww, wbuf, start, lvl)
-
-				logFields := map[string]interface{}{
-					"httpRequest":  requestFields,
-					"httpResponse": responseFields,
-				}
-
-				if orgID := extractOrganisationID(r); orgID != "" {
-					logFields["organisation_id"] = orgID
-				}
+				responseFields := responseLogFields(ww, wbuf, start)
 
 				if shouldSkipLogging(requestFields, responseFields) {
 					return
 				}
 
-				log.FromContext(r.Context()).WithFields(logFields).Log(lvl, requestFields["requestURL"])
+				logArgs := []any{"httpRequest", requestFields, "httpResponse", responseFields}
+				if orgID := extractOrganisationID(r); orgID != "" {
+					logArgs = append(logArgs, "organisation_id", orgID)
+				}
+
+				a.Logger.Log(r.Context(), lvl, fmt.Sprintf("%v", requestFields["requestURL"]), logArgs...)
 			}()
 
 			requestID := middleware.GetReqID(r.Context())
-			ctx := log.NewContext(r.Context(), a.Logger, log.Fields{"request_id": requestID})
+			ctx := context.WithValue(r.Context(), convoy.RequestIDKey, requestID)
 			r = r.WithContext(ctx)
 
 			next.ServeHTTP(ww, r)
@@ -417,7 +410,7 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	return requestFields
 }
 
-func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t time.Time, _ logrus.Level) map[string]interface{} {
+func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t time.Time) map[string]interface{} {
 	responseFields := map[string]interface{}{
 		"status":  w.Status(),
 		"byes":    w.BytesWritten(),
@@ -432,16 +425,16 @@ func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t ti
 	return responseFields
 }
 
-func statusLevel(status int) log.Level {
+func statusLevel(status int) slog.Level {
 	switch {
 	case status <= 0:
-		return log.WarnLevel
+		return slog.LevelWarn
 	case status < 400:
-		return log.InfoLevel
+		return slog.LevelInfo
 	case status < 500:
-		return log.WarnLevel
+		return slog.LevelWarn
 	default:
-		return log.ErrorLevel
+		return slog.LevelError
 	}
 }
 
@@ -498,7 +491,7 @@ func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) htt
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.EnterpriseSSO() {
-				log.Warnf("Enterprise SSO access denied - license required")
+				slog.Warn("Enterprise SSO access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
@@ -527,7 +520,7 @@ func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.GoogleOAuth() {
-				log.Warnf("Google OAuth access denied - license required")
+				slog.Warn("Google OAuth access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
@@ -540,7 +533,7 @@ func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.PortalLinks() {
-				log.Warnf("Portal links access denied - license required")
+				slog.Warn("Portal links access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}

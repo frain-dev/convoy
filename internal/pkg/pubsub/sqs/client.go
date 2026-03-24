@@ -18,7 +18,9 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
-	"github.com/frain-dev/convoy/pkg/log"
+	"log/slog"
+
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
 )
@@ -31,13 +33,13 @@ type Sqs struct {
 	workers     int
 	ctx         context.Context
 	handler     datastore.PubSubHandler
-	log         log.StdLogger
+	log         log.Logger
 	rateLimiter limiter.RateLimiter
 	licenser    license.Licenser
 	instanceId  string
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) *Sqs {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.Logger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) *Sqs {
 	return &Sqs{
 		Cfg:         source.PubSub.Sqs,
 		source:      source,
@@ -73,7 +75,7 @@ func (s *Sqs) Verify() error {
 
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
-		log.WithError(err).Error("failed to create new session - sqs")
+		slog.Error("failed to create new session - sqs", "error", err)
 		return ErrInvalidCredentials
 	}
 
@@ -83,7 +85,7 @@ func (s *Sqs) Verify() error {
 	})
 
 	if err != nil {
-		log.WithError(err).Error("failed to fetch queue url - sqs")
+		slog.Error("failed to fetch queue url - sqs", "error", err)
 		return ErrInvalidCredentials
 	}
 
@@ -107,7 +109,7 @@ func (s *Sqs) consume() {
 	defer s.handleError()
 
 	if err != nil {
-		s.log.WithError(err).Error("failed to create new session - sqs")
+		s.log.Error("failed to create new session - sqs", "error", err)
 	}
 
 	svc := sqs.New(sess)
@@ -115,21 +117,21 @@ func (s *Sqs) consume() {
 		QueueName: &s.Cfg.QueueName,
 	})
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch queue url - sqs")
+		s.log.Error("failed to fetch queue url - sqs", "error", err)
 	}
 
 	if url == nil {
-		log.Errorf("pubsub url for source with id %s is nil", s.source.UID)
+		slog.Error(fmt.Sprintf("pubsub url for source with id %s is nil", s.source.UID))
 		return
 	}
 
 	if url.QueueUrl == nil {
-		log.Errorf("pubsub queue url for source with id %s is nil", s.source.UID)
+		slog.Error(fmt.Sprintf("pubsub queue url for source with id %s is nil", s.source.UID))
 		return
 	}
 
 	if util.IsStringEmpty(*url.QueueUrl) {
-		log.Errorf("pubsub queue url for source with id %s is empty", s.source.UID)
+		slog.Error(fmt.Sprintf("pubsub queue url for source with id %s is empty", s.source.UID))
 		return
 	}
 
@@ -137,7 +139,7 @@ func (s *Sqs) consume() {
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.WithError(err).Errorf("failed to load config.Get() in sqs source %s with id %s", s.source.Name, s.source.UID)
+		slog.Error(fmt.Sprintf("failed to load config.Get() in sqs source %s with id %s: %v", s.source.Name, s.source.UID, err))
 		return
 	}
 
@@ -161,7 +163,7 @@ func (s *Sqs) consume() {
 				MessageAttributeNames: []*string{&allAttr},
 			})
 			if err != nil {
-				s.log.WithError(err).Error("failed to fetch message - sqs")
+				s.log.Error("failed to fetch message - sqs", "error", err)
 				continue
 			}
 
@@ -187,7 +189,7 @@ func (s *Sqs) consume() {
 
 					attributes, err := msgpack.EncodeMsgPack(d.Map())
 					if err != nil {
-						s.log.WithError(err).Error("failed to marshall message attributes")
+						s.log.Error("failed to marshall message attributes", "error", err)
 						return
 					}
 
@@ -197,14 +199,14 @@ func (s *Sqs) consume() {
 						emptyMap := map[string]string{}
 						emptyBytes, err := msgpack.EncodeMsgPack(emptyMap)
 						if err != nil {
-							s.log.WithError(err).Error("an error occurred creating an empty attributes map")
+							s.log.Error("an error occurred creating an empty attributes map", "error", err)
 							return
 						}
 						attributes = emptyBytes
 					}
 
 					if err := s.handler(context.Background(), s.source, *m.Body, attributes); err != nil {
-						s.log.WithError(err).Error("failed to write message to create event queue")
+						s.log.Error("failed to write message to create event queue", "error", err)
 						mm.IncrementIngestErrorsTotal(s.source)
 					} else {
 						mm.IncrementIngestConsumedTotal(s.source)
@@ -214,7 +216,7 @@ func (s *Sqs) consume() {
 						})
 
 						if err != nil {
-							s.log.WithError(err).Error("failed to delete message")
+							s.log.Error("failed to delete message", "error", err)
 						}
 					}
 				}(message)
@@ -227,7 +229,7 @@ func (s *Sqs) consume() {
 
 func (s *Sqs) handleError() {
 	if err := recover(); err != nil {
-		s.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", s.source.UID, err)).Error("sqs pubsub source crashed")
+		s.log.Error("sqs pubsub source crashed", "error", fmt.Errorf("sourceID: %s, Error: %s", s.source.UID, err))
 	}
 }
 

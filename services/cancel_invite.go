@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -21,7 +21,7 @@ func (co *CancelOrgMemberService) Run(ctx context.Context) (*datastore.Organisat
 	iv, err := co.InviteRepo.FetchOrganisationInviteByID(ctx, co.InviteID)
 	if err != nil {
 		errMsg := "failed to fetch organisation invite by id"
-		log.FromContext(ctx).WithError(err).Error(errMsg)
+		slog.ErrorContext(ctx, errMsg, "error", err)
 		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
@@ -35,7 +35,7 @@ func (co *CancelOrgMemberService) Run(ctx context.Context) (*datastore.Organisat
 	err = co.InviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
 		errMsg := "failed to update organisation member invite"
-		log.FromContext(ctx).WithError(err).Error(errMsg)
+		slog.ErrorContext(ctx, errMsg, "error", err)
 		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 

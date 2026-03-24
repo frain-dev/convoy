@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/migrator"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func AddMigrateCommand(a *cli.App) *cobra.Command {
@@ -37,14 +38,13 @@ func addUpCommand() *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			lo := log.NewLogger(os.Stdout)
-			lo.SetLevel(log.DebugLevel)
+			lo := log.New("convoy", slog.LevelInfo)
 
 			lo.Info("Running migrations...")
 
 			cfg, err := config.Get()
 			if err != nil {
-				lo.WithError(err).Fatal("Error fetching the config.")
+				lo.Fatal("Error fetching the config.", "error", err)
 			}
 
 			db, err := postgres.NewDB(cfg)
@@ -80,12 +80,11 @@ func addDownCommand() *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			lo := log.NewLogger(os.Stdout)
-			lo.SetLevel(log.DebugLevel)
+			lo := log.New("convoy", slog.LevelInfo)
 
 			cfg, err := config.Get()
 			if err != nil {
-				lo.WithError(err).Fatal("Error fetching the config.")
+				lo.Fatal("Error fetching the config.", "error", err)
 			}
 
 			db, err := postgres.NewDB(cfg)
@@ -120,8 +119,7 @@ func addCreateCommand() *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			lo := log.NewLogger(os.Stdout)
-			lo.SetLevel(log.DebugLevel)
+			lo := log.New("convoy", slog.LevelInfo)
 
 			fileName := fmt.Sprintf("sql/%v.sql", time.Now().Unix())
 			f, err := os.Create(fileName)

@@ -17,7 +17,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/pkg/log"
+	"log/slog"
 )
 
 const pkgName = "postgres"
@@ -61,7 +61,7 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 			replicas = append(replicas, r)
 		}
 	} else if len(dbConfig.ReadReplicas) > 0 {
-		log.Errorln("read-replicas feature flag required before use")
+		slog.Error("read-replicas feature flag required before use")
 	}
 	primary.replicas = replicas
 	primary.randGen = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -90,7 +90,7 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 	maxConns := dbConfig.SetMaxOpenConnections
 	if maxConns <= 0 {
 		maxConns = 100
-		log.Warnf("[%s]: SetMaxOpenConnections not set or 0, using default: %d. Set CONVOY_DB_MAX_OPEN_CONN to override.", pkgName, maxConns)
+		slog.Warn(fmt.Sprintf("[%s]: SetMaxOpenConnections not set or 0, using default: %d. Set CONVOY_DB_MAX_OPEN_CONN to override.", pkgName, maxConns))
 	}
 	pgxCfg.MaxConns = int32(maxConns)
 
@@ -141,10 +141,10 @@ func (p *Postgres) GetReadDB() *sqlx.DB {
 			if r != nil {
 				id = fmt.Sprintf(" %d", r.id)
 			}
-			log.WithError(err).Errorf("failed to get random replica%s", id)
+			slog.Error(fmt.Sprintf("failed to get random replica%s: %v", id, err))
 			return p.dbx
 		}
-		log.Debugf("fetched replica %d", r.id)
+		slog.Debug(fmt.Sprintf("fetched replica %d", r.id))
 		return r.dbx
 	}
 	return p.dbx
@@ -187,14 +187,14 @@ func (p *Postgres) BeginTx(ctx context.Context) (*sqlx.Tx, error) {
 func (p *Postgres) Rollback(tx *sqlx.Tx, err error) {
 	if err != nil {
 		rbErr := tx.Rollback()
-		log.WithError(rbErr).Error("failed to roll back transaction in ProcessBroadcastEventCreation")
+		slog.Error("failed to roll back transaction in ProcessBroadcastEventCreation", "error", rbErr)
 	}
 
 	cmErr := tx.Commit()
 	if cmErr != nil && !errors.Is(cmErr, sql.ErrTxDone) {
-		log.WithError(cmErr).Error("failed to commit tx in ProcessBroadcastEventCreation, rolling back transaction")
+		slog.Error("failed to commit tx in ProcessBroadcastEventCreation, rolling back transaction", "error", cmErr)
 		rbErr := tx.Rollback()
-		log.WithError(rbErr).Error("failed to roll back transaction in ProcessBroadcastEventCreation")
+		slog.Error("failed to roll back transaction in ProcessBroadcastEventCreation", "error", rbErr)
 	}
 }
 
@@ -205,7 +205,7 @@ func (p *Postgres) GetHook() *hooks.Hook {
 
 	hook, err := hooks.Get()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
 	}
 
 	p.hook = hook
@@ -246,7 +246,7 @@ func (p *Postgres) Ping(ctx context.Context) error {
 func (p *Postgres) PingReplicas(ctx context.Context) error {
 	for _, replica := range p.replicas {
 		if err := replica.dbx.PingContext(ctx); err != nil {
-			log.WithError(err).Errorf("replica %d ping failed", replica.id)
+			slog.Error(fmt.Sprintf("replica %d ping failed: %v", replica.id, err))
 			return err
 		}
 	}
@@ -273,7 +273,7 @@ func GetTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, bool, error) {
 func rollbackTx(tx *sqlx.Tx) {
 	err := tx.Rollback()
 	if err != nil && !errors.Is(err, sql.ErrTxDone) {
-		log.WithError(err).Error("failed to rollback tx")
+		slog.Error("failed to rollback tx", "error", err)
 	}
 }
 

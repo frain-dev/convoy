@@ -3,9 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type ActivateEndpointService struct {
@@ -17,7 +17,7 @@ type ActivateEndpointService struct {
 func (s *ActivateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
 	endpoint, err := s.EndpointRepo.FindEndpointByID(ctx, s.EndpointId, s.ProjectID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to find endpoint")
+		slog.ErrorContext(ctx, "failed to find endpoint", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to find endpoint", Err: err}
 	}
 
@@ -27,7 +27,7 @@ func (s *ActivateEndpointService) Run(ctx context.Context) (*datastore.Endpoint,
 
 	err = s.EndpointRepo.UpdateEndpointStatus(ctx, s.ProjectID, endpoint.UID, datastore.ActiveEndpointStatus)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to activate endpoint")
+		slog.ErrorContext(ctx, "failed to activate endpoint", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to activate endpoint", Err: err}
 	}
 

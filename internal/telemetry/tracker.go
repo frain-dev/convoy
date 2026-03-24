@@ -7,8 +7,8 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
+	"log/slog"
 )
 
 var ErrInvalidInstanceID = errors.New("invalid instance id provided")
@@ -44,14 +44,14 @@ func (te *TotalEventsTracker) track(ctx context.Context, instanceID string) (Met
 	for _, org := range te.Orgs {
 		projects, err := te.ProjectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
 		if err != nil {
-			log.WithError(err).Error("failed to load organisation projects")
+			slog.Error("failed to load organisation projects", "error", err)
 			continue
 		}
 
 		for _, p := range projects {
 			count, err := te.EventRepo.CountProjectMessages(ctx, p.UID)
 			if err != nil {
-				log.WithError(err).Error("failed to load events paged")
+				slog.Error("failed to load events paged", "error", err)
 				continue
 			}
 			mt.Count += uint64(count) + uint64(p.RetainedEvents)
@@ -81,7 +81,7 @@ func (ta *TotalActiveProjectTracker) track(ctx context.Context, instanceID strin
 	for _, org := range ta.Orgs {
 		projects, err := ta.ProjectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
 		if err != nil {
-			log.WithError(err).Error("failed to load organisation projects")
+			slog.Error("failed to load organisation projects", "error", err)
 			continue
 		}
 
@@ -95,7 +95,7 @@ func (ta *TotalActiveProjectTracker) track(ctx context.Context, instanceID strin
 
 			count, err := ta.EventRepo.CountEvents(ctx, project.UID, filter)
 			if err != nil {
-				log.WithError(err).Error("failed to load events paged")
+				slog.Error("failed to load events paged", "error", err)
 				continue
 			}
 

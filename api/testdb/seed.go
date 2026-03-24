@@ -6,8 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
-	"os"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -36,12 +35,12 @@ import (
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 func SeedEventType(db database.Database, projectId, uid, name, desc, category string) (*datastore.ProjectEventType, error) {
-	evtTypesRepo := event_types.New(log.NewLogger(os.Stdout), db)
+	evtTypesRepo := event_types.New(log.New("convoy", slog.LevelInfo), db)
 	pe := &datastore.ProjectEventType{
 		UID:         uid,
 		Name:        name,
@@ -176,7 +175,7 @@ func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastor
 	}
 
 	// Seed Data.
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
 	err := projectRepo.CreateProject(context.TODO(), defaultProject)
 	if err != nil {
 		return &datastore.Project{}, err
@@ -211,7 +210,7 @@ func SeedDefaultUser(db database.Database, isAdmin ...bool) (*datastore.User, er
 	}
 
 	// Seed Data.
-	userRepo := users.New(log.NewLogger(io.Discard), db)
+	userRepo := users.New(log.New("convoy", slog.LevelError), db)
 	err = userRepo.CreateUser(context.TODO(), defaultUser)
 	if err != nil {
 		return &datastore.User{}, err
@@ -234,7 +233,7 @@ func SeedDefaultOrganisationWithRole(db database.Database, user *datastore.User,
 	}
 
 	// Seed Data.
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	organisationRepo := organisations.New(logger, db)
 	err := organisationRepo.CreateOrganisation(context.TODO(), defaultOrg)
 	if err != nil {
@@ -250,7 +249,7 @@ func SeedDefaultOrganisationWithRole(db database.Database, user *datastore.User,
 		UpdatedAt:      time.Now(),
 	}
 
-	orgMemberRepo := organisation_members.New(log.NewLogger(os.Stdout), db)
+	orgMemberRepo := organisation_members.New(log.New("convoy", slog.LevelInfo), db)
 	err = orgMemberRepo.CreateOrganisationMember(context.TODO(), member)
 	if err != nil {
 		return nil, err
@@ -270,7 +269,7 @@ func SeedOrganisationMember(db database.Database, org *datastore.Organisation, u
 		UpdatedAt:      time.Now(),
 	}
 
-	orgMemberRepo := organisation_members.New(log.NewLogger(os.Stdout), db)
+	orgMemberRepo := organisation_members.New(log.New("convoy", slog.LevelInfo), db)
 	err := orgMemberRepo.CreateOrganisationMember(context.TODO(), member)
 	if err != nil {
 		return nil, err
@@ -297,7 +296,7 @@ func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, e
 		UpdatedAt:      time.Now(),
 	}
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	orgInviteRepo := organisation_invites.New(logger, db)
 	err := orgInviteRepo.CreateOrganisationInvite(context.TODO(), iv)
 	if err != nil {
@@ -335,7 +334,7 @@ func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID
 		UpdatedAt: time.Now(),
 	}
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	apiRepo := api_keys.New(logger, db)
 	err = apiRepo.CreateAPIKey(context.Background(), apiKey)
 	if err != nil {
@@ -366,7 +365,7 @@ func SeedProject(db database.Database, uid, name, orgID string, projectType data
 	}
 
 	// Seed Data.
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
 	err := projectRepo.CreateProject(context.TODO(), g)
 	if err != nil {
 		return &datastore.Project{}, err
@@ -394,7 +393,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, ui
 	}
 
 	// Seed Data.
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
+	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err
@@ -422,7 +421,7 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err
@@ -450,7 +449,7 @@ func SeedOrganisation(db database.Database, uid, ownerID, name string) (*datasto
 	}
 
 	// Seed Data.
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	orgRepo := organisations.New(logger, db)
 	err := orgRepo.CreateOrganisation(context.TODO(), org)
 	if err != nil {
@@ -477,7 +476,7 @@ func SeedMultipleOrganisations(db database.Database, ownerID string, num int) ([
 		orgs = append(orgs, org)
 
 		// Seed Data.
-		logger := log.NewLogger(os.Stdout)
+		logger := log.New("convoy", slog.LevelInfo)
 		orgRepo := organisations.New(logger, db)
 		err := orgRepo.CreateOrganisation(context.TODO(), org)
 		if err != nil {
@@ -526,7 +525,7 @@ func SeedSource(db database.Database, g *datastore.Project, uid, maskID, ds stri
 	}
 
 	// Seed Data
-	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	sourceRepo := sources.New(log.New("convoy", slog.LevelError), db)
 	err := sourceRepo.CreateSource(context.TODO(), source)
 	if err != nil {
 		return nil, err
@@ -575,7 +574,7 @@ func SeedSubscription(db database.Database,
 		FilterConfig: filterConfig,
 	}
 
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
 	err := subRepo.CreateSubscription(context.TODO(), g.UID, subscription)
 	if err != nil {
 		return nil, err
@@ -604,7 +603,7 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 	}
 
 	// Seed Data
-	userRepo := users.New(log.NewLogger(io.Discard), db)
+	userRepo := users.New(log.New("convoy", slog.LevelError), db)
 	err = userRepo.CreateUser(context.TODO(), user)
 	if err != nil {
 		return nil, err
@@ -623,7 +622,7 @@ func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	}
 
 	// Seed Data
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
+	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
 	err := configRepo.CreateConfiguration(context.TODO(), c)
 	if err != nil {
 		return nil, err
@@ -641,7 +640,7 @@ func SeedPortalLink(db database.Database, project *datastore.Project, ownerId st
 		CanManageEndpoint: true,
 	}
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", slog.LevelInfo)
 	portalLinkRepo := portal_links.New(logger, db)
 	p, err := portalLinkRepo.CreatePortalLink(context.TODO(), project.UID, portalLink)
 	if err != nil {
@@ -670,7 +669,7 @@ func SeedMetaEvent(db database.Database, project *datastore.Project) (*datastore
 		UpdatedAt: time.Now(),
 	}
 
-	metaEventRepo := meta_events.New(log.NewLogger(io.Discard), db)
+	metaEventRepo := meta_events.New(log.New("convoy", slog.LevelError), db)
 	err := metaEventRepo.CreateMetaEvent(context.TODO(), metaEvent)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -68,7 +68,7 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 	taskName := convoy.ExpireSecretsProcessor
 	err = a.Queuer.Write(taskName, convoy.DefaultQueue, job)
 	if err != nil {
-		log.Errorf("Error occurred sending new event to the queue %s", err)
+		slog.Error(fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 	}
 
 	// Generate new secret.
@@ -91,7 +91,7 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 
 	err = a.EndpointRepo.UpdateSecrets(ctx, a.Endpoint.UID, a.Project.UID, a.Endpoint.Secrets)
 	if err != nil {
-		log.Errorf("Error occurred expiring secret %s", err)
+		slog.Error(fmt.Sprintf("Error occurred expiring secret %s", err))
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
 	}
 

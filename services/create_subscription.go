@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -12,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -33,7 +33,7 @@ type CreateSubscriptionService struct {
 func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscription, error) {
 	endpoint, err := s.findEndpoint(ctx, s.NewSubscription.AppID, s.NewSubscription.EndpointID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to find endpoint by id")
+		slog.ErrorContext(ctx, "failed to find endpoint by id", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to find endpoint by id", Err: err}
 	}
 
@@ -47,7 +47,7 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		}
 		_, err = s.SourceRepo.FindSourceByID(ctx, s.Project.UID, s.NewSubscription.SourceID)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("failed to find source by id")
+			slog.ErrorContext(ctx, "failed to find source by id", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to find source by id"}
 		}
 	}
@@ -55,7 +55,7 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 	if s.Project.Type == datastore.OutgoingProject && !s.Project.Config.MultipleEndpointSubscriptions {
 		count, err := s.SubRepo.CountEndpointSubscriptions(ctx, s.Project.UID, endpoint.UID, "")
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("failed to count endpoint subscriptions")
+			slog.ErrorContext(ctx, "failed to count endpoint subscriptions", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to count endpoint subscriptions"}
 		}
 
@@ -114,14 +114,14 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		// validate that the filter is a json string
 		_, err = json.Marshal(subscription.FilterConfig.Filter)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Error(ErrInvalidSubscriptionFilterFormat.Error())
+			slog.ErrorContext(ctx, ErrInvalidSubscriptionFilterFormat.Error(), "error", err)
 			return nil, &ServiceError{ErrMsg: ErrInvalidSubscriptionFilterFormat.Error()}
 		}
 	}
 
 	err = s.SubRepo.CreateSubscription(ctx, s.Project.UID, subscription)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrCreateSubscriptionError.Error())
+		slog.ErrorContext(ctx, ErrCreateSubscriptionError.Error(), "error", err)
 		return nil, &ServiceError{ErrMsg: ErrCreateSubscriptionError.Error()}
 	}
 

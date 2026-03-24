@@ -3,9 +3,9 @@ package services
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -21,13 +21,13 @@ type ForceResendEventDeliveriesService struct {
 func (e *ForceResendEventDeliveriesService) Run(ctx context.Context) (int, int, error) {
 	deliveries, err := e.EventDeliveryRepo.FindEventDeliveriesByIDs(ctx, e.Project.UID, e.IDs)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to fetch event deliveries by ids")
+		slog.ErrorContext(ctx, "failed to fetch event deliveries by ids", "error", err)
 		return 0, 0, &ServiceError{ErrMsg: "failed to fetch event deliveries", Err: err}
 	}
 
 	err = validateEventDeliveryStatus(deliveries)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("event delivery status validation failed")
+		slog.ErrorContext(ctx, "event delivery status validation failed", "error", err)
 		return 0, 0, &ServiceError{ErrMsg: err.Error()}
 	}
 
@@ -36,7 +36,7 @@ func (e *ForceResendEventDeliveriesService) Run(ctx context.Context) (int, int, 
 		err := e.forceResendEventDelivery(ctx, &delivery, e.Project)
 		if err != nil {
 			failures++
-			log.FromContext(ctx).WithError(err).Error("an item in the force resend batch failed")
+			slog.ErrorContext(ctx, "an item in the force resend batch failed", "error", err)
 		}
 	}
 

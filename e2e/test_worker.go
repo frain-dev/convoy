@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"testing"
@@ -10,7 +11,6 @@ import (
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/testenv"
 	"github.com/frain-dev/convoy/worker"
@@ -82,11 +82,10 @@ func NewTestWorker(ctx context.Context, t *testing.T, q queue.Queuer, validator 
 	t.Helper()
 
 	logger := testenv.NewLogger(t)
-	logger.SetLevel(log.ErrorLevel)
 
 	workerCtx, cancel := context.WithCancel(ctx)
 
-	consumer := worker.NewConsumer(workerCtx, 3, q, logger, log.ErrorLevel)
+	consumer := worker.NewConsumer(workerCtx, 3, q, logger, slog.LevelError)
 
 	tw := &TestWorker{
 		consumer:  consumer,

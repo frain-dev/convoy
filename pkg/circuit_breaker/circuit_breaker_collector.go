@@ -7,7 +7,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 const namespace = "circuit_breaker"
@@ -108,7 +107,7 @@ func (cb *CircuitBreakerManager) Collect(ch chan<- prometheus.Metric) {
 	} else {
 		metrics, err = cb.collectMetrics()
 		if err != nil {
-			log.Errorf("Failed to collect metrics data: %v", err)
+			cb.logger.Errorf("Failed to collect metrics data: %v", err)
 			return
 		}
 		cachedMetrics = metrics

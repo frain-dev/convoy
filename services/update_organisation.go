@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
+	"log/slog"
 	"net/url"
 
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -21,7 +21,7 @@ type UpdateOrganisationService struct {
 func (os *UpdateOrganisationService) Run(ctx context.Context) (*datastore.Organisation, error) {
 	err := util.Validate(os.Update)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate organisation update - validate")
+		slog.ErrorContext(ctx, "failed to validate organisation update - validate", "error", err)
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
@@ -32,12 +32,12 @@ func (os *UpdateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	if len(os.Update.CustomDomain) > 0 {
 		u, err := url.Parse(os.Update.CustomDomain)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("failed to validate hostname")
+			slog.ErrorContext(ctx, "failed to validate hostname", "error", err)
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 
 		if len(u.Host) == 0 {
-			log.FromContext(ctx).Error("failed to validate hostname - malformatted url")
+			slog.ErrorContext(ctx, "failed to validate hostname - malformatted url")
 			return nil, &ServiceError{ErrMsg: "failed to validate hostname: malformatted url", Err: nil}
 		}
 
@@ -46,7 +46,7 @@ func (os *UpdateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 
 	err = os.OrgRepo.UpdateOrganisation(ctx, os.Org)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to to update organisation")
+		slog.ErrorContext(ctx, "failed to to update organisation", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to update organisation", Err: err}
 	}
 

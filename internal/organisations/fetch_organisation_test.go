@@ -1,20 +1,20 @@
 package organisations
 
 import (
-	"os"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestFetchOrganisationByID_Found(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed organisation
 	org := seedOrganisation(t, db, "fetch.test.com", "fetch.convoy.io")
@@ -32,7 +32,7 @@ func TestFetchOrganisationByID_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Try to fetch non-existent organisation
 	_, err := service.FetchOrganisationByID(ctx, "non-existent-id")
@@ -44,7 +44,7 @@ func TestFetchOrganisationByCustomDomain_Found(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed organisation with custom domain
 	org := seedOrganisation(t, db, "custom.domain.com", "")
@@ -61,7 +61,7 @@ func TestFetchOrganisationByCustomDomain_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Try to fetch by non-existent custom domain
 	_, err := service.FetchOrganisationByCustomDomain(ctx, "non-existent.com")
@@ -73,7 +73,7 @@ func TestFetchOrganisationByAssignedDomain_Found(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed organisation with assigned domain
 	org := seedOrganisation(t, db, "", "assigned.convoy.io")
@@ -90,7 +90,7 @@ func TestFetchOrganisationByAssignedDomain_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Try to fetch by non-existent assigned domain
 	_, err := service.FetchOrganisationByAssignedDomain(ctx, "non-existent.convoy.io")
@@ -102,7 +102,7 @@ func TestFetchOrganisation_DeletedOrganisationNotReturned(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", slog.LevelInfo), db)
 
 	// Seed and then delete organisation
 	org := seedOrganisation(t, db, "deleted.test.com", "deleted.convoy.io")

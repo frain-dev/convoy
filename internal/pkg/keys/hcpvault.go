@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 const RedisCacheKey = "HCPVaultRedisKey"
@@ -364,7 +364,7 @@ func NewHCPVaultKeyManager(clientID, clientSecret, orgID, projectID, appName, se
 
 func NewHCPVaultKeyManagerFromConfig(cfg config.HCPVaultConfig, licenser license.Licenser, cache cache.Cache) *HCPVaultKeyManager {
 	if cfg.ClientID == "" || cfg.ClientSecret == "" || cfg.OrgID == "" || cfg.ProjectID == "" || cfg.AppName == "" || cfg.SecretName == "" {
-		log.Warn("missing required HCP Vault configuration")
+		slog.Warn("missing required HCP Vault configuration")
 		return &HCPVaultKeyManager{
 			cache:    cache,
 			licenser: licenser,

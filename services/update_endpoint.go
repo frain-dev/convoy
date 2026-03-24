@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/net"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -29,7 +30,7 @@ type UpdateEndpointService struct {
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 	DB                         database.Database
-	Logger                     log.StdLogger
+	Logger                     log.Logger
 	E                          models.UpdateEndpoint
 	Endpoint                   *datastore.Endpoint
 	Project                    *datastore.Project
@@ -57,7 +58,7 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 	err = a.EndpointRepo.UpdateEndpoint(ctx, endpoint, endpoint.ProjectID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update endpoint")
+		slog.ErrorContext(ctx, "failed to update endpoint", "error", err)
 		return endpoint, &ServiceError{ErrMsg: "an error occurred while updating endpoints", Err: err}
 	}
 
@@ -108,14 +109,14 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		if mtlsClientCert != nil && !util.IsStringEmpty(mtlsClientCert.ClientCert) && !util.IsStringEmpty(mtlsClientCert.ClientKey) {
 			cert, certErr := config.LoadClientCertificate(mtlsClientCert.ClientCert, mtlsClientCert.ClientKey)
 			if certErr != nil {
-				log.FromContext(ctx).WithError(certErr).Warn("failed to load new mTLS cert for ping, will validate later")
+				slog.WarnContext(ctx, "failed to load new mTLS cert for ping, will validate later", "error", certErr)
 			} else {
 				mtlsCert = cert
 			}
 		} else if mtlsClientCert == nil && existingEndpoint != nil && existingEndpoint.MtlsClientCert != nil {
 			cert, certErr := config.LoadClientCertificate(existingEndpoint.MtlsClientCert.ClientCert, existingEndpoint.MtlsClientCert.ClientKey)
 			if certErr != nil {
-				log.FromContext(ctx).WithError(certErr).Warn("failed to load existing mTLS cert for ping")
+				slog.WarnContext(ctx, "failed to load existing mTLS cert for ping", "error", certErr)
 			} else {
 				mtlsCert = cert
 			}
@@ -144,9 +145,9 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		})
 		if pingErr != nil {
 			if cfg.Dispatcher.SkipPingValidation {
-				log.FromContext(ctx).Warnf("failed to ping tls endpoint (validation skipped): %v", pingErr)
+				slog.WarnContext(ctx, fmt.Sprintf("failed to ping tls endpoint (validation skipped): %v", pingErr))
 			} else {
-				log.FromContext(ctx).Errorf("failed to ping tls endpoint: %v", pingErr)
+				slog.ErrorContext(ctx, fmt.Sprintf("failed to ping tls endpoint: %v", pingErr))
 				return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
 			}
 		}
@@ -213,7 +214,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 
 		basicAuthEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.BasicAuthEndpoint, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, a.Project.OrganisationID)
 		if !basicAuthEnabled {
-			log.FromContext(ctx).Warn("Basic Auth configuration provided but feature flag not enabled, ignoring Basic Auth config")
+			slog.WarnContext(ctx, "Basic Auth configuration provided but feature flag not enabled, ignoring Basic Auth config")
 			auth = nil
 		}
 	}
@@ -227,7 +228,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 		// Check feature flag for OAuth2 using project's organisation ID
 		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, a.Project.OrganisationID)
 		if !oauth2Enabled {
-			log.FromContext(ctx).Warn("OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
+			slog.WarnContext(ctx, "OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
 			// Remove OAuth2 authentication if feature flag is disabled
 			auth = nil
 		}
@@ -253,7 +254,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 			// Updating or setting new mTLS cert - both fields required
 			mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, a.Project.OrganisationID)
 			if !mtlsEnabled {
-				log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
+				slog.WarnContext(ctx, "mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
 				endpoint.MtlsClientCert = nil
 				config.GetCertCache().Delete(endpoint.UID)
 			} else {

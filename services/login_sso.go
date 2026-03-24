@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strings"
 	"time"
@@ -17,7 +18,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/sso/service"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -76,7 +77,7 @@ func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
 
 	redirectResp, err := ssoClient.GetRedirectURL(ctx, u.LicenseKey, u.Host, redirectURI)
 	if err != nil {
-		log.Errorf("failed to get SSO redirect URL: %+v", err)
+		slog.Error(fmt.Sprintf("failed to get SSO redirect URL: %+v", err))
 		return nil, fmt.Errorf("failed to get SSO redirect URL: %w", err)
 	}
 
@@ -84,7 +85,7 @@ func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
 		return nil, errors.New("no redirect URL in SSO response")
 	}
 
-	log.Infof("SSO redirect URL obtained successfully")
+	slog.Info(fmt.Sprintf("SSO redirect URL obtained successfully"))
 
 	return &models.SSOLoginResponse{
 		RedirectURL: redirectResp.Data.RedirectURL,
@@ -127,7 +128,7 @@ func (u *LoginUserSSOService) RedeemToken(queryValues url.Values) (*models.SSOTo
 
 	tokenResp, err := ssoClient.ValidateToken(ctx, token)
 	if err != nil {
-		log.Errorf("failed to validate SSO token: %+v", err)
+		slog.Error(fmt.Sprintf("failed to validate SSO token: %+v", err))
 		return nil, fmt.Errorf("failed to validate SSO token: %w", err)
 	}
 
@@ -147,7 +148,7 @@ func (u *LoginUserSSOService) RedeemToken(queryValues url.Values) (*models.SSOTo
 		return nil, errors.New("no external organization id in token response")
 	}
 
-	log.Infof("SSO token validated successfully")
+	slog.Info(fmt.Sprintf("SSO token validated successfully"))
 
 	return &models.SSOTokenResponse{
 		Status:  true,
@@ -210,7 +211,7 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 	err = p.GenerateHash()
 
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate hash")
+		slog.ErrorContext(ctx, "failed to generate hash", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate hash", Err: err}
 	}
 
@@ -238,7 +239,7 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 			return nil, nil, &ServiceError{ErrMsg: "this email is taken"}
 		}
 
-		log.FromContext(ctx).WithError(err).Error("failed to create user")
+		slog.ErrorContext(ctx, "failed to create user", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to create user", Err: err}
 	}
 
@@ -246,7 +247,7 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 		OrgRepo:       u.OrgRepo,
 		OrgMemberRepo: u.OrgMemberRepo,
 		Licenser:      u.Licenser,
-		Logger:        log.FromContext(ctx),
+		Logger:        log.New("convoy", slog.LevelInfo),
 		NewOrg:        &datastore.OrganisationRequest{Name: t.Data.Payload.OrganizationExternalID},
 		User:          user,
 	}
@@ -260,7 +261,7 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 
 	token, err := u.JWT.GenerateToken(user)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate token")
+		slog.ErrorContext(ctx, "failed to generate token", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate token", Err: err}
 	}
 

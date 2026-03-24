@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/queue/redis"
@@ -65,12 +65,12 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 		// get or create event
 		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo)
 		if err != nil {
-			log.WithError(err).Error("failed to get last task info")
+			slog.Error("failed to get last task info", "error", err)
 			return err
 		}
 
 		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
-			log.FromContext(ctx).Debugf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey)
+			slog.DebugContext(ctx, fmt.Sprintf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey))
 			return nil
 		}
 
@@ -99,7 +99,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 					return err
 				}
 
-				log.WithError(err).Error("skipping duplicated event: " + event.UID)
+				slog.Error("skipping duplicated event: "+event.UID, "error", err)
 				return nil
 			}
 			if event == nil {
@@ -126,7 +126,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 
 		err = eventQueue.Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred while matching event subs")
+			slog.ErrorContext(ctx, fmt.Sprintf("[asynq]: an error occurred while matching event subs: %v", err))
 		}
 
 		return err
@@ -169,14 +169,14 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 
 		channel := deps.Channels[metadata.Config.Channel]
 		if channel == nil {
-			log.Errorf("Invalid channel %s\n", metadata.Config.Channel)
+			slog.Error(fmt.Sprintf("Invalid channel %s\n", metadata.Config.Channel))
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
 			return nil
 		}
 
 		attributes["channel"] = metadata.Config.Channel
 		cfg := metadata.Config
-		log.Infof("about to match subs for channel: %s\n", cfg.Channel)
+		slog.Info(fmt.Sprintf("about to match subs for channel: %s\n", cfg.Channel))
 
 		subResponse, err := channel.MatchSubscriptions(ctx, metadata, EventChannelArgs{
 			eventRepo:          deps.EventRepo,
@@ -202,7 +202,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		event, subscriptions := subResponse.Event, subResponse.Subscriptions
 		if len(subscriptions) < 1 {
 			err = &EndpointError{Err: fmt.Errorf("CODE: 1011, empty subscriptions via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
-			log.WithError(err).Errorf("failed to send %s", event.UID)
+			slog.Error(fmt.Sprintf("failed to send %s: %v", event.UID, err))
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
 			return deps.EventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
 		}
@@ -222,7 +222,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		}
 
 		if subResponse.IsDuplicateEvent {
-			log.FromContext(ctx).Infof("CODE: 1007, duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
+			slog.InfoContext(ctx, fmt.Sprintf("CODE: 1007, duplicate event with idempotency key %v will not be sent", event.IdempotencyKey))
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.duplicate", attributes, startTime, time.Now())
 			return nil
 		}
@@ -242,7 +242,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			EarlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
 		})
 		if err != nil {
-			log.WithError(err).Error(ErrFailedToWriteToQueue)
+			slog.Error(ErrFailedToWriteToQueue.Error(), "error", err)
 			writeErr := fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error())
 			err = &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
 			_ = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.RetryStatus)
@@ -252,7 +252,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 
 		err = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.SuccessStatus)
 		if err != nil {
-			log.WithError(err).Errorf("failed to update event status: %s", event.UID)
+			slog.Error(fmt.Sprintf("failed to update event status: %s: %v", event.UID, err))
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
 			return err
 		}
@@ -300,7 +300,7 @@ func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQ
 
 	ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), jobID)
 	if err != nil {
-		log.WithError(err).Error("failed to get task from queue")
+		slog.Error("failed to get task from queue", "error", err)
 		return nil, false, &EndpointError{Err: fmt.Errorf("failed to get task from queue, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 

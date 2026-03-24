@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -14,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
@@ -30,7 +31,7 @@ type RegisterUserService struct {
 
 	BaseURL string
 	Data    *models.RegisterUser
-	Logger  log.StdLogger
+	Logger  log.Logger
 }
 
 func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
@@ -59,7 +60,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 	err = p.GenerateHash()
 
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate hash")
+		slog.ErrorContext(ctx, "failed to generate hash", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate hash", Err: err}
 	}
 
@@ -81,7 +82,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 			return nil, nil, &ServiceError{ErrMsg: "this email is taken"}
 		}
 
-		log.FromContext(ctx).WithError(err).Error("failed to create user")
+		slog.ErrorContext(ctx, "failed to create user", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to create user", Err: err}
 	}
 
@@ -103,7 +104,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 
 	token, err := u.JWT.GenerateToken(user)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate token")
+		slog.ErrorContext(ctx, "failed to generate token", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate token", Err: err}
 	}
 
@@ -134,7 +135,7 @@ func sendUserVerificationEmail(ctx context.Context, baseURL string, user *datast
 func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer) error {
 	bytes, err := msgpack.EncodeMsgPack(em)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
+		slog.ErrorContext(ctx, "failed to marshal notification payload", "error", err)
 		return err
 	}
 
@@ -145,7 +146,7 @@ func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer) error {
 
 	err = q.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
+		slog.ErrorContext(ctx, "failed to write new notification to the queue", "error", err)
 		return err
 	}
 	return nil
