@@ -56,35 +56,35 @@ func TestHeaderFields(t *testing.T) {
 			expected: map[string]string{"x-hub-signature": "***"},
 		},
 		{
-			name: "redacts x-hub-signature-256 header",
+			name: "redacts unknown custom header",
 			input: http.Header{
-				"X-Hub-Signature-256": {"sha256=abc123"},
+				"X-Custom-Header": {"some-value"},
 			},
-			expected: map[string]string{"x-hub-signature-256": "***"},
+			expected: map[string]string{"x-custom-header": "***"},
 		},
 		{
-			name: "redacts x-shopify-hmac-sha256 header",
-			input: http.Header{
-				"X-Shopify-Hmac-Sha256": {"abc123=="},
-			},
-			expected: map[string]string{"x-shopify-hmac-sha256": "***"},
-		},
-		{
-			name: "redacts x-twitter-webhooks-signature header",
-			input: http.Header{
-				"X-Twitter-Webhooks-Signature": {"sha256=abc123"},
-			},
-			expected: map[string]string{"x-twitter-webhooks-signature": "***"},
-		},
-		{
-			name: "passes non-sensitive single-value header unchanged",
+			name: "passes content-type header unchanged",
 			input: http.Header{
 				"Content-Type": {"application/json"},
 			},
 			expected: map[string]string{"content-type": "application/json"},
 		},
 		{
-			name: "joins non-sensitive multi-value header",
+			name: "passes user-agent header unchanged",
+			input: http.Header{
+				"User-Agent": {"convoy/1.0"},
+			},
+			expected: map[string]string{"user-agent": "convoy/1.0"},
+		},
+		{
+			name: "passes x-forwarded-for header unchanged",
+			input: http.Header{
+				"X-Forwarded-For": {"192.168.1.1"},
+			},
+			expected: map[string]string{"x-forwarded-for": "192.168.1.1"},
+		},
+		{
+			name: "joins multi-value safe header",
 			input: http.Header{
 				"Accept": {"application/json", "text/html"},
 			},
@@ -93,21 +93,21 @@ func TestHeaderFields(t *testing.T) {
 		{
 			name: "omits header with zero values",
 			input: http.Header{
-				"X-Empty": {},
+				"Content-Type": {},
 			},
 			expected: map[string]string{},
 		},
 		{
-			name: "handles mix of sensitive and non-sensitive headers",
+			name: "handles mix of safe and sensitive headers",
 			input: http.Header{
 				"Authorization": {"Bearer secret"},
 				"Content-Type":  {"application/json"},
-				"X-Request-Id":  {"req-123"},
+				"User-Agent":    {"convoy/1.0"},
 			},
 			expected: map[string]string{
 				"authorization": "***",
 				"content-type":  "application/json",
-				"x-request-id":  "req-123",
+				"user-agent":    "convoy/1.0",
 			},
 		},
 	}
@@ -120,30 +120,30 @@ func TestHeaderFields(t *testing.T) {
 	}
 }
 
-func TestSensitiveHeadersNeverStoredRaw(t *testing.T) {
-	// Verify that no sensitive header value appears in the output as its raw value.
+func TestSensitiveHeaderValuesNeverLogged(t *testing.T) {
+	sensitiveNames := []string{
+		"Authorization",
+		"Proxy-Authorization",
+		"Cookie",
+		"Set-Cookie",
+		"X-Convoy-Signature",
+		"X-Hub-Signature",
+		"X-Hub-Signature-256",
+		"X-Shopify-Hmac-Sha256",
+		"X-Twitter-Webhooks-Signature",
+	}
+
 	rawValue := "super-secret-value-that-must-not-be-logged"
 
-	for name := range sensitiveHeaders {
+	for _, name := range sensitiveNames {
 		h := http.Header{}
 		h.Set(name, rawValue)
 
 		result := headerFields(h)
 
-		canonicalKey := http.CanonicalHeaderKey(name)
-		resultKey := ""
-		for k := range result {
-			if http.CanonicalHeaderKey(k) == canonicalKey {
-				resultKey = k
-				break
-			}
-		}
-
-		if resultKey != "" {
-			assert.NotEqual(t, rawValue, result[resultKey],
-				"sensitive header %q must not be logged as raw value", name)
-			assert.Equal(t, "***", result[resultKey],
-				"sensitive header %q must be redacted to ***", name)
+		for _, v := range result {
+			assert.NotEqual(t, rawValue, v,
+				"sensitive header %q raw value must not appear in log output", name)
 		}
 	}
 }

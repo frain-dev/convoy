@@ -42,22 +42,10 @@ var (
 		"/billing/organisations/",
 	}
 
-	// sensitiveHeaders is the set of lowercased header names whose values must
-	// never appear in logs, even transiently.
-	sensitiveHeaders = map[string]struct{}{
-		"authorization":                {},
-		"proxy-authorization":          {},
-		"cookie":                       {},
-		"set-cookie":                   {},
-		"x-convoy-signature":           {}, // outbound HMAC set by dispatcher
-		"x-hub-signature":              {}, // GitHub legacy
-		"x-hub-signature-256":          {}, // GitHub SHA-256
-		"x-shopify-hmac-sha256":        {}, // Shopify
-		"x-twitter-webhooks-signature": {}, // Twitter
-	}
-
-	// safeHeaders is the set of lowercased header names whose values are
-	// considered safe to log in clear text. All other headers are redacted.
+	// safeHeaders is the whitelist of header names that are safe to include
+	// in log output. Sensitive headers (auth tokens, cookies, signatures) are
+	// intentionally redacted. A whitelist is used instead of a blacklist because
+	// it is easier to know what headers are safe to log.
 	safeHeaders = map[string]struct{}{
 		"content-type":              {},
 		"user-agent":                {},
@@ -67,6 +55,12 @@ var (
 		"cache-control":             {},
 		"pragma":                    {},
 		"upgrade-insecure-requests": {},
+		"content-length":            {},
+		"origin":                    {},
+		"referer":                   {},
+		"x-forwarded-for":           {},
+		"x-real-ip":                 {},
+		"idempotency-key":           {},
 	}
 )
 
@@ -372,14 +366,14 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			start := time.Now()
 
-			wbuf := &bytes.Buffer{}
-			ww.Tee(wbuf)
+			buff := &bytes.Buffer{}
+			ww.Tee(buff)
 
 			defer func() {
 				lvl := statusLevel(ww.Status())
 
 				requestFields := requestLogFields(r)
-				responseFields := responseLogFields(ww, wbuf, start)
+				responseFields := responseLogFields(ww, buff, start)
 
 				if shouldSkipLogging(requestFields, responseFields) {
 					return
@@ -390,7 +384,10 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 					logArgs = append(logArgs, "organisation_id", orgID)
 				}
 
-				// Use a constant log message; request details (including URL) are carried only in structured fields.
+				if projectId := extractProjectID(r); projectId != "" {
+					logArgs = append(logArgs, "project_id", projectId)
+				}
+
 				a.Logger.Log(r.Context(), lvl, "http_request", logArgs...)
 			}()
 
@@ -473,11 +470,6 @@ func headerFields(header http.Header) map[string]string {
 		if len(v) == 0 {
 			continue
 		}
-		// Redact before any raw value is stored — severs CodeQL taint flow.
-		if _, sensitive := sensitiveHeaders[k]; sensitive {
-			headerField[k] = "***"
-			continue
-		}
 
 		// Only log clear-text values for explicitly safe headers; redact all others.
 		if _, safe := safeHeaders[k]; !safe {
@@ -547,6 +539,22 @@ func extractOrganisationID(r *http.Request) string {
 
 	if orgID := r.URL.Query().Get("organisation_id"); orgID != "" {
 		return orgID
+	}
+
+	return ""
+}
+
+func extractProjectID(r *http.Request) string {
+	if projectId := chi.URLParam(r, "projectID"); projectId != "" {
+		return projectId
+	}
+
+	if projectId := r.URL.Query().Get("projectId"); projectId != "" {
+		return projectId
+	}
+
+	if projectId := r.URL.Query().Get("project_id"); projectId != "" {
+		return projectId
 	}
 
 	return ""

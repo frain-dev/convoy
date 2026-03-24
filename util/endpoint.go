@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -51,10 +52,17 @@ func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
 			},
 		}
 
-		_, err = client.Get(s)
-		if err != nil {
-			return "", fmt.Errorf("failed to ping tls endpoint: %v", err)
+		resp, getErr := client.Get(u.String())
+		if getErr != nil {
+			return "", fmt.Errorf("failed to ping tls endpoint: %v", getErr)
 		}
+
+		defer func(Body io.ReadCloser) {
+			err = Body.Close()
+			if err != nil {
+				fmt.Println("failed to close response body")
+			}
+		}(resp.Body)
 	default:
 		return "", errors.New("invalid endpoint scheme")
 	}
