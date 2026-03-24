@@ -3,12 +3,12 @@ package telemetry
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"log/slog"
 )
 
 var ErrInvalidInstanceID = errors.New("invalid instance id provided")

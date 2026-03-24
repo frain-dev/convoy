@@ -3,13 +3,13 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/frain-dev/convoy/config"
-	"log/slog"
 )
 
 // Namespace used in fully-qualified metrics names.

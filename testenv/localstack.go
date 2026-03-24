@@ -15,7 +15,7 @@ type LocalStackContainer struct {
 // StartLocalStack starts a LocalStack container for AWS service emulation
 func StartLocalStack(ctx context.Context) (*LocalStackContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "localstack/localstack:latest",
+		Image:        "localstack/localstack:4.14",
 		ExposedPorts: []string{"4566/tcp"},
 		Env: map[string]string{
 			"SERVICES":              "sqs",

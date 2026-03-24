@@ -2,7 +2,7 @@ package utils
 
 import (
 	"errors"
-	"fmt"
+	"log/slog"
 
 	"github.com/spf13/cobra"
 
@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"log/slog"
 )
 
 var (
@@ -54,7 +53,7 @@ func AddRotateKeyCommand(a *cli.App) *cobra.Command {
 				return ErrMissingHCPVaultConfig
 			}
 
-			slog.Info(fmt.Sprintf("Starting key rotation..."))
+			slog.Info("Starting key rotation...")
 
 			// Ensure the old key matches the current key
 			currentKey, err := km.GetCurrentKey()

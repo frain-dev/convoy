@@ -2,7 +2,7 @@ package utils
 
 import (
 	"errors"
-	"fmt"
+	"log/slog"
 
 	"github.com/spf13/cobra"
 
@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"log/slog"
 )
 
 var (
@@ -63,7 +62,7 @@ func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 				return ErrEncryptionKeyCannotBeEmpty
 			}
 
-			slog.Info(fmt.Sprintf("Initializing encryption with the current encryption key..."))
+			slog.Info("Initializing encryption with the current encryption key...")
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {

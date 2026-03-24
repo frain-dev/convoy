@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"math/rand"
 	"time"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
-	"log/slog"
 )
 
 const pkgName = "postgres"

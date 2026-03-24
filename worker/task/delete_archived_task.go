@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -14,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/queue/redis"
-	"log/slog"
 )
 
 func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *asynq.Task) error {

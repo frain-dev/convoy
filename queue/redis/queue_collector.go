@@ -2,13 +2,13 @@ package redis
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"log/slog"
 )
 
 // Namespace used in fully qualified metrics names.

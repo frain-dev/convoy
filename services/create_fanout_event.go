@@ -116,7 +116,15 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 	}
 
 	// Log detailed service timing breakdown for performance monitoring
-	slog.InfoContext(ctx, "fanout service timing breakdown", "idempotency_duration", afterIdempotency.Sub(idempotencyStart).Milliseconds(), "endpoints_duration", afterEndpoints.Sub(afterIdempotency).Milliseconds(), "portal_link_duration", afterPortalLink.Sub(afterEndpoints).Milliseconds(), "queue_duration", afterQueue.Sub(afterPortalLink).Milliseconds(), "total_service_duration", afterQueue.Sub(serviceStart).Milliseconds(), "event_id", event.UID, "endpoints_count", len(endpointIDs))
+	slog.InfoContext(ctx, "fanout service timing breakdown",
+		"idempotency_duration", afterIdempotency.Sub(idempotencyStart).Milliseconds(),
+		"endpoints_duration", afterEndpoints.Sub(afterIdempotency).Milliseconds(),
+		"portal_link_duration", afterPortalLink.Sub(afterEndpoints).Milliseconds(),
+		"queue_duration", afterQueue.Sub(afterPortalLink).Milliseconds(),
+		"total_service_duration", afterQueue.Sub(serviceStart).Milliseconds(),
+		"event_id", event.UID,
+		"endpoints_count", len(endpointIDs),
+	)
 
 	return event, nil
 }

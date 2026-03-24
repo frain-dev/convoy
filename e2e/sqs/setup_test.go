@@ -311,7 +311,7 @@ func SetupE2EWithSQS(t *testing.T) *E2ETestEnvWithSQS {
 	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
 
 	// Create the source loader and table for pubsub ingest
-	lo := baseEnv.App.Logger.(log.Logger)
+	lo := baseEnv.App.Logger
 	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
 	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
 

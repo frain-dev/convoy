@@ -85,7 +85,7 @@ func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
 		return nil, errors.New("no redirect URL in SSO response")
 	}
 
-	slog.Info(fmt.Sprintf("SSO redirect URL obtained successfully"))
+	slog.Info("SSO redirect URL obtained successfully")
 
 	return &models.SSOLoginResponse{
 		RedirectURL: redirectResp.Data.RedirectURL,
@@ -148,7 +148,7 @@ func (u *LoginUserSSOService) RedeemToken(queryValues url.Values) (*models.SSOTo
 		return nil, errors.New("no external organization id in token response")
 	}
 
-	slog.Info(fmt.Sprintf("SSO token validated successfully"))
+	slog.Info("SSO token validated successfully")
 
 	return &models.SSOTokenResponse{
 		Status:  true,

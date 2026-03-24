@@ -3,6 +3,7 @@ package notifications
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/oklog/ulid/v2"
@@ -13,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	"log/slog"
 )
 
 type NotificationType string

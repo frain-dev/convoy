@@ -293,7 +293,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
 		} else {
-			slog.ErrorContext(ctx, fmt.Sprintf("%s", eventDelivery.UID), logAttrs...)
+			slog.ErrorContext(ctx, eventDelivery.UID, logAttrs...)
 			done = false
 
 			// For at-most-once delivery, only retry on network failures

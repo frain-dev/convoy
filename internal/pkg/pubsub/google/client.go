@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	//nolint:staticcheck // SA1019: cloud.google.com/go/pubsub deprecated; we don't want to use v2 yet
 	"cloud.google.com/go/pubsub"
@@ -14,8 +15,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
-	"log/slog"
-
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 )

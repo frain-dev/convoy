@@ -1,7 +1,8 @@
 package utils
 
 import (
-	"fmt"
+	"log/slog"
+
 	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/config"
@@ -9,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"log/slog"
 )
 
 func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
@@ -49,7 +49,7 @@ func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
 				return ErrEncryptionKeyCannotBeEmpty
 			}
 
-			slog.Info(fmt.Sprintf("Reverting encryption with the current encryption key..."))
+			slog.Info("Reverting encryption with the current encryption key...")
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {

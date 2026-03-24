@@ -170,7 +170,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 		"duration", duration}
 
 	if statusCode >= 200 && statusCode <= 299 {
-		slog.Info(fmt.Sprintf("%s", metaEvent.UID), logAttrs...)
+		slog.Info(metaEvent.UID, logAttrs...)
 		slog.Info(fmt.Sprintf("%s sent", metaEvent.UID))
 		return resp, nil
 	}
@@ -188,6 +188,6 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 	endTime := time.Now()
 	tracerBackend.Capture(ctx, "meta_event_delivery", attributes, startTime, endTime)
 
-	slog.Error(fmt.Sprintf("%s", metaEvent.UID), logAttrs...)
+	slog.Error(metaEvent.UID, logAttrs...)
 	return resp, errors.New(resp.Error)
 }

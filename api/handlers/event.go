@@ -225,7 +225,18 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 
 	duration := time.Since(start)
 	// Log detailed timing breakdown for performance monitoring
-	h.A.Logger.Info("fanout event timing breakdown", "project_id", project.UID, "event_id", event.UID, "body_size_bytes", bodySize, "read_parse_duration", afterRead.Sub(start).Milliseconds(), "validation_duration", afterValidation.Sub(afterRead).Milliseconds(), "project_duration", afterProject.Sub(afterValidation).Milliseconds(), "service_duration", afterService.Sub(afterProject).Milliseconds(), "total_duration", duration.Milliseconds(), "endpoints_count", len(event.Endpoints), "is_duplicate", event.IsDuplicateEvent)
+	h.A.Logger.Info("fanout event timing breakdown",
+		"project_id", project.UID,
+		"event_id", event.UID,
+		"body_size_bytes", bodySize,
+		"read_parse_duration", afterRead.Sub(start).Milliseconds(),
+		"validation_duration", afterValidation.Sub(afterRead).Milliseconds(),
+		"project_duration", afterProject.Sub(afterValidation).Milliseconds(),
+		"service_duration", afterService.Sub(afterProject).Milliseconds(),
+		"total_duration", duration.Milliseconds(),
+		"endpoints_count", len(event.Endpoints),
+		"is_duplicate", event.IsDuplicateEvent,
+	)
 
 	if event.IsDuplicateEvent {
 		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", nil, http.StatusCreated))

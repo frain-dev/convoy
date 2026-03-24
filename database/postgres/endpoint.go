@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/util"
-	"log/slog"
 )
 
 var (

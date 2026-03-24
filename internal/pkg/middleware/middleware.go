@@ -6,12 +6,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
-	"log/slog"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/go-chi/chi/v5"

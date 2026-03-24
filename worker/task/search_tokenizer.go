@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -16,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"log/slog"
 )
 
 func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, redis *rdb.Redis) func(context.Context, *asynq.Task) error {

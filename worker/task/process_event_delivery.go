@@ -314,7 +314,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			mm := metrics.GetDPInstance(deps.Licenser)
 			mm.RecordEndToEndLatency(eventDelivery)
 		} else {
-			slog.ErrorContext(ctx, fmt.Sprintf("%s", eventDelivery.UID), logAttrs...)
+			slog.ErrorContext(ctx, eventDelivery.UID, logAttrs...)
 			done = false
 
 			// For at-most-once delivery, only retry on network failures
