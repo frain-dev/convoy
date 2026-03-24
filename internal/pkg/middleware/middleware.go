@@ -39,33 +39,51 @@ import (
 // intentionally redacted. A whitelist is used instead of a blacklist because
 // it is easier to know what headers are safe to log.
 var safeHeaders = map[string]struct{}{
-	"content-type":              {},
-	"content-length":            {},
-	"user-agent":                {},
-	"accept":                    {},
-	"accept-encoding":           {},
-	"accept-language":           {},
-	"host":                      {},
-	"x-request-id":              {},
-	"cache-control":             {},
-	"pragma":                    {},
-	"upgrade-insecure-requests": {},
-	"origin":                    {},
-	"referer":                   {},
-	"x-forwarded-for":           {},
-	"x-real-ip":                 {},
-	"idempotency-key":           {},
+	"connection":                    {},
+	"content-type":                  {},
+	"content-length":                {},
+	"user-agent":                    {},
+	"accept":                        {},
+	"accept-encoding":               {},
+	"accept-language":               {},
+	"host":                          {},
+	"x-request-id":                  {},
+	"cache-control":                 {},
+	"pragma":                        {},
+	"upgrade-insecure-requests":     {},
+	"origin":                        {},
+	"idempotency-key":               {},
+	"x-datadog-trace-id":            {},
+	"x-convoy-version":              {},
+	"access-control-allow-headers":  {},
+	"access-control-allow-methods":  {},
+	"access-control-allow-origin":   {},
+	"access-control-expose-headers": {},
 }
 
 // sensitiveHeaders contains header names (lowercase) that should always be
 // redacted, even if they are accidentally added to safeHeaders.
 var sensitiveHeaders = map[string]struct{}{
+	"referer":             {},
 	"authorization":       {},
+	"x-forwarded-for":     {},
+	"x-webhook-secret":    {},
+	"x-webhook-signature": {},
+	"x-real-ip":           {},
 	"proxy-authorization": {},
 	"cookie":              {},
 	"set-cookie":          {},
 	"x-api-key":           {},
 	"x-auth-token":        {},
+}
+
+var sensitivePatterns = []string{
+	"-secret",
+	"-token",
+	"-signature",
+	"-key",
+	"-credential",
+	"-password",
 }
 
 var (
@@ -485,9 +503,22 @@ func headerFields(header http.Header) map[string]string {
 			continue
 		}
 
-		// Always redact explicitly sensitive headers, regardless of allow-list.
+		// Always redact explicitly sensitive headers, regardless of the allowlist.
 		if _, isSensitive := sensitiveHeaders[k]; isSensitive {
 			headerField[k] = "***"
+			continue
+		}
+
+		matched := false
+		for _, suffix := range sensitivePatterns {
+			if strings.HasSuffix(k, suffix) {
+				headerField[k] = "***"
+				matched = true
+				break
+			}
+		}
+
+		if matched {
 			continue
 		}
 
