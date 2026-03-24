@@ -34,29 +34,38 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-// safeHeaders contains a conservative allow-list of HTTP header names (lowercase)
-// whose values are considered safe to log in clear text. All headers not present
-// in this map will have their values redacted before logging.
+// safeHeaders is the whitelist of header names that are safe to include
+// in log output. Sensitive headers (auth tokens, cookies, signatures) are
+// intentionally redacted. A whitelist is used instead of a blacklist because
+// it is easier to know what headers are safe to log.
 var safeHeaders = map[string]struct{}{
-	"content-type":   {},
-	"content-length": {},
-	"user-agent":     {},
-	"accept":         {},
-	"accept-encoding": {},
-	"accept-language": {},
-	"host":           {},
-	"x-request-id":   {},
+	"content-type":              {},
+	"content-length":            {},
+	"user-agent":                {},
+	"accept":                    {},
+	"accept-encoding":           {},
+	"accept-language":           {},
+	"host":                      {},
+	"x-request-id":              {},
+	"cache-control":             {},
+	"pragma":                    {},
+	"upgrade-insecure-requests": {},
+	"origin":                    {},
+	"referer":                   {},
+	"x-forwarded-for":           {},
+	"x-real-ip":                 {},
+	"idempotency-key":           {},
 }
 
 // sensitiveHeaders contains header names (lowercase) that should always be
 // redacted, even if they are accidentally added to safeHeaders.
 var sensitiveHeaders = map[string]struct{}{
-	"authorization": {},
+	"authorization":       {},
 	"proxy-authorization": {},
-	"cookie":        {},
-	"set-cookie":    {},
-	"x-api-key":     {},
-	"x-auth-token":  {},
+	"cookie":              {},
+	"set-cookie":          {},
+	"x-api-key":           {},
+	"x-auth-token":        {},
 }
 
 var (
@@ -65,27 +74,6 @@ var (
 	// skipLoggingPaths defines paths that should not be logged by the request logger
 	skipLoggingPaths = []string{
 		"/billing/organisations/",
-	}
-
-	// safeHeaders is the whitelist of header names that are safe to include
-	// in log output. Sensitive headers (auth tokens, cookies, signatures) are
-	// intentionally redacted. A whitelist is used instead of a blacklist because
-	// it is easier to know what headers are safe to log.
-	safeHeaders = map[string]struct{}{
-		"content-type":              {},
-		"user-agent":                {},
-		"accept":                    {},
-		"accept-encoding":           {},
-		"accept-language":           {},
-		"cache-control":             {},
-		"pragma":                    {},
-		"upgrade-insecure-requests": {},
-		"content-length":            {},
-		"origin":                    {},
-		"referer":                   {},
-		"x-forwarded-for":           {},
-		"x-real-ip":                 {},
-		"idempotency-key":           {},
 	}
 )
 
