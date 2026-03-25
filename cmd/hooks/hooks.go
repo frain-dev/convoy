@@ -92,7 +92,12 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return nil
 		}
 
-		lo := log.New("convoy", slog.LevelInfo)
+		logLevel, parseErr := log.ParseLevel(cfg.Logger.Level)
+		if parseErr != nil {
+			logLevel = slog.LevelError
+		}
+
+		lo := log.New("convoy", logLevel)
 
 		postgresDB, err := postgres.NewDB(cfg)
 		if err != nil {
