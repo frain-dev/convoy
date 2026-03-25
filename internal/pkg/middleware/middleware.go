@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -52,7 +51,6 @@ var safeHeaders = map[string]struct{}{
 	"pragma":                        {},
 	"upgrade-insecure-requests":     {},
 	"origin":                        {},
-	"idempotency-key":               {},
 	"x-datadog-trace-id":            {},
 	"x-convoy-version":              {},
 	"access-control-allow-headers":  {},
@@ -399,14 +397,11 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			start := time.Now()
 
-			buff := &bytes.Buffer{}
-			ww.Tee(buff)
-
 			defer func() {
 				lvl := statusLevel(ww.Status())
 
 				requestFields := requestLogFields(r)
-				responseFields := responseLogFields(ww, buff, start)
+				responseFields := responseLogFields(ww, start)
 
 				if shouldSkipLogging(requestFields, responseFields) {
 					return
@@ -461,16 +456,16 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 
 	span := sdktrace.SpanFromContext(r.Context())
 
-	requestFields["traceId"] = span.SpanContext().SpanID()
-	requestFields["spanId"] = span.SpanContext().TraceID()
+	requestFields["traceId"] = span.SpanContext().TraceID()
+	requestFields["spanId"] = span.SpanContext().SpanID()
 
 	return requestFields
 }
 
-func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t time.Time) map[string]interface{} {
+func responseLogFields(w middleware.WrapResponseWriter, t time.Time) map[string]interface{} {
 	responseFields := map[string]interface{}{
 		"status":  w.Status(),
-		"byes":    w.BytesWritten(),
+		"bytes":   w.BytesWritten(),
 		"latency": time.Since(t),
 		// Do not log response body content to avoid leaking sensitive data.
 		"body": "***",
