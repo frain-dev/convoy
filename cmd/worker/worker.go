@@ -320,6 +320,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
 		TracerBackend:              a.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,
+		Logger:                     lo,
 	}
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
@@ -336,6 +337,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		OAuth2TokenService: oauth2TokenService,
 		FeatureFlag:        featureFlag,
 		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
+		Logger:             lo,
 	}
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
@@ -366,6 +368,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
+		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 
@@ -398,6 +401,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
+		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
 
