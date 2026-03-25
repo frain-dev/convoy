@@ -126,11 +126,12 @@ func buildApplication(t *testing.T) *applicationHandler {
 	tl := newInfra(t)
 	db := tl.Database
 
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
-	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
-	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
-	deliveryRepo := delivery_attempts.New(log.New("convoy", slog.LevelInfo), db)
+	logger := log.New("convoy", slog.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	eventRepo := events.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	deliveryRepo := delivery_attempts.New(logger, db)
 
 	app := &applicationHandler{
 		projectRepo:       projectRepo,
@@ -140,6 +141,7 @@ func buildApplication(t *testing.T) *applicationHandler {
 		deliveryRepo:      deliveryRepo,
 		database:          db,
 		redis:             tl.Redis,
+		logger:            logger,
 	}
 
 	return app

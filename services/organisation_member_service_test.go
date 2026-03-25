@@ -18,8 +18,9 @@ import (
 
 func provideOrganisationMemberService(ctrl *gomock.Controller) *OrganisationMemberService {
 	orgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
-	l := mocks.NewMockLicenser(ctrl)
-	return NewOrganisationMemberService(orgMemberRepo, l)
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
+	return NewOrganisationMemberService(orgMemberRepo, mockLicenser, mockLogger)
 }
 
 func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {

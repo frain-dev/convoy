@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
@@ -36,6 +37,7 @@ type testArgs struct {
 	subTable           memorystore.ITable
 	licenser           license.Licenser
 	tracer             tracer.Backend
+	logger             logger.Logger
 	oauth2TokenService OAuth2TokenService
 }
 
@@ -51,6 +53,7 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 	subTable := mocks.NewMockITable(ctrl)
 	filterRepo := mocks.NewMockFilterRepository(ctrl)
 	mockTracer := mocks.NewMockBackend(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
 
 	// Create a simple mock OAuth2TokenService that returns empty token (no-op for tests)
 	mockOAuth2TokenService := &mockOAuth2TokenService{}
@@ -68,6 +71,7 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 		filterRepo:         filterRepo,
 		licenser:           mocks.NewMockLicenser(ctrl),
 		tracer:             mockTracer,
+		logger:             mockLogger,
 		oauth2TokenService: mockOAuth2TokenService,
 	}
 }
@@ -898,7 +902,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			payload, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, args.filterRepo, args.licenser, tt.inputSubs, false)
+			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, args.filterRepo, args.licenser, tt.inputSubs, false, args.logger)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				return

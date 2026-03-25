@@ -19,19 +19,24 @@ import (
 
 const errBillingRequired = "complete billing setup to create projects: add a subscription or payment method"
 
-func createProjectService(h *Handler) (*services.ProjectService, error) {
+func createProjectService(h *Handler) *services.ProjectService {
 	apiKeyRepo := api_keys.New(h.A.Logger, h.A.DB)
 	projectRepo := projects.New(h.A.Logger, h.A.DB)
 	eventRepo := events.New(h.A.Logger, h.A.DB)
 	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 	eventTypesRepo := event_types.New(h.A.Logger, h.A.DB)
 
-	projectService, err := services.NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, h.A.Licenser, eventTypesRepo, h.A.Logger)
-	if err != nil {
-		return nil, err
+	projectService := services.ProjectService{
+		ApiKeyRepo:        apiKeyRepo,
+		ProjectRepo:       projectRepo,
+		EventRepo:         eventRepo,
+		EventDeliveryRepo: eventDeliveryRepo,
+		EventTypesRepo:    eventTypesRepo,
+		Licenser:          h.A.Licenser,
+		Logger:            h.A.Logger,
 	}
 
-	return projectService, nil
+	return &projectService
 }
 
 func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {
@@ -148,11 +153,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		skipLimitCheck = true
 	}
 
-	projectService, err := createProjectService(h)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
+	projectService := createProjectService(h)
 
 	project, apiKey, err := projectService.CreateProject(r.Context(), &newProject, org, member, skipLimitCheck)
 	if err != nil {
@@ -194,11 +195,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectService, err := createProjectService(h)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
+	projectService := createProjectService(h)
 
 	project, err := projectService.UpdateProject(r.Context(), p, &update)
 	if err != nil {

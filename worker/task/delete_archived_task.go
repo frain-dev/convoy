@@ -34,7 +34,7 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis, logger log.Logger) func(
 		}
 
 		defer func() {
-			tctx, cancel := context.WithTimeout(ctx, time.Second*2)
+			tctx, cancel = context.WithTimeout(ctx, time.Second*2)
 			defer cancel()
 
 			// Release the lock so other processes or threads can obtain a lock.
@@ -62,7 +62,7 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis, logger log.Logger) func(
 		}
 
 		for _, qu := range queues {
-			_, err := q.Inspector().DeleteAllArchivedTasks(qu)
+			_, err = q.Inspector().DeleteAllArchivedTasks(qu)
 			if err != nil {
 				logger.ErrorContext(ctx, fmt.Sprintf("failed to delete archived task from queue - %s: %v", qu, err))
 				continue

@@ -146,7 +146,7 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 	}
 }
 
-func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup, batchID string, tracker *batch_tracker.BatchTracker, logger log.Logger) {
+func processEventDeliveryBatch(ctx context.Context, s datastore.EventDeliveryStatus, edRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup, batchID string, t *batch_tracker.BatchTracker, l log.Logger) {
 	defer wg.Done()
 
 	batchCount := 1
@@ -156,7 +156,7 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 		batch, ok := <-deliveryChan
 		if !ok {
 			// the channel has been closed and there are no more deliveries coming in
-			logger.Warn("batch processor exiting")
+			l.Warn("batch processor exiting")
 			return
 		}
 
@@ -165,17 +165,17 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 			batchIDs[i] = batch[i].UID
 		}
 
-		if status == datastore.ProcessingEventStatus {
-			err := eventDeliveryRepo.UpdateStatusOfEventDeliveries(ctx, "", batchIDs, datastore.ScheduledEventStatus)
+		if s == datastore.ProcessingEventStatus {
+			err := edRepo.UpdateStatusOfEventDeliveries(ctx, "", batchIDs, datastore.ScheduledEventStatus)
 			if err != nil {
-				logger.Error(fmt.Sprintf("batch %d: failed to update event deliveries status: %v", batchCount, err))
+				l.Error(fmt.Sprintf("batch %d: failed to update event deliveries status: %v", batchCount, err))
 			}
 		}
 
 		// remove these event deliveries queue
 		err := q.DeleteEventDeliveriesFromQueue(convoy.EventQueue, batchIDs)
 		if err != nil {
-			logger.Error(fmt.Sprintf("batch %d: failed to delete event deliveries from zset", batchCount), "error", err, "ids", batchIDs)
+			l.Error(fmt.Sprintf("batch %d: failed to delete event deliveries from zset", batchCount), "error", err, "ids", batchIDs)
 		}
 
 		processedInBatch := int64(0)
@@ -191,7 +191,7 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 
 			data, err := msgpack.EncodeMsgPack(payload)
 			if err != nil {
-				logger.Error("failed to marshal process event delivery payload", "error", err)
+				l.Error("failed to marshal process event delivery payload", "error", err)
 				failedInBatch++
 				continue
 			}
@@ -204,39 +204,39 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 			}
 			err = q.Write(taskName, convoy.EventQueue, job)
 			if err != nil {
-				logger.Error(fmt.Sprintf("batch %d: failed to send event delivery %s to the queue: %v", batchCount, delivery.UID, err))
+				l.Error(fmt.Sprintf("batch %d: failed to send event delivery %s to the queue: %v", batchCount, delivery.UID, err))
 				failedInBatch++
 				continue
 			}
-			logger.Info(fmt.Sprintf("successfully re-queued delivery with id: %s", delivery.UID))
+			l.Info(fmt.Sprintf("successfully re-queued delivery with id: %s", delivery.UID))
 			processedInBatch++
 		}
 
 		// Update tracking counters in Redis only (atomic operations)
-		if tracker != nil && batchID != "" {
+		if t != nil && batchID != "" {
 			batchTotal := processedInBatch + failedInBatch
 
 			// Increment total count for this batch (what we're actually processing)
 			if batchTotal > 0 {
-				if err := tracker.IncrementTotal(ctx, batchID, batchTotal); err != nil {
-					logger.Error("Failed to increment total count", "error", err)
+				if err := t.IncrementTotal(ctx, batchID, batchTotal); err != nil {
+					l.Error("Failed to increment total count", "error", err)
 				}
 			}
 
 			// Increment processed count atomically in Redis
 			if processedInBatch > 0 {
-				if err := tracker.IncrementProcessed(ctx, batchID, processedInBatch); err != nil {
-					logger.Error("Failed to increment processed count", "error", err)
+				if err := t.IncrementProcessed(ctx, batchID, processedInBatch); err != nil {
+					l.Error("Failed to increment processed count", "error", err)
 				}
 			}
 			if failedInBatch > 0 {
-				if err := tracker.IncrementFailed(ctx, batchID, failedInBatch); err != nil {
-					logger.Error("Failed to increment failed count", "error", err)
+				if err := t.IncrementFailed(ctx, batchID, failedInBatch); err != nil {
+					l.Error("Failed to increment failed count", "error", err)
 				}
 			}
 		}
 
-		logger.Info(fmt.Sprintf("batch %d: successfully re-queued %d deliveries", batchCount, len(batch)))
+		l.Info(fmt.Sprintf("batch %d: successfully re-queued %d deliveries", batchCount, len(batch)))
 		batchCount++
 	}
 }

@@ -167,7 +167,7 @@ func TestProcessMetaEvent(t *testing.T) {
 				defer deferFn()
 			}
 
-			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, tracer.NoOpBackend{})
+			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, tracer.NoOpBackend{}, log.New("convoy", slog.LevelInfo))
 			payload := MetaEvent{
 				MetaEventID: tc.msg.MetaEventID,
 				ProjectID:   tc.msg.ProjectID,

@@ -208,10 +208,10 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		r.ConvoyApp.eventRepo,
 		r.ConvoyApp.eventDeliveryRepo,
 		r.ConvoyApp.deliveryRepo,
-		r.ConvoyApp.redis)(context.Background(), backUpTask)
+		r.ConvoyApp.redis, r.ConvoyApp.logger)(context.Background(), backUpTask)
 	require.NoError(r.T(), err)
 
-	err = RetentionPolicies(r.ConvoyApp.redis, ret)(context.Background(), retentionTask)
+	err = RetentionPolicies(r.ConvoyApp.redis, ret, r.ConvoyApp.logger)(context.Background(), retentionTask)
 	require.NoError(r.T(), err)
 
 	_, err = r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery1.UID, attempt1.UID)
@@ -243,6 +243,7 @@ type applicationHandler struct {
 	deliveryRepo      datastore.DeliveryAttemptsRepository
 	database          database.Database
 	redis             redis.UniversalClient
+	logger            log.Logger
 }
 
 func seedEvent(db database.Database, endpointID string, projectID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {

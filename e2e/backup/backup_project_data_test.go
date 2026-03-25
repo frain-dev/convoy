@@ -35,11 +35,12 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
-	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
-	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
-	attemptsRepo := delivery_attempts.New(log.New("convoy", slog.LevelInfo), db)
+	logger := log.New("convoy", slog.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	org := env.Organisation
@@ -88,6 +89,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 
@@ -148,11 +150,12 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
-	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
-	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
-	attemptsRepo := delivery_attempts.New(log.New("convoy", slog.LevelInfo), db)
+	logger := log.New("convoy", slog.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	project := env.Project
@@ -207,6 +210,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 
@@ -264,13 +268,14 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
-	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
-	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
-	attemptsRepo := delivery_attempts.New(log.New("convoy", slog.LevelInfo), db)
+	logger := log.New("convoy", slog.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
 	endpointRepo := postgres.NewEndpointRepo(db)
-	orgService := organisations.New(log.New("convoy", slog.LevelInfo), db)
+	orgService := organisations.New(logger, db)
 
 	// Create first organization and project
 	org1 := env.Organisation
@@ -363,6 +368,7 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 
@@ -400,11 +406,12 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
-	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
-	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
-	attemptsRepo := delivery_attempts.New(log.New("convoy", slog.LevelInfo), db)
+	logger := log.New("convoy", slog.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	project := env.Project
@@ -463,6 +470,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 
@@ -501,11 +509,12 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
-	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
-	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
-	attemptsRepo := delivery_attempts.New(log.New("convoy", slog.LevelInfo), db)
+	logger := log.New("convoy", slog.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	org := env.Organisation
@@ -549,6 +558,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 

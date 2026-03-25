@@ -15,8 +15,9 @@ import (
 func provideMetaEventService(ctrl *gomock.Controller) *MetaEventService {
 	queue := mocks.NewMockQueuer(ctrl)
 	metaEventRepo := mocks.NewMockMetaEventRepository(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
 
-	return &MetaEventService{queue, metaEventRepo}
+	return &MetaEventService{Queue: queue, MetaEventRepo: metaEventRepo, Logger: mockLogger}
 }
 
 func TestMetaEventService(t *testing.T) {

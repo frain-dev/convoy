@@ -17,16 +17,25 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func provideProjectService(ctrl *gomock.Controller) (*ProjectService, error) {
+func provideProjectService(ctrl *gomock.Controller) *ProjectService {
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventTypesRepo := mocks.NewMockEventTypesRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
 
 	l := mocks.NewMockLicenser(ctrl)
 
-	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, l, eventTypesRepo)
+	return &ProjectService{
+		ApiKeyRepo:        apiKeyRepo,
+		ProjectRepo:       projectRepo,
+		EventRepo:         eventRepo,
+		EventDeliveryRepo: eventDeliveryRepo,
+		Licenser:          l,
+		EventTypesRepo:    eventTypesRepo,
+		Logger:            mockLogger,
+	}
 }
 
 func TestProjectService_CreateProject(t *testing.T) {
@@ -81,13 +90,13 @@ func TestProjectService_CreateProject(t *testing.T) {
 				},
 			},
 			dbFn: func(gs *ProjectService) {
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.ApiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
@@ -95,7 +104,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
-				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
@@ -159,13 +168,13 @@ func TestProjectService_CreateProject(t *testing.T) {
 				},
 			},
 			dbFn: func(gs *ProjectService) {
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.ApiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
@@ -173,7 +182,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
-				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
@@ -221,13 +230,13 @@ func TestProjectService_CreateProject(t *testing.T) {
 				},
 			},
 			dbFn: func(gs *ProjectService) {
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.ApiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
@@ -235,7 +244,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
-				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
@@ -283,13 +292,13 @@ func TestProjectService_CreateProject(t *testing.T) {
 				},
 			},
 			dbFn: func(gs *ProjectService) {
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.ApiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
@@ -297,7 +306,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
-				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
@@ -360,13 +369,13 @@ func TestProjectService_CreateProject(t *testing.T) {
 				},
 			},
 			dbFn: func(gs *ProjectService) {
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.ApiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
@@ -374,7 +383,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(false)
 
-				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
@@ -428,7 +437,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{},
 			},
 			dbFn: func(gs *ProjectService) {
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 
@@ -504,7 +513,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{},
 			},
 			dbFn: func(gs *ProjectService) {
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(datastore.ErrDuplicateProjectName)
 
@@ -571,16 +580,16 @@ func TestProjectService_CreateProject(t *testing.T) {
 				},
 			},
 			dbFn: func(gs *ProjectService) {
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.ApiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				// CheckProjectLimit must NOT be called when skipLimitCheck is true
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
-				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
@@ -607,15 +616,14 @@ func TestProjectService_CreateProject(t *testing.T) {
 			err := config.LoadConfig("./testdata/basic-config.json")
 			require.NoError(t, err)
 
-			gs, err := provideProjectService(ctrl)
-			require.NoError(t, err)
+			projectService := provideProjectService(ctrl)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
-				tc.dbFn(gs)
+				tc.dbFn(projectService)
 			}
 
-			project, apiKey, err := gs.CreateProject(tc.args.ctx, tc.args.newProject, tc.args.org, tc.args.member, tc.skipLimitCheck)
+			project, apiKey, err := projectService.CreateProject(tc.args.ctx, tc.args.newProject, tc.args.org, tc.args.member, tc.skipLimitCheck)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -725,7 +733,7 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
@@ -755,7 +763,7 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 
-				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
@@ -771,15 +779,14 @@ func TestProjectService_UpdateProject(t *testing.T) {
 			err := config.LoadConfig("./testdata/basic-config.json")
 			require.NoError(t, err)
 
-			gs, err := provideProjectService(ctrl)
-			require.NoError(t, err)
+			projectService := provideProjectService(ctrl)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
-				tc.dbFn(gs)
+				tc.dbFn(projectService)
 			}
 
-			project, err := gs.UpdateProject(tc.args.ctx, tc.args.project, tc.args.update)
+			project, err := projectService.UpdateProject(tc.args.ctx, tc.args.project, tc.args.update)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

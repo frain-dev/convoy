@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -20,6 +21,7 @@ func provideForceResendEventDeliveriesService(ctrl *gomock.Controller, ids []str
 		EventDeliveryRepo: mocks.NewMockEventDeliveryRepository(ctrl),
 		EndpointRepo:      mocks.NewMockEndpointRepository(ctrl),
 		Queue:             mocks.NewMockQueuer(ctrl),
+		Logger:            mocks.NewMockLogger(ctrl),
 		IDs:               ids,
 		Project:           project,
 	}
@@ -256,6 +258,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 		g                 *datastore.Project
 		eventDeliveryRepo datastore.EventDeliveryRepository
 		queuer            queue.Queuer
+		logger            logger.Logger
 	}
 	tests := []struct {
 		name       string
@@ -326,12 +329,13 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 
 			tc.args.eventDeliveryRepo = mocks.NewMockEventDeliveryRepository(ctrl)
 			tc.args.queuer = mocks.NewMockQueuer(ctrl)
+			tc.args.logger = mocks.NewMockLogger(ctrl)
 
 			if tc.dbFn != nil {
 				tc.dbFn(&tc.args)
 			}
 
-			err = requeueEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g, tc.args.eventDeliveryRepo, tc.args.queuer)
+			err = requeueEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g, tc.args.eventDeliveryRepo, tc.args.queuer, tc.args.logger)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
