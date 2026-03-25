@@ -18,6 +18,7 @@ func provideReplayEventService(ctrl *gomock.Controller, event *datastore.Event) 
 	return &ReplayEventService{
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
 		Queue:        mocks.NewMockQueuer(ctrl),
+		Logger:       mocks.NewMockLogger(ctrl),
 		Event:        event,
 	}
 }

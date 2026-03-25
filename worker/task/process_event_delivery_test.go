@@ -1078,7 +1078,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				t.Errorf("failed to get config: %v", err)
 			}
 
-			logger := log.New("convoy", slog.LevelInfo)
+			logger := mocks.NewMockLogger(ctrl)
 
 			err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, cache, logger)
 			if err != nil {
@@ -1143,6 +1143,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				FeatureFlag:           featureFlag,
 				FeatureFlagFetcher:    fetcher,
 				TracerBackend:         mt,
+				Logger:                logger,
 			}
 			processor := ProcessEventDelivery(deps)
 

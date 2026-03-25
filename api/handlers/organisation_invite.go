@@ -119,6 +119,7 @@ func (h *Handler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http
 		Token:         token,
 		Accepted:      accepted,
 		NewUser:       newUser,
+		Logger:        h.A.Logger,
 	}
 
 	err = prc.Run(r.Context())

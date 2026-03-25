@@ -228,6 +228,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 		Licenser:        h.A.Licenser,
 		Project:         project,
 		NewSubscription: &sub,
+		Logger:          h.A.Logger,
 	}
 
 	subscription, err := cs.Run(r.Context())

@@ -22,6 +22,7 @@ func provideCreateFanoutEventService(ctrl *gomock.Controller, event *models.Fano
 		EventRepo:      mocks.NewMockEventRepository(ctrl),
 		PortalLinkRepo: mocks.NewMockPortalLinkRepository(ctrl),
 		Queue:          mocks.NewMockQueuer(ctrl),
+		Logger:         mocks.NewMockLogger(ctrl),
 		NewMessage:     event,
 		Project:        project,
 	}

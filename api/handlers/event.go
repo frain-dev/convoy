@@ -212,6 +212,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 		Queue:          h.A.Queue,
 		NewMessage:     &newMessage,
 		Project:        project,
+		Logger:         h.A.Logger,
 	}
 
 	event, err := cf.Run(r.Context())
@@ -318,6 +319,7 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
 		Queue:        h.A.Queue,
 		Event:        event,
+		Logger:       h.A.Logger,
 	}
 
 	err = rs.Run(r.Context())
@@ -369,6 +371,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 		Queue:        h.A.Queue,
 		EventRepo:    events.New(h.A.Logger, h.A.DB),
 		Filter:       data.Filter,
+		Logger:       h.A.Logger,
 	}
 
 	successes, failures, err := bs.Run(r.Context())

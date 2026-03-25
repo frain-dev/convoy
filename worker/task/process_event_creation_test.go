@@ -56,7 +56,7 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	// Create a simple mock OAuth2TokenService that returns empty token (no-op for tests)
-	mockOAuth2TokenService := &mockOAuth2TokenService{}
+	oAuth2TokenService := &mockOAuth2TokenService{}
 
 	return &testArgs{
 		endpointRepo:       endpointRepo,
@@ -72,7 +72,7 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 		licenser:           mocks.NewMockLicenser(ctrl),
 		tracer:             mockTracer,
 		logger:             mockLogger,
-		oauth2TokenService: mockOAuth2TokenService,
+		oauth2TokenService: oAuth2TokenService,
 	}
 }
 

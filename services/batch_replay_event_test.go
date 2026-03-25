@@ -19,6 +19,7 @@ func provideBatchReplayEventService(ctrl *gomock.Controller, f *datastore.Filter
 		Queue:        mocks.NewMockQueuer(ctrl),
 		EventRepo:    mocks.NewMockEventRepository(ctrl),
 		Filter:       f,
+		Logger:       mocks.NewMockLogger(ctrl),
 	}
 }
 
