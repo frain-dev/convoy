@@ -41,6 +41,7 @@ func (ss *RegenerateProjectAPIKeyService) Run(ctx context.Context) (*datastore.A
 		ProjectRepo: ss.ProjectRepo,
 		APIKeyRepo:  ss.APIKeyRepo,
 		Member:      ss.Member,
+		Logger:      ss.Logger,
 		NewApiKey: &datastore.APIKey{
 			Name: fmt.Sprintf("%s's key", ss.Project.Name),
 			Role: auth.Role{

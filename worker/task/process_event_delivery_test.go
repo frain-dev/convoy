@@ -1143,7 +1143,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				FeatureFlag:           featureFlag,
 				FeatureFlagFetcher:    fetcher,
 				TracerBackend:         mt,
-				Logger:                logger,
+				Logger:                log.New("convoy", slog.LevelInfo),
 			}
 			processor := ProcessEventDelivery(deps)
 

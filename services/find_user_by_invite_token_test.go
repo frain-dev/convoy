@@ -18,6 +18,7 @@ func provideFindUserByInviteTokenService(ctrl *gomock.Controller, token string) 
 		InviteRepo: mocks.NewMockOrganisationInviteRepository(ctrl),
 		OrgRepo:    mocks.NewMockOrganisationRepository(ctrl),
 		UserRepo:   mocks.NewMockUserRepository(ctrl),
+		Logger:     mocks.NewMockLogger(ctrl),
 		Token:      token,
 	}
 }
@@ -123,6 +124,9 @@ func TestFindUserByInviteTokenService_Run(t *testing.T) {
 				oir, _ := ois.InviteRepo.(*mocks.MockOrganisationInviteRepository)
 				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(nil, errors.New("failed"))
+
+				ml, _ := ois.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch organisation member invite by token and email", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch organisation member invite",

@@ -61,6 +61,9 @@ func TestMetaEventService(t *testing.T) {
 				metaEventRepo, _ := m.MetaEventRepo.(*mocks.MockMetaEventRepository)
 				metaEventRepo.EXPECT().UpdateMetaEvent(
 					gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("failed to update meta event"))
+
+				ml, _ := m.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update meta event", "error", gomock.Any()).Times(1)
 			},
 			wantErr: true,
 		},

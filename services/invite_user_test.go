@@ -29,7 +29,7 @@ func TestInviteUserService(t *testing.T) {
 		name         string
 		err          error
 		inviteeEmail string
-		mockDep      func(args)
+		mockDep      func(args, *mocks.MockLogger)
 		role         auth.Role
 		user         *datastore.User
 		organisation *datastore.Organisation
@@ -39,7 +39,7 @@ func TestInviteUserService(t *testing.T) {
 			inviteeEmail: "sidemen@default.com",
 			user:         &datastore.User{},
 			organisation: &datastore.Organisation{},
-			mockDep: func(a args) {
+			mockDep: func(a args, ml *mocks.MockLogger) {
 				licenser, _ := a.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
@@ -60,7 +60,7 @@ func TestInviteUserService(t *testing.T) {
 			user:         &datastore.User{},
 			organisation: &datastore.Organisation{},
 			err:          dbErr,
-			mockDep: func(a args) {
+			mockDep: func(a args, ml *mocks.MockLogger) {
 				licenser, _ := a.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
@@ -70,6 +70,8 @@ func TestInviteUserService(t *testing.T) {
 					gomock.Any(),
 					gomock.Any(),
 				).Return(dbErr)
+
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to invite member", "error", gomock.Any()).Times(1)
 			},
 		},
 		{
@@ -78,7 +80,7 @@ func TestInviteUserService(t *testing.T) {
 			user:         &datastore.User{},
 			organisation: &datastore.Organisation{},
 			err:          ErrUserLimit,
-			mockDep: func(a args) {
+			mockDep: func(a args, ml *mocks.MockLogger) {
 				licenser, _ := a.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(false, nil)
 			},
@@ -99,8 +101,10 @@ func TestInviteUserService(t *testing.T) {
 				Licenser:   mocks.NewMockLicenser(ctrl),
 			}
 
+			ml := mocks.NewMockLogger(ctrl)
+
 			if tt.mockDep != nil {
-				tt.mockDep(args)
+				tt.mockDep(args, ml)
 			}
 
 			inviteService := &InviteUserService{
@@ -110,6 +114,7 @@ func TestInviteUserService(t *testing.T) {
 				User:         tt.user,
 				Organisation: tt.organisation,
 				Licenser:     args.Licenser,
+				Logger:       ml,
 				Role:         tt.role,
 			}
 

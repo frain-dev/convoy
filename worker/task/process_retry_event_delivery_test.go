@@ -1236,6 +1236,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				FeatureFlagFetcher:    fetcher,
 				TracerBackend:         mt,
 				OAuth2TokenService:    mockOAuth2TokenService,
+				Logger:                log.New("convoy", slog.LevelInfo),
 			}
 			processFn := ProcessRetryEventDelivery(deps)
 

@@ -20,6 +20,7 @@ func provideUpdateAPIKeyService(ctrl *gomock.Controller, uid string, role *auth.
 		APIKeyRepo:  mocks.NewMockAPIKeyRepository(ctrl),
 		UID:         uid,
 		Role:        role,
+		Logger:      mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -100,6 +101,10 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 					Type: "abc",
 				},
 			},
+			dbFn: func(ss *UpdateAPIKeyService) {
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "invalid api key role", "error", gomock.Any()).Times(1)
+			},
 			wantErr:    true,
 			wantErrMsg: "invalid api key role",
 		},
@@ -140,6 +145,9 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().GetAPIKeyByID(gomock.Any(), "1234").
 					Times(1).Return(nil, errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch api key", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch api key",
@@ -174,6 +182,9 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 
 				a.EXPECT().UpdateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update api key", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update api key",

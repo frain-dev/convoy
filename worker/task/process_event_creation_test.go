@@ -902,7 +902,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			payload, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, args.filterRepo, args.licenser, tt.inputSubs, false, args.logger)
+			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, args.filterRepo, args.licenser, tt.inputSubs, false, logger.New("test", logger.LevelInfo))
 			if tt.wantErr {
 				require.NotNil(t, err)
 				return

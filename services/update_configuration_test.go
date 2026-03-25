@@ -17,6 +17,7 @@ func provideUpdateConfigService(ctrl *gomock.Controller, config *models.Configur
 	return &UpdateConfigService{
 		ConfigRepo: mocks.NewMockConfigurationRepository(ctrl),
 		Config:     config,
+		Logger:     mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -73,6 +74,9 @@ func TestUpdateConfigService_Run(t *testing.T) {
 			dbFn: func(c *UpdateConfigService) {
 				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
 				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
+
+				ml, _ := c.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to load configuration", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "config not found",

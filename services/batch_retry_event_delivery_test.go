@@ -20,6 +20,7 @@ func provideBatchRetryEventDeliveryService(ctrl *gomock.Controller, f *datastore
 		Queue:             mocks.NewMockQueuer(ctrl),
 		Filter:            f,
 		ProjectID:         "123",
+		Logger:            mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -153,12 +154,15 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 			dbFn: func(es *BatchRetryEventDeliveryService) {
 				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
+				ml, _ := es.Logger.(*mocks.MockLogger)
 
 				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
 					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
 
 				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(int64(0), errors.New("failed to count events"))
+
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to count events", "error", gomock.Any()).Times(1)
 			},
 		},
 		{
@@ -176,6 +180,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 			dbFn: func(es *BatchRetryEventDeliveryService) {
 				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
+				ml, _ := es.Logger.(*mocks.MockLogger)
 
 				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
 					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
@@ -185,6 +190,8 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 
 				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any()).
 					Return(errors.New("failed to create batch retry"))
+
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create batch retry", "error", gomock.Any()).Times(1)
 			},
 		},
 		{
@@ -203,6 +210,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
 				q, _ := es.Queue.(*mocks.MockQueuer)
+				ml, _ := es.Logger.(*mocks.MockLogger)
 
 				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
 					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
@@ -214,6 +222,8 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 
 				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("failed to queue batch retry job"))
+
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to queue batch retry job", "error", gomock.Any()).Times(1)
 			},
 		},
 		{
@@ -230,8 +240,12 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 			wantErrMsg: "failed to check for active batch retry",
 			dbFn: func(es *BatchRetryEventDeliveryService) {
 				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
+				ml, _ := es.Logger.(*mocks.MockLogger)
+
 				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
 					Return(nil, errors.New("failed to check for active batch retry"))
+
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to check for active batch retry", "error", gomock.Any()).Times(1)
 			},
 		},
 		{

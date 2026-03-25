@@ -19,6 +19,7 @@ func provideResetPasswordService(ctrl *gomock.Controller, token string, data *mo
 		UserRepo: mocks.NewMockUserRepository(ctrl),
 		Token:    token,
 		Data:     data,
+		Logger:   mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -122,6 +123,9 @@ func TestResetPasswordService_Run(t *testing.T) {
 				)
 
 				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+
+				ml, _ := u.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "an error occurred while updating user", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while updating user",

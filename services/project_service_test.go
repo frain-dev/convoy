@@ -444,6 +444,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+
+				ml, _ := gs.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create project", "error", gomock.Any()).Times(1)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -520,6 +523,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+
+				ml, _ := gs.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create project", "error", gomock.Any()).Times(1)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -765,6 +771,9 @@ func TestProjectService_UpdateProject(t *testing.T) {
 
 				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+
+				ml, _ := gs.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to to update project", "error", gomock.Any()).Times(1)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,

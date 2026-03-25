@@ -54,6 +54,10 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				eq, _ := es.Queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
+				ml, _ := es.Logger.(*mocks.MockLogger)
+				ml.EXPECT().DebugContext(gomock.Any(), "endpoint lookup completed", "duration", gomock.Any(), "endpoints", gomock.Any()).Times(1)
+				ml.EXPECT().DebugContext(gomock.Any(), "event written to queue", "duration", gomock.Any()).Times(1)
+				ml.EXPECT().InfoContext(gomock.Any(), "fanout service timing breakdown", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			args: args{
 				ctx: ctx,
@@ -99,6 +103,12 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				eq, _ := es.Queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
+
+				ml, _ := es.Logger.(*mocks.MockLogger)
+				ml.EXPECT().DebugContext(gomock.Any(), "endpoint lookup completed", "duration", gomock.Any(), "endpoints", gomock.Any()).Times(1)
+				ml.EXPECT().DebugContext(gomock.Any(), "portal link lookup completed", "duration", gomock.Any(), "found", gomock.Any()).Times(1)
+				ml.EXPECT().DebugContext(gomock.Any(), "event written to queue", "duration", gomock.Any()).Times(1)
+				ml.EXPECT().InfoContext(gomock.Any(), "fanout service timing breakdown", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			args: args{
 				ctx: ctx,
@@ -142,6 +152,11 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				eq, _ := es.Queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
+				ml, _ := es.Logger.(*mocks.MockLogger)
+				ml.EXPECT().DebugContext(gomock.Any(), "endpoint lookup completed", "duration", gomock.Any(), "endpoints", gomock.Any()).Times(1)
+				ml.EXPECT().DebugContext(gomock.Any(), "portal link lookup completed", "duration", gomock.Any(), "found", gomock.Any()).Times(1)
+				ml.EXPECT().DebugContext(gomock.Any(), "event written to queue", "duration", gomock.Any()).Times(1)
+				ml.EXPECT().InfoContext(gomock.Any(), "fanout service timing breakdown", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			args: args{
 				ctx: ctx,
