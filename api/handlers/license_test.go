@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -74,7 +73,7 @@ func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 		A: &types.APIOptions{
 			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			BillingClient: &billing.MockBillingClient{},
-			Logger:        log.New("convoy", slog.LevelInfo),
+			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
 			OrgMemberRepo: mockOrgMemberRepo,
 			ProjectRepo:   mockProjectRepo,
@@ -126,7 +125,7 @@ func TestGetLicenseFeatures_OrgLevel_Header(t *testing.T) {
 		A: &types.APIOptions{
 			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			BillingClient: &billing.MockBillingClient{},
-			Logger:        log.New("convoy", slog.LevelInfo),
+			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
 			OrgMemberRepo: mockOrgMemberRepo,
 			ProjectRepo:   mockProjectRepo,
@@ -171,7 +170,7 @@ func TestGetLicenseFeatures_OrgLevel_BillingRequiredWhenNoLicenseData(t *testing
 		A: &types.APIOptions{
 			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			BillingClient: &billing.MockBillingClient{},
-			Logger:        log.New("convoy", slog.LevelInfo),
+			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
 			OrgMemberRepo: mockOrgMemberRepo,
 			ProjectRepo:   mockProjectRepo,

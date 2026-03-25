@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -125,7 +124,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	if len(endpointIDs) == 0 {
 		endpoints, err = postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(r.Context(), project.UID)
 		if err != nil {
-			slog.Error("failed to count project endpoints", "error", err)
+			h.A.Logger.Error("failed to count project endpoints", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 			return
 		}
@@ -164,7 +163,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 	var dashboardQ *models.DashboardSummary
 	_ = h.A.Cache.Get(ctx, qsQuery, &dashboardQ)
 	if dashboardQ != nil {
-		slog.Warn("Query still running in a Goroutine")
+		h.A.Logger.Warn("Query still running in a Goroutine")
 		return
 	}
 
@@ -183,7 +182,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 		if len(endpointIds) == 0 {
 			endpoints, err = postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(ctx, project.UID)
 			if err != nil {
-				slog.Error("failed to count project endpoints", "error", err)
+				h.A.Logger.Error("failed to count project endpoints", "error", err)
 				return
 			}
 		} else {
@@ -191,7 +190,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 		}
 		eventsSent, messages, err := h.computeDashboardMessages(ctx, project.UID, searchParams, p, endpointIds)
 		if err != nil {
-			slog.Error("an error occurred while fetching messages", "error", err)
+			h.A.Logger.Error("an error occurred while fetching messages", "error", err)
 			return
 		}
 
@@ -220,7 +219,7 @@ func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string
 	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, endpointIds)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to load message intervals - ", "error", err)
+		h.A.Logger.ErrorContext(ctx, "failed to load message intervals - ", "error", err)
 		return 0, nil, err
 	}
 

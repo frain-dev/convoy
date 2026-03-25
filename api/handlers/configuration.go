@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -113,7 +112,7 @@ func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Get()
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to load configuration", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to load configuration", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load configuration", http.StatusBadRequest))
 		return
 	}

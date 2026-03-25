@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel"
@@ -29,7 +28,7 @@ type Consumer struct {
 	jobTracker JobTracker // optional, used only in E2E tests
 }
 
-func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.Logger, level slog.Level) *Consumer {
+func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.Logger, level log.Level) *Consumer {
 	lo.Infof("The consumer pool size has been set to %d.", consumerPoolSize)
 
 	var opts asynq.RedisConnOpt
@@ -133,15 +132,15 @@ func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) 
 	})
 }
 
-func getLogLevel(lvl slog.Level) asynq.LogLevel {
+func getLogLevel(lvl log.Level) asynq.LogLevel {
 	switch lvl {
-	case slog.LevelDebug:
+	case log.LevelDebug:
 		return asynq.DebugLevel
-	case slog.LevelInfo:
+	case log.LevelInfo:
 		return asynq.InfoLevel
-	case slog.LevelWarn:
+	case log.LevelWarn:
 		return asynq.WarnLevel
-	case slog.LevelError:
+	case log.LevelError:
 		return asynq.ErrorLevel
 	default:
 		return asynq.InfoLevel

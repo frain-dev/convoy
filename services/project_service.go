@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -24,9 +24,10 @@ type ProjectService struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventTypesRepo    datastore.EventTypesRepository
 	Licenser          license.Licenser
+	logger            log.Logger
 }
 
-func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
+func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository, logger log.Logger) (*ProjectService, error) {
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
@@ -34,6 +35,7 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 		eventDeliveryRepo: eventDeliveryRepo,
 		eventTypesRepo:    eventTypesRepo,
 		Licenser:          licenser,
+		logger:            logger,
 	}, nil
 }
 
@@ -106,7 +108,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 
 	err = ps.projectRepo.CreateProject(ctx, project)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create project", "error", err)
+		ps.logger.ErrorContext(ctx, "failed to create project", "error", err)
 		if errors.Is(err, datastore.ErrDuplicateProjectName) {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -116,7 +118,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 
 	err = ps.eventTypesRepo.CreateDefaultEventType(ctx, project.UID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create default event types", "error", err)
+		ps.logger.ErrorContext(ctx, "failed to create default event types", "error", err)
 	}
 
 	newAPIKey := &datastore.APIKey{
@@ -193,7 +195,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 
 	err := ps.projectRepo.UpdateProject(ctx, project)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to to update project", "error", err)
+		ps.logger.ErrorContext(ctx, "failed to to update project", "error", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 

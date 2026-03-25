@@ -8,7 +8,6 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
-	"log/slog"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -25,7 +24,7 @@ import (
 
 func provideOAuth2TokenService() (*OAuth2TokenService, cache.Cache) {
 	memCache := mcache.NewMemoryCache()
-	logger := log.New("convoy", slog.LevelError)
+	logger := log.New("convoy", log.LevelError)
 	return NewOAuth2TokenService(memCache, logger), memCache
 }
 

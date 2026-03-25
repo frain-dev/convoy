@@ -3,10 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
-	"log/slog"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
@@ -15,13 +14,14 @@ import (
 type MetaEventService struct {
 	Queue         queue.Queuer
 	MetaEventRepo datastore.MetaEventRepository
+	Logger        log.Logger
 }
 
 func (m *MetaEventService) Run(ctx context.Context, metaEvent *datastore.MetaEvent) error {
 	metaEvent.Status = datastore.ScheduledEventStatus
 	err := m.MetaEventRepo.UpdateMetaEvent(ctx, metaEvent.ProjectID, metaEvent)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to update meta event", "error", err)
+		m.Logger.ErrorContext(ctx, "failed to update meta event", "error", err)
 		return err
 	}
 
@@ -32,7 +32,7 @@ func (m *MetaEventService) Run(ctx context.Context, metaEvent *datastore.MetaEve
 
 	bytes, err := msgpack.EncodeMsgPack(payload)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to marshal meta event payload", "error", err)
+		m.Logger.ErrorContext(ctx, "failed to marshal meta event payload", "error", err)
 		return err
 	}
 

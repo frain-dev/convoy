@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
 )
@@ -83,7 +83,7 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	metadata["dynamicPayload"] = string(payload)
 	m, err := json.Marshal(metadata)
 	if err != nil {
-		slog.Error("failed to marshal metadata for event", "error", err)
+		args.logger.Error("failed to marshal metadata for event", "error", err)
 		args.tracerBackend.Capture(ctx, "dynamic.event.creation.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
@@ -156,7 +156,7 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		}
 	}
 
-	endpoint, err := findEndpoint(ctx, project, args.endpointRepo, &dynamicEvent)
+	endpoint, err := findEndpoint(ctx, project, args.endpointRepo, &dynamicEvent, args.logger)
 	if err != nil {
 		args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.error", attributes, startTime, time.Now())
 		return nil, err
@@ -197,10 +197,11 @@ func ProcessDynamicEventCreation(deps EventProcessorDeps) func(context.Context, 
 		deps.Licenser,
 		deps.TracerBackend,
 		deps.OAuth2TokenService,
+		deps.Logger,
 	)
 }
 
-func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, dynamicEvent *models.DynamicEvent) (*datastore.Endpoint, error) {
+func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, dynamicEvent *models.DynamicEvent, logger log.Logger) (*datastore.Endpoint, error) {
 	endpoint, err := endpointRepo.FindEndpointByTargetURL(ctx, project.UID, dynamicEvent.URL)
 	if err == nil {
 		return endpoint, nil
@@ -240,7 +241,7 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 
 		err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 		if err != nil {
-			slog.Error("failed to create endpoint", "error", err)
+			logger.Error("failed to create endpoint", "error", err)
 			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 

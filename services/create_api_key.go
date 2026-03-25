@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -21,6 +21,7 @@ type CreateAPIKeyService struct {
 
 	Member    *datastore.OrganisationMember
 	NewApiKey *datastore.APIKey
+	Logger    log.Logger
 }
 
 func (ss *CreateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, string, error) {
@@ -35,13 +36,13 @@ func (ss *CreateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, stri
 
 	err := role.Validate("api key")
 	if err != nil {
-		slog.ErrorContext(ctx, "invalid api key role", "error", err)
+		ss.Logger.ErrorContext(ctx, "invalid api key role", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "invalid api key role", Err: err}
 	}
 
 	project, err := ss.ProjectRepo.FetchProjectByID(ctx, ss.NewApiKey.Role.Project)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to fetch project by id", "error", err)
+		ss.Logger.ErrorContext(ctx, "failed to fetch project by id", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "failed to fetch project by id", Err: err}
 	}
 
@@ -59,7 +60,7 @@ func (ss *CreateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, stri
 
 	salt, err := util.GenerateSecret()
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to generate salt", "error", err)
+		ss.Logger.ErrorContext(ctx, "failed to generate salt", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "something went wrong"}
 	}
 
@@ -84,7 +85,7 @@ func (ss *CreateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, stri
 
 	err = ss.APIKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create api key", "error", err)
+		ss.Logger.ErrorContext(ctx, "failed to create api key", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "failed to create api key", Err: err}
 	}
 

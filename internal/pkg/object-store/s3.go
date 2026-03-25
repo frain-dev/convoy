@@ -2,7 +2,6 @@ package objectstore
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"strings"
 
@@ -11,15 +10,17 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 type S3Client struct {
 	session *session.Session
 	opts    ObjectStoreOptions
+	logger  log.Logger
 }
 
-func NewS3Client(opts ObjectStoreOptions) (ObjectStore, error) {
+func NewS3Client(opts ObjectStoreOptions, logger log.Logger) (ObjectStore, error) {
 	sess, err := session.NewSession(&aws.Config{
 		S3ForcePathStyle: aws.Bool(true),
 		Region:           aws.String(opts.Region),
@@ -33,6 +34,7 @@ func NewS3Client(opts ObjectStoreOptions) (ObjectStore, error) {
 	client := &S3Client{
 		session: sess,
 		opts:    opts,
+		logger:  logger,
 	}
 
 	return client, nil
@@ -41,7 +43,7 @@ func NewS3Client(opts ObjectStoreOptions) (ObjectStore, error) {
 func (s3 *S3Client) Save(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Unable to open file %q, %v: %v", filename, err, err))
+		s3.logger.Error(fmt.Sprintf("Unable to open file %q, %v: %v", filename, err, err))
 		return err
 	}
 
@@ -66,10 +68,10 @@ func (s3 *S3Client) Save(filename string) error {
 	})
 
 	if err != nil {
-		slog.Error(fmt.Sprintf("Unable to save %q to %q, %v: %v", filename, s3.opts.Bucket, err, err))
+		s3.logger.Error(fmt.Sprintf("Unable to save %q to %q, %v: %v", filename, s3.opts.Bucket, err, err))
 		return err
 	}
 
-	slog.Info(fmt.Sprintf("Successfully saved %q to %q\n", filename, s3.opts.Bucket))
+	s3.logger.Info(fmt.Sprintf("Successfully saved %q to %q\n", filename, s3.opts.Bucket))
 	return nil
 }

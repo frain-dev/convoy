@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"strings"
 
 	"gopkg.in/guregu/null.v4"
@@ -12,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -27,6 +27,7 @@ type UpdateSubscriptionService struct {
 	ProjectRepo  datastore.ProjectRepository
 	SourceRepo   datastore.SourceRepository
 	Licenser     license.Licenser
+	Logger       log.Logger
 
 	ProjectId      string
 	SubscriptionId string
@@ -36,20 +37,20 @@ type UpdateSubscriptionService struct {
 func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscription, error) {
 	subscription, err := s.SubRepo.FindSubscriptionByID(ctx, s.ProjectId, s.SubscriptionId)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to find subscription", "error", err)
+		s.Logger.ErrorContext(ctx, "failed to find subscription", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to find subscription", Err: err}
 	}
 
 	project, err := s.findProject(ctx, s.ProjectId)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to find project by id", "error", err)
+		s.Logger.ErrorContext(ctx, "failed to find project by id", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to find project by id", Err: err}
 	}
 
 	if !util.IsStringEmpty(s.Update.EndpointID) {
 		endpoint, err2 := s.findEndpoint(ctx, s.Update.EndpointID, s.ProjectId)
 		if err2 != nil {
-			slog.ErrorContext(ctx, "failed to find endpoint by id", "error", err2)
+			s.Logger.ErrorContext(ctx, "failed to find endpoint by id", "error", err2)
 			return nil, &ServiceError{ErrMsg: "failed to find endpoint by id: the endpoint may not belong to project", Err: err2}
 		}
 
@@ -59,7 +60,7 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 			}
 			_, err2 = s.SourceRepo.FindSourceByID(ctx, project.UID, s.Update.SourceID)
 			if err2 != nil {
-				slog.ErrorContext(ctx, "failed to find source by id", "error", err2)
+				s.Logger.ErrorContext(ctx, "failed to find source by id", "error", err2)
 				return nil, &ServiceError{ErrMsg: "failed to find source by id"}
 			}
 		}
@@ -67,7 +68,7 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		if project.Type == datastore.OutgoingProject {
 			count, err3 := s.SubRepo.CountEndpointSubscriptions(ctx, project.UID, endpoint.UID, subscription.UID)
 			if err3 != nil {
-				slog.ErrorContext(ctx, "failed to count endpoint subscriptions", "error", err3)
+				s.Logger.ErrorContext(ctx, "failed to count endpoint subscriptions", "error", err3)
 				return nil, &ServiceError{ErrMsg: "failed to count endpoint subscriptions", Err: err3}
 			}
 
@@ -160,7 +161,7 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 			// validate that the filter is a json string
 			_, err = json.Marshal(s.Update.FilterConfig.Filter)
 			if err != nil {
-				slog.ErrorContext(ctx, ErrInvalidSubscriptionFilterFormat.Error(), "error", err)
+				s.Logger.ErrorContext(ctx, ErrInvalidSubscriptionFilterFormat.Error(), "error", err)
 				return nil, &ServiceError{ErrMsg: ErrInvalidSubscriptionFilterFormat.Error(), Err: err}
 			}
 			subscription.FilterConfig.Filter = s.Update.FilterConfig.Filter.Transform()
@@ -185,7 +186,7 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 
 	err = s.SubRepo.UpdateSubscription(ctx, s.ProjectId, subscription)
 	if err != nil {
-		slog.ErrorContext(ctx, ErrUpdateSubscriptionError.Error(), "error", err)
+		s.Logger.ErrorContext(ctx, ErrUpdateSubscriptionError.Error(), "error", err)
 		if strings.Contains(err.Error(), "key value violates unique constraint") {
 			return nil, &ServiceError{ErrMsg: ErrCantUseEndpointForTwoSubs.Error(), Err: err}
 		}

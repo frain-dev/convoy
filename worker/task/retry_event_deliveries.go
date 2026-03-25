@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +35,7 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 
 	d, err := time.ParseDuration(lookBackDuration)
 	if err != nil {
-		slog.Error("Failed to parse time duration")
+		logger.Error("Failed to parse time duration")
 	}
 	now := time.Now()
 	then := now.Add(-d)
@@ -48,7 +47,7 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 	var q *redisqueue.RedisQueue
 	q, ok := eventQueue.(*redisqueue.RedisQueue)
 	if !ok {
-		slog.Error(fmt.Sprintf("Invalid queue type for requeing event deliveries: %T", eventQueue))
+		logger.Error(fmt.Sprintf("Invalid queue type for requeing event deliveries: %T", eventQueue))
 		return
 	}
 
@@ -71,7 +70,7 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 
 		// Start with 0, we'll update the total as we actually process deliveries
 		if err := tracker.CreateBatch(ctx, batchID, 0, statusFilter, lookBackDuration, eventId); err != nil {
-			slog.Error("Failed to create batch tracker", "error", err)
+			logger.Error("Failed to create batch tracker", "error", err)
 		}
 	}
 
@@ -79,7 +78,7 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 		allStatusesWg.Add(1)
 		go func(s datastore.EventDeliveryStatus) {
 			defer allStatusesWg.Done()
-			slog.Info(fmt.Sprintf("Searching for events with status %s", s))
+			logger.Info(fmt.Sprintf("Searching for events with status %s", s))
 			searchParams := datastore.SearchParams{
 				CreatedAtStart: then.Unix(),
 				CreatedAtEnd:   now.Unix(),
@@ -98,28 +97,28 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 
 			wg.Add(1)
 
-			go processEventDeliveryBatch(ctx, s, eventDeliveryRepo, deliveryChan, q, &wg, batchID, tracker)
+			go processEventDeliveryBatch(ctx, s, eventDeliveryRepo, deliveryChan, q, &wg, batchID, tracker, logger)
 
 			counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, "", s, searchParams)
 			if err != nil {
-				slog.Error("Failed to count event deliveries")
+				logger.Error("Failed to count event deliveries")
 			}
-			slog.Info(fmt.Sprintf("Total number of event deliveries to requeue is %d", counter))
+			logger.Info(fmt.Sprintf("Total number of event deliveries to requeue is %d", counter))
 
 			for {
 				deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, eventId, "", []datastore.EventDeliveryStatus{s}, searchParams, pageable, "", "", "")
 				if err != nil {
-					slog.Error(fmt.Sprintf("successfully fetched %d event deliveries but with error: %v", count, err))
+					logger.Error(fmt.Sprintf("successfully fetched %d event deliveries but with error: %v", count, err))
 					close(deliveryChan)
-					slog.Info("closed delivery channel")
+					logger.Info("closed delivery channel")
 					break
 				}
 
 				// stop when len(deliveries) is 0
 				if len(deliveries) == 0 {
-					slog.Warn("no deliveries received from db, exiting")
+					logger.Warn("no deliveries received from db, exiting")
 					close(deliveryChan)
-					slog.Info("closed delivery channel")
+					logger.Info("closed delivery channel")
 					break
 				}
 
@@ -128,7 +127,7 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 				pageable.NextCursor = pagination.NextPageCursor
 			}
 
-			slog.Info("waiting for batch processor to finish")
+			logger.Info("waiting for batch processor to finish")
 			wg.Wait()
 		}(status)
 	}
@@ -139,15 +138,15 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 	// Complete batch tracking if tracker is provided (after all statuses are processed)
 	if tracker != nil && batchID != "" {
 		if err := tracker.SyncCounters(ctx, batchID); err != nil {
-			slog.Error("Failed to sync batch counters", "error", err)
+			logger.Error("Failed to sync batch counters", "error", err)
 		}
 		if err := tracker.CompleteBatch(ctx, batchID); err != nil {
-			slog.Error("Failed to complete batch tracking", "error", err)
+			logger.Error("Failed to complete batch tracking", "error", err)
 		}
 	}
 }
 
-func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup, batchID string, tracker *batch_tracker.BatchTracker) {
+func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup, batchID string, tracker *batch_tracker.BatchTracker, logger log.Logger) {
 	defer wg.Done()
 
 	batchCount := 1
@@ -157,7 +156,7 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 		batch, ok := <-deliveryChan
 		if !ok {
 			// the channel has been closed and there are no more deliveries coming in
-			slog.Warn("batch processor exiting")
+			logger.Warn("batch processor exiting")
 			return
 		}
 
@@ -169,14 +168,14 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 		if status == datastore.ProcessingEventStatus {
 			err := eventDeliveryRepo.UpdateStatusOfEventDeliveries(ctx, "", batchIDs, datastore.ScheduledEventStatus)
 			if err != nil {
-				slog.Error(fmt.Sprintf("batch %d: failed to update event deliveries status: %v", batchCount, err))
+				logger.Error(fmt.Sprintf("batch %d: failed to update event deliveries status: %v", batchCount, err))
 			}
 		}
 
 		// remove these event deliveries queue
 		err := q.DeleteEventDeliveriesFromQueue(convoy.EventQueue, batchIDs)
 		if err != nil {
-			slog.Error(fmt.Sprintf("batch %d: failed to delete event deliveries from zset", batchCount), "error", err, "ids", batchIDs)
+			logger.Error(fmt.Sprintf("batch %d: failed to delete event deliveries from zset", batchCount), "error", err, "ids", batchIDs)
 		}
 
 		processedInBatch := int64(0)
@@ -192,7 +191,7 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 
 			data, err := msgpack.EncodeMsgPack(payload)
 			if err != nil {
-				slog.Error("failed to marshal process event delivery payload", "error", err)
+				logger.Error("failed to marshal process event delivery payload", "error", err)
 				failedInBatch++
 				continue
 			}
@@ -205,11 +204,11 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 			}
 			err = q.Write(taskName, convoy.EventQueue, job)
 			if err != nil {
-				slog.Error(fmt.Sprintf("batch %d: failed to send event delivery %s to the queue: %v", batchCount, delivery.UID, err))
+				logger.Error(fmt.Sprintf("batch %d: failed to send event delivery %s to the queue: %v", batchCount, delivery.UID, err))
 				failedInBatch++
 				continue
 			}
-			slog.Info(fmt.Sprintf("successfully re-queued delivery with id: %s", delivery.UID))
+			logger.Info(fmt.Sprintf("successfully re-queued delivery with id: %s", delivery.UID))
 			processedInBatch++
 		}
 
@@ -220,24 +219,24 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 			// Increment total count for this batch (what we're actually processing)
 			if batchTotal > 0 {
 				if err := tracker.IncrementTotal(ctx, batchID, batchTotal); err != nil {
-					slog.Error("Failed to increment total count", "error", err)
+					logger.Error("Failed to increment total count", "error", err)
 				}
 			}
 
 			// Increment processed count atomically in Redis
 			if processedInBatch > 0 {
 				if err := tracker.IncrementProcessed(ctx, batchID, processedInBatch); err != nil {
-					slog.Error("Failed to increment processed count", "error", err)
+					logger.Error("Failed to increment processed count", "error", err)
 				}
 			}
 			if failedInBatch > 0 {
 				if err := tracker.IncrementFailed(ctx, batchID, failedInBatch); err != nil {
-					slog.Error("Failed to increment failed count", "error", err)
+					logger.Error("Failed to increment failed count", "error", err)
 				}
 			}
 		}
 
-		slog.Info(fmt.Sprintf("batch %d: successfully re-queued %d deliveries", batchCount, len(batch)))
+		logger.Info(fmt.Sprintf("batch %d: successfully re-queued %d deliveries", batchCount, len(batch)))
 		batchCount++
 	}
 }

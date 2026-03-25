@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -66,7 +65,7 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 
 	org, err := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to find organisation by id", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to find organisation by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -117,7 +116,7 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 
 	org, err := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to find organisation by id", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to find organisation by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -194,7 +193,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 
 	org, err := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to find organisation by id", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to find organisation by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -280,7 +279,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	data := q.Transform(r)
 	sourcesData, paginationData, err := sources.New(h.A.Logger, h.A.DB).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
 	if err != nil {
-		slog.Error("an error occurred while fetching sources", "error", err)
+		h.A.Logger.Error("an error occurred while fetching sources", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusBadRequest))
 		return
 	}
@@ -352,7 +351,7 @@ func (h *Handler) TestSourceFunction(w http.ResponseWriter, r *http.Request) {
 	transformer := transform.NewTransformer()
 	mutatedPayload, consoleLog, err := transformer.Transform(test.Function, test.Payload)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to transform function", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to transform function", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}

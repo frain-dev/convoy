@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +17,7 @@ import (
 func TestHandler_CreateProject_InvalidBody_Returns400(t *testing.T) {
 	handler := &Handler{
 		A: &types.APIOptions{
-			Logger: log.New("convoy", slog.LevelInfo),
+			Logger: log.New("convoy", log.LevelInfo),
 			Cfg:    config.Configuration{},
 		},
 	}

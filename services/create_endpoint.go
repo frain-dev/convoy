@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -171,7 +170,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 		basicAuthEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.BasicAuthEndpoint, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !basicAuthEnabled {
-			slog.WarnContext(ctx, "Basic Auth configuration provided but feature flag not enabled, ignoring Basic Auth config")
+			a.Logger.WarnContext(ctx, "Basic Auth configuration provided but feature flag not enabled, ignoring Basic Auth config")
 			auth = nil
 		}
 	}
@@ -185,7 +184,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		// Check feature flag for OAuth2 using project's organisation ID
 		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !oauth2Enabled {
-			slog.WarnContext(ctx, "OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
+			a.Logger.WarnContext(ctx, "OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
 			// Remove OAuth2 authentication if feature flag is disabled
 			auth = nil
 		}
@@ -203,7 +202,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		// Validate both fields provided together
 		mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !mtlsEnabled {
-			slog.WarnContext(ctx, "mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
+			a.Logger.WarnContext(ctx, "mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
 		} else {
 			cc := a.E.MtlsClientCert
 			if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
@@ -222,7 +221,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 	err = a.EndpointRepo.CreateEndpoint(ctx, endpoint, a.ProjectID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create endpoint", "error", err)
+		a.Logger.ErrorContext(ctx, "failed to create endpoint", "error", err)
 		if errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailableUpgradeOrRevert) {
 			return nil, &ServiceError{ErrMsg: err.Error(), Err: err}
 		}
@@ -279,7 +278,7 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			cert, certErr := config.LoadClientCertificate(mtlsClientCert.ClientCert, mtlsClientCert.ClientKey)
 			if certErr != nil {
 				// Log warning but don't fail - validation will happen later
-				slog.WarnContext(ctx, "failed to load mTLS cert for ping, will validate later", "error", certErr)
+				a.Logger.WarnContext(ctx, "failed to load mTLS cert for ping, will validate later", "error", certErr)
 			} else {
 				mtlsCert = cert
 			}
@@ -296,9 +295,9 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		})
 		if pingErr != nil {
 			if cfg.Dispatcher.SkipPingValidation {
-				slog.WarnContext(ctx, fmt.Sprintf("failed to ping tls endpoint (validation skipped): %v", pingErr))
+				a.Logger.WarnContext(ctx, fmt.Sprintf("failed to ping tls endpoint (validation skipped): %v", pingErr))
 			} else {
-				slog.ErrorContext(ctx, fmt.Sprintf("failed to ping tls endpoint: %v", pingErr))
+				a.Logger.ErrorContext(ctx, fmt.Sprintf("failed to ping tls endpoint: %v", pingErr))
 				return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
 			}
 		}

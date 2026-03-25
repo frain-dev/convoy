@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"sync"
 	"time"
 
@@ -74,7 +73,7 @@ func (s *Sqs) Verify() error {
 
 	sess, err := session.NewSession(awsCfg)
 	if err != nil {
-		slog.Error("failed to create new session - sqs", "error", err)
+		s.log.Error("failed to create new session - sqs", "error", err)
 		return ErrInvalidCredentials
 	}
 
@@ -84,7 +83,7 @@ func (s *Sqs) Verify() error {
 	})
 
 	if err != nil {
-		slog.Error("failed to fetch queue url - sqs", "error", err)
+		s.log.Error("failed to fetch queue url - sqs", "error", err)
 		return ErrInvalidCredentials
 	}
 
@@ -120,17 +119,17 @@ func (s *Sqs) consume() {
 	}
 
 	if url == nil {
-		slog.Error(fmt.Sprintf("pubsub url for source with id %s is nil", s.source.UID))
+		s.log.Error(fmt.Sprintf("pubsub url for source with id %s is nil", s.source.UID))
 		return
 	}
 
 	if url.QueueUrl == nil {
-		slog.Error(fmt.Sprintf("pubsub queue url for source with id %s is nil", s.source.UID))
+		s.log.Error(fmt.Sprintf("pubsub queue url for source with id %s is nil", s.source.UID))
 		return
 	}
 
 	if util.IsStringEmpty(*url.QueueUrl) {
-		slog.Error(fmt.Sprintf("pubsub queue url for source with id %s is empty", s.source.UID))
+		s.log.Error(fmt.Sprintf("pubsub queue url for source with id %s is empty", s.source.UID))
 		return
 	}
 
@@ -138,7 +137,7 @@ func (s *Sqs) consume() {
 
 	cfg, err := config.Get()
 	if err != nil {
-		slog.Error(fmt.Sprintf("failed to load config.Get() in sqs source %s with id %s: %v", s.source.Name, s.source.UID, err))
+		s.log.Error(fmt.Sprintf("failed to load config.Get() in sqs source %s with id %s: %v", s.source.Name, s.source.UID, err))
 		return
 	}
 

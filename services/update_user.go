@@ -2,17 +2,18 @@ package services
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type UpdateUserService struct {
 	UserRepo datastore.UserRepository
 
-	Data *models.UpdateUser
-	User *datastore.User
+	Data   *models.UpdateUser
+	User   *datastore.User
+	Logger log.Logger
 }
 
 func (u *UpdateUserService) Run(ctx context.Context) (*datastore.User, error) {
@@ -26,7 +27,7 @@ func (u *UpdateUserService) Run(ctx context.Context) (*datastore.User, error) {
 
 	err := u.UserRepo.UpdateUser(ctx, u.User)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to update user", "error", err)
+		u.Logger.ErrorContext(ctx, "failed to update user", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to update user", Err: err}
 	}
 

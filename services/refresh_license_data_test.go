@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,7 +35,7 @@ func TestCheckOrganisationProjectLimit_NoKey_ReturnsFalseNil(t *testing.T) {
 			Billing:    config.BillingConfiguration{Enabled: true},
 			LicenseKey: "",
 		},
-		Logger: log.New("convoy", slog.LevelInfo),
+		Logger: log.New("convoy", log.LevelInfo),
 	}
 
 	allowed, err := CheckOrganisationProjectLimit(ctx, org, deps)

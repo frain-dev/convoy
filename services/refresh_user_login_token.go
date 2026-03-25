@@ -3,19 +3,20 @@ package services
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"time"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type RefreshTokenService struct {
 	UserRepo datastore.UserRepository
 	JWT      *jwt.Jwt
 
-	Data *models.Token
+	Data   *models.Token
+	Logger log.Logger
 }
 
 func (u *RefreshTokenService) Run(ctx context.Context) (*jwt.Token, error) {
@@ -47,19 +48,19 @@ func (u *RefreshTokenService) Run(ctx context.Context) (*jwt.Token, error) {
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 
-		slog.ErrorContext(ctx, "failed to find user by id", "error", err)
+		u.Logger.ErrorContext(ctx, "failed to find user by id", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to find user by id", Err: err}
 	}
 
 	token, err := u.JWT.GenerateToken(user)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to generate token", "error", err)
+		u.Logger.ErrorContext(ctx, "failed to generate token", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to generate token", Err: err}
 	}
 
 	err = u.JWT.BlacklistToken(verified, u.Data.RefreshToken)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to blacklist token", "error", err)
+		u.Logger.ErrorContext(ctx, "failed to blacklist token", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to blacklist token", Err: err}
 	}
 

@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"math/big"
 	"net/http"
 	"strings"
@@ -33,6 +32,7 @@ type GoogleOAuthService struct {
 	JWT           *jwt.Jwt
 	ConfigRepo    datastore.ConfigurationRepository
 	Licenser      license.Licenser
+	Logger        log.Logger
 }
 
 func NewGoogleOAuthService(
@@ -42,6 +42,7 @@ func NewGoogleOAuthService(
 	jwt *jwt.Jwt,
 	configRepo datastore.ConfigurationRepository,
 	licenser license.Licenser,
+	logger log.Logger,
 ) *GoogleOAuthService {
 	return &GoogleOAuthService{
 		UserRepo:      userRepo,
@@ -50,11 +51,12 @@ func NewGoogleOAuthService(
 		JWT:           jwt,
 		ConfigRepo:    configRepo,
 		Licenser:      licenser,
+		Logger:        logger,
 	}
 }
 
 func (g *GoogleOAuthService) HandleIDToken(ctx context.Context, idToken string, a *types.APIOptions) (*datastore.User, *jwt.Token, error) {
-	slog.InfoContext(ctx, "HandleIDToken called - processing Google ID token")
+	g.Logger.InfoContext(ctx, "HandleIDToken called - processing Google ID token")
 
 	// Verify the Google ID token and extract user info
 	userInfo, err := g.verifyGoogleIDToken(idToken)
@@ -121,7 +123,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 	p := datastore.Password{Plaintext: ulid.Make().String()}
 	err = p.GenerateHash()
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to generate hash", "error", err)
+		g.Logger.ErrorContext(ctx, "failed to generate hash", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate hash", Err: err}
 	}
 
@@ -157,7 +159,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 		if errors.Is(err, datastore.ErrDuplicateEmail) {
 			return nil, nil, &ServiceError{ErrMsg: "this email is taken"}
 		}
-		slog.ErrorContext(ctx, "failed to create user", "error", err)
+		g.Logger.ErrorContext(ctx, "failed to create user", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to create user", Err: err}
 	}
 
@@ -166,7 +168,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 		OrgRepo:       g.OrgRepo,
 		OrgMemberRepo: g.OrgMemberRepo,
 		Licenser:      g.Licenser,
-		Logger:        log.New("convoy", slog.LevelInfo),
+		Logger:        g.Logger,
 		NewOrg:        &datastore.OrganisationRequest{Name: businessName},
 		User:          user,
 	}
@@ -179,7 +181,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 	// Generate JWT token
 	token, err := g.JWT.GenerateToken(user)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to generate token", "error", err)
+		g.Logger.ErrorContext(ctx, "failed to generate token", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate token", Err: err}
 	}
 

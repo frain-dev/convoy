@@ -2,15 +2,16 @@ package services
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type VerifyEmailService struct {
 	UserRepo datastore.UserRepository
 	Token    string
+	Logger   log.Logger
 }
 
 func (u *VerifyEmailService) Run(ctx context.Context) error {
@@ -20,7 +21,7 @@ func (u *VerifyEmailService) Run(ctx context.Context) error {
 			return &ServiceError{ErrMsg: "invalid password reset token"}
 		}
 
-		slog.ErrorContext(ctx, "failed to find user by email verification token", "error", err)
+		u.Logger.ErrorContext(ctx, "failed to find user by email verification token", "error", err)
 		return &ServiceError{ErrMsg: "failed to find user", Err: err}
 	}
 
@@ -31,7 +32,7 @@ func (u *VerifyEmailService) Run(ctx context.Context) error {
 	user.EmailVerified = true
 	err = u.UserRepo.UpdateUser(ctx, user)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to update user", "error", err)
+		u.Logger.ErrorContext(ctx, "failed to update user", "error", err)
 		return &ServiceError{ErrMsg: "failed to update user", Err: err}
 	}
 

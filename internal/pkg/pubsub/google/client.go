@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	//nolint:staticcheck // SA1019: cloud.google.com/go/pubsub deprecated; we don't want to use v2 yet
 	"cloud.google.com/go/pubsub"
@@ -58,7 +57,7 @@ func (g *Google) Verify() error {
 	// The SDK automatically detects PUBSUB_EMULATOR_HOST and disables authentication when set
 	client, err := pubsub.NewClient(ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 	if err != nil {
-		slog.Error("failed to create new Google PubSub client", "error", err)
+		g.log.Error("failed to create new Google PubSub client", "error", err)
 		return ErrInvalidCredentials
 	}
 
@@ -66,7 +65,7 @@ func (g *Google) Verify() error {
 
 	exists, err := client.Subscription(g.Cfg.SubscriptionID).Exists(ctx)
 	if err != nil {
-		slog.Error("failed to find subscription", "error", err)
+		g.log.Error("failed to find subscription", "error", err)
 		return ErrInvalidCredentials
 	}
 

@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -282,7 +281,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	ed, paginationData, err := event_deliveries.New(h.A.Logger, h.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType, f.BrokerMessageId)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to fetch event deliveries", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to fetch event deliveries", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		return
 	}
@@ -335,7 +334,7 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 	f := data.Filter
 	count, err := event_deliveries.New(h.A.Logger, h.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "an error occurred while fetching event deliveries", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "an error occurred while fetching event deliveries", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

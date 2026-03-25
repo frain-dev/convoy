@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -12,9 +11,10 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func RefreshMetricsMaterializedViews(db database.Database, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func RefreshMetricsMaterializedViews(db database.Database, rd *rdb.Redis, logger log.Logger) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
 
@@ -36,7 +36,7 @@ func RefreshMetricsMaterializedViews(db database.Database, rd *rdb.Redis) func(c
 
 			ok, err := mutex.UnlockContext(unlockCtx)
 			if !ok || err != nil {
-				slog.ErrorContext(ctx, "failed to release lock", "error", err)
+				logger.ErrorContext(ctx, "failed to release lock", "error", err)
 			}
 		}()
 
@@ -68,14 +68,14 @@ func RefreshMetricsMaterializedViews(db database.Database, rd *rdb.Redis) func(c
 			_, err := db.GetDB().ExecContext(refreshCtx, q.sql)
 			refreshCancel()
 			if err != nil {
-				slog.ErrorContext(ctx, fmt.Sprintf("failed to refresh materialized view: %s: %v", q.name, err))
+				logger.ErrorContext(ctx, fmt.Sprintf("failed to refresh materialized view: %s: %v", q.name, err))
 				// Continue with other views even if one fails
 				continue
 			}
-			slog.InfoContext(ctx, fmt.Sprintf("refreshed materialized view: %s", q.name))
+			logger.InfoContext(ctx, fmt.Sprintf("refreshed materialized view: %s", q.name))
 		}
 
-		slog.InfoContext(ctx, fmt.Sprintf("refreshed all metrics materialized views in %v", time.Since(start)))
+		logger.InfoContext(ctx, fmt.Sprintf("refreshed all metrics materialized views in %v", time.Since(start)))
 		return nil
 	}
 }

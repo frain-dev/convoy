@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -50,7 +49,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	}
 
 	if len(co.NewOrg.Name) == 0 {
-		slog.ErrorContext(ctx, "organisation name is required", "error", err)
+		co.Logger.ErrorContext(ctx, "organisation name is required", "error", err)
 		return nil, &ServiceError{ErrMsg: "organisation name is required", Err: err}
 	}
 
@@ -64,7 +63,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 
 	cfg, err := config.Get()
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to load config", "error", err)
+		co.Logger.ErrorContext(ctx, "failed to load config", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create organisation", Err: err}
 	}
 
@@ -74,13 +73,13 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 
 	err = co.OrgRepo.CreateOrganisation(ctx, org)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create organisation", "error", err)
+		co.Logger.ErrorContext(ctx, "failed to create organisation", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create organisation", Err: err}
 	}
 
-	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: auth.RoleOrganisationAdmin})
+	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser, co.Logger).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create super_user member for organisation owner", "error", err)
+		co.Logger.ErrorContext(ctx, "failed to create super_user member for organisation owner", "error", err)
 	}
 
 	hostForBilling := cfg.Host

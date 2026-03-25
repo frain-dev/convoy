@@ -3,7 +3,6 @@ package rqm
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"math"
 	"math/rand"
 	"time"
@@ -69,7 +68,7 @@ func (a *Amqp) dialer() (*amqp.Connection, error) {
 	connString := fmt.Sprintf("%s://%s%s:%s/%s?heartbeat=30", a.Cfg.Schema, auth, a.Cfg.Host, a.Cfg.Port, *a.Cfg.Vhost)
 	conn, err := amqp.Dial(connString)
 	if err != nil {
-		slog.Error("Failed to open connection to amqp", "error", err)
+		a.log.Error("Failed to open connection to amqp", "error", err)
 		return nil, err
 	}
 

@@ -3,9 +3,9 @@ package services
 import (
 	"context"
 	"errors"
-	"log/slog"
 
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -16,18 +16,19 @@ type ForceResendEventDeliveriesService struct {
 
 	IDs     []string
 	Project *datastore.Project
+	Logger  log.Logger
 }
 
 func (e *ForceResendEventDeliveriesService) Run(ctx context.Context) (int, int, error) {
 	deliveries, err := e.EventDeliveryRepo.FindEventDeliveriesByIDs(ctx, e.Project.UID, e.IDs)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to fetch event deliveries by ids", "error", err)
+		e.Logger.ErrorContext(ctx, "failed to fetch event deliveries by ids", "error", err)
 		return 0, 0, &ServiceError{ErrMsg: "failed to fetch event deliveries", Err: err}
 	}
 
 	err = validateEventDeliveryStatus(deliveries)
 	if err != nil {
-		slog.ErrorContext(ctx, "event delivery status validation failed", "error", err)
+		e.Logger.ErrorContext(ctx, "event delivery status validation failed", "error", err)
 		return 0, 0, &ServiceError{ErrMsg: err.Error()}
 	}
 
@@ -36,7 +37,7 @@ func (e *ForceResendEventDeliveriesService) Run(ctx context.Context) (int, int, 
 		err := e.forceResendEventDelivery(ctx, &delivery, e.Project)
 		if err != nil {
 			failures++
-			slog.ErrorContext(ctx, "an item in the force resend batch failed", "error", err)
+			e.Logger.ErrorContext(ctx, "an item in the force resend batch failed", "error", err)
 		}
 	}
 
@@ -54,7 +55,7 @@ func (e *ForceResendEventDeliveriesService) forceResendEventDelivery(ctx context
 		return errors.New("force resend to an inactive or pending endpoint is not allowed")
 	}
 
-	return requeueEventDelivery(ctx, eventDelivery, project, e.EventDeliveryRepo, e.Queue)
+	return requeueEventDelivery(ctx, eventDelivery, project, e.EventDeliveryRepo, e.Queue, e.Logger)
 }
 
 func validateEventDeliveryStatus(deliveries []datastore.EventDelivery) error {

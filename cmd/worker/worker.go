@@ -71,7 +71,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		return nil, err
 	}
 
-	sc, err := smtp.NewClient(&cfg.SMTP)
+	sc, err := smtp.NewClient(&cfg.SMTP, lo)
 	if err != nil {
 		lo.Error("Failed to create smtp client", "error", err)
 		return nil, err
@@ -347,8 +347,8 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
 
 	if a.Licenser.RetentionPolicy() {
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret), nil)
-		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd.Client()), nil)
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret, lo), nil)
+		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd.Client(), lo), nil)
 	}
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
@@ -369,7 +369,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd), nil)
+	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd, lo), nil)
 
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 
@@ -377,13 +377,13 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
 	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {
-		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
-		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
+		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd, lo), nil)
+		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo, lo), nil)
 	}
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend), nil)
-	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend, lo), nil)
+	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd, lo), nil)
 
 	//nolint:gocritic
 	// consumer.RegisterHandlers(convoy.RefreshMetricsMaterializedViews, task.RefreshMetricsMaterializedViews(a.DB, rd), nil)

@@ -3,10 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
-	"log/slog"
-
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type RegenerateProjectAPIKeyService struct {
@@ -16,6 +15,7 @@ type RegenerateProjectAPIKeyService struct {
 
 	Project *datastore.Project
 	Member  *datastore.OrganisationMember
+	Logger  log.Logger
 }
 
 func (ss *RegenerateProjectAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, string, error) {
@@ -26,13 +26,13 @@ func (ss *RegenerateProjectAPIKeyService) Run(ctx context.Context) (*datastore.A
 
 	apiKey, err := ss.APIKeyRepo.GetAPIKeyByProjectID(ctx, ss.Project.UID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to fetch project api key", "error", err)
+		ss.Logger.ErrorContext(ctx, "failed to fetch project api key", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "failed to fetch api project key", Err: err}
 	}
 
 	err = ss.APIKeyRepo.RevokeAPIKeys(ctx, []string{apiKey.UID})
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to revoke api key", "error", err)
+		ss.Logger.ErrorContext(ctx, "failed to revoke api key", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "failed to revoke api key", Err: err}
 	}
 

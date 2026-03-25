@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/queue"
@@ -71,6 +71,7 @@ type EventProcessorDeps struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	Logger                     log.Logger
 }
 
 func NewDefaultEventChannel() *DefaultEventChannel {
@@ -123,7 +124,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	}
 
 	if createEvent.Event == nil {
-		event, err = buildEvent(ctx, args.eventRepo, args.endpointRepo, &createEvent.Params, project)
+		event, err = buildEvent(ctx, args.eventRepo, args.endpointRepo, &createEvent.Params, project, args.logger)
 		if err != nil {
 			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
@@ -136,7 +137,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 	_, err = args.eventRepo.FindEventByID(ctx, project.UID, event.UID)
 	if err != nil { // 404
-		err = updateEventMetadata(channel, event, createEvent.CreateSubscription)
+		err = updateEventMetadata(channel, event, createEvent.CreateSubscription, args.logger)
 		if err != nil {
 			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
 			return nil, err
@@ -163,7 +164,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	return event, nil
 }
 
-func updateEventMetadata(channel EventChannel, event *datastore.Event, createSubscription bool) error {
+func updateEventMetadata(channel EventChannel, event *datastore.Event, createSubscription bool, logger log.Logger) error {
 	metadata := make(map[string]string)
 	metadata["channel"] = channel.GetConfig().Channel
 	metadata["delay"] = strconv.FormatInt(int64(channel.GetConfig().DefaultDelay), 10)
@@ -172,7 +173,7 @@ func updateEventMetadata(channel EventChannel, event *datastore.Event, createSub
 	}
 	m, err := json.Marshal(metadata)
 	if err != nil {
-		slog.Error("failed to marshal metadata for event", "error", err)
+		logger.Error("failed to marshal metadata for event", "error", err)
 		return &EndpointError{Err: err, delay: defaultDelay}
 	}
 	event.Metadata = string(m)
@@ -207,7 +208,7 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		createSubscription = !util.IsStringEmpty(cs) && cs == "true"
 	}
 
-	subscriptions, err := findSubscriptions(ctx, args.endpointRepo, args.subRepo, args.filterRepo, args.licenser, project, event, createSubscription)
+	subscriptions, err := findSubscriptions(ctx, args.endpointRepo, args.subRepo, args.filterRepo, args.licenser, project, event, createSubscription, args.logger)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
@@ -234,6 +235,7 @@ func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.
 		deps.Licenser,
 		deps.TracerBackend,
 		deps.OAuth2TokenService,
+		deps.Logger,
 	)
 }
 
@@ -249,6 +251,7 @@ type WriteEventDeliveriesToQueueOptions struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	Logger                     log.Logger
 }
 
 func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesToQueueOptions) error {
@@ -275,7 +278,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 				authType = string(endpoint.Authentication.Type)
 				hasOAuth2 = endpoint.Authentication.OAuth2 != nil
 			}
-			slog.DebugContext(ctx, "Processing endpoint authentication", "endpoint.id", endpoint.UID, "has_authentication", endpoint.Authentication != nil, "auth_type", authType, "has_oauth2", hasOAuth2)
+			opts.Logger.DebugContext(ctx, "Processing endpoint authentication", "endpoint.id", endpoint.UID, "has_authentication", endpoint.Authentication != nil, "auth_type", authType, "has_oauth2", hasOAuth2)
 
 			if endpoint.Authentication != nil {
 				switch endpoint.Authentication.Type {
@@ -287,29 +290,29 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 					// Check feature flag for OAuth2 using project's organisation ID
 					oauth2Enabled := opts.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, opts.FeatureFlagFetcher, opts.EarlyAdopterFeatureFetcher, opts.Project.OrganisationID)
 					if !oauth2Enabled {
-						slog.WarnContext(ctx, "Endpoint has OAuth2 configured but feature flag is disabled, skipping OAuth2 authentication")
+						opts.Logger.WarnContext(ctx, "Endpoint has OAuth2 configured but feature flag is disabled, skipping OAuth2 authentication")
 						// Continue without OAuth2 authentication if feature flag is disabled
 					} else if opts.OAuth2TokenService == nil {
-						slog.ErrorContext(ctx, "OAuth2 token service is nil")
+						opts.Logger.ErrorContext(ctx, "OAuth2 token service is nil")
 					} else {
 						authHeader, err := opts.OAuth2TokenService.GetAuthorizationHeader(ctx, endpoint)
 						if err != nil {
-							slog.ErrorContext(ctx, "failed to get OAuth2 authorization header", "error", err)
+							opts.Logger.ErrorContext(ctx, "failed to get OAuth2 authorization header", "error", err)
 						} else {
 							headers = make(httpheader.HTTPHeader)
 							headers["Authorization"] = []string{authHeader}
 							headers.MergeHeaders(opts.Event.Headers)
-							slog.InfoContext(ctx, "OAuth2 authorization header retrieved and added to headers", "endpoint.id", endpoint.UID)
+							opts.Logger.InfoContext(ctx, "OAuth2 authorization header retrieved and added to headers", "endpoint.id", endpoint.UID)
 						}
 					}
 				case datastore.BasicAuthentication:
 					basicAuthEnabled := opts.FeatureFlag.CanAccessOrgFeature(ctx, fflag.BasicAuthEndpoint, opts.FeatureFlagFetcher, opts.EarlyAdopterFeatureFetcher, opts.Project.OrganisationID)
 					if !basicAuthEnabled {
-						slog.WarnContext(ctx, "Endpoint has Basic Auth configured but feature flag is disabled, skipping Basic Auth authentication")
+						opts.Logger.WarnContext(ctx, "Endpoint has Basic Auth configured but feature flag is disabled, skipping Basic Auth authentication")
 					} else if endpoint.Authentication.BasicAuth == nil {
-						slog.ErrorContext(ctx, "Basic Auth config is nil")
+						opts.Logger.ErrorContext(ctx, "Basic Auth config is nil")
 					} else if endpoint.Authentication.BasicAuth.UserName == "" && endpoint.Authentication.BasicAuth.Password == "" {
-						slog.ErrorContext(ctx, "Basic Auth credentials are empty, skipping Basic Auth authentication", "endpoint.id", endpoint.UID)
+						opts.Logger.ErrorContext(ctx, "Basic Auth credentials are empty, skipping Basic Auth authentication", "endpoint.id", endpoint.UID)
 					} else {
 						headers = make(httpheader.HTTPHeader)
 						credentials := base64.StdEncoding.EncodeToString(
@@ -319,10 +322,10 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 						headers.MergeHeaders(opts.Event.Headers)
 					}
 				default:
-					slog.DebugContext(ctx, "Unknown authentication type, skipping", "endpoint.id", endpoint.UID, "auth_type", endpoint.Authentication.Type)
+					opts.Logger.DebugContext(ctx, "Unknown authentication type, skipping", "endpoint.id", endpoint.UID, "auth_type", endpoint.Authentication.Type)
 				}
 			} else {
-				slog.DebugContext(ctx, "Endpoint has no authentication configured", "endpoint.id", endpoint.UID)
+				opts.Logger.DebugContext(ctx, "Endpoint has no authentication configured", "endpoint.id", endpoint.UID)
 			}
 
 			s.Endpoint = endpoint
@@ -380,7 +383,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			Headers:        headers,
 			IdempotencyKey: opts.Event.IdempotencyKey,
 			URLQueryParams: opts.Event.URLQueryParams,
-			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint),
+			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, opts.Logger),
 			AcknowledgedAt: null.TimeFrom(time.Now()),
 			DeliveryMode:   s.DeliveryMode,
 		}
@@ -422,7 +425,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			if s.Type == datastore.SubscriptionTypeAPI {
 				err = opts.EventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
-					slog.ErrorContext(ctx, fmt.Sprintf("[asynq]: an error occurred sending event delivery to be dispatched: %v", err))
+					opts.Logger.ErrorContext(ctx, fmt.Sprintf("[asynq]: an error occurred sending event delivery to be dispatched: %v", err))
 				}
 			}
 		}
@@ -432,7 +435,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 }
 
 func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository,
-	subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool,
+	subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool, logger log.Logger,
 ) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 	var err error
@@ -468,7 +471,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 				return subscriptions, &EndpointError{Err: fmt.Errorf("error matching subscriptions for event type: %v", innerErr), delay: defaultDelay}
 			}
 
-			matchedSubs, innerErr = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, matchedSubs, false)
+			matchedSubs, innerErr = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, matchedSubs, false, logger)
 			if innerErr != nil {
 				return subscriptions, &EndpointError{Err: fmt.Errorf("error fetching subscriptions for event type: %v", innerErr), delay: defaultDelay}
 			}
@@ -487,7 +490,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 				return subscriptions, &EndpointError{Err: fmt.Errorf("error matching subscriptions for event type: %v", innerErr), delay: defaultDelay}
 			}
 
-			matchedSubs, innerErr = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, matchedSubs, false)
+			matchedSubs, innerErr = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, matchedSubs, false, logger)
 			if innerErr != nil {
 				return subscriptions, &EndpointError{Err: fmt.Errorf("error fetching subscriptions for event type: %v", innerErr), delay: defaultDelay}
 			}
@@ -495,9 +498,9 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			subscriptions = matchedSubs
 		}
 
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, subscriptions, false)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, subscriptions, false, logger)
 		if err != nil {
-			slog.Error("error find a matching subscription for this source", "error", err)
+			logger.Error("error find a matching subscription for this source", "error", err)
 			return subscriptions, &EndpointError{Err: fmt.Errorf("error find a matching subscription for this source: %v", err), delay: defaultDelay}
 		}
 	}
@@ -505,7 +508,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	return subscriptions, nil
 }
 
-func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, subscriptions []datastore.Subscription, soft bool) ([]datastore.Subscription, error) {
+func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, subscriptions []datastore.Subscription, soft bool, logger log.Logger) ([]datastore.Subscription, error) {
 	if !licenser.AdvancedSubscriptions() {
 		return subscriptions, nil
 	}
@@ -538,15 +541,15 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	for i := range subscriptions {
 		sub := &subscriptions[i]
 
-		slog.DebugContext(ctx, "matching subscription", "event.id", e.UID, "subscription.id", sub.UID)
+		logger.DebugContext(ctx, "matching subscription", "event.id", e.UID, "subscription.id", sub.UID)
 
 		// First check if there's a specific filter for this event type
 		filter, innerErr := filterRepo.FindFilterBySubscriptionAndEventType(ctx, sub.UID, string(e.EventType))
 		if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() && soft {
-			slog.ErrorContext(ctx, "failed to find filter subscription", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
+			logger.ErrorContext(ctx, "failed to find filter subscription", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
 			continue
 		} else if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() {
-			slog.ErrorContext(ctx, "fiter not found", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
+			logger.ErrorContext(ctx, "fiter not found", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
 			return nil, innerErr
 		}
 
@@ -554,10 +557,10 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		if filter == nil {
 			filter, innerErr = filterRepo.FindFilterBySubscriptionAndEventType(ctx, sub.UID, "*")
 			if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() && soft {
-				slog.ErrorContext(ctx, "failed to find catch-all filter", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
+				logger.ErrorContext(ctx, "failed to find catch-all filter", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
 				continue
 			} else if innerErr != nil && !errors.Is(innerErr, datastore.ErrFilterNotFound) {
-				slog.ErrorContext(ctx, "catch-all filter not found", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
+				logger.ErrorContext(ctx, "catch-all filter not found", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
 				return nil, innerErr
 			}
 		}
@@ -565,25 +568,25 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		// If no filter found at all, or filter has no conditions, match the subscription
 		if filter == nil || (len(filter.Body) == 0 && len(filter.Headers) == 0) {
 			matched = append(matched, *sub)
-			slog.DebugContext(ctx, "subscription event type matched passed", "event.id", e.UID, "subscription.id", sub.UID)
+			logger.DebugContext(ctx, "subscription event type matched passed", "event.id", e.UID, "subscription.id", sub.UID)
 			continue
 		}
 
 		isBodyMatched, innerErr := subRepo.CompareFlattenedPayload(ctx, flatPayload, filter.Body, true)
 		if innerErr != nil && soft {
-			slog.ErrorContext(ctx, "subscription failed to match body", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
+			logger.ErrorContext(ctx, "subscription failed to match body", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
 			continue
 		} else if innerErr != nil {
-			slog.ErrorContext(ctx, "subscription failed to match body", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
+			logger.ErrorContext(ctx, "subscription failed to match body", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
 			return nil, innerErr
 		}
 
 		isHeaderMatched, innerErr := subRepo.CompareFlattenedPayload(ctx, headers, filter.Headers, true)
 		if innerErr != nil && soft {
-			slog.ErrorContext(ctx, "subscription failed to match header", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
+			logger.ErrorContext(ctx, "subscription failed to match header", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
 			continue
 		} else if innerErr != nil {
-			slog.ErrorContext(ctx, "subscription failed to match header", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
+			logger.ErrorContext(ctx, "subscription failed to match header", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
 			return nil, innerErr
 		}
 
@@ -592,7 +595,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		if isMatched {
 			matched = append(matched, *sub)
 
-			slog.DebugContext(ctx, "subscription filter matched passed", "event.id", e.UID, "subscription.id", sub.UID)
+			logger.DebugContext(ctx, "subscription filter matched passed", "event.id", e.UID, "subscription.id", sub.UID)
 		}
 	}
 
@@ -629,7 +632,7 @@ func matchSubscriptions(ctx context.Context, eventType string, subscriptions []d
 	return matched, nil
 }
 
-func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, endpoint *datastore.Endpoint,
+func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, endpoint *datastore.Endpoint, logger log.Logger,
 ) datastore.EventDeliveryStatus {
 	switch subscription.Type {
 	case datastore.SubscriptionTypeAPI:
@@ -637,7 +640,7 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 			return datastore.DiscardedEventStatus
 		}
 	default:
-		slog.DebugContext(ctx, "unknown subscription type", "subscription_type", subscription.Type)
+		logger.DebugContext(ctx, "unknown subscription type", "subscription_type", subscription.Type)
 	}
 
 	return datastore.ScheduledEventStatus
@@ -663,7 +666,7 @@ func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoi
 }
 
 func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpointRepo datastore.EndpointRepository,
-	eventParams *CreateEventTaskParams, project *datastore.Project,
+	eventParams *CreateEventTaskParams, project *datastore.Project, logger log.Logger,
 ) (*datastore.Event, error) {
 	var isDuplicate bool
 	if !util.IsStringEmpty(eventParams.IdempotencyKey) {
@@ -685,7 +688,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 
 	endpoints, err := findEndpoints(ctx, endpointRepo, eventParams, project)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to find endpoints", "error", err)
+		logger.ErrorContext(ctx, "failed to find endpoints", "error", err)
 		return nil, err
 	}
 

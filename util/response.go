@@ -3,7 +3,6 @@ package util
 import (
 	"bytes"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -69,18 +68,12 @@ type ServerResponse struct {
 }
 
 func NewErrorResponseWithData(msg string, statusCode int, object interface{}) ServerResponse {
-	data, err := json.Marshal(object)
-	if err != nil {
-		slog.Error("unable to marshal response data", "error", err)
-	}
+	data, _ := json.Marshal(object)
 	return newServerResponseWithStatus(false, msg, data, statusCode)
 }
 
 func NewServerResponse(msg string, object interface{}, statusCode int) ServerResponse {
-	data, err := json.Marshal(object)
-	if err != nil {
-		slog.Error("unable to marshal response data", "error", err)
-	}
+	data, _ := json.Marshal(object)
 	return newServerResponseWithStatus(true, msg, data, statusCode)
 }
 

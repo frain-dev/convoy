@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/http/httptrace"
 	"net/netip"
@@ -172,7 +171,7 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	d := &Dispatcher{
 		ff:     ff,
 		l:      l,
-		logger: log.New("convoy", slog.LevelInfo),
+		logger: log.New("convoy", log.LevelInfo),
 		tracer: tracer.NoOpBackend{},
 		client: &http.Client{},
 		rules:  &netjail.Rules{},

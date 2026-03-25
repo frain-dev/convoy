@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -15,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -29,6 +29,7 @@ type CreateFanoutEventService struct {
 
 	NewMessage *models.FanoutEvent
 	Project    *datastore.Project
+	Logger     log.Logger
 }
 
 var (
@@ -68,33 +69,33 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 		// We only need to check if an event exists, not fetch all matching events
 		_, err := e.EventRepo.FindFirstEventWithIdempotencyKey(ctx, e.Project.UID, e.NewMessage.IdempotencyKey)
 		if err != nil && !errors.Is(err, datastore.ErrEventNotFound) {
-			slog.ErrorContext(ctx, "failed to check idempotency key", "error", err)
+			e.Logger.ErrorContext(ctx, "failed to check idempotency key", "error", err)
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 		isDuplicate = (err == nil)
-		slog.DebugContext(ctx, "idempotency check completed", "duration", time.Since(idempotencyStart), "found", isDuplicate)
+		e.Logger.DebugContext(ctx, "idempotency check completed", "duration", time.Since(idempotencyStart), "found", isDuplicate)
 	}
 	afterIdempotency := time.Now()
 
 	endpointIDs, err := e.EndpointRepo.FetchEndpointIDsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to find endpoints by owner id", "error", err)
+		e.Logger.ErrorContext(ctx, "failed to find endpoints by owner id", "error", err)
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 	afterEndpoints := time.Now()
-	slog.DebugContext(ctx, "endpoint lookup completed", "duration", afterEndpoints.Sub(afterIdempotency), "endpoints", len(endpointIDs))
+	e.Logger.DebugContext(ctx, "endpoint lookup completed", "duration", afterEndpoints.Sub(afterIdempotency), "endpoints", len(endpointIDs))
 
 	afterPortalLink := afterEndpoints
 	if len(endpointIDs) == 0 {
 		_, err = e.PortalLinkRepo.GetPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 		if err != nil {
 			if !errors.Is(err, datastore.ErrPortalLinkNotFound) {
-				slog.ErrorContext(ctx, "failed to find portal link by owner id", "error", err)
+				e.Logger.ErrorContext(ctx, "failed to find portal link by owner id", "error", err)
 				return nil, &ServiceError{ErrMsg: err.Error()}
 			}
 		}
 		afterPortalLink = time.Now()
-		slog.DebugContext(ctx, "portal link lookup completed", "duration", afterPortalLink.Sub(afterEndpoints), "found", err == nil)
+		e.Logger.DebugContext(ctx, "portal link lookup completed", "duration", afterPortalLink.Sub(afterEndpoints), "found", err == nil)
 	}
 
 	ev := &newEvent{
@@ -108,15 +109,15 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 		AcknowledgedAt: time.Now(),
 	}
 
-	event, err = createEvent(ctx, endpointIDs, ev, e.Project, e.Queue)
+	event, err = createEvent(ctx, endpointIDs, ev, e.Project, e.Queue, e.Logger)
 	afterQueue := time.Now()
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create fanout event", "error", err)
+		e.Logger.ErrorContext(ctx, "failed to create fanout event", "error", err)
 		return nil, err
 	}
 
 	// Log detailed service timing breakdown for performance monitoring
-	slog.InfoContext(ctx, "fanout service timing breakdown",
+	e.Logger.InfoContext(ctx, "fanout service timing breakdown",
 		"idempotency_duration", afterIdempotency.Sub(idempotencyStart).Milliseconds(),
 		"endpoints_duration", afterEndpoints.Sub(afterIdempotency).Milliseconds(),
 		"portal_link_duration", afterPortalLink.Sub(afterEndpoints).Milliseconds(),
@@ -129,7 +130,7 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 	return event, nil
 }
 
-func createEvent(ctx context.Context, endpointIDs []string, newMessage *newEvent, project *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
+func createEvent(ctx context.Context, endpointIDs []string, newMessage *newEvent, project *datastore.Project, queuer queue.Queuer, logger log.Logger) (*datastore.Event, error) {
 	jobId := queue.JobId{ProjectID: project.UID, ResourceID: newMessage.UID}.FanOutJobId()
 	event := &datastore.Event{
 		UID:              newMessage.UID,
@@ -167,10 +168,10 @@ func createEvent(ctx context.Context, endpointIDs []string, newMessage *newEvent
 	startQueue := time.Now()
 	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
-		slog.ErrorContext(ctx, fmt.Sprintf("Error occurred sending new event to the queue %s", err))
+		logger.ErrorContext(ctx, fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
-	slog.DebugContext(ctx, "event written to queue", "duration", time.Since(startQueue))
+	logger.DebugContext(ctx, "event written to queue", "duration", time.Since(startQueue))
 
 	return event, nil
 }

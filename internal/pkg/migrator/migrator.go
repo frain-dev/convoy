@@ -2,7 +2,6 @@ package migrator
 
 import (
 	"fmt"
-	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 
@@ -24,7 +23,7 @@ type Migrator struct {
 }
 
 func New(d database.Database) *Migrator {
-	defaultLogger := log.New("convoy", slog.LevelError)
+	defaultLogger := log.New("convoy", log.LevelError)
 	return NewWithLogger(d, defaultLogger)
 }
 
@@ -37,7 +36,7 @@ func NewWithLogger(d database.Database, logger log.Logger) *Migrator {
 	migrate.SetSchema(tableSchema)
 
 	if logger == nil {
-		logger = log.New("convoy", slog.LevelError)
+		logger = log.New("convoy", log.LevelError)
 	}
 
 	return &Migrator{dbx: d.GetDB(), src: migrations, logger: logger}

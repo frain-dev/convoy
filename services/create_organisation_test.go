@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"testing"
 	"time"
 
@@ -23,7 +22,7 @@ func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *datastore
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 		Licenser:      mocks.NewMockLicenser(ctrl),
-		Logger:        log.New("convoy", slog.LevelInfo),
+		Logger:        log.New("convoy", log.LevelInfo),
 		NewOrg:        newOrg,
 		User:          user,
 	}
@@ -196,7 +195,7 @@ func TestRunBillingOrganisationSync(t *testing.T) {
 			CreateOrganisationLicenseKey: "test-license-key-from-billing",
 		}
 
-		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.New("convoy", slog.LevelInfo))
+		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.New("convoy", log.LevelInfo))
 
 		require.NotEmpty(t, capturedLicenseData, "UpdateOrganisationLicenseData should be called with encrypted payload")
 		payload, err := license.DecryptLicenseData(org.UID, capturedLicenseData)
@@ -214,6 +213,6 @@ func TestRunBillingOrganisationSync(t *testing.T) {
 		mockBilling := &billing.MockBillingClient{}
 		// CreateOrganisationLicenseKey and GetOrganisationLicenseKey left empty
 
-		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.New("convoy", slog.LevelInfo))
+		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.New("convoy", log.LevelInfo))
 	})
 }

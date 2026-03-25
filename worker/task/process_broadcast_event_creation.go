@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -86,7 +85,7 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
 
-	err = updateEventMetadata(channel, event, false)
+	err = updateEventMetadata(channel, event, false, args.logger)
 	if err != nil {
 		args.tracerBackend.Capture(ctx, "broadcast.event.creation.error", attributes, startTime, time.Now())
 		return nil, err
@@ -144,9 +143,9 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	subscriptions = append(subscriptions, eventTypeSubs...)
 	subscriptions = append(subscriptions, matchAllSubs...)
 
-	slog.DebugContext(ctx, "matching subscriptions using filter", "event.id", broadcastEvent.UID)
+	args.logger.DebugContext(ctx, "matching subscriptions using filter", "event.id", broadcastEvent.UID)
 
-	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, args.subRepo, args.filterRepo, args.licenser, subscriptions, true)
+	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, args.subRepo, args.filterRepo, args.licenser, subscriptions, true, args.logger)
 	if err != nil {
 		args.tracerBackend.Capture(ctx, "broadcast.subscription.matching.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
@@ -184,6 +183,7 @@ func ProcessBroadcastEventCreation(
 		deps.Licenser,
 		deps.TracerBackend,
 		deps.OAuth2TokenService,
+		deps.Logger,
 	)
 }
 

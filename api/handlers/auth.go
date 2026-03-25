@@ -356,6 +356,7 @@ func (h *Handler) GoogleOAuthToken(w http.ResponseWriter, r *http.Request) {
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		h.A.ConfigRepo,
 		h.A.Licenser,
+		h.A.Logger,
 	)
 
 	user, token, err := googleOAuthService.HandleIDToken(r.Context(), request.IDToken, h.A)
@@ -414,6 +415,7 @@ func (h *Handler) GoogleOAuthSetup(w http.ResponseWriter, r *http.Request) {
 		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		h.A.ConfigRepo,
 		h.A.Licenser,
+		h.A.Logger,
 	)
 
 	user, token, err := googleOAuthService.CompleteGoogleOAuthSetup(r.Context(), request.IDToken, request.BusinessName, h.A)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -408,7 +407,7 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err = postgres.NewEndpointRepo(h.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to delete endpoint", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to delete endpoint", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete endpoint", http.StatusBadRequest))
 		return
 	}

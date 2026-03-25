@@ -3,7 +3,6 @@ package retention
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"time"
 
 	partman "github.com/jirevwe/go_partman"
@@ -38,7 +37,7 @@ func (t *TestRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
 func NewTestRetentionPolicy(db database.Database, manager *partman.Manager) *TestRetentionPolicy {
 	return &TestRetentionPolicy{
 		partitioner: manager,
-		logger:      log.New("convoy", slog.LevelInfo),
+		logger:      log.New("convoy", log.LevelInfo),
 		db:          db,
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -16,15 +15,21 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 type Server struct {
 	s      *http.Server
 	StopFn func()
+	logger log.Logger
 }
 
 func NewServer(port uint32, stopFn func()) *Server {
+	return NewServerWithLogger(port, stopFn, log.New("server", log.LevelInfo))
+}
+
+func NewServerWithLogger(port uint32, stopFn func(), logger log.Logger) *Server {
 	srv := &Server{
 		s: &http.Server{
 			ReadTimeout:  time.Second * 30,
@@ -32,6 +37,7 @@ func NewServer(port uint32, stopFn func()) *Server {
 			Addr:         fmt.Sprintf(":%d", port),
 		},
 		StopFn: stopFn,
+		logger: logger,
 	}
 
 	return srv
@@ -45,7 +51,7 @@ func (s *Server) SetHandler(handler http.Handler) {
 
 	cfg, err := config.Get()
 	if err != nil {
-		slog.Error("failed to start server", "error", err)
+		s.logger.Error("failed to start server", "error", err)
 	}
 
 	if cfg.EnableProfiling {
@@ -73,7 +79,7 @@ func (s *Server) Listen() {
 		// serve connections
 		err := s.s.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("failed to listen", "error", err)
+			s.logger.Error("failed to listen", "error", err)
 		}
 	}()
 
@@ -85,7 +91,7 @@ func (s *Server) ListenAndServeTLS(certFile, keyFile string) {
 		// serve connections
 		err := s.s.ListenAndServeTLS(certFile, keyFile)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("failed to listen", "error", err)
+			s.logger.Error("failed to listen", "error", err)
 		}
 	}()
 
@@ -98,16 +104,16 @@ func (s *Server) gracefulShutdown() {
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 
-	slog.Info("Stopping server")
+	s.logger.Info("Stopping server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := s.s.Shutdown(ctx); err != nil {
-		slog.Error("Server Shutdown", "error", err)
+		s.logger.Error("Server Shutdown", "error", err)
 	}
 
-	slog.Info("Server exiting")
+	s.logger.Info("Server exiting")
 
 	time.Sleep(2 * time.Second) // allow all pending connections to close themselves
 }

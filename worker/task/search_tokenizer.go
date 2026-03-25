@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -17,9 +16,10 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, redis *rdb.Redis) func(context.Context, *asynq.Task) error {
+func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, redis *rdb.Redis, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		pool := goredis.NewPool(redis.Client())
 		rs := redsync.New(pool)
@@ -41,7 +41,7 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 
 			ok, err := mutex.UnlockContext(tctx)
 			if !ok || err != nil {
-				slog.Error("failed to release lock", "error", err)
+				logger.Error("failed to release lock", "error", err)
 			}
 		}()
 
@@ -53,23 +53,23 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 		for _, p := range projectEvents {
 			err = tokenize(ctx, eventRepo, jobRepo, p.Id, config.DefaultSearchTokenizationInterval)
 			if err != nil {
-				slog.Error(fmt.Sprintf("failed to tokenize events for project with id %s: %v", p.Id, err))
+				logger.Error(fmt.Sprintf("failed to tokenize events for project with id %s: %v", p.Id, err))
 				continue
 			}
-			slog.Debug(fmt.Sprintf("done tokenizing events for %+v with %v events", p.Id, p.EventsCount))
+			logger.Debug(fmt.Sprintf("done tokenizing events for %+v with %v events", p.Id, p.EventsCount))
 		}
-		slog.Debug("done tokenizing events in the interval")
+		logger.Debug("done tokenizing events in the interval")
 
 		return nil
 	}
 }
 
-func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.JobRepository) func(context.Context, *asynq.Task) error {
+func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var params datastore.SearchIndexParams
 		err := json.Unmarshal(t.Payload(), &params)
 		if err != nil {
-			slog.Error("failed to unmarshal tokenizer handler payload", "error", err)
+			logger.Error("failed to unmarshal tokenizer handler payload", "error", err)
 			return &EndpointError{Err: err, delay: time.Second * 30}
 		}
 
@@ -77,7 +77,7 @@ func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.Job
 		if err != nil {
 			return err
 		}
-		slog.Debug(fmt.Sprintf("done tokenizing events in the last %d hours for project with id %s", params.Interval, params.ProjectID))
+		logger.Debug(fmt.Sprintf("done tokenizing events in the last %d hours for project with id %s", params.Interval, params.ProjectID))
 
 		return nil
 	}

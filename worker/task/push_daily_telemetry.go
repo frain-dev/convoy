@@ -74,6 +74,7 @@ func PushDailyTelemetry(lo log.Logger, db database.Database, rd *rdb.Redis) func
 			Orgs:        orgs,
 			EventRepo:   eventRepo,
 			ProjectRepo: projectRepo,
+			Logger:      lo,
 		}
 
 		pb := telemetry.NewposthogBackend()

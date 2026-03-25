@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -31,6 +30,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -208,26 +208,28 @@ func CanAccessFeature(fflag *fflag.FFlag, featureKey fflag.FeatureFlagKey) func(
 	}
 }
 
-func SetupCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg, err := config.Get()
-		if err != nil {
-			slog.ErrorContext(r.Context(), "failed to load configuration", "error", err)
-			return
-		}
+func SetupCORS(logger log.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cfg, err := config.Get()
+			if err != nil {
+				logger.ErrorContext(r.Context(), "failed to load configuration", "error", err)
+				return
+			}
 
-		if env := cfg.Environment; string(env) == "development" {
-			w.Header().Set("Access-Control-Allow-Origin", cfg.Host)
-			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		}
+			if env := cfg.Environment; string(env) == "development" {
+				w.Header().Set("Access-Control-Allow-Origin", cfg.Host)
+				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+				w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+			}
 
-		if r.Method == "OPTIONS" {
-			return
-		}
+			if r.Method == "OPTIONS" {
+				return
+			}
 
-		next.ServeHTTP(w, r)
-	})
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func JsonResponse(next http.Handler) http.Handler {
@@ -237,19 +239,19 @@ func JsonResponse(next http.Handler) http.Handler {
 	})
 }
 
-func RequireAuth() func(next http.Handler) http.Handler {
+func RequireAuth(logger log.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			creds, err := GetAuthFromRequest(r)
 			if err != nil {
-				slog.ErrorContext(r.Context(), "failed to get auth from request", "error", err)
+				logger.ErrorContext(r.Context(), "failed to get auth from request", "error", err)
 				_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
 				return
 			}
 
 			rc, err := realm_chain.Get()
 			if err != nil {
-				slog.ErrorContext(r.Context(), "failed to get realm chain", "error", err)
+				logger.ErrorContext(r.Context(), "failed to get realm chain", "error", err)
 				_ = render.Render(w, r, util.NewErrorResponse("internal server error", http.StatusInternalServerError))
 				return
 			}
@@ -481,16 +483,16 @@ func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t ti
 	return responseFields
 }
 
-func statusLevel(status int) slog.Level {
+func statusLevel(status int) log.Level {
 	switch {
 	case status <= 0:
-		return slog.LevelWarn
+		return log.LevelWarn
 	case status < 400:
-		return slog.LevelInfo
+		return log.LevelInfo
 	case status < 500:
-		return slog.LevelWarn
+		return log.LevelWarn
 	default:
-		return slog.LevelError
+		return log.LevelError
 	}
 }
 
@@ -566,11 +568,11 @@ func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
 	return ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
 }
 
-func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) http.Handler {
+func RequireValidEnterpriseSSOLicense(l license.Licenser, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.EnterpriseSSO() {
-				slog.Warn("Enterprise SSO access denied - license required")
+				logger.WarnContext(r.Context(), "Enterprise SSO access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
@@ -611,11 +613,11 @@ func extractProjectID(r *http.Request) string {
 	return ""
 }
 
-func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.Handler {
+func RequireValidGoogleOAuthLicense(l license.Licenser, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.GoogleOAuth() {
-				slog.Warn("Google OAuth access denied - license required")
+				logger.WarnContext(r.Context(), "Google OAuth access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
@@ -624,11 +626,11 @@ func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.
 	}
 }
 
-func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.Handler {
+func RequireValidPortalLinksLicense(l license.Licenser, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.PortalLinks() {
-				slog.Warn("Portal links access denied - license required")
+				logger.WarnContext(r.Context(), "Portal links access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}

@@ -2,13 +2,13 @@ package listener
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
 )
@@ -16,6 +16,7 @@ import (
 type EventDeliveryListener struct {
 	mEvent       *services.MetaEvent
 	attemptsRepo datastore.DeliveryAttemptsRepository
+	logger       log.Logger
 }
 
 type MetaEventDelivery struct {
@@ -44,22 +45,22 @@ type MetaEventDelivery struct {
 	DeletedAt       null.Time                     `json:"deleted_at,omitempty"`
 }
 
-func NewEventDeliveryListener(queue queue.Queuer, projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, attemptsRepo datastore.DeliveryAttemptsRepository) *EventDeliveryListener {
-	mEvent := services.NewMetaEvent(queue, projectRepo, metaEventRepo)
-	return &EventDeliveryListener{mEvent: mEvent, attemptsRepo: attemptsRepo}
+func NewEventDeliveryListener(queue queue.Queuer, projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, attemptsRepo datastore.DeliveryAttemptsRepository, logger log.Logger) *EventDeliveryListener {
+	mEvent := services.NewMetaEvent(queue, projectRepo, metaEventRepo, logger)
+	return &EventDeliveryListener{mEvent: mEvent, attemptsRepo: attemptsRepo, logger: logger}
 }
 
 func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data, _ interface{}) {
 	eventDelivery, ok := data.(*datastore.EventDelivery)
 	if !ok {
-		slog.Error("invalid type for event - eventdelivery.updated")
+		e.logger.Error("invalid type for event - eventdelivery.updated")
 		return
 	}
 
 	mEventDelivery := getMetaEventDelivery(eventDelivery)
 	attempts, err := e.attemptsRepo.FindDeliveryAttempts(ctx, mEventDelivery.UID)
 	if err != nil {
-		slog.Error("event delivery meta event failed", "error", err)
+		e.logger.Error("event delivery meta event failed", "error", err)
 	}
 
 	if len(attempts) > 0 {
@@ -69,14 +70,14 @@ func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data, _ interfa
 	if eventDelivery.Status == datastore.SuccessEventStatus {
 		err = e.mEvent.Run(ctx, string(datastore.EventDeliverySuccess), eventDelivery.ProjectID, mEventDelivery)
 		if err != nil {
-			slog.Error("event delivery meta event failed", "error", err)
+			e.logger.Error("event delivery meta event failed", "error", err)
 		}
 	}
 
 	if eventDelivery.Status == datastore.FailureEventStatus {
 		err = e.mEvent.Run(ctx, string(datastore.EventDeliveryFailed), eventDelivery.ProjectID, mEventDelivery)
 		if err != nil {
-			slog.Error("event delivery meta event failed", "error", err)
+			e.logger.Error("event delivery meta event failed", "error", err)
 		}
 	}
 }

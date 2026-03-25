@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -17,6 +17,7 @@ type ResendEmailVerificationTokenService struct {
 
 	BaseURL string
 	User    *datastore.User
+	Logger  log.Logger
 }
 
 func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
@@ -33,11 +34,11 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 
 	err := u.UserRepo.UpdateUser(ctx, u.User)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to update user", "error", err)
+		u.Logger.ErrorContext(ctx, "failed to update user", "error", err)
 		return &ServiceError{ErrMsg: "failed to update user", Err: err}
 	}
 
-	err = sendUserVerificationEmail(ctx, u.BaseURL, u.User, u.Queue)
+	err = sendUserVerificationEmail(ctx, u.BaseURL, u.User, u.Queue, u.Logger)
 	if err != nil {
 		return &ServiceError{ErrMsg: "failed to queue user verification email", Err: err}
 	}

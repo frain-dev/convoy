@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -20,7 +19,7 @@ func createOrganisationMemberService(h *Handler) *services.OrganisationMemberSer
 	// Use new SQLc-based implementation
 	orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
 
-	return services.NewOrganisationMemberService(orgMemberRepo, h.A.Licenser)
+	return services.NewOrganisationMemberService(orgMemberRepo, h.A.Licenser, h.A.Logger)
 }
 
 func (h *Handler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +34,7 @@ func (h *Handler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request)
 
 	members, paginationData, err := organisation_members.New(h.A.Logger, h.A.DB).LoadOrganisationMembersPaged(r.Context(), org.UID, userID, pageable)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to fetch organisation members", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to fetch organisation members", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -54,7 +53,7 @@ func (h *Handler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) 
 
 	member, err := organisation_members.New(h.A.Logger, h.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to find organisation member by id", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to find organisation member by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -91,7 +90,7 @@ func (h *Handler) UpdateOrganisationMember(w http.ResponseWriter, r *http.Reques
 
 	member, err := organisation_members.New(h.A.Logger, h.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to find organisation member by id", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to find organisation member by id", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

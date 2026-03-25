@@ -3,11 +3,11 @@ package services
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
@@ -20,6 +20,7 @@ type RetryEventDeliveryService struct {
 
 	EventDelivery *datastore.EventDelivery
 	Project       *datastore.Project
+	Logger        log.Logger
 }
 
 func (e *RetryEventDeliveryService) Run(ctx context.Context) error {
@@ -44,14 +45,14 @@ func (e *RetryEventDeliveryService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "the endpoint is currently inactive"}
 	}
 
-	return requeueEventDelivery(ctx, e.EventDelivery, e.Project, e.EventDeliveryRepo, e.Queue)
+	return requeueEventDelivery(ctx, e.EventDelivery, e.Project, e.EventDeliveryRepo, e.Queue, e.Logger)
 }
 
-func requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Project, ed datastore.EventDeliveryRepository, q queue.Queuer) error {
+func requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Project, ed datastore.EventDeliveryRepository, q queue.Queuer, logger log.Logger) error {
 	eventDelivery.Status = datastore.ScheduledEventStatus
 	err := ed.UpdateStatusOfEventDelivery(ctx, g.UID, *eventDelivery, datastore.ScheduledEventStatus)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to update event delivery status", "error", err)
+		logger.ErrorContext(ctx, "failed to update event delivery status", "error", err)
 		return &ServiceError{ErrMsg: "an error occurred while trying to resend event", Err: err}
 	}
 
@@ -63,7 +64,7 @@ func requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDel
 
 	bytes, err := msgpack.EncodeMsgPack(payload)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to marshal process event delivery payload", "error", err)
+		logger.ErrorContext(ctx, "failed to marshal process event delivery payload", "error", err)
 		return &ServiceError{ErrMsg: "error occurred marshaling event delivery payload", Err: err}
 	}
 
@@ -75,7 +76,7 @@ func requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDel
 
 	err = q.Write(taskName, convoy.EventQueue, job)
 	if err != nil {
-		slog.ErrorContext(ctx, fmt.Sprintf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err))
+		logger.ErrorContext(ctx, fmt.Sprintf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err))
 		return &ServiceError{ErrMsg: fmt.Sprintf("error occurred re-enqueing old event - %s", eventDelivery.UID), Err: err}
 	}
 

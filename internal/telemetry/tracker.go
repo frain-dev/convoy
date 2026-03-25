@@ -3,11 +3,11 @@ package telemetry
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -28,6 +28,7 @@ type TotalEventsTracker struct {
 	Orgs        []datastore.Organisation
 	EventRepo   datastore.EventRepository
 	ProjectRepo datastore.ProjectRepository
+	Logger      log.Logger
 }
 
 func (te *TotalEventsTracker) track(ctx context.Context, instanceID string) (Metric, error) {
@@ -44,14 +45,14 @@ func (te *TotalEventsTracker) track(ctx context.Context, instanceID string) (Met
 	for _, org := range te.Orgs {
 		projects, err := te.ProjectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
 		if err != nil {
-			slog.Error("failed to load organisation projects", "error", err)
+			te.Logger.Error("failed to load organisation projects", "error", err)
 			continue
 		}
 
 		for _, p := range projects {
 			count, err := te.EventRepo.CountProjectMessages(ctx, p.UID)
 			if err != nil {
-				slog.Error("failed to load events paged", "error", err)
+				te.Logger.Error("failed to load events paged", "error", err)
 				continue
 			}
 			mt.Count += uint64(count) + uint64(p.RetainedEvents)
@@ -65,6 +66,7 @@ type TotalActiveProjectTracker struct {
 	Orgs        []datastore.Organisation
 	EventRepo   datastore.EventRepository
 	ProjectRepo datastore.ProjectRepository
+	Logger      log.Logger
 }
 
 func (ta *TotalActiveProjectTracker) track(ctx context.Context, instanceID string) (Metric, error) {
@@ -81,7 +83,7 @@ func (ta *TotalActiveProjectTracker) track(ctx context.Context, instanceID strin
 	for _, org := range ta.Orgs {
 		projects, err := ta.ProjectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
 		if err != nil {
-			slog.Error("failed to load organisation projects", "error", err)
+			ta.Logger.Error("failed to load organisation projects", "error", err)
 			continue
 		}
 
@@ -95,7 +97,7 @@ func (ta *TotalActiveProjectTracker) track(ctx context.Context, instanceID strin
 
 			count, err := ta.EventRepo.CountEvents(ctx, project.UID, filter)
 			if err != nil {
-				slog.Error("failed to load events paged", "error", err)
+				ta.Logger.Error("failed to load events paged", "error", err)
 				continue
 			}
 

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -101,7 +100,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 
 	err = h.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
-		slog.ErrorContext(r.Context(), fmt.Sprintf("Error occurred sending new event to the queue %s", err))
+		h.A.Logger.ErrorContext(r.Context(), fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", 200, http.StatusCreated))
@@ -466,7 +465,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 	eventsPaged, paginationData, err := events.New(h.A.Logger, h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to fetch events", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to fetch events", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
 	}
@@ -516,7 +515,7 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 
 	count, err := events.New(h.A.Logger, h.A.DB).CountEvents(r.Context(), p.UID, data.Filter)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "an error occurred while fetching event", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "an error occurred while fetching event", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

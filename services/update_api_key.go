@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -14,8 +14,9 @@ type UpdateAPIKeyService struct {
 	UserRepo    datastore.UserRepository
 	APIKeyRepo  datastore.APIKeyRepository
 
-	UID  string
-	Role *auth.Role
+	UID    string
+	Role   *auth.Role
+	Logger log.Logger
 }
 
 func (ss *UpdateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, error) {
@@ -25,7 +26,7 @@ func (ss *UpdateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, erro
 
 	err := ss.Role.Validate("api key")
 	if err != nil {
-		slog.ErrorContext(ctx, "invalid api key role", "error", err)
+		ss.Logger.ErrorContext(ctx, "invalid api key role", "error", err)
 		return nil, &ServiceError{ErrMsg: "invalid api key role", Err: err}
 	}
 
@@ -36,14 +37,14 @@ func (ss *UpdateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, erro
 
 	apiKey, err := ss.APIKeyRepo.GetAPIKeyByID(ctx, ss.UID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to fetch api key", "error", err)
+		ss.Logger.ErrorContext(ctx, "failed to fetch api key", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch api key", Err: err}
 	}
 
 	apiKey.Role = *ss.Role
 	err = ss.APIKeyRepo.UpdateAPIKey(ctx, apiKey)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to update api key", "error", err)
+		ss.Logger.ErrorContext(ctx, "failed to update api key", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to update api key", Err: err}
 	}
 

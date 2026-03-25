@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -13,8 +13,9 @@ type RevokePersonalAPIKeyService struct {
 	UserRepo    datastore.UserRepository
 	APIKeyRepo  datastore.APIKeyRepository
 
-	UID  string
-	User *datastore.User
+	UID    string
+	User   *datastore.User
+	Logger log.Logger
 }
 
 func (ss *RevokePersonalAPIKeyService) Run(ctx context.Context) error {
@@ -24,7 +25,7 @@ func (ss *RevokePersonalAPIKeyService) Run(ctx context.Context) error {
 
 	apiKey, err := ss.APIKeyRepo.GetAPIKeyByID(ctx, ss.UID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to fetch api key", "error", err)
+		ss.Logger.ErrorContext(ctx, "failed to fetch api key", "error", err)
 		return &ServiceError{ErrMsg: "failed to fetch api key", Err: err}
 	}
 
@@ -34,7 +35,7 @@ func (ss *RevokePersonalAPIKeyService) Run(ctx context.Context) error {
 
 	err = ss.APIKeyRepo.RevokeAPIKeys(ctx, []string{ss.UID})
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to revoke api key", "error", err)
+		ss.Logger.ErrorContext(ctx, "failed to revoke api key", "error", err)
 		return &ServiceError{ErrMsg: "failed to revoke api key", Err: err}
 	}
 

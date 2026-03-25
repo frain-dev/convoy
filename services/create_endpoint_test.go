@@ -8,7 +8,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
-	"log/slog"
 	"math/big"
 	"os"
 	"testing"
@@ -32,7 +31,7 @@ func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoi
 		EndpointRepo:               mocks.NewMockEndpointRepository(ctrl),
 		ProjectRepo:                mocks.NewMockProjectRepository(ctrl),
 		Licenser:                   mocks.NewMockLicenser(ctrl),
-		Logger:                     log.New("convoy", slog.LevelInfo),
+		Logger:                     log.New("convoy", log.LevelInfo),
 		FeatureFlag:                fflag.NoopFflag(),
 		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),
 		EarlyAdopterFeatureFetcher: mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),

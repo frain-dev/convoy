@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -39,7 +38,7 @@ func TestGetInternalOrganisationID_BillingDisabled_DoesNotCallBilling(t *testing
 			A: &types.APIOptions{
 				Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: false}},
 				BillingClient: &client,
-				Logger:        log.New("convoy", slog.LevelInfo),
+				Logger:        log.New("convoy", log.LevelInfo),
 			},
 		},
 		BillingClient: &client,

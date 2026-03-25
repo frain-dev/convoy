@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
@@ -59,7 +59,7 @@ func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
 
 	contentType := r.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "multipart/form-data") {
-		items, err = parseCSVUpload(r)
+		items, err = parseCSVUpload(r, h.A.Logger)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -185,16 +185,16 @@ func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Bulk onboard request accepted", resp, http.StatusAccepted))
 }
 
-func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
+func parseCSVUpload(r *http.Request, logger log.Logger) ([]models.OnboardItem, error) {
 	err := r.ParseMultipartForm(10 << 20) // 10 MB
 	if err != nil {
-		slog.Error("bulk onboard: failed to parse multipart form", "error", err)
+		logger.Error("bulk onboard: failed to parse multipart form", "error", err)
 		return nil, fmt.Errorf("failed to parse multipart form")
 	}
 
 	file, _, err := r.FormFile("file")
 	if err != nil {
-		slog.Error("bulk onboard: failed to read file field", "error", err)
+		logger.Error("bulk onboard: failed to read file field", "error", err)
 		return nil, fmt.Errorf("failed to read file field")
 	}
 	defer file.Close()
@@ -204,7 +204,7 @@ func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
 	// Read and validate header
 	header, err := reader.Read()
 	if err != nil {
-		slog.Error("bulk onboard: failed to read CSV header", "error", err)
+		logger.Error("bulk onboard: failed to read CSV header", "error", err)
 		return nil, fmt.Errorf("failed to read CSV header")
 	}
 
@@ -230,7 +230,7 @@ func parseCSVUpload(r *http.Request) ([]models.OnboardItem, error) {
 		}
 		dataRow++
 		if readErr != nil {
-			slog.Error(fmt.Sprintf("bulk onboard: failed to parse CSV data row %d: %v", dataRow, readErr))
+			logger.Error(fmt.Sprintf("bulk onboard: failed to parse CSV data row %d: %v", dataRow, readErr))
 			return nil, fmt.Errorf("CSV (data row %d): failed to parse row", dataRow)
 		}
 

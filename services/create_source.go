@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -13,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type CreateSourceService struct {
@@ -20,6 +20,7 @@ type CreateSourceService struct {
 	Cache      cache.Cache
 	NewSource  *models.CreateSource
 	Project    *datastore.Project
+	Logger     log.Logger
 }
 
 func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error) {
@@ -65,7 +66,7 @@ func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error
 
 	err = s.SourceRepo.CreateSource(ctx, source)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to create source", "error", err)
+		s.Logger.ErrorContext(ctx, "failed to create source", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create source", Err: err}
 	}
 

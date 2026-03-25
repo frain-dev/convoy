@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -118,7 +117,7 @@ func (k *Kafka) Verify() error {
 func (k *Kafka) consume() {
 	dialer, err := k.dialer()
 	if err != nil {
-		slog.Error(fmt.Sprintf("failed to fetch auth for kafka source %s with id %s: %v", k.source.Name, k.source.UID, err))
+		k.log.Error(fmt.Sprintf("failed to fetch auth for kafka source %s with id %s: %v", k.source.Name, k.source.UID, err))
 		return
 	}
 
@@ -141,7 +140,7 @@ func (k *Kafka) consume() {
 
 	cfg, err := config.Get()
 	if err != nil {
-		slog.Error(fmt.Sprintf("failed to load config.Get() in kafka source %s with id %s: %v", k.source.Name, k.source.UID, err))
+		k.log.Error(fmt.Sprintf("failed to load config.Get() in kafka source %s with id %s: %v", k.source.Name, k.source.UID, err))
 		return
 	}
 
@@ -160,7 +159,7 @@ func (k *Kafka) consume() {
 
 			m, err := r.FetchMessage(k.ctx)
 			if err != nil {
-				slog.Error(fmt.Sprintf("failed to fetch message from kafka source %s with id %s from topic %s - kafka: %v", k.source.Name, k.source.UID, k.Cfg.TopicName, err))
+				k.log.Error(fmt.Sprintf("failed to fetch message from kafka source %s with id %s from topic %s - kafka: %v", k.source.Name, k.source.UID, k.Cfg.TopicName, err))
 				continue
 			}
 

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -66,7 +65,7 @@ func (h *Handler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Reques
 
 	iv, err := inviteService.Run(r.Context())
 	if err != nil {
-		slog.ErrorContext(r.Context(), err.Error())
+		h.A.Logger.ErrorContext(r.Context(), err.Error())
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -85,7 +84,7 @@ func (h *Handler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.R
 	pageable := m.GetPageableFromContext(r.Context())
 	invites, paginationData, err := organisation_invites.New(h.A.Logger, h.A.DB).LoadOrganisationsInvitesPaged(r.Context(), org.UID, datastore.InviteStatusPending, pageable)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to load organisation invites", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to load organisation invites", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

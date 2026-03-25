@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -27,7 +26,7 @@ func createProjectService(h *Handler) (*services.ProjectService, error) {
 	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 	eventTypesRepo := event_types.New(h.A.Logger, h.A.DB)
 
-	projectService, err := services.NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, h.A.Licenser, eventTypesRepo)
+	projectService, err := services.NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, h.A.Licenser, eventTypesRepo, h.A.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +54,7 @@ func (h *Handler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
 
 	err = projects.New(h.A.Logger, h.A.DB).FillProjectsStatistics(r.Context(), project)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to count project statistics", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to count project statistics", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to count project statistics", http.StatusBadRequest))
 		return
 	}
@@ -77,7 +76,7 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	err = projects.New(h.A.Logger, h.A.DB).DeleteProject(r.Context(), project.UID)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to delete project", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to delete project", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete project", http.StatusBadRequest))
 		return
 	}
@@ -221,7 +220,7 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
 	projectsList, err := projects.New(h.A.Logger, h.A.DB).LoadProjects(r.Context(), filter)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "failed to load projects", "error", err)
+		h.A.Logger.ErrorContext(r.Context(), "failed to load projects", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching projects", http.StatusBadRequest))
 		return
 	}

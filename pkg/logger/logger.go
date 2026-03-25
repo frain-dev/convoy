@@ -10,6 +10,17 @@ import (
 	"time"
 )
 
+// Level is a type alias for slog.Level so callers don't need to import log/slog.
+type Level = slog.Level
+
+// Level constants re-exported from log/slog so callers don't need to import log/slog directly.
+const (
+	LevelDebug Level = slog.LevelDebug
+	LevelInfo  Level = slog.LevelInfo
+	LevelWarn  Level = slog.LevelWarn
+	LevelError Level = slog.LevelError
+)
+
 type Logger interface {
 	Info(args ...any)
 	Debug(args ...any)
@@ -27,7 +38,7 @@ type Logger interface {
 	DebugContext(ctx context.Context, msg string, args ...any)
 	WarnContext(ctx context.Context, msg string, args ...any)
 	ErrorContext(ctx context.Context, msg string, args ...any)
-	Log(ctx context.Context, level slog.Level, msg string, args ...any)
+	Log(ctx context.Context, level Level, msg string, args ...any)
 }
 
 // SlogLogger is a reusable logger implementation that supports contextual fields

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -17,6 +16,7 @@ import (
 	tracer2 "github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/frain-dev/convoy/retrystrategies"
@@ -29,13 +29,13 @@ type MetaEvent struct {
 	ProjectID   string
 }
 
-func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher, tracerBackend tracer2.Backend) func(context.Context, *asynq.Task) error {
+func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher, tracerBackend tracer2.Backend, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data MetaEvent
 
 		err := msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
-			slog.Error("failed to unmarshal process process meta event payload", "error", err)
+			logger.Error("failed to unmarshal process process meta event payload", "error", err)
 			err := json.Unmarshal(t.Payload(), &data)
 			if err != nil {
 				return &EndpointError{Err: err, delay: defaultDelay}
@@ -44,13 +44,13 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 		metaEvent, err := metaEventRepo.FindMetaEventByID(ctx, data.ProjectID, data.MetaEventID)
 		if err != nil {
-			slog.Error("failed to find meta event by id", "error", err)
+			logger.Error("failed to find meta event by id", "error", err)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		project, err := projectRepo.FetchProjectByID(ctx, data.ProjectID)
 		if err != nil {
-			slog.Error("failed to find project by id", "error", err)
+			logger.Error("failed to find project by id", "error", err)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
@@ -62,19 +62,19 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 		metaEvent.Status = datastore.ProcessingEventStatus
 		err = metaEventRepo.UpdateMetaEvent(ctx, metaEvent.ProjectID, metaEvent)
 		if err != nil {
-			slog.Error("failed to update meta event status", "error", err)
+			logger.Error("failed to update meta event status", "error", err)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 		cfg, err := config.Get()
 		if err != nil {
-			slog.Error("failed to get config", "error", err)
+			logger.Error("failed to get config", "error", err)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 		metaEvent.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*metaEvent.Metadata).NextDuration(metaEvent.Metadata.NumTrials)
 
-		resp, err := sendUrlRequest(ctx, project, metaEvent, dispatch, tracerBackend)
+		resp, err := sendUrlRequest(ctx, project, metaEvent, dispatch, tracerBackend, logger)
 		metaEvent.Metadata.NumTrials++
 
 		if resp != nil {
@@ -89,7 +89,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 		}
 
 		if err != nil {
-			slog.Error("failed to dispatch meta event request", "error", err)
+			logger.Error("failed to dispatch meta event request", "error", err)
 			metaEvent.Status = datastore.RetryEventStatus
 			nextTime := time.Now().Add(delayDuration)
 			metaEvent.Metadata.NextSendTime = nextTime
@@ -100,11 +100,11 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 			err = metaEventRepo.UpdateMetaEvent(ctx, project.UID, metaEvent)
 			if err != nil {
-				slog.Error("failed to update meta event", "error", err)
+				logger.Error("failed to update meta event", "error", err)
 			}
 
 			if metaEvent.Metadata.NumTrials < metaEvent.Metadata.RetryLimit {
-				slog.InfoContext(ctx, fmt.Sprintf("%s next retry time meta events is %s (strategy = %s, delay = %d, attempts = %d/%d)",
+				logger.InfoContext(ctx, fmt.Sprintf("%s next retry time meta events is %s (strategy = %s, delay = %d, attempts = %d/%d)",
 					metaEvent.UID, nextTime.Format(time.ANSIC), metaEvent.Metadata.Strategy, metaEvent.Metadata.IntervalSeconds, metaEvent.Metadata.NumTrials, metaEvent.Metadata.RetryLimit))
 				return &EndpointError{Err: ErrMetaEventDeliveryFailed, delay: delayDuration}
 			}
@@ -115,14 +115,14 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 		metaEvent.Status = datastore.SuccessEventStatus
 		err = metaEventRepo.UpdateMetaEvent(ctx, project.UID, metaEvent)
 		if err != nil {
-			slog.Error("failed to update meta event", "error", err)
+			logger.Error("failed to update meta event", "error", err)
 		}
 
 		return nil
 	}
 }
 
-func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *datastore.MetaEvent, dispatch *net.Dispatcher, tracerBackend tracer2.Backend) (*net.Response, error) {
+func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *datastore.MetaEvent, dispatch *net.Dispatcher, tracerBackend tracer2.Backend, logger log.Logger) (*net.Response, error) {
 	cfg, err := config.Get()
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 
 	header, err := sig.ComputeHeaderValue()
 	if err != nil {
-		slog.Error("error occurred generating hmac", "error", err)
+		logger.Error("error occurred generating hmac", "error", err)
 		return nil, err
 	}
 
@@ -170,8 +170,8 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 		"duration", duration}
 
 	if statusCode >= 200 && statusCode <= 299 {
-		slog.Info(metaEvent.UID, logAttrs...)
-		slog.Info(fmt.Sprintf("%s sent", metaEvent.UID))
+		logger.Info(append([]any{metaEvent.UID}, logAttrs...)...)
+		logger.Info(fmt.Sprintf("%s sent", metaEvent.UID))
 		return resp, nil
 	}
 
@@ -188,6 +188,6 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 	endTime := time.Now()
 	tracerBackend.Capture(ctx, "meta_event_delivery", attributes, startTime, endTime)
 
-	slog.Error(metaEvent.UID, logAttrs...)
+	logger.Error(append([]any{metaEvent.UID}, logAttrs...)...)
 	return resp, errors.New(resp.Error)
 }

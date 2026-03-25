@@ -2,13 +2,13 @@ package services
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -19,7 +19,8 @@ type ReplayEventService struct {
 	EndpointRepo datastore.EndpointRepository
 	Queue        queue.Queuer
 
-	Event *datastore.Event
+	Event  *datastore.Event
+	Logger log.Logger
 }
 
 func (e *ReplayEventService) Run(ctx context.Context) error {
@@ -46,7 +47,7 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 
 	err = e.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
-		slog.ErrorContext(ctx, "replay_event: failed to write event to the queue", "error", err)
+		e.Logger.ErrorContext(ctx, "replay_event: failed to write event to the queue", "error", err)
 		return &ServiceError{ErrMsg: "failed to write event to queue", Err: err}
 	}
 

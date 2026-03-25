@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,7 +27,7 @@ func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoi
 		FeatureFlag:                fflag.NoopFflag(),
 		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),
 		EarlyAdopterFeatureFetcher: mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),
-		Logger:                     log.New("convoy", slog.LevelInfo),
+		Logger:                     log.New("convoy", log.LevelInfo),
 		E:                          e,
 		Endpoint:                   Endpoint,
 		Project:                    Project,
