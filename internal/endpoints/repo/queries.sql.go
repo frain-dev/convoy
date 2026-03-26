@@ -123,7 +123,7 @@ VALUES (
     CASE WHEN $4::boolean THEN pgp_sym_encrypt($22::TEXT, $20) END,
     CASE WHEN $4::boolean THEN NULL ELSE $23::jsonb END,
     CASE WHEN $4::boolean THEN pgp_sym_encrypt($23::TEXT, $20) END,
-    $24
+    CAST($24 AS text)::convoy.endpoint_content_types
 )
 `
 
@@ -151,7 +151,7 @@ type CreateEndpointParams struct {
 	MtlsClientCert                      []byte
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
-	ContentType                         interface{}
+	ContentType                         pgtype.Text
 }
 
 // Endpoints Queries
@@ -1105,7 +1105,7 @@ UPDATE convoy.endpoints SET
     basic_auth_config_cipher = CASE
         WHEN is_encrypted THEN pgp_sym_encrypt($19::TEXT, $15)
     END,
-    updated_at = NOW(), content_type = $20
+    updated_at = NOW(), content_type = CAST($20 AS text)::convoy.endpoint_content_types
 WHERE id = $21 AND project_id = $22 AND deleted_at IS NULL
 `
 
@@ -1129,7 +1129,7 @@ type UpdateEndpointParams struct {
 	MtlsClientCertText                  []byte
 	Oauth2ConfigText                    []byte
 	BasicAuthConfigText                 []byte
-	ContentType                         interface{}
+	ContentType                         pgtype.Text
 	ID                                  pgtype.Text
 	ProjectID                           pgtype.Text
 }

@@ -31,7 +31,7 @@ VALUES (
     CASE WHEN @is_encrypted::boolean THEN pgp_sym_encrypt(@oauth2_config::TEXT, @encryption_key) END,
     CASE WHEN @is_encrypted::boolean THEN NULL ELSE @basic_auth_config::jsonb END,
     CASE WHEN @is_encrypted::boolean THEN pgp_sym_encrypt(@basic_auth_config::TEXT, @encryption_key) END,
-    @content_type
+    CAST(@content_type AS text)::convoy.endpoint_content_types
 );
 
 -- name: FindEndpointByID :one
@@ -247,7 +247,7 @@ UPDATE convoy.endpoints SET
     basic_auth_config_cipher = CASE
         WHEN is_encrypted THEN pgp_sym_encrypt(@basic_auth_config_text::TEXT, @encryption_key)
     END,
-    updated_at = NOW(), content_type = @content_type
+    updated_at = NOW(), content_type = CAST(@content_type AS text)::convoy.endpoint_content_types
 WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL;
 
 -- name: UpdateEndpointStatus :execresult

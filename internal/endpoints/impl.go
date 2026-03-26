@@ -119,7 +119,7 @@ func (s *Service) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 		MtlsClientCert:                      mtlsClientCert,
 		Oauth2Config:                        oauth2Config,
 		BasicAuthConfig:                     basicAuthConfig,
-		ContentType:                         contentType,
+		ContentType:                         common.StringToPgText(contentType),
 	}
 
 	err = s.repo.CreateEndpoint(ctx, params)
@@ -349,7 +349,7 @@ func (s *Service) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 		MtlsClientCertText:                  mtlsClientCertText,
 		Oauth2ConfigText:                    oauth2Config,
 		BasicAuthConfigText:                 basicAuthConfig,
-		ContentType:                         contentType,
+		ContentType:                         common.StringToPgText(contentType),
 		ID:                                  common.StringToPgTextNullable(endpoint.UID),
 		ProjectID:                           common.StringToPgTextNullable(projectID),
 	}

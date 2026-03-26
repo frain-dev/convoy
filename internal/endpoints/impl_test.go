@@ -263,6 +263,75 @@ func TestCreateEndpoint(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid content type")
 	})
+
+	t.Run("with_oauth2_auth", func(t *testing.T) {
+		svc, db := setupTestDB(t)
+		project := seedTestProject(t, db)
+
+		endpoint := &datastore.Endpoint{
+			UID:    ulid.Make().String(),
+			Name:   fmt.Sprintf("oauth2-endpoint-%s", ulid.Make().String()[:8]),
+			Url:    "https://example.com/webhook",
+			Status: datastore.ActiveEndpointStatus,
+			Secrets: datastore.Secrets{
+				{UID: ulid.Make().String(), Value: "secret", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+			},
+			Authentication: &datastore.EndpointAuthentication{
+				Type: datastore.OAuth2Authentication,
+				OAuth2: &datastore.OAuth2{
+					URL:                "https://auth.example.com/token",
+					ClientID:           "test-client-id",
+					GrantType:          "client_credentials",
+					AuthenticationType: "shared_secret",
+					ClientSecret:       "test-client-secret",
+				},
+			},
+		}
+		err := svc.CreateEndpoint(context.Background(), endpoint, project.UID)
+		require.NoError(t, err)
+
+		fetched, err := svc.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+		require.NoError(t, err)
+		require.NotNil(t, fetched.Authentication)
+		require.Equal(t, datastore.OAuth2Authentication, fetched.Authentication.Type)
+		require.NotNil(t, fetched.Authentication.OAuth2)
+		require.Equal(t, "https://auth.example.com/token", fetched.Authentication.OAuth2.URL)
+		require.Equal(t, "test-client-id", fetched.Authentication.OAuth2.ClientID)
+		require.Equal(t, "client_credentials", fetched.Authentication.OAuth2.GrantType)
+		require.Equal(t, "test-client-secret", fetched.Authentication.OAuth2.ClientSecret)
+	})
+
+	t.Run("with_basic_auth", func(t *testing.T) {
+		svc, db := setupTestDB(t)
+		project := seedTestProject(t, db)
+
+		endpoint := &datastore.Endpoint{
+			UID:    ulid.Make().String(),
+			Name:   fmt.Sprintf("basic-auth-endpoint-%s", ulid.Make().String()[:8]),
+			Url:    "https://example.com/webhook",
+			Status: datastore.ActiveEndpointStatus,
+			Secrets: datastore.Secrets{
+				{UID: ulid.Make().String(), Value: "secret", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+			},
+			Authentication: &datastore.EndpointAuthentication{
+				Type: datastore.BasicAuthentication,
+				BasicAuth: &datastore.BasicAuth{
+					UserName: "test-user",
+					Password: "test-password",
+				},
+			},
+		}
+		err := svc.CreateEndpoint(context.Background(), endpoint, project.UID)
+		require.NoError(t, err)
+
+		fetched, err := svc.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+		require.NoError(t, err)
+		require.NotNil(t, fetched.Authentication)
+		require.Equal(t, datastore.BasicAuthentication, fetched.Authentication.Type)
+		require.NotNil(t, fetched.Authentication.BasicAuth)
+		require.Equal(t, "test-user", fetched.Authentication.BasicAuth.UserName)
+		require.Equal(t, "test-password", fetched.Authentication.BasicAuth.Password)
+	})
 }
 
 func TestFindEndpointByID(t *testing.T) {
