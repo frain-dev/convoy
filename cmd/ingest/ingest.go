@@ -2,7 +2,6 @@ package ingest
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -39,7 +38,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	instCfg, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
-		slog.Error("Failed to load configuration", "error", err)
+		a.Logger.Error("Failed to load configuration", "error", err)
 	}
 
 	var host string
@@ -59,7 +58,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	go ingest.Run()
 
-	slog.Info("Starting Convoy Ingester")
+	a.Logger.Info("Starting Convoy Ingester")
 
 	return nil
 }

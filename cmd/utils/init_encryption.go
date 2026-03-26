@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"log/slog"
 
 	"github.com/spf13/cobra"
 
@@ -29,13 +28,13 @@ func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			timeout, err := cmd.Flags().GetInt("timeout")
 			if err != nil {
-				slog.Error("failed to get timeout", "error", err)
+				a.Logger.Error("failed to get timeout", "error", err)
 				return err
 			}
 
 			cfg, err := config.Get()
 			if err != nil {
-				slog.Error("Error fetching the config.", "error", err)
+				a.Logger.Error("Error fetching the config.", "error", err)
 				return err
 			}
 
@@ -62,18 +61,18 @@ func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 				return ErrEncryptionKeyCannotBeEmpty
 			}
 
-			slog.Info("Initializing encryption with the current encryption key...")
+			a.Logger.Info("Initializing encryption with the current encryption key...")
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
-				slog.Error("Error connecting to database.", "error", err)
+				a.Logger.Error("Error connecting to database.", "error", err)
 				return err
 			}
 			defer db.Close()
 
 			err = keys.InitEncryption(a.Logger, db, km, currentKey, timeout)
 			if err != nil {
-				slog.Error("Error initializing encryption key.", "error", err)
+				a.Logger.Error("Error initializing encryption key.", "error", err)
 			}
 			return err
 		},
