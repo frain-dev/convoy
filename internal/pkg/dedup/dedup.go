@@ -43,7 +43,7 @@ func (d *DeDuper) GenerateChecksum(source string, input []string) (string, error
 	var builder strings.Builder
 	builder.WriteString(source)
 	for i := range parts {
-		builder.WriteString(fmt.Sprintf("%v", parts[i]))
+		fmt.Fprintf(&builder, "%v", parts[i])
 	}
 
 	checksum := GenerateChecksum(builder.String())
@@ -62,16 +62,11 @@ func (d *DeDuper) Exists(source, projectId string, input []string) (bool, error)
 	var builder strings.Builder
 	builder.WriteString(source)
 	for i := range parts {
-		builder.WriteString(fmt.Sprintf("%v", parts[i]))
+		fmt.Fprintf(&builder, "%v", parts[i])
 	}
 
 	checksum := GenerateChecksum(builder.String())
-	events, err := d.eventRepo.FindEventsByIdempotencyKey(d.ctx, projectId, checksum)
-	if err != nil {
-		return false, err
-	}
-
-	return len(events) > 0, nil
+	return d.eventRepo.FindEventsByIdempotencyKey(d.ctx, projectId, checksum)
 }
 
 func (d *DeDuper) extractDataFromRequest(input []string) ([]interface{}, error) {
@@ -146,7 +141,7 @@ func (d *DeDuper) extractFromBodyJSON(request *http.Request, parts []string) (in
 	var q strings.Builder
 	q.WriteString(parts[0])
 	for i := 1; i < len(parts); i++ {
-		q.WriteString(fmt.Sprintf(".%v", parts[i]))
+		fmt.Fprintf(&q, ".%v", parts[i])
 	}
 
 	return gjson.GetBytes(body, q.String()), nil

@@ -1,0 +1,16 @@
+// Plan badge next to "Organisation Info" – Convoy theme (new.primary palette)
+.org-plan-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 100px;
+	border: 1px solid #91b1d1; // new.primary-200
+	background: #edf2f7; // new.primary-25
+	color: #0a3866; // new.primary-700
+	font-size: 10px;
+	line-height: 1;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	box-shadow: 0 0 0 -4px rgba(12, 26, 75, 0.08), 0 0 1px 1px rgba(50, 50, 71, 0.05);
+}

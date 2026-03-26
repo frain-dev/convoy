@@ -123,6 +123,20 @@ func (mr *MockLicenserMockRecorder) AsynqMonitoring() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsynqMonitoring", reflect.TypeOf((*MockLicenser)(nil).AsynqMonitoring))
 }
 
+// BasicAuthEndpointAuth mocks base method.
+func (m *MockLicenser) BasicAuthEndpointAuth() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BasicAuthEndpointAuth")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// BasicAuthEndpointAuth indicates an expected call of BasicAuthEndpointAuth.
+func (mr *MockLicenserMockRecorder) BasicAuthEndpointAuth() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BasicAuthEndpointAuth", reflect.TypeOf((*MockLicenser)(nil).BasicAuthEndpointAuth))
+}
+
 // CanExportPrometheusMetrics mocks base method.
 func (m *MockLicenser) CanExportPrometheusMetrics() bool {
 	m.ctrl.T.Helper()
@@ -135,34 +149,6 @@ func (m *MockLicenser) CanExportPrometheusMetrics() bool {
 func (mr *MockLicenserMockRecorder) CanExportPrometheusMetrics() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanExportPrometheusMetrics", reflect.TypeOf((*MockLicenser)(nil).CanExportPrometheusMetrics))
-}
-
-// CircuitBreaking mocks base method.
-func (m *MockLicenser) CircuitBreaking() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CircuitBreaking")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// CircuitBreaking indicates an expected call of CircuitBreaking.
-func (mr *MockLicenserMockRecorder) CircuitBreaking() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CircuitBreaking", reflect.TypeOf((*MockLicenser)(nil).CircuitBreaking))
-}
-
-// ConsumerPoolTuning mocks base method.
-func (m *MockLicenser) ConsumerPoolTuning() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConsumerPoolTuning")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// ConsumerPoolTuning indicates an expected call of ConsumerPoolTuning.
-func (mr *MockLicenserMockRecorder) ConsumerPoolTuning() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConsumerPoolTuning", reflect.TypeOf((*MockLicenser)(nil).ConsumerPoolTuning))
 }
 
 // CheckOrgLimit mocks base method.
@@ -210,19 +196,32 @@ func (mr *MockLicenserMockRecorder) CheckUserLimit(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserLimit", reflect.TypeOf((*MockLicenser)(nil).CheckUserLimit), ctx)
 }
 
-// IsMultiUserMode mocks base method.
-func (m *MockLicenser) IsMultiUserMode(ctx context.Context) (bool, error) {
+// CircuitBreaking mocks base method.
+func (m *MockLicenser) CircuitBreaking() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsMultiUserMode", ctx)
+	ret := m.ctrl.Call(m, "CircuitBreaking")
 	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
-// IsMultiUserMode indicates an expected call of IsMultiUserMode.
-func (mr *MockLicenserMockRecorder) IsMultiUserMode(ctx any) *gomock.Call {
+// CircuitBreaking indicates an expected call of CircuitBreaking.
+func (mr *MockLicenserMockRecorder) CircuitBreaking() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMultiUserMode", reflect.TypeOf((*MockLicenser)(nil).IsMultiUserMode), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CircuitBreaking", reflect.TypeOf((*MockLicenser)(nil).CircuitBreaking))
+}
+
+// ConsumerPoolTuning mocks base method.
+func (m *MockLicenser) ConsumerPoolTuning() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConsumerPoolTuning")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// ConsumerPoolTuning indicates an expected call of ConsumerPoolTuning.
+func (mr *MockLicenserMockRecorder) ConsumerPoolTuning() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConsumerPoolTuning", reflect.TypeOf((*MockLicenser)(nil).ConsumerPoolTuning))
 }
 
 // CredentialEncryption mocks base method.
@@ -338,6 +337,21 @@ func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IpRules", reflect.TypeOf((*MockLicenser)(nil).IpRules))
 }
 
+// IsMultiUserMode mocks base method.
+func (m *MockLicenser) IsMultiUserMode(ctx context.Context) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsMultiUserMode", ctx)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsMultiUserMode indicates an expected call of IsMultiUserMode.
+func (mr *MockLicenserMockRecorder) IsMultiUserMode(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMultiUserMode", reflect.TypeOf((*MockLicenser)(nil).IsMultiUserMode), ctx)
+}
+
 // MutualTLS mocks base method.
 func (m *MockLicenser) MutualTLS() bool {
 	m.ctrl.T.Helper()
@@ -434,6 +448,20 @@ func (mr *MockLicenserMockRecorder) RetentionPolicy() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetentionPolicy", reflect.TypeOf((*MockLicenser)(nil).RetentionPolicy))
 }
 
+// StaticIP mocks base method.
+func (m *MockLicenser) StaticIP() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StaticIP")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// StaticIP indicates an expected call of StaticIP.
+func (mr *MockLicenserMockRecorder) StaticIP() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StaticIP", reflect.TypeOf((*MockLicenser)(nil).StaticIP))
+}
+
 // Transformations mocks base method.
 func (m *MockLicenser) Transformations() bool {
 	m.ctrl.T.Helper()
@@ -474,18 +502,4 @@ func (m *MockLicenser) WebhookAnalytics() bool {
 func (mr *MockLicenserMockRecorder) WebhookAnalytics() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WebhookAnalytics", reflect.TypeOf((*MockLicenser)(nil).WebhookAnalytics))
-}
-
-// StaticIP mocks base method.
-func (m *MockLicenser) StaticIP() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StaticIP")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// StaticIP indicates an expected call of StaticIP.
-func (mr *MockLicenserMockRecorder) StaticIP() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StaticIP", reflect.TypeOf((*MockLicenser)(nil).StaticIP))
 }

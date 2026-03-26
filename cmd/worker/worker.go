@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -14,6 +17,8 @@ import (
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/filters"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
@@ -73,41 +78,9 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		return nil, err
 	}
 
-	redis, err := rdb.NewClientFromConfig(
-		cfg.Redis.BuildDsn(),
-		cfg.Redis.TLSSkipVerify,
-		cfg.Redis.TLSCACertFile,
-		cfg.Redis.TLSCertFile,
-		cfg.Redis.TLSKeyFile,
-	)
+	redis, err := rdb.NewClientFromRedisConfig(cfg.Redis)
 	if err != nil {
 		return nil, err
-	}
-
-	events := map[string]int{
-		string(convoy.EventQueue):         5,
-		string(convoy.CreateEventQueue):   5,
-		string(convoy.EventWorkflowQueue): 5,
-	}
-
-	retry := map[string]int{
-		string(convoy.RetryEventQueue):    7,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.MetaEventQueue):     1,
-		string(convoy.BatchRetryQueue):    5,
-		string(convoy.EventWorkflowQueue): 4,
-	}
-
-	both := map[string]int{
-		string(convoy.EventQueue):         4,
-		string(convoy.CreateEventQueue):   4,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.RetryEventQueue):    1,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.MetaEventQueue):     1,
-		string(convoy.BatchRetryQueue):    1,
 	}
 
 	if !a.Licenser.AgentExecutionMode() {
@@ -119,24 +92,9 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		return nil, err
 	}
 
-	var queueNames map[string]int
-	switch cfg.WorkerExecutionMode {
-	case config.RetryExecutionMode:
-		queueNames = retry
-	case config.EventsExecutionMode:
-		queueNames = events
-	case config.DefaultExecutionMode:
-		queueNames = both
-	default:
-		return nil, fmt.Errorf("unknown execution mode: %s", cfg.WorkerExecutionMode)
-	}
-
-	opts := queue.QueueOptions{
-		Names:             queueNames,
-		RedisClient:       redis,
-		RedisAddress:      cfg.Redis.BuildDsn(),
-		Type:              string(config.RedisQueueProvider),
-		PrometheusAddress: cfg.Prometheus.Dsn,
+	opts, err := getQueueOptions(&cfg, redis)
+	if err != nil {
+		return nil, err
 	}
 
 	q := redisQueue.NewQueue(opts)
@@ -161,22 +119,16 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	projectRepo := projects.New(a.Logger, a.DB)
 	metaEventRepo := meta_events.New(a.Logger, a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
-	eventRepo := postgres.NewEventRepo(a.DB)
+	eventRepo := events.New(a.Logger, a.DB)
 	jobRepo := postgres.NewJobRepo(a.DB)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
+	eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
 	subRepo := subscriptions.New(a.Logger, a.DB)
 	configRepo := configuration.New(a.Logger, a.DB)
 	attemptRepo := delivery_attempts.New(a.Logger, a.DB)
 	filterRepo := filters.New(a.Logger, a.DB)
 	batchRetryRepo := batch_retries.New(lo, a.DB)
 
-	rd, err := rdb.NewClientFromConfig(
-		cfg.Redis.BuildDsn(),
-		cfg.Redis.TLSSkipVerify,
-		cfg.Redis.TLSCACertFile,
-		cfg.Redis.TLSCertFile,
-		cfg.Redis.TLSKeyFile,
-	)
+	rd, err := rdb.NewClientFromRedisConfig(cfg.Redis)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +262,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 							ownerEmail = owner.Email
 						}
 					}
-					_ = EnqueueCircuitBreakerEmails(a.Queue, lo, project, endpoint, ownerEmail)
+					_ = EnqueueCircuitBreakerEmails(a.Queue, lo, project, endpoint, ownerEmail, b.FailureRate)
 
 				default:
 					return fmt.Errorf("unsupported circuit breaker notification type: %s", n)
@@ -440,6 +392,17 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
 
+	bulkOnboardDeps := task.BulkOnboardDeps{
+		EndpointRepo:               endpointRepo,
+		SubRepo:                    subRepo,
+		ProjectRepo:                projectRepo,
+		Licenser:                   a.Licenser,
+		FeatureFlag:                featureFlag,
+		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
+		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
+	}
+	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
+
 	var billingClient billing.Client
 	if cfg.Billing.Enabled {
 		billingClient = billing.NewClient(cfg.Billing)
@@ -474,4 +437,66 @@ func (w *Worker) Run(ctx context.Context, workerReady chan struct{}) error {
 	w.logger.Printf("Convoy Consumer Pool stopped")
 
 	return ctx.Err()
+}
+
+func getQueueOptions(cfg *config.Configuration, redis *rdb.Redis) (queue.QueueOptions, error) {
+	events := map[string]int{
+		string(convoy.EventQueue):         5,
+		string(convoy.CreateEventQueue):   5,
+		string(convoy.EventWorkflowQueue): 5,
+	}
+
+	retry := map[string]int{
+		string(convoy.RetryEventQueue):    7,
+		string(convoy.ScheduleQueue):      1,
+		string(convoy.DefaultQueue):       1,
+		string(convoy.MetaEventQueue):     1,
+		string(convoy.BatchRetryQueue):    5,
+		string(convoy.EventWorkflowQueue): 4,
+	}
+
+	both := map[string]int{
+		string(convoy.EventQueue):         4,
+		string(convoy.CreateEventQueue):   4,
+		string(convoy.EventWorkflowQueue): 3,
+		string(convoy.RetryEventQueue):    1,
+		string(convoy.ScheduleQueue):      1,
+		string(convoy.DefaultQueue):       1,
+		string(convoy.MetaEventQueue):     1,
+		string(convoy.BatchRetryQueue):    1,
+	}
+
+	var queueNames map[string]int
+	switch cfg.WorkerExecutionMode {
+	case config.RetryExecutionMode:
+		queueNames = retry
+	case config.EventsExecutionMode:
+		queueNames = events
+	case config.DefaultExecutionMode:
+		queueNames = both
+	default:
+		return queue.QueueOptions{}, fmt.Errorf("unknown execution mode: %s", cfg.WorkerExecutionMode)
+	}
+
+	opts := queue.QueueOptions{
+		Names:             queueNames,
+		RedisClient:       redis,
+		RedisAddress:      cfg.Redis.BuildDsn(),
+		Type:              string(config.RedisQueueProvider),
+		PrometheusAddress: cfg.Prometheus.Dsn,
+	}
+
+	if cfg.Redis.IsSentinel() {
+		db, _ := strconv.Atoi(cfg.Redis.Database)
+		opts.RedisFailoverOpt = &asynq.RedisFailoverClientOpt{
+			MasterName:       cfg.Redis.MasterName,
+			SentinelAddrs:    cfg.Redis.SentinelAddresses(),
+			Username:         cfg.Redis.Username,
+			Password:         cfg.Redis.Password,
+			SentinelPassword: cfg.Redis.SentinelPassword,
+			DB:               db,
+		}
+	}
+
+	return opts, nil
 }

@@ -4098,6 +4098,149 @@
                 }
             }
         },
+        "/v1/projects/{projectID}/onboard": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint accepts a CSV file or JSON body to bulk-create endpoints with subscriptions",
+                "consumes": [
+                    "application/json",
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Onboard"
+                ],
+                "summary": "Bulk onboard endpoints with subscriptions",
+                "operationId": "BulkOnboard",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "projectID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Validate without creating",
+                        "name": "dry_run",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Onboard Details (JSON)",
+                        "name": "onboard",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/models.BulkOnboardRequest"
+                        }
+                    },
+                    {
+                        "type": "file",
+                        "description": "CSV file upload",
+                        "name": "file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.BulkOnboardDryRunResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.BulkOnboardAcceptedResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{projectID}/portal-links": {
             "get": {
                 "security": [
@@ -7725,6 +7868,9 @@
                 "api_key": {
                     "$ref": "#/definitions/datastore.ApiKey"
                 },
+                "basic_auth": {
+                    "$ref": "#/definitions/datastore.BasicAuth"
+                },
                 "oauth2": {
                     "$ref": "#/definitions/datastore.OAuth2"
                 },
@@ -7737,11 +7883,13 @@
             "type": "string",
             "enum": [
                 "api_key",
-                "oauth2"
+                "oauth2",
+                "basic_auth"
             ],
             "x-enum-varnames": [
                 "APIKeyAuthentication",
-                "OAuth2Authentication"
+                "OAuth2Authentication",
+                "BasicAuthentication"
             ]
         },
         "datastore.EndpointStatus": {
@@ -8733,6 +8881,48 @@
                 }
             }
         },
+        "models.BulkOnboardAcceptedResponse": {
+            "type": "object",
+            "properties": {
+                "batch_count": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "total_items": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.BulkOnboardDryRunResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.OnboardValidationError"
+                    }
+                },
+                "total_rows": {
+                    "type": "integer"
+                },
+                "valid_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.BulkOnboardRequest": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.OnboardItem"
+                    }
+                }
+            }
+        },
         "models.BulkUpdateFilterRequest": {
             "type": "object",
             "required": [
@@ -9090,6 +9280,9 @@
             "properties": {
                 "api_key": {
                     "$ref": "#/definitions/models.ApiKey"
+                },
+                "basic_auth": {
+                    "$ref": "#/definitions/models.BasicAuth"
                 },
                 "oauth2": {
                     "$ref": "#/definitions/models.OAuth2"
@@ -9759,6 +9952,40 @@
                 "y": {
                     "description": "Y coordinate (EC only)",
                     "type": "string"
+                }
+            }
+        },
+        "models.OnboardItem": {
+            "type": "object",
+            "properties": {
+                "auth_password": {
+                    "type": "string"
+                },
+                "auth_username": {
+                    "type": "string"
+                },
+                "event_type": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.OnboardValidationError": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "row": {
+                    "type": "integer"
                 }
             }
         },

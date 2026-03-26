@@ -40,16 +40,40 @@ WHERE id = @id AND deleted_at IS NULL;
 -- ============================================================================
 
 -- name: FindUserByID :one
-SELECT * FROM convoy.users WHERE id = @id AND deleted_at IS NULL;
+SELECT
+    id, first_name, last_name, email, password, email_verified,
+    reset_password_token, email_verification_token,
+    reset_password_expires_at, email_verification_expires_at,
+    auth_type, created_at, updated_at, deleted_at
+FROM convoy.users
+WHERE id = @id AND deleted_at IS NULL;
 
 -- name: FindUserByEmail :one
-SELECT * FROM convoy.users WHERE email = @email AND deleted_at IS NULL;
+SELECT
+    id, first_name, last_name, email, password, email_verified,
+    reset_password_token, email_verification_token,
+    reset_password_expires_at, email_verification_expires_at,
+    auth_type, created_at, updated_at, deleted_at
+FROM convoy.users
+WHERE email = @email AND deleted_at IS NULL;
 
 -- name: FindUserByToken :one
-SELECT * FROM convoy.users WHERE reset_password_token = sqlc.arg(token)::text AND deleted_at IS NULL;
+SELECT
+    id, first_name, last_name, email, password, email_verified,
+    reset_password_token, email_verification_token,
+    reset_password_expires_at, email_verification_expires_at,
+    auth_type, created_at, updated_at, deleted_at
+FROM convoy.users
+WHERE reset_password_token = @reset_password_token AND deleted_at IS NULL;
 
 -- name: FindUserByEmailVerificationToken :one
-SELECT * FROM convoy.users WHERE email_verification_token = sqlc.arg(token)::text AND deleted_at IS NULL;
+SELECT
+    id, first_name, last_name, email, password, email_verified,
+    reset_password_token, email_verification_token,
+    reset_password_expires_at, email_verification_expires_at,
+    auth_type, created_at, updated_at, deleted_at
+FROM convoy.users
+WHERE email_verification_token = @email_verification_token AND deleted_at IS NULL;
 
 -- ============================================================================
 -- COUNT Operations

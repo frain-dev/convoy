@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { Observable, fromEvent } from 'rxjs';
-import { map, startWith, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { Observable, fromEvent, merge, of, from } from 'rxjs';
+import { map, debounceTime, distinctUntilChanged, switchMap, tap, finalize } from 'rxjs/operators';
 import { DropdownContainerComponent } from 'src/app/components/dropdown-container/dropdown-container.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
@@ -33,12 +33,16 @@ export class EndpointFilterComponent implements OnInit {
 	ngOnInit(): void {}
 
 	ngAfterViewInit() {
-		this.endpoints$ = fromEvent<any>(this.eventDelsEndpointFilter?.nativeElement, 'keyup').pipe(
-			map(event => event.target.value),
-			startWith(''),
+		const keyup$ = this.eventDelsEndpointFilter?.nativeElement
+			? fromEvent<any>(this.eventDelsEndpointFilter.nativeElement, 'keyup').pipe(map(event => event.target.value))
+			: of('');
+		this.endpoints$ = merge(of(''), keyup$).pipe(
 			debounceTime(500),
 			distinctUntilChanged(),
-			switchMap(search => this.getEndpointsForFilter(search))
+			tap(() => (this.loadingFilterEndpoints = true)),
+			switchMap(search =>
+				from(this.getEndpointsForFilter(search)).pipe(finalize(() => (this.loadingFilterEndpoints = false)))
+			)
 		);
 	}
 

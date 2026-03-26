@@ -161,6 +161,20 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
+	// Check license + feature flag before allowing Basic Auth configuration
+	if auth != nil && auth.Type == datastore.BasicAuthentication {
+		// TODO: Replace with a.Licenser.BasicAuthEndpointAuth() once basic_auth_endpoint_auth entitlement is available
+		if !a.Licenser.OAuth2EndpointAuth() {
+			return nil, &ServiceError{ErrMsg: ErrBasicAuthFeatureUnavailable}
+		}
+
+		basicAuthEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.BasicAuthEndpoint, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
+		if !basicAuthEnabled {
+			log.FromContext(ctx).Warn("Basic Auth configuration provided but feature flag not enabled, ignoring Basic Auth config")
+			auth = nil
+		}
+	}
+
 	// Check license before allowing OAuth2 configuration
 	if auth != nil && auth.Type == datastore.OAuth2Authentication {
 		if !a.Licenser.OAuth2EndpointAuth() {
@@ -287,6 +301,32 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 				return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
 			}
 		}
+	default:
+		return "", ErrInvalidEndpointScheme
+	}
+
+	return u.String(), nil
+}
+
+// ValidateEndpointURL validates the URL format without performing an HTTPS ping.
+// This is used by bulk operations where pinging each endpoint would be too slow.
+func ValidateEndpointURL(rawURL string, enforceSecure bool) (string, error) {
+	if util.IsStringEmpty(rawURL) {
+		return "", ErrEndpointURLRequired
+	}
+
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+
+	switch u.Scheme {
+	case "http":
+		if enforceSecure {
+			return "", ErrHTTPSOnly
+		}
+	case "https":
+		// URL format is valid, skip ping
 	default:
 		return "", ErrInvalidEndpointScheme
 	}

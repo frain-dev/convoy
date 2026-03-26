@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 -- +migrate StatementBegin
 CREATE OR REPLACE FUNCTION convoy.duration_to_seconds(duration_text interval default '10s') RETURNS INTEGER AS $$
 DECLARE
@@ -12,6 +14,8 @@ $$ LANGUAGE plpgsql;
 -- +migrate StatementEnd
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 -- +migrate StatementBegin
 CREATE OR REPLACE FUNCTION convoy.seconds_to_interval(sec INT) RETURNS TEXT AS $$
 DECLARE

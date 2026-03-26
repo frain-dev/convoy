@@ -9,7 +9,7 @@ services:
         build:
           context: ./
           dockerfile: Dockerfile.dev
-        command: [ "/start.sh" ]
+        command: ["./cmd", "server", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
@@ -76,7 +76,7 @@ services:
         volumes:
             - postgres_data:/data/postgres
         healthcheck:
-            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+            test: [ "CMD-SHELL", "pg_isready -U convoy" ]
             interval: 5s
             timeout: 5s
             retries: 5
@@ -96,4 +96,3 @@ services:
         ports:
             - 9090:9090
         restart: always
-

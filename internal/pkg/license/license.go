@@ -40,6 +40,7 @@ type Licenser interface {
 	WebhookAnalytics() bool
 	MutualTLS() bool
 	OAuth2EndpointAuth() bool
+	BasicAuthEndpointAuth() bool
 	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 
 	RemoveEnabledProject(projectID string)

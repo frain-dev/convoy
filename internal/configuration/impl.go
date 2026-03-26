@@ -50,14 +50,14 @@ func textToBool(s string) bool {
 // configurationToCreateParams converts Configuration to CreateConfigurationParams
 func configurationToCreateParams(cfg *datastore.Configuration) repo.CreateConfigurationParams {
 	params := repo.CreateConfigurationParams{
-		ID:                 cfg.UID,
-		IsAnalyticsEnabled: boolToText(cfg.IsAnalyticsEnabled),
-		IsSignupEnabled:    cfg.IsSignupEnabled,
+		ID:                 common.StringToPgText(cfg.UID),
+		IsAnalyticsEnabled: common.StringToPgText(boolToText(cfg.IsAnalyticsEnabled)),
+		IsSignupEnabled:    pgtype.Bool{Bool: cfg.IsSignupEnabled, Valid: true},
 	}
 
 	// Handle storage policy based on type
 	if cfg.StoragePolicy != nil {
-		params.StoragePolicyType = string(cfg.StoragePolicy.Type)
+		params.StoragePolicyType = common.StringToPgText(string(cfg.StoragePolicy.Type))
 
 		if cfg.StoragePolicy.Type == datastore.OnPrem && cfg.StoragePolicy.OnPrem != nil {
 			params.OnPremPath = common.NullStringToPgText(cfg.StoragePolicy.OnPrem.Path)
@@ -84,8 +84,8 @@ func configurationToCreateParams(cfg *datastore.Configuration) repo.CreateConfig
 
 	// Handle retention policy
 	rc := cfg.GetRetentionPolicyConfig()
-	params.RetentionPolicyPolicy = rc.Policy
-	params.RetentionPolicyEnabled = rc.IsRetentionPolicyEnabled
+	params.RetentionPolicyPolicy = common.StringToPgText(rc.Policy)
+	params.RetentionPolicyEnabled = pgtype.Bool{Bool: rc.IsRetentionPolicyEnabled, Valid: true}
 
 	return params
 }
@@ -93,14 +93,14 @@ func configurationToCreateParams(cfg *datastore.Configuration) repo.CreateConfig
 // configurationToUpdateParams converts Configuration to UpdateConfigurationParams
 func configurationToUpdateParams(cfg *datastore.Configuration) repo.UpdateConfigurationParams {
 	params := repo.UpdateConfigurationParams{
-		ID:                 cfg.UID,
-		IsAnalyticsEnabled: boolToText(cfg.IsAnalyticsEnabled),
-		IsSignupEnabled:    cfg.IsSignupEnabled,
+		ID:                 common.StringToPgText(cfg.UID),
+		IsAnalyticsEnabled: common.StringToPgText(boolToText(cfg.IsAnalyticsEnabled)),
+		IsSignupEnabled:    pgtype.Bool{Bool: cfg.IsSignupEnabled, Valid: true},
 	}
 
 	// Handle storage policy based on type
 	if cfg.StoragePolicy != nil {
-		params.StoragePolicyType = string(cfg.StoragePolicy.Type)
+		params.StoragePolicyType = common.StringToPgText(string(cfg.StoragePolicy.Type))
 
 		if cfg.StoragePolicy.Type == datastore.OnPrem && cfg.StoragePolicy.OnPrem != nil {
 			params.OnPremPath = common.NullStringToPgText(cfg.StoragePolicy.OnPrem.Path)
@@ -127,8 +127,8 @@ func configurationToUpdateParams(cfg *datastore.Configuration) repo.UpdateConfig
 
 	// Handle retention policy
 	rc := cfg.GetRetentionPolicyConfig()
-	params.RetentionPolicyPolicy = rc.Policy
-	params.RetentionPolicyEnabled = rc.IsRetentionPolicyEnabled
+	params.RetentionPolicyPolicy = common.StringToPgText(rc.Policy)
+	params.RetentionPolicyEnabled = pgtype.Bool{Bool: rc.IsRetentionPolicyEnabled, Valid: true}
 
 	return params
 }

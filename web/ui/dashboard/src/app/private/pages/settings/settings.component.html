@@ -34,7 +34,12 @@
 			</ul>
 		</div>
 
-		<div class="min-h-[60vh] w-full">
+		<div class="min-h-[60vh] w-full relative">
+			<div *ngIf="isVerifyingSubscription" class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white bg-opacity-80 rounded-8px">
+				<convoy-loader [isTransparent]="true"></convoy-loader>
+				<p class="text-14 text-neutral-11 mt-8px">Verifying subscription status...</p>
+			</div>
+
 			<ng-container *ngIf="activePage === 'organisation settings'">
 				<organisation-settings></organisation-settings>
 			</ng-container>

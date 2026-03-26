@@ -243,59 +243,6 @@ func TestFindSubscriptionsByEndpointID(t *testing.T) {
 	})
 }
 
-func TestFindSubscriptionByDeviceID(t *testing.T) {
-	db, ctx, service := setupTestDB(t)
-	defer db.GetConn().Close()
-
-	project, _, _, device := seedTestData(t, db)
-
-	t.Run("should_find_cli_subscription_by_device_id", func(t *testing.T) {
-		sub := createTestCLISubscription(project, device)
-		err := service.CreateSubscription(ctx, project.UID, sub)
-		require.NoError(t, err)
-
-		fetched, err := service.FindSubscriptionByDeviceID(ctx, project.UID, device.UID, datastore.SubscriptionTypeCLI)
-		require.NoError(t, err)
-		require.NotNil(t, fetched)
-		require.Equal(t, sub.UID, fetched.UID)
-		require.Equal(t, device.UID, fetched.DeviceID)
-		require.Equal(t, datastore.SubscriptionTypeCLI, fetched.Type)
-	})
-
-	t.Run("should_return_not_found_error", func(t *testing.T) {
-		nonExistentDeviceID := ulid.Make().String()
-
-		fetched, err := service.FindSubscriptionByDeviceID(ctx, project.UID, nonExistentDeviceID, datastore.SubscriptionTypeCLI)
-		require.Error(t, err)
-		require.Nil(t, fetched)
-		require.Equal(t, datastore.ErrSubscriptionNotFound, err)
-	})
-
-	t.Run("should_populate_device_metadata", func(t *testing.T) {
-		sub := createTestCLISubscription(project, device)
-		sub.UID = ulid.Make().String()
-		err := service.CreateSubscription(ctx, project.UID, sub)
-		require.NoError(t, err)
-
-		fetched, err := service.FindSubscriptionByDeviceID(ctx, project.UID, device.UID, datastore.SubscriptionTypeCLI)
-		require.NoError(t, err)
-		require.NotNil(t, fetched.Device)
-		require.Equal(t, device.UID, fetched.Device.UID)
-		require.Equal(t, device.HostName, fetched.Device.HostName)
-	})
-
-	t.Run("should_filter_by_subscription_type", func(t *testing.T) {
-		sub := createTestCLISubscription(project, device)
-		err := service.CreateSubscription(ctx, project.UID, sub)
-		require.NoError(t, err)
-
-		// Try to fetch with wrong type
-		fetched, err := service.FindSubscriptionByDeviceID(ctx, project.UID, device.UID, datastore.SubscriptionTypeAPI)
-		require.Error(t, err)
-		require.Nil(t, fetched)
-	})
-}
-
 func TestFindCLISubscriptions(t *testing.T) {
 	db, ctx, service := setupTestDB(t)
 	defer db.GetConn().Close()

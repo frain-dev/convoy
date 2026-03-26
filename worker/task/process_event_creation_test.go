@@ -130,7 +130,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil, nil)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
@@ -179,7 +179,7 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
@@ -227,7 +227,7 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
@@ -275,7 +275,7 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 

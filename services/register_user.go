@@ -30,6 +30,7 @@ type RegisterUserService struct {
 
 	BaseURL string
 	Data    *models.RegisterUser
+	Logger  log.StdLogger
 }
 
 func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
@@ -90,6 +91,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 		Licenser:      u.Licenser,
 		NewOrg:        &datastore.OrganisationRequest{Name: u.Data.OrganisationName},
 		User:          user,
+		Logger:        u.Logger,
 	}
 
 	_, err = co.Run(ctx)

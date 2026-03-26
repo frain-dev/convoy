@@ -6,18 +6,25 @@ import {HTTP_RESPONSE} from 'src/app/models/global.model';
 	providedIn: 'root'
 })
 export class LicensesService {
+	readonly licensedOrgLabel = 'Pro';
+
 	constructor(private http: HttpService) {}
 
-	getLicenses(orgId?: string): Promise<HTTP_RESPONSE> {
+	getLicenses(orgId?: string, instanceLevelOnly = false): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			const query: Record<string, string> = {};
+			if (!instanceLevelOnly) {
+				const fromStorage = this.http.getOrganisation();
+				const org = orgId ?? fromStorage?.uid;
+				if (org) query['orgID'] = org;
+			}
+			const queryUndefined = Object.keys(query).length === 0 ? undefined : query;
 			try {
-				const org = orgId ?? this.http.getOrganisation()?.uid;
 				const response = await this.http.request({
 					url: `/license/features`,
 					method: 'get',
-					query: org ? { orgID: org } : undefined
+					query: queryUndefined
 				});
-
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -25,11 +32,25 @@ export class LicensesService {
 		});
 	}
 
-
-	async setLicenses() {
+	/** Same check as Configure SSO: true when this org's license has enterprise_sso. Use to gate SSO/slug UI. */
+	async hasEnterpriseSSO(orgId?: string): Promise<boolean> {
 		try {
-			const response = await this.getLicenses();
-			// Store full response data for new format (limits with allowed field and boolean features)
+			const res = await this.getLicenses(orgId);
+			const d = res?.data as Record<string, unknown> | undefined;
+			if (!d) return false;
+			const v = d['EnterpriseSSO'];
+			if (v === true) return true;
+			if (v && typeof v === 'object' && 'allowed' in v && (v as { allowed: boolean }).allowed === true) return true;
+			return false;
+		} catch {
+			return false;
+		}
+	}
+
+	/** Call from login/signup (public pages) so the request uses instance-level only (no orgID). */
+	async setLicenses(instanceLevelOnly = false) {
+		try {
+			const response = await this.getLicenses(undefined, instanceLevelOnly);
 			localStorage.setItem('licenses', JSON.stringify(response.data));
 		} catch {}
 	}

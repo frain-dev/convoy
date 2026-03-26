@@ -48,22 +48,8 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 			name: "should_create_fanout_event_for_multiple_endpoints",
 			dbFn: func(es *CreateFanoutEventService) {
 				a, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{
-					{
-						Name:         "test_app",
-						UID:          "123",
-						ProjectID:    "abc",
-						SupportEmail: "test_app@gmail.com",
-					},
-
-					{
-						Name:         "test_app",
-						UID:          "12345",
-						ProjectID:    "abc",
-						SupportEmail: "test_app@gmail.com",
-					},
-				}, nil)
+				a.EXPECT().FetchEndpointIDsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]string{"123", "12345"}, nil)
 				eq, _ := es.Queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
@@ -102,8 +88,8 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 			name: "should_create_fanout_event_for_owner_id_tied_to_a_portal_link",
 			dbFn: func(es *CreateFanoutEventService) {
 				a, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{}, nil)
+				a.EXPECT().FetchEndpointIDsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]string{}, nil)
 
 				p, _ := es.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
 				p.EXPECT().GetPortalLinkByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -147,8 +133,8 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 			name: "should_not_error_for_empty_endpoints",
 			dbFn: func(es *CreateFanoutEventService) {
 				a, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return([]datastore.Endpoint{}, nil)
+				a.EXPECT().FetchEndpointIDsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]string{}, nil)
 				p, _ := es.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
 				p.EXPECT().GetPortalLinkByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.PortalLink{UID: "12345"}, nil)
@@ -227,6 +213,9 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 			}
 
 			event.AcknowledgedAt = null.Time{}
+
+			event.Raw = string(event.Data)
+
 			require.Equal(t, tc.wantEvent, event)
 		})
 	}

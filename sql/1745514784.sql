@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 create table if not exists convoy.portal_tokens (
     id varchar primary key,
     portal_link_id varchar not null,
@@ -16,4 +18,3 @@ create table if not exists convoy.portal_tokens (
 );
 
 -- +migrate Down
-drop table if exists convoy.portal_tokens;

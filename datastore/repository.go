@@ -48,7 +48,7 @@ type EventRepository interface {
 	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
 	DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *EventFilter) error
-	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)
+	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (bool, error)
 	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
 	CopyRows(ctx context.Context, projectID string, interval int) error
 	PartitionEventsTable(ctx context.Context) error
@@ -196,6 +196,7 @@ type EndpointRepository interface {
 	FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]Endpoint, error)
 	FindEndpointsByAppID(ctx context.Context, appID string, projectID string) ([]Endpoint, error)
 	FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]Endpoint, error)
+	FetchEndpointIDsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]string, error)
 	FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) error
@@ -214,7 +215,6 @@ type SubscriptionRepository interface {
 	FindSubscriptionByID(ctx context.Context, projectID, id string) (*Subscription, error)
 	FindSubscriptionsBySourceID(ctx context.Context, projectID, sourceID string) ([]Subscription, error)
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
-	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
 	CountEndpointSubscriptions(context.Context, string, string, string) (int64, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}, isFlattened bool) (bool, error)

@@ -6,6 +6,7 @@ import (
 
 	rcache "github.com/frain-dev/convoy/cache/redis"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
 type Cache interface {
@@ -15,16 +16,10 @@ type Cache interface {
 }
 
 func NewCache(cfg config.RedisConfiguration) (Cache, error) {
-	ca, err := rcache.NewRedisCacheFromConfig(
-		cfg.BuildDsn(),
-		cfg.TLSSkipVerify,
-		cfg.TLSCACertFile,
-		cfg.TLSCertFile,
-		cfg.TLSKeyFile,
-	)
+	client, err := rdb.NewClientFromRedisConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return ca, nil
+	return rcache.NewRedisCacheFromClient(client.Client()), nil
 }

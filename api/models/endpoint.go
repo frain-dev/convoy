@@ -159,9 +159,10 @@ func (q *QueryListEndpoint) Transform(r *http.Request) *QueryListEndpointRespons
 }
 
 type EndpointAuthentication struct {
-	Type   datastore.EndpointAuthenticationType `json:"type,omitempty" valid:"optional,in(api_key|oauth2)~unsupported authentication type"`
-	ApiKey *ApiKey                              `json:"api_key,omitempty"`
-	OAuth2 *OAuth2                              `json:"oauth2,omitempty"`
+	Type      datastore.EndpointAuthenticationType `json:"type,omitempty" valid:"optional,in(api_key|oauth2|basic_auth)~unsupported authentication type"`
+	ApiKey    *ApiKey                              `json:"api_key,omitempty"`
+	OAuth2    *OAuth2                              `json:"oauth2,omitempty"`
+	BasicAuth *BasicAuth                           `json:"basic_auth,omitempty"`
 }
 
 // OAuth2SigningKey represents a JWK-formatted signing key for client assertion
@@ -296,9 +297,10 @@ func (ea *EndpointAuthentication) Transform() *datastore.EndpointAuthentication 
 	}
 
 	return &datastore.EndpointAuthentication{
-		Type:   ea.Type,
-		ApiKey: ea.ApiKey.transform(),
-		OAuth2: ea.OAuth2.Transform(),
+		Type:      ea.Type,
+		ApiKey:    ea.ApiKey.transform(),
+		OAuth2:    ea.OAuth2.Transform(),
+		BasicAuth: ea.BasicAuth.transform(),
 	}
 }
 
@@ -315,6 +317,15 @@ func (er EndpointResponse) MarshalJSON() ([]byte, error) {
 
 	// Create a shallow copy to avoid mutating the original
 	e := *er.Endpoint
+	if e.Authentication != nil && e.Authentication.BasicAuth != nil {
+		auth := *e.Authentication
+		ba := *auth.BasicAuth
+		if ba.Password != "" {
+			ba.Password = "[REDACTED]"
+		}
+		auth.BasicAuth = &ba
+		e.Authentication = &auth
+	}
 	if e.MtlsClientCert != nil {
 		mtls := *e.MtlsClientCert
 		// Redact private key from API responses - show placeholder if key exists

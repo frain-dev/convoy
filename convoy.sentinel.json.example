@@ -1,0 +1,50 @@
+{
+  "auth": {
+    "native": { "enabled": true },
+    "jwt": {
+      "enabled": true,
+      "secret": "<insert-jwt-secret>",
+      "expiry": 3600,
+      "refresh_secret": "<insert-jwt-refresh-secret>",
+      "refresh_expiry": 86400
+    },
+    "is_signup_enabled": true
+  },
+  "database": {
+    "type": "postgres",
+    "scheme": "postgres",
+    "host": "postgres",
+    "username": "convoy",
+    "password": "convoy",
+    "database": "convoy",
+    "options": "sslmode=disable",
+    "port": 5432,
+    "max_open_conn": 100,
+    "max_idle_conn": 10,
+    "conn_max_lifetime": 3600
+  },
+  "redis": {
+    "scheme": "redis-sentinel",
+    "addresses": "redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379",
+    "master_name": "mymaster",
+    "username": "",
+    "password": "",
+    "database": "0"
+  },
+  "queue_driver": "redis",
+  "server": {
+    "http": {
+      "ssl": false,
+      "port": 5005,
+      "ingest_port": 5006,
+      "worker_port": 5007,
+      "socket_port": 5008,
+      "domain_port": 5009
+    }
+  },
+  "env": "development",
+  "logger": { "level": "info" },
+  "host": "http://localhost:5005",
+  "license_key": "<insert-license-key>",
+  "license_service": { "host": "https://overwatch.getconvoy.cloud" }
+}

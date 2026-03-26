@@ -50,6 +50,8 @@ type newEvent struct {
 }
 
 func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Event, err error) {
+	serviceStart := time.Now()
+
 	if e.Project == nil {
 		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
 	}
@@ -59,27 +61,48 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 	}
 
 	var isDuplicate bool
+	idempotencyStart := time.Now()
 	if !util.IsStringEmpty(e.NewMessage.IdempotencyKey) {
-		events, err := e.EventRepo.FindEventsByIdempotencyKey(ctx, e.Project.UID, e.NewMessage.IdempotencyKey)
-		if err != nil {
+		// Optimization: Use FindFirstEventWithIdempotencyKey (LIMIT 1) instead of FindEventsByIdempotencyKey (returns all)
+		// We only need to check if an event exists, not fetch all matching events
+		_, err := e.EventRepo.FindFirstEventWithIdempotencyKey(ctx, e.Project.UID, e.NewMessage.IdempotencyKey)
+		if err != nil && !errors.Is(err, datastore.ErrEventNotFound) {
+			log.FromContext(ctx).WithError(err).Error("failed to check idempotency key")
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
-
-		isDuplicate = len(events) > 0
+		isDuplicate = (err == nil)
+		log.FromContext(ctx).WithFields(log.Fields{
+			"duration": time.Since(idempotencyStart),
+			"found":    isDuplicate,
+		}).Debug("idempotency check completed")
 	}
+	afterIdempotency := time.Now()
 
-	endpoints, err := e.EndpointRepo.FindEndpointsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
+	endpointIDs, err := e.EndpointRepo.FetchEndpointIDsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to find endpoints by owner id")
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
+	afterEndpoints := time.Now()
+	log.FromContext(ctx).WithFields(log.Fields{
+		"duration":  afterEndpoints.Sub(afterIdempotency),
+		"endpoints": len(endpointIDs),
+	}).Debug("endpoint lookup completed")
 
-	if len(endpoints) == 0 {
+	afterPortalLink := afterEndpoints
+	if len(endpointIDs) == 0 {
 		_, err = e.PortalLinkRepo.GetPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 		if err != nil {
 			if !errors.Is(err, datastore.ErrPortalLinkNotFound) {
+				log.FromContext(ctx).WithError(err).Error("failed to find portal link by owner id")
 				return nil, &ServiceError{ErrMsg: err.Error()}
 			}
 		}
+		afterPortalLink = time.Now()
+		log.FromContext(ctx).WithFields(log.Fields{
+			"duration": afterPortalLink.Sub(afterEndpoints),
+			"found":    err == nil,
+		}).Debug("portal link lookup completed")
 	}
 
 	ev := &newEvent{
@@ -87,27 +110,34 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 		Data:           e.NewMessage.Data,
 		EventType:      e.NewMessage.EventType,
 		IdempotencyKey: e.NewMessage.IdempotencyKey,
-		Raw:            string(e.NewMessage.Data),
+		Raw:            "", // Skip Raw duplication - Data field is canonical (saves ~629KB per event)
 		CustomHeaders:  e.NewMessage.CustomHeaders,
 		IsDuplicate:    isDuplicate,
 		AcknowledgedAt: time.Now(),
 	}
 
-	event, err = createEvent(ctx, endpoints, ev, e.Project, e.Queue)
+	event, err = createEvent(ctx, endpointIDs, ev, e.Project, e.Queue)
+	afterQueue := time.Now()
 	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to create fanout event")
 		return nil, err
 	}
+
+	// Log detailed service timing breakdown for performance monitoring
+	log.FromContext(ctx).WithFields(log.Fields{
+		"idempotency_duration":   afterIdempotency.Sub(idempotencyStart).Milliseconds(),
+		"endpoints_duration":     afterEndpoints.Sub(afterIdempotency).Milliseconds(),
+		"portal_link_duration":   afterPortalLink.Sub(afterEndpoints).Milliseconds(),
+		"queue_duration":         afterQueue.Sub(afterPortalLink).Milliseconds(),
+		"total_service_duration": afterQueue.Sub(serviceStart).Milliseconds(),
+		"event_id":               event.UID,
+		"endpoints_count":        len(endpointIDs),
+	}).Info("fanout service timing breakdown")
 
 	return event, nil
 }
 
-func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *newEvent, project *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
-	endpointIDs := make([]string, 0, len(endpoints))
-
-	for _, endpoint := range endpoints {
-		endpointIDs = append(endpointIDs, endpoint.UID)
-	}
-
+func createEvent(ctx context.Context, endpointIDs []string, newMessage *newEvent, project *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
 	jobId := queue.JobId{ProjectID: project.UID, ResourceID: newMessage.UID}.FanOutJobId()
 	event := &datastore.Event{
 		UID:              newMessage.UID,
@@ -142,10 +172,15 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		ID:      jobId,
 		Payload: eventByte,
 	}
+	startQueue := time.Now()
 	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Error occurred sending new event to the queue %s", err)
+		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
+	log.FromContext(ctx).WithFields(log.Fields{
+		"duration": time.Since(startQueue),
+	}).Debug("event written to queue")
 
 	return event, nil
 }

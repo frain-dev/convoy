@@ -2,11 +2,11 @@ package delivery_attempts
 
 import (
 	"context"
+	"io"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/users"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
@@ -15,10 +15,13 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/subscriptions"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -311,12 +314,13 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	t.Helper()
 
 	// First create an event
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(log.NewLogger(os.Stdout), db)
 	event := &datastore.Event{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
 		EventType: datastore.EventType("test.event"),
 		Data:      []byte(`{"test": "data"}`),
+		Raw:       `{"test": "data"}`,
 	}
 	err := eventRepo.CreateEvent(ctx, event)
 	require.NoError(t, err)
@@ -340,7 +344,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	require.NoError(t, err)
 
 	// Now create event delivery with valid event_id and subscription_id
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
 
 	eventDelivery := &datastore.EventDelivery{
 		UID:            ulid.Make().String(),

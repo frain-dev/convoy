@@ -215,6 +215,8 @@ components:
       properties:
         api_key:
           $ref: '#/components/schemas/datastore.ApiKey'
+        basic_auth:
+          $ref: '#/components/schemas/datastore.BasicAuth'
         oauth2:
           $ref: '#/components/schemas/datastore.OAuth2'
         type:
@@ -224,6 +226,7 @@ components:
       enum:
       - api_key
       - oauth2
+      - basic_auth
       type: string
     datastore.EndpointStatus:
       enum:
@@ -1135,6 +1138,8 @@ components:
       properties:
         api_key:
           $ref: '#/components/schemas/models.ApiKey'
+        basic_auth:
+          $ref: '#/components/schemas/models.BasicAuth'
         oauth2:
           $ref: '#/components/schemas/models.OAuth2'
         type:

@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -143,13 +144,11 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 		var isDuplicate bool
 		if len(event.IdempotencyKey) > 0 {
-			events, err := args.eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
+			isDuplicate, err = args.eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
 			if err != nil {
 				args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
 				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 			}
-
-			isDuplicate = len(events) > 0
 		}
 		event.IsDuplicateEvent = isDuplicate
 
@@ -310,6 +309,24 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 							}).Info("OAuth2 authorization header retrieved and added to headers")
 						}
 					}
+				case datastore.BasicAuthentication:
+					basicAuthEnabled := opts.FeatureFlag.CanAccessOrgFeature(ctx, fflag.BasicAuthEndpoint, opts.FeatureFlagFetcher, opts.EarlyAdopterFeatureFetcher, opts.Project.OrganisationID)
+					if !basicAuthEnabled {
+						log.FromContext(ctx).Warn("Endpoint has Basic Auth configured but feature flag is disabled, skipping Basic Auth authentication")
+					} else if endpoint.Authentication.BasicAuth == nil {
+						log.FromContext(ctx).Error("Basic Auth config is nil")
+					} else if endpoint.Authentication.BasicAuth.UserName == "" && endpoint.Authentication.BasicAuth.Password == "" {
+						log.FromContext(ctx).WithFields(log.Fields{
+							"endpoint.id": endpoint.UID,
+						}).Error("Basic Auth credentials are empty, skipping Basic Auth authentication")
+					} else {
+						headers = make(httpheader.HTTPHeader)
+						credentials := base64.StdEncoding.EncodeToString(
+							[]byte(endpoint.Authentication.BasicAuth.UserName + ":" + endpoint.Authentication.BasicAuth.Password),
+						)
+						headers["Authorization"] = []string{"Basic " + credentials}
+						headers.MergeHeaders(opts.Event.Headers)
+					}
 				default:
 					log.FromContext(ctx).WithFields(log.Fields{
 						"endpoint.id": endpoint.UID,
@@ -330,7 +347,8 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		raw := opts.Event.Raw
+		// Use Event.Data as the canonical source - Event.Raw may be empty for optimization
+		raw := string(opts.Event.Data)
 		data := opts.Event.Data
 
 		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) && opts.Licenser.Transformations() {
@@ -700,12 +718,11 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 ) (*datastore.Event, error) {
 	var isDuplicate bool
 	if !util.IsStringEmpty(eventParams.IdempotencyKey) {
-		events, err := eventRepo.FindEventsByIdempotencyKey(ctx, project.UID, eventParams.IdempotencyKey)
+		var err error
+		isDuplicate, err = eventRepo.FindEventsByIdempotencyKey(ctx, project.UID, eventParams.IdempotencyKey)
 		if err != nil {
 			return nil, err
 		}
-
-		isDuplicate = len(events) > 0
 	}
 
 	if project == nil {
@@ -736,7 +753,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		UID:              eventParams.UID,
 		EventType:        datastore.EventType(eventParams.EventType),
 		Data:             eventParams.Data,
-		Raw:              string(eventParams.Data),
+		Raw:              "", // Skip Raw duplication - Data field is canonical (reduces payload size)
 		IdempotencyKey:   eventParams.IdempotencyKey,
 		IsDuplicateEvent: isDuplicate,
 		Headers:          getCustomHeaders(eventParams.CustomHeaders),

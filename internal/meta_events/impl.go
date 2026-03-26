@@ -13,6 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/meta_events/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -132,11 +133,11 @@ func (s *Service) CreateMetaEvent(ctx context.Context, metaEvent *datastore.Meta
 	}
 
 	err = s.repo.CreateMetaEvent(ctx, repo.CreateMetaEventParams{
-		ID:        metaEvent.UID,
-		EventType: metaEvent.EventType,
-		ProjectID: metaEvent.ProjectID,
+		ID:        common.StringToPgText(metaEvent.UID),
+		EventType: common.StringToPgText(metaEvent.EventType),
+		ProjectID: common.StringToPgText(metaEvent.ProjectID),
 		Metadata:  metadataBytes,
-		Status:    string(metaEvent.Status),
+		Status:    common.StringToPgText(string(metaEvent.Status)),
 	})
 
 	if err != nil {
@@ -150,8 +151,8 @@ func (s *Service) CreateMetaEvent(ctx context.Context, metaEvent *datastore.Meta
 // FindMetaEventByID retrieves a meta event by its ID
 func (s *Service) FindMetaEventByID(ctx context.Context, projectID, id string) (*datastore.MetaEvent, error) {
 	row, err := s.repo.FindMetaEventByID(ctx, repo.FindMetaEventByIDParams{
-		ID:        id,
-		ProjectID: projectID,
+		ID:        common.StringToPgText(id),
+		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -180,16 +181,16 @@ func (s *Service) LoadMetaEventsPaged(ctx context.Context, projectID string, fil
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
 	// Convert cursor to pgtype.Text (empty string is handled in SQL query)
-	cursor := pgtype.Text{String: filter.Pageable.Cursor(), Valid: true}
+	cursor := common.StringToPgText(filter.Pageable.Cursor())
 
 	// Query with unified pagination
 	rows, err := s.repo.FetchMetaEventsPaginated(ctx, repo.FetchMetaEventsPaginatedParams{
-		Direction: direction,
-		ProjectID: projectID,
+		Direction: common.StringToPgText(direction),
+		ProjectID: common.StringToPgText(projectID),
 		StartDate: pgtype.Timestamptz{Time: startDate, Valid: true},
 		EndDate:   pgtype.Timestamptz{Time: endDate, Valid: true},
 		Cursor:    cursor,
-		LimitVal:  int64(filter.Pageable.Limit()),
+		LimitVal:  pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
 	})
 
 	if err != nil {
@@ -225,10 +226,10 @@ func (s *Service) LoadMetaEventsPaged(ctx context.Context, projectID string, fil
 	var prevRowCount datastore.PrevRowCount
 	if len(metaEvents) > 0 {
 		count, err2 := s.repo.CountPrevMetaEvents(ctx, repo.CountPrevMetaEventsParams{
-			ProjectID: projectID,
+			ProjectID: common.StringToPgText(projectID),
 			StartDate: pgtype.Timestamptz{Time: startDate, Valid: true},
 			EndDate:   pgtype.Timestamptz{Time: endDate, Valid: true},
-			Cursor:    first.UID,
+			Cursor:    common.StringToPgText(first.UID),
 		})
 		if err2 != nil {
 			s.logger.WithError(err2).Error("failed to count prev meta events")
@@ -280,12 +281,12 @@ func (s *Service) UpdateMetaEvent(ctx context.Context, projectID string, metaEve
 	}
 
 	result, err := s.repo.UpdateMetaEvent(ctx, repo.UpdateMetaEventParams{
-		ID:        metaEvent.UID,
-		ProjectID: projectID,
-		EventType: metaEvent.EventType,
+		ID:        common.StringToPgText(metaEvent.UID),
+		ProjectID: common.StringToPgText(projectID),
+		EventType: common.StringToPgText(metaEvent.EventType),
 		Metadata:  metadataBytes,
 		Attempt:   attemptBytes,
-		Status:    string(metaEvent.Status),
+		Status:    common.StringToPgText(string(metaEvent.Status)),
 	})
 
 	if err != nil {

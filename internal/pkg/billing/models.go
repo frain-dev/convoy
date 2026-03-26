@@ -1,8 +1,16 @@
 package billing
 
+// WorkspaceConfigData is the workspace_config API response.
+type WorkspaceConfigData struct {
+	ExternalID   string `json:"external_id"`
+	LicenseKey   string `json:"license_key"`
+	SSOAvailable bool   `json:"sso_available"`
+}
+
 type BillingOrganisation struct {
 	ID             string `json:"id,omitempty"`
 	Name           string `json:"name,omitempty"`
+	Slug           string `json:"slug,omitempty"`
 	ExternalID     string `json:"external_id,omitempty"`
 	BillingEmail   string `json:"billing_email,omitempty"`
 	Host           string `json:"host,omitempty"`
@@ -56,8 +64,9 @@ type UpgradeSubscriptionRequest struct {
 }
 
 type Plan struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	ProductType string `json:"product_type,omitempty"`
 }
 
 type BillingSubscription struct {

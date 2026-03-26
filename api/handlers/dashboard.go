@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -216,7 +217,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period, endpointIds []string) (uint64, []datastore.EventInterval, error) {
 	var messagesSent uint64
 
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
+	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, endpointIds)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load message intervals - ")

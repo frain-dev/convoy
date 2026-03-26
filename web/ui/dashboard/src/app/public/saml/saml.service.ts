@@ -12,7 +12,7 @@ export class SamlService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/sso/callback?token=${encodeURIComponent(token)}`,
+					url: `/saml/login?token=${encodeURIComponent(token)}`,
 					method: 'get'
 				});
 				return resolve(response);

@@ -1,9 +1,13 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE SCHEMA IF NOT EXISTS convoy;
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.users (
-    id CHAR(26) PRIMARY KEY,
+    id VARCHAR(26) PRIMARY KEY,
 
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
@@ -23,11 +27,13 @@ CREATE TABLE IF NOT EXISTS convoy.users (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.organisations (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
-	owner_id CHAR(26) NOT NULL REFERENCES convoy.users (id),
+	owner_id VARCHAR(26) NOT NULL REFERENCES convoy.users (id),
 	custom_domain TEXT,
 	assigned_domain TEXT,
 
@@ -37,8 +43,10 @@ CREATE TABLE IF NOT EXISTS convoy.organisations (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.project_configurations (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	retention_policy_policy TEXT NOT NULL,
 	max_payload_read_size INTEGER NOT NULL,
@@ -62,16 +70,18 @@ CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.projects (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
 	type TEXT NOT NULL,
 	logo_url TEXT,
 	retained_events INTEGER DEFAULT 0,
 
-	organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
-	project_configuration_id CHAR(26) NOT NULL REFERENCES convoy.project_configurations (id),
+	organisation_id VARCHAR(26) NOT NULL REFERENCES convoy.organisations (id),
+	project_configuration_id VARCHAR(26) NOT NULL REFERENCES convoy.project_configurations (id),
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -81,8 +91,10 @@ CREATE TABLE IF NOT EXISTS convoy.projects (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.endpoints (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	title TEXT NOT NULL,
 	status TEXT NOT NULL,
@@ -98,7 +110,7 @@ CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	support_email TEXT,
 	app_id TEXT,
 
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	project_id VARCHAR(26) NOT NULL REFERENCES convoy.projects (id),
 
 	authentication_type TEXT,
 	authentication_type_api_key_header_name TEXT,
@@ -113,14 +125,16 @@ CREATE TABLE IF NOT EXISTS convoy.endpoints (
 
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.organisation_members (
-    id CHAR(26) PRIMARY KEY,
+    id VARCHAR(26) PRIMARY KEY,
 
     role_type TEXT NOT NULL,
     role_project TEXT REFERENCES convoy.projects (id),
     role_endpoint TEXT REFERENCES convoy.endpoints (id),
-    user_id CHAR(26) NOT NULL REFERENCES convoy.users (id),
-    organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
+    user_id VARCHAR(26) NOT NULL REFERENCES convoy.users (id),
+    organisation_id VARCHAR(26) NOT NULL REFERENCES convoy.organisations (id),
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -130,10 +144,12 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_members (
     );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.applications (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	project_id VARCHAR(26) NOT NULL REFERENCES convoy.projects (id),
 	title TEXT NOT NULL,
 	support_email TEXT,
 	slack_webhook_url TEXT,
@@ -144,10 +160,12 @@ CREATE TABLE IF NOT EXISTS convoy.applications (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
-	organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
+	organisation_id VARCHAR(26) NOT NULL REFERENCES convoy.organisations (id),
 	invitee_email TEXT NOT NULL,
 	token TEXT NOT NULL,
 	role_type TEXT NOT NULL,
@@ -164,10 +182,12 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.portal_links (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	project_id VARCHAR(26) NOT NULL REFERENCES convoy.projects (id),
 
 	name TEXT NOT NULL,
 	token TEXT NOT NULL,
@@ -181,17 +201,21 @@ CREATE TABLE IF NOT EXISTS convoy.portal_links (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.portal_links_endpoints (
-	portal_link_id CHAR(26) NOT NULL REFERENCES convoy.portal_links (id),
-	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id)
+	portal_link_id VARCHAR(26) NOT NULL REFERENCES convoy.portal_links (id),
+	endpoint_id VARCHAR(26) NOT NULL REFERENCES convoy.endpoints (id)
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.devices (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
+	project_id VARCHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	endpoint_id VARCHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
 
 	host_name TEXT NOT NULL,
 	status TEXT NOT NULL,
@@ -203,6 +227,8 @@ CREATE TABLE IF NOT EXISTS convoy.devices (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.configurations (
 	id TEXT PRIMARY KEY,
 
@@ -227,8 +253,10 @@ CREATE TABLE IF NOT EXISTS convoy.configurations (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	type TEXT NOT NULL,
 
@@ -251,8 +279,10 @@ CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.sources (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
 	type TEXT NOT NULL,
@@ -261,8 +291,8 @@ CREATE TABLE IF NOT EXISTS convoy.sources (
 	is_disabled BOOLEAN NOT NULL,
 	forward_headers TEXT[],
 
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	source_verifier_id CHAR(26) REFERENCES convoy.source_verifiers (id),
+	project_id VARCHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	source_verifier_id VARCHAR(26) REFERENCES convoy.source_verifiers (id),
 
 	pub_sub JSONB,
 
@@ -274,16 +304,18 @@ CREATE TABLE IF NOT EXISTS convoy.sources (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.subscriptions (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
 	type TEXT NOT NULL,
 
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	endpoint_id CHAR(26) REFERENCES convoy.endpoints (id),
-	device_id CHAR(26) REFERENCES convoy.devices (id),
-	source_id CHAR(26) REFERENCES convoy.sources (id),
+	project_id VARCHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	endpoint_id VARCHAR(26) REFERENCES convoy.endpoints (id),
+	device_id VARCHAR(26) REFERENCES convoy.devices (id),
+	source_id VARCHAR(26) REFERENCES convoy.sources (id),
 
 	alert_config_count INTEGER NOT NULL,
 	alert_config_threshold TEXT NOT NULL,
@@ -305,8 +337,10 @@ CREATE TABLE IF NOT EXISTS convoy.subscriptions (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.api_keys (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
 	key_type TEXT NOT NULL,
@@ -317,7 +351,7 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 	hash TEXT NOT NULL,
 	salt TEXT NOT NULL,
 
-	user_id CHAR(26) REFERENCES convoy.users (id),
+	user_id VARCHAR(26) REFERENCES convoy.users (id),
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -328,14 +362,16 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.events (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	event_type TEXT NOT NULL,
 	endpoints TEXT,
 
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	source_id CHAR(26) REFERENCES convoy.sources (id),
+	project_id VARCHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	source_id VARCHAR(26) REFERENCES convoy.sources (id),
 
 	headers JSONB,
 
@@ -348,23 +384,27 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.events_endpoints (
-	event_id CHAR(26) NOT NULL REFERENCES convoy.events (id) ON DELETE CASCADE,
-	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id) ON DELETE CASCADE
+	event_id VARCHAR(26) NOT NULL REFERENCES convoy.events (id) ON DELETE CASCADE,
+	endpoint_id VARCHAR(26) NOT NULL REFERENCES convoy.endpoints (id) ON DELETE CASCADE
 );
 
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 CREATE TABLE IF NOT EXISTS convoy.event_deliveries (
-	id CHAR(26) PRIMARY KEY,
+	id VARCHAR(26) PRIMARY KEY,
 
 	status TEXT NOT NULL,
 	description TEXT NOT NULL,
 
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	endpoint_id CHAR(26) REFERENCES convoy.endpoints (id),
-	event_id CHAR(26) NOT NULL REFERENCES convoy.events (id),
-	device_id CHAR(26) REFERENCES convoy.devices (id),
-	subscription_id CHAR(26) NOT NULL REFERENCES convoy.subscriptions (id),
+	project_id VARCHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	endpoint_id VARCHAR(26) REFERENCES convoy.endpoints (id),
+	event_id VARCHAR(26) NOT NULL REFERENCES convoy.events (id),
+	device_id VARCHAR(26) REFERENCES convoy.devices (id),
+	subscription_id VARCHAR(26) NOT NULL REFERENCES convoy.subscriptions (id),
 
     metadata JSONB NOT NULL,
 	headers JSONB,

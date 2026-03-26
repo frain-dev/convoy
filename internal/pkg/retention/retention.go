@@ -9,10 +9,11 @@ import (
 	partman "github.com/jirevwe/go_partman"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/log"
 )
@@ -177,10 +178,10 @@ type DeleteRetentionPolicy struct {
 }
 
 func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
-	eventRepo := postgres.NewEventRepo(d.db)
+	eventRepo := events.New(d.logger, d.db)
 	projectRepo := projects.New(d.logger, d.db)
 	configRepo := configuration.New(d.logger, d.db)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(d.db)
+	eventDeliveryRepo := event_deliveries.New(d.logger, d.db)
 	deliveryAttemptsRepo := delivery_attempts.New(d.logger, d.db)
 
 	c, err := configRepo.LoadConfiguration(ctx)

@@ -5,10 +5,13 @@ import (
 	"crypto/x509"
 	"errors"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -147,6 +150,68 @@ func NewClientFromConfig(addresses []string, tlsSkipVerify bool, caCertFile, cer
 	}
 
 	return NewClientWithTLS(addresses, tlsConfig)
+}
+
+func NewClientFromRedisConfig(cfg config.RedisConfiguration) (*Redis, error) {
+	if cfg.IsSentinel() {
+		return newFailoverClient(cfg)
+	}
+	return NewClientFromConfig(
+		cfg.BuildDsn(),
+		cfg.TLSSkipVerify,
+		cfg.TLSCACertFile,
+		cfg.TLSCertFile,
+		cfg.TLSKeyFile,
+	)
+}
+
+func newFailoverClient(cfg config.RedisConfiguration) (*Redis, error) {
+	sentinelAddrs := cfg.SentinelAddresses()
+	if len(sentinelAddrs) == 0 {
+		return nil, errors.New("redis sentinel addresses are required")
+	}
+	if strings.TrimSpace(cfg.MasterName) == "" {
+		return nil, errors.New("redis sentinel master_name is required")
+	}
+
+	db := 0
+	if cfg.Database != "" {
+		var err error
+		db, err = strconv.Atoi(cfg.Database)
+		if err != nil {
+			return nil, errors.New("redis database must be a valid integer")
+		}
+	}
+
+	opts := &redis.FailoverOptions{
+		MasterName:       strings.TrimSpace(cfg.MasterName),
+		SentinelAddrs:    sentinelAddrs,
+		SentinelUsername: cfg.SentinelUsername,
+		SentinelPassword: cfg.SentinelPassword,
+		Username:         cfg.Username,
+		Password:         cfg.Password,
+		DB:               db,
+	}
+
+	if cfg.TLSSkipVerify || cfg.TLSCACertFile != "" || (cfg.TLSCertFile != "" && cfg.TLSKeyFile != "") {
+		tlsCfg, err := buildTLSConfig(&TLSConfig{
+			SkipVerify: cfg.TLSSkipVerify,
+			CACertFile: cfg.TLSCACertFile,
+			CertFile:   cfg.TLSCertFile,
+			KeyFile:    cfg.TLSKeyFile,
+		})
+		if err != nil {
+			return nil, err
+		}
+		opts.TLSConfig = tlsCfg
+	}
+
+	client := redis.NewFailoverClient(opts)
+	if err := redisotel.InstrumentTracing(client); err != nil {
+		return nil, err
+	}
+
+	return &Redis{addresses: sentinelAddrs, client: client}, nil
 }
 
 // Client is to return underlying redis interface

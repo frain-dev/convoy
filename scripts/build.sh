@@ -22,6 +22,8 @@ buildConvoy() {
 	# Install dependencies
 	npm i
 
+	rm -rf .angular/cache dist
+
 	# Run production build
 	npm run build
 
@@ -31,8 +33,13 @@ buildConvoy() {
 
 	echo -n "" > $UIDIR/go_test_stub.txt
 
-	# Build Binary
-	go build -o convoy ./cmd/*.go
+	# Build Binary (inject version from VERSION file so UI shows correct version)
+	VERSION="$(cat ./VERSION 2>/dev/null | tr -d '\n' | tr -d ' ')"
+	LDFLAGS=""
+	if [ -n "$VERSION" ]; then
+		LDFLAGS="-X github.com/frain-dev/convoy.Version=$VERSION"
+	fi
+	go build ${LDFLAGS:+-ldflags="$LDFLAGS"} -o convoy ./cmd/*.go
 }
 
 buildConvoy

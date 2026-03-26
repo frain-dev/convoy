@@ -142,14 +142,27 @@ func (m *MockBillingClient) GetOrganisation(ctx context.Context, orgID string) (
 
 func (m *MockBillingClient) GetOrganisationLicense(ctx context.Context, orgID string) (*Response[OrganisationLicense], error) {
 	m.ensureOrganisation(orgID)
-	data := OrganisationLicense{}
-	if m.GetOrganisationLicenseKey != "" {
-		data.Key = m.GetOrganisationLicenseKey
+	data := OrganisationLicense{
+		Organisation: &BillingOrganisation{
+			ExternalID: orgID,
+			LicenseKey: m.GetOrganisationLicenseKey,
+		},
 	}
 	return &Response[OrganisationLicense]{
 		Status:  true,
 		Message: "OK",
 		Data:    data,
+	}, nil
+}
+
+func (m *MockBillingClient) GetWorkspaceConfigBySlug(ctx context.Context, slug string) (*Response[WorkspaceConfigData], error) {
+	if slug == "" {
+		return nil, &Error{Message: "slug is required"}
+	}
+	return &Response[WorkspaceConfigData]{
+		Status:  true,
+		Message: "OK",
+		Data:    WorkspaceConfigData{ExternalID: slug, SSOAvailable: false},
 	}, nil
 }
 
@@ -262,6 +275,14 @@ func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID, subsc
 		Message: "Subscription deleted successfully",
 		Data:    nil,
 	}, nil
+}
+
+func (m *MockBillingClient) DeactivateOrganisation(ctx context.Context, orgID string) error {
+	if orgID == "" {
+		return &Error{Message: "organisation ID is required"}
+	}
+	m.ensureOrganisation(orgID)
+	return nil
 }
 
 func (m *MockBillingClient) GetSetupIntent(ctx context.Context, orgID string) (*Response[SetupIntent], error) {

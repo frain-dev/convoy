@@ -500,3 +500,66 @@ func TestCreateEndpointService_Run(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateEndpointURL(t *testing.T) {
+	tests := []struct {
+		name          string
+		url           string
+		enforceSecure bool
+		wantURL       string
+		wantErr       error
+	}{
+		{
+			name:    "valid http URL",
+			url:     "http://example.com/webhook",
+			wantURL: "http://example.com/webhook",
+		},
+		{
+			name:    "valid https URL",
+			url:     "https://example.com/webhook",
+			wantURL: "https://example.com/webhook",
+		},
+		{
+			name:          "valid https URL with enforceSecure",
+			url:           "https://example.com/webhook",
+			enforceSecure: true,
+			wantURL:       "https://example.com/webhook",
+		},
+		{
+			name:          "http rejected when enforceSecure",
+			url:           "http://example.com/webhook",
+			enforceSecure: true,
+			wantErr:       ErrHTTPSOnly,
+		},
+		{
+			name:    "ftp scheme rejected",
+			url:     "ftp://example.com/file",
+			wantErr: ErrInvalidEndpointScheme,
+		},
+		{
+			name:    "empty URL",
+			url:     "",
+			wantErr: ErrEndpointURLRequired,
+		},
+		{
+			name:    "URL without scheme returns parse error",
+			url:     "://missing-scheme",
+			wantErr: errors.New("parse error"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := ValidateEndpointURL(tc.url, tc.enforceSecure)
+			if tc.wantErr != nil {
+				require.Error(t, err)
+				if errors.Is(tc.wantErr, ErrEndpointURLRequired) || errors.Is(tc.wantErr, ErrHTTPSOnly) || errors.Is(tc.wantErr, ErrInvalidEndpointScheme) {
+					require.ErrorIs(t, err, tc.wantErr)
+				}
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.wantURL, result)
+		})
+	}
+}

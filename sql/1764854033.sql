@@ -1,4 +1,6 @@
 -- +migrate Up
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
 -- Set all instance_admin roles to organisation_admin
 UPDATE convoy.organisation_members
 SET role_type = 'organisation_admin'

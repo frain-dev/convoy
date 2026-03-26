@@ -32,14 +32,14 @@ func TestEnqueueCircuitBreakerEmails(t *testing.T) {
 	project := &datastore.Project{Name: "P1", LogoURL: "http://logo"}
 	endpoint := &datastore.Endpoint{Name: "E1", Url: "http://e1", SupportEmail: "ep@x.y", FailureRate: 42}
 
-	err := EnqueueCircuitBreakerEmails(q, lo, project, endpoint, "owner@x.y")
+	err := EnqueueCircuitBreakerEmails(q, lo, project, endpoint, "owner@x.y", 42.0)
 	require.NoError(t, err)
 	require.Len(t, q.wrote, 2) // endpoint + owner
 
 	// When no support email
 	q2 := &testQueue{}
 	endpoint2 := &datastore.Endpoint{Name: "E2", Url: "http://e2", SupportEmail: ""}
-	err = EnqueueCircuitBreakerEmails(q2, lo, project, endpoint2, "owner@x.y")
+	err = EnqueueCircuitBreakerEmails(q2, lo, project, endpoint2, "owner@x.y", 0.0)
 	require.NoError(t, err)
 	require.Len(t, q2.wrote, 1)
 }

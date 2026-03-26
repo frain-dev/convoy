@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -16,9 +17,11 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -32,6 +35,10 @@ var (
 	ErrNotEarlyAdopterFeature = errors.New("not early adopter feature")
 	ErrOverrideNotAllowed     = errors.New("override not allowed")
 	ErrNotLicensed            = errors.New("not licensed")
+
+	// workspaceSlugRegex matches lowercase letters, numbers, and hyphens. Length 2-64 is
+	// enforced separately. Must be kept in sync with Overwatch Organisation slug validation.
+	workspaceSlugRegex = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 )
 
 func (h *Handler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +102,7 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		NewOrg:        &newOrg,
 		User:          user,
 		Licenser:      h.A.Licenser,
+		Logger:        h.A.Logger,
 	}
 
 	organisation, err := co.Run(r.Context())
@@ -103,7 +111,7 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest created successfully", organisation, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation created successfully", organisation, http.StatusCreated))
 }
 
 func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +148,7 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest updated successfully", org, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation updated successfully", org, http.StatusAccepted))
 }
 
 func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -150,9 +158,17 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManageAll), org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
+	}
+
+	if h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil {
+		if err = h.A.BillingClient.DeactivateOrganisation(r.Context(), org.UID); err != nil {
+			log.FromContext(r.Context()).WithError(err).Error("failed to deactivate organisation in billing")
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
 	}
 
 	orgRepo := organisations.New(h.A.Logger, h.A.DB)
@@ -163,7 +179,63 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("OrganisationRequest deleted successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Organisation deleted successfully", nil, http.StatusOK))
+}
+
+// UpdateOrganisationSlug sets the workspace slug in billing (Overwatch) for SSO/login by slug.
+func (h *Handler) UpdateOrganisationSlug(w http.ResponseWriter, r *http.Request) {
+	if !h.A.Cfg.Billing.Enabled || h.A.BillingClient == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Billing is not enabled", http.StatusBadRequest))
+		return
+	}
+
+	var body struct {
+		Slug string `json:"slug"`
+	}
+	if err := util.ReadJSON(r, &body); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		return
+	}
+
+	slug := strings.TrimSpace(body.Slug)
+	if len(slug) < 2 || len(slug) > 64 {
+		_ = render.Render(w, r, util.NewErrorResponse("Slug must be between 2 and 64 characters", http.StatusBadRequest))
+		return
+	}
+	if !workspaceSlugRegex.MatchString(slug) {
+		_ = render.Render(w, r, util.NewErrorResponse("Slug must contain only lowercase letters, numbers, and hyphens", http.StatusBadRequest))
+		return
+	}
+
+	org, err := h.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
+	_, err = h.A.BillingClient.UpdateOrganisation(r.Context(), org.UID, billing.BillingOrganisation{
+		Name: org.Name,
+		Slug: slug,
+	})
+	if err != nil {
+		errMsg := strings.ToLower(err.Error())
+		if strings.Contains(errMsg, "record exists already") ||
+			strings.Contains(errMsg, "already taken") ||
+			strings.Contains(errMsg, "already been taken") {
+			_ = render.Render(w, r, util.NewErrorResponse("Slug is already taken", http.StatusConflict))
+			return
+		}
+		log.FromContext(r.Context()).WithError(err).Error("failed to update organisation slug in billing")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Workspace slug updated successfully", map[string]string{"slug": slug}, http.StatusOK))
 }
 
 func (h *Handler) UpdateOrganisationFeatureFlags(w http.ResponseWriter, r *http.Request) {
@@ -232,11 +304,13 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 	featureNames := map[fflag.FeatureFlagKey]string{
 		fflag.MTLS:               "mTLS",
 		fflag.OAuthTokenExchange: "OAuth Token Exchange",
+		fflag.BasicAuthEndpoint:  "Basic Auth Endpoint",
 	}
 
 	featureDescriptions := map[fflag.FeatureFlagKey]string{
 		fflag.MTLS:               "Mutual TLS support for secure endpoint communication",
 		fflag.OAuthTokenExchange: "OAuth token exchange functionality for endpoint authentication",
+		fflag.BasicAuthEndpoint:  "Basic authentication support for endpoint webhook delivery",
 	}
 
 	for _, featureKey := range features {
@@ -319,6 +393,9 @@ func (h *Handler) isEarlyAdopterFeatureLicensed(featureKey fflag.FeatureFlagKey)
 	case fflag.MTLS:
 		return h.A.Licenser.MutualTLS()
 	case fflag.OAuthTokenExchange:
+		return h.A.Licenser.OAuth2EndpointAuth()
+	case fflag.BasicAuthEndpoint:
+		// TODO: Replace with h.A.Licenser.BasicAuthEndpointAuth() once basic_auth_endpoint_auth entitlement is available
 		return h.A.Licenser.OAuth2EndpointAuth()
 	default:
 		return false
@@ -924,7 +1001,7 @@ func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 
 	// Run retry in background goroutine - don't block the response
 	go func() {
-		task.RetryEventDeliveriesWithTracker(h.A.DB, h.A.Queue, statuses, retryRequest.Time, retryRequest.EventID, batchID, tracker)
+		task.RetryEventDeliveriesWithTracker(h.A.Logger, h.A.DB, h.A.Queue, statuses, retryRequest.Time, retryRequest.EventID, batchID, tracker)
 	}()
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries retry initiated successfully", map[string]interface{}{
@@ -992,7 +1069,7 @@ func (h *Handler) CountRetryEventDeliveries(w http.ResponseWriter, r *http.Reque
 		CreatedAtEnd:   now.Unix(),
 	}
 
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
+	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 
 	// Count across all statuses
 	var totalCount int64

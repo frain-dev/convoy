@@ -240,7 +240,10 @@ WITH filtered_portal_links AS (
     LIMIT @limit_val
 )
 -- Final select: reverse order for backward pagination to get DESC order
-SELECT * FROM filtered_portal_links
+SELECT
+    id, project_id, name, token, endpoints, auth_type, can_manage_endpoint,
+    owner_id, endpoint_count, created_at, updated_at, endpoints_metadata
+FROM filtered_portal_links
 ORDER BY
     CASE
         WHEN @direction::text = 'prev' THEN id

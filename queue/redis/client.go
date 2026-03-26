@@ -27,7 +27,11 @@ type RedisQueue struct {
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	var c asynq.RedisConnOpt
-	if len(opts.RedisAddress) == 1 {
+	if opts.RedisFailoverOpt != nil {
+		c = *opts.RedisFailoverOpt
+	} else if opts.RedisClient != nil {
+		c = opts.RedisClient
+	} else if len(opts.RedisAddress) == 1 {
 		var _ = opts.RedisClient.MakeRedisClient().(redis.UniversalClient)
 		c = opts.RedisClient
 	} else {
@@ -52,27 +56,26 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 	}
 	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
 
-	_, err := q.inspector.GetTaskInfo(s, job.ID)
-	if err != nil {
-		// If the task or queue does not yet exist, we can proceed
-		// to enqueuing the task
-		message := err.Error()
-		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
-			_, err := q.client.Enqueue(t, nil)
-			return err
+	// Optimization: Try to enqueue directly first (optimistic path)
+	// This reduces from 3 Redis calls to 1 in the common case (no duplicate)
+	_, err := q.client.Enqueue(t, nil)
+	if err == nil {
+		return nil // Success - saved 2 Redis calls!
+	}
+
+	// If enqueue failed due to duplicate task ID, delete and retry
+	// Check if it's a duplicate task error (Asynq returns this when task ID exists)
+	if err == asynq.ErrDuplicateTask || err == asynq.ErrTaskIDConflict {
+		// Delete the existing task and retry
+		deleteErr := q.inspector.DeleteTask(s, job.ID)
+		if deleteErr != nil {
+			return deleteErr
 		}
-
+		_, err = q.client.Enqueue(t, nil)
 		return err
 	}
 
-	// At this point, the task is already on the queue based on its ID.
-	// We need to delete before enqueuing
-	err = q.inspector.DeleteTask(s, job.ID)
-	if err != nil {
-		return err
-	}
-
-	_, err = q.client.Enqueue(t, nil)
+	// For other errors (queue not found, etc.), return as-is
 	return err
 }
 
@@ -84,27 +87,26 @@ func (q *RedisQueue) WriteWithoutTimeout(taskName convoy.TaskName, queueName con
 
 	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.Timeout(0), asynq.ProcessIn(job.Delay))
 
-	task, err := q.inspector.GetTaskInfo(s, job.ID)
-	if err != nil {
-		// If the task or queue does not yet exist, we can proceed
-		// to enqueuing the task
-		message := err.Error()
-		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
-			_, err := q.client.Enqueue(t, nil)
-			return err
+	// Optimization: Try to enqueue directly first (optimistic path)
+	// This reduces from 3 Redis calls to 1 in the common case (no duplicate)
+	_, err := q.client.Enqueue(t, nil)
+	if err == nil {
+		return nil // Success - saved 2 Redis calls!
+	}
+
+	// If enqueue failed due to duplicate task ID, delete and retry
+	// Check if it's a duplicate task error (Asynq returns this when task ID exists)
+	if err == asynq.ErrDuplicateTask || err == asynq.ErrTaskIDConflict {
+		// Delete the existing task and retry
+		deleteErr := q.inspector.DeleteTask(s, job.ID)
+		if deleteErr != nil {
+			return deleteErr
 		}
-
+		_, err = q.client.Enqueue(t, nil)
 		return err
 	}
 
-	// At this point, the task is already on the queue based on its ID.
-	// We need to delete before enqueuing
-	err = q.inspector.DeleteTask(s, task.ID)
-	if err != nil {
-		return err
-	}
-
-	_, err = q.client.Enqueue(t, nil)
+	// For other errors (queue not found, etc.), return as-is
 	return err
 }
 
@@ -113,9 +115,16 @@ func (q *RedisQueue) Options() queue.QueueOptions {
 }
 
 func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
+	var redisConnOpt asynq.RedisConnOpt
+	if q.opts.RedisFailoverOpt != nil {
+		redisConnOpt = *q.opts.RedisFailoverOpt
+	} else {
+		redisConnOpt = q.opts.RedisClient
+	}
+
 	h := asynqmon.New(asynqmon.Options{
 		RootPath:          "/queue/monitoring",
-		RedisConnOpt:      q.opts.RedisClient,
+		RedisConnOpt:      redisConnOpt,
 		PrometheusAddress: q.opts.PrometheusAddress,
 		PayloadFormatter:  Formatter{},
 		ResultFormatter:   Formatter{},

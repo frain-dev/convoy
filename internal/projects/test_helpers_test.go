@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/frain-dev/convoy/internal/users"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
@@ -17,10 +16,12 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -278,7 +279,7 @@ func seedEndpoint(t *testing.T, db database.Database, project *datastore.Project
 func seedEvent(t *testing.T, db database.Database, project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Event {
 	t.Helper()
 
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := events.New(testLogger, db)
 
 	var endpoints []string
 	if endpoint != nil {
@@ -291,6 +292,7 @@ func seedEvent(t *testing.T, db database.Database, project *datastore.Project, e
 		Endpoints: endpoints,
 		EventType: datastore.EventType("test.event"),
 		Data:      []byte(`{"test": "data"}`),
+		Raw:       `{"test": "data"}`,
 	}
 
 	err := eventRepo.CreateEvent(context.Background(), event)

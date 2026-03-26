@@ -13,6 +13,8 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/events"
+	internalio "github.com/frain-dev/convoy/internal/io"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -133,7 +135,7 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -169,28 +171,59 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
 func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+
+	// Wrap the request body to count bytes in real-time
+	var bodySize int
+	r.Body = internalio.NewCountingReadCloser(r.Body, &bodySize)
+
 	var newMessage models.FanoutEvent
 	err := util.ReadJSON(r, &newMessage)
+	afterRead := time.Now()
 	if err != nil {
+		h.A.Logger.WithError(err).WithFields(log.Fields{
+			"body_size_bytes": bodySize,
+			"read_duration":   afterRead.Sub(start).Milliseconds(),
+		}).Error("failed to read fanout event json")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+
+	h.A.Logger.WithFields(log.Fields{
+		"body_size_bytes": bodySize,
+		"duration":        afterRead.Sub(start).Milliseconds(),
+	}).Debug("read fanout event json completed")
 
 	err = newMessage.Validate()
+	afterValidation := time.Now()
 	if err != nil {
+		h.A.Logger.WithError(err).WithFields(log.Fields{
+			"owner_id":        newMessage.OwnerID,
+			"event_type":      newMessage.EventType,
+			"body_size_bytes": bodySize,
+		}).Error("failed to validate fanout event")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
+	afterProject := time.Now()
 	if err != nil {
+		h.A.Logger.WithError(err).Error("failed to retrieve project for fanout event")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
+	h.A.Logger.WithFields(log.Fields{
+		"project_id":      project.UID,
+		"owner_id":        newMessage.OwnerID,
+		"event_type":      newMessage.EventType,
+		"body_size_bytes": bodySize,
+	}).Info("processing fanout event")
+
 	cf := services.CreateFanoutEventService{
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
-		EventRepo:      postgres.NewEventRepo(h.A.DB),
+		EventRepo:      events.New(h.A.Logger, h.A.DB),
 		PortalLinkRepo: portal_links.New(h.A.Logger, h.A.DB),
 		Queue:          h.A.Queue,
 		NewMessage:     &newMessage,
@@ -198,10 +231,31 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	event, err := cf.Run(r.Context())
+	afterService := time.Now()
 	if err != nil {
+		h.A.Logger.WithError(err).WithFields(log.Fields{
+			"project_id":      project.UID,
+			"owner_id":        newMessage.OwnerID,
+			"body_size_bytes": bodySize,
+		}).Error("failed to run fanout event service")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	duration := time.Since(start)
+	// Log detailed timing breakdown for performance monitoring
+	h.A.Logger.WithFields(log.Fields{
+		"project_id":          project.UID,
+		"event_id":            event.UID,
+		"body_size_bytes":     bodySize,
+		"read_parse_duration": afterRead.Sub(start).Milliseconds(),
+		"validation_duration": afterValidation.Sub(afterRead).Milliseconds(),
+		"project_duration":    afterProject.Sub(afterValidation).Milliseconds(),
+		"service_duration":    afterService.Sub(afterProject).Milliseconds(),
+		"total_duration":      duration.Milliseconds(),
+		"endpoints_count":     len(event.Endpoints),
+		"is_duplicate":        event.IsDuplicateEvent,
+	}).Info("fanout event timing breakdown")
 
 	if event.IsDuplicateEvent {
 		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", nil, http.StatusCreated))
@@ -232,7 +286,7 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -312,7 +366,7 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Router			/v1/projects/{projectID}/events/batchreplay [post]
 func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEvent
-	p, err := h.retrieveProject(r)
+	p, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -333,7 +387,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	bs := services.BatchReplayEventService{
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
 		Queue:        h.A.Queue,
-		EventRepo:    postgres.NewEventRepo(h.A.DB),
+		EventRepo:    events.New(h.A.Logger, h.A.DB),
 		Filter:       data.Filter,
 	}
 
@@ -394,7 +448,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -429,7 +483,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		data.Filter.Query = "" // event payload search is not allowed
 	}
 
-	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
+	eventsPaged, paginationData, err := events.New(h.A.Logger, h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
@@ -445,7 +499,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEvent
-	p, err := h.retrieveProject(r)
+	p, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -479,7 +533,7 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 		data.Filter.EndpointIDs = endpointIDs
 	}
 
-	count, err := postgres.NewEventRepo(h.A.DB).CountEvents(r.Context(), p.UID, data.Filter)
+	count, err := events.New(h.A.Logger, h.A.DB).CountEvents(r.Context(), p.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -490,12 +544,12 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		return &datastore.Event{}, err
 	}
 
 	eventID := chi.URLParam(r, "eventID")
-	eventRepo := postgres.NewEventRepo(h.A.DB)
+	eventRepo := events.New(h.A.Logger, h.A.DB)
 	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
 }

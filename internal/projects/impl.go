@@ -129,32 +129,32 @@ func projectConfigToCreateParams(id string, config *datastore.ProjectConfig) rep
 	ssl := config.GetSSLConfig()
 
 	return repo.CreateProjectConfigurationParams{
-		ID:                             id,
-		SearchPolicy:                   common.StringToPgText(config.SearchPolicy),
-		MaxPayloadReadSize:             int32(config.MaxIngestSize),
-		ReplayAttacksPreventionEnabled: config.ReplayAttacks,
-		RatelimitCount:                 int32(rlc.Count),
-		RatelimitDuration:              int32(rlc.Duration),
-		StrategyType:                   string(sc.Type),
-		StrategyDuration:               int32(sc.Duration),
-		StrategyRetryCount:             int32(sc.RetryCount),
-		SignatureHeader:                string(sgc.Header),
+		ID:                             common.StringToPgTextNullable(id),
+		SearchPolicy:                   common.StringToPgTextNullable(config.SearchPolicy),
+		MaxPayloadReadSize:             pgtype.Int4{Int32: int32(config.MaxIngestSize), Valid: true},
+		ReplayAttacksPreventionEnabled: pgtype.Bool{Bool: config.ReplayAttacks, Valid: true},
+		RatelimitCount:                 pgtype.Int4{Int32: int32(rlc.Count), Valid: true},
+		RatelimitDuration:              pgtype.Int4{Int32: int32(rlc.Duration), Valid: true},
+		StrategyType:                   common.StringToPgTextNullable(string(sc.Type)),
+		StrategyDuration:               pgtype.Int4{Int32: int32(sc.Duration), Valid: true},
+		StrategyRetryCount:             pgtype.Int4{Int32: int32(sc.RetryCount), Valid: true},
+		SignatureHeader:                common.StringToPgTextNullable(string(sgc.Header)),
 		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
-		DisableEndpoint:                config.DisableEndpoint,
-		MetaEventsEnabled:              me.IsEnabled,
-		MetaEventsType:                 common.StringToPgText(string(me.Type)),
+		DisableEndpoint:                pgtype.Bool{Bool: config.DisableEndpoint, Valid: true},
+		MetaEventsEnabled:              pgtype.Bool{Bool: me.IsEnabled, Valid: true},
+		MetaEventsType:                 common.StringToPgTextNullable(string(me.Type)),
 		MetaEventsEventType:            sliceToPgText(me.EventType),
-		MetaEventsUrl:                  common.StringToPgText(me.URL),
-		MetaEventsSecret:               common.StringToPgText(me.Secret),
+		MetaEventsUrl:                  common.StringToPgTextNullable(me.URL),
+		MetaEventsSecret:               common.StringToPgTextNullable(me.Secret),
 		MetaEventsPubSub:               pubSubToJSON(me.PubSub),
 		SslEnforceSecureEndpoints:      common.BoolToPgBool(ssl.EnforceSecureEndpoints),
-		CbSampleRate:                   int32(cb.SampleRate),
-		CbErrorTimeout:                 int32(cb.ErrorTimeout),
-		CbFailureThreshold:             int32(cb.FailureThreshold),
-		CbSuccessThreshold:             int32(cb.SuccessThreshold),
-		CbObservabilityWindow:          int32(cb.ObservabilityWindow),
-		CbMinimumRequestCount:          int32(cb.MinimumRequestCount),
-		CbConsecutiveFailureThreshold:  int32(cb.ConsecutiveFailureThreshold),
+		CbSampleRate:                   pgtype.Int4{Int32: int32(cb.SampleRate), Valid: true},
+		CbErrorTimeout:                 pgtype.Int4{Int32: int32(cb.ErrorTimeout), Valid: true},
+		CbFailureThreshold:             pgtype.Int4{Int32: int32(cb.FailureThreshold), Valid: true},
+		CbSuccessThreshold:             pgtype.Int4{Int32: int32(cb.SuccessThreshold), Valid: true},
+		CbObservabilityWindow:          pgtype.Int4{Int32: int32(cb.ObservabilityWindow), Valid: true},
+		CbMinimumRequestCount:          pgtype.Int4{Int32: int32(cb.MinimumRequestCount), Valid: true},
+		CbConsecutiveFailureThreshold:  pgtype.Int4{Int32: int32(cb.ConsecutiveFailureThreshold), Valid: true},
 	}
 }
 
@@ -168,32 +168,32 @@ func projectConfigToUpdateParams(id string, config *datastore.ProjectConfig) rep
 	ssl := config.GetSSLConfig()
 
 	return repo.UpdateProjectConfigurationParams{
-		ID:                             id,
-		MaxPayloadReadSize:             int32(config.MaxIngestSize),
-		ReplayAttacksPreventionEnabled: config.ReplayAttacks,
-		RatelimitCount:                 int32(rlc.Count),
-		RatelimitDuration:              int32(rlc.Duration),
-		StrategyType:                   string(sc.Type),
-		StrategyDuration:               int32(sc.Duration),
-		StrategyRetryCount:             int32(sc.RetryCount),
-		SignatureHeader:                string(sgc.Header),
+		ID:                             common.StringToPgTextNullable(id),
+		MaxPayloadReadSize:             pgtype.Int4{Int32: int32(config.MaxIngestSize), Valid: true},
+		ReplayAttacksPreventionEnabled: pgtype.Bool{Bool: config.ReplayAttacks, Valid: true},
+		RatelimitCount:                 pgtype.Int4{Int32: int32(rlc.Count), Valid: true},
+		RatelimitDuration:              pgtype.Int4{Int32: int32(rlc.Duration), Valid: true},
+		StrategyType:                   common.StringToPgTextNullable(string(sc.Type)),
+		StrategyDuration:               pgtype.Int4{Int32: int32(sc.Duration), Valid: true},
+		StrategyRetryCount:             pgtype.Int4{Int32: int32(sc.RetryCount), Valid: true},
+		SignatureHeader:                common.StringToPgTextNullable(string(sgc.Header)),
 		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
-		DisableEndpoint:                config.DisableEndpoint,
-		MetaEventsEnabled:              me.IsEnabled,
-		MetaEventsType:                 common.StringToPgText(string(me.Type)),
+		DisableEndpoint:                pgtype.Bool{Bool: config.DisableEndpoint, Valid: true},
+		MetaEventsEnabled:              pgtype.Bool{Bool: me.IsEnabled, Valid: true},
+		MetaEventsType:                 common.StringToPgTextNullable(string(me.Type)),
 		MetaEventsEventType:            sliceToPgText(me.EventType),
-		MetaEventsUrl:                  common.StringToPgText(me.URL),
-		MetaEventsSecret:               common.StringToPgText(me.Secret),
+		MetaEventsUrl:                  common.StringToPgTextNullable(me.URL),
+		MetaEventsSecret:               common.StringToPgTextNullable(me.Secret),
 		MetaEventsPubSub:               pubSubToJSON(me.PubSub),
-		SearchPolicy:                   common.StringToPgText(config.SearchPolicy),
+		SearchPolicy:                   common.StringToPgTextNullable(config.SearchPolicy),
 		SslEnforceSecureEndpoints:      common.BoolToPgBool(ssl.EnforceSecureEndpoints),
-		CbSampleRate:                   int32(cb.SampleRate),
-		CbErrorTimeout:                 int32(cb.ErrorTimeout),
-		CbFailureThreshold:             int32(cb.FailureThreshold),
-		CbSuccessThreshold:             int32(cb.SuccessThreshold),
-		CbObservabilityWindow:          int32(cb.ObservabilityWindow),
-		CbMinimumRequestCount:          int32(cb.MinimumRequestCount),
-		CbConsecutiveFailureThreshold:  int32(cb.ConsecutiveFailureThreshold),
+		CbSampleRate:                   pgtype.Int4{Int32: int32(cb.SampleRate), Valid: true},
+		CbErrorTimeout:                 pgtype.Int4{Int32: int32(cb.ErrorTimeout), Valid: true},
+		CbFailureThreshold:             pgtype.Int4{Int32: int32(cb.FailureThreshold), Valid: true},
+		CbSuccessThreshold:             pgtype.Int4{Int32: int32(cb.SuccessThreshold), Valid: true},
+		CbObservabilityWindow:          pgtype.Int4{Int32: int32(cb.ObservabilityWindow), Valid: true},
+		CbMinimumRequestCount:          pgtype.Int4{Int32: int32(cb.MinimumRequestCount), Valid: true},
+		CbConsecutiveFailureThreshold:  pgtype.Int4{Int32: int32(cb.ConsecutiveFailureThreshold), Valid: true},
 	}
 }
 
@@ -204,30 +204,30 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		logoUrl                                pgtype.Text
 		retainedEvents                         pgtype.Int4
 		createdAt, updatedAt, deletedAt        pgtype.Timestamptz
-		// Config fields - some are strings, some are pgtype.Text per the generated code
-		searchPolicy                                    pgtype.Text
-		strategyType, signatureHeader                   pgtype.Text
-		signatureVersions                               []byte
-		metaEventsType, metaEventsUrl, metaEventsSecret string // These are strings with COALESCE in SQL
-		maxPayloadReadSize                              pgtype.Int4
-		multipleEndpointSubscriptions                   pgtype.Bool
-		replayAttacks                                   pgtype.Bool
-		ratelimitCount                                  pgtype.Int4
-		ratelimitDuration                               pgtype.Int4
-		strategyDuration                                pgtype.Int4
-		strategyRetryCount                              pgtype.Int4
-		disableEndpoint                                 pgtype.Bool
-		sslEnforceSecureEndpoints                       pgtype.Bool
-		metaEventsEnabled                               pgtype.Bool
-		metaEventsEventType                             pgtype.Text
-		metaEventsPubSub                                []byte
-		cbSampleRate                                    pgtype.Int4
-		cbErrorTimeout                                  pgtype.Int4
-		cbFailureThreshold                              pgtype.Int4
-		cbSuccessThreshold                              pgtype.Int4
-		cbObservabilityWindow                           pgtype.Int4
-		cbMinimumRequestCount                           pgtype.Int4
-		cbConsecutiveFailureThreshold                   pgtype.Int4
+		// Config fields
+		searchPolicy                        pgtype.Text
+		strategyType, signatureHeader       string
+		signatureVersions                   []byte
+		maxPayloadReadSize                  int32
+		multipleEndpointSubscriptions       bool
+		replayAttacks                       bool
+		ratelimitCount                      int32
+		ratelimitDuration                   int32
+		strategyDuration                    int32
+		strategyRetryCount                  int32
+		disableEndpoint                     bool
+		sslEnforceSecureEndpoints           pgtype.Bool
+		metaEventsEnabled                   bool
+		metaEventsType, metaEventsEventType pgtype.Text
+		metaEventsUrl, metaEventsSecret     pgtype.Text
+		metaEventsPubSub                    []byte
+		cbSampleRate                        int32
+		cbErrorTimeout                      int32
+		cbFailureThreshold                  int32
+		cbSuccessThreshold                  int32
+		cbObservabilityWindow               int32
+		cbMinimumRequestCount               int32
+		cbConsecutiveFailureThreshold       int32
 	)
 
 	switch r := row.(type) {
@@ -316,42 +316,42 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 	// Build nested config
 	project.Config = &datastore.ProjectConfig{
 		SearchPolicy:                  searchPolicy.String,
-		MaxIngestSize:                 uint64(maxPayloadReadSize.Int32),
-		MultipleEndpointSubscriptions: multipleEndpointSubscriptions.Bool,
-		ReplayAttacks:                 replayAttacks.Bool,
-		DisableEndpoint:               disableEndpoint.Bool,
+		MaxIngestSize:                 uint64(maxPayloadReadSize),
+		MultipleEndpointSubscriptions: multipleEndpointSubscriptions,
+		ReplayAttacks:                 replayAttacks,
+		DisableEndpoint:               disableEndpoint,
 		RateLimit: &datastore.RateLimitConfiguration{
-			Count:    int(ratelimitCount.Int32),
-			Duration: uint64(ratelimitDuration.Int32),
+			Count:    int(ratelimitCount),
+			Duration: uint64(ratelimitDuration),
 		},
 		Strategy: &datastore.StrategyConfiguration{
-			Type:       datastore.StrategyProvider(strategyType.String),
-			Duration:   uint64(strategyDuration.Int32),
-			RetryCount: uint64(strategyRetryCount.Int32),
+			Type:       datastore.StrategyProvider(strategyType),
+			Duration:   uint64(strategyDuration),
+			RetryCount: uint64(strategyRetryCount),
 		},
 		Signature: &datastore.SignatureConfiguration{
-			Header:   config.SignatureHeaderProvider(signatureHeader.String),
+			Header:   config.SignatureHeaderProvider(signatureHeader),
 			Versions: jsonToSignatureVersions(signatureVersions),
 		},
 		SSL: &datastore.SSLConfiguration{
 			EnforceSecureEndpoints: sslEnforceSecureEndpoints.Bool,
 		},
 		MetaEvent: &datastore.MetaEventConfiguration{
-			IsEnabled: metaEventsEnabled.Bool,
-			Type:      datastore.MetaEventType(metaEventsType),
+			IsEnabled: metaEventsEnabled,
+			Type:      datastore.MetaEventType(metaEventsType.String),
 			EventType: pgTextToSlice(metaEventsEventType),
-			URL:       metaEventsUrl,
-			Secret:    metaEventsSecret,
+			URL:       metaEventsUrl.String,
+			Secret:    metaEventsSecret.String,
 			PubSub:    jsonBytesToPubSub(metaEventsPubSub),
 		},
 		CircuitBreaker: &datastore.CircuitBreakerConfiguration{
-			SampleRate:                  uint64(cbSampleRate.Int32),
-			ErrorTimeout:                uint64(cbErrorTimeout.Int32),
-			FailureThreshold:            uint64(cbFailureThreshold.Int32),
-			SuccessThreshold:            uint64(cbSuccessThreshold.Int32),
-			ObservabilityWindow:         uint64(cbObservabilityWindow.Int32),
-			MinimumRequestCount:         uint64(cbMinimumRequestCount.Int32),
-			ConsecutiveFailureThreshold: uint64(cbConsecutiveFailureThreshold.Int32),
+			SampleRate:                  uint64(cbSampleRate),
+			ErrorTimeout:                uint64(cbErrorTimeout),
+			FailureThreshold:            uint64(cbFailureThreshold),
+			SuccessThreshold:            uint64(cbSuccessThreshold),
+			ObservabilityWindow:         uint64(cbObservabilityWindow),
+			MinimumRequestCount:         uint64(cbMinimumRequestCount),
+			ConsecutiveFailureThreshold: uint64(cbConsecutiveFailureThreshold),
 		},
 	}
 
@@ -390,12 +390,12 @@ func (s *Service) CreateProject(ctx context.Context, project *datastore.Project)
 	// Create project
 	project.ProjectConfigID = configID
 	err = qtx.CreateProject(ctx, repo.CreateProjectParams{
-		ID:                     project.UID,
-		Name:                   project.Name,
-		Type:                   string(project.Type),
-		LogoUrl:                common.StringToPgText(project.LogoURL),
-		OrganisationID:         project.OrganisationID,
-		ProjectConfigurationID: configID,
+		ID:                     common.StringToPgText(project.UID),
+		Name:                   common.StringToPgText(project.Name),
+		Type:                   common.StringToPgText(string(project.Type)),
+		LogoUrl:                common.StringToPgTextNullable(project.LogoURL),
+		OrganisationID:         common.StringToPgTextNullable(project.OrganisationID),
+		ProjectConfigurationID: common.StringToPgTextNullable(configID),
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
@@ -420,7 +420,7 @@ func (s *Service) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) 
 		orgID = f.OrgID
 	}
 
-	rows, err := s.repo.FetchProjects(ctx, orgID)
+	rows, err := s.repo.FetchProjects(ctx, common.StringToPgText(orgID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to load projects")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -468,9 +468,9 @@ func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project)
 
 	// Update project metadata
 	result, err := qtx.UpdateProject(ctx, repo.UpdateProjectParams{
-		ID:             project.UID,
-		Name:           project.Name,
-		LogoUrl:        common.StringToPgText(project.LogoURL),
+		ID:             common.StringToPgTextNullable(project.UID),
+		Name:           common.StringToPgTextNullable(project.Name),
+		LogoUrl:        common.StringToPgTextNullable(project.LogoURL),
 		RetainedEvents: pgtype.Int4{Int32: int32(project.RetainedEvents), Valid: true},
 	})
 	if err != nil {
@@ -498,9 +498,9 @@ func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project)
 	// Update endpoint statuses if DisableEndpoint is false
 	if !project.Config.DisableEndpoint {
 		_, err = qtx.UpdateProjectEndpointStatus(ctx, repo.UpdateProjectEndpointStatusParams{
-			Status:    string(datastore.ActiveEndpointStatus),
-			ProjectID: project.UID,
-			Column3:   []string{string(datastore.InactiveEndpointStatus)},
+			Status:    common.StringToPgTextNullable(string(datastore.ActiveEndpointStatus)),
+			ProjectID: common.StringToPgTextNullable(project.UID),
+			Statuses:  []string{string(datastore.InactiveEndpointStatus)},
 		})
 		if err != nil {
 			s.logger.WithError(err).Error("failed to update endpoint statuses")
@@ -521,7 +521,7 @@ func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project)
 
 // FetchProjectByID retrieves a single project by ID
 func (s *Service) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {
-	row, err := s.repo.FetchProjectByID(ctx, id)
+	row, err := s.repo.FetchProjectByID(ctx, common.StringToPgTextNullable(id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrProjectNotFound
@@ -545,7 +545,7 @@ func (s *Service) FillProjectsStatistics(ctx context.Context, project *datastore
 		return util.NewServiceError(http.StatusBadRequest, errors.New("project cannot be nil"))
 	}
 
-	stats, err := s.repo.FetchProjectStatistics(ctx, common.StringToPgText(project.UID))
+	stats, err := s.repo.FetchProjectStatistics(ctx, common.StringToPgTextNullable(project.UID))
 	if err != nil {
 		s.logger.WithError(err).Error("failed to fetch project statistics")
 		return util.NewServiceError(http.StatusInternalServerError, err)
@@ -572,27 +572,29 @@ func (s *Service) DeleteProject(ctx context.Context, uid string) error {
 
 	qtx := repo.New(tx)
 
+	uidPgText := common.StringToPgTextNullable(uid)
+
 	// Soft delete project
-	_, err = qtx.DeleteProject(ctx, uid)
+	_, err = qtx.DeleteProject(ctx, uidPgText)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to delete project")
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
 	// Cascade deletes
-	_, err = qtx.DeleteProjectEndpoints(ctx, uid)
+	_, err = qtx.DeleteProjectEndpoints(ctx, uidPgText)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to delete project endpoints")
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
-	_, err = qtx.DeleteProjectEvents(ctx, uid)
+	_, err = qtx.DeleteProjectEvents(ctx, uidPgText)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to delete project events")
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
-	_, err = qtx.DeleteProjectSubscriptions(ctx, uid)
+	_, err = qtx.DeleteProjectSubscriptions(ctx, uidPgText)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to delete project subscriptions")
 		return util.NewServiceError(http.StatusInternalServerError, err)
@@ -608,7 +610,7 @@ func (s *Service) DeleteProject(ctx context.Context, uid string) error {
 
 // GetProjectsWithEventsInTheInterval retrieves projects with event counts in a time interval
 func (s *Service) GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]datastore.ProjectEvents, error) {
-	rows, err := s.repo.GetProjectsWithEventsInInterval(ctx, int32(interval))
+	rows, err := s.repo.GetProjectsWithEventsInInterval(ctx, pgtype.Int4{Int32: int32(interval), Valid: true})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to get projects with events in interval")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -618,7 +620,7 @@ func (s *Service) GetProjectsWithEventsInTheInterval(ctx context.Context, interv
 	for _, row := range rows {
 		projects = append(projects, datastore.ProjectEvents{
 			Id:          row.ID,
-			EventsCount: int(row.EventsCount),
+			EventsCount: int(row.EventsCount.Int64),
 		})
 	}
 
@@ -633,5 +635,5 @@ func (s *Service) CountProjects(ctx context.Context) (int64, error) {
 		return 0, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
-	return count, nil
+	return count.Int64, nil
 }

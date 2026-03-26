@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ type Client interface {
 	CreateOrganisation(ctx context.Context, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
 	GetOrganisationLicense(ctx context.Context, orgID string) (*Response[OrganisationLicense], error)
 	GetOrganisation(ctx context.Context, orgID string) (*Response[BillingOrganisation], error)
+	GetWorkspaceConfigBySlug(ctx context.Context, slug string) (*Response[WorkspaceConfigData], error)
 	UpdateOrganisation(ctx context.Context, orgID string, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
 	UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error)
 	UpdateOrganisationAddress(ctx context.Context, orgID string, addressData UpdateOrganisationAddressRequest) (*Response[BillingOrganisation], error)
@@ -31,6 +33,7 @@ type Client interface {
 	OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error)
 	UpgradeSubscription(ctx context.Context, orgID, subscriptionID string, req UpgradeSubscriptionRequest) (*Response[Checkout], error)
 	DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error)
+	DeactivateOrganisation(ctx context.Context, orgID string) error
 	GetSetupIntent(ctx context.Context, orgID string) (*Response[SetupIntent], error)
 	CreateSetupIntent(ctx context.Context, orgID string, setupIntentData CreateSetupIntentRequest) (*Response[SetupIntent], error)
 	GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response[Invoice], error)
@@ -157,6 +160,14 @@ func (c *HTTPClient) GetOrganisation(ctx context.Context, orgID string) (*Respon
 	return makeRequest[BillingOrganisation](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s", orgID), nil)
 }
 
+func (c *HTTPClient) GetWorkspaceConfigBySlug(ctx context.Context, slug string) (*Response[WorkspaceConfigData], error) {
+	if slug == "" {
+		return nil, fmt.Errorf("slug is required")
+	}
+	path := fmt.Sprintf("/api/v1/workspace_config?slug=%s", strings.ReplaceAll(url.QueryEscape(slug), "+", "%20"))
+	return makeRequest[WorkspaceConfigData](ctx, c.httpClient, c.config, "GET", path, nil)
+}
+
 func (c *HTTPClient) UpdateOrganisation(ctx context.Context, orgID string, orgData BillingOrganisation) (*Response[BillingOrganisation], error) {
 	return makeRequest[BillingOrganisation](ctx, c.httpClient, c.config, "PUT", fmt.Sprintf("/organisations/%s", orgID), orgData)
 }
@@ -183,6 +194,11 @@ func (c *HTTPClient) UpgradeSubscription(ctx context.Context, orgID, subscriptio
 
 func (c *HTTPClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error) {
 	return makeRequest[interface{}](ctx, c.httpClient, c.config, "DELETE", fmt.Sprintf("/organisations/%s/subscriptions/%s", orgID, subscriptionID), nil)
+}
+
+func (c *HTTPClient) DeactivateOrganisation(ctx context.Context, orgID string) error {
+	_, err := makeRequest[interface{}](ctx, c.httpClient, c.config, "POST", fmt.Sprintf("/organisations/%s/deactivate", orgID), nil)
+	return err
 }
 
 func (c *HTTPClient) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response[interface{}], error) {
