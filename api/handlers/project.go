@@ -96,7 +96,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var newProject models.CreateProject
 	err := util.ReadJSON(r, &newProject)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to parse project creation request: %v: %v", err, err)
+		h.A.Logger.Error("Failed to parse project creation request", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -119,7 +119,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := newProject.Validate(); err != nil {
-		h.A.Logger.Errorf("Project creation validation failed: %v: %v", err, err)
+		h.A.Logger.Error("Project creation validation failed", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
@@ -173,7 +173,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateProject
 	err := util.ReadJSON(r, &update)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to parse project update request: %v: %v", err, err)
+		h.A.Logger.Error("Failed to parse project update request", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -190,7 +190,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := update.Validate(); err != nil {
-		h.A.Logger.Errorf("Project update validation failed: %v: %v", err, err)
+		h.A.Logger.Error("Project update validation failed", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}

@@ -167,6 +167,22 @@ func TestDebug_SuppressedAtInfoLevel(t *testing.T) {
 	}
 }
 
+func TestInfo_NoArgs_DoesNotPanic(t *testing.T) {
+	buf := &bytes.Buffer{}
+	l := newTestLogger(buf, slog.LevelDebug)
+
+	// None of these should panic.
+	l.Info()
+	l.Debug()
+	l.Warn()
+	l.Error()
+
+	// No output expected for zero-arg calls.
+	if buf.Len() != 0 {
+		t.Errorf("expected no output for zero-arg log calls, got: %s", buf.String())
+	}
+}
+
 func TestSource_PointsToCallerNotLogger(t *testing.T) {
 	buf := &bytes.Buffer{}
 	l := newTestLogger(buf, slog.LevelDebug)

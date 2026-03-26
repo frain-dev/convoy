@@ -74,23 +74,37 @@ func (l *SlogLogger) log(ctx context.Context, level slog.Level, msg string, args
 }
 
 func (l *SlogLogger) Info(args ...any) {
+	if len(args) == 0 {
+		return
+	}
 	l.log(context.Background(), slog.LevelInfo, fmt.Sprint(args[0]), args[1:]...)
 }
 
 func (l *SlogLogger) Debug(args ...any) {
+	if len(args) == 0 {
+		return
+	}
 	l.log(context.Background(), slog.LevelDebug, fmt.Sprint(args[0]), args[1:]...)
 }
 
 func (l *SlogLogger) Warn(args ...any) {
+	if len(args) == 0 {
+		return
+	}
 	l.log(context.Background(), slog.LevelWarn, fmt.Sprint(args[0]), args[1:]...)
 }
 
 func (l *SlogLogger) Error(args ...any) {
+	if len(args) == 0 {
+		return
+	}
 	l.log(context.Background(), slog.LevelError, fmt.Sprint(args[0]), args[1:]...)
 }
 
 func (l *SlogLogger) Fatal(args ...any) {
-	l.log(context.Background(), slog.LevelError, fmt.Sprint(args[0]), args[1:]...)
+	if len(args) > 0 {
+		l.log(context.Background(), slog.LevelError, fmt.Sprint(args[0]), args[1:]...)
+	}
 	os.Exit(1)
 }
 

@@ -295,9 +295,9 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		})
 		if pingErr != nil {
 			if cfg.Dispatcher.SkipPingValidation {
-				a.Logger.WarnContext(ctx, fmt.Sprintf("failed to ping tls endpoint (validation skipped): %v", pingErr))
+				a.Logger.WarnContext(ctx, "failed to ping tls endpoint (validation skipped)", "error", pingErr)
 			} else {
-				a.Logger.ErrorContext(ctx, fmt.Sprintf("failed to ping tls endpoint: %v", pingErr))
+				a.Logger.ErrorContext(ctx, "failed to ping tls endpoint", "error", pingErr)
 				return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
 			}
 		}
