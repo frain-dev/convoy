@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"testing"
@@ -33,7 +32,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/testenv"
@@ -74,7 +73,6 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 
 	// Create logger
 	logger := testenv.NewLogger(t)
-	logger.SetLevel(log.ErrorLevel)
 
 	// Reload config for each test to ensure clean state
 	err := config.LoadConfig("")
@@ -216,7 +214,7 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	go func() {
 		err := cmdserver.StartConvoyServer(app)
 		if err != nil {
-			logger.WithError(err).Error("Server error")
+			logger.Error("Server error", "error", err)
 		}
 	}()
 
@@ -230,14 +228,14 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 		worker, err := cmdworker.NewWorker(workerCtx, app, cfg)
 		if err != nil {
 			t.Logf("Worker initialization error for test %s: %v", t.Name(), err)
-			logger.WithError(err).Error("Worker initialization error")
+			logger.Error("Worker initialization error", "error", err)
 			return
 		}
 		err = worker.Run(workerCtx, nil)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				t.Logf("Worker error for test %s: %v", t.Name(), err)
-				logger.WithError(err).Error("Worker error")
+				logger.Error("Worker error", "error", err)
 			} else {
 				t.Logf("Worker context canceled (expected during cleanup)")
 			}
@@ -307,12 +305,12 @@ func SetupE2EWithSQS(t *testing.T) *E2ETestEnvWithSQS {
 	localStackEndpoint := (*infra.NewLocalStackConnect)(t)
 
 	// Set up repositories needed for source loading
-	sourceRepo := sources.New(log.NewLogger(io.Discard), baseEnv.App.DB)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), baseEnv.App.DB)
 	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
 	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
 
 	// Create the source loader and table for pubsub ingest
-	lo := baseEnv.App.Logger.(*log.Logger)
+	lo := baseEnv.App.Logger
 	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
 	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
 

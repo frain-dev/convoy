@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -16,7 +15,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/riandyrn/otelchi"
-	"github.com/sirupsen/logrus"
 
 	sdktrace "go.opentelemetry.io/otel/trace"
 
@@ -31,9 +29,60 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
+
+// safeHeaders is the whitelist of header names that are safe to include
+// in log output. Sensitive headers (auth tokens, cookies, signatures) are
+// intentionally redacted. A whitelist is used instead of a blacklist because
+// it is easier to know what headers are safe to log.
+var safeHeaders = map[string]struct{}{
+	"connection":                    {},
+	"content-type":                  {},
+	"content-length":                {},
+	"user-agent":                    {},
+	"accept":                        {},
+	"accept-encoding":               {},
+	"accept-language":               {},
+	"host":                          {},
+	"x-request-id":                  {},
+	"cache-control":                 {},
+	"pragma":                        {},
+	"upgrade-insecure-requests":     {},
+	"origin":                        {},
+	"x-datadog-trace-id":            {},
+	"x-convoy-version":              {},
+	"access-control-allow-headers":  {},
+	"access-control-allow-methods":  {},
+	"access-control-allow-origin":   {},
+	"access-control-expose-headers": {},
+}
+
+// sensitiveHeaders contains header names (lowercase) that should always be
+// redacted, even if they are accidentally added to safeHeaders.
+var sensitiveHeaders = map[string]struct{}{
+	"referer":             {},
+	"authorization":       {},
+	"x-forwarded-for":     {},
+	"x-webhook-secret":    {},
+	"x-webhook-signature": {},
+	"x-real-ip":           {},
+	"proxy-authorization": {},
+	"cookie":              {},
+	"set-cookie":          {},
+	"x-api-key":           {},
+	"x-auth-token":        {},
+}
+
+var sensitivePatterns = []string{
+	"-secret",
+	"-token",
+	"-signature",
+	"-key",
+	"-credential",
+	"-password",
+}
 
 var (
 	ErrValidLicenseRequired = errors.New("access to this resource requires a valid license")
@@ -157,26 +206,28 @@ func CanAccessFeature(fflag *fflag.FFlag, featureKey fflag.FeatureFlagKey) func(
 	}
 }
 
-func SetupCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg, err := config.Get()
-		if err != nil {
-			log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
-			return
-		}
+func SetupCORS(logger log.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cfg, err := config.Get()
+			if err != nil {
+				logger.ErrorContext(r.Context(), "failed to load configuration", "error", err)
+				return
+			}
 
-		if env := cfg.Environment; string(env) == "development" {
-			w.Header().Set("Access-Control-Allow-Origin", cfg.Host)
-			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		}
+			if env := cfg.Environment; string(env) == "development" {
+				w.Header().Set("Access-Control-Allow-Origin", cfg.Host)
+				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+				w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+			}
 
-		if r.Method == "OPTIONS" {
-			return
-		}
+			if r.Method == "OPTIONS" {
+				return
+			}
 
-		next.ServeHTTP(w, r)
-	})
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func JsonResponse(next http.Handler) http.Handler {
@@ -186,19 +237,19 @@ func JsonResponse(next http.Handler) http.Handler {
 	})
 }
 
-func RequireAuth() func(next http.Handler) http.Handler {
+func RequireAuth(logger log.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			creds, err := GetAuthFromRequest(r)
 			if err != nil {
-				log.FromContext(r.Context()).WithError(err).Error("failed to get auth from request")
+				logger.ErrorContext(r.Context(), "failed to get auth from request", "error", err)
 				_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
 				return
 			}
 
 			rc, err := realm_chain.Get()
 			if err != nil {
-				log.FromContext(r.Context()).WithError(err).Error("failed to get realm chain")
+				logger.ErrorContext(r.Context(), "failed to get realm chain", "error", err)
 				_ = render.Render(w, r, util.NewErrorResponse("internal server error", http.StatusInternalServerError))
 				return
 			}
@@ -346,36 +397,30 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			start := time.Now()
 
-			wbuf := &bytes.Buffer{}
-			ww.Tee(wbuf)
-
 			defer func() {
-				lvl, err := statusLevel(ww.Status()).ToLogrusLevel()
-				if err != nil {
-					log.FromContext(r.Context()).WithError(err).Error("Failed to generate status level")
-				}
+				lvl := statusLevel(ww.Status())
 
 				requestFields := requestLogFields(r)
-				responseFields := responseLogFields(ww, wbuf, start, lvl)
-
-				logFields := map[string]interface{}{
-					"httpRequest":  requestFields,
-					"httpResponse": responseFields,
-				}
-
-				if orgID := extractOrganisationID(r); orgID != "" {
-					logFields["organisation_id"] = orgID
-				}
+				responseFields := responseLogFields(ww, start)
 
 				if shouldSkipLogging(requestFields, responseFields) {
 					return
 				}
 
-				log.FromContext(r.Context()).WithFields(logFields).Log(lvl, requestFields["requestURL"])
+				logArgs := []any{"httpRequest", requestFields, "httpResponse", responseFields}
+				if orgID := extractOrganisationID(r); orgID != "" {
+					logArgs = append(logArgs, "organisation_id", orgID)
+				}
+
+				if projectId := extractProjectID(r); projectId != "" {
+					logArgs = append(logArgs, "project_id", projectId)
+				}
+
+				a.Logger.Log(r.Context(), lvl, "http_request", logArgs...)
 			}()
 
 			requestID := middleware.GetReqID(r.Context())
-			ctx := log.NewContext(r.Context(), a.Logger, log.Fields{"request_id": requestID})
+			ctx := context.WithValue(r.Context(), convoy.RequestIDKey, requestID)
 			r = r.WithContext(ctx)
 
 			next.ServeHTTP(ww, r)
@@ -411,18 +456,19 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 
 	span := sdktrace.SpanFromContext(r.Context())
 
-	requestFields["traceId"] = span.SpanContext().SpanID()
-	requestFields["spanId"] = span.SpanContext().TraceID()
+	requestFields["traceId"] = span.SpanContext().TraceID()
+	requestFields["spanId"] = span.SpanContext().SpanID()
 
 	return requestFields
 }
 
-func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t time.Time, _ logrus.Level) map[string]interface{} {
+func responseLogFields(w middleware.WrapResponseWriter, t time.Time) map[string]interface{} {
 	responseFields := map[string]interface{}{
 		"status":  w.Status(),
-		"byes":    w.BytesWritten(),
+		"bytes":   w.BytesWritten(),
 		"latency": time.Since(t),
-		"body":    wbuf.String(),
+		// Do not log response body content to avoid leaking sensitive data.
+		"body": "***",
 	}
 
 	if len(w.Header()) > 0 {
@@ -435,13 +481,13 @@ func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t ti
 func statusLevel(status int) log.Level {
 	switch {
 	case status <= 0:
-		return log.WarnLevel
+		return log.LevelWarn
 	case status < 400:
-		return log.InfoLevel
+		return log.LevelInfo
 	case status < 500:
-		return log.WarnLevel
+		return log.LevelWarn
 	default:
-		return log.ErrorLevel
+		return log.LevelError
 	}
 }
 
@@ -450,16 +496,39 @@ func headerFields(header http.Header) map[string]string {
 
 	for k, v := range header {
 		k = strings.ToLower(k)
-		switch {
-		case len(v) == 0:
+		if len(v) == 0 {
 			continue
-		case len(v) == 1:
-			headerField[k] = v[0]
-		default:
-			headerField[k] = fmt.Sprintf("[%s]", strings.Join(v, "], ["))
 		}
-		if k == "authorization" || k == "cookie" || k == "set-cookie" {
+
+		// Always redact explicitly sensitive headers, regardless of the allowlist.
+		if _, isSensitive := sensitiveHeaders[k]; isSensitive {
 			headerField[k] = "***"
+			continue
+		}
+
+		matched := false
+		for _, suffix := range sensitivePatterns {
+			if strings.HasSuffix(k, suffix) {
+				headerField[k] = "***"
+				matched = true
+				break
+			}
+		}
+
+		if matched {
+			continue
+		}
+
+		// Only log clear-text values for explicitly safe headers; redact all others.
+		if _, safe := safeHeaders[k]; !safe {
+			headerField[k] = "***"
+			continue
+		}
+
+		if len(v) == 1 {
+			headerField[k] = v[0]
+		} else {
+			headerField[k] = fmt.Sprintf("[%s]", strings.Join(v, "], ["))
 		}
 	}
 
@@ -494,11 +563,11 @@ func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
 	return ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
 }
 
-func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) http.Handler {
+func RequireValidEnterpriseSSOLicense(l license.Licenser, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.EnterpriseSSO() {
-				log.Warnf("Enterprise SSO access denied - license required")
+				logger.WarnContext(r.Context(), "Enterprise SSO access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
@@ -523,11 +592,27 @@ func extractOrganisationID(r *http.Request) string {
 	return ""
 }
 
-func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.Handler {
+func extractProjectID(r *http.Request) string {
+	if projectId := chi.URLParam(r, "projectID"); projectId != "" {
+		return projectId
+	}
+
+	if projectId := r.URL.Query().Get("projectId"); projectId != "" {
+		return projectId
+	}
+
+	if projectId := r.URL.Query().Get("project_id"); projectId != "" {
+		return projectId
+	}
+
+	return ""
+}
+
+func RequireValidGoogleOAuthLicense(l license.Licenser, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.GoogleOAuth() {
-				log.Warnf("Google OAuth access denied - license required")
+				logger.WarnContext(r.Context(), "Google OAuth access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
@@ -536,11 +621,11 @@ func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.
 	}
 }
 
-func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.Handler {
+func RequireValidPortalLinksLicense(l license.Licenser, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.PortalLinks() {
-				log.Warnf("Portal links access denied - license required")
+				logger.WarnContext(r.Context(), "Portal links access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}

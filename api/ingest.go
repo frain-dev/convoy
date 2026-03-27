@@ -39,7 +39,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	source, err := sources.New(a.A.Logger, a.A.DB).FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
-			a.A.Logger.WithError(err).Errorf("Source not found for mask ID %s", maskID)
+			a.A.Logger.Errorf("Source not found for mask ID %s: %v", maskID, err)
 			_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 			return
 		}
@@ -119,7 +119,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	if maxIngestSize == 0 {
 		cfg, err := config.Get()
 		if err != nil {
-			a.A.Logger.WithError(err).Error("failed to load config")
+			a.A.Logger.Error("failed to load config", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError))
 			return
 		}
@@ -142,7 +142,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		duper := dedup.NewDeDuper(r.Context(), r, events.New(a.A.Logger, a.A.DB))
 		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
 		if err != nil {
-			a.A.Logger.WithError(err).Error("Duplicate check failed")
+			a.A.Logger.Error("Duplicate check failed", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Failed to process request", http.StatusBadRequest))
 			return
 		}
@@ -151,7 +151,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 		checksum, err = duper.GenerateChecksum(source.Name, source.IdempotencyKeys)
 		if err != nil {
-			a.A.Logger.WithError(err).Error("Checksum generation failed")
+			a.A.Logger.Error("Checksum generation failed", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Failed to process request", http.StatusBadRequest))
 			return
 		}
@@ -162,7 +162,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// Read raw body for signature verification first (e.g., GitHub signs raw bytes)
 	rawPayload, err := io.ReadAll(io.LimitReader(r.Body, int64(maxIngestSize)))
 	if err != nil {
-		a.A.Logger.WithError(err).Error("Failed to read request body")
+		a.A.Logger.Error("Failed to read request body", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -178,7 +178,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		// Fallback: extract/convert payload (e.g., form -> JSON) and verify against that for backward compatibility
 		payload, err = extractPayloadFromIngestEventReq(r, maxIngestSize)
 		if err != nil {
-			a.A.Logger.WithError(err).Error("Failed to extract payload")
+			a.A.Logger.Error("Failed to extract payload", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 			return
 		}
@@ -187,7 +187,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		r.Body = io.NopCloser(bytes.NewReader(rawPayload))
 
 		if err = v.VerifyRequest(r, payload); err != nil {
-			a.A.Logger.WithError(rawVerifyErr).Error("Request verification failed (raw and converted)")
+			a.A.Logger.Error("Request verification failed (raw and converted)", "error", rawVerifyErr)
 			_ = render.Render(w, r, util.NewErrorResponse("Request verification failed", http.StatusBadRequest))
 			return
 		}
@@ -195,7 +195,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		// Raw verification succeeded; now convert for storage
 		payload, err = extractPayloadFromIngestEventReq(r, maxIngestSize)
 		if err != nil {
-			a.A.Logger.WithError(err).Error("Failed to extract payload")
+			a.A.Logger.Error("Failed to extract payload", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 			return
 		}
@@ -232,7 +232,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("Failed to encode event data")
+		a.A.Logger.Error("Failed to encode event data", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Failed to process event", http.StatusBadRequest))
 		return
 	}
@@ -245,7 +245,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("Error occurred sending new event to the queue")
+		a.A.Logger.Error("Error occurred sending new event to the queue", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Failed to process event", http.StatusBadRequest))
 		return
 	}
@@ -332,7 +332,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	source, err := sources.New(a.A.Logger, a.A.DB).FindSourceByMaskID(r.Context(), maskId)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
-			a.A.Logger.WithError(err).Errorf("Source not found for mask ID %s", maskId)
+			a.A.Logger.Errorf("Source not found for mask ID %s: %v", maskId, err)
 			_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 			return
 		}
@@ -363,7 +363,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	sourceRepo := sources.New(a.A.Logger, a.A.DB)
 	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("CRC check failed")
+		a.A.Logger.Error("CRC check failed", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("CRC verification failed", http.StatusBadRequest))
 		return
 	}

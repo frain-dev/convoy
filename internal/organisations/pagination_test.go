@@ -2,20 +2,19 @@ package organisations
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestLoadOrganisationsPaged_ForwardPagination(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed 15 organisations
 	for i := 0; i < 15; i++ {
@@ -57,7 +56,7 @@ func TestLoadOrganisationsPaged_BackwardPagination(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed 10 organisations
 	for i := 0; i < 10; i++ {
@@ -101,7 +100,7 @@ func TestLoadOrganisationsPaged_EmptyResults(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Don't seed any organisations, just query
 	orgs, pagination, err := service.LoadOrganisationsPaged(ctx, datastore.Pageable{
@@ -119,7 +118,7 @@ func TestLoadOrganisationsPaged_SinglePage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed only 3 organisations
 	for i := 0; i < 3; i++ {
@@ -142,7 +141,7 @@ func TestLoadOrganisationsPagedWithSearch_NameMatch(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisations with specific names
 	org1 := seedOrganisation(t, db, "", "")
@@ -194,7 +193,7 @@ func TestLoadOrganisationsPagedWithSearch_IDMatch(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation
 	org := seedOrganisation(t, db, "", "")
@@ -225,7 +224,7 @@ func TestLoadOrganisationsPagedWithSearch_NoResults(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed some organisations
 	for i := 0; i < 5; i++ {
@@ -248,7 +247,7 @@ func TestLoadOrganisationsPagedWithSearch_PaginationWithSearch(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed 10 organisations with "SearchTest" in name
 	for i := 0; i < 10; i++ {
@@ -294,7 +293,7 @@ func TestLoadOrganisationsPaged_ExcludesDeletedOrganisations(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed 5 organisations
 	orgs := make([]*datastore.Organisation, 5)

@@ -16,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/constants"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -334,17 +334,22 @@ const (
 )
 
 type endpointRepo struct {
-	db   database.Database
-	hook *hooks.Hook
-	km   keys.KeyManager
+	db     database.Database
+	hook   *hooks.Hook
+	km     keys.KeyManager
+	logger log.Logger
 }
 
 func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
+	return NewEndpointRepoWithLogger(db, pkgLogger)
+}
+
+func NewEndpointRepoWithLogger(db database.Database, logger log.Logger) datastore.EndpointRepository {
 	km, err := keys.Get()
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err.Error())
 	}
-	return &endpointRepo{db: db, hook: db.GetHook(), km: km}
+	return &endpointRepo{db: db, hook: db.GetHook(), km: km, logger: logger}
 }
 
 // checkEncryptionStatus checks if any row is already encrypted.

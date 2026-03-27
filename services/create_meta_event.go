@@ -9,7 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
@@ -19,10 +19,11 @@ type MetaEvent struct {
 	queue         queue.Queuer
 	projectRepo   datastore.ProjectRepository
 	metaEventRepo datastore.MetaEventRepository
+	logger        log.Logger
 }
 
-func NewMetaEvent(queue queue.Queuer, projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository) *MetaEvent {
-	return &MetaEvent{queue: queue, projectRepo: projectRepo, metaEventRepo: metaEventRepo}
+func NewMetaEvent(queue queue.Queuer, projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, logger log.Logger) *MetaEvent {
+	return &MetaEvent{queue: queue, projectRepo: projectRepo, metaEventRepo: metaEventRepo, logger: logger}
 }
 
 func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data interface{}) error {
@@ -81,7 +82,7 @@ func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data i
 
 	err = m.metaEventRepo.CreateMetaEvent(ctx, metaEvent)
 	if err != nil {
-		log.WithError(err).Error("failed to create meta event")
+		m.logger.Error("failed to create meta event", "error", err)
 		return err
 	}
 

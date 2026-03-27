@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/event_types/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -25,7 +25,7 @@ var (
 )
 
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier
 	db     *pgxpool.Pool
 }
@@ -33,7 +33,7 @@ type Service struct {
 // Ensure Service implements datastore.EventTypesRepository at compile time
 var _ datastore.EventTypesRepository = (*Service)(nil)
 
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -107,7 +107,7 @@ func (s *Service) CreateEventType(ctx context.Context, eventType *datastore.Proj
 		JsonSchema:  eventType.JSONSchema,
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create event type")
+		s.logger.Error("failed to create event type", "error", err)
 		return util.NewServiceError(500, err)
 	}
 
@@ -124,7 +124,7 @@ func (s *Service) CreateDefaultEventType(ctx context.Context, projectId string) 
 		JsonSchema:  []byte("{}"),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create default event type")
+		s.logger.Error("failed to create default event type", "error", err)
 		return util.NewServiceError(500, err)
 	}
 
@@ -144,7 +144,7 @@ func (s *Service) UpdateEventType(ctx context.Context, eventType *datastore.Proj
 		ProjectID:   common.StringToPgText(eventType.ProjectId),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update event type")
+		s.logger.Error("failed to update event type", "error", err)
 		return util.NewServiceError(500, err)
 	}
 
@@ -164,7 +164,7 @@ func (s *Service) DeprecateEventType(ctx context.Context, id, projectId string) 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, util.NewServiceError(404, ErrEventTypeNotFound)
 		}
-		s.logger.WithError(err).Error("failed to deprecate event type")
+		s.logger.Error("failed to deprecate event type", "error", err)
 		return nil, util.NewServiceError(500, err)
 	}
 
@@ -181,7 +181,7 @@ func (s *Service) FetchEventTypeById(ctx context.Context, id, projectId string) 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, util.NewServiceError(404, ErrEventTypeNotFound)
 		}
-		s.logger.WithError(err).Error("failed to fetch event type by id")
+		s.logger.Error("failed to fetch event type by id", "error", err)
 		return nil, util.NewServiceError(500, err)
 	}
 
@@ -198,7 +198,7 @@ func (s *Service) FetchEventTypeByName(ctx context.Context, name, projectId stri
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, util.NewServiceError(404, ErrEventTypeNotFound)
 		}
-		s.logger.WithError(err).Error("failed to fetch event type by name")
+		s.logger.Error("failed to fetch event type by name", "error", err)
 		return nil, util.NewServiceError(500, err)
 	}
 
@@ -212,7 +212,7 @@ func (s *Service) CheckEventTypeExists(ctx context.Context, name, projectId stri
 		ProjectID: common.StringToPgText(projectId),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to check event type exists")
+		s.logger.Error("failed to check event type exists", "error", err)
 		return false, util.NewServiceError(500, err)
 	}
 
@@ -222,7 +222,7 @@ func (s *Service) CheckEventTypeExists(ctx context.Context, name, projectId stri
 func (s *Service) FetchAllEventTypes(ctx context.Context, projectId string) ([]datastore.ProjectEventType, error) {
 	rows, err := s.repo.FetchAllEventTypes(ctx, common.StringToPgText(projectId))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to fetch all event types")
+		s.logger.Error("failed to fetch all event types", "error", err)
 		return nil, util.NewServiceError(500, err)
 	}
 

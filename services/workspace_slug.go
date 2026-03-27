@@ -10,14 +10,14 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	licensesvc "github.com/frain-dev/convoy/internal/pkg/license/service"
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/logger"
 )
 
 // ResolveWorkspaceBySlugDeps holds dependencies for ResolveWorkspaceBySlug.
 type ResolveWorkspaceBySlugDeps struct {
 	BillingClient billing.Client
 	OrgRepo       datastore.OrganisationRepository
-	Logger        log.StdLogger
+	Logger        logger.Logger
 	Cfg           config.Configuration
 	RefreshDeps   RefreshLicenseDataDeps
 }
@@ -48,7 +48,7 @@ func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorksp
 	resp, err := deps.BillingClient.GetWorkspaceConfigBySlug(reqCtx, slug)
 	if err != nil {
 		if deps.Logger != nil {
-			deps.Logger.WithError(err).WithField("slug", slug).Debug("workspace_config by slug failed")
+			deps.Logger.Debug("workspace_config by slug failed", "error", err, "slug", slug)
 		}
 		return nil, fmt.Errorf("workspace not found: %w", err)
 	}

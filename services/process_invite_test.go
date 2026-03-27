@@ -25,6 +25,7 @@ func provideProcessInviteService(ctrl *gomock.Controller, token string, accepted
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 		Licenser:      mocks.NewMockLicenser(ctrl),
+		Logger:        mocks.NewMockLogger(ctrl),
 
 		Token:    token,
 		Accepted: accepted,
@@ -244,6 +245,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+
+				ml, _ := pis.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch organisation member invite by token and email", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch organisation member invite",
@@ -329,6 +333,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+
+				ml, _ := pis.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to find user by email", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to find user by email",
@@ -475,6 +482,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+
+				ml, _ := pis.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to validate new user information", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "first_name:please provide a first name",
@@ -518,6 +528,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+
+				ml, _ := pis.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create user", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create user",
@@ -561,6 +574,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 					Times(1).Return(nil, errors.New("failed"))
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+
+				ml, _ := pis.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch organisation by id", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch organisation by id",
@@ -678,6 +694,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
+
+				ml, _ := pis.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update accepted organisation invite", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update accepted organisation invite",

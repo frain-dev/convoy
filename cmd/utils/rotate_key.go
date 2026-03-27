@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"log/slog"
 
 	"github.com/spf13/cobra"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var (
@@ -30,13 +30,13 @@ func AddRotateKeyCommand(a *cli.App) *cobra.Command {
 			}
 			timeout, err := cmd.Flags().GetInt("timeout")
 			if err != nil {
-				log.WithError(err).Errorln("failed to get timeout")
+				slog.Error("failed to get timeout", "error", err)
 				return err
 			}
 
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Error("Error fetching the config.")
+				slog.Error("Error fetching the config.", "error", err)
 				return err
 			}
 			flag := fflag2.NewFFlag(cfg.EnableFeatureFlag)
@@ -53,7 +53,7 @@ func AddRotateKeyCommand(a *cli.App) *cobra.Command {
 				return ErrMissingHCPVaultConfig
 			}
 
-			log.Infof("Starting key rotation...")
+			slog.Info("Starting key rotation...")
 
 			// Ensure the old key matches the current key
 			currentKey, err := km.GetCurrentKey()
@@ -66,14 +66,14 @@ func AddRotateKeyCommand(a *cli.App) *cobra.Command {
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
-				log.WithError(err).Error("Error connecting to database.")
+				slog.Error("Error connecting to database.", "error", err)
 				return err
 			}
 			defer db.Close()
 
 			err = keys.RotateEncryptionKey(a.Logger, db, km, oldKey, newKey, timeout)
 			if err != nil {
-				log.WithError(err).Error("Error rotating key.")
+				slog.Error("Error rotating key.", "error", err)
 			}
 			return err
 		},

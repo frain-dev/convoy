@@ -19,6 +19,7 @@ func provideUpdateOrganisationService(ctrl *gomock.Controller, org *datastore.Or
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 		Org:           org,
 		Update:        update,
+		Logger:        mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -88,6 +89,9 @@ func TestUpdateOrganisationService_Run(t *testing.T) {
 				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)
 				a.EXPECT().UpdateOrganisation(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				ml, _ := os.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to to update organisation", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update organisation",

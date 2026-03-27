@@ -9,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	licensesvc "github.com/frain-dev/convoy/internal/pkg/license/service"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -18,7 +18,7 @@ type RefreshLicenseDataDeps struct {
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	OrgRepo       datastore.OrganisationRepository
 	BillingClient billing.Client
-	Logger        log.StdLogger
+	Logger        log.Logger
 	Cfg           config.Configuration
 }
 
@@ -33,7 +33,7 @@ func RefreshLicenseDataForUser(userID string, deps RefreshLicenseDataDeps) {
 	if deps.Logger == nil {
 		return
 	}
-	logger := deps.Logger.WithFields(log.Fields{"user_id": userID})
+	logger := deps.Logger
 
 	// Use first-page cursor: empty cursor would make the query use o.id <= '' which matches no ULID org ids.
 	orgs, _, err := deps.OrgMemberRepo.LoadUserOrganisationsPaged(ctx, userID, datastore.Pageable{
@@ -42,7 +42,7 @@ func RefreshLicenseDataForUser(userID string, deps RefreshLicenseDataDeps) {
 		NextCursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
 	})
 	if err != nil {
-		logger.WithError(err).Warn("refresh license data: failed to load user organisations")
+		logger.Warn("refresh license data: failed to load user organisations", "error", err, "user_id", userID)
 		return
 	}
 	if len(orgs) == 0 {
@@ -75,7 +75,7 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 		if billingEnabled {
 			if err := deps.OrgRepo.UpdateOrganisationLicenseData(ctx, org.UID, ""); err != nil {
 				if deps.Logger != nil {
-					deps.Logger.WithError(err).WithField("org_id", org.UID).Warn("refresh license data: clear license_data failed")
+					deps.Logger.Warn("refresh license data: clear license_data failed", "error", err, "org_id", org.UID)
 				}
 			}
 		}
@@ -84,14 +84,14 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 	data, err := licClient.ValidateLicense(ctx, key)
 	if err != nil {
 		if deps.Logger != nil {
-			deps.Logger.WithError(err).WithField("org_id", org.UID).Warn("refresh license data: validate failed")
+			deps.Logger.Warn("refresh license data: validate failed", "error", err, "org_id", org.UID)
 		}
 		return
 	}
 	entitlements, err := data.GetEntitlementsMap()
 	if err != nil {
 		if deps.Logger != nil {
-			deps.Logger.WithError(err).WithField("org_id", org.UID).Warn("refresh license data: get entitlements failed")
+			deps.Logger.Warn("refresh license data: get entitlements failed", "error", err, "org_id", org.UID)
 		}
 		return
 	}
@@ -99,13 +99,13 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 	enc, err := license.EncryptLicenseData(org.UID, payload)
 	if err != nil {
 		if deps.Logger != nil {
-			deps.Logger.WithError(err).WithField("org_id", org.UID).Warn("refresh license data: encrypt failed")
+			deps.Logger.Warn("refresh license data: encrypt failed", "error", err, "org_id", org.UID)
 		}
 		return
 	}
 	if err := deps.OrgRepo.UpdateOrganisationLicenseData(ctx, org.UID, enc); err != nil {
 		if deps.Logger != nil {
-			deps.Logger.WithError(err).WithField("org_id", org.UID).Warn("refresh license data: update failed")
+			deps.Logger.Warn("refresh license data: update failed", "error", err, "org_id", org.UID)
 		}
 		return
 	}
@@ -134,7 +134,7 @@ type OrgProjectLimitDeps struct {
 	BillingClient billing.Client
 	ProjectRepo   datastore.ProjectRepository
 	Cfg           config.Configuration
-	Logger        log.StdLogger
+	Logger        log.Logger
 }
 
 // CheckOrganisationProjectLimit returns whether the org is allowed to create another project

@@ -8,7 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -19,7 +19,8 @@ type ReplayEventService struct {
 	EndpointRepo datastore.EndpointRepository
 	Queue        queue.Queuer
 
-	Event *datastore.Event
+	Event  *datastore.Event
+	Logger log.Logger
 }
 
 func (e *ReplayEventService) Run(ctx context.Context) error {
@@ -46,7 +47,7 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 
 	err = e.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("replay_event: failed to write event to the queue")
+		e.Logger.ErrorContext(ctx, "replay_event: failed to write event to the queue", "error", err)
 		return &ServiceError{ErrMsg: "failed to write event to queue", Err: err}
 	}
 

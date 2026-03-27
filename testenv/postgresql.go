@@ -16,6 +16,7 @@ import (
 
 	convoyPostgres "github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/migrator"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 var pgCloneMutex sync.Mutex
@@ -42,7 +43,7 @@ func NewTestPostgres(ctx context.Context) (*postgres.PostgresContainer, Postgres
 		// Store the database in-memory for faster tests
 		testcontainers.WithTmpfs(map[string]string{"/var/lib/postgresql/data": "rw"}),
 		testcontainers.WithEnv(map[string]string{"PGDATA": "/var/lib/postgresql/data"}),
-		testcontainers.WithLogger(NewTestcontainersLogger()),
+		testcontainers.WithLogger(log.New("postgres", log.LevelDebug)),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("start postgres container: %w", err)

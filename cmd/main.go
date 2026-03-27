@@ -5,8 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	_ "time/tzdata"
 
 	"github.com/frain-dev/convoy"
@@ -27,12 +25,10 @@ import (
 )
 
 func main() {
-	slog := logrus.New()
-	slog.Out = os.Stdout
-
 	err := os.Setenv("TZ", "") // Use UTC by default :)
 	if err != nil {
-		slog.Fatal("failed to set env - ", err)
+		fmt.Fprintf(os.Stderr, "failed to set env: %v\n", err)
+		os.Exit(1)
 	}
 
 	app := &cli.App{}
@@ -182,7 +178,8 @@ func main() {
 	c.AddCommand(openapi.AddOpenAPICommand())
 
 	if err = c.Execute(); err != nil {
-		slog.Fatal(err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 }
 

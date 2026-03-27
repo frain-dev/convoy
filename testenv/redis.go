@@ -11,12 +11,14 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 
 	tcr "github.com/testcontainers/testcontainers-go/modules/redis"
+
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type RedisClientFunc func(t *testing.T, db int) (*redis.Client, error)
 
 func NewTestRedis(ctx context.Context) (*tcr.RedisContainer, RedisClientFunc, error) {
-	container, err := tcr.Run(ctx, "redis:7-alpine", testcontainers.WithLogger(NewTestcontainersLogger()))
+	container, err := tcr.Run(ctx, "redis:7-alpine", testcontainers.WithLogger(log.New("redis", log.LevelDebug)))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start redis container: %w", err)
 	}

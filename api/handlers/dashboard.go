@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -28,7 +27,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 
 	startT, err := time.Parse(format, startDate)
 	if err != nil {
-		h.A.Logger.WithError(err).Error("error parsing startDate")
+		h.A.Logger.Error("error parsing startDate", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("please specify a startDate in the format "+format, http.StatusBadRequest))
 		return
 	}
@@ -111,7 +110,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	var data *models.DashboardSummary
 	err = h.A.Cache.Get(r.Context(), qs, &data)
 	if err != nil {
-		h.A.Logger.WithError(err).Error("failed to get dashboard summary from cache")
+		h.A.Logger.Error("failed to get dashboard summary from cache", "error", err)
 	}
 
 	if data != nil {
@@ -125,7 +124,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	if len(endpointIDs) == 0 {
 		endpoints, err = postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(r.Context(), project.UID)
 		if err != nil {
-			log.WithError(err).Error("failed to count project endpoints")
+			h.A.Logger.Error("failed to count project endpoints", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 			return
 		}
@@ -149,7 +148,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	err = h.A.Cache.Set(r.Context(), qs, dashboard, time.Hour)
 
 	if err != nil {
-		h.A.Logger.WithError(err)
+		h.A.Logger.Error("failed to cache dashboard", "error", err)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
@@ -164,7 +163,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 	var dashboardQ *models.DashboardSummary
 	_ = h.A.Cache.Get(ctx, qsQuery, &dashboardQ)
 	if dashboardQ != nil {
-		log.Warn("Query still running in a Goroutine")
+		h.A.Logger.Warn("Query still running in a Goroutine")
 		return
 	}
 
@@ -175,7 +174,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 
 		err := h.A.Cache.Set(ctx, qsQuery, dashboardQ, 2*time.Minute)
 		if err != nil {
-			h.A.Logger.WithError(err).Error("failed to cache query item: " + qsQuery)
+			h.A.Logger.Error("failed to cache query item: "+qsQuery, "error", err)
 			return
 		}
 
@@ -183,7 +182,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 		if len(endpointIds) == 0 {
 			endpoints, err = postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(ctx, project.UID)
 			if err != nil {
-				log.WithError(err).Error("failed to count project endpoints")
+				h.A.Logger.Error("failed to count project endpoints", "error", err)
 				return
 			}
 		} else {
@@ -191,7 +190,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 		}
 		eventsSent, messages, err := h.computeDashboardMessages(ctx, project.UID, searchParams, p, endpointIds)
 		if err != nil {
-			log.WithError(err).Error("an error occurred while fetching messages")
+			h.A.Logger.Error("an error occurred while fetching messages", "error", err)
 			return
 		}
 
@@ -204,12 +203,12 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 
 		err = h.A.Cache.Set(ctx, qs, dashboard, time.Hour)
 		if err != nil {
-			h.A.Logger.WithError(err).Error("failed to cache item")
+			h.A.Logger.Error("failed to cache item", "error", err)
 		}
 
 		err = h.A.Cache.Delete(ctx, qsQuery)
 		if err != nil {
-			h.A.Logger.WithError(err).Error("failed to delete cache item")
+			h.A.Logger.Error("failed to delete cache item", "error", err)
 		}
 	}()
 }
@@ -220,7 +219,7 @@ func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string
 	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, endpointIds)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to load message intervals - ")
+		h.A.Logger.ErrorContext(ctx, "failed to load message intervals - ", "error", err)
 		return 0, nil, err
 	}
 

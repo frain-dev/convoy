@@ -3,7 +3,7 @@ package testenv
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"testing"
 	"time"
@@ -242,7 +242,7 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				if termErr := state.pgcontainer.Terminate(c); termErr != nil {
-					log.Printf("terminate postgres container: %v", termErr)
+					slog.Info(fmt.Sprintf("terminate postgres container: %v", termErr))
 				}
 				return nil
 			})
@@ -254,7 +254,7 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				if termErr := state.rediscontainer.Terminate(c); termErr != nil {
-					log.Printf("terminate redis container: %v", termErr)
+					slog.Info(fmt.Sprintf("terminate redis container: %v", termErr))
 				}
 				return nil
 			})
@@ -266,7 +266,7 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				if termErr := state.miniocontainer.Terminate(c); termErr != nil {
-					log.Printf("terminate minio container: %v", termErr)
+					slog.Info(fmt.Sprintf("terminate minio container: %v", termErr))
 				}
 				return nil
 			})
@@ -278,7 +278,7 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				if termErr := state.rabbitmqcontainer.Terminate(c); termErr != nil {
-					log.Printf("terminate rabbitmq container: %v", termErr)
+					slog.Info(fmt.Sprintf("terminate rabbitmq container: %v", termErr))
 				}
 				return nil
 			})
@@ -290,7 +290,7 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				if termErr := state.localstackcontainer.Terminate(c); termErr != nil {
-					log.Printf("terminate localstack container: %v", termErr)
+					slog.Info(fmt.Sprintf("terminate localstack container: %v", termErr))
 				}
 				return nil
 			})
@@ -302,7 +302,7 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				if termErr := state.kafkacontainer.Terminate(c); termErr != nil {
-					log.Printf("terminate kafka container: %v", termErr)
+					slog.Info(fmt.Sprintf("terminate kafka container: %v", termErr))
 				}
 				return nil
 			})
@@ -314,7 +314,7 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				if termErr := state.pubsubcontainer.Terminate(c); termErr != nil {
-					log.Printf("terminate pubsub emulator container: %v", termErr)
+					slog.Info(fmt.Sprintf("terminate pubsub emulator container: %v", termErr))
 				}
 				return nil
 			})

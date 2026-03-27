@@ -1,21 +1,20 @@
 package portal_links
 
 import (
-	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestGetPortalLinkByToken_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	// Create a portal link
@@ -49,7 +48,7 @@ func TestGetPortalLinkByToken_WithEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -83,7 +82,7 @@ func TestGetPortalLinkByToken_WithEndpoints(t *testing.T) {
 func TestGetPortalLinkByToken_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	// Try to fetch with non-existent token

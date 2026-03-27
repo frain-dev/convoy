@@ -2,8 +2,6 @@ package task
 
 import (
 	"context"
-	"io"
-	"os"
 	"testing"
 	"time"
 
@@ -26,7 +24,7 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -152,7 +150,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		partman.WithConfig(pmConfig),
 		partman.WithDB(r.ConvoyApp.database.GetDB()),
 		partman.WithClock(clock),
-		partman.WithLogger(log.NewLogger(os.Stdout)),
+		partman.WithLogger(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(r.T(), err)
 
@@ -209,10 +207,10 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		r.ConvoyApp.eventRepo,
 		r.ConvoyApp.eventDeliveryRepo,
 		r.ConvoyApp.deliveryRepo,
-		r.ConvoyApp.redis)(context.Background(), backUpTask)
+		r.ConvoyApp.redis, r.ConvoyApp.logger)(context.Background(), backUpTask)
 	require.NoError(r.T(), err)
 
-	err = RetentionPolicies(r.ConvoyApp.redis, ret)(context.Background(), retentionTask)
+	err = RetentionPolicies(r.ConvoyApp.redis, ret, r.ConvoyApp.logger)(context.Background(), retentionTask)
 	require.NoError(r.T(), err)
 
 	_, err = r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery1.UID, attempt1.UID)
@@ -244,6 +242,7 @@ type applicationHandler struct {
 	deliveryRepo      datastore.DeliveryAttemptsRepository
 	database          database.Database
 	redis             redis.UniversalClient
+	logger            log.Logger
 }
 
 func seedEvent(db database.Database, endpointID string, projectID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
@@ -262,7 +261,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 	}
 
 	// Seed Data.
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
+	eventRepo := events.New(log.New("convoy", log.LevelInfo), db)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err
@@ -314,7 +313,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", log.LevelError), db)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err
@@ -348,7 +347,7 @@ func seedDeliveryAttempt(db database.Database, delivery *datastore.EventDelivery
 		UpdatedAt:        filter.CreatedAt,
 	}
 
-	daRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
+	daRepo := delivery_attempts.New(log.New("convoy", log.LevelInfo), db)
 	err := daRepo.CreateDeliveryAttempt(context.TODO(), deliveryAttempt)
 	if err != nil {
 		return nil, err
@@ -378,7 +377,7 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	}
 
 	// Seed Data
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
+	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
 	err := configRepo.CreateConfiguration(context.TODO(), c)
 	if err != nil {
 		return nil, err

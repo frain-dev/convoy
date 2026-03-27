@@ -12,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
@@ -21,15 +21,12 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
 	configRepo := configuration.New(a.Logger, a.DB)
 
-	lo := a.Logger.(*log.Logger)
-	lo.SetPrefix("ingester")
+	lo := a.Logger
 
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
+	_, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
 		return err
 	}
-
-	lo.SetLevel(lvl)
 
 	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
 	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
@@ -41,7 +38,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	instCfg, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to load configuration")
+		a.Logger.Error("Failed to load configuration", "error", err)
 	}
 
 	var host string
@@ -61,7 +58,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	go ingest.Run()
 
-	log.Printf("Starting Convoy Ingester")
+	a.Logger.Info("Starting Convoy Ingester")
 
 	return nil
 }

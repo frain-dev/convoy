@@ -23,7 +23,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 )
@@ -98,7 +97,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 func StartConvoyServer(a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to load configuration")
+		a.Logger.Fatal("Failed to load configuration", "error", err)
 	}
 
 	start := time.Now()
@@ -123,7 +122,7 @@ func StartConvoyServer(a *cli.App) error {
 	configRepo := configuration.New(a.Logger, a.DB)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
 	if err != nil {
-		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
+		a.Logger.Fatal("failed to initialize realm chain", "error", err)
 	}
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
@@ -134,14 +133,7 @@ func StartConvoyServer(a *cli.App) error {
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	lo := a.Logger.(*log.Logger)
-	lo.SetPrefix("api server")
-
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
-	if err != nil {
-		return err
-	}
-	lo.SetLevel(lvl)
+	lo := a.Logger
 
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 

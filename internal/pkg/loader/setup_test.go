@@ -2,6 +2,7 @@ package loader
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -14,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -25,7 +26,8 @@ var (
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 		os.Exit(1)
 	}
 
@@ -34,7 +36,8 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 		os.Exit(1)
 	}
 
@@ -42,7 +45,7 @@ func TestMain(m *testing.M) {
 }
 
 type testInstance struct {
-	Logger     *log.Logger
+	Logger     log.Logger
 	Conn       *pgxpool.Pool
 	KeyManager keys.KeyManager
 	Database   database.Database
@@ -68,11 +71,13 @@ func newLoader(t *testing.T) (context.Context, *testInstance) {
 
 	km, err := keys.NewLocalKeyManager("test-key")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 
 	if err = keys.Set(km); err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
 
 	return ctx, &testInstance{

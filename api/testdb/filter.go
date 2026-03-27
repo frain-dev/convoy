@@ -9,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/filters"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // SeedFilter creates a filter for integration tests
@@ -43,7 +43,7 @@ func SeedFilter(db database.Database, subscriptionID, uid, eventType string, hea
 		UpdatedAt:      time.Now(),
 	}
 
-	logger := log.NewLogger(nil)
+	logger := log.New("convoy", log.LevelError)
 	filterRepo := filters.New(logger, db)
 	err := filterRepo.CreateFilter(context.Background(), filter)
 	if err != nil {

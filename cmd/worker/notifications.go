@@ -9,14 +9,14 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
 	notification "github.com/frain-dev/convoy/internal/notifications"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
 
 // EnqueueCircuitBreakerEmails enqueues notification emails to endpoint support email and project owner.
 // ownerEmail may be empty if unavailable. It is safe to call this with missing emails; those are skipped.
-func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datastore.Project, endpoint *datastore.Endpoint, ownerEmail string, failureRate float64) error {
+func EnqueueCircuitBreakerEmails(q queue.Queuer, lo log.Logger, project *datastore.Project, endpoint *datastore.Endpoint, ownerEmail string, failureRate float64) error {
 	// Endpoint support email
 	if endpoint != nil && endpoint.SupportEmail != "" {
 		emailMsg := &email.Message{
@@ -35,7 +35,7 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datast
 			},
 		}
 		if err := enqueueEmail(q, emailMsg); err != nil {
-			lo.WithError(err).Error("Failed to queue circuit breaker notification email")
+			lo.Error("Failed to queue circuit breaker notification email", "error", err)
 		}
 	}
 
@@ -66,7 +66,7 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datast
 			},
 		}
 		if err := enqueueEmail(q, emailMsg); err != nil {
-			lo.WithError(err).Error("Failed to queue circuit breaker notification email to owner")
+			lo.Error("Failed to queue circuit breaker notification email to owner", "error", err)
 		}
 	}
 	return nil

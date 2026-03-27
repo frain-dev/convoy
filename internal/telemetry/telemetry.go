@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const (
@@ -52,13 +52,13 @@ type Telemetry struct {
 	config   *datastore.Configuration
 	backends []Backend
 	trackers []Tracker
-	Logger   *log.Logger
+	Logger   log.Logger
 }
 
-func NewTelemetry(log *log.Logger, config *datastore.Configuration, opts ...TelemetryOption) *Telemetry {
+func NewTelemetry(lo log.Logger, config *datastore.Configuration, opts ...TelemetryOption) *Telemetry {
 	t := &Telemetry{
 		config: config,
-		Logger: log,
+		Logger: lo,
 	}
 
 	for _, opt := range opts {

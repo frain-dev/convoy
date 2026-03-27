@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -14,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/internal/projects"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func AddCircuitBreakersCommand(a *cli.App) *cobra.Command {
@@ -63,7 +62,7 @@ func AddCircuitBreakersGetCommand(a *cli.App) *cobra.Command {
 				}),
 				cb.StoreOption(cb.NewRedisStore(a.Redis, clock.NewRealClock())),
 				cb.ClockOption(clock.NewRealClock()),
-				cb.LoggerOption(log.NewLogger(os.Stdout)),
+				cb.LoggerOption(log.New("convoy", log.LevelInfo)),
 			)
 			if err != nil {
 				return fmt.Errorf("failed to create circuit breaker manager: %v", err)
@@ -212,7 +211,7 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 						// Get breaker to check TenantId
 						breakerData, err := store.GetOne(context.Background(), key)
 						if err == nil {
-							breaker, err := cb.NewCircuitBreakerFromStore([]byte(breakerData), log.NewLogger(os.Stdout))
+							breaker, err := cb.NewCircuitBreakerFromStore([]byte(breakerData), log.New("convoy", log.LevelInfo))
 							if err == nil && breaker.TenantId == projectID {
 								// Ignore errors here; it's best-effort
 								_ = a.Redis.Del(context.Background(), key).Err()

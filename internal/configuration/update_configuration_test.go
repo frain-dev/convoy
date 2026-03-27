@@ -1,7 +1,6 @@
 package configuration
 
 import (
-	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -9,14 +8,14 @@ import (
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestUpdateConfiguration_ValidUpdate(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed initial configuration
 	cfg := seedConfiguration(t, db, datastore.S3)
@@ -44,7 +43,7 @@ func TestUpdateConfiguration_ChangeStorageFromS3ToOnPrem(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration with S3 storage
 	cfg := seedConfiguration(t, db, datastore.S3)
@@ -80,7 +79,7 @@ func TestUpdateConfiguration_ChangeStorageFromOnPremToS3(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration with OnPrem storage
 	cfg := seedConfiguration(t, db, datastore.OnPrem)
@@ -116,7 +115,7 @@ func TestUpdateConfiguration_UpdateS3Credentials(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration with S3 storage
 	cfg := seedConfiguration(t, db, datastore.S3)
@@ -141,7 +140,7 @@ func TestUpdateConfiguration_UpdateOnPremPath(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration with OnPrem storage
 	cfg := seedConfiguration(t, db, datastore.OnPrem)
@@ -162,7 +161,7 @@ func TestUpdateConfiguration_UpdateRetentionPolicy(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration
 	cfg := seedConfiguration(t, db, datastore.S3)
@@ -185,7 +184,7 @@ func TestUpdateConfiguration_EnableAnalytics(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration with analytics disabled
 	cfg := seedConfiguration(t, db, datastore.S3)
@@ -207,7 +206,7 @@ func TestUpdateConfiguration_DisableSignup(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration with signup enabled
 	cfg := seedConfiguration(t, db, datastore.S3)
@@ -229,7 +228,7 @@ func TestUpdateConfiguration_NilConfiguration(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	err := service.UpdateConfiguration(ctx, nil)
 	require.Error(t, err)
@@ -240,7 +239,7 @@ func TestUpdateConfiguration_NonExistentConfiguration(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Try to update non-existent configuration
 	cfg := &datastore.Configuration{
@@ -268,7 +267,7 @@ func TestUpdateConfiguration_StorageNormalization_S3(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration
 	cfg := seedConfiguration(t, db, datastore.S3)
@@ -295,7 +294,7 @@ func TestUpdateConfiguration_StorageNormalization_OnPrem(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration
 	cfg := seedConfiguration(t, db, datastore.OnPrem)
@@ -324,7 +323,7 @@ func TestUpdateConfiguration_VerifyUpdatedAtChanged(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration
 	cfg := seedConfiguration(t, db, datastore.S3)
@@ -349,7 +348,7 @@ func TestUpdateConfiguration_MultipleUpdates(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration
 	cfg := seedConfiguration(t, db, datastore.S3)
@@ -379,7 +378,7 @@ func TestUpdateConfiguration_VerifyNoRowsAffectedError(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed configuration
 	seedConfiguration(t, db, datastore.S3)

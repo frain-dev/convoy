@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -28,7 +27,8 @@ func TestMain(m *testing.M) {
 	)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "TestMain: Failed to launch test infrastructure: %v\n", err)
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	_, _ = fmt.Fprintf(os.Stderr, "TestMain: SQS infrastructure launched successfully\n")
@@ -39,7 +39,8 @@ func TestMain(m *testing.M) {
 
 	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Cleaning up...\n")
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)

@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 const (
@@ -734,7 +733,7 @@ func LoadConfig(p string, opts ...ConfigFunc) error {
 		}
 		applyServiceDefaults(&c)
 	} else if !errors.Is(err, os.ErrNotExist) {
-		log.WithError(err).Fatal("failed to check if config file exists")
+		return fmt.Errorf("failed to check if config file exists: %w", err)
 	}
 
 	// override config from environment variables

@@ -21,6 +21,7 @@ func provideCreateAPIKeyService(ctrl *gomock.Controller, member *datastore.Organ
 		APIKeyRepo:  mocks.NewMockAPIKeyRepository(ctrl),
 		Member:      member,
 		NewApiKey:   newApiKey,
+		Logger:      mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -114,6 +115,10 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				},
 				member: nil,
 			},
+			dbFn: func(ss *CreateAPIKeyService) {
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "invalid api key role", "error", gomock.Any()).Times(1)
+			},
 			wantErr:    true,
 			wantErrMsg: "invalid api key role",
 		},
@@ -140,6 +145,9 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				g, _ := ss.ProjectRepo.(*mocks.MockProjectRepository)
 				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
 					Times(1).Return(nil, errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch project by id", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch project by id",
@@ -225,6 +233,9 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create api key", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create api key",

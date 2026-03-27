@@ -3,7 +3,6 @@ package organisations
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"testing"
 
@@ -16,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -25,7 +24,8 @@ var testEnv *testenv.Environment
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	testEnv = res
@@ -33,7 +33,8 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)
@@ -62,7 +63,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func seedUser(t *testing.T, db database.Database) *datastore.User {
 	t.Helper()
 
-	userRepo := users.New(log.NewLogger(io.Discard), db)
+	userRepo := users.New(log.New("convoy", log.LevelError), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",
@@ -98,7 +99,7 @@ func seedOrganisation(t *testing.T, db database.Database, customDomain, assigned
 		org.AssignedDomain.Valid = true
 	}
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	err := service.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
@@ -112,7 +113,7 @@ func TestCreateOrganisation_ValidRequest(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:     ulid.Make().String(),
@@ -138,7 +139,7 @@ func TestCreateOrganisation_WithCustomDomain(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:          ulid.Make().String(),
@@ -165,7 +166,7 @@ func TestCreateOrganisation_WithAssignedDomain(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
@@ -192,7 +193,7 @@ func TestCreateOrganisation_WithBothDomains(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
@@ -216,7 +217,7 @@ func TestCreateOrganisation_NilOrganisation(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	err := service.CreateOrganisation(ctx, nil)
 	require.Error(t, err)
@@ -230,7 +231,7 @@ func TestCreateOrganisation_VerifyDatabasePersistence(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
@@ -245,7 +246,7 @@ func TestCreateOrganisation_VerifyDatabasePersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a new service instance to ensure no caching
-	newService := New(log.NewLogger(os.Stdout), db)
+	newService := New(log.New("convoy", log.LevelInfo), db)
 
 	// Fetch and verify all fields match
 	fetched, err := newService.FetchOrganisationByID(ctx, org.UID)

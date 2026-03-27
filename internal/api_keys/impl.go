@@ -13,13 +13,13 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys/repo"
 	"github.com/frain-dev/convoy/internal/common"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 // Service implements the API key Service using SQLc-generated queries
 type Service struct {
-	logger   log.StdLogger
+	logger   log.Logger
 	repo     repo.Querier      // SQLc-generated interface
 	db       *pgxpool.Pool     // Connection pool
 	legacyDB database.Database // For gradual migration if needed
@@ -29,7 +29,7 @@ type Service struct {
 var _ datastore.APIKeyRepository = (*Service)(nil)
 
 // New creates a new API key Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger:   logger,
 		repo:     repo.New(db.GetConn()),
@@ -135,7 +135,7 @@ func (s *Service) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create api key")
+		s.logger.Error("failed to create api key", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -161,7 +161,7 @@ func (s *Service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update api key")
+		s.logger.Error("failed to update api key", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -175,7 +175,7 @@ func (s *Service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIK
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
 		}
-		s.logger.WithError(err).Error("failed to find api key by id")
+		s.logger.Error("failed to find api key by id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -191,7 +191,7 @@ func (s *Service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datast
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
 		}
-		s.logger.WithError(err).Error("failed to find api key by mask id")
+		s.logger.Error("failed to find api key by mask id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -206,7 +206,7 @@ func (s *Service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
 		}
-		s.logger.WithError(err).Error("failed to find api key by hash")
+		s.logger.Error("failed to find api key by hash", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -221,7 +221,7 @@ func (s *Service) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
 		}
-		s.logger.WithError(err).Error("failed to find api key by project id")
+		s.logger.Error("failed to find api key by project id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -237,7 +237,7 @@ func (s *Service) RevokeAPIKeys(ctx context.Context, ids []string) error {
 
 	err := s.repo.RevokeAPIKeys(ctx, ids)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to revoke api keys")
+		s.logger.Error("failed to revoke api keys", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -275,7 +275,7 @@ func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Filter
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load api keys paged")
+		s.logger.Error("failed to load api keys paged", "error", err)
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -312,7 +312,7 @@ func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Filter
 			EndpointIds:    filter.EndpointIDs,
 		})
 		if err2 != nil {
-			s.logger.WithError(err2).Error("failed to count prev api keys")
+			s.logger.Error("failed to count prev api keys", "error", err2)
 			return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err2)
 		}
 		prevRowCount.Count = int(count.Int64)

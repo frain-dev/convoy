@@ -1,7 +1,6 @@
 package organisation_invites
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // ============================================================================
@@ -21,7 +20,7 @@ func TestUpdateOrganisationInvite_ChangeStatus(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
 
@@ -40,7 +39,7 @@ func TestUpdateOrganisationInvite_ChangeRole(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	project := seedProject(t, db, org)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
@@ -64,7 +63,7 @@ func TestUpdateOrganisationInvite_ChangeExpiresAt(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
 
@@ -84,7 +83,7 @@ func TestUpdateOrganisationInvite_AllStatuses(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	transitions := []struct {
@@ -116,7 +115,7 @@ func TestUpdateOrganisationInvite_UpdateMultipleFields(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	project := seedProject(t, db, org)
 	endpoint := seedEndpoint(t, db, project)
@@ -150,7 +149,7 @@ func TestUpdateOrganisationInvite_NilInvite(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	err := service.UpdateOrganisationInvite(ctx, nil)
 	require.Error(t, err)
@@ -161,7 +160,7 @@ func TestUpdateOrganisationInvite_SoftDelete(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
 
@@ -180,7 +179,7 @@ func TestUpdateOrganisationInvite_UpdatedAtChanges(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
 
@@ -209,7 +208,7 @@ func TestDeleteOrganisationInvite_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
 
@@ -227,7 +226,7 @@ func TestDeleteOrganisationInvite_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Try to delete non-existent invite - should not error (idempotent)
 	err := service.DeleteOrganisationInvite(ctx, "non-existent-id")
@@ -238,7 +237,7 @@ func TestDeleteOrganisationInvite_AlreadyDeleted(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
 
@@ -255,7 +254,7 @@ func TestDeleteOrganisationInvite_DifferentStatuses(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	statuses := []datastore.InviteStatus{
@@ -283,7 +282,7 @@ func TestDeleteOrganisationInvite_DoesNotAffectOtherInvites(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create multiple invites
@@ -314,7 +313,7 @@ func TestDeleteOrganisationInvite_IsSoftDelete(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
 

@@ -1,7 +1,6 @@
 package delivery_attempts
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -9,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestDeleteProjectDeliveriesAttempts_SoftDelete(t *testing.T) {
@@ -20,7 +19,7 @@ func TestDeleteProjectDeliveriesAttempts_SoftDelete(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create multiple delivery attempts
 	attemptIDs := make([]string, 5)
@@ -69,7 +68,7 @@ func TestDeleteProjectDeliveriesAttempts_HardDelete(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create multiple delivery attempts
 	attemptIDs := make([]string, 3)
@@ -113,7 +112,7 @@ func TestDeleteProjectDeliveriesAttempts_DateRangeFilter(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create attempts (all will have similar timestamps in test)
 	for i := 0; i < 5; i++ {
@@ -155,7 +154,7 @@ func TestDeleteProjectDeliveriesAttempts_NoMatchingAttempts(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create an attempt
 	attempt := &datastore.DeliveryAttempt{
@@ -195,7 +194,7 @@ func TestDeleteProjectDeliveriesAttempts_WrongProject(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create an attempt
 	attempt := &datastore.DeliveryAttempt{
@@ -235,7 +234,7 @@ func TestDeleteProjectDeliveriesAttempts_NilFilter(t *testing.T) {
 
 	project := seedTestData(t, db, ctx)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Try to delete with nil filter
 	err := service.DeleteProjectDeliveriesAttempts(ctx, project.UID, nil, false)
@@ -257,7 +256,7 @@ func TestDeleteProjectDeliveriesAttempts_MultipleProjects(t *testing.T) {
 	eventDelivery1 := seedEventDelivery(t, db, ctx, project1, endpoint1)
 	eventDelivery2 := seedEventDelivery(t, db, ctx, project2, endpoint2)
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create attempts for both projects
 	for i := 0; i < 3; i++ {

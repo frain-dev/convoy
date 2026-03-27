@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var (
@@ -29,13 +28,13 @@ func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			timeout, err := cmd.Flags().GetInt("timeout")
 			if err != nil {
-				log.WithError(err).Errorln("failed to get timeout")
+				a.Logger.Error("failed to get timeout", "error", err)
 				return err
 			}
 
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Error("Error fetching the config.")
+				a.Logger.Error("Error fetching the config.", "error", err)
 				return err
 			}
 
@@ -62,18 +61,18 @@ func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 				return ErrEncryptionKeyCannotBeEmpty
 			}
 
-			log.Infof("Initializing encryption with the current encryption key...")
+			a.Logger.Info("Initializing encryption with the current encryption key...")
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
-				log.WithError(err).Error("Error connecting to database.")
+				a.Logger.Error("Error connecting to database.", "error", err)
 				return err
 			}
 			defer db.Close()
 
 			err = keys.InitEncryption(a.Logger, db, km, currentKey, timeout)
 			if err != nil {
-				log.WithError(err).Error("Error initializing encryption key.")
+				a.Logger.Error("Error initializing encryption key.", "error", err)
 			}
 			return err
 		},

@@ -26,7 +26,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/testenv"
@@ -60,7 +59,6 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 
 	// Create logger
 	logger := testenv.NewLogger(t)
-	logger.SetLevel(log.ErrorLevel)
 
 	// Reload config for each test to ensure clean state
 	err := config.LoadConfig("")
@@ -198,7 +196,7 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 	go func() {
 		err := cmdserver.StartConvoyServer(app)
 		if err != nil {
-			logger.WithError(err).Error("Server error")
+			logger.Error("Server error", "error", err)
 		}
 	}()
 

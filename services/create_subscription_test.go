@@ -22,6 +22,7 @@ func provideCreateSubscriptionService(ctrl *gomock.Controller, project *datastor
 		EndpointRepo:    mocks.NewMockEndpointRepository(ctrl),
 		SourceRepo:      mocks.NewMockSourceRepository(ctrl),
 		Licenser:        mocks.NewMockLicenser(ctrl),
+		Logger:          mocks.NewMockLogger(ctrl),
 		Project:         project,
 		NewSubscription: newSub,
 	}
@@ -195,6 +196,9 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 					},
 					nil,
 				)
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to count endpoint subscriptions", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to count endpoint subscriptions",
@@ -374,6 +378,9 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 				sr, _ := ss.SourceRepo.(*mocks.MockSourceRepository)
 				sr.EXPECT().FindSourceByID(gomock.Any(), "12345", "source-id-1").
 					Times(1).Return(nil, errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to find source by id", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to find source by id",
@@ -399,6 +406,9 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(nil, errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to find endpoint by id", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to find endpoint by id",
@@ -454,6 +464,9 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(nil, errors.New("failed to find endpoint by id"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to find endpoint by id", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to find endpoint by id",
@@ -489,6 +502,9 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 					},
 					nil,
 				)
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create subscription", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create subscription",

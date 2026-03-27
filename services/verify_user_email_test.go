@@ -17,6 +17,7 @@ func provideVerifyEmailService(ctrl *gomock.Controller, token string) *VerifyEma
 	return &VerifyEmailService{
 		UserRepo: mocks.NewMockUserRepository(ctrl),
 		Token:    token,
+		Logger:   mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -86,6 +87,9 @@ func TestVerifyEmailService_Run(t *testing.T) {
 					nil,
 					errors.New("failed to find user"),
 				)
+
+				ml, _ := u.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to find user by email verification token", "error", gomock.Any()).Times(1)
 			},
 			args: args{
 				ctx:   ctx,
@@ -113,6 +117,9 @@ func TestVerifyEmailService_Run(t *testing.T) {
 				u1 := *user
 				u1.EmailVerified = true
 				us.EXPECT().UpdateUser(gomock.Any(), &u1).Times(1).Return(errors.New("failed to update user"))
+
+				ml, _ := u.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update user", "error", gomock.Any()).Times(1)
 			},
 			args: args{
 				ctx:   ctx,

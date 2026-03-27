@@ -2,6 +2,7 @@ package filters
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -20,7 +21,7 @@ import (
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -31,7 +32,8 @@ var (
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	testEnv = res
@@ -39,7 +41,8 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)
@@ -85,7 +88,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *datastore.Subscription) {
 	t.Helper()
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 
 	ctx := context.Background()
 
@@ -111,7 +114,7 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *data
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -140,7 +143,7 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *data
 	require.NoError(t, err)
 
 	// Create subscription
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		ProjectID:  project.UID,
@@ -173,7 +176,7 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *data
 
 	// Clean up any auto-created filters from subscription creation
 	// Tests will create their own filters as needed
-	filterRepo := New(log.NewLogger(os.Stdout), db)
+	filterRepo := New(log.New("convoy", log.LevelInfo), db)
 	existingFilters, err := filterRepo.FindFiltersBySubscriptionID(ctx, subscription.UID)
 	require.NoError(t, err)
 	for _, filter := range existingFilters {
@@ -188,7 +191,7 @@ func seedEventType(t *testing.T, db database.Database, projectID, eventType stri
 	t.Helper()
 
 	ctx := context.Background()
-	eventTypeRepo := event_types.New(log.NewLogger(os.Stdout), db)
+	eventTypeRepo := event_types.New(log.New("convoy", log.LevelInfo), db)
 
 	et := &datastore.ProjectEventType{
 		UID:        ulid.Make().String(),
@@ -210,6 +213,6 @@ func seedEventType(t *testing.T, db database.Database, projectID, eventType stri
 
 func createFilterService(t *testing.T, db database.Database) *Service {
 	t.Helper()
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	return New(logger, db)
 }

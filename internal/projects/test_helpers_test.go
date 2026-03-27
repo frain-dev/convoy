@@ -3,7 +3,6 @@ package projects
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"testing"
 
@@ -22,28 +21,30 @@ import (
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
 var (
 	testEnv    *testenv.Environment
-	testLogger log.StdLogger
+	testLogger log.Logger
 )
 
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	testEnv = res
-	testLogger = log.NewLogger(os.Stdout)
+	testLogger = log.New("convoy", log.LevelInfo)
 
 	code := m.Run()
 
 	if err = cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)
@@ -94,7 +95,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func seedUser(t *testing.T, db database.Database) *datastore.User {
 	t.Helper()
 
-	userRepo := users.New(log.NewLogger(io.Discard), db)
+	userRepo := users.New(log.New("convoy", log.LevelError), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",
@@ -304,7 +305,7 @@ func seedEvent(t *testing.T, db database.Database, project *datastore.Project, e
 func seedSubscription(t *testing.T, db database.Database, project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
 	t.Helper()
 
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		ProjectID:  project.UID,
@@ -325,7 +326,7 @@ func seedSubscription(t *testing.T, db database.Database, project *datastore.Pro
 func seedSource(t *testing.T, db database.Database, project *datastore.Project) {
 	t.Helper()
 
-	sourceRepo := sources.New(log.NewLogger(io.Discard), db)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), db)
 	source := &datastore.Source{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,

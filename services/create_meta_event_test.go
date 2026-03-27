@@ -15,8 +15,9 @@ func provideMetaEvent(ctrl *gomock.Controller) *MetaEvent {
 	queue := mocks.NewMockQueuer(ctrl)
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	metaEventRepo := mocks.NewMockMetaEventRepository(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
 
-	return NewMetaEvent(queue, projectRepo, metaEventRepo)
+	return NewMetaEvent(queue, projectRepo, metaEventRepo, mockLogger)
 }
 
 func Test_MetaEvent_Run(t *testing.T) {

@@ -21,6 +21,7 @@ func provideRegenerateProjectAPIKeyService(ctrl *gomock.Controller, project *dat
 		APIKeyRepo:  mocks.NewMockAPIKeyRepository(ctrl),
 		Project:     project,
 		Member:      member,
+		Logger:      mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -99,6 +100,9 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 			dbFn: func(ss *RegenerateProjectAPIKeyService) {
 				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().GetAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch project api key", "error", gomock.Any()).Times(1)
 			},
 			args: args{
 				ctx: ctx,
@@ -159,6 +163,9 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 				}, nil)
 
 				a.EXPECT().RevokeAPIKeys(gomock.Any(), []string{"45678"}).Times(1).Return(errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to revoke api key", "error", gomock.Any()).Times(1)
 			},
 			args: args{
 				ctx: ctx,
@@ -205,6 +212,9 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create api key", "error", gomock.Any()).Times(1)
 			},
 			args: args{
 				ctx: ctx,

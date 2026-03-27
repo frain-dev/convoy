@@ -2,21 +2,20 @@ package organisation_invites
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestLoadOrganisationsInvitesPaged_EmptyResult(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	pageable := datastore.Pageable{
@@ -37,7 +36,7 @@ func TestLoadOrganisationsInvitesPaged_SinglePage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create 5 invites
@@ -61,7 +60,7 @@ func TestLoadOrganisationsInvitesPaged_MultiplePagesForward(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create 25 invites
@@ -115,7 +114,7 @@ func TestLoadOrganisationsInvitesPaged_BackwardPagination(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create 25 invites
@@ -154,7 +153,7 @@ func TestLoadOrganisationsInvitesPaged_FilterByStatus(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create invites with different statuses
@@ -208,7 +207,7 @@ func TestLoadOrganisationsInvitesPaged_IsolationBetweenOrganisations(t *testing.
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create two organisations
 	org1 := seedOrganisation(t, db)
@@ -249,7 +248,7 @@ func TestLoadOrganisationsInvitesPaged_DeletedInvitesExcluded(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create 10 invites
@@ -292,7 +291,7 @@ func TestLoadOrganisationsInvitesPaged_VerifyPaginationMetadata(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create 15 invites
@@ -328,7 +327,7 @@ func TestLoadOrganisationsInvitesPaged_ConsistentOrdering(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create 20 invites
@@ -360,7 +359,7 @@ func TestLoadOrganisationsInvitesPaged_LargeDataset(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create 100 invites
@@ -405,7 +404,7 @@ func TestLoadOrganisationsInvitesPaged_VerifyFieldsPopulated(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create invite

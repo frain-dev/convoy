@@ -22,7 +22,7 @@ import (
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/url"
 	"github.com/frain-dev/convoy/queue"
@@ -50,6 +50,7 @@ type EventDeliveryProcessorDeps struct {
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 	TracerBackend              tracer.Backend
 	OAuth2TokenService         OAuth2TokenService
+	Logger                     log.Logger
 }
 
 func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *asynq.Task) error {
@@ -85,7 +86,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			// write it to the retry queue.
 			deferErr := deps.Queue.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
 			if deferErr != nil {
-				log.FromContext(ctx).WithError(deferErr).Error("[asynq]: an error occurred sending event delivery to the retry queue")
+				deps.Logger.ErrorContext(ctx, "[asynq]: an error occurred sending event delivery to the retry queue", "error", deferErr)
 			}
 		}()
 
@@ -128,7 +129,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				eventDelivery.Description = datastore.ErrEndpointNotFound.Error()
 				err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
 				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to discarded")
+					deps.Logger.ErrorContext(ctx, "failed to update event delivery status to discarded", "error", err)
 				}
 
 				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
@@ -152,9 +153,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		err = deps.RateLimiter.AllowWithDuration(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
 		if err != nil {
-			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery_id": data.EventDeliveryID}).
-				WithError(err).
-				Debugf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second)
+			deps.Logger.DebugContext(ctx, "too many events, rate limit reached", "endpoint_url", endpoint.Url, "rate_limit", endpoint.RateLimit, "rate_limit_duration", time.Duration(endpoint.RateLimitDuration)*time.Second, "event_delivery_id", data.EventDeliveryID, "error", err)
 
 			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
@@ -177,7 +176,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		done := true
 
 		if eventDelivery.Status == datastore.SuccessEventStatus {
-			log.FromContext(ctx).Debugf("endpoint %s already merged with message %s\n", endpoint.Url, eventDelivery.UID)
+			deps.Logger.DebugContext(ctx, "endpoint already merged with message", "endpoint_url", endpoint.Url, "event_delivery_uid", eventDelivery.UID)
 			deps.TracerBackend.Capture(ctx, "event.delivery.success", attributes, traceStartTime, time.Now())
 			return nil
 		}
@@ -189,7 +188,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				return &DeliveryError{Err: err}
 			}
 
-			log.FromContext(ctx).Debugf("endpoint %s is inactive, failing to send.", endpoint.Url)
+			deps.Logger.DebugContext(ctx, "endpoint is inactive, failing to send", "endpoint_url", endpoint.Url)
 			deps.TracerBackend.Capture(ctx, "event.delivery.discarded", attributes, traceStartTime, time.Now())
 			return nil
 		}
@@ -205,7 +204,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		if !util.IsStringEmpty(eventDelivery.URLQueryParams) {
 			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
 			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to concat url query params")
+				deps.Logger.ErrorContext(ctx, "failed to concat url query params", "error", err)
 				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 				return &DeliveryError{Err: err}
 			}
@@ -226,7 +225,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.OAuth2Authentication {
 			oauth2Enabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
 			if !oauth2Enabled {
-				log.FromContext(ctx).Warn("Endpoint has OAuth2 configured but feature flag is disabled, removing OAuth2 authorization header")
+				deps.Logger.WarnContext(ctx, "Endpoint has OAuth2 configured but feature flag is disabled, removing OAuth2 authorization header")
 				// Remove OAuth2 authorization header if feature flag is disabled
 				if eventDelivery.Headers != nil {
 					delete(eventDelivery.Headers, "Authorization")
@@ -251,12 +250,12 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		if endpoint.MtlsClientCert != nil {
 			// Check license before using mTLS during delivery
 			if !deps.Licenser.MutualTLS() {
-				log.FromContext(ctx).Error(errMutualTLSFeatureUnavailable)
+				deps.Logger.ErrorContext(ctx, errMutualTLSFeatureUnavailable)
 				eventDelivery.Status = datastore.FailureEventStatus
 				eventDelivery.Description = errMutualTLSFeatureUnavailable
 				err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
 				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+					deps.Logger.ErrorContext(ctx, "failed to update event delivery status to failed", "error", err)
 				}
 				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 				return nil // Return nil to avoid retrying
@@ -265,7 +264,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			// Check feature flag for mTLS using project's organisation ID
 			mtlsEnabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
 			if !mtlsEnabled {
-				log.FromContext(ctx).Warn("Endpoint has mTLS configured but feature flag is disabled, continuing without mTLS")
+				deps.Logger.WarnContext(ctx, "Endpoint has mTLS configured but feature flag is disabled, continuing without mTLS")
 				// Continue without mTLS if feature flag is disabled
 				mtlsCert = nil
 			} else {
@@ -277,12 +276,12 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				)
 				if certErr != nil {
 					// Fail fast on certificate errors (invalid or expired cert) to avoid needless retries
-					log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
+					deps.Logger.ErrorContext(ctx, "failed to load mTLS client certificate", "error", certErr)
 					eventDelivery.Status = datastore.FailureEventStatus
 					eventDelivery.Description = fmt.Sprintf("Invalid mTLS certificate: %v", certErr)
 					err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
 					if err != nil {
-						log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+						deps.Logger.ErrorContext(ctx, "failed to update event delivery status to failed", "error", err)
 					}
 					deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 					return nil // Return nil to avoid retrying
@@ -302,16 +301,10 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		duration := time.Since(httpDispatchStart)
 		// log request details
-		requestLogger := log.FromContext(ctx).WithFields(log.Fields{
-			"status":          status,
-			"uri":             targetURL,
-			"method":          convoy.HttpPost,
-			"duration":        duration,
-			"eventDeliveryID": eventDelivery.UID,
-		})
+		logAttrs := []any{"status", status, "uri", targetURL, "method", convoy.HttpPost, "duration", duration, "eventDeliveryID", eventDelivery.UID}
 
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
-			requestLogger.Debugf("%s sent", eventDelivery.UID)
+			deps.Logger.DebugContext(ctx, "event delivery sent", append(logAttrs, "event_delivery_uid", eventDelivery.UID)...)
 			attemptStatus = true
 
 			eventDelivery.Status = datastore.SuccessEventStatus
@@ -322,7 +315,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			mm := metrics.GetDPInstance(deps.Licenser)
 			mm.RecordEndToEndLatency(eventDelivery)
 		} else {
-			requestLogger.Errorf("%s", eventDelivery.UID)
+			deps.Logger.ErrorContext(ctx, "event delivery http error", append(logAttrs, "event_delivery_uid", eventDelivery.UID)...)
 			done = false
 
 			// For at-most-once delivery, only retry on network failures
@@ -334,8 +327,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 					eventDelivery.Metadata.NextSendTime = nextTime
 					attempts := eventDelivery.Metadata.NumTrials + 1
 
-					log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
-						nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+					deps.Logger.ErrorContext(ctx, "event delivery retry scheduled", "event_delivery_uid", eventDelivery.UID, "next_send_time", nextTime.Format(time.ANSIC), "strategy", eventDelivery.Metadata.Strategy, "interval_seconds", eventDelivery.Metadata.IntervalSeconds, "attempt", attempts, "retry_limit", eventDelivery.Metadata.RetryLimit) //nolint:lll
 				} else {
 					// Got a response (even if it's an error status code) - mark as failed
 					eventDelivery.Status = datastore.FailureEventStatus
@@ -349,8 +341,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				eventDelivery.Metadata.NextSendTime = nextTime
 				attempts := eventDelivery.Metadata.NumTrials + 1
 
-				log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
-					nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+				deps.Logger.ErrorContext(ctx, "event delivery retry scheduled", "event_delivery_uid", eventDelivery.UID, "next_send_time", nextTime.Format(time.ANSIC), "strategy", eventDelivery.Metadata.Strategy, "interval_seconds", eventDelivery.Metadata.IntervalSeconds, "attempt", attempts, "retry_limit", eventDelivery.Metadata.RetryLimit) //nolint:lll
 			}
 		}
 
@@ -364,7 +355,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		// The request failed, but the statusCode is 200 <= x <= 299
 		if err != nil {
-			log.FromContext(ctx).Errorf("%s failed. Reason: %s", eventDelivery.UID, err)
+			deps.Logger.ErrorContext(ctx, "event delivery failed", "event_delivery_uid", eventDelivery.UID, "error", err)
 			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
 		} else {
 			deps.TracerBackend.Capture(ctx, "event.delivery.success", attributes, traceStartTime, time.Now())
@@ -384,11 +375,11 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		if eventDelivery.Metadata.NumTrials >= eventDelivery.Metadata.RetryLimit {
 			if done {
 				if eventDelivery.Status != datastore.SuccessEventStatus {
-					log.FromContext(ctx).Error("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
+					deps.Logger.ErrorContext(ctx, "an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
 					eventDelivery.Status = datastore.FailureEventStatus
 				}
 			} else {
-				log.FromContext(ctx).Errorf("%s retry limit exceeded ", eventDelivery.UID)
+				deps.Logger.ErrorContext(ctx, "retry limit exceeded", "event_delivery_uid", eventDelivery.UID)
 				eventDelivery.Description = "Retry limit exceeded"
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
@@ -398,14 +389,14 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 				err = deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("failed to deactivate endpoint after failed retry")
+					deps.Logger.ErrorContext(ctx, "failed to deactivate endpoint after failed retry", "error", err)
 				}
 
 				if deps.Licenser.AdvancedEndpointMgmt() {
 					// send endpoint deactivation notification
-					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, deps.Queue, true, resp.Error, string(resp.Body), resp.StatusCode)
+					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, deps.Queue, true, resp.Error, string(resp.Body), resp.StatusCode, deps.Logger)
 					if err != nil {
-						log.FromContext(ctx).WithError(err).Error("failed to send notification")
+						deps.Logger.ErrorContext(ctx, "failed to send notification", "error", err)
 					}
 				}
 			}
@@ -413,15 +404,13 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		err = deps.AttemptsRepo.CreateDeliveryAttempt(ctx, &attempt)
 		if err != nil {
-			log.FromContext(ctx).
-				WithError(err).
-				Errorf("failed to create delivery attempt for event delivery with id: %s and delivery attempt: %s", eventDelivery.UID, attempt.ResponseData)
+			deps.Logger.ErrorContext(ctx, "failed to create delivery attempt", "event_delivery_uid", eventDelivery.UID, "response_data", attempt.ResponseData, "error", err)
 			return &DeliveryError{Err: fmt.Errorf("%w: %w", ErrDeliveryAttemptFailed, err)}
 		}
 
 		err = deps.EventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("failed to update message ", eventDelivery.UID)
+			deps.Logger.ErrorContext(ctx, "failed to update message", "error", err, "event_delivery_uid", eventDelivery.UID)
 			return &DeliveryError{Err: fmt.Errorf("%w: %w", ErrDeliveryAttemptFailed, err)}
 		}
 
