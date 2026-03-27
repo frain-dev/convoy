@@ -1,7 +1,6 @@
 package api_keys
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/oklog/ulid/v2"

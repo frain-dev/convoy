@@ -1,7 +1,6 @@
 package event_types
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
