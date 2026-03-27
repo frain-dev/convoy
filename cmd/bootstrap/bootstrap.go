@@ -76,7 +76,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			if err != nil {
 				if errors.Is(err, datastore.ErrDuplicateEmail) {
 					// user already exists
-					slog.Error("bootstrap failed: user already exists", "error", err)
+					a.Logger.Error("bootstrap failed: user already exists", "error", err)
 					return nil
 				}
 
