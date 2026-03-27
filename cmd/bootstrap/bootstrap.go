@@ -114,7 +114,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			case "json":
 				data, err := json.MarshalIndent(jsUser, "", "    ")
 				if err != nil {
-					slog.Error("Error printing config", "error", err)
+					a.Logger.Error("Error printing config", "error", err)
 					return err
 				}
 
