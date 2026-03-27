@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os"
 	"testing"
@@ -311,7 +310,7 @@ func SetupE2EWithAMQP(t *testing.T) *E2ETestEnvWithAMQP {
 	require.NoError(t, err)
 
 	// Set up repositories needed for source loading
-	sourceRepo := sources.New(log.New("convoy", slog.LevelError), baseEnv.App.DB)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), baseEnv.App.DB)
 	endpointRepo := postgres.NewEndpointRepo(baseEnv.App.DB)
 	projectRepo := projects.New(baseEnv.App.Logger, baseEnv.App.DB)
 

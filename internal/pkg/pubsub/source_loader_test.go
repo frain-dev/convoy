@@ -1,17 +1,17 @@
 package pubsub
 
-//func provideSourceLoader(ctrl *gomock.Controller) *SourceLoader {
+// func provideSourceLoader(ctrl *gomock.Controller) *SourceLoader {
 //	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 //	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 //	projectRepo := mocks.NewMockProjectRepository(ctrl)
 //	queue := mocks.NewMockQueuer(ctrl)
-//	logger := log.New("convoy", slog.LevelError)
+//	logger := log.New("convoy", log.LevelError)
 //
 //	sourceLoader := NewSourceLoader(endpointRepo, sourceRepo, projectRepo, queue, logger)
 //	return sourceLoader
-//}
+// }
 //
-//func TestSourceLoader_FetchSources(t *testing.T) {
+// func TestSourceLoader_FetchSources(t *testing.T) {
 //	tests := []struct {
 //		name              string
 //		dbFn              func(sourceLoader *SourceLoader)
@@ -125,5 +125,5 @@ package pubsub
 //			require.Nil(t, err)
 //		})
 //	}
-//}
+// }
 //

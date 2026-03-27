@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -75,14 +74,14 @@ func setupTestDB(t *testing.T) (*Service, database.Database) {
 	err = keys.Set(km)
 	require.NoError(t, err)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	return New(logger, db), db
 }
 
 func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
 	t.Helper()
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 
 	// Create user with unique email
@@ -108,7 +107,7 @@ func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -152,7 +151,7 @@ func seedTestEndpoint(t *testing.T, db database.Database, projectID string) *dat
 func seedTestSource(t *testing.T, db database.Database, projectID string) *datastore.Source {
 	t.Helper()
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 	sourceRepo := sources.New(logger, db)
 

@@ -178,7 +178,7 @@ func TestService_FetchEventTypes_DifferentProjects(t *testing.T) {
 		OrganisationID: org.UID,
 		Config:         &datastore.DefaultProjectConfig,
 	}
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	err := projectRepo.CreateProject(ctx, project2)
 	require.NoError(t, err)
 

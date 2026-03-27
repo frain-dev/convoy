@@ -1,11 +1,11 @@
 package pubsub
 
-//func provideSourcePool() *SourcePool {
-//	logger := log.New("convoy", slog.LevelError)
+// func provideSourcePool() *SourcePool {
+//	logger := log.New("convoy", log.LevelError)
 //	return NewSourcePool(logger)
-//}
+// }
 //
-//func TestPubSub_InsertSource(t *testing.T) {
+// func TestPubSub_InsertSource(t *testing.T) {
 //	ctrl := gomock.NewController(t)
 //	defer ctrl.Finish()
 //
@@ -26,9 +26,9 @@ package pubsub
 //	_, ok := sourcePool.sources[uid]
 //	require.Equal(t, 1, len(sourcePool.sources))
 //	require.True(t, ok)
-//}
+// }
 //
-//func TestPubSub_InsertSource_NewConfig(t *testing.T) {
+// func TestPubSub_InsertSource_NewConfig(t *testing.T) {
 //	ctrl := gomock.NewController(t)
 //	defer ctrl.Finish()
 //
@@ -61,9 +61,9 @@ package pubsub
 //	_, ok := sourcePool.sources[uid]
 //	require.Equal(t, 1, len(sourcePool.sources))
 //	require.True(t, ok)
-//}
+// }
 //
-//func TestPubSub_RemoveSource(t *testing.T) {
+// func TestPubSub_RemoveSource(t *testing.T) {
 //	ctrl := gomock.NewController(t)
 //	defer ctrl.Finish()
 //
@@ -85,5 +85,5 @@ package pubsub
 //	require.Equal(t, 0, len(sourcePool.sources))
 //	require.False(t, ok)
 //
-//}
+// }
 //

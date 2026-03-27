@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,7 +27,7 @@ func (tq *testQueue) Options() queue.QueueOptions { return queue.QueueOptions{} 
 
 func TestEnqueueCircuitBreakerEmails(t *testing.T) {
 	q := &testQueue{}
-	lo := log.New("convoy", slog.LevelError)
+	lo := log.New("convoy", log.LevelError)
 
 	project := &datastore.Project{Name: "P1", LogoURL: "http://logo"}
 	endpoint := &datastore.Endpoint{Name: "E1", Url: "http://e1", SupportEmail: "ep@x.y", FailureRate: 42}

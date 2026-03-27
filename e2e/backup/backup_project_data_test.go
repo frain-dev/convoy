@@ -3,7 +3,6 @@ package backup
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"path/filepath"
 	"testing"
 	"time"
@@ -35,7 +34,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	projectRepo := projects.New(logger, db)
 	configRepo := configuration.New(logger, db)
 	eventRepo := events.New(logger, db)
@@ -150,7 +149,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	projectRepo := projects.New(logger, db)
 	configRepo := configuration.New(logger, db)
 	eventRepo := events.New(logger, db)
@@ -268,7 +267,7 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	projectRepo := projects.New(logger, db)
 	configRepo := configuration.New(logger, db)
 	eventRepo := events.New(logger, db)
@@ -406,7 +405,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	projectRepo := projects.New(logger, db)
 	configRepo := configuration.New(logger, db)
 	eventRepo := events.New(logger, db)
@@ -509,7 +508,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	projectRepo := projects.New(logger, db)
 	configRepo := configuration.New(logger, db)
 	eventRepo := events.New(logger, db)

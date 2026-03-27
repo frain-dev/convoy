@@ -3,7 +3,6 @@ package filters
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"strings"
 	"testing"
@@ -89,7 +88,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *datastore.Subscription) {
 	t.Helper()
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 
 	ctx := context.Background()
 
@@ -115,7 +114,7 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *data
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -144,7 +143,7 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *data
 	require.NoError(t, err)
 
 	// Create subscription
-	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		ProjectID:  project.UID,
@@ -177,7 +176,7 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.Project, *data
 
 	// Clean up any auto-created filters from subscription creation
 	// Tests will create their own filters as needed
-	filterRepo := New(log.New("convoy", slog.LevelInfo), db)
+	filterRepo := New(log.New("convoy", log.LevelInfo), db)
 	existingFilters, err := filterRepo.FindFiltersBySubscriptionID(ctx, subscription.UID)
 	require.NoError(t, err)
 	for _, filter := range existingFilters {
@@ -192,7 +191,7 @@ func seedEventType(t *testing.T, db database.Database, projectID, eventType stri
 	t.Helper()
 
 	ctx := context.Background()
-	eventTypeRepo := event_types.New(log.New("convoy", slog.LevelInfo), db)
+	eventTypeRepo := event_types.New(log.New("convoy", log.LevelInfo), db)
 
 	et := &datastore.ProjectEventType{
 		UID:        ulid.Make().String(),
@@ -214,6 +213,6 @@ func seedEventType(t *testing.T, db database.Database, projectID, eventType stri
 
 func createFilterService(t *testing.T, db database.Database) *Service {
 	t.Helper()
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	return New(logger, db)
 }

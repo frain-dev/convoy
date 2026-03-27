@@ -128,7 +128,7 @@ func TestUpdateAPIKey_ChangeRoleProject(t *testing.T) {
 	user, org, project1 := seedTestData(t, db)
 
 	// Create a second project
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project2 := &datastore.Project{
 		UID:            ulid.Make().String(),

@@ -1,7 +1,6 @@
 package testenv
 
 import (
-	"log/slog"
 	"testing"
 
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -16,5 +15,5 @@ type TestingT interface {
 
 func NewLogger(t *testing.T) log.Logger {
 	t.Helper()
-	return log.New("convoy", slog.LevelInfo)
+	return log.New("convoy", log.LevelDebug)
 }

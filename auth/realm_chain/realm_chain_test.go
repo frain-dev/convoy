@@ -3,7 +3,6 @@ package realm_chain
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sync/atomic"
 	"testing"
 
@@ -317,7 +316,7 @@ func TestInit(t *testing.T) {
 			userRepo := mocks.NewMockUserRepository(ctrl)
 			portalLinkRepo := mocks.NewMockPortalLinkRepository(ctrl)
 			cache := mocks.NewMockCache(ctrl)
-			logger := log.New("convoy", slog.LevelInfo)
+			logger := log.New("convoy", log.LevelInfo)
 
 			err := Init(tt.args.authConfig, mockAPIKeyRepo, userRepo, portalLinkRepo, cache, logger)
 			if tt.wantErr {

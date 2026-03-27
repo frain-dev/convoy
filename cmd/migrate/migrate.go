@@ -2,7 +2,6 @@ package migrate
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"time"
 
@@ -38,7 +37,7 @@ func addUpCommand() *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			lo := log.New("convoy", slog.LevelInfo)
+			lo := log.New("convoy", log.LevelInfo)
 
 			lo.Info("Running migrations...")
 
@@ -80,7 +79,7 @@ func addDownCommand() *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			lo := log.New("convoy", slog.LevelInfo)
+			lo := log.New("convoy", log.LevelInfo)
 
 			cfg, err := config.Get()
 			if err != nil {
@@ -119,7 +118,7 @@ func addCreateCommand() *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			lo := log.New("convoy", slog.LevelInfo)
+			lo := log.New("convoy", log.LevelInfo)
 
 			fileName := fmt.Sprintf("sql/%v.sql", time.Now().Unix())
 			f, err := os.Create(fileName)

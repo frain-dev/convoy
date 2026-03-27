@@ -95,10 +95,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		logLevel, parseErr := log.ParseLevel(cfg.Logger.Level)
 		if parseErr != nil {
 			slog.Warn("error parsing log level",
-				slog.String("using default log level: ", slog.LevelError.String()),
+				slog.String("using default log level: ", log.LevelError.String()),
 				slog.String(" for log level: ", cfg.Logger.Level),
 				slog.String(" err: ", parseErr.Error()))
-			logLevel = slog.LevelError
+			logLevel = log.LevelError
 		}
 
 		lo := log.New("convoy", logLevel)
@@ -220,7 +220,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				BillingEnabled: cfg.Billing.Enabled,
 				Client:         licenseClient,
 				OrgRepo:        organisations.New(lo, app.DB),
-				UserRepo:       users.New(log.New("convoy", slog.LevelError), app.DB),
+				UserRepo:       users.New(log.New("convoy", log.LevelError), app.DB),
 				ProjectRepo:    projectRepo,
 				Logger:         lo,
 			},

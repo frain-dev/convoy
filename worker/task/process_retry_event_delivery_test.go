@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -1167,7 +1166,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				t.Errorf("failed to get config: %v", err)
 			}
 
-			logger := log.New("convoy", slog.LevelInfo)
+			logger := log.New("convoy", log.LevelInfo)
 
 			err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, cache, logger)
 			if err != nil {
@@ -1187,7 +1186,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				l,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
 				net.BlockListOption([]string{"10.0.0.0/8"}),
-				net.LoggerOption(log.New("convoy", slog.LevelInfo)),
+				net.LoggerOption(log.New("convoy", log.LevelInfo)),
 				net.ProxyOption("nil"),
 			)
 			require.NoError(t, err)
@@ -1210,7 +1209,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
 					return breakerConfig
 				}),
-				cb.LoggerOption(log.New("convoy", slog.LevelInfo)),
+				cb.LoggerOption(log.New("convoy", log.LevelInfo)),
 			)
 			require.NoError(t, err)
 
@@ -1236,7 +1235,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				FeatureFlagFetcher:    fetcher,
 				TracerBackend:         mt,
 				OAuth2TokenService:    mockOAuth2TokenService,
-				Logger:                log.New("convoy", slog.LevelInfo),
+				Logger:                log.New("convoy", log.LevelInfo),
 			}
 			processFn := ProcessRetryEventDelivery(deps)
 

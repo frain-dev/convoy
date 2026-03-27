@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 
@@ -126,7 +125,7 @@ func buildApplication(t *testing.T) *applicationHandler {
 	tl := newInfra(t)
 	db := tl.Database
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	projectRepo := projects.New(logger, db)
 	eventRepo := events.New(logger, db)
 	configRepo := configuration.New(logger, db)

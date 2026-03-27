@@ -2,7 +2,6 @@ package testdb
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -44,7 +43,7 @@ func SeedFilter(db database.Database, subscriptionID, uid, eventType string, hea
 		UpdatedAt:      time.Now(),
 	}
 
-	logger := log.New("convoy", slog.LevelError)
+	logger := log.New("convoy", log.LevelError)
 	filterRepo := filters.New(logger, db)
 	err := filterRepo.CreateFilter(context.Background(), filter)
 	if err != nil {

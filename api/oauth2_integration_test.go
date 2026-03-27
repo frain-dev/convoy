@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -354,7 +353,7 @@ func (s *OAuth2IntegrationTestSuite) Test_OAuth2TokenService_Integration() {
 	require.NoError(s.T(), err)
 
 	// Test OAuth2 token service with the endpoint (using in-memory cache)
-	oauth2TokenService := services.NewOAuth2TokenService(s.MemoryCache, log.New("convoy", slog.LevelError))
+	oauth2TokenService := services.NewOAuth2TokenService(s.MemoryCache, log.New("convoy", log.LevelError))
 
 	// Verify no token requests yet
 	require.Equal(s.T(), 0, s.OAuth2TokenCallCount)
@@ -423,7 +422,7 @@ func (s *OAuth2IntegrationTestSuite) Test_OAuth2TokenService_ClientAssertion_Int
 	require.NoError(s.T(), err)
 
 	// Test OAuth2 token service with client assertion (using in-memory cache)
-	oauth2TokenService := services.NewOAuth2TokenService(s.MemoryCache, log.New("convoy", slog.LevelError))
+	oauth2TokenService := services.NewOAuth2TokenService(s.MemoryCache, log.New("convoy", log.LevelError))
 
 	// Fetch token - should trigger OAuth2 token exchange with client assertion
 	token, err := oauth2TokenService.GetAccessToken(context.Background(), endpoint)
@@ -444,7 +443,7 @@ func (s *OAuth2IntegrationTestSuite) Test_OAuth2TokenService_ClientAssertion_Int
 func (s *OAuth2IntegrationTestSuite) initEncryption() {
 	km, err := keys.Get()
 	require.NoError(s.T(), err)
-	err = keys.InitEncryption(log.New("convoy", slog.LevelInfo), s.DB, km, "test-key", 120)
+	err = keys.InitEncryption(log.New("convoy", log.LevelInfo), s.DB, km, "test-key", 120)
 	require.NoError(s.T(), err)
 }
 

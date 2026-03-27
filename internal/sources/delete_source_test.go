@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -81,7 +80,7 @@ func TestDeleteSource_CascadeToSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create subscription
-	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		Name:       "TestSubscription",
@@ -193,7 +192,7 @@ func TestDeleteSource_MultipleSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create multiple subscriptions
-	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	sub1 := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		Name:       "Subscription1",

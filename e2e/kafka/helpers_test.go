@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"strconv"
@@ -267,7 +266,7 @@ func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx conte
 		}
 	}
 
-	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	err := subRepo.CreateSubscription(ctx, project.UID, subscription)
 	require.NoError(t, err)
 
@@ -540,7 +539,7 @@ func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx conte
 		lookback = timeWindow[0]
 	}
 
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", log.LevelError), db)
 
 	// Wait a bit to ensure no delivery is created
 	time.Sleep(2 * time.Second)
@@ -625,7 +624,7 @@ func CreateKafkaSource(t *testing.T, db *postgres.Postgres, ctx context.Context,
 		},
 	}
 
-	sourceRepo := sources.New(log.New("convoy", slog.LevelError), db)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), db)
 	err := sourceRepo.CreateSource(ctx, source)
 	require.NoError(t, err)
 

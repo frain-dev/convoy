@@ -3,7 +3,6 @@ package delivery_attempts
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -58,7 +57,7 @@ func TestCreateDeliveryAttempt_ValidRequest(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.New("convoy", slog.LevelError), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	attempt := &datastore.DeliveryAttempt{
 		UID:              ulid.Make().String(),
@@ -93,7 +92,7 @@ func TestCreateDeliveryAttempt_WithHeaders(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.New("convoy", slog.LevelError), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	requestHeaders := datastore.HttpHeader{
 		"Content-Type": "application/json",
@@ -138,7 +137,7 @@ func TestCreateDeliveryAttempt_FailedAttempt(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.New("convoy", slog.LevelError), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	attempt := &datastore.DeliveryAttempt{
 		UID:              ulid.Make().String(),
@@ -171,7 +170,7 @@ func TestFindDeliveryAttempts_MultipleAttempts(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.New("convoy", slog.LevelError), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	// Create multiple attempts
 	for i := 0; i < 5; i++ {
@@ -203,7 +202,7 @@ func TestFindDeliveryAttemptById_NotFound(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.New("convoy", slog.LevelError), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	_, err := service.FindDeliveryAttemptById(ctx, eventDelivery.UID, "nonexistent-id")
 	require.Error(t, err)
@@ -251,7 +250,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func seedTestData(t *testing.T, db database.Database, ctx context.Context) *datastore.Project {
 	t.Helper()
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 
 	// Create user with unique email
 	userRepo := users.New(logger, db)
@@ -275,7 +274,7 @@ func seedTestData(t *testing.T, db database.Database, ctx context.Context) *data
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -317,7 +316,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	t.Helper()
 
 	// First create an event
-	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
+	eventRepo := events.New(log.New("convoy", log.LevelInfo), db)
 	event := &datastore.Event{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
@@ -329,7 +328,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	require.NoError(t, err)
 
 	// Create a subscription
-	subscriptionRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
+	subscriptionRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		Name:       "Test Subscription",
@@ -347,7 +346,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	require.NoError(t, err)
 
 	// Now create event delivery with valid event_id and subscription_id
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", log.LevelError), db)
 
 	eventDelivery := &datastore.EventDelivery{
 		UID:            ulid.Make().String(),

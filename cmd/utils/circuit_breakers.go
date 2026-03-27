@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -63,7 +62,7 @@ func AddCircuitBreakersGetCommand(a *cli.App) *cobra.Command {
 				}),
 				cb.StoreOption(cb.NewRedisStore(a.Redis, clock.NewRealClock())),
 				cb.ClockOption(clock.NewRealClock()),
-				cb.LoggerOption(log.New("convoy", slog.LevelInfo)),
+				cb.LoggerOption(log.New("convoy", log.LevelInfo)),
 			)
 			if err != nil {
 				return fmt.Errorf("failed to create circuit breaker manager: %v", err)
@@ -212,7 +211,7 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 						// Get breaker to check TenantId
 						breakerData, err := store.GetOne(context.Background(), key)
 						if err == nil {
-							breaker, err := cb.NewCircuitBreakerFromStore([]byte(breakerData), log.New("convoy", slog.LevelInfo))
+							breaker, err := cb.NewCircuitBreakerFromStore([]byte(breakerData), log.New("convoy", log.LevelInfo))
 							if err == nil && breaker.TenantId == projectID {
 								// Ignore errors here; it's best-effort
 								_ = a.Redis.Del(context.Background(), key).Err()

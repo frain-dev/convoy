@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -83,12 +82,12 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func createMetaEventService(t *testing.T, db database.Database) *Service {
 	t.Helper()
-	return New(log.New("convoy", slog.LevelInfo), db)
+	return New(log.New("convoy", log.LevelInfo), db)
 }
 
 func seedTestData(t *testing.T, db database.Database) (*datastore.User, *datastore.Organisation, *datastore.Project) {
 	ctx := context.Background()
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 
 	// Create user
 	userRepo := users.New(logger, db)

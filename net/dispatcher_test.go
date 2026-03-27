@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -118,7 +117,7 @@ func TestDispatcher_Ping(t *testing.T) {
 			defer server.Close()
 
 			// Create dispatcher
-			dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", slog.LevelInfo)))
+			dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", log.LevelInfo)))
 			require.NoError(t, err)
 
 			// Test ping
@@ -150,7 +149,7 @@ func TestDispatcher_tryPingMethod(t *testing.T) {
 	// Setup default mocks
 	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
 
-	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", slog.LevelInfo)))
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -258,7 +257,7 @@ func TestDispatcher_PingWithDefaultMethods(t *testing.T) {
 	// Setup default mocks
 	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
 
-	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", slog.LevelInfo)))
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	// Test with default ping methods (HEAD, GET, POST)
@@ -292,7 +291,7 @@ func TestDispatcher_PingWithOAuth2(t *testing.T) {
 	// Setup default mocks
 	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
 
-	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", slog.LevelInfo)))
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	// Setup mock OAuth2 token server
@@ -678,7 +677,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &Dispatcher{client: client, logger: log.New("convoy", slog.LevelInfo), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
+			d := &Dispatcher{client: client, logger: log.New("convoy", log.LevelInfo), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
 
 			if tt.nFn != nil {
 				deferFn := tt.nFn()
@@ -720,7 +719,7 @@ func TestDispatcher_SendFormDataWithSignature(t *testing.T) {
 	}))
 	defer server.Close()
 
-	d := &Dispatcher{client: http.DefaultClient, logger: log.New("convoy", slog.LevelInfo), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
+	d := &Dispatcher{client: http.DefaultClient, logger: log.New("convoy", log.LevelInfo), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
 
 	jsonData := json.RawMessage(`{"name":"test","value":"123"}`)
 	project := &datastore.Project{
@@ -811,7 +810,7 @@ func TestNewDispatcher(t *testing.T) {
 			d, err := NewDispatcher(
 				licenser,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
-				LoggerOption(log.New("convoy", slog.LevelInfo)),
+				LoggerOption(log.New("convoy", log.LevelInfo)),
 				TLSConfigOption(tt.args.enforceSecure, licenser, nil),
 				ProxyOption(tt.args.httpProxy),
 			)
@@ -863,7 +862,7 @@ func TestDispatcherSendRequest(t *testing.T) {
 	dispatcher, err := NewDispatcher(
 		licenser,
 		fflag.NewFFlag([]string{string(fflag.IpRules)}),
-		LoggerOption(log.New("convoy", slog.LevelInfo)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"10.0.0.0/8"}),
@@ -915,7 +914,7 @@ func TestDispatcherWithTimeout(t *testing.T) {
 	dispatcher, err := NewDispatcher(
 		licenser,
 		fflag.NewFFlag([]string{string(fflag.IpRules)}),
-		LoggerOption(log.New("convoy", slog.LevelInfo)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"10.0.0.0/8"}),
@@ -961,7 +960,7 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 	dispatcher, err := NewDispatcher(
 		licenser,
 		fflag.NewFFlag([]string{string(fflag.IpRules)}),
-		LoggerOption(log.New("convoy", slog.LevelInfo)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"127.0.0.0/8"}),
@@ -1058,7 +1057,7 @@ C6azzwqUOSsfDcuAS5sfJp/6
 	dispatcher, err := NewDispatcher(
 		licenser,
 		fflag.NewFFlag([]string{string(fflag.IpRules)}),
-		LoggerOption(log.New("convoy", slog.LevelInfo)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"127.0.0.0/8"}),

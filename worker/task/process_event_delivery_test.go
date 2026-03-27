@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -1099,7 +1098,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dispatcher, err := net.NewDispatcher(
 				licenser,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
-				net.LoggerOption(log.New("convoy", slog.LevelInfo)),
+				net.LoggerOption(log.New("convoy", log.LevelInfo)),
 				net.BlockListOption([]string{"10.0.0.0/8"}),
 				net.ProxyOption("nil"),
 			)
@@ -1123,7 +1122,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
 					return breakerConfig
 				}),
-				cb.LoggerOption(log.New("convoy", slog.LevelInfo)),
+				cb.LoggerOption(log.New("convoy", log.LevelInfo)),
 			)
 			require.NoError(t, err)
 
@@ -1143,7 +1142,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				FeatureFlag:           featureFlag,
 				FeatureFlagFetcher:    fetcher,
 				TracerBackend:         mt,
-				Logger:                log.New("convoy", slog.LevelInfo),
+				Logger:                log.New("convoy", log.LevelInfo),
 			}
 			processor := ProcessEventDelivery(deps)
 

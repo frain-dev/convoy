@@ -1,7 +1,6 @@
 package organisation_invites
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -16,7 +15,7 @@ func TestDeleteOrganisationInvite_ErrorPath(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Try to delete with invalid ID (triggers different error path)
 	// This tests the error logging branch
@@ -31,7 +30,7 @@ func TestUpdateOrganisationInvite_ErrorPath(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create an invite that we'll try to update with invalid data
@@ -50,7 +49,7 @@ func TestFetchOrganisationInviteByID_DatabaseError(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Close the database to trigger connection errors
 	db.Close()
@@ -65,7 +64,7 @@ func TestFetchOrganisationInviteByToken_DatabaseError(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Close the database to trigger connection errors
 	db.Close()
@@ -80,7 +79,7 @@ func TestLoadOrganisationsInvitesPaged_DatabaseError(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Close the database to trigger connection errors
@@ -102,7 +101,7 @@ func TestLoadOrganisationsInvitesPaged_CountError(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create some invites
@@ -134,7 +133,7 @@ func TestRowToOrganisationInvite_AllRowTypes(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
 

@@ -3,7 +3,6 @@ package organisation_invites
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -91,7 +90,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func seedUser(t *testing.T, db database.Database) *datastore.User {
 	t.Helper()
 
-	userRepo := users.New(log.New("convoy", slog.LevelError), db)
+	userRepo := users.New(log.New("convoy", log.LevelError), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",
@@ -117,7 +116,7 @@ func seedOrganisation(t *testing.T, db database.Database) *datastore.Organisatio
 		OwnerID: user.UID,
 	}
 
-	orgRepo := organisations.New(log.New("convoy", slog.LevelInfo), db)
+	orgRepo := organisations.New(log.New("convoy", log.LevelInfo), db)
 	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
@@ -127,7 +126,7 @@ func seedOrganisation(t *testing.T, db database.Database) *datastore.Organisatio
 func seedProject(t *testing.T, db database.Database, org *datastore.Organisation) *datastore.Project {
 	t.Helper()
 
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -172,7 +171,7 @@ func seedEndpoint(t *testing.T, db database.Database, project *datastore.Project
 func seedOrganisationInvite(t *testing.T, db database.Database, org *datastore.Organisation, status datastore.InviteStatus) *datastore.OrganisationInvite {
 	t.Helper()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	invite := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -198,7 +197,7 @@ func TestCreateOrganisationInvite_ValidRequest(t *testing.T) {
 	defer db.Close()
 
 	org := seedOrganisation(t, db)
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	invite := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -233,7 +232,7 @@ func TestCreateOrganisationInvite_WithProjectRole(t *testing.T) {
 
 	org := seedOrganisation(t, db)
 	project := seedProject(t, db, org)
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	invite := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -265,7 +264,7 @@ func TestCreateOrganisationInvite_WithEndpointRole(t *testing.T) {
 	org := seedOrganisation(t, db)
 	project := seedProject(t, db, org)
 	endpoint := seedEndpoint(t, db, project)
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	invite := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -297,7 +296,7 @@ func TestCreateOrganisationInvite_WithAllRoleFields(t *testing.T) {
 	org := seedOrganisation(t, db)
 	project := seedProject(t, db, org)
 	endpoint := seedEndpoint(t, db, project)
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	invite := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -329,7 +328,7 @@ func TestCreateOrganisationInvite_DifferentStatuses(t *testing.T) {
 	defer db.Close()
 
 	org := seedOrganisation(t, db)
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	statuses := []datastore.InviteStatus{
 		datastore.InviteStatusPending,
@@ -366,7 +365,7 @@ func TestCreateOrganisationInvite_NilInvite(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	err := service.CreateOrganisationInvite(ctx, nil)
 	require.Error(t, err)
@@ -379,7 +378,7 @@ func TestCreateOrganisationInvite_VerifyDatabasePersistence(t *testing.T) {
 
 	org := seedOrganisation(t, db)
 	project := seedProject(t, db, org)
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	invite := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -399,7 +398,7 @@ func TestCreateOrganisationInvite_VerifyDatabasePersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a new service instance to ensure no caching
-	newService := New(log.New("convoy", slog.LevelInfo), db)
+	newService := New(log.New("convoy", log.LevelInfo), db)
 
 	// Fetch and verify all fields match
 	fetched, err := newService.FetchOrganisationInviteByID(ctx, invite.UID)
@@ -421,7 +420,7 @@ func TestCreateOrganisationInvite_UniqueToken(t *testing.T) {
 	defer db.Close()
 
 	org := seedOrganisation(t, db)
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	token := ulid.Make().String()
 

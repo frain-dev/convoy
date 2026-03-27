@@ -1,7 +1,6 @@
 package organisations
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,7 @@ func TestUpdateOrganisation_ValidUpdate(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation
 	org := seedOrganisation(t, db, "old.test.com", "old.convoy.io")
@@ -40,7 +39,7 @@ func TestUpdateOrganisation_UpdateName(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation
 	org := seedOrganisation(t, db, "", "")
@@ -61,7 +60,7 @@ func TestUpdateOrganisation_ClearCustomDomain(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation with custom domain
 	org := seedOrganisation(t, db, "clear.test.com", "")
@@ -82,7 +81,7 @@ func TestUpdateOrganisation_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Try to update non-existent organisation
 	org := &datastore.Organisation{
@@ -99,7 +98,7 @@ func TestUpdateOrganisation_DeletedOrganisation(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed and then delete organisation
 	org := seedOrganisation(t, db, "", "")
@@ -117,7 +116,7 @@ func TestUpdateOrganisation_NilOrganisation(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	err := service.UpdateOrganisation(ctx, nil)
 	require.Error(t, err)
@@ -128,7 +127,7 @@ func TestUpdateOrganisation_VerifyTimestampUpdated(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation
 	org := seedOrganisation(t, db, "", "")
@@ -152,7 +151,7 @@ func TestDeleteOrganisation_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation
 	org := seedOrganisation(t, db, "", "")
@@ -171,7 +170,7 @@ func TestDeleteOrganisation_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Try to delete non-existent organisation
 	err := service.DeleteOrganisation(ctx, "non-existent-id")
@@ -183,7 +182,7 @@ func TestDeleteOrganisation_IdempotentDelete(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation
 	org := seedOrganisation(t, db, "", "")
@@ -202,7 +201,7 @@ func TestCountOrganisations(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Get initial count
 	initialCount, err := service.CountOrganisations(ctx)

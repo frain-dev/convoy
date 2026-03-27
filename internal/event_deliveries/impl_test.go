@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -77,14 +76,14 @@ func setupTestDB(t *testing.T) (*Service, database.Database) {
 	err = keys.Set(km)
 	require.NoError(t, err)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	return New(logger, db), db
 }
 
 func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
 	t.Helper()
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 
 	userRepo := users.New(logger, db)
@@ -151,7 +150,7 @@ func seedTestEndpoint(t *testing.T, db database.Database, projectID string) *dat
 func seedTestSource(t *testing.T, db database.Database, projectID string) *datastore.Source {
 	t.Helper()
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 	sourceRepo := sources.New(logger, db)
 
@@ -194,7 +193,7 @@ func seedDevice(t *testing.T, db database.Database, projectID string) *datastore
 func seedSubscription(t *testing.T, db database.Database, projectID, endpointID, sourceID string) *datastore.Subscription {
 	t.Helper()
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 	subRepo := subscriptions.New(logger, db)
 
@@ -236,7 +235,7 @@ func seedSubscription(t *testing.T, db database.Database, projectID, endpointID,
 func seedEvent(t *testing.T, db database.Database, projectID, endpointID, sourceID string) *datastore.Event {
 	t.Helper()
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 	eventRepo := events.New(logger, db)
 

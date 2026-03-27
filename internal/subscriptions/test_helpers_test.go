@@ -3,7 +3,6 @@ package subscriptions
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 
@@ -88,7 +87,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context, *Service) {
 	err = keys.Set(km)
 	require.NoError(t, err)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	return db, ctx, service
@@ -106,7 +105,7 @@ func seedUser(t *testing.T, db database.Database) *datastore.User {
 		Email:     fmt.Sprintf("test-%s@user.com", uid),
 	}
 
-	userRepo := users.New(log.New("convoy", slog.LevelError), db)
+	userRepo := users.New(log.New("convoy", log.LevelError), db)
 	err := userRepo.CreateUser(context.Background(), user)
 	require.NoError(t, err)
 
@@ -125,7 +124,7 @@ func seedOrganisation(t *testing.T, db database.Database, user *datastore.User) 
 		AssignedDomain: null.NewString("test.convoy.io", true),
 	}
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	orgRepo := organisations.New(logger, db)
 	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
@@ -146,7 +145,7 @@ func seedProject(t *testing.T, db database.Database, org *datastore.Organisation
 		Config:         &projectConfig,
 	}
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	projectRepo := projects.New(logger, db)
 	err := projectRepo.CreateProject(context.Background(), project)
 	require.NoError(t, err)
@@ -196,7 +195,7 @@ func seedSource(t *testing.T, db database.Database, project *datastore.Project) 
 		},
 	}
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	sourceRepo := sources.New(logger, db)
 	err := sourceRepo.CreateSource(context.Background(), source)
 	require.NoError(t, err)

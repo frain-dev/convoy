@@ -1,7 +1,6 @@
 package organisation_members
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -248,5 +247,5 @@ func Test_LoadUserOrganisationsPaged_UserInMultipleOrgsWithDifferentRoles(t *tes
 
 func createOrganisationService(t *testing.T, db database.Database) datastore.OrganisationRepository {
 	t.Helper()
-	return organisations.New(log.New("convoy", slog.LevelInfo), db)
+	return organisations.New(log.New("convoy", log.LevelInfo), db)
 }

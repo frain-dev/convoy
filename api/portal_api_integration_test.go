@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -73,7 +72,7 @@ func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
-	userRepo := users.New(log.New("convoy", slog.LevelError), s.ConvoyApp.A.DB)
+	userRepo := users.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -211,7 +210,7 @@ func (s *PortalEventIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
-	userRepo := users.New(log.New("convoy", slog.LevelError), s.ConvoyApp.A.DB)
+	userRepo := users.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }

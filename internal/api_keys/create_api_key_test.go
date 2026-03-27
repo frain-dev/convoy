@@ -3,7 +3,6 @@ package api_keys
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -84,12 +83,12 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func createAPIKeyService(t *testing.T, db database.Database) *Service {
 	t.Helper()
-	return New(log.New("convoy", slog.LevelInfo), db)
+	return New(log.New("convoy", log.LevelInfo), db)
 }
 
 func seedTestData(t *testing.T, db database.Database) (*datastore.User, *datastore.Organisation, *datastore.Project) {
 	ctx := context.Background()
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 
 	// Create user
 	userRepo := users.New(logger, db)
@@ -113,7 +112,7 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.User, *datasto
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),

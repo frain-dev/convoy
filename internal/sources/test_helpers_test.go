@@ -3,7 +3,6 @@ package sources
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 
@@ -91,7 +90,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func seedTestData(t *testing.T, db database.Database) *datastore.Project {
 	t.Helper()
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 
 	// Create user
@@ -116,7 +115,7 @@ func seedTestData(t *testing.T, db database.Database) *datastore.Project {
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -134,7 +133,7 @@ func seedTestData(t *testing.T, db database.Database) *datastore.Project {
 func createSourceService(t *testing.T, db database.Database) *Service {
 	t.Helper()
 
-	return New(log.New("convoy", slog.LevelInfo), db)
+	return New(log.New("convoy", log.LevelInfo), db)
 }
 
 // SeedSource creates a test source

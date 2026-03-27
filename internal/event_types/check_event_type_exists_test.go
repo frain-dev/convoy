@@ -1,7 +1,6 @@
 package event_types
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -55,7 +54,7 @@ func TestService_CheckEventTypeExists_DifferentProjects(t *testing.T) {
 		OrganisationID: org.UID,
 		Config:         &datastore.DefaultProjectConfig,
 	}
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	err := projectRepo.CreateProject(ctx, project2)
 	require.NoError(t, err)
 

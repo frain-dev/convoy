@@ -12,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 )
 
-func newTestLogger(buf *bytes.Buffer, level slog.Level) *SlogLogger {
+func newTestLogger(buf *bytes.Buffer, level Level) *SlogLogger {
 	jsonHandler := slog.NewJSONHandler(buf, &slog.HandlerOptions{
 		Level:     level,
 		AddSource: true,
@@ -34,7 +34,7 @@ func parseLogEntry(t *testing.T, buf *bytes.Buffer) map[string]any {
 
 func TestInfoContext_WithTraceContext(t *testing.T) {
 	buf := &bytes.Buffer{}
-	l := newTestLogger(buf, slog.LevelDebug)
+	l := newTestLogger(buf, LevelDebug)
 
 	traceID, _ := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
 	spanID, _ := trace.SpanIDFromHex("0102030405060708")
@@ -65,7 +65,7 @@ func TestInfoContext_WithTraceContext(t *testing.T) {
 
 func TestInfoContext_WithRequestID(t *testing.T) {
 	buf := &bytes.Buffer{}
-	l := newTestLogger(buf, slog.LevelDebug)
+	l := newTestLogger(buf, LevelDebug)
 
 	ctx := context.WithValue(context.Background(), convoy.RequestIDKey, "req-abc-123")
 
@@ -80,7 +80,7 @@ func TestInfoContext_WithRequestID(t *testing.T) {
 
 func TestInfoContext_WithoutContext(t *testing.T) {
 	buf := &bytes.Buffer{}
-	l := newTestLogger(buf, slog.LevelDebug)
+	l := newTestLogger(buf, LevelDebug)
 
 	l.InfoContext(context.Background(), "no trace context")
 
@@ -99,7 +99,7 @@ func TestInfoContext_WithoutContext(t *testing.T) {
 
 func TestInfo_BackwardsCompatible(t *testing.T) {
 	buf := &bytes.Buffer{}
-	l := newTestLogger(buf, slog.LevelDebug)
+	l := newTestLogger(buf, LevelDebug)
 
 	l.Info("old style log", "key", "value")
 
@@ -126,7 +126,7 @@ func TestInfo_BackwardsCompatible(t *testing.T) {
 
 func TestErrorContext_WithFullContext(t *testing.T) {
 	buf := &bytes.Buffer{}
-	l := newTestLogger(buf, slog.LevelDebug)
+	l := newTestLogger(buf, LevelDebug)
 
 	traceID, _ := trace.TraceIDFromHex("abcdef0123456789abcdef0123456789")
 	spanID, _ := trace.SpanIDFromHex("abcdef0123456789")
@@ -158,7 +158,7 @@ func TestErrorContext_WithFullContext(t *testing.T) {
 
 func TestDebug_SuppressedAtInfoLevel(t *testing.T) {
 	buf := &bytes.Buffer{}
-	l := newTestLogger(buf, slog.LevelInfo)
+	l := newTestLogger(buf, LevelInfo)
 
 	l.Debug("this should be suppressed")
 
@@ -169,7 +169,7 @@ func TestDebug_SuppressedAtInfoLevel(t *testing.T) {
 
 func TestInfo_NoArgs_DoesNotPanic(t *testing.T) {
 	buf := &bytes.Buffer{}
-	l := newTestLogger(buf, slog.LevelDebug)
+	l := newTestLogger(buf, LevelDebug)
 
 	// None of these should panic.
 	l.Info()
@@ -185,7 +185,7 @@ func TestInfo_NoArgs_DoesNotPanic(t *testing.T) {
 
 func TestSource_PointsToCallerNotLogger(t *testing.T) {
 	buf := &bytes.Buffer{}
-	l := newTestLogger(buf, slog.LevelDebug)
+	l := newTestLogger(buf, LevelDebug)
 
 	l.Info("check source")
 

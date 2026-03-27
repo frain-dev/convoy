@@ -267,7 +267,7 @@ func CreateAMQPSource(t *testing.T, db *postgres.Postgres, ctx context.Context, 
 		},
 	}
 
-	sourceRepo := sources.New(log.New("convoy", slog.LevelError), db)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), db)
 	err := sourceRepo.CreateSource(ctx, source)
 	require.NoError(t, err)
 
@@ -280,7 +280,7 @@ func UpdateAMQPSourcePort(t *testing.T, db *postgres.Postgres, ctx context.Conte
 	t.Helper()
 
 	source.PubSub.Amqp.Port = fmt.Sprintf("%d", newPort)
-	sourceRepo := sources.New(log.New("convoy", slog.LevelError), db)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), db)
 	err := sourceRepo.UpdateSource(ctx, source.ProjectID, source)
 	require.NoError(t, err)
 	t.Logf("Updated source %s port to %d", source.UID, newPort)
@@ -521,7 +521,7 @@ func CreateSubscriptionWithFilter(t *testing.T, db *postgres.Postgres, ctx conte
 		}
 	}
 
-	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	err := subRepo.CreateSubscription(ctx, project.UID, subscription)
 	require.NoError(t, err)
 
@@ -735,7 +735,7 @@ func AssertNoEventDeliveryCreated(t *testing.T, db *postgres.Postgres, ctx conte
 		lookback = timeWindow[0]
 	}
 
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", log.LevelError), db)
 
 	// Wait a bit to ensure no delivery is created
 	time.Sleep(2 * time.Second)

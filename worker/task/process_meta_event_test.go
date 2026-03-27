@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"testing"
 	"time"
 
@@ -152,7 +151,7 @@ func TestProcessMetaEvent(t *testing.T) {
 			dispatcher, err := net.NewDispatcher(
 				licenser,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
-				net.LoggerOption(log.New("convoy", slog.LevelInfo)),
+				net.LoggerOption(log.New("convoy", log.LevelInfo)),
 				net.ProxyOption("nil"),
 			)
 			require.NoError(t, err)
@@ -167,7 +166,7 @@ func TestProcessMetaEvent(t *testing.T) {
 				defer deferFn()
 			}
 
-			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, tracer.NoOpBackend{}, log.New("convoy", slog.LevelInfo))
+			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, tracer.NoOpBackend{}, log.New("convoy", log.LevelInfo))
 			payload := MetaEvent{
 				MetaEventID: tc.msg.MetaEventID,
 				ProjectID:   tc.msg.ProjectID,

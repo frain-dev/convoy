@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"testing"
 
 	"github.com/hibiken/asynq"
@@ -340,7 +339,7 @@ func TestProcessBatchRetry(t *testing.T) {
 			batchRetryRepo := mocks.NewMockBatchRetryRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			queuer := mocks.NewMockQueuer(ctrl)
-			logger := log.New("convoy", slog.LevelInfo)
+			logger := log.New("convoy", log.LevelInfo)
 
 			if tc.dbFn != nil {
 				tc.dbFn(batchRetryRepo, eventDeliveryRepo, queuer, tc.batchRetry)

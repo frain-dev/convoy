@@ -3,7 +3,6 @@ package organisation_members
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -91,7 +90,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func createOrgMemberService(t *testing.T, db database.Database) *Service {
 	t.Helper()
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	return New(logger, db)
 }
 
@@ -102,7 +101,7 @@ func seedUser(t *testing.T, db database.Database, email string) *datastore.User 
 		email = fmt.Sprintf("test-%s@example.com", ulid.Make().String())
 	}
 
-	userRepo := users.New(log.New("convoy", slog.LevelError), db)
+	userRepo := users.New(log.New("convoy", log.LevelError), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",
@@ -121,7 +120,7 @@ func seedUser(t *testing.T, db database.Database, email string) *datastore.User 
 func seedOrganisation(t *testing.T, db database.Database, ownerID string) *datastore.Organisation {
 	t.Helper()
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	orgRepo := organisations.New(logger, db)
 
 	org := &datastore.Organisation{
@@ -161,7 +160,7 @@ func seedOrganisationMember(t *testing.T, db database.Database, orgID, userID st
 func seedProject(t *testing.T, db database.Database, orgID string) *datastore.Project {
 	t.Helper()
 
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{

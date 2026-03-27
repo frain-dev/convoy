@@ -3,7 +3,6 @@ package projects
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 
@@ -39,7 +38,7 @@ func TestMain(m *testing.M) {
 	}
 
 	testEnv = res
-	testLogger = log.New("convoy", slog.LevelInfo)
+	testLogger = log.New("convoy", log.LevelInfo)
 
 	code := m.Run()
 
@@ -96,7 +95,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func seedUser(t *testing.T, db database.Database) *datastore.User {
 	t.Helper()
 
-	userRepo := users.New(log.New("convoy", slog.LevelError), db)
+	userRepo := users.New(log.New("convoy", log.LevelError), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",
@@ -306,7 +305,7 @@ func seedEvent(t *testing.T, db database.Database, project *datastore.Project, e
 func seedSubscription(t *testing.T, db database.Database, project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
 	t.Helper()
 
-	subRepo := subscriptions.New(log.New("convoy", slog.LevelInfo), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		ProjectID:  project.UID,
@@ -327,7 +326,7 @@ func seedSubscription(t *testing.T, db database.Database, project *datastore.Pro
 func seedSource(t *testing.T, db database.Database, project *datastore.Project) {
 	t.Helper()
 
-	sourceRepo := sources.New(log.New("convoy", slog.LevelError), db)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), db)
 	source := &datastore.Source{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,

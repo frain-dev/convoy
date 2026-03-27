@@ -1,7 +1,6 @@
 package delivery_attempts
 
 import (
-	"log/slog"
 	"testing"
 	"time"
 
@@ -20,7 +19,7 @@ func TestGetFailureAndSuccessCounts_BasicLookback(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create multiple delivery attempts with different statuses
 	// 3 successful, 2 failed
@@ -62,7 +61,7 @@ func TestGetFailureAndSuccessCounts_WithResetTimes(t *testing.T) {
 	endpoint2 := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint1)
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create old attempts for endpoint1 (before reset time)
 	for i := 0; i < 3; i++ {
@@ -147,7 +146,7 @@ func TestGetFailureAndSuccessCounts_NoAttempts(t *testing.T) {
 
 	seedTestData(t, db, ctx)
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Get counts when there are no delivery attempts
 	results, err := service.GetFailureAndSuccessCounts(ctx, 60, nil)
@@ -160,7 +159,7 @@ func TestGetFailureAndSuccessCounts_MultipleEndpoints(t *testing.T) {
 	defer db.Close()
 
 	project := seedTestData(t, db, ctx)
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create 3 endpoints with different success/failure patterns
 	endpoints := make([]*datastore.Endpoint, 3)
@@ -226,7 +225,7 @@ func TestGetFailureAndSuccessCounts_ShortLookback(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create an attempt
 	attempt := &datastore.DeliveryAttempt{

@@ -3,7 +3,6 @@ package configuration
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 
@@ -103,7 +102,7 @@ func seedConfiguration(t *testing.T, db database.Database, storageType datastore
 		}
 	}
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	err := service.CreateConfiguration(context.Background(), cfg)
 	require.NoError(t, err)
 
@@ -114,7 +113,7 @@ func TestCreateConfiguration_WithS3Storage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -162,7 +161,7 @@ func TestCreateConfiguration_WithOnPremStorage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -212,7 +211,7 @@ func TestCreateConfiguration_WithMinimalFields(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -245,7 +244,7 @@ func TestCreateConfiguration_NilConfiguration(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	err := service.CreateConfiguration(ctx, nil)
 	require.Error(t, err)
@@ -256,7 +255,7 @@ func TestCreateConfiguration_S3StorageNormalization(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -295,7 +294,7 @@ func TestCreateConfiguration_OnPremStorageNormalization(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),
@@ -335,7 +334,7 @@ func TestCreateConfiguration_VerifyTimestamps(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	cfg := &datastore.Configuration{
 		UID:                ulid.Make().String(),

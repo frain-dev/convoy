@@ -1,7 +1,6 @@
 package portal_links
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -15,7 +14,7 @@ func TestGetPortalLinkByOwnerID_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -46,7 +45,7 @@ func TestGetPortalLinkByOwnerID_WithEndpointsAutoLinked(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -81,7 +80,7 @@ func TestGetPortalLinkByOwnerID_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	// Try to fetch with non-existent owner ID
@@ -96,7 +95,7 @@ func TestGetPortalLinkByOwnerID_WrongProject(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -124,7 +123,7 @@ func TestGetPortalLinkByOwnerID_WithRefreshTokenAuthType_GeneratesAuthToken(t *t
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -157,7 +156,7 @@ func TestGetPortalLinkByOwnerID_WithStaticTokenAuthType_NoAuthKey(t *testing.T) 
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()

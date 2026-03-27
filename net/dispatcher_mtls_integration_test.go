@@ -8,7 +8,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"log/slog"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -138,7 +137,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		dispatcher, err := NewDispatcher(
 			licenser,
 			fflag.NewFFlag([]string{}),
-			LoggerOption(log.New("convoy", slog.LevelInfo)),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
 			TLSConfigOption(true, licenser, tlsConfig),
 		)
 		require.NoError(t, err)
@@ -202,7 +201,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		dispatcher, err := NewDispatcher(
 			licenser,
 			fflag.NewFFlag([]string{}),
-			LoggerOption(log.New("convoy", slog.LevelInfo)),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
 			TLSConfigOption(true, licenser, tlsConfig),
 		)
 		require.NoError(t, err)
@@ -296,7 +295,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		dispatcher, err := NewDispatcher(
 			licenser,
 			fflag.NewFFlag([]string{}),
-			LoggerOption(log.New("convoy", slog.LevelInfo)),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
 			TLSConfigOption(true, licenser, tlsConfig),
 		)
 		require.NoError(t, err)
@@ -359,7 +358,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		dispatcher, err := NewDispatcher(
 			licenser,
 			fflag.NewFFlag([]string{}),
-			LoggerOption(log.New("convoy", slog.LevelInfo)),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
 			TLSConfigOption(true, licenser, tlsConfig),
 		)
 		require.NoError(t, err)

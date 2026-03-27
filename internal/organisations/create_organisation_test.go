@@ -3,7 +3,6 @@ package organisations
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 
@@ -64,7 +63,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func seedUser(t *testing.T, db database.Database) *datastore.User {
 	t.Helper()
 
-	userRepo := users.New(log.New("convoy", slog.LevelError), db)
+	userRepo := users.New(log.New("convoy", log.LevelError), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",
@@ -100,7 +99,7 @@ func seedOrganisation(t *testing.T, db database.Database, customDomain, assigned
 		org.AssignedDomain.Valid = true
 	}
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	err := service.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
@@ -114,7 +113,7 @@ func TestCreateOrganisation_ValidRequest(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:     ulid.Make().String(),
@@ -140,7 +139,7 @@ func TestCreateOrganisation_WithCustomDomain(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:          ulid.Make().String(),
@@ -167,7 +166,7 @@ func TestCreateOrganisation_WithAssignedDomain(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
@@ -194,7 +193,7 @@ func TestCreateOrganisation_WithBothDomains(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
@@ -218,7 +217,7 @@ func TestCreateOrganisation_NilOrganisation(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	err := service.CreateOrganisation(ctx, nil)
 	require.Error(t, err)
@@ -232,7 +231,7 @@ func TestCreateOrganisation_VerifyDatabasePersistence(t *testing.T) {
 	// Create a user first (organisations require a valid owner_id)
 	user := seedUser(t, db)
 
-	service := New(log.New("convoy", slog.LevelInfo), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
@@ -247,7 +246,7 @@ func TestCreateOrganisation_VerifyDatabasePersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a new service instance to ensure no caching
-	newService := New(log.New("convoy", slog.LevelInfo), db)
+	newService := New(log.New("convoy", log.LevelInfo), db)
 
 	// Fetch and verify all fields match
 	fetched, err := newService.FetchOrganisationByID(ctx, org.UID)

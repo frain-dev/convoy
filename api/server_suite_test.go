@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -213,7 +212,7 @@ func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRep
 		t.Errorf("failed to get config: %v", err)
 	}
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, cache, logger)
 	if err != nil {

@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"log/slog"
 	"testing"
 	"time"
 
@@ -151,7 +150,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		partman.WithConfig(pmConfig),
 		partman.WithDB(r.ConvoyApp.database.GetDB()),
 		partman.WithClock(clock),
-		partman.WithLogger(log.New("convoy", slog.LevelInfo)),
+		partman.WithLogger(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(r.T(), err)
 
@@ -262,7 +261,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 	}
 
 	// Seed Data.
-	eventRepo := events.New(log.New("convoy", slog.LevelInfo), db)
+	eventRepo := events.New(log.New("convoy", log.LevelInfo), db)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err
@@ -314,7 +313,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := event_deliveries.New(log.New("convoy", slog.LevelError), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", log.LevelError), db)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err
@@ -348,7 +347,7 @@ func seedDeliveryAttempt(db database.Database, delivery *datastore.EventDelivery
 		UpdatedAt:        filter.CreatedAt,
 	}
 
-	daRepo := delivery_attempts.New(log.New("convoy", slog.LevelInfo), db)
+	daRepo := delivery_attempts.New(log.New("convoy", log.LevelInfo), db)
 	err := daRepo.CreateDeliveryAttempt(context.TODO(), deliveryAttempt)
 	if err != nil {
 		return nil, err
@@ -378,7 +377,7 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	}
 
 	// Seed Data
-	configRepo := configuration.New(log.New("convoy", slog.LevelInfo), db)
+	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
 	err := configRepo.CreateConfiguration(context.TODO(), c)
 	if err != nil {
 		return nil, err

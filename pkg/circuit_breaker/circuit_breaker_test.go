@@ -1,7 +1,6 @@
 package circuit_breaker
 
 import (
-	"log/slog"
 	"testing"
 	"time"
 
@@ -104,7 +103,7 @@ func TestNewCircuitBreakerFromStore(t *testing.T) {
 		return data
 	}
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 
 	tests := []struct {
 		name        string

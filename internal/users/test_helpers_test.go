@@ -3,7 +3,6 @@ package users
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 
@@ -62,7 +61,7 @@ func setupTestDB(t *testing.T) (context.Context, *Service) {
 
 	db := postgres.NewFromConnection(conn)
 
-	logger := log.New("convoy", slog.LevelInfo)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	return ctx, service

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -24,7 +23,7 @@ const (
 )
 
 func main() {
-	var l = log.New("v3gen", slog.LevelInfo)
+	var l = log.New("v3gen", log.LevelInfo)
 	docV2, err := loadV2()
 	if err != nil {
 		l.Fatal("loadV2 failed: " + err.Error())

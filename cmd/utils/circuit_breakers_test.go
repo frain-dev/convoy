@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -131,7 +130,7 @@ func TestCircuitBreakersUpdate_Integration(t *testing.T) {
 	org := &datastore.Organisation{UID: "cli-org-1", Name: "CLI Org 1", OwnerID: user.UID}
 	_ = orgRepo.CreateOrganisation(ctx, org)
 
-	projectRepo := projects.New(log.New("convoy", slog.LevelInfo), app.Database)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), app.Database)
 	pc := datastore.DefaultProjectConfig
 	pc.CircuitBreaker = &datastore.CircuitBreakerConfiguration{
 		SampleRate:                  30,
