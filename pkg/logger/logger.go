@@ -21,6 +21,8 @@ const (
 	LevelError Level = slog.LevelError
 )
 
+const callerSkip = 3
+
 type Logger interface {
 	Info(args ...any)
 	Debug(args ...any)
@@ -67,7 +69,7 @@ func (l *SlogLogger) log(ctx context.Context, level slog.Level, msg string, args
 		return
 	}
 	var pcs [1]uintptr
-	runtime.Callers(3, pcs[:])
+	runtime.Callers(callerSkip, pcs[:])
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.Add(args...)
 	_ = l.logger.Handler().Handle(ctx, r)
