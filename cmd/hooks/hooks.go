@@ -94,6 +94,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		logLevel, parseErr := log.ParseLevel(cfg.Logger.Level)
 		if parseErr != nil {
+			slog.Warn("error parsing log level, using default log level: ", slog.LevelError, " for log level: ", cfg.Logger.Level, " err: ", parseErr)
 			logLevel = slog.LevelError
 		}
 
