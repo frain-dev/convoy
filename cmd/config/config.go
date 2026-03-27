@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -18,20 +17,19 @@ func AddConfigCommand() *cobra.Command {
 			"CheckMigration":  "false",
 			"ShouldBootstrap": "false",
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error getting config: %v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("error getting config: %w", err)
 			}
 
 			data, err := json.MarshalIndent(cfg, "", "    ")
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error printing config: %v\n", err)
-				os.Exit(1)
+				return fmt.Errorf("error printing config: %w", err)
 			}
 
 			fmt.Println(string(data))
+			return nil
 		},
 	}
 
