@@ -3,6 +3,7 @@ package util
 import (
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -17,10 +18,14 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-var src = rand.NewSource(time.Now().UnixNano())
+var (
+	src   = rand.NewSource(time.Now().UnixNano())
+	srcMu sync.Mutex
+)
 
 func GenerateRandomString(n int) (string, error) {
 	b := make([]byte, n)
+	srcMu.Lock()
 	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
 			cache, remain = src.Int63(), letterIdxMax
@@ -32,6 +37,7 @@ func GenerateRandomString(n int) (string, error) {
 		cache >>= letterIdxBits
 		remain--
 	}
+	srcMu.Unlock()
 	return string(b), nil
 }
 
