@@ -9,8 +9,8 @@ import (
 	"github.com/go-chi/render"
 
 	apiModels "github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	endpointsvc "github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/util"
@@ -362,7 +362,7 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) datastore.Port
 func (h *Handler) getEndpoints(r *http.Request, pl *datastore.PortalLink) ([]string, error) {
 	results := make([]string, 0)
 	if !util.IsStringEmpty(pl.OwnerID) {
-		endpointRepo := postgres.NewEndpointRepo(h.A.DB)
+		endpointRepo := endpointsvc.New(h.A.Logger, h.A.DB)
 		endpoints, err := endpointRepo.FindEndpointsByOwnerID(r.Context(), pl.ProjectID, pl.OwnerID)
 		if err != nil {
 			return nil, err

@@ -21,9 +21,9 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -128,7 +128,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -157,7 +157,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint_With
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -245,7 +245,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
@@ -278,7 +278,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIK
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbApp, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbApp.Name)
@@ -330,7 +330,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithFormContentT
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
@@ -411,7 +411,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -454,7 +454,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpointWithFormContentT
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -497,7 +497,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPI
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -525,7 +525,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	_, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
@@ -549,7 +549,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_DeleteEndpoint_WithPersonalAPI
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	_, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
@@ -684,7 +684,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	endpoint2, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.NotEmpty(s.T(), endpoint2.Secrets[0].ExpiresAt)
@@ -712,7 +712,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
 	var endpoint *datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointId, dbEndpoint.UID)
@@ -741,7 +741,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_PauseEndpoint_ActiveStatus() {
 	var endpoint *datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointId, dbEndpoint.UID)
@@ -914,13 +914,14 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 		Name:      fmt.Sprintf("TestEndpoint-%s", endpointID),
 		ProjectID: s.DefaultProject.UID,
 		AppID:     appID,
+		Url:       "http://localhost:8889",
+		Status:    datastore.ActiveEndpointStatus,
 		Secrets: datastore.Secrets{
-			{UID: ulid.Make().String()},
+			{UID: ulid.Make().String(), Value: "1234"},
 		},
-		Status: datastore.ActiveEndpointStatus,
 	}
 
-	err := postgres.NewEndpointRepo(s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
+	err := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 
 	body := serialize(`{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`, appID)
@@ -1556,7 +1557,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpoin
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 
 	// Clear owner_id to simulate endpoint without owner_id
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	endpoint1.OwnerID = ""
 	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
@@ -1642,7 +1643,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithoutEndp
 
 	// First, create an endpoint with the owner_id already set
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	endpoint1.OwnerID = ownerID
 	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
@@ -1727,7 +1728,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_ListPortalLinks_WithEndpoint
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 
 	// Clear owner_id to simulate endpoint without owner_id
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	endpoint1.OwnerID = ""
 	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
@@ -1807,7 +1808,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpoin
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 
 	// Clear owner_id to simulate endpoint without owner_id
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	endpoint1.OwnerID = ""
 	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
@@ -1861,7 +1862,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpoin
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 
 	// Clear owner_id to simulate endpoint without owner_id
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	endpoint1.OwnerID = ""
 	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
@@ -1934,7 +1935,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpoin
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 
 	// Clear owner_id to simulate endpoint without owner_id
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	endpoint1.OwnerID = ""
 	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
 	require.NoError(s.T(), err)

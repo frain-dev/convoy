@@ -20,9 +20,9 @@ import (
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
+	endpointspkg "github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/portal_links/repo"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
@@ -57,7 +57,7 @@ func New(logger log.Logger, db database.Database) *Service {
 		logger:       logger,
 		repo:         repo.New(db.GetConn()),
 		db:           db.GetConn(),
-		endpointRepo: postgres.NewEndpointRepo(db),
+		endpointRepo: endpointspkg.New(logger, db),
 	}
 }
 

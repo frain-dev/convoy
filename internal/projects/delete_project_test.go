@@ -6,8 +6,8 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -85,7 +85,7 @@ func TestDeleteProject_CascadeDeletes(t *testing.T) {
 	require.ErrorIs(t, err, datastore.ErrProjectNotFound)
 
 	// Verify endpoints are soft deleted
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	fetchedEndpoint, err := endpointRepo.FindEndpointByID(ctx, endpoint.UID, project.UID)
 	require.Error(t, err)
 	require.Nil(t, fetchedEndpoint)
@@ -121,7 +121,7 @@ func TestDeleteProject_WithMultipleEndpoints(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify all endpoints are deleted
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 
 	_, err = endpointRepo.FindEndpointByID(ctx, endpoint1.UID, project.UID)
 	require.Error(t, err)

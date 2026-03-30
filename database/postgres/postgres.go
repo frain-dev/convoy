@@ -277,12 +277,6 @@ func GetTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, bool, error) {
 	return tx, isWrapped, nil
 }
 
-func rollbackTx(tx *sqlx.Tx) {
-	err := tx.Rollback()
-	if err != nil && !errors.Is(err, sql.ErrTxDone) {
-		pkgLogger.Error("failed to rollback tx", "error", err)
-	}
-}
 
 func closeWithError(closer io.Closer) {
 	err := closer.Close()

@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -145,7 +146,7 @@ func seedProject(t *testing.T, db database.Database, org *datastore.Organisation
 func seedEndpoint(t *testing.T, db database.Database, project *datastore.Project) *datastore.Endpoint {
 	t.Helper()
 
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	endpoint := &datastore.Endpoint{
 		UID:                ulid.Make().String(),
 		ProjectID:          project.UID,
@@ -157,6 +158,7 @@ func seedEndpoint(t *testing.T, db database.Database, project *datastore.Project
 		RateLimitDuration:  60000, // 1 minute in milliseconds
 		HttpTimeout:        30000, // 30 seconds in milliseconds
 		AdvancedSignatures: false,
+		Status:             datastore.ActiveEndpointStatus,
 		Secrets: []datastore.Secret{
 			{Value: "test-secret"},
 		},

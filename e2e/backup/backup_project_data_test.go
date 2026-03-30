@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
@@ -63,7 +63,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		Authentication: &datastore.EndpointAuthentication{},
 	}
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
@@ -184,7 +184,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		Authentication: &datastore.EndpointAuthentication{},
 	}
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
@@ -273,7 +273,7 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 	eventRepo := events.New(logger, db)
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(logger, db)
 	orgService := organisations.New(logger, db)
 
 	// Create first organization and project
@@ -433,7 +433,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		Authentication: &datastore.EndpointAuthentication{},
 	}
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
@@ -537,7 +537,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		Authentication: &datastore.EndpointAuthentication{},
 	}
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 

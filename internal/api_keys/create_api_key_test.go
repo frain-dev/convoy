@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -325,12 +326,13 @@ func TestCreateAPIKey_WithEndpointRole(t *testing.T) {
 	user, _, project := seedTestData(t, db)
 
 	// Create an endpoint
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	endpoint := &datastore.Endpoint{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
 		Name:      "Test Endpoint",
 		Url:       "https://example.com/webhook",
+		Status:    datastore.ActiveEndpointStatus,
 		Secrets: []datastore.Secret{
 			{Value: "test-secret"},
 		},

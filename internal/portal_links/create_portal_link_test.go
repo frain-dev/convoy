@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -148,7 +149,7 @@ func seedEndpoint(t *testing.T, db database.Database, project *datastore.Project
 	t.Helper()
 
 	ctx := context.Background()
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 
 	endpoint := &datastore.Endpoint{
 		UID:       ulid.Make().String(),
@@ -231,7 +232,7 @@ func TestCreatePortalLink_WithEndpoints(t *testing.T) {
 	require.Contains(t, portalLink.Endpoints, endpoint2.UID)
 
 	// Verify that endpoints have the correct owner_id
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	updatedEndpoint1, err := endpointRepo.FindEndpointByID(ctx, endpoint1.UID, project.UID)
 	require.NoError(t, err)
 	require.Equal(t, ownerID, updatedEndpoint1.OwnerID)

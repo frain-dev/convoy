@@ -12,9 +12,9 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
@@ -27,7 +27,7 @@ import (
 func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.Redis, logger log.Logger) func(context.Context, *asynq.Task) error {
 	sourceRepo := sources.New(logger, db)
 	subRepo := subscriptions.New(logger, db)
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(logger, db)
 
 	pool := goredis.NewPool(redis.Client())
 	rs := redsync.New(pool)
