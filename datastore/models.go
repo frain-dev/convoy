@@ -246,8 +246,9 @@ const (
 )
 
 const (
-	S3     StorageType = "s3"
-	OnPrem StorageType = "on_prem"
+	S3        StorageType = "s3"
+	OnPrem    StorageType = "on_prem"
+	AzureBlob StorageType = "azure_blob"
 )
 
 const (
@@ -1651,9 +1652,10 @@ func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration 
 }
 
 type StoragePolicyConfiguration struct {
-	Type   StorageType    `json:"type,omitempty" db:"type" valid:"supported_storage~please provide a valid storage type,required"`
-	S3     *S3Storage     `json:"s3" db:"s3"`
-	OnPrem *OnPremStorage `json:"on_prem" db:"on_prem"`
+	Type      StorageType       `json:"type,omitempty" db:"type" valid:"supported_storage~please provide a valid storage type,required"`
+	S3        *S3Storage        `json:"s3" db:"s3"`
+	OnPrem    *OnPremStorage    `json:"on_prem" db:"on_prem"`
+	AzureBlob *AzureBlobStorage `json:"azure_blob" db:"azure_blob"`
 }
 
 type S3Storage struct {
