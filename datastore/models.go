@@ -1670,6 +1670,29 @@ type OnPremStorage struct {
 	Path null.String `json:"path" db:"path"`
 }
 
+type AzureBlobStorage struct {
+	AccountName   null.String `json:"account_name" db:"account_name"`
+	AccountKey    null.String `json:"account_key,omitempty" db:"account_key"`
+	ContainerName null.String `json:"container_name" db:"container_name"`
+	Endpoint      null.String `json:"endpoint,omitempty" db:"endpoint"`
+	Prefix        null.String `json:"prefix,omitempty" db:"prefix"`
+}
+
+type BackupJob struct {
+	ID           string           `json:"id" db:"id"`
+	ProjectID    string           `json:"project_id" db:"project_id"`
+	HourStart    time.Time        `json:"hour_start" db:"hour_start"`
+	HourEnd      time.Time        `json:"hour_end" db:"hour_end"`
+	Status       string           `json:"status" db:"status"`
+	WorkerID     string           `json:"worker_id" db:"worker_id"`
+	ClaimedAt    *time.Time       `json:"claimed_at" db:"claimed_at"`
+	CompletedAt  *time.Time       `json:"completed_at" db:"completed_at"`
+	Error        string           `json:"error" db:"error"`
+	RecordCounts map[string]int64 `json:"record_counts" db:"record_counts"`
+	CreatedAt    time.Time        `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time        `json:"updated_at" db:"updated_at"`
+}
+
 type OrganisationMember struct {
 	UID            string       `json:"uid" db:"id"`
 	OrganisationID string       `json:"organisation_id" db:"organisation_id"`
