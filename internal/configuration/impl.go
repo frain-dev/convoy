@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -58,28 +57,7 @@ func configurationToCreateParams(cfg *datastore.Configuration) repo.CreateConfig
 	// Handle storage policy based on type
 	if cfg.StoragePolicy != nil {
 		params.StoragePolicyType = common.StringToPgText(string(cfg.StoragePolicy.Type))
-
-		if cfg.StoragePolicy.Type == datastore.OnPrem && cfg.StoragePolicy.OnPrem != nil {
-			params.OnPremPath = common.NullStringToPgText(cfg.StoragePolicy.OnPrem.Path)
-			// Set S3 fields to NULL
-			params.S3Prefix = pgtype.Text{Valid: false}
-			params.S3Bucket = pgtype.Text{Valid: false}
-			params.S3AccessKey = pgtype.Text{Valid: false}
-			params.S3SecretKey = pgtype.Text{Valid: false}
-			params.S3Region = pgtype.Text{Valid: false}
-			params.S3SessionToken = pgtype.Text{Valid: false}
-			params.S3Endpoint = pgtype.Text{Valid: false}
-		} else if cfg.StoragePolicy.S3 != nil { // S3
-			params.S3Prefix = common.NullStringToPgText(cfg.StoragePolicy.S3.Prefix)
-			params.S3Bucket = common.NullStringToPgText(cfg.StoragePolicy.S3.Bucket)
-			params.S3AccessKey = common.NullStringToPgText(cfg.StoragePolicy.S3.AccessKey)
-			params.S3SecretKey = common.NullStringToPgText(cfg.StoragePolicy.S3.SecretKey)
-			params.S3Region = common.NullStringToPgText(cfg.StoragePolicy.S3.Region)
-			params.S3SessionToken = common.NullStringToPgText(cfg.StoragePolicy.S3.SessionToken)
-			params.S3Endpoint = common.NullStringToPgText(cfg.StoragePolicy.S3.Endpoint)
-			// Set OnPrem to NULL
-			params.OnPremPath = pgtype.Text{Valid: false}
-		}
+		setStoragePolicyCreateParams(&params, cfg.StoragePolicy)
 	}
 
 	// Handle retention policy
@@ -88,6 +66,52 @@ func configurationToCreateParams(cfg *datastore.Configuration) repo.CreateConfig
 	params.RetentionPolicyEnabled = pgtype.Bool{Bool: rc.IsRetentionPolicyEnabled, Valid: true}
 
 	return params
+}
+
+// setStoragePolicyCreateParams populates storage fields on CreateConfigurationParams,
+// setting unused backends to NULL.
+func setStoragePolicyCreateParams(params *repo.CreateConfigurationParams, sp *datastore.StoragePolicyConfiguration) {
+	nullText := pgtype.Text{Valid: false}
+
+	// Default all to NULL
+	params.OnPremPath = nullText
+	params.S3Prefix = nullText
+	params.S3Bucket = nullText
+	params.S3AccessKey = nullText
+	params.S3SecretKey = nullText
+	params.S3Region = nullText
+	params.S3SessionToken = nullText
+	params.S3Endpoint = nullText
+	params.AzureAccountName = nullText
+	params.AzureAccountKey = nullText
+	params.AzureContainerName = nullText
+	params.AzureEndpoint = nullText
+	params.AzurePrefix = nullText
+
+	switch sp.Type {
+	case datastore.OnPrem:
+		if sp.OnPrem != nil {
+			params.OnPremPath = common.NullStringToPgText(sp.OnPrem.Path)
+		}
+	case datastore.S3:
+		if sp.S3 != nil {
+			params.S3Prefix = common.NullStringToPgText(sp.S3.Prefix)
+			params.S3Bucket = common.NullStringToPgText(sp.S3.Bucket)
+			params.S3AccessKey = common.NullStringToPgText(sp.S3.AccessKey)
+			params.S3SecretKey = common.NullStringToPgText(sp.S3.SecretKey)
+			params.S3Region = common.NullStringToPgText(sp.S3.Region)
+			params.S3SessionToken = common.NullStringToPgText(sp.S3.SessionToken)
+			params.S3Endpoint = common.NullStringToPgText(sp.S3.Endpoint)
+		}
+	case datastore.AzureBlob:
+		if sp.AzureBlob != nil {
+			params.AzureAccountName = common.NullStringToPgText(sp.AzureBlob.AccountName)
+			params.AzureAccountKey = common.NullStringToPgText(sp.AzureBlob.AccountKey)
+			params.AzureContainerName = common.NullStringToPgText(sp.AzureBlob.ContainerName)
+			params.AzureEndpoint = common.NullStringToPgText(sp.AzureBlob.Endpoint)
+			params.AzurePrefix = common.NullStringToPgText(sp.AzureBlob.Prefix)
+		}
+	}
 }
 
 // configurationToUpdateParams converts Configuration to UpdateConfigurationParams
@@ -101,28 +125,7 @@ func configurationToUpdateParams(cfg *datastore.Configuration) repo.UpdateConfig
 	// Handle storage policy based on type
 	if cfg.StoragePolicy != nil {
 		params.StoragePolicyType = common.StringToPgText(string(cfg.StoragePolicy.Type))
-
-		if cfg.StoragePolicy.Type == datastore.OnPrem && cfg.StoragePolicy.OnPrem != nil {
-			params.OnPremPath = common.NullStringToPgText(cfg.StoragePolicy.OnPrem.Path)
-			// Set S3 fields to NULL
-			params.S3Prefix = pgtype.Text{Valid: false}
-			params.S3Bucket = pgtype.Text{Valid: false}
-			params.S3AccessKey = pgtype.Text{Valid: false}
-			params.S3SecretKey = pgtype.Text{Valid: false}
-			params.S3Region = pgtype.Text{Valid: false}
-			params.S3SessionToken = pgtype.Text{Valid: false}
-			params.S3Endpoint = pgtype.Text{Valid: false}
-		} else if cfg.StoragePolicy.S3 != nil { // S3
-			params.S3Prefix = common.NullStringToPgText(cfg.StoragePolicy.S3.Prefix)
-			params.S3Bucket = common.NullStringToPgText(cfg.StoragePolicy.S3.Bucket)
-			params.S3AccessKey = common.NullStringToPgText(cfg.StoragePolicy.S3.AccessKey)
-			params.S3SecretKey = common.NullStringToPgText(cfg.StoragePolicy.S3.SecretKey)
-			params.S3Region = common.NullStringToPgText(cfg.StoragePolicy.S3.Region)
-			params.S3SessionToken = common.NullStringToPgText(cfg.StoragePolicy.S3.SessionToken)
-			params.S3Endpoint = common.NullStringToPgText(cfg.StoragePolicy.S3.Endpoint)
-			// Set OnPrem to NULL
-			params.OnPremPath = pgtype.Text{Valid: false}
-		}
+		setStoragePolicyUpdateParams(&params, cfg.StoragePolicy)
 	}
 
 	// Handle retention policy
@@ -131,6 +134,52 @@ func configurationToUpdateParams(cfg *datastore.Configuration) repo.UpdateConfig
 	params.RetentionPolicyEnabled = pgtype.Bool{Bool: rc.IsRetentionPolicyEnabled, Valid: true}
 
 	return params
+}
+
+// setStoragePolicyUpdateParams populates storage fields on UpdateConfigurationParams,
+// setting unused backends to NULL.
+func setStoragePolicyUpdateParams(params *repo.UpdateConfigurationParams, sp *datastore.StoragePolicyConfiguration) {
+	nullText := pgtype.Text{Valid: false}
+
+	// Default all to NULL
+	params.OnPremPath = nullText
+	params.S3Prefix = nullText
+	params.S3Bucket = nullText
+	params.S3AccessKey = nullText
+	params.S3SecretKey = nullText
+	params.S3Region = nullText
+	params.S3SessionToken = nullText
+	params.S3Endpoint = nullText
+	params.AzureAccountName = nullText
+	params.AzureAccountKey = nullText
+	params.AzureContainerName = nullText
+	params.AzureEndpoint = nullText
+	params.AzurePrefix = nullText
+
+	switch sp.Type {
+	case datastore.OnPrem:
+		if sp.OnPrem != nil {
+			params.OnPremPath = common.NullStringToPgText(sp.OnPrem.Path)
+		}
+	case datastore.S3:
+		if sp.S3 != nil {
+			params.S3Prefix = common.NullStringToPgText(sp.S3.Prefix)
+			params.S3Bucket = common.NullStringToPgText(sp.S3.Bucket)
+			params.S3AccessKey = common.NullStringToPgText(sp.S3.AccessKey)
+			params.S3SecretKey = common.NullStringToPgText(sp.S3.SecretKey)
+			params.S3Region = common.NullStringToPgText(sp.S3.Region)
+			params.S3SessionToken = common.NullStringToPgText(sp.S3.SessionToken)
+			params.S3Endpoint = common.NullStringToPgText(sp.S3.Endpoint)
+		}
+	case datastore.AzureBlob:
+		if sp.AzureBlob != nil {
+			params.AzureAccountName = common.NullStringToPgText(sp.AzureBlob.AccountName)
+			params.AzureAccountKey = common.NullStringToPgText(sp.AzureBlob.AccountKey)
+			params.AzureContainerName = common.NullStringToPgText(sp.AzureBlob.ContainerName)
+			params.AzureEndpoint = common.NullStringToPgText(sp.AzureBlob.Endpoint)
+			params.AzurePrefix = common.NullStringToPgText(sp.AzureBlob.Prefix)
+		}
+	}
 }
 
 // rowToConfiguration converts LoadConfigurationRow to Configuration
@@ -149,21 +198,12 @@ func rowToConfiguration(row repo.LoadConfigurationRow) *datastore.Configuration 
 		Type: datastore.StorageType(row.StoragePolicyType),
 	}
 
-	if row.StoragePolicyType == string(datastore.OnPrem) {
+	switch datastore.StorageType(row.StoragePolicyType) {
+	case datastore.OnPrem:
 		cfg.StoragePolicy.OnPrem = &datastore.OnPremStorage{
 			Path: common.PgTextToNullString(row.OnPremPath),
 		}
-		// Create empty S3 storage to match legacy behavior
-		cfg.StoragePolicy.S3 = &datastore.S3Storage{
-			Prefix:       null.NewString("", false),
-			Bucket:       null.NewString("", false),
-			AccessKey:    null.NewString("", false),
-			SecretKey:    null.NewString("", false),
-			Region:       null.NewString("", false),
-			SessionToken: null.NewString("", false),
-			Endpoint:     null.NewString("", false),
-		}
-	} else {
+	case datastore.S3:
 		cfg.StoragePolicy.S3 = &datastore.S3Storage{
 			Prefix:       common.PgTextToNullString(row.S3Prefix),
 			Bucket:       common.PgTextToNullString(row.S3Bucket),
@@ -173,9 +213,13 @@ func rowToConfiguration(row repo.LoadConfigurationRow) *datastore.Configuration 
 			SessionToken: common.PgTextToNullString(row.S3SessionToken),
 			Endpoint:     common.PgTextToNullString(row.S3Endpoint),
 		}
-		// Create empty OnPrem storage to match legacy behavior
-		cfg.StoragePolicy.OnPrem = &datastore.OnPremStorage{
-			Path: null.NewString("", false),
+	case datastore.AzureBlob:
+		cfg.StoragePolicy.AzureBlob = &datastore.AzureBlobStorage{
+			AccountName:   common.PgTextToNullString(row.AzureAccountName),
+			AccountKey:    common.PgTextToNullString(row.AzureAccountKey),
+			ContainerName: common.PgTextToNullString(row.AzureContainerName),
+			Endpoint:      common.PgTextToNullString(row.AzureEndpoint),
+			Prefix:        common.PgTextToNullString(row.AzurePrefix),
 		}
 	}
 
@@ -196,23 +240,6 @@ func rowToConfiguration(row repo.LoadConfigurationRow) *datastore.Configuration 
 func (s *Service) CreateConfiguration(ctx context.Context, cfg *datastore.Configuration) error {
 	if cfg == nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("configuration cannot be nil"))
-	}
-
-	// Normalize storage policy - ensure empty S3 fields for OnPrem and vice versa
-	if cfg.StoragePolicy.Type == datastore.OnPrem {
-		cfg.StoragePolicy.S3 = &datastore.S3Storage{
-			Prefix:       null.NewString("", false),
-			Bucket:       null.NewString("", false),
-			AccessKey:    null.NewString("", false),
-			SecretKey:    null.NewString("", false),
-			Region:       null.NewString("", false),
-			SessionToken: null.NewString("", false),
-			Endpoint:     null.NewString("", false),
-		}
-	} else {
-		cfg.StoragePolicy.OnPrem = &datastore.OnPremStorage{
-			Path: null.NewString("", false),
-		}
 	}
 
 	params := configurationToCreateParams(cfg)
@@ -245,23 +272,6 @@ func (s *Service) LoadConfiguration(ctx context.Context) (*datastore.Configurati
 func (s *Service) UpdateConfiguration(ctx context.Context, cfg *datastore.Configuration) error {
 	if cfg == nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("configuration cannot be nil"))
-	}
-
-	// Normalize storage policy - ensure empty S3 fields for OnPrem and vice versa
-	if cfg.StoragePolicy.Type == datastore.OnPrem {
-		cfg.StoragePolicy.S3 = &datastore.S3Storage{
-			Prefix:       null.NewString("", false),
-			Bucket:       null.NewString("", false),
-			AccessKey:    null.NewString("", false),
-			SecretKey:    null.NewString("", false),
-			Region:       null.NewString("", false),
-			SessionToken: null.NewString("", false),
-			Endpoint:     null.NewString("", false),
-		}
-	} else {
-		cfg.StoragePolicy.OnPrem = &datastore.OnPremStorage{
-			Path: null.NewString("", false),
-		}
 	}
 
 	params := configurationToUpdateParams(cfg)
