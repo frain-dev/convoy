@@ -187,11 +187,14 @@ func StartConvoyServer(a *cli.App) error {
 	// 	lo.Infof("Registered metrics materialized view refresh every %d min", refreshInterval)
 	// }
 
-	// ensures that project data is backed up about 2 hours before they are deleted
 	if a.Licenser.RetentionPolicy() {
-		// runs at 10pm
+		// Enqueue backup jobs at :05 every hour (inserts pending rows for all projects)
+		s.RegisterTask("5 * * * *", convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
+		// Process backup jobs at :10 every hour (claims and exports one pending job)
+		s.RegisterTask("10 * * * *", convoy.ScheduleQueue, convoy.ProcessBackupJob)
+		// Legacy: keep BackupProjectData for backwards compat during rollout
 		s.RegisterTask("0 22 * * *", convoy.ScheduleQueue, convoy.BackupProjectData)
-		// runs at 1am
+		// Retention runs at 1am
 		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
 

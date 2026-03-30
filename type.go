@@ -108,6 +108,8 @@ const (
 	MonitorTwitterSources            TaskName = "MonitorTwitterSources"
 	RetentionPolicies                TaskName = "RetentionPolicies"
 	BackupProjectData                TaskName = "BackupProjectData"
+	EnqueueBackupJobs                TaskName = "EnqueueBackupJobs"
+	ProcessBackupJob                 TaskName = "ProcessBackupJob"
 	EmailProcessor                   TaskName = "EmailProcessor"
 	ExpireSecretsProcessor           TaskName = "ExpireSecretsProcessor"
 	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"

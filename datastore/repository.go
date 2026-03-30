@@ -298,6 +298,15 @@ type DeliveryAttemptsRepository interface {
 	UnPartitionDeliveryAttemptsTable(ctx context.Context) error
 }
 
+type BackupJobRepository interface {
+	EnqueueBackupJob(ctx context.Context, projectID string, hourStart, hourEnd time.Time) error
+	ClaimBackupJob(ctx context.Context, workerID string) (*BackupJob, error)
+	CompleteBackupJob(ctx context.Context, jobID string, recordCounts map[string]int64) error
+	FailBackupJob(ctx context.Context, jobID string, errMsg string) error
+	ReclaimStaleJobs(ctx context.Context, staleMinutes int32) (int64, error)
+	FindLatestCompletedBackup(ctx context.Context, projectID string) (*BackupJob, error)
+}
+
 type EventTypesRepository interface {
 	CreateEventType(context.Context, *ProjectEventType) error
 	UpdateEventType(context.Context, *ProjectEventType) error
