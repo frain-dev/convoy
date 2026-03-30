@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -19,12 +21,12 @@ var (
 	ErrInvalidExportDir = errors.New("invalid export directory")
 )
 
-type tablename string
+type tableName string
 
 const (
-	eventsTable           tablename = "convoy.events"
-	eventDeliveriesTable  tablename = "convoy.event_deliveries"
-	deliveryAttemptsTable tablename = "convoy.delivery_attempts"
+	eventsTable           tableName = "convoy.events"
+	eventDeliveriesTable  tableName = "convoy.event_deliveries"
+	deliveryAttemptsTable tableName = "convoy.delivery_attempts"
 )
 
 // order is important here,
@@ -32,16 +34,23 @@ const (
 // event_deliveries references event id,
 // so delivery_attempts must be deleted first,
 // then event_deliveries then events.
-var tables = []tablename{deliveryAttemptsTable, eventDeliveriesTable, eventsTable}
+var tables = []tableName{deliveryAttemptsTable, eventDeliveriesTable, eventsTable}
 
-var tableToFileMapping = map[tablename]string{
-	eventsTable:           "%s/orgs/%s/projects/%s/events/%s.json",
-	eventDeliveriesTable:  "%s/orgs/%s/projects/%s/eventdeliveries/%s.json",
-	deliveryAttemptsTable: "%s/orgs/%s/projects/%s/deliveryattempts/%s.json",
+var tableToBlobKeyMapping = map[tableName]string{
+	eventsTable:           "orgs/%s/projects/%s/events/%s.jsonl.gz",
+	eventDeliveriesTable:  "orgs/%s/projects/%s/eventdeliveries/%s.jsonl.gz",
+	deliveryAttemptsTable: "orgs/%s/projects/%s/deliveryattempts/%s.jsonl.gz",
+}
+
+// tableToFileMapping is used by the disk-based Export() path.
+var tableToFileMapping = map[tableName]string{
+	eventsTable:           "%s/orgs/%s/projects/%s/events/%s.jsonl.gz",
+	eventDeliveriesTable:  "%s/orgs/%s/projects/%s/eventdeliveries/%s.jsonl.gz",
+	deliveryAttemptsTable: "%s/orgs/%s/projects/%s/deliveryattempts/%s.jsonl.gz",
 }
 
 type (
-	ExportResult      map[tablename]ExportTableResult
+	ExportResult      map[tableName]ExportTableResult
 	ExportTableResult struct {
 		NumDocs    int64
 		ExportFile string
@@ -85,14 +94,15 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 	}, nil
 }
 
+// Export writes gzip-compressed JSONL files to disk. Used by the legacy
+// file-based backup flow and E2E tests.
 func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 	if !ex.config.RetentionPolicy.IsRetentionPolicyEnabled {
 		return nil, nil
 	}
 
-	// export tables
 	for _, table := range tables {
-		result, err := ex.exportTable(ctx, table, ex.expDate)
+		result, err := ex.exportTableToDisk(ctx, table, ex.expDate)
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +114,83 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 	return ex.result, nil
 }
 
-func (ex *Exporter) exportTable(ctx context.Context, table tablename, expDate time.Time) (*ExportTableResult, error) {
+// StreamExport exports all tables and streams gzip-compressed JSONL directly to
+// the given BlobStore via io.Pipe, avoiding any local disk writes.
+func (ex *Exporter) StreamExport(ctx context.Context, store blobstore.BlobStore) (ExportResult, error) {
+	if !ex.config.RetentionPolicy.IsRetentionPolicyEnabled {
+		return nil, nil
+	}
+
+	result := ExportResult{}
+
+	for _, table := range tables {
+		tableResult, err := ex.streamExportTable(ctx, store, table, ex.expDate)
+		if err != nil {
+			return nil, err
+		}
+
+		result[table] = *tableResult
+		ex.logger.Info(fmt.Sprintf("streamed %v record(s) from %v", tableResult.NumDocs, table))
+	}
+
+	return result, nil
+}
+
+// streamExportTable pipes ExportRecords → gzip → BlobStore.Upload without touching disk.
+func (ex *Exporter) streamExportTable(ctx context.Context, store blobstore.BlobStore, table tableName, expDate time.Time) (*ExportTableResult, error) {
+	keyFormat, ok := tableToBlobKeyMapping[table]
+	if !ok {
+		return nil, ErrInvalidTable
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	key := fmt.Sprintf(keyFormat, ex.project.OrganisationID, ex.project.UID, now)
+
+	exportRepo, err := ex.getRepo(table)
+	if err != nil {
+		return nil, err
+	}
+
+	pr, pw := io.Pipe()
+	exportCtx, cancelExport := context.WithCancel(ctx)
+	defer cancelExport()
+
+	var numDocs int64
+	errCh := make(chan error, 1)
+
+	go func() {
+		gzw := gzip.NewWriter(pw)
+
+		n, exportErr := exportRepo.ExportRecords(exportCtx, ex.project.UID, expDate, gzw)
+		numDocs = n
+
+		// MUST close gzip before pipe — flush trailer (checksum + size)
+		if closeErr := gzw.Close(); closeErr != nil && exportErr == nil {
+			exportErr = closeErr
+		}
+		if exportErr != nil {
+			pw.CloseWithError(exportErr)
+		} else {
+			pw.Close()
+		}
+		errCh <- exportErr
+	}()
+
+	uploadErr := store.Upload(ctx, key, pr)
+	exportErr := <-errCh
+
+	if uploadErr != nil {
+		return nil, fmt.Errorf("upload %q: %w", key, uploadErr)
+	}
+	if exportErr != nil {
+		return nil, fmt.Errorf("export %q: %w", key, exportErr)
+	}
+
+	return &ExportTableResult{NumDocs: numDocs, ExportFile: key}, nil
+}
+
+// exportTableToDisk writes gzip-compressed JSONL to a local file (legacy path).
+func (ex *Exporter) exportTableToDisk(ctx context.Context, table tableName, expDate time.Time) (*ExportTableResult, error) {
 	result := &ExportTableResult{}
 	exportFileFormat, ok := tableToFileMapping[table]
 	if !ok {
@@ -119,23 +205,29 @@ func (ex *Exporter) exportTable(ctx context.Context, table tablename, expDate ti
 	now := time.Now().UTC().Format(time.RFC3339)
 	exportFile := fmt.Sprintf(exportFileFormat, exportDir, ex.project.OrganisationID, ex.project.UID, now)
 
-	writer, err := getOutputWriter(exportFile)
+	fileWriter, err := getOutputWriter(exportFile)
+	if err != nil {
+		return result, err
+	}
+	defer func(fileWriter io.WriteCloser) {
+		if err = fileWriter.Close(); err != nil {
+			ex.logger.Error("failed to close file writer", "error", err)
+		}
+	}(fileWriter)
+
+	gzw := gzip.NewWriter(fileWriter)
+	defer func(gzw *gzip.Writer) {
+		if err = gzw.Close(); err != nil {
+			ex.logger.Error("failed to close gzip writer", "error", err)
+		}
+	}(gzw)
+
+	exportRepo, err := ex.getRepo(table)
 	if err != nil {
 		return result, err
 	}
 
-	if writer == nil {
-		writer = os.Stdout
-	} else {
-		defer writer.Close()
-	}
-
-	repo, err := ex.getRepo(table)
-	if err != nil {
-		return result, err
-	}
-
-	numDocs, err := repo.ExportRecords(ctx, ex.project.UID, expDate, writer)
+	numDocs, err := exportRepo.ExportRecords(ctx, ex.project.UID, expDate, gzw)
 	if err != nil {
 		ex.logger.Error("failed to export records", "error", err)
 		return result, err
@@ -162,7 +254,7 @@ func (ex *Exporter) getExportDir() (string, error) {
 	}
 }
 
-func (ex *Exporter) getRepo(table tablename) (datastore.ExportRepository, error) {
+func (ex *Exporter) getRepo(table tableName) (datastore.ExportRepository, error) {
 	switch table {
 	case eventsTable:
 		return ex.eventRepo, nil
@@ -175,42 +267,17 @@ func (ex *Exporter) getRepo(table tablename) (datastore.ExportRepository, error)
 	}
 }
 
-// GetOutputWriter opens and returns an io.WriteCloser for the output
-// options or nil if none is set. The caller is responsible for closing it.
 func getOutputWriter(out string) (io.WriteCloser, error) {
-	// If the directory in which the output file is to be
-	// written does not exist, create it
 	fileDir := filepath.Dir(out)
 	err := os.MkdirAll(fileDir, 0o750)
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := os.Create(toUniversalPath(out))
+	file, err := os.Create(filepath.FromSlash(out))
 	if err != nil {
 		return nil, err
 	}
 
 	return file, err
-}
-
-// type compressWriter struct {
-//	gw   *gzip.Writer
-//	file *os.File
-// }
-//
-// func (c compressWriter) Write(b []byte) (int, error) {
-//	return c.gw.Write(b)
-// }
-//
-// func (c compressWriter) Close() error {
-//	if err := c.gw.Close(); err != nil {
-//		return err
-//	}
-//
-//	return c.file.Close()
-// }
-
-func toUniversalPath(path string) string {
-	return filepath.FromSlash(path)
 }
