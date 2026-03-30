@@ -73,7 +73,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 		if (this.checkIfTailModeIsEnabled()) this.tail.emit({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
 		this.filter.emit(data);
 
-		if (this.type === 'logs') this.projectService.activeProjectDetails?.type === 'outgoing' ? this.filterOptions.splice(3, 4) : this.filterOptions.splice(3, 4, { name: 'Source', id: 'source', show: false });
+		if (this.type === 'logs') this.projectService.activeProjectDetails?.type === 'outgoing' ? this.filterOptions.splice(4, 2) : this.filterOptions.splice(4, 2, { name: 'Source', id: 'source', show: false });
 		else this.projectService.activeProjectDetails?.type == 'incoming' ? this.filterOptions.splice(3, 2) : this.filterOptions.splice(2, 1);
         if (this.portalToken) this.filterOptions = this.filterOptions.filter(key => key.id !== 'endpoint');
         if (this.eventDeliveriesSource) this.eventDeliveriesSourceData = await this.getSelectedSourceData();

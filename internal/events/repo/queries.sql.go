@@ -36,6 +36,7 @@ WHERE ev.project_id = $1
   AND ev.deleted_at IS NULL
   AND (CASE WHEN $4::BOOLEAN THEN e.id = ANY ($5::TEXT[]) ELSE true END)
   AND (CASE WHEN $6::BOOLEAN THEN ev.source_id = $7 ELSE true END)
+  AND (CASE WHEN $8::BOOLEAN THEN ev.status = ANY($9::TEXT[]) ELSE true END)
 `
 
 type CountEventsParams struct {
@@ -46,6 +47,8 @@ type CountEventsParams struct {
 	EndpointIds    []string
 	HasSourceID    pgtype.Bool
 	SourceID       pgtype.Text
+	HasStatus      pgtype.Bool
+	Statuses       []string
 }
 
 func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (pgtype.Int8, error) {
@@ -57,6 +60,8 @@ func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (pgtyp
 		arg.EndpointIds,
 		arg.HasSourceID,
 		arg.SourceID,
+		arg.HasStatus,
+		arg.Statuses,
 	)
 	var count pgtype.Int8
 	err := row.Scan(&count)
@@ -118,10 +123,12 @@ WHERE ev.deleted_at IS NULL
   AND (CASE
            WHEN $13::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $14
            ELSE true END)
+  -- Status filter
+  AND (CASE WHEN $15::BOOLEAN THEN ev.status = ANY($16::TEXT[]) ELSE true END)
   AND (CASE
-           WHEN $15::text = 'DESC' THEN ev.id > $16
-           WHEN $15::text = 'ASC' THEN ev.id < $16
-           ELSE ev.id > $16 END)
+           WHEN $17::text = 'DESC' THEN ev.id > $18
+           WHEN $17::text = 'ASC' THEN ev.id < $18
+           ELSE ev.id > $18 END)
 `
 
 type CountPrevEventsParams struct {
@@ -139,6 +146,8 @@ type CountPrevEventsParams struct {
 	EndpointIds              []string
 	HasBrokerMessageID       pgtype.Bool
 	BrokerMessageID          pgtype.Text
+	HasStatus                pgtype.Bool
+	Statuses                 []string
 	SortOrder                pgtype.Text
 	Cursor                   pgtype.Text
 }
@@ -161,6 +170,8 @@ func (q *Queries) CountPrevEvents(ctx context.Context, arg CountPrevEventsParams
 		arg.EndpointIds,
 		arg.HasBrokerMessageID,
 		arg.BrokerMessageID,
+		arg.HasStatus,
+		arg.Statuses,
 		arg.SortOrder,
 		arg.Cursor,
 	)
@@ -196,10 +207,12 @@ WHERE ev.deleted_at IS NULL
   AND (CASE
            WHEN $12::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', $13)
            ELSE true END)
+  -- Status filter
+  AND (CASE WHEN $14::BOOLEAN THEN ev.status = ANY($15::TEXT[]) ELSE true END)
   AND (CASE
-           WHEN $14::text = 'DESC' THEN ev.id > $15
-           WHEN $14::text = 'ASC' THEN ev.id < $15
-           ELSE ev.id > $15 END)
+           WHEN $16::text = 'DESC' THEN ev.id > $17
+           WHEN $16::text = 'ASC' THEN ev.id < $17
+           ELSE ev.id > $17 END)
 `
 
 type CountPrevEventsSearchParams struct {
@@ -216,6 +229,8 @@ type CountPrevEventsSearchParams struct {
 	BrokerMessageID    pgtype.Text
 	HasQuery           pgtype.Bool
 	Query              pgtype.Text
+	HasStatus          pgtype.Bool
+	Statuses           []string
 	SortOrder          pgtype.Text
 	Cursor             pgtype.Text
 }
@@ -237,6 +252,8 @@ func (q *Queries) CountPrevEventsSearch(ctx context.Context, arg CountPrevEvents
 		arg.BrokerMessageID,
 		arg.HasQuery,
 		arg.Query,
+		arg.HasStatus,
+		arg.Statuses,
 		arg.SortOrder,
 		arg.Cursor,
 	)
@@ -734,20 +751,22 @@ WITH filtered_events AS (
       AND (CASE
                WHEN $14::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = $15
                ELSE true END)
+      -- Status filter
+      AND (CASE WHEN $16::BOOLEAN THEN ev.status = ANY($17::TEXT[]) ELSE true END)
       -- Cursor pagination: DESC+next or ASC+prev → id <= cursor; ASC+next or DESC+prev → id >= cursor
       AND (
         CASE
-            WHEN $16 = '' THEN true
-            WHEN ($1::text = 'DESC' AND $17::text = 'next') OR ($1::text = 'ASC' AND $17::text = 'prev') THEN ev.id <= $16
-            WHEN ($1::text = 'ASC' AND $17::text = 'next') OR ($1::text = 'DESC' AND $17::text = 'prev') THEN ev.id >= $16
+            WHEN $18 = '' THEN true
+            WHEN ($1::text = 'DESC' AND $19::text = 'next') OR ($1::text = 'ASC' AND $19::text = 'prev') THEN ev.id <= $18
+            WHEN ($1::text = 'ASC' AND $19::text = 'next') OR ($1::text = 'DESC' AND $19::text = 'prev') THEN ev.id >= $18
             ELSE true
         END
       )
     -- Inner sort: DESC+next or ASC+prev → DESC; ASC+next or DESC+prev → ASC
     ORDER BY
-        CASE WHEN ($1::text = 'DESC' AND $17::text = 'next') OR ($1::text = 'ASC' AND $17::text = 'prev') THEN ev.id END DESC,
-        CASE WHEN ($1::text = 'ASC' AND $17::text = 'next') OR ($1::text = 'DESC' AND $17::text = 'prev') THEN ev.id END ASC
-    LIMIT $18
+        CASE WHEN ($1::text = 'DESC' AND $19::text = 'next') OR ($1::text = 'ASC' AND $19::text = 'prev') THEN ev.id END DESC,
+        CASE WHEN ($1::text = 'ASC' AND $19::text = 'next') OR ($1::text = 'DESC' AND $19::text = 'prev') THEN ev.id END ASC
+    LIMIT $20
 )
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
        headers, raw, data, created_at, idempotency_key, url_query_params,
@@ -775,6 +794,8 @@ type LoadEventsPagedExistsParams struct {
 	SourceIds                []string
 	HasBrokerMessageID       pgtype.Bool
 	BrokerMessageID          pgtype.Text
+	HasStatus                pgtype.Bool
+	Statuses                 []string
 	Cursor                   pgtype.Text
 	Direction                pgtype.Text
 	PageLimit                pgtype.Int8
@@ -827,6 +848,8 @@ func (q *Queries) LoadEventsPagedExists(ctx context.Context, arg LoadEventsPaged
 		arg.SourceIds,
 		arg.HasBrokerMessageID,
 		arg.BrokerMessageID,
+		arg.HasStatus,
+		arg.Statuses,
 		arg.Cursor,
 		arg.Direction,
 		arg.PageLimit,
@@ -917,21 +940,23 @@ WITH events AS (SELECT ev.id,
                   AND (CASE
                            WHEN $13::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', $14)
                            ELSE true END)
+                  -- Status filter
+                  AND (CASE WHEN $15::BOOLEAN THEN ev.status = ANY($16::TEXT[]) ELSE true END)
                   -- Cursor pagination: DESC+next or ASC+prev → id <= cursor; ASC+next or DESC+prev → id >= cursor
                   AND (
                     CASE
-                        WHEN $15 = '' THEN true
-                        WHEN ($1::text = 'DESC' AND $16::text = 'next') OR ($1::text = 'ASC' AND $16::text = 'prev') THEN ev.id <= $15
-                        WHEN ($1::text = 'ASC' AND $16::text = 'next') OR ($1::text = 'DESC' AND $16::text = 'prev') THEN ev.id >= $15
+                        WHEN $17 = '' THEN true
+                        WHEN ($1::text = 'DESC' AND $18::text = 'next') OR ($1::text = 'ASC' AND $18::text = 'prev') THEN ev.id <= $17
+                        WHEN ($1::text = 'ASC' AND $18::text = 'next') OR ($1::text = 'DESC' AND $18::text = 'prev') THEN ev.id >= $17
                         ELSE true
                     END
                   )
                 GROUP BY ev.id, s.id
                 -- Inner sort: DESC+next or ASC+prev → DESC; ASC+next or DESC+prev → ASC
                 ORDER BY
-                    CASE WHEN ($1::text = 'DESC' AND $16::text = 'next') OR ($1::text = 'ASC' AND $16::text = 'prev') THEN ev.id END DESC,
-                    CASE WHEN ($1::text = 'ASC' AND $16::text = 'next') OR ($1::text = 'DESC' AND $16::text = 'prev') THEN ev.id END ASC
-                LIMIT $17
+                    CASE WHEN ($1::text = 'DESC' AND $18::text = 'next') OR ($1::text = 'ASC' AND $18::text = 'prev') THEN ev.id END DESC,
+                    CASE WHEN ($1::text = 'ASC' AND $18::text = 'next') OR ($1::text = 'DESC' AND $18::text = 'prev') THEN ev.id END ASC
+                LIMIT $19
 )
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
        headers, raw, data, created_at, idempotency_key, url_query_params,
@@ -958,6 +983,8 @@ type LoadEventsPagedSearchParams struct {
 	BrokerMessageID    pgtype.Text
 	HasQuery           pgtype.Bool
 	Query              pgtype.Text
+	HasStatus          pgtype.Bool
+	Statuses           []string
 	Cursor             pgtype.Text
 	Direction          pgtype.Text
 	PageLimit          pgtype.Int8
@@ -1006,6 +1033,8 @@ func (q *Queries) LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPaged
 		arg.BrokerMessageID,
 		arg.HasQuery,
 		arg.Query,
+		arg.HasStatus,
+		arg.Statuses,
 		arg.Cursor,
 		arg.Direction,
 		arg.PageLimit,

@@ -137,7 +137,8 @@ WHERE ev.project_id = @project_id
   AND ev.created_at <= @end_date
   AND ev.deleted_at IS NULL
   AND (CASE WHEN @has_endpoint_ids::BOOLEAN THEN e.id = ANY (@endpoint_ids::TEXT[]) ELSE true END)
-  AND (CASE WHEN @has_source_id::BOOLEAN THEN ev.source_id = @source_id ELSE true END);
+  AND (CASE WHEN @has_source_id::BOOLEAN THEN ev.source_id = @source_id ELSE true END)
+  AND (CASE WHEN @has_status::BOOLEAN THEN ev.status = ANY(@statuses::TEXT[]) ELSE true END);
 
 -- ============================================================================
 -- Group 3: Complex Pagination (5 queries) ⚠️ MOST CRITICAL
@@ -200,6 +201,8 @@ WITH filtered_events AS (
       AND (CASE
                WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
                ELSE true END)
+      -- Status filter
+      AND (CASE WHEN @has_status::BOOLEAN THEN ev.status = ANY(@statuses::TEXT[]) ELSE true END)
       -- Cursor pagination: DESC+next or ASC+prev → id <= cursor; ASC+next or DESC+prev → id >= cursor
       AND (
         CASE
@@ -277,6 +280,8 @@ WITH events AS (SELECT ev.id,
                   AND (CASE
                            WHEN @has_query::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', @query)
                            ELSE true END)
+                  -- Status filter
+                  AND (CASE WHEN @has_status::BOOLEAN THEN ev.status = ANY(@statuses::TEXT[]) ELSE true END)
                   -- Cursor pagination: DESC+next or ASC+prev → id <= cursor; ASC+next or DESC+prev → id >= cursor
                   AND (
                     CASE
@@ -339,6 +344,8 @@ WHERE ev.deleted_at IS NULL
   AND (CASE
            WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
            ELSE true END)
+  -- Status filter
+  AND (CASE WHEN @has_status::BOOLEAN THEN ev.status = ANY(@statuses::TEXT[]) ELSE true END)
   AND (CASE
            WHEN @sort_order::text = 'DESC' THEN ev.id > @cursor
            WHEN @sort_order::text = 'ASC' THEN ev.id < @cursor
@@ -373,6 +380,8 @@ WHERE ev.deleted_at IS NULL
   AND (CASE
            WHEN @has_query::BOOLEAN THEN ev.search_token @@ websearch_to_tsquery('simple', @query)
            ELSE true END)
+  -- Status filter
+  AND (CASE WHEN @has_status::BOOLEAN THEN ev.status = ANY(@statuses::TEXT[]) ELSE true END)
   AND (CASE
            WHEN @sort_order::text = 'DESC' THEN ev.id > @cursor
            WHEN @sort_order::text = 'ASC' THEN ev.id < @cursor

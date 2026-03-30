@@ -262,6 +262,7 @@ func (s *Service) CountProjectMessages(ctx context.Context, projectID string) (i
 func (s *Service) CountEvents(ctx context.Context, projectID string, filter *datastore.Filter) (int64, error) {
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
+	statuses := statusToStringSlice(filter.Status)
 	params := repo.CountEventsParams{
 		ProjectID:      common.StringToPgTextNullable(projectID),
 		StartDate:      common.TimeToPgTimestamptz(startDate),
@@ -270,6 +271,8 @@ func (s *Service) CountEvents(ctx context.Context, projectID string, filter *dat
 		EndpointIds:    filter.EndpointIDs,
 		HasSourceID:    common.BoolToPgBool(!util.IsStringEmpty(filter.SourceID)),
 		SourceID:       common.StringToPgTextNullable(filter.SourceID),
+		HasStatus:      common.BoolToPgBool(len(statuses) > 0),
+		Statuses:       statuses,
 	}
 
 	count, err := s.repo.CountEvents(ctx, params)
@@ -344,6 +347,7 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 	}
 	sortOrder := filter.Pageable.SortOrder()
 
+	statuses := statusToStringSlice(filter.Status)
 	params := repo.LoadEventsPagedExistsParams{
 		HasEndpointOrOwnerFilter: common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID) || len(filter.EndpointIDs) > 0),
 		HasOwnerID:               common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID)),
@@ -359,6 +363,8 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 		SourceIds:                filter.SourceIDs,
 		HasBrokerMessageID:       common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
 		BrokerMessageID:          common.StringToPgTextNullable(filter.BrokerMessageId),
+		HasStatus:                common.BoolToPgBool(len(statuses) > 0),
+		Statuses:                 statuses,
 		Cursor:                   common.StringToPgText(cursor),
 		Direction:                common.StringToPgText(direction),
 		SortOrder:                common.StringToPgText(sortOrder),
@@ -391,6 +397,7 @@ func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, f
 	}
 	sortOrder := filter.Pageable.SortOrder()
 
+	statuses := statusToStringSlice(filter.Status)
 	params := repo.LoadEventsPagedSearchParams{
 		ProjectID:          common.StringToPgTextNullable(projectID),
 		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
@@ -405,6 +412,8 @@ func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, f
 		BrokerMessageID:    common.StringToPgTextNullable(filter.BrokerMessageId),
 		HasQuery:           common.BoolToPgBool(!util.IsStringEmpty(filter.Query)),
 		Query:              common.StringToPgTextNullable(filter.Query),
+		HasStatus:          common.BoolToPgBool(len(statuses) > 0),
+		Statuses:           statuses,
 		Cursor:             common.StringToPgText(cursor),
 		Direction:          common.StringToPgText(direction),
 		SortOrder:          common.StringToPgText(sortOrder),
@@ -433,6 +442,8 @@ func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, f
 func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter *datastore.Filter, cursor string, startDate, endDate time.Time, useExistsPath bool) (datastore.PrevRowCount, error) {
 	sortOrder := filter.Pageable.SortOrder()
 
+	statuses := statusToStringSlice(filter.Status)
+
 	if useExistsPath {
 		params := repo.CountPrevEventsParams{
 			ProjectID:                common.StringToPgTextNullable(projectID),
@@ -449,6 +460,8 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 			EndpointIds:              filter.EndpointIDs,
 			HasBrokerMessageID:       common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
 			BrokerMessageID:          common.StringToPgTextNullable(filter.BrokerMessageId),
+			HasStatus:                common.BoolToPgBool(len(statuses) > 0),
+			Statuses:                 statuses,
 			SortOrder:                common.StringToPgText(sortOrder),
 			Cursor:                   common.StringToPgTextNullable(cursor),
 		}
@@ -475,6 +488,8 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 		BrokerMessageID:    common.StringToPgTextNullable(filter.BrokerMessageId),
 		HasQuery:           common.BoolToPgBool(!util.IsStringEmpty(filter.Query)),
 		Query:              common.StringToPgTextNullable(filter.Query),
+		HasStatus:          common.BoolToPgBool(len(statuses) > 0),
+		Statuses:           statuses,
 		SortOrder:          common.StringToPgText(sortOrder),
 		Cursor:             common.StringToPgTextNullable(cursor),
 	}
@@ -662,8 +677,14 @@ func (s *Service) UnPartitionEventsSearchTable(ctx context.Context) error {
 	return err
 }
 
-// Helper: getCreatedDateFilter converts Unix timestamps to time.Time
-// When both are 0, defaults endDate to now so callers get all events.
+func statusToStringSlice(statuses []datastore.EventDeliveryStatus) []string {
+	result := make([]string, len(statuses))
+	for i, s := range statuses {
+		result[i] = string(s)
+	}
+	return result
+}
+
 func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
 	if startDate == 0 && endDate == 0 {
 		return time.Unix(0, 0), time.Now()

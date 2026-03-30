@@ -117,6 +117,7 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
 			EndpointIDs:     getEndpointIDs(r),
 			SourceIDs:       getSourceIDs(r),
+			Status:          getEventDeliveryStatus(r),
 			SearchParams:    searchParams,
 			Pageable:        m.GetPageableFromContext(r.Context()),
 		},
