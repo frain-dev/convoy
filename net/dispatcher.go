@@ -16,10 +16,9 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/net/http/httpproxy"
-
 	"github.com/stealthrocket/netjail"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"golang.org/x/net/http/httpproxy"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
