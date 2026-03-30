@@ -3,7 +3,6 @@ package organisation_members
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"testing"
 	"time"
@@ -22,7 +21,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -92,7 +91,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 func createOrgMemberService(t *testing.T, db database.Database) *Service {
 	t.Helper()
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	return New(logger, db)
 }
 
@@ -103,7 +102,7 @@ func seedUser(t *testing.T, db database.Database, email string) *datastore.User 
 		email = fmt.Sprintf("test-%s@example.com", ulid.Make().String())
 	}
 
-	userRepo := users.New(log.NewLogger(io.Discard), db)
+	userRepo := users.New(log.New("convoy", log.LevelError), db)
 	user := &datastore.User{
 		UID:       ulid.Make().String(),
 		FirstName: "Test",
@@ -122,7 +121,7 @@ func seedUser(t *testing.T, db database.Database, email string) *datastore.User 
 func seedOrganisation(t *testing.T, db database.Database, ownerID string) *datastore.Organisation {
 	t.Helper()
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	orgRepo := organisations.New(logger, db)
 
 	org := &datastore.Organisation{
@@ -162,7 +161,7 @@ func seedOrganisationMember(t *testing.T, db database.Database, orgID, userID st
 func seedProject(t *testing.T, db database.Database, orgID string) *datastore.Project {
 	t.Helper()
 
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
@@ -184,7 +183,7 @@ func seedProject(t *testing.T, db database.Database, orgID string) *datastore.Pr
 func seedEndpoint(t *testing.T, db database.Database, projectID string) *datastore.Endpoint {
 	t.Helper()
 
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 
 	endpoint := &datastore.Endpoint{
 		UID:       ulid.Make().String(),

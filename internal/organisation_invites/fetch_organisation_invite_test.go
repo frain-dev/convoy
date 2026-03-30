@@ -1,20 +1,19 @@
 package organisation_invites
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestFetchOrganisationInviteByID_Found(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation and invite
 	org := seedOrganisation(t, db)
@@ -35,7 +34,7 @@ func TestFetchOrganisationInviteByID_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Try to fetch non-existent invite
 	_, err := service.FetchOrganisationInviteByID(ctx, "non-existent-id")
@@ -47,7 +46,7 @@ func TestFetchOrganisationInviteByToken_Found(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation and invite
 	org := seedOrganisation(t, db)
@@ -66,7 +65,7 @@ func TestFetchOrganisationInviteByToken_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Try to fetch by non-existent token
 	_, err := service.FetchOrganisationInviteByToken(ctx, "non-existent-token")
@@ -78,7 +77,7 @@ func TestFetchOrganisationInvite_VerifyAllFields(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed organisation and invite
 	org := seedOrganisation(t, db)
@@ -105,7 +104,7 @@ func TestFetchOrganisationInvite_DeletedInviteNotReturned(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Seed, then delete invite
 	org := seedOrganisation(t, db)
@@ -128,7 +127,7 @@ func TestFetchOrganisationInvite_DifferentStatuses(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	statuses := []datastore.InviteStatus{
@@ -159,7 +158,7 @@ func TestFetchOrganisationInvite_MultipleInvitesForSameOrganisation(t *testing.T
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 
 	// Create multiple invites for the same organisation
@@ -188,7 +187,7 @@ func TestFetchOrganisationInvite_ByTokenReturnsSameAsById(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 	org := seedOrganisation(t, db)
 	invite := seedOrganisationInvite(t, db, org, datastore.InviteStatusPending)
 

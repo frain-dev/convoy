@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -24,7 +23,7 @@ import (
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -1078,8 +1077,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				t.Errorf("failed to get config: %v", err)
 			}
 
-			logger := log.NewLogger(os.Stderr)
-			logger.SetLevel(log.FatalLevel)
+			logger := mocks.NewMockLogger(ctrl)
 
 			err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, cache, logger)
 			if err != nil {
@@ -1100,7 +1098,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dispatcher, err := net.NewDispatcher(
 				licenser,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
-				net.LoggerOption(log.NewLogger(os.Stdout)),
+				net.LoggerOption(log.New("convoy", log.LevelInfo)),
 				net.BlockListOption([]string{"10.0.0.0/8"}),
 				net.ProxyOption("nil"),
 			)
@@ -1124,7 +1122,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
 					return breakerConfig
 				}),
-				cb.LoggerOption(log.NewLogger(os.Stdout)),
+				cb.LoggerOption(log.New("convoy", log.LevelInfo)),
 			)
 			require.NoError(t, err)
 
@@ -1144,6 +1142,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				FeatureFlag:           featureFlag,
 				FeatureFlagFetcher:    fetcher,
 				TracerBackend:         mt,
+				Logger:                log.New("convoy", log.LevelInfo),
 			}
 			processor := ProcessEventDelivery(deps)
 

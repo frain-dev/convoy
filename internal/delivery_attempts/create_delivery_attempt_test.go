@@ -2,7 +2,7 @@ package delivery_attempts
 
 import (
 	"context"
-	"io"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -23,7 +23,7 @@ import (
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -34,7 +34,8 @@ var (
 func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to launch test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	testEnv = res
@@ -42,7 +43,8 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	if err := cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to cleanup test infrastructure: %v\n", err)
+		os.Exit(1)
 	}
 
 	os.Exit(code)
@@ -56,7 +58,7 @@ func TestCreateDeliveryAttempt_ValidRequest(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(nil), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	attempt := &datastore.DeliveryAttempt{
 		UID:              ulid.Make().String(),
@@ -91,7 +93,7 @@ func TestCreateDeliveryAttempt_WithHeaders(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(nil), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	requestHeaders := datastore.HttpHeader{
 		"Content-Type": "application/json",
@@ -136,7 +138,7 @@ func TestCreateDeliveryAttempt_FailedAttempt(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(nil), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	attempt := &datastore.DeliveryAttempt{
 		UID:              ulid.Make().String(),
@@ -169,7 +171,7 @@ func TestFindDeliveryAttempts_MultipleAttempts(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(nil), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	// Create multiple attempts
 	for i := 0; i < 5; i++ {
@@ -201,7 +203,7 @@ func TestFindDeliveryAttemptById_NotFound(t *testing.T) {
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
 
-	service := New(log.NewLogger(nil), db)
+	service := New(log.New("convoy", log.LevelError), db)
 
 	_, err := service.FindDeliveryAttemptById(ctx, eventDelivery.UID, "nonexistent-id")
 	require.Error(t, err)
@@ -249,7 +251,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 func seedTestData(t *testing.T, db database.Database, ctx context.Context) *datastore.Project {
 	t.Helper()
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 
 	// Create user with unique email
 	userRepo := users.New(logger, db)
@@ -273,7 +275,7 @@ func seedTestData(t *testing.T, db database.Database, ctx context.Context) *data
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -291,7 +293,7 @@ func seedTestData(t *testing.T, db database.Database, ctx context.Context) *data
 func seedEndpoint(t *testing.T, db database.Database, ctx context.Context, project *datastore.Project) *datastore.Endpoint {
 	t.Helper()
 
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 
 	endpoint := &datastore.Endpoint{
 		UID:       ulid.Make().String(),
@@ -315,7 +317,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	t.Helper()
 
 	// First create an event
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
+	eventRepo := events.New(log.New("convoy", log.LevelInfo), db)
 	event := &datastore.Event{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
@@ -327,7 +329,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	require.NoError(t, err)
 
 	// Create a subscription
-	subscriptionRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subscriptionRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		Name:       "Test Subscription",
@@ -345,7 +347,7 @@ func seedEventDelivery(t *testing.T, db database.Database, ctx context.Context, 
 	require.NoError(t, err)
 
 	// Now create event delivery with valid event_id and subscription_id
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
+	eventDeliveryRepo := event_deliveries.New(log.New("convoy", log.LevelError), db)
 
 	eventDelivery := &datastore.EventDelivery{
 		UID:            ulid.Make().String(),

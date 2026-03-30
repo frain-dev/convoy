@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/queue/redis"
@@ -40,6 +40,7 @@ type EventChannelArgs struct {
 	licenser           license.Licenser
 	tracerBackend      tracer.Backend
 	oauth2TokenService OAuth2TokenService
+	logger             log.Logger
 }
 
 type EventChannelSubResponse struct {
@@ -58,19 +59,19 @@ type EventChannel interface {
 func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository,
 	eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
-	licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService OAuth2TokenService) func(context.Context, *asynq.Task) error {
+	licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService OAuth2TokenService, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
 		// get or create event
-		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo)
+		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo, logger)
 		if err != nil {
-			log.WithError(err).Error("failed to get last task info")
+			logger.Error("failed to get last task info", "error", err)
 			return err
 		}
 
 		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
-			log.FromContext(ctx).Debugf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey)
+			logger.DebugContext(ctx, fmt.Sprintf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey))
 			return nil
 		}
 
@@ -87,6 +88,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 				licenser:           licenser,
 				tracerBackend:      tracerBackend,
 				oauth2TokenService: oauth2TokenService,
+				logger:             logger,
 			})
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate key") {
@@ -99,7 +101,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 					return err
 				}
 
-				log.WithError(err).Error("skipping duplicated event: " + event.UID)
+				logger.Error("skipping duplicated event: "+event.UID, "error", err)
 				return nil
 			}
 			if event == nil {
@@ -126,7 +128,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 
 		err = eventQueue.Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred while matching event subs")
+			logger.ErrorContext(ctx, fmt.Sprintf("[asynq]: an error occurred while matching event subs: %v", err))
 		}
 
 		return err
@@ -148,6 +150,7 @@ type MatchSubscriptionsDeps struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	Logger                     log.Logger
 }
 
 func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) func(context.Context, *asynq.Task) error {
@@ -169,14 +172,14 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 
 		channel := deps.Channels[metadata.Config.Channel]
 		if channel == nil {
-			log.Errorf("Invalid channel %s\n", metadata.Config.Channel)
+			deps.Logger.Error(fmt.Sprintf("Invalid channel %s\n", metadata.Config.Channel))
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
 			return nil
 		}
 
 		attributes["channel"] = metadata.Config.Channel
 		cfg := metadata.Config
-		log.Infof("about to match subs for channel: %s\n", cfg.Channel)
+		deps.Logger.Info(fmt.Sprintf("about to match subs for channel: %s\n", cfg.Channel))
 
 		subResponse, err := channel.MatchSubscriptions(ctx, metadata, EventChannelArgs{
 			eventRepo:          deps.EventRepo,
@@ -187,6 +190,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			licenser:           deps.Licenser,
 			tracerBackend:      deps.TracerBackend,
 			oauth2TokenService: deps.OAuth2TokenService,
+			logger:             deps.Logger,
 		})
 		if err != nil {
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
@@ -202,7 +206,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		event, subscriptions := subResponse.Event, subResponse.Subscriptions
 		if len(subscriptions) < 1 {
 			err = &EndpointError{Err: fmt.Errorf("CODE: 1011, empty subscriptions via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
-			log.WithError(err).Errorf("failed to send %s", event.UID)
+			deps.Logger.Error(fmt.Sprintf("failed to send %s: %v", event.UID, err))
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
 			return deps.EventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
 		}
@@ -222,7 +226,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		}
 
 		if subResponse.IsDuplicateEvent {
-			log.FromContext(ctx).Infof("CODE: 1007, duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
+			deps.Logger.InfoContext(ctx, fmt.Sprintf("CODE: 1007, duplicate event with idempotency key %v will not be sent", event.IdempotencyKey))
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.duplicate", attributes, startTime, time.Now())
 			return nil
 		}
@@ -240,9 +244,10 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			FeatureFlag:                deps.FeatureFlag,
 			FeatureFlagFetcher:         deps.FeatureFlagFetcher,
 			EarlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
+			Logger:                     deps.Logger,
 		})
 		if err != nil {
-			log.WithError(err).Error(ErrFailedToWriteToQueue)
+			deps.Logger.Error(ErrFailedToWriteToQueue.Error(), "error", err)
 			writeErr := fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error())
 			err = &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
 			_ = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.RetryStatus)
@@ -252,7 +257,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 
 		err = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.SuccessStatus)
 		if err != nil {
-			log.WithError(err).Errorf("failed to update event status: %s", event.UID)
+			deps.Logger.Error(fmt.Sprintf("failed to update event status: %s: %v", event.UID, err))
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
 			return err
 		}
@@ -262,7 +267,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 	}
 }
 
-func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQueue queue.Queuer, eventRepo datastore.EventRepository) (*datastore.Event, bool, error) {
+func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQueue queue.Queuer, eventRepo datastore.EventRepository, logger log.Logger) (*datastore.Event, bool, error) {
 	var jobID string
 	switch ch.GetConfig().Channel {
 	case "broadcast":
@@ -300,7 +305,7 @@ func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQ
 
 	ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), jobID)
 	if err != nil {
-		log.WithError(err).Error("failed to get task from queue")
+		logger.Error("failed to get task from queue", "error", err)
 		return nil, false, &EndpointError{Err: fmt.Errorf("failed to get task from queue, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 

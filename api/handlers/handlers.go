@@ -100,7 +100,7 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 
 		cacheErr = h.A.Cache.Set(r.Context(), cacheKey.String(), &pp, time.Hour)
 		if cacheErr != nil {
-			h.A.Logger.WithError(cacheErr).Error("failed to cache item")
+			h.A.Logger.Error("failed to cache item", "error", cacheErr)
 		}
 
 		return pp, nil

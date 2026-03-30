@@ -19,7 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -72,14 +72,14 @@ func setupTestDB(t *testing.T) (*Service, database.Database) {
 	err = keys.Set(km)
 	require.NoError(t, err)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	return New(logger, db), db
 }
 
 func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
 	t.Helper()
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 
 	// Create user with unique email
@@ -105,7 +105,7 @@ func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),

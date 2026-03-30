@@ -1,7 +1,6 @@
 package organisation_members
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func Test_LoadUserOrganisationsPaged_Forward_SingleOrg(t *testing.T) {
@@ -248,5 +247,5 @@ func Test_LoadUserOrganisationsPaged_UserInMultipleOrgsWithDifferentRoles(t *tes
 
 func createOrganisationService(t *testing.T, db database.Database) datastore.OrganisationRepository {
 	t.Helper()
-	return organisations.New(log.NewLogger(os.Stdout), db)
+	return organisations.New(log.New("convoy", log.LevelInfo), db)
 }

@@ -6,7 +6,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type SubscriptionLoader struct {
@@ -16,13 +16,13 @@ type SubscriptionLoader struct {
 	config                 *LoaderConfig
 	loaded                 bool
 	lastSyncTime           time.Time
-	log                    log.StdLogger
+	log                    log.Logger
 }
 
 func NewSubscriptionLoader(
 	subRepo datastore.SubscriptionRepository,
 	projectRepo datastore.ProjectRepository,
-	log log.StdLogger,
+	log log.Logger,
 	batchSize int64,
 ) *SubscriptionLoader {
 	config := NewLoaderConfig(batchSize, false)
@@ -50,7 +50,7 @@ func (s *SubscriptionLoader) performInitialLoad(ctx context.Context, table *memo
 
 	subscriptions, err := s.subscriptionFetcher.FetchAllSubscriptions(ctx)
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch all subscriptions")
+		s.log.Error("failed to fetch all subscriptions", "error", err)
 		return err
 	}
 
@@ -101,7 +101,7 @@ func (s *SubscriptionLoader) SetLastSyncTime() {
 func (s *SubscriptionLoader) processUpdatedSubscriptions(ctx context.Context, table *memorystore.Table) error {
 	updatedSubs, err := s.subscriptionFetcher.FetchUpdatedSubscriptions(ctx)
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch updated subscriptions")
+		s.log.Error("failed to fetch updated subscriptions", "error", err)
 		return err
 	}
 
@@ -117,7 +117,7 @@ func (s *SubscriptionLoader) processUpdatedSubscriptions(ctx context.Context, ta
 func (s *SubscriptionLoader) processNewSubscriptions(ctx context.Context, table *memorystore.Table) error {
 	newSubs, err := s.subscriptionFetcher.FetchNewSubscriptions(ctx)
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch new subscriptions")
+		s.log.Error("failed to fetch new subscriptions", "error", err)
 		return err
 	}
 
@@ -132,7 +132,7 @@ func (s *SubscriptionLoader) processNewSubscriptions(ctx context.Context, table 
 func (s *SubscriptionLoader) processDeletedSubscriptions(ctx context.Context, table *memorystore.Table) error {
 	deletedSubs, err := s.subscriptionFetcher.FetchDeletedSubscriptions(ctx)
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch deleted subscriptions")
+		s.log.Error("failed to fetch deleted subscriptions", "error", err)
 		return err
 	}
 

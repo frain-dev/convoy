@@ -10,7 +10,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -20,6 +20,7 @@ type GeneratePasswordResetTokenService struct {
 
 	BaseURL string
 	Data    *models.ForgotPassword
+	Logger  log.Logger
 }
 
 func (u *GeneratePasswordResetTokenService) Run(ctx context.Context) error {
@@ -29,7 +30,7 @@ func (u *GeneratePasswordResetTokenService) Run(ctx context.Context) error {
 			return &ServiceError{ErrMsg: "an account with this email does not exist"}
 		}
 
-		log.FromContext(ctx).WithError(err).Error("failed to find user by email")
+		u.Logger.ErrorContext(ctx, "failed to find user by email", "error", err)
 		return &ServiceError{ErrMsg: "failed to find user by email", Err: err}
 	}
 
@@ -39,19 +40,19 @@ func (u *GeneratePasswordResetTokenService) Run(ctx context.Context) error {
 
 	err = u.UserRepo.UpdateUser(ctx, user)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update user")
+		u.Logger.ErrorContext(ctx, "failed to update user", "error", err)
 		return &ServiceError{ErrMsg: "failed to update user", Err: err}
 	}
 
-	err = u.sendPasswordResetEmail(ctx, u.BaseURL, resetToken, user)
+	err = u.sendPasswordResetEmail(ctx, u.BaseURL, resetToken, user, u.Logger)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to queue password reset email")
+		u.Logger.ErrorContext(ctx, "failed to queue password reset email", "error", err)
 		return &ServiceError{ErrMsg: err.Error()}
 	}
 	return nil
 }
 
-func (u *GeneratePasswordResetTokenService) sendPasswordResetEmail(ctx context.Context, baseURL, token string, user *datastore.User) error {
+func (u *GeneratePasswordResetTokenService) sendPasswordResetEmail(ctx context.Context, baseURL, token string, user *datastore.User, logger log.Logger) error {
 	em := email.Message{
 		Email:        user.Email,
 		Subject:      "Convoy Password Reset",
@@ -64,5 +65,5 @@ func (u *GeneratePasswordResetTokenService) sendPasswordResetEmail(ctx context.C
 		},
 	}
 
-	return queueEmail(ctx, &em, u.Queue)
+	return queueEmail(ctx, &em, u.Queue, logger)
 }

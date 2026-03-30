@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -10,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestDeleteSource_WithVerifier(t *testing.T) {
@@ -66,7 +65,7 @@ func TestDeleteSource_CascadeToSubscriptions(t *testing.T) {
 	source := SeedSource(t, db, project, datastore.NoopVerifier)
 
 	// Create endpoint for subscription
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	endpoint := &datastore.Endpoint{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
@@ -81,7 +80,7 @@ func TestDeleteSource_CascadeToSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create subscription
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		Name:       "TestSubscription",
@@ -178,7 +177,7 @@ func TestDeleteSource_MultipleSubscriptions(t *testing.T) {
 	source := SeedSource(t, db, project, datastore.NoopVerifier)
 
 	// Create endpoint
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	endpoint := &datastore.Endpoint{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
@@ -193,7 +192,7 @@ func TestDeleteSource_MultipleSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create multiple subscriptions
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	sub1 := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		Name:       "Subscription1",

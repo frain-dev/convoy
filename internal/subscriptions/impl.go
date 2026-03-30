@@ -19,7 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/subscriptions/repo"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -45,7 +45,7 @@ func (s *ServiceError) Unwrap() error {
 
 // Service implements the SubscriptionRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier
 	db     *pgxpool.Pool
 }
@@ -54,7 +54,7 @@ type Service struct {
 var _ datastore.SubscriptionRepository = (*Service)(nil)
 
 // New creates a new Subscription Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -92,7 +92,7 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 	// Begin transaction
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to create subscription", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -130,7 +130,7 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 		DeliveryMode:                  common.StringToPgTextNullable(string(subscription.DeliveryMode)),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create subscription")
+		s.logger.Error("failed to create subscription", "error", err)
 		return &ServiceError{ErrMsg: "failed to create subscription", Err: err}
 	}
 
@@ -154,7 +154,7 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 	for _, et := range eventTypesSlice {
 		err = qtx.UpsertSubscriptionEventTypes(ctx, et)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to upsert event types")
+			s.logger.Error("failed to upsert event types", "error", err)
 			return &ServiceError{ErrMsg: "failed to create subscription event types", Err: err}
 		}
 	}
@@ -162,14 +162,14 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 	// Create filters for each event type
 	err = qtx.InsertSubscriptionEventTypeFilters(ctx, common.StringToPgTextNullable(subscription.UID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to insert event type filters")
+		s.logger.Error("failed to insert event type filters", "error", err)
 		return &ServiceError{ErrMsg: "failed to create subscription filters", Err: err}
 	}
 
 	// Commit transaction
 	err = tx.Commit(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to create subscription", Err: err}
 	}
 
@@ -202,7 +202,7 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 	// Begin transaction
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to update subscription", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -239,7 +239,7 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 		DeliveryMode:                  common.StringToPgTextNullable(string(subscription.DeliveryMode)),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update subscription")
+		s.logger.Error("failed to update subscription", "error", err)
 		return &ServiceError{ErrMsg: "failed to update subscription", Err: err}
 	}
 
@@ -268,7 +268,7 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 	for _, et := range eventTypesSlice {
 		err = qtx.UpsertSubscriptionEventTypes(ctx, et)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to upsert event types")
+			s.logger.Error("failed to upsert event types", "error", err)
 			return &ServiceError{ErrMsg: "failed to update subscription event types", Err: err}
 		}
 	}
@@ -276,21 +276,21 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 	// Delete filters when they are removed from the subscription
 	err = qtx.DeleteSubscriptionEventTypes(ctx, common.StringToPgText(subscription.UID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete old event type filters")
+		s.logger.Error("failed to delete old event type filters", "error", err)
 		return &ServiceError{ErrMsg: "failed to delete old subscription filters", Err: err}
 	}
 
 	// Create filters for each event type
 	err = qtx.InsertSubscriptionEventTypeFilters(ctx, common.StringToPgTextNullable(subscription.UID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to insert event type filters")
+		s.logger.Error("failed to insert event type filters", "error", err)
 		return &ServiceError{ErrMsg: "failed to create subscription filters", Err: err}
 	}
 
 	// Commit transaction
 	err = tx.Commit(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to update subscription", Err: err}
 	}
 
@@ -310,7 +310,7 @@ func (s *Service) FindSubscriptionByID(ctx context.Context, projectID, subscript
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrSubscriptionNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch subscription by ID")
+		s.logger.Error("failed to fetch subscription by ID", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch subscription", Err: err}
 	}
 
@@ -326,7 +326,7 @@ func (s *Service) FindSubscriptionsBySourceID(ctx context.Context, projectID, so
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrSubscriptionNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch subscriptions by source ID")
+		s.logger.Error("failed to fetch subscriptions by source ID", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch subscriptions", Err: err}
 	}
 
@@ -353,7 +353,7 @@ func (s *Service) FindSubscriptionsByEndpointID(ctx context.Context, projectID, 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrSubscriptionNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch subscriptions by endpoint ID")
+		s.logger.Error("failed to fetch subscriptions by endpoint ID", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch subscriptions", Err: err}
 	}
 
@@ -374,7 +374,7 @@ func (s *Service) FindSubscriptionsByEndpointID(ctx context.Context, projectID, 
 func (s *Service) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
 	rows, err := s.repo.FetchCLISubscriptions(ctx, common.StringToPgText(projectID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to fetch CLI subscriptions")
+		s.logger.Error("failed to fetch CLI subscriptions", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch CLI subscriptions", Err: err}
 	}
 
@@ -429,7 +429,7 @@ func (s *Service) LoadSubscriptionsPaged(ctx context.Context, projectID string, 
 		LimitVal:          pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to fetch subscriptions paginated")
+		s.logger.Error("failed to fetch subscriptions paginated", "error", err)
 		return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "failed to fetch subscriptions", Err: err}
 	}
 
@@ -486,7 +486,7 @@ func (s *Service) DeleteSubscription(ctx context.Context, projectID string, subs
 		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete subscription")
+		s.logger.Error("failed to delete subscription", "error", err)
 		return &ServiceError{ErrMsg: "failed to delete subscription", Err: err}
 	}
 
@@ -514,7 +514,7 @@ func (s *Service) FetchSubscriptionsForBroadcast(ctx context.Context, projectID,
 			LimitVal:  pgtype.Int8{Int64: int64(pageSize), Valid: true},
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to fetch subscriptions for broadcast")
+			s.logger.Error("failed to fetch subscriptions for broadcast", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to fetch subscriptions for broadcast", Err: err}
 		}
 
@@ -555,7 +555,7 @@ func (s *Service) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []st
 	// Count total subscriptions
 	totalCount, err := s.repo.CountProjectSubscriptions(ctx, projectIDs)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to count subscriptions")
+		s.logger.Error("failed to count subscriptions", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to count subscriptions", Err: err}
 	}
 
@@ -574,7 +574,7 @@ func (s *Service) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []st
 			LimitVal:   pgtype.Int8{Int64: int64(pageSize), Valid: true},
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to load subscriptions config")
+			s.logger.Error("failed to load subscriptions config", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to load subscriptions config", Err: err}
 		}
 
@@ -620,7 +620,7 @@ func (s *Service) FetchDeletedSubscriptions(ctx context.Context, projectIDs []st
 		LimitVal:        pgtype.Int8{Int64: int64(pageSize), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to fetch deleted subscriptions")
+		s.logger.Error("failed to fetch deleted subscriptions", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch deleted subscriptions", Err: err}
 	}
 
@@ -739,7 +739,7 @@ LIMIT $%d`, valuesSQL, argIdx, argIdx, argIdx+1)
 
 	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to fetch updated subscriptions")
+		s.logger.Error("failed to fetch updated subscriptions", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch updated subscriptions", Err: err}
 	}
 	defer rows.Close()
@@ -768,7 +768,7 @@ LIMIT $%d`, valuesSQL, argIdx, argIdx, argIdx+1)
 			&filterRawHeaders, &filterRawBody,
 			&rateLimitCount, &rateLimitDuration,
 		); err != nil {
-			s.logger.WithError(err).Error("failed to scan updated subscription")
+			s.logger.Error("failed to scan updated subscription", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to scan updated subscription", Err: err}
 		}
 
@@ -794,7 +794,7 @@ LIMIT $%d`, valuesSQL, argIdx, argIdx, argIdx+1)
 	}
 
 	if err := rows.Err(); err != nil {
-		s.logger.WithError(err).Error("failed to iterate updated subscriptions")
+		s.logger.Error("failed to iterate updated subscriptions", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to iterate updated subscriptions", Err: err}
 	}
 
@@ -824,7 +824,7 @@ func (s *Service) FetchNewSubscriptions(ctx context.Context, projectIDs, knownSu
 		LimitVal:             pgtype.Int8{Int64: int64(pageSize), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to fetch new subscriptions")
+		s.logger.Error("failed to fetch new subscriptions", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch new subscriptions", Err: err}
 	}
 
@@ -864,7 +864,7 @@ func (s *Service) CountEndpointSubscriptions(ctx context.Context, projectID, end
 		ExcludeSubscriptionID: common.StringToPgText(subscriptionID),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to count endpoint subscriptions")
+		s.logger.Error("failed to count endpoint subscriptions", "error", err)
 		return 0, &ServiceError{ErrMsg: "failed to count endpoint subscriptions", Err: err}
 	}
 

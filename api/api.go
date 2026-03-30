@@ -233,7 +233,7 @@ func (a *ApplicationHandler) buildRouter() *chi.Mux {
 	router.Use(middleware.WriteVersionHeader(VersionHeader, a.cfg.APIVersion))
 	router.Use(middleware.InstrumentRequests(serverName, router))
 	router.Use(middleware.LogHttpRequest(a.A))
-	router.Use(chiMiddleware.Maybe(middleware.SetupCORS, shouldApplyCORS))
+	router.Use(chiMiddleware.Maybe(middleware.SetupCORS(a.A.Logger), shouldApplyCORS))
 
 	return router
 }
@@ -270,7 +270,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 	router.Route("/sso", func(ssoRouter chi.Router) {
 		ssoRouter.Use(middleware.JsonResponse)
-		ssoRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+		ssoRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger))
 		ssoRouter.Get("/callback", handler.RedeemSSOCallback)
 		ssoRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
 	})
@@ -287,7 +287,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(allowContentType)
 			r.Use(middleware.JsonResponse)
-			r.Use(middleware.RequireAuth())
+			r.Use(middleware.RequireAuth(handler.A.Logger))
 
 			r.Route("/projects", func(projectRouter chi.Router) {
 				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
@@ -408,7 +408,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					})
 
 					projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
-						portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
+						portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser, handler.A.Logger))
 						portalLinkRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreatePortalLink)
 						portalLinkRouter.Get("/{portalLinkID}", handler.GetPortalLink)
 						portalLinkRouter.Get("/{portalLinkID}/refresh_token", handler.RefreshPortalLinkAuthToken)
@@ -433,7 +433,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
-		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
+		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(handler.A.Logger), shouldAuthRoute))
 
 		uiRouter.Get("/license/features", handler.GetLicenseFeatures)
 
@@ -445,18 +445,18 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/sso", handler.InitSSO)
+			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger)).Get("/sso", handler.InitSSO)
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
 			authRouter.Post("/logout", handler.LogoutUser)
 
-			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser)).Post("/google/token", handler.GoogleOAuthToken)
-			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser)).Post("/google/setup", handler.GoogleOAuthSetup)
+			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser, handler.A.Logger)).Post("/google/token", handler.GoogleOAuthToken)
+			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser, handler.A.Logger)).Post("/google/setup", handler.GoogleOAuthSetup)
 		})
 
 		uiRouter.Route("/saml", func(samlRouter chi.Router) {
-			samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+			samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger))
 			samlRouter.Get("/login", handler.RedeemSSOCallback)
 			samlRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
 		})
@@ -642,7 +642,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						})
 
 						projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
-							portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
+							portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser, handler.A.Logger))
 							portalLinkRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreatePortalLink)
 							portalLinkRouter.Get("/{portalLinkID}", handler.GetPortalLink)
 							portalLinkRouter.With(middleware.Pagination).Get("/", handler.LoadPortalLinksPaged)
@@ -717,9 +717,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	// Portal Link API.
 	router.Route("/portal-api", func(portalLinkRouter chi.Router) {
 		portalLinkRouter.Use(middleware.JsonResponse)
-		portalLinkRouter.Use(middleware.SetupCORS)
-		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
-		portalLinkRouter.Use(middleware.RequireAuth())
+		portalLinkRouter.Use(middleware.SetupCORS(handler.A.Logger))
+		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser, handler.A.Logger))
+		portalLinkRouter.Use(middleware.RequireAuth(handler.A.Logger))
 
 		portalLinkRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
@@ -806,7 +806,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 	if a.A.Licenser.AsynqMonitoring() {
 		router.Route("/queue", func(asynqRouter chi.Router) {
-			asynqRouter.Use(middleware.RequireAuth())
+			asynqRouter.Use(middleware.RequireAuth(handler.A.Logger))
 			asynqRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
 		})
 	}
@@ -864,7 +864,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 		v1Router.Route("/v1", func(r chi.Router) {
 			r.Use(allowContentType)
 			r.Use(middleware.JsonResponse)
-			r.Use(middleware.RequireAuth())
+			r.Use(middleware.RequireAuth(handler.A.Logger))
 
 			r.Route("/projects", func(projectRouter chi.Router) {
 				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
@@ -907,12 +907,12 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
-		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
+		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(handler.A.Logger), shouldAuthRoute))
 
 		// TODO(subomi): added these back for the tests to pass.
 		// What should we do in the future?
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/sso", handler.InitSSO)
+			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger)).Get("/sso", handler.InitSSO)
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
@@ -961,9 +961,9 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 	// Portal Link API.
 	router.Route("/portal-api", func(portalLinkRouter chi.Router) {
 		portalLinkRouter.Use(middleware.JsonResponse)
-		portalLinkRouter.Use(middleware.SetupCORS)
-		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
-		portalLinkRouter.Use(middleware.RequireAuth())
+		portalLinkRouter.Use(middleware.SetupCORS(handler.A.Logger))
+		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser, handler.A.Logger))
+		portalLinkRouter.Use(middleware.RequireAuth(handler.A.Logger))
 
 		portalLinkRouter.Get("/license/features", handler.GetLicenseFeatures)
 

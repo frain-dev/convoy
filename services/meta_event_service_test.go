@@ -15,8 +15,9 @@ import (
 func provideMetaEventService(ctrl *gomock.Controller) *MetaEventService {
 	queue := mocks.NewMockQueuer(ctrl)
 	metaEventRepo := mocks.NewMockMetaEventRepository(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
 
-	return &MetaEventService{queue, metaEventRepo}
+	return &MetaEventService{Queue: queue, MetaEventRepo: metaEventRepo, Logger: mockLogger}
 }
 
 func TestMetaEventService(t *testing.T) {
@@ -60,6 +61,9 @@ func TestMetaEventService(t *testing.T) {
 				metaEventRepo, _ := m.MetaEventRepo.(*mocks.MockMetaEventRepository)
 				metaEventRepo.EXPECT().UpdateMetaEvent(
 					gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("failed to update meta event"))
+
+				ml, _ := m.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update meta event", "error", gomock.Any()).Times(1)
 			},
 			wantErr: true,
 		},

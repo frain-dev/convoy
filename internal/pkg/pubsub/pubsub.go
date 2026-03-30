@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/sqs"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type PubSub interface {
@@ -39,7 +39,7 @@ type PubSubSource struct {
 }
 
 func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler,
-	log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*PubSubSource, error) {
+	log log.Logger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*PubSubSource, error) {
 	client, err := createClient(source, handler, log, rateLimiter, licenser, instanceId)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (p *PubSubSource) Stop() {
 	p.cancelFunc()
 }
 
-func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (PubSub, error) {
+func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.Logger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (PubSub, error) {
 	if source.PubSub.Type == datastore.SqsPubSub {
 		return sqs.New(source, handler, log, rateLimiter, licenser, instanceId), nil
 	}

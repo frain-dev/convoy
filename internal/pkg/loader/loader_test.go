@@ -2,7 +2,6 @@ package loader
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -14,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // TestData holds common test data for integration tests
@@ -201,8 +200,8 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 			ctx, l := newLoader(t)
 			table := memorystore.NewTable()
 
-			subRepo := subscriptions.New(log.NewLogger(os.Stdout), l.Database)
-			projectRepo := projects.New(log.NewLogger(os.Stdout), l.Database)
+			subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), l.Database)
+			projectRepo := projects.New(log.New("convoy", log.LevelInfo), l.Database)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, l.Logger, 1000)
 			err := loader.SyncChanges(ctx, table)
@@ -219,10 +218,10 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 
 			table := memorystore.NewTable()
 			ctx := context.Background()
-			logger := log.NewLogger(os.Stdout)
+			logger := log.New("convoy", log.LevelInfo)
 
-			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
-			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
+			subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), testData.DB)
+			projectRepo := projects.New(log.New("convoy", log.LevelInfo), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
 			err := loader.SyncChanges(ctx, table)
@@ -248,10 +247,10 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 
 			table := memorystore.NewTable()
 			ctx := context.Background()
-			logger := log.NewLogger(os.Stdout)
+			logger := log.New("convoy", log.LevelInfo)
 
-			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
-			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
+			subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), testData.DB)
+			projectRepo := projects.New(log.New("convoy", log.LevelInfo), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
 			err := loader.SyncChanges(ctx, table)
@@ -298,10 +297,10 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 
 			table := memorystore.NewTable()
 			ctx := context.Background()
-			logger := log.NewLogger(os.Stdout)
+			logger := log.New("convoy", log.LevelInfo)
 
-			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
-			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
+			subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), testData.DB)
+			projectRepo := projects.New(log.New("convoy", log.LevelInfo), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
 
@@ -341,10 +340,10 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 
 			table := memorystore.NewTable()
 			ctx := context.Background()
-			logger := log.NewLogger(os.Stdout)
+			logger := log.New("convoy", log.LevelInfo)
 
-			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
-			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
+			subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), testData.DB)
+			projectRepo := projects.New(log.New("convoy", log.LevelInfo), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
 
@@ -385,10 +384,10 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 
 			table := memorystore.NewTable()
 			ctx := context.Background()
-			logger := log.NewLogger(os.Stdout)
+			logger := log.New("convoy", log.LevelInfo)
 
-			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
-			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
+			subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), testData.DB)
+			projectRepo := projects.New(log.New("convoy", log.LevelInfo), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
 
@@ -425,10 +424,10 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 
 			table := memorystore.NewTable()
 			ctx := context.Background()
-			logger := log.NewLogger(os.Stdout)
+			logger := log.New("convoy", log.LevelInfo)
 
-			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
-			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
+			subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), testData.DB)
+			projectRepo := projects.New(log.New("convoy", log.LevelInfo), testData.DB)
 
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
 			err = loader.SyncChanges(ctx, table)
@@ -444,10 +443,10 @@ func TestSubscriptionLoaderIntegration(t *testing.T) {
 
 			table := memorystore.NewTable()
 			ctx := context.Background()
-			logger := log.NewLogger(os.Stdout)
+			logger := log.New("convoy", log.LevelInfo)
 
-			subRepo := subscriptions.New(log.NewLogger(os.Stdout), testData.DB)
-			projectRepo := projects.New(log.NewLogger(os.Stdout), testData.DB)
+			subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), testData.DB)
+			projectRepo := projects.New(log.New("convoy", log.LevelInfo), testData.DB)
 
 			// Test with very small batch size
 			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1)

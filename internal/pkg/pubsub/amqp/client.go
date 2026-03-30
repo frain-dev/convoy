@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
@@ -32,12 +32,12 @@ type Amqp struct {
 	workers     int
 	ctx         context.Context
 	handler     datastore.PubSubHandler
-	log         log.StdLogger
+	log         log.Logger
 	rateLimiter limiter.RateLimiter
 	licenser    license.Licenser
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser) *Amqp {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.Logger, rateLimiter limiter.RateLimiter, licenser license.Licenser) *Amqp {
 	return &Amqp{
 		Cfg:         source.PubSub.Amqp,
 		source:      source,
@@ -68,7 +68,7 @@ func (a *Amqp) dialer() (*amqp.Connection, error) {
 	connString := fmt.Sprintf("%s://%s%s:%s/%s?heartbeat=30", a.Cfg.Schema, auth, a.Cfg.Host, a.Cfg.Port, *a.Cfg.Vhost)
 	conn, err := amqp.Dial(connString)
 	if err != nil {
-		log.WithError(err).Error("Failed to open connection to amqp")
+		a.log.Error("Failed to open connection to amqp", "error", err)
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func (a *Amqp) Verify() error {
 
 	ch, err := conn.Channel()
 	if err != nil {
-		a.log.WithError(err).Error("failed to instantiate a channel")
+		a.log.Error("failed to instantiate a channel", "error", err)
 		return err
 	}
 	defer ch.Close()
@@ -131,7 +131,7 @@ func (a *Amqp) consume() {
 			}
 
 			attempt++
-			a.log.WithError(err).Errorf("AMQP connection failed for queue: %s, will reconnect", a.Cfg.Queue)
+			a.log.Error(fmt.Sprintf("AMQP connection failed for queue: %s, will reconnect: %v", a.Cfg.Queue, err))
 		}
 	}
 }
@@ -240,22 +240,22 @@ func (a *Amqp) processMessage(d amqp.Delivery, mm *metrics.Metrics) {
 
 	headers, err := msgpack.EncodeMsgPack(d.Headers)
 	if err != nil {
-		a.log.WithError(err).Error("failed to marshall message headers")
+		a.log.Error("failed to marshall message headers", "error", err)
 	}
 
 	a.log.Debugf("Processing AMQP message: %s", string(d.Body))
 	if err := a.handler(a.ctx, a.source, string(d.Body), headers); err != nil {
-		a.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
+		a.log.Error("failed to write message to create event queue - amqp pub sub", "error", err)
 		// Reject the message and send it to DLQ
 		if err := d.Nack(false, false); err != nil {
-			a.log.WithError(err).Error("failed to nack message")
+			a.log.Error("failed to nack message", "error", err)
 			mm.IncrementIngestErrorsTotal(a.source)
 		}
 	} else {
 		a.log.Debug("AMQP message processed successfully")
 		// Acknowledge successful processing
 		if err := d.Ack(false); err != nil {
-			a.log.WithError(err).Error("failed to ack message")
+			a.log.Error("failed to ack message", "error", err)
 			mm.IncrementIngestErrorsTotal(a.source)
 		} else {
 			a.log.Debug("AMQP message acknowledged")
@@ -285,6 +285,6 @@ func (a *Amqp) calculateBackoff(attempt uint64) time.Duration {
 // and logs the error for debugging.
 func (a *Amqp) handleError() {
 	if err := recover(); err != nil {
-		a.log.WithError(fmt.Errorf("sourceID: %s, Error: %v", a.source.UID, err)).Error("amqp pubsub source crashed")
+		a.log.Error("amqp pubsub source crashed", "error", fmt.Errorf("sourceID: %s, Error: %v", a.source.UID, err))
 	}
 }

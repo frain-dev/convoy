@@ -15,13 +15,13 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/organisations/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 // Service implements the OrganisationRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier      // SQLc-generated interface
 	db     *pgxpool.Pool     // Connection pool
 	legacy database.Database // For gradual migration if needed
@@ -31,7 +31,7 @@ type Service struct {
 var _ datastore.OrganisationRepository = (*Service)(nil)
 
 // New creates a new Organisation Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -116,7 +116,7 @@ func (s *Service) CreateOrganisation(ctx context.Context, org *datastore.Organis
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create organisation")
+		s.logger.Error("failed to create organisation", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -139,7 +139,7 @@ func (s *Service) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update organisation")
+		s.logger.Error("failed to update organisation", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -157,7 +157,7 @@ func (s *Service) UpdateOrganisationLicenseData(ctx context.Context, orgID, lice
 		ID:          common.StringToPgTextNullable(orgID),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update organisation license data")
+		s.logger.Error("failed to update organisation license data", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 	if result.RowsAffected() == 0 {
@@ -170,7 +170,7 @@ func (s *Service) UpdateOrganisationLicenseData(ctx context.Context, orgID, lice
 func (s *Service) DeleteOrganisation(ctx context.Context, id string) error {
 	result, err := s.repo.DeleteOrganisation(ctx, common.StringToPgTextNullable(id))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete organisation")
+		s.logger.Error("failed to delete organisation", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -188,7 +188,7 @@ func (s *Service) FetchOrganisationByID(ctx context.Context, id string) (*datast
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch organisation by id")
+		s.logger.Error("failed to fetch organisation by id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -203,7 +203,7 @@ func (s *Service) FetchOrganisationByCustomDomain(ctx context.Context, domain st
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch organisation by custom domain")
+		s.logger.Error("failed to fetch organisation by custom domain", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -218,7 +218,7 @@ func (s *Service) FetchOrganisationByAssignedDomain(ctx context.Context, domain 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch organisation by assigned domain")
+		s.logger.Error("failed to fetch organisation by assigned domain", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -255,7 +255,7 @@ func (s *Service) LoadOrganisationsPagedWithSearch(ctx context.Context, pageable
 		LimitVal:  pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load organisations paged")
+		s.logger.Error("failed to load organisations paged", "error", err)
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -287,7 +287,7 @@ func (s *Service) LoadOrganisationsPagedWithSearch(ctx context.Context, pageable
 			Search:    common.StringToPgTextNullable(searchParam),
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to count prev organisations")
+			s.logger.Error("failed to count prev organisations", "error", err)
 			return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err)
 		}
 		prevRowCount.Count = int(count.Int64)
@@ -304,7 +304,7 @@ func (s *Service) LoadOrganisationsPagedWithSearch(ctx context.Context, pageable
 func (s *Service) CountOrganisations(ctx context.Context) (int64, error) {
 	count, err := s.repo.CountOrganisations(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to count organisations")
+		s.logger.Error("failed to count organisations", "error", err)
 		return 0, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -325,7 +325,7 @@ func (s *Service) CalculateUsage(ctx context.Context, orgID string, startTime, e
 		EndTime:        pgtype.Timestamptz{Time: endTime, Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to calculate ingress bytes")
+		s.logger.Error("failed to calculate ingress bytes", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to calculate ingress bytes: %w", err))
 	}
 	usage.Received.Bytes = ingressRow.RawBytes.Int64 + ingressRow.DataBytes.Int64
@@ -337,7 +337,7 @@ func (s *Service) CalculateUsage(ctx context.Context, orgID string, startTime, e
 		EndTime:        pgtype.Timestamptz{Time: endTime, Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to calculate egress bytes")
+		s.logger.Error("failed to calculate egress bytes", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to calculate egress bytes: %w", err))
 	}
 	usage.Sent.Bytes = egressBytes.Int64
@@ -349,7 +349,7 @@ func (s *Service) CalculateUsage(ctx context.Context, orgID string, startTime, e
 		EndTime:        pgtype.Timestamptz{Time: endTime, Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to count events")
+		s.logger.Error("failed to count events", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to count events: %w", err))
 	}
 	usage.Received.Volume = eventCount.Int64
@@ -361,7 +361,7 @@ func (s *Service) CalculateUsage(ctx context.Context, orgID string, startTime, e
 		EndTime:        pgtype.Timestamptz{Time: endTime, Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to count deliveries")
+		s.logger.Error("failed to count deliveries", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, fmt.Errorf("failed to count deliveries: %w", err))
 	}
 	usage.Sent.Volume = deliveryCount.Int64

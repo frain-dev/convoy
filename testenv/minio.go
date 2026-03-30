@@ -10,6 +10,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 
 	tcminio "github.com/testcontainers/testcontainers-go/modules/minio"
+
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const (
@@ -30,7 +32,7 @@ func NewTestMinIO(ctx context.Context) (*tcminio.MinioContainer, MinIOClientFunc
 		"minio/minio:"+minioDockerTag,
 		tcminio.WithUsername(minioUsername),
 		tcminio.WithPassword(minioPassword),
-		testcontainers.WithLogger(NewTestcontainersLogger()),
+		testcontainers.WithLogger(log.New("minio", log.LevelDebug)),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start minio container: %w", err)

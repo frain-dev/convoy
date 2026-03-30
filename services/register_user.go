@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
@@ -30,7 +30,7 @@ type RegisterUserService struct {
 
 	BaseURL string
 	Data    *models.RegisterUser
-	Logger  log.StdLogger
+	Logger  log.Logger
 }
 
 func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
@@ -59,7 +59,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 	err = p.GenerateHash()
 
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate hash")
+		u.Logger.ErrorContext(ctx, "failed to generate hash", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate hash", Err: err}
 	}
 
@@ -81,7 +81,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 			return nil, nil, &ServiceError{ErrMsg: "this email is taken"}
 		}
 
-		log.FromContext(ctx).WithError(err).Error("failed to create user")
+		u.Logger.ErrorContext(ctx, "failed to create user", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to create user", Err: err}
 	}
 
@@ -103,11 +103,11 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 
 	token, err := u.JWT.GenerateToken(user)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate token")
+		u.Logger.ErrorContext(ctx, "failed to generate token", "error", err)
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate token", Err: err}
 	}
 
-	err = sendUserVerificationEmail(ctx, u.BaseURL, user, u.Queue)
+	err = sendUserVerificationEmail(ctx, u.BaseURL, user, u.Queue, u.Logger)
 	if err != nil {
 		return nil, nil, &ServiceError{ErrMsg: "failed to queue user verification email", Err: err}
 	}
@@ -115,7 +115,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 	return user, &token, nil
 }
 
-func sendUserVerificationEmail(ctx context.Context, baseURL string, user *datastore.User, q queue.Queuer) error {
+func sendUserVerificationEmail(ctx context.Context, baseURL string, user *datastore.User, q queue.Queuer, logger log.Logger) error {
 	em := email.Message{
 		Email:        user.Email,
 		Subject:      "Convoy Email Verification",
@@ -128,13 +128,13 @@ func sendUserVerificationEmail(ctx context.Context, baseURL string, user *datast
 		},
 	}
 
-	return queueEmail(ctx, &em, q)
+	return queueEmail(ctx, &em, q, logger)
 }
 
-func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer) error {
+func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer, logger log.Logger) error {
 	bytes, err := msgpack.EncodeMsgPack(em)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
+		logger.ErrorContext(ctx, "failed to marshal notification payload", "error", err)
 		return err
 	}
 
@@ -145,7 +145,7 @@ func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer) error {
 
 	err = q.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
+		logger.ErrorContext(ctx, "failed to write new notification to the queue", "error", err)
 		return err
 	}
 	return nil

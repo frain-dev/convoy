@@ -14,13 +14,13 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/configuration/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 // Service implements the ConfigurationRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier  // SQLc-generated interface
 	db     *pgxpool.Pool // Connection pool
 }
@@ -29,7 +29,7 @@ type Service struct {
 var _ datastore.ConfigurationRepository = (*Service)(nil)
 
 // New creates a new Configuration Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -219,7 +219,7 @@ func (s *Service) CreateConfiguration(ctx context.Context, cfg *datastore.Config
 
 	err := s.repo.CreateConfiguration(ctx, params)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create configuration")
+		s.logger.Error("failed to create configuration", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -233,7 +233,7 @@ func (s *Service) LoadConfiguration(ctx context.Context) (*datastore.Configurati
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrConfigNotFound
 		}
-		s.logger.WithError(err).Error("failed to load configuration")
+		s.logger.Error("failed to load configuration", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -268,7 +268,7 @@ func (s *Service) UpdateConfiguration(ctx context.Context, cfg *datastore.Config
 
 	result, err := s.repo.UpdateConfiguration(ctx, params)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update configuration")
+		s.logger.Error("failed to update configuration", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 

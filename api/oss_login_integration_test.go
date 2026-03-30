@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,7 +25,7 @@ import (
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 )
@@ -83,7 +82,7 @@ func (s *OSSLoginIntegrationTestSuite) SetupTest() {
 		UpdatedAt:     time.Now(),
 	}
 
-	userRepo := users.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
+	userRepo := users.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
 	err = userRepo.CreateUser(context.Background(), s.DefaultUser)
 	require.NoError(s.T(), err)
 

@@ -5,9 +5,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
@@ -21,6 +23,21 @@ func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
 	u, err := url.Parse(s)
 	if err != nil {
 		return "", err
+	}
+
+	if u.Host == "" {
+		return "", errors.New("endpoint url must include a valid host")
+	}
+
+	hostname := strings.ToLower(u.Hostname())
+	if hostname == "localhost" || hostname == "127.0.0.1" || hostname == "::1" || hostname == "0.0.0.0" {
+		return "", errors.New("endpoint url must not point to localhost or loopback addresses")
+	}
+
+	if ip := net.ParseIP(hostname); ip != nil {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return "", errors.New("endpoint url must not point to private or reserved IP addresses")
+		}
 	}
 
 	switch u.Scheme {
@@ -43,6 +60,9 @@ func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
 		}
 		client := &http.Client{
 			Timeout: 10 * time.Second,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 			Transport: &http.Transport{
 				DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 					dialer := &net.Dialer{}
@@ -51,10 +71,17 @@ func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
 			},
 		}
 
-		_, err = client.Get(s)
-		if err != nil {
-			return "", fmt.Errorf("failed to ping tls endpoint: %v", err)
+		resp, getErr := client.Get(u.String())
+		if getErr != nil {
+			return "", fmt.Errorf("failed to ping tls endpoint: %v", getErr)
 		}
+
+		defer func(Body io.ReadCloser) {
+			err = Body.Close()
+			if err != nil {
+				fmt.Println("failed to close response body")
+			}
+		}(resp.Body)
 	default:
 		return "", errors.New("invalid endpoint scheme")
 	}

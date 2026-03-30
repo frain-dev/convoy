@@ -5,18 +5,19 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type UpdateConfigService struct {
 	ConfigRepo datastore.ConfigurationRepository
 	Config     *models.Configuration
+	Logger     log.Logger
 }
 
 func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration, error) {
 	cfg, err := c.ConfigRepo.LoadConfiguration(ctx)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to load configuration")
+		c.Logger.ErrorContext(ctx, "failed to load configuration", "error", err)
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
@@ -38,7 +39,7 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 
 	err = c.ConfigRepo.UpdateConfiguration(ctx, cfg)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update configuration")
+		c.Logger.ErrorContext(ctx, "failed to update configuration", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to update configuration"}
 	}
 

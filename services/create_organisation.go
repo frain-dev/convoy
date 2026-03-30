@@ -16,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	licensesvc "github.com/frain-dev/convoy/internal/pkg/license/service"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -28,7 +28,7 @@ type CreateOrganisationService struct {
 	Licenser      license.Licenser
 	RoleType      auth.RoleType
 	// Logger is required for RunBillingOrganisationSync when billing is enabled.
-	Logger log.StdLogger
+	Logger log.Logger
 }
 
 var ErrOrgLimit = errors.New("your instance has reached it's organisation limit, upgrade to create new organisations")
@@ -49,7 +49,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	}
 
 	if len(co.NewOrg.Name) == 0 {
-		log.FromContext(ctx).WithError(err).Error("organisation name is required")
+		co.Logger.ErrorContext(ctx, "organisation name is required", "error", err)
 		return nil, &ServiceError{ErrMsg: "organisation name is required", Err: err}
 	}
 
@@ -63,7 +63,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to load config")
+		co.Logger.ErrorContext(ctx, "failed to load config", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create organisation", Err: err}
 	}
 
@@ -73,13 +73,13 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 
 	err = co.OrgRepo.CreateOrganisation(ctx, org)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create organisation")
+		co.Logger.ErrorContext(ctx, "failed to create organisation", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create organisation", Err: err}
 	}
 
-	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: auth.RoleOrganisationAdmin})
+	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser, co.Logger).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create super_user member for organisation owner")
+		co.Logger.ErrorContext(ctx, "failed to create super_user member for organisation owner", "error", err)
 	}
 
 	hostForBilling := cfg.Host
@@ -117,7 +117,7 @@ func RunBillingOrganisationSync(
 	userEmail string,
 	billingHost string,
 	orgRepo datastore.OrganisationRepository,
-	logger log.StdLogger,
+	logger log.Logger,
 ) {
 	if logger == nil {
 		panic("RunBillingOrganisationSync: logger is required and must not be nil")
@@ -134,7 +134,7 @@ func RunBillingOrganisationSync(
 		key = resp.Data.LicenseKey
 	}
 	if createErr != nil {
-		logger.WithError(createErr).Error("create_organisation: CreateOrganisation failed")
+		logger.Error("create_organisation: CreateOrganisation failed", "error", createErr)
 	}
 	if key == "" && createErr == nil {
 		licResp, licErr := billingClient.GetOrganisationLicense(ctx, org.UID)
@@ -142,7 +142,7 @@ func RunBillingOrganisationSync(
 			key = licResp.Data.Organisation.LicenseKey
 		}
 		if licErr != nil {
-			logger.WithError(licErr).Error("create_organisation: GetOrganisationLicense failed")
+			logger.Error("create_organisation: GetOrganisationLicense failed", "error", licErr)
 		}
 	}
 	if key == "" {
@@ -161,10 +161,10 @@ func RunBillingOrganisationSync(
 	payload := &license.LicenseDataPayload{Key: key, Entitlements: entitlements}
 	enc, encErr := license.EncryptLicenseData(org.UID, payload)
 	if encErr != nil {
-		logger.WithError(encErr).Error("create_organisation: EncryptLicenseData failed")
+		logger.Error("create_organisation: EncryptLicenseData failed", "error", encErr)
 		return
 	}
 	if updateErr := orgRepo.UpdateOrganisationLicenseData(ctx, org.UID, enc); updateErr != nil {
-		logger.WithError(updateErr).Error("create_organisation: UpdateOrganisationLicenseData failed")
+		logger.Error("create_organisation: UpdateOrganisationLicenseData failed", "error", updateErr)
 	}
 }

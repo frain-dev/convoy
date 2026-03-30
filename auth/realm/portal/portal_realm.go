@@ -14,19 +14,19 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type PortalRealm struct {
 	portalLinkService datastore.PortalLinkRepository
-	logger            log.StdLogger
+	logger            log.Logger
 }
 
 func (p *PortalRealm) GetName() string {
 	return auth.PortalRealmName
 }
 
-func NewPortalRealm(portalLinkService datastore.PortalLinkRepository, logger log.StdLogger) *PortalRealm {
+func NewPortalRealm(portalLinkService datastore.PortalLinkRepository, logger log.Logger) *PortalRealm {
 	return &PortalRealm{
 		portalLinkService: portalLinkService,
 		logger:            logger,

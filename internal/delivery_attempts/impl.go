@@ -18,12 +18,12 @@ import (
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/delivery_attempts/repo"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier
 	db     *pgxpool.Pool
 }
@@ -31,7 +31,7 @@ type Service struct {
 // Ensure Service implements datastore.DeliveryAttemptsRepository at compile time
 var _ datastore.DeliveryAttemptsRepository = (*Service)(nil)
 
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -63,7 +63,7 @@ func (s *Service) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.
 	if attempt.RequestHeader != nil {
 		requestHeaderBytes, err := json.Marshal(attempt.RequestHeader)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to marshal request headers")
+			s.logger.Error("failed to marshal request headers", "error", err)
 			return util.NewServiceError(500, fmt.Errorf("failed to marshal request headers: %w", err))
 		}
 		params.RequestHttpHeader = requestHeaderBytes
@@ -72,7 +72,7 @@ func (s *Service) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.
 	if attempt.ResponseHeader != nil {
 		responseHeaderBytes, err := json.Marshal(attempt.ResponseHeader)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to marshal response headers")
+			s.logger.Error("failed to marshal response headers", "error", err)
 			return util.NewServiceError(500, fmt.Errorf("failed to marshal response headers: %w", err))
 		}
 		params.ResponseHttpHeader = responseHeaderBytes
@@ -84,7 +84,7 @@ func (s *Service) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.
 
 	err := s.repo.CreateDeliveryAttempt(ctx, params)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create delivery attempt")
+		s.logger.Error("failed to create delivery attempt", "error", err)
 		return util.NewServiceError(500, fmt.Errorf("failed to create delivery attempt: %w", err))
 	}
 
@@ -100,7 +100,7 @@ func (s *Service) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId, 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrDeliveryAttemptNotFound
 		}
-		s.logger.WithError(err).Error("failed to find delivery attempt by id")
+		s.logger.Error("failed to find delivery attempt by id", "error", err)
 		return nil, util.NewServiceError(500, fmt.Errorf("failed to find delivery attempt: %w", err))
 	}
 
@@ -110,7 +110,7 @@ func (s *Service) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId, 
 func (s *Service) FindDeliveryAttempts(ctx context.Context, eventDeliveryId string) ([]datastore.DeliveryAttempt, error) {
 	rows, err := s.repo.FindDeliveryAttempts(ctx, common.StringToPgText(eventDeliveryId))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to find delivery attempts")
+		s.logger.Error("failed to find delivery attempts", "error", err)
 		return nil, util.NewServiceError(500, fmt.Errorf("failed to find delivery attempts: %w", err))
 	}
 
@@ -118,7 +118,7 @@ func (s *Service) FindDeliveryAttempts(ctx context.Context, eventDeliveryId stri
 	for _, row := range rows {
 		attempt, err := rowToDeliveryAttempt(row)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to convert row to delivery attempt")
+			s.logger.Error("failed to convert row to delivery attempt", "error", err)
 			continue // Skip invalid rows
 		}
 		attempts = append(attempts, *attempt)
@@ -153,7 +153,7 @@ func (s *Service) DeleteProjectDeliveriesAttempts(ctx context.Context, projectID
 	}
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete project delivery attempts")
+		s.logger.Error("failed to delete project delivery attempts", "error", err)
 		return util.NewServiceError(500, fmt.Errorf("failed to delete delivery attempts: %w", err))
 	}
 
@@ -170,7 +170,7 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 	// First, get counts for all endpoints within the lookback duration
 	rows, err := s.repo.GetFailureAndSuccessCounts(ctx, pgtype.Int4{Int32: int32(lookBackDuration), Valid: true})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to get failure and success counts")
+		s.logger.Error("failed to get failure and success counts", "error", err)
 		return nil, util.NewServiceError(500, fmt.Errorf("failed to get counts: %w", err))
 	}
 
@@ -198,7 +198,7 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 				// No results for this endpoint, skip
 				continue
 			}
-			s.logger.WithError(err).Error("failed to get counts for endpoint with reset time")
+			s.logger.Error("failed to get counts for endpoint with reset time", "error", err)
 			continue // Continue processing other endpoints
 		}
 
@@ -419,7 +419,7 @@ select partition_delivery_attempts_table();
 
 	_, err := s.db.Exec(ctx, partitionSQL)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to partition delivery attempts table")
+		s.logger.Error("failed to partition delivery attempts table", "error", err)
 		return util.NewServiceError(500, fmt.Errorf("failed to partition table: %w", err))
 	}
 
@@ -494,7 +494,7 @@ select convoy.un_partition_delivery_attempts_table()
 
 	_, err := s.db.Exec(ctx, unPartitionSQL)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to unpartition delivery attempts table")
+		s.logger.Error("failed to unpartition delivery attempts table", "error", err)
 		return util.NewServiceError(500, fmt.Errorf("failed to unpartition table: %w", err))
 	}
 

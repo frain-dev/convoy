@@ -3,7 +3,6 @@ package delivery_attempts
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
@@ -11,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestExportRecords_EmptyResult(t *testing.T) {
@@ -19,7 +18,7 @@ func TestExportRecords_EmptyResult(t *testing.T) {
 	defer db.Close()
 
 	project := seedTestData(t, db, ctx)
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create a buffer to write exported data
 	var buf bytes.Buffer
@@ -40,7 +39,7 @@ func TestExportRecords_WithData(t *testing.T) {
 	project := seedTestData(t, db, ctx)
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create 5 delivery attempts
 	attemptIDs := make([]string, 5)
@@ -91,7 +90,7 @@ func TestExportRecords_ProjectIsolation(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create two projects with delivery attempts
 	project1 := seedTestData(t, db, ctx)
@@ -162,7 +161,7 @@ func TestExportRecords_TimeFiltering(t *testing.T) {
 	project := seedTestData(t, db, ctx)
 	endpoint := seedEndpoint(t, db, ctx, project)
 	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
-	service := New(log.NewLogger(os.Stdout), db)
+	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create 3 attempts
 	for i := 0; i < 3; i++ {

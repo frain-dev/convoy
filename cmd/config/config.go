@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func AddConfigCommand() *cobra.Command {
@@ -18,18 +17,19 @@ func AddConfigCommand() *cobra.Command {
 			"CheckMigration":  "false",
 			"ShouldBootstrap": "false",
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
-				log.Fatalf("Error getting config: %v\n", err)
+				return fmt.Errorf("error getting config: %w", err)
 			}
 
 			data, err := json.MarshalIndent(cfg, "", "    ")
 			if err != nil {
-				log.Fatalf("Error printing config: %v\n", err)
+				return fmt.Errorf("error printing config: %w", err)
 			}
 
 			fmt.Println(string(data))
+			return nil
 		},
 	}
 

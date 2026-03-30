@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestGetLicenseFeatures_InstanceLevel(t *testing.T) {
@@ -74,7 +73,7 @@ func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 		A: &types.APIOptions{
 			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			BillingClient: &billing.MockBillingClient{},
-			Logger:        log.FromContext(context.Background()),
+			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
 			OrgMemberRepo: mockOrgMemberRepo,
 			ProjectRepo:   mockProjectRepo,
@@ -126,7 +125,7 @@ func TestGetLicenseFeatures_OrgLevel_Header(t *testing.T) {
 		A: &types.APIOptions{
 			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			BillingClient: &billing.MockBillingClient{},
-			Logger:        log.FromContext(context.Background()),
+			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
 			OrgMemberRepo: mockOrgMemberRepo,
 			ProjectRepo:   mockProjectRepo,
@@ -171,7 +170,7 @@ func TestGetLicenseFeatures_OrgLevel_BillingRequiredWhenNoLicenseData(t *testing
 		A: &types.APIOptions{
 			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
 			BillingClient: &billing.MockBillingClient{},
-			Logger:        log.FromContext(context.Background()),
+			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
 			OrgMemberRepo: mockOrgMemberRepo,
 			ProjectRepo:   mockProjectRepo,

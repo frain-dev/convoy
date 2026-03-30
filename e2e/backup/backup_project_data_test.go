@@ -3,8 +3,6 @@ package backup
 import (
 	"context"
 	"encoding/json"
-	"io"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,7 +20,7 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/projects"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/worker/task"
 )
 
@@ -36,11 +34,12 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
-	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
+	logger := log.New("convoy", log.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	org := env.Organisation
@@ -64,7 +63,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		Authentication: &datastore.EndpointAuthentication{},
 	}
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
@@ -89,6 +88,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 
@@ -149,11 +149,12 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
-	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
+	logger := log.New("convoy", log.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	project := env.Project
@@ -183,7 +184,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		Authentication: &datastore.EndpointAuthentication{},
 	}
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
@@ -208,6 +209,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 
@@ -265,13 +267,14 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
-	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
-	orgService := organisations.New(log.NewLogger(os.Stdout), db)
+	logger := log.New("convoy", log.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
+	endpointRepo := endpoints.New(logger, db)
+	orgService := organisations.New(logger, db)
 
 	// Create first organization and project
 	org1 := env.Organisation
@@ -364,6 +367,7 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 
@@ -401,11 +405,12 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
-	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
+	logger := log.New("convoy", log.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	project := env.Project
@@ -428,7 +433,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		Authentication: &datastore.EndpointAuthentication{},
 	}
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
@@ -464,6 +469,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 
@@ -502,11 +508,12 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
-	configRepo := configuration.New(log.NewLogger(os.Stdout), db)
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
-	eventDeliveryRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
-	attemptsRepo := delivery_attempts.New(log.NewLogger(os.Stdout), db)
+	logger := log.New("convoy", log.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	org := env.Organisation
@@ -530,7 +537,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 		UpdatedAt:      time.Now(),
 		Authentication: &datastore.EndpointAuthentication{},
 	}
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
@@ -550,6 +557,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 		eventDeliveryRepo,
 		attemptsRepo,
 		env.App.Redis,
+		logger,
 	)(ctx, backupTask)
 	require.NoError(t, err)
 

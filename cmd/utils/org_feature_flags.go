@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var (
@@ -51,21 +51,21 @@ func AddUpdateOrgFeatureFlagsCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("failed to fetch organisation: %w", err)
 			}
 
-			log.Infof("Updating feature flags for organisation: %s (%s)", org.Name, org.UID)
+			slog.Info(fmt.Sprintf("Updating feature flags for organisation: %s (%s)", org.Name, org.UID))
 
 			errorList := processFeatureFlags(context.Background(), db, orgID, enableFlags, true)
 			errorList = append(errorList, processFeatureFlags(context.Background(), db, orgID, disableFlags, false)...)
 
 			if len(errorList) > 0 {
-				log.Errorf("Encountered %d errors:", len(errorList))
+				slog.Error(fmt.Sprintf("Encountered %d errors:", len(errorList)))
 				for _, errMsg := range errorList {
-					log.Errorf("  - %s", errMsg)
+					slog.Error(fmt.Sprintf("  - %s", errMsg))
 				}
 			}
 
 			updated := len(enableFlags) + len(disableFlags) - len(errorList)
 			if updated > 0 {
-				log.Infof("Successfully updated %d feature flag(s)", updated)
+				slog.Info(fmt.Sprintf("Successfully updated %d feature flag(s)", updated))
 			}
 
 			return nil
@@ -84,7 +84,7 @@ func processFeatureFlags(ctx context.Context, db database.Database, orgID string
 	for _, flag := range flags {
 		flagKey := strings.ToLower(strings.TrimSpace(flag))
 		if !isValidFeatureFlag(flagKey) {
-			log.Warnf("Skipping invalid feature flag: %s", flag)
+			slog.Warn(fmt.Sprintf("Skipping invalid feature flag: %s", flag))
 			continue
 		}
 
@@ -102,7 +102,7 @@ func processFeatureFlags(ctx context.Context, db database.Database, orgID string
 		if !enabled {
 			action = "Disabled"
 		}
-		log.Infof("%s feature flag: %s", action, flagKey)
+		slog.Info(fmt.Sprintf("%s feature flag: %s", action, flagKey))
 	}
 	return errorList
 }

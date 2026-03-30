@@ -14,13 +14,13 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/batch_retries/repo"
 	"github.com/frain-dev/convoy/internal/common"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 // Service implements the BatchRetryRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier  // SQLc-generated interface
 	db     *pgxpool.Pool // Connection pool
 }
@@ -29,7 +29,7 @@ type Service struct {
 var _ datastore.BatchRetryRepository = (*Service)(nil)
 
 // New creates a new Batch Retry Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -98,7 +98,7 @@ func (s *Service) CreateBatchRetry(ctx context.Context, batchRetry *datastore.Ba
 	filterBytes, err := common.RetryFilterToJSONB(batchRetry.Filter)
 	if err != nil {
 		if s.logger != nil {
-			s.logger.WithError(err).Error("failed to marshal filter")
+			s.logger.Error("failed to marshal filter", "error", err)
 		}
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -119,7 +119,7 @@ func (s *Service) CreateBatchRetry(ctx context.Context, batchRetry *datastore.Ba
 
 	if err != nil {
 		if s.logger != nil {
-			s.logger.WithError(err).Error("failed to create batch retry")
+			s.logger.Error("failed to create batch retry", "error", err)
 		}
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -136,7 +136,7 @@ func (s *Service) UpdateBatchRetry(ctx context.Context, batchRetry *datastore.Ba
 	filterBytes, err := common.RetryFilterToJSONB(batchRetry.Filter)
 	if err != nil {
 		if s.logger != nil {
-			s.logger.WithError(err).Error("failed to marshal filter")
+			s.logger.Error("failed to marshal filter", "error", err)
 		}
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -156,7 +156,7 @@ func (s *Service) UpdateBatchRetry(ctx context.Context, batchRetry *datastore.Ba
 
 	if err != nil {
 		if s.logger != nil {
-			s.logger.WithError(err).Error("failed to update batch retry")
+			s.logger.Error("failed to update batch retry", "error", err)
 		}
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -176,7 +176,7 @@ func (s *Service) FindBatchRetryByID(ctx context.Context, id string) (*datastore
 			return nil, datastore.ErrBatchRetryNotFound
 		}
 		if s.logger != nil {
-			s.logger.WithError(err).Error("failed to find batch retry by id")
+			s.logger.Error("failed to find batch retry by id", "error", err)
 		}
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -198,7 +198,7 @@ func (s *Service) FindActiveBatchRetry(ctx context.Context, projectID string) (*
 			return nil, nil
 		}
 		if s.logger != nil {
-			s.logger.WithError(err).Error("failed to find active batch retry")
+			s.logger.Error("failed to find active batch retry", "error", err)
 		}
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}

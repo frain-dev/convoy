@@ -15,6 +15,7 @@ import (
 func providePauseEndpointService(ctrl *gomock.Controller, EndpointID, projectID string) *PauseEndpointService {
 	return &PauseEndpointService{
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
+		Logger:       mocks.NewMockLogger(ctrl),
 		EndpointId:   EndpointID,
 		ProjectID:    projectID,
 	}
@@ -81,6 +82,9 @@ func TestPauseEndpointService_Run(t *testing.T) {
 				e.EXPECT().FindEndpointByID(gomock.Any(), "123", "abc").Times(1).Return(
 					nil, errors.New("failed"),
 				)
+
+				ml, _ := es.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to find endpoint", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to find endpoint",
@@ -99,6 +103,9 @@ func TestPauseEndpointService_Run(t *testing.T) {
 				)
 
 				e.EXPECT().UpdateEndpointStatus(gomock.Any(), "abc", "123", datastore.PausedEndpointStatus).Times(1).Return(errors.New("failed"))
+
+				ml, _ := es.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update endpoint status", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update endpoint status",

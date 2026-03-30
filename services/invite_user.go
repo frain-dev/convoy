@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
@@ -29,6 +29,7 @@ type InviteUserService struct {
 	User         *datastore.User
 	Organisation *datastore.Organisation
 	Licenser     license.Licenser
+	Logger       log.Logger
 }
 
 func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationInvite, error) {
@@ -68,7 +69,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	err = iu.InviteRepo.CreateOrganisationInvite(ctx, iv)
 	if err != nil {
 		errMsg := "failed to invite member"
-		log.FromContext(ctx).WithError(err).Error(errMsg)
+		iu.Logger.ErrorContext(ctx, errMsg, "error", err)
 
 		if strings.Contains(err.Error(), "duplicate") && strings.Contains(err.Error(), "organisation_invites_invitee_email") {
 			return nil, &ServiceError{ErrMsg: "an invite for this email already exists", Err: err}
@@ -79,7 +80,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 
 	err = sendInviteEmail(iv, iu.User, iu.Organisation, iu.Queue)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to send email invite")
+		iu.Logger.ErrorContext(ctx, "failed to send email invite", "error", err)
 	}
 
 	return iv, nil

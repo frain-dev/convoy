@@ -15,11 +15,11 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	objectstore "github.com/frain-dev/convoy/internal/pkg/object-store"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository,
-	eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd redis.UniversalClient) func(context.Context, *asynq.Task) error {
+	eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd redis.UniversalClient, logger log.Logger) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd)
 	rs := redsync.New(pool)
 
@@ -41,7 +41,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 
 			ok, _err := mutex.UnlockContext(_ctx)
 			if !ok || _err != nil {
-				log.WithError(_err).Error("failed to release lock")
+				logger.Error("failed to release lock", "error", _err)
 			}
 		}()
 
@@ -61,23 +61,23 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 		}
 
 		if len(projects) == 0 {
-			log.Warn("no existing projects, retention policy job exiting")
+			logger.Warn("no existing projects, retention policy job exiting")
 			return nil
 		}
 
 		for _, p := range projects {
-			e, innerErr := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, config, attemptsRepo)
+			e, innerErr := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, config, attemptsRepo, logger)
 			if innerErr != nil {
 				return innerErr
 			}
 
 			result, innerErr := e.Export(ctx)
 			if innerErr != nil {
-				log.WithError(innerErr).Errorf("Failed to archive project id's (%s) events ", p.UID)
+				logger.Error(fmt.Sprintf("Failed to archive project id's (%s) events : %v", p.UID, innerErr))
 			}
 
 			// upload to object storage.
-			objectStoreClient, innerErr := objectstore.NewObjectStoreClient(config.StoragePolicy)
+			objectStoreClient, innerErr := objectstore.NewObjectStoreClient(config.StoragePolicy, logger)
 			if innerErr != nil {
 				return innerErr
 			}
@@ -92,12 +92,12 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 		}
 
-		log.Printf("Backup Project Data job took %f minutes to run", time.Since(c).Minutes())
+		logger.Info(fmt.Sprintf("Backup Project Data job took %f minutes to run", time.Since(c).Minutes()))
 		return nil
 	}
 }
 
-func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner) func(context.Context, *asynq.Task) error {
+func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner, logger log.Logger) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd)
 	rs := redsync.New(pool)
 
@@ -119,7 +119,7 @@ func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner) func
 
 			ok, _err := mutex.UnlockContext(_lockCtx)
 			if !ok || _err != nil {
-				log.FromContext(ctx).WithError(_err).Error("failed to release lock")
+				logger.ErrorContext(ctx, "failed to release lock", "error", _err)
 			}
 		}()
 
@@ -129,7 +129,7 @@ func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner) func
 			return err
 		}
 
-		log.FromContext(ctx).Infof("Retention job took %f minutes to run", time.Since(c).Minutes())
+		logger.InfoContext(ctx, fmt.Sprintf("Retention job took %f minutes to run", time.Since(c).Minutes()))
 		return nil
 	}
 }

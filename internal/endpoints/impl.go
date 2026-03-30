@@ -19,7 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/endpoints/repo"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -31,7 +31,7 @@ var (
 
 // Service implements datastore.EndpointRepository using sqlc-generated queries.
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier
 	db     *pgxpool.Pool
 	hook   *hooks.Hook
@@ -42,7 +42,7 @@ type Service struct {
 var _ datastore.EndpointRepository = (*Service)(nil)
 
 // New creates a new endpoints service.
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	km, err := keys.Get()
 	if err != nil {
 		panic(fmt.Sprintf("endpoints: failed to initialize key manager: %v", err))

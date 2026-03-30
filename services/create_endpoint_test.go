@@ -23,7 +23,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoint, projectID string) *CreateEndpointService {
@@ -31,7 +31,7 @@ func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoi
 		EndpointRepo:               mocks.NewMockEndpointRepository(ctrl),
 		ProjectRepo:                mocks.NewMockProjectRepository(ctrl),
 		Licenser:                   mocks.NewMockLicenser(ctrl),
-		Logger:                     log.NewLogger(os.Stdout),
+		Logger:                     log.New("convoy", log.LevelInfo),
 		FeatureFlag:                fflag.NoopFflag(),
 		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),
 		EarlyAdopterFeatureFetcher: mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),

@@ -2,7 +2,6 @@ package migrator
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/jmoiron/sqlx"
 
@@ -10,7 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 var (
@@ -20,15 +19,15 @@ var (
 type Migrator struct {
 	dbx    *sqlx.DB
 	src    migrate.MigrationSource
-	logger log.StdLogger
+	logger log.Logger
 }
 
 func New(d database.Database) *Migrator {
-	defaultLogger := log.NewLogger(os.Stdout)
+	defaultLogger := log.New("convoy", log.LevelError)
 	return NewWithLogger(d, defaultLogger)
 }
 
-func NewWithLogger(d database.Database, logger log.StdLogger) *Migrator {
+func NewWithLogger(d database.Database, logger log.Logger) *Migrator {
 	migrations := &migrate.EmbedFileSystemMigrationSource{
 		FileSystem: convoy.MigrationFiles,
 		Root:       "sql",
@@ -37,7 +36,7 @@ func NewWithLogger(d database.Database, logger log.StdLogger) *Migrator {
 	migrate.SetSchema(tableSchema)
 
 	if logger == nil {
-		logger = log.NewLogger(os.Stdout)
+		logger = log.New("convoy", log.LevelError)
 	}
 
 	return &Migrator{dbx: d.GetDB(), src: migrations, logger: logger}

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -43,7 +43,7 @@ type Licenser struct {
 	isCommunity     bool
 	denyLimits      bool
 
-	logger log.StdLogger
+	logger log.Logger
 }
 
 // Config holds configuration for the license service licenser
@@ -55,7 +55,7 @@ type LicenserConfig struct {
 	UserRepo       datastore.UserRepository
 	ProjectRepo    datastore.ProjectRepository
 	CacheTTL       time.Duration
-	Logger         log.StdLogger
+	Logger         log.Logger
 }
 
 // NewLicenser creates a new license service licenser

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // subscriptionFetcher implements SubscriptionFetcher
@@ -15,7 +15,7 @@ type subscriptionFetcher struct {
 	batchSize              int64
 	subscriptionCollection *SubscriptionCollection
 	lastSyncTime           time.Time
-	log                    log.StdLogger
+	log                    log.Logger
 }
 
 // NewSubscriptionFetcher creates a new subscription fetcher
@@ -23,7 +23,7 @@ func NewSubscriptionFetcher(
 	subRepo datastore.SubscriptionRepository,
 	projectRepo datastore.ProjectRepository,
 	subscriptionCollection *SubscriptionCollection,
-	log log.StdLogger,
+	log log.Logger,
 	batchSize int64,
 ) SubscriptionFetcher {
 	return &subscriptionFetcher{
@@ -48,7 +48,7 @@ func (sf *subscriptionFetcher) FetchAllSubscriptions(ctx context.Context) ([]dat
 
 	subscriptions, err := sf.subRepo.LoadAllSubscriptionConfig(ctx, projectIDs, sf.batchSize)
 	if err != nil {
-		sf.log.WithError(err).Error("failed to load subscriptions of all projects")
+		sf.log.Error("failed to load subscriptions of all projects", "error", err)
 		return nil, err
 	}
 
@@ -73,7 +73,7 @@ func (sf *subscriptionFetcher) FetchUpdatedSubscriptions(ctx context.Context) ([
 		sf.batchSize,
 	)
 	if err != nil {
-		sf.log.WithError(err).Error("failed to load updated subscriptions of all projects")
+		sf.log.Error("failed to load updated subscriptions of all projects", "error", err)
 		return nil, err
 	}
 
@@ -106,7 +106,7 @@ func (sf *subscriptionFetcher) FetchNewSubscriptions(ctx context.Context) ([]dat
 		sf.batchSize,
 	)
 	if err != nil {
-		sf.log.WithError(err).Error("failed to load new subscriptions of all projects")
+		sf.log.Error("failed to load new subscriptions of all projects", "error", err)
 		return nil, err
 	}
 
@@ -136,7 +136,7 @@ func (sf *subscriptionFetcher) FetchDeletedSubscriptions(ctx context.Context) ([
 		sf.batchSize,
 	)
 	if err != nil {
-		sf.log.WithError(err).Error("failed to load deleted subscriptions of all projects")
+		sf.log.Error("failed to load deleted subscriptions of all projects", "error", err)
 		return nil, err
 	}
 

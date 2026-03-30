@@ -9,10 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 var (
@@ -61,6 +60,8 @@ type Exporter struct {
 	projectRepo          datastore.ProjectRepository
 	eventDeliveryRepo    datastore.EventDeliveryRepository
 	deliveryAttemptsRepo datastore.DeliveryAttemptsRepository
+
+	logger log.Logger
 }
 
 func NewExporter(projectRepo datastore.ProjectRepository,
@@ -68,6 +69,7 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	p *datastore.Project, c *datastore.Configuration,
 	attemptsRepo datastore.DeliveryAttemptsRepository,
+	logger log.Logger,
 ) (*Exporter, error) {
 	return &Exporter{
 		config:  c,
@@ -79,6 +81,7 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 		projectRepo:          projectRepo,
 		deliveryAttemptsRepo: attemptsRepo,
 		eventDeliveryRepo:    eventDeliveryRepo,
+		logger:               logger,
 	}, nil
 }
 
@@ -95,7 +98,7 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 		}
 
 		ex.result[table] = *result
-		log.Printf("exported %v record(s) from %v", ex.result[table].NumDocs, table)
+		ex.logger.Info(fmt.Sprintf("exported %v record(s) from %v", ex.result[table].NumDocs, table))
 	}
 
 	return ex.result, nil
@@ -134,7 +137,7 @@ func (ex *Exporter) exportTable(ctx context.Context, table tablename, expDate ti
 
 	numDocs, err := repo.ExportRecords(ctx, ex.project.UID, expDate, writer)
 	if err != nil {
-		log.WithError(err).Error("failed to export records")
+		ex.logger.Error("failed to export records", "error", err)
 		return result, err
 	}
 

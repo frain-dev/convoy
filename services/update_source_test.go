@@ -23,6 +23,7 @@ func provideUpdateSourceService(ctrl *gomock.Controller, t *testing.T, sourceUpd
 		Project:      project,
 		SourceUpdate: sourceUpdate,
 		Source:       source,
+		Logger:       mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -120,6 +121,9 @@ func TestUpdateSourceService_Run(t *testing.T) {
 			dbFn: func(so *UpdateSourceService) {
 				s, _ := so.SourceRepo.(*mocks.MockSourceRepository)
 				s.EXPECT().UpdateSource(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("updated failed"))
+
+				ml, _ := so.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update source", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while updating source",

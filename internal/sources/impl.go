@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/sources/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -35,7 +35,7 @@ func (s *ServiceError) Unwrap() error {
 
 // Service implements the SourceRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier
 	db     *pgxpool.Pool
 }
@@ -44,7 +44,7 @@ type Service struct {
 var _ datastore.SourceRepository = (*Service)(nil)
 
 // New creates a new Source Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -286,7 +286,7 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to create source", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -312,7 +312,7 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 			HmacEncoding:      common.StringToPgTextNullable(params.hmacEncoding),
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to create source verifier")
+			s.logger.Error("failed to create source verifier", "error", err)
 			return &ServiceError{ErrMsg: "failed to create source verifier", Err: err}
 		}
 
@@ -338,12 +338,12 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 		HeaderFunction:            common.StringPtrToPgTextNullable(source.HeaderFunction),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create source")
+		s.logger.Error("failed to create source", "error", err)
 		return &ServiceError{ErrMsg: "failed to create source", Err: err}
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to create source", Err: err}
 	}
 
@@ -358,7 +358,7 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to update source", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -383,7 +383,7 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 		HeaderFunction:            common.StringPtrToPgTextNullable(source.HeaderFunction),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update source")
+		s.logger.Error("failed to update source", "error", err)
 		return &ServiceError{ErrMsg: "failed to update source", Err: err}
 	}
 
@@ -408,7 +408,7 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 			HmacEncoding:      common.StringToPgTextNullable(params.hmacEncoding),
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to update source verifier")
+			s.logger.Error("failed to update source verifier", "error", err)
 			return &ServiceError{ErrMsg: "failed to update source verifier", Err: err}
 		}
 
@@ -418,7 +418,7 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to update source", Err: err}
 	}
 
@@ -432,7 +432,7 @@ func (s *Service) FindSourceByID(ctx context.Context, projectID, id string) (*da
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrSourceNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch source by id")
+		s.logger.Error("failed to fetch source by id", "error", err)
 		return nil, &ServiceError{ErrMsg: "error retrieving source", Err: err}
 	}
 
@@ -449,7 +449,7 @@ func (s *Service) FindSourceByName(ctx context.Context, projectID, name string) 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrSourceNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch source by name")
+		s.logger.Error("failed to fetch source by name", "error", err)
 		return nil, &ServiceError{ErrMsg: "error retrieving source", Err: err}
 	}
 
@@ -463,7 +463,7 @@ func (s *Service) FindSourceByMaskID(ctx context.Context, maskID string) (*datas
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrSourceNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch source by mask id")
+		s.logger.Error("failed to fetch source by mask id", "error", err)
 		return nil, &ServiceError{ErrMsg: "error retrieving source", Err: err}
 	}
 
@@ -474,7 +474,7 @@ func (s *Service) FindSourceByMaskID(ctx context.Context, maskID string) (*datas
 func (s *Service) DeleteSourceByID(ctx context.Context, projectID, id, verifierID string) error {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to delete source", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -487,7 +487,7 @@ func (s *Service) DeleteSourceByID(ctx context.Context, projectID, id, verifierI
 		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete source")
+		s.logger.Error("failed to delete source", "error", err)
 		return &ServiceError{ErrMsg: "failed to delete source", Err: err}
 	}
 
@@ -499,7 +499,7 @@ func (s *Service) DeleteSourceByID(ctx context.Context, projectID, id, verifierI
 	if !util.IsStringEmpty(verifierID) {
 		err = qtx.DeleteSourceVerifier(ctx, common.StringToPgText(verifierID))
 		if err != nil {
-			s.logger.WithError(err).Error("failed to delete source verifier")
+			s.logger.Error("failed to delete source verifier", "error", err)
 			return &ServiceError{ErrMsg: "failed to delete source verifier", Err: err}
 		}
 	}
@@ -510,12 +510,12 @@ func (s *Service) DeleteSourceByID(ctx context.Context, projectID, id, verifierI
 		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete source subscriptions")
+		s.logger.Error("failed to delete source subscriptions", "error", err)
 		return &ServiceError{ErrMsg: "failed to delete source subscriptions", Err: err}
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return &ServiceError{ErrMsg: "failed to delete source", Err: err}
 	}
 
@@ -555,7 +555,7 @@ func (s *Service) LoadSourcesPaged(ctx context.Context, projectID string, filter
 		LimitVal:          pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load sources paged")
+		s.logger.Error("failed to load sources paged", "error", err)
 		return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "an error occurred while fetching sources", Err: err}
 	}
 
@@ -564,7 +564,7 @@ func (s *Service) LoadSourcesPaged(ctx context.Context, projectID string, filter
 	for _, row := range rows {
 		source, err := rowToSource(row)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to convert row to source")
+			s.logger.Error("failed to convert row to source", "error", err)
 			return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "an error occurred while processing sources", Err: err}
 		}
 		sources = append(sources, *source)
@@ -596,7 +596,7 @@ func (s *Service) LoadSourcesPaged(ctx context.Context, projectID string, filter
 			QueryFilter:       common.StringToPgText(queryFilter),
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to count prev sources")
+			s.logger.Error("failed to count prev sources", "error", err)
 			return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "an error occurred while counting sources", Err: err}
 		}
 		prevRowCount.Count = int(count.Int64)
@@ -619,7 +619,7 @@ func (s *Service) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIDs 
 		LimitVal:   pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load pubsub sources")
+		s.logger.Error("failed to load pubsub sources", "error", err)
 		return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "an error occurred while fetching pubsub sources", Err: err}
 	}
 

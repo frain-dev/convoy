@@ -11,7 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestCheckOrganisationProjectLimit_NoKey_ReturnsFalseNil(t *testing.T) {
@@ -35,7 +35,7 @@ func TestCheckOrganisationProjectLimit_NoKey_ReturnsFalseNil(t *testing.T) {
 			Billing:    config.BillingConfiguration{Enabled: true},
 			LicenseKey: "",
 		},
-		Logger: log.FromContext(ctx),
+		Logger: log.New("convoy", log.LevelInfo),
 	}
 
 	allowed, err := CheckOrganisationProjectLimit(ctx, org, deps)

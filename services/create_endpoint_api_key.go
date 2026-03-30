@@ -13,13 +13,14 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 type CreateEndpointAPIKeyService struct {
 	APIKeyRepo datastore.APIKeyRepository
 	D          *models.CreateEndpointApiKey
+	Logger     log.Logger
 }
 
 func (ss *CreateEndpointAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, string, error) {
@@ -36,7 +37,7 @@ func (ss *CreateEndpointAPIKeyService) Run(ctx context.Context) (*datastore.APIK
 	maskID, key := util.GenerateAPIKey()
 	salt, err := util.GenerateSecret()
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate salt")
+		ss.Logger.ErrorContext(ctx, "failed to generate salt", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "something went wrong"}
 	}
 
@@ -66,7 +67,7 @@ func (ss *CreateEndpointAPIKeyService) Run(ctx context.Context) (*datastore.APIK
 
 	err = ss.APIKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create api key")
+		ss.Logger.ErrorContext(ctx, "failed to create api key", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "failed to create api key", Err: err}
 	}
 

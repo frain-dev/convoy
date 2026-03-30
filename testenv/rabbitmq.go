@@ -10,6 +10,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type RabbitMQContainer struct {
@@ -35,7 +37,7 @@ func NewTestRabbitMQ(ctx context.Context) (*RabbitMQContainer, RabbitMQConnectio
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-		Logger:           NewTestcontainersLogger(),
+		Logger:           log.New("rabbitmq", log.LevelDebug),
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to start rabbitmq container: %w", err)

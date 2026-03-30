@@ -3,7 +3,6 @@ package retention
 import (
 	"context"
 	"errors"
-	"os"
 	"time"
 
 	partman "github.com/jirevwe/go_partman"
@@ -15,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/projects"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type Retentioner interface {
@@ -25,7 +24,7 @@ type Retentioner interface {
 
 type TestRetentionPolicy struct {
 	partitioner partman.Partitioner
-	logger      log.StdLogger
+	logger      log.Logger
 	db          database.Database
 }
 
@@ -38,7 +37,7 @@ func (t *TestRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
 func NewTestRetentionPolicy(db database.Database, manager *partman.Manager) *TestRetentionPolicy {
 	return &TestRetentionPolicy{
 		partitioner: manager,
-		logger:      log.NewLogger(os.Stdout),
+		logger:      log.New("convoy", log.LevelInfo),
 		db:          db,
 	}
 }
@@ -46,11 +45,11 @@ func NewTestRetentionPolicy(db database.Database, manager *partman.Manager) *Tes
 type PartitionRetentionPolicy struct {
 	retentionPeriod time.Duration
 	partitioner     partman.Partitioner
-	logger          log.StdLogger
+	logger          log.Logger
 	db              database.Database
 }
 
-func NewPartitionRetentionPolicy(db database.Database, logger log.StdLogger, period time.Duration) (*PartitionRetentionPolicy, error) {
+func NewPartitionRetentionPolicy(db database.Database, logger log.Logger, period time.Duration) (*PartitionRetentionPolicy, error) {
 	pm, err := partman.NewManager(
 		partman.WithDB(db.GetDB()),
 		partman.WithLogger(logger),
@@ -99,7 +98,7 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 			case <-ticker.C:
 				projects, pErr := projectRepo.LoadProjects(context.Background(), &datastore.ProjectFilter{})
 				if pErr != nil {
-					r.logger.WithError(pErr).Error("failed to load projects")
+					r.logger.Error("failed to load projects", "error", pErr)
 				}
 
 				for _, project := range projects {
@@ -115,7 +114,7 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 						PartitionCount:    10,
 					})
 					if err != nil {
-						r.logger.WithError(err).Error("failed to add convoy.events to managed tables")
+						r.logger.Error("failed to add convoy.events to managed tables", "error", err)
 					}
 
 					err = r.partitioner.AddManagedTable(partman.Table{
@@ -130,7 +129,7 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 						PartitionCount:    10,
 					})
 					if err != nil {
-						r.logger.WithError(err).Error("failed to add convoy.events to managed tables")
+						r.logger.Error("failed to add convoy.events to managed tables", "error", err)
 					}
 
 					err = r.partitioner.AddManagedTable(partman.Table{
@@ -145,7 +144,7 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 						PartitionCount:    10,
 					})
 					if err != nil {
-						r.logger.WithError(err).Error("failed to add convoy.event_deliveries to managed tables")
+						r.logger.Error("failed to add convoy.event_deliveries to managed tables", "error", err)
 					}
 
 					err = r.partitioner.AddManagedTable(partman.Table{
@@ -160,7 +159,7 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 						PartitionCount:    10,
 					})
 					if err != nil {
-						r.logger.WithError(err).Error("failed to add convoy.delivery_attempts to managed tables")
+						r.logger.Error("failed to add convoy.delivery_attempts to managed tables", "error", err)
 					}
 				}
 			}
@@ -173,7 +172,7 @@ func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 }
 
 type DeleteRetentionPolicy struct {
-	logger log.StdLogger
+	logger log.Logger
 	db     database.Database
 }
 
@@ -216,7 +215,7 @@ func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
 
 		err = deliveryAttemptsRepo.DeleteProjectDeliveriesAttempts(ctx, p.UID, deliveryFilter, true)
 		if err != nil {
-			d.logger.WithError(err).Error("failed to delete project delivery attempts")
+			d.logger.Error("failed to delete project delivery attempts", "error", err)
 		}
 
 		eventDeliveryFilter := &datastore.EventDeliveryFilter{
@@ -226,7 +225,7 @@ func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
 
 		err = eventDeliveryRepo.DeleteProjectEventDeliveries(ctx, p.UID, eventDeliveryFilter, true)
 		if err != nil {
-			d.logger.WithError(err).Error("failed to delete project event deliveries")
+			d.logger.Error("failed to delete project event deliveries", "error", err)
 		}
 
 		eventFilter := &datastore.EventFilter{
@@ -235,12 +234,12 @@ func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
 		}
 		err = eventRepo.DeleteProjectEvents(ctx, p.UID, eventFilter, true)
 		if err != nil {
-			d.logger.WithError(err).Error("failed to delete project events")
+			d.logger.Error("failed to delete project events", "error", err)
 		}
 
 		err = eventRepo.DeleteProjectTokenizedEvents(ctx, p.UID, eventFilter)
 		if err != nil {
-			d.logger.WithError(err).Error("failed to delete tokenized project events")
+			d.logger.Error("failed to delete tokenized project events", "error", err)
 		}
 	}
 
@@ -249,7 +248,7 @@ func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
 
 func (d *DeleteRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
 
-func NewDeleteRetentionPolicy(db database.Database, logger log.StdLogger) *DeleteRetentionPolicy {
+func NewDeleteRetentionPolicy(db database.Database, logger log.Logger) *DeleteRetentionPolicy {
 	return &DeleteRetentionPolicy{
 		logger: logger,
 		db:     db,

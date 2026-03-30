@@ -146,7 +146,7 @@ func (h *BillingHandler) updateBillingEmailIfEmpty(orgID string) {
 		}
 		_, updateErr := h.BillingClient.UpdateOrganisation(bgCtx, orgID, updateData)
 		if updateErr != nil {
-			h.A.Logger.WithError(updateErr).Warnf("Failed to update billing_email for organisation %s", orgID)
+			h.A.Logger.Warnf("Failed to update billing_email for organisation %s: %v", orgID, updateErr)
 		} else {
 			h.A.Logger.Infof("Updated billing_email for organisation %s", orgID)
 		}
@@ -696,7 +696,7 @@ func (h *BillingHandler) DownloadInvoice(w http.ResponseWriter, r *http.Request)
 
 	_, err = io.Copy(w, pdfResp.Body)
 	if err != nil {
-		h.A.Logger.WithError(err).Error("Failed to stream PDF to client")
+		h.A.Logger.Error("Failed to stream PDF to client", "error", err)
 		return
 	}
 }
@@ -738,7 +738,7 @@ func (h *BillingHandler) updateOrganisationStatus(ctx context.Context, orgID str
 	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to fetch organisation %s for disabled status update", orgID)
+		h.A.Logger.Errorf("Failed to fetch organisation %s for disabled status update: %v", orgID, err)
 		return
 	}
 
@@ -748,7 +748,7 @@ func (h *BillingHandler) updateOrganisationStatus(ctx context.Context, orgID str
 		if org.DisabledAt.Valid {
 			org.DisabledAt = null.Time{}
 			if err := orgRepo.UpdateOrganisation(ctx, org); err != nil {
-				h.A.Logger.WithError(err).Errorf("Failed to clear organisation %s disabled_at", orgID)
+				h.A.Logger.Errorf("Failed to clear organisation %s disabled_at: %v", orgID, err)
 				return
 			}
 			h.A.Logger.Infof("Cleared organisation %s disabled_at - subscription active", orgID)
@@ -757,7 +757,7 @@ func (h *BillingHandler) updateOrganisationStatus(ctx context.Context, orgID str
 		if !org.DisabledAt.Valid {
 			org.DisabledAt = null.NewTime(time.Now(), true)
 			if err := orgRepo.UpdateOrganisation(ctx, org); err != nil {
-				h.A.Logger.WithError(err).Errorf("Failed to set organisation %s disabled_at", orgID)
+				h.A.Logger.Errorf("Failed to set organisation %s disabled_at: %v", orgID, err)
 				return
 			}
 			h.A.Logger.Infof("Set organisation %s disabled_at - subscription not active", orgID)

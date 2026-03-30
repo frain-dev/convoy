@@ -6,8 +6,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
-
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type Response struct {
@@ -70,18 +68,12 @@ type ServerResponse struct {
 }
 
 func NewErrorResponseWithData(msg string, statusCode int, object interface{}) ServerResponse {
-	data, err := json.Marshal(object)
-	if err != nil {
-		log.Errorf("Unable to marshal response data - %s", err)
-	}
+	data, _ := json.Marshal(object)
 	return newServerResponseWithStatus(false, msg, data, statusCode)
 }
 
 func NewServerResponse(msg string, object interface{}, statusCode int) ServerResponse {
-	data, err := json.Marshal(object)
-	if err != nil {
-		log.Errorf("Unable to marshal response data - %s", err)
-	}
+	data, _ := json.Marshal(object)
 	return newServerResponseWithStatus(true, msg, data, statusCode)
 }
 

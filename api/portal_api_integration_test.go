@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,7 +22,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type PortalEndpointIntegrationTestSuite struct {
@@ -73,7 +72,7 @@ func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
-	userRepo := users.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
+	userRepo := users.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
@@ -211,7 +210,7 @@ func (s *PortalEventIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
-	userRepo := users.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
+	userRepo := users.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }

@@ -14,7 +14,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -43,7 +42,7 @@ func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 
 	apiKey, keyString, err := cpk.Run(r.Context())
 	if err != nil {
-		h.A.Logger.WithError(err).Error("failed to create personal api key")
+		h.A.Logger.Error("failed to create personal api key", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -162,7 +161,7 @@ func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 
 	apiKeys, paginationData, err := api_keys.New(h.A.Logger, h.A.DB).LoadAPIKeysPaged(r.Context(), f, &pageable)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to load api keys")
+		h.A.Logger.ErrorContext(r.Context(), "failed to load api keys", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load api keys", http.StatusBadRequest))
 		return
 	}

@@ -9,7 +9,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 // Namespace used in fully-qualified metrics names.
@@ -133,10 +132,10 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	} else {
 		metrics, err = p.collectMetrics()
 		if err != nil {
-			log.Errorf("Failed to collect metrics data: %v", err)
+			p.logger.Error(fmt.Sprintf("Failed to collect metrics data: %v", err))
 			if cachedMetrics != nil {
 				metrics = cachedMetrics
-				log.Warn("Using cached metrics due to collection failure")
+				p.logger.Warn("Using cached metrics due to collection failure")
 			} else {
 				// Return empty metrics to prevent blocking the endpoint
 				metrics = &Metrics{}
@@ -151,7 +150,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	for _, metric := range metrics.EventQueueMetrics {
 		key := fmt.Sprintf("event_queue_total_%s_%s", metric.ProjectID, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
-			log.Warnf("Duplicate metric detected and skipped: event_queue_total (project: %s, source: %s)", metric.ProjectID, metric.SourceId)
+			p.logger.Warn(fmt.Sprintf("Duplicate metric detected and skipped: event_queue_total (project: %s, source: %s)", metric.ProjectID, metric.SourceId))
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -168,7 +167,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	for _, metric := range metrics.EventQueueBacklogMetrics {
 		key := fmt.Sprintf("event_queue_backlog_%s_%s", metric.ProjectID, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
-			log.Warnf("Duplicate metric detected and skipped: event_queue_backlog (project: %s, source: %s)", metric.ProjectID, metric.SourceId)
+			p.logger.Warn(fmt.Sprintf("Duplicate metric detected and skipped: event_queue_backlog (project: %s, source: %s)", metric.ProjectID, metric.SourceId))
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -184,7 +183,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	for _, metric := range metrics.EventDeliveryQueueMetrics {
 		key := fmt.Sprintf("event_delivery_queue_total_%s_%s_%s_%s_%s_%s", metric.ProjectID, metric.EndpointId, strings.ToLower(metric.Status), metric.EventType, metric.SourceId, metric.OrganisationID)
 		if _, ok := metricsMap[key]; ok {
-			log.Warnf("Duplicate metric detected and skipped: event_delivery_queue_total (project: %s, endpoint: %s, status: %s, event_type: %s, source: %s, organisation_id: %s)", metric.ProjectID, metric.EndpointId, metric.Status, metric.EventType, metric.SourceId, metric.OrganisationID)
+			p.logger.Warn(fmt.Sprintf("Duplicate metric detected and skipped: event_delivery_queue_total (project: %s, endpoint: %s, status: %s, event_type: %s, source: %s, organisation_id: %s)", metric.ProjectID, metric.EndpointId, metric.Status, metric.EventType, metric.SourceId, metric.OrganisationID))
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -206,7 +205,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	for _, metric := range metrics.EventQueueEndpointBacklogMetrics {
 		key := fmt.Sprintf("event_delivery_queue_backlog_%s_%s_%s", metric.ProjectID, metric.EndpointId, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
-			log.Warnf("Duplicate metric detected and skipped: event_delivery_queue_backlog (project: %s, endpoint: %s, source: %s)", metric.ProjectID, metric.EndpointId, metric.SourceId)
+			p.logger.Warn(fmt.Sprintf("Duplicate metric detected and skipped: event_delivery_queue_backlog (project: %s, endpoint: %s, source: %s)", metric.ProjectID, metric.EndpointId, metric.SourceId))
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -223,7 +222,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	for _, metric := range metrics.EventQueueEndpointAttemptMetrics {
 		key := fmt.Sprintf("event_delivery_attempts_total_%s_%s_%s_%s", metric.ProjectID, metric.EndpointId, strings.ToLower(metric.Status), metric.StatusCode)
 		if _, ok := metricsMap[key]; ok {
-			log.Warnf("Duplicate metric detected and skipped: event_delivery_attempts_total (project: %s, endpoint: %s, status: %s, status_code: %s)", metric.ProjectID, metric.EndpointId, metric.Status, metric.StatusCode)
+			p.logger.Warn(fmt.Sprintf("Duplicate metric detected and skipped: event_delivery_attempts_total (project: %s, endpoint: %s, status: %s, status_code: %s)", metric.ProjectID, metric.EndpointId, metric.Status, metric.StatusCode))
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -253,7 +252,7 @@ func (p *Postgres) materializedViewExists(ctx context.Context, viewName string) 
 	var exists bool
 	err := p.GetDB().GetContext(ctx, &exists, query, viewName)
 	if err != nil {
-		log.Warnf("Failed to check if materialized view %s exists: %v", viewName, err)
+		p.logger.Warn(fmt.Sprintf("Failed to check if materialized view %s exists: %v", viewName, err))
 		return false
 	}
 	return exists

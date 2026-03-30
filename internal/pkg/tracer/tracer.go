@@ -9,12 +9,14 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 var (
 	ErrInvalidTracerConfiguration = errors.New("invalid tracer configuration")
 	ErrTracerFeatureUnavailable   = errors.New("tracer feature unavailable, please upgrade")
+
+	pkgLogger log.Logger = log.New("tracer", log.LevelInfo)
 )
 
 type contextKey string
@@ -60,7 +62,7 @@ func Init(tCfg config.TracerConfiguration, componentName string, licenser licens
 	case config.DatadogTracerProvider:
 		dt := NewDatadogTracer(tCfg.Datadog, licenser)
 		if !licenser.DatadogTracing() {
-			log.Error(ErrTracerFeatureUnavailable.Error())
+			pkgLogger.Error(ErrTracerFeatureUnavailable.Error())
 			return dt, nil
 		}
 		if tCfg.Datadog == (config.DatadogConfiguration{}) {

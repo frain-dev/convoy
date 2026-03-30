@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,13 +11,13 @@ import (
 
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestHandler_CreateProject_InvalidBody_Returns400(t *testing.T) {
 	handler := &Handler{
 		A: &types.APIOptions{
-			Logger: log.FromContext(context.Background()),
+			Logger: log.New("convoy", log.LevelInfo),
 			Cfg:    config.Configuration{},
 		},
 	}

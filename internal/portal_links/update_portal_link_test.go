@@ -1,7 +1,6 @@
 package portal_links
 
 import (
-	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -9,14 +8,14 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/endpoints"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestUpdatePortalLink_ValidRequest(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	// Create initial portal link
@@ -55,7 +54,7 @@ func TestUpdatePortalLink_WithNewEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -96,7 +95,7 @@ func TestUpdatePortalLink_WithNewEndpoints(t *testing.T) {
 	require.NotContains(t, updatedPortalLink.Endpoints, endpoint1.UID)
 
 	// Verify endpoints have correct owner_id
-	endpointRepo := endpoints.New(log.NewLogger(os.Stdout), db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	updatedEndpoint2, err := endpointRepo.FindEndpointByID(ctx, endpoint2.UID, project.UID)
 	require.NoError(t, err)
 	require.Equal(t, ownerID, updatedEndpoint2.OwnerID)
@@ -110,7 +109,7 @@ func TestUpdatePortalLink_WithEndpoints_AlreadyHaveOwnerID(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -150,7 +149,7 @@ func TestUpdatePortalLink_WithEndpoints_DifferentOwnerID_ShouldFail(t *testing.T
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -191,7 +190,7 @@ func TestUpdatePortalLink_RemoveAllEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -236,7 +235,7 @@ func TestUpdatePortalLink_ChangeOwnerID_AutoLinkEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID1 := ulid.Make().String()
@@ -284,7 +283,7 @@ func TestUpdatePortalLink_InvalidRequest_InvalidAuthType(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	// Create initial portal link
@@ -319,7 +318,7 @@ func TestUpdatePortalLink_EndpointNotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	// Create initial portal link
@@ -354,7 +353,7 @@ func TestUpdatePortalLink_MultipleEndpoints_SomeInvalid(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()
@@ -394,7 +393,7 @@ func TestUpdatePortalLink_VerifyDatabasePersistence(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	// Create initial portal link
@@ -435,7 +434,7 @@ func TestUpdatePortalLink_ChangeAuthType(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	// Create portal link with StaticToken auth type
@@ -474,7 +473,7 @@ func TestUpdatePortalLink_AddEndpointsToExisting(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	service := New(logger, db)
 
 	ownerID := ulid.Make().String()

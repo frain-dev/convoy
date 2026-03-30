@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hibiken/asynq"
@@ -15,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
@@ -340,7 +339,7 @@ func TestProcessBatchRetry(t *testing.T) {
 			batchRetryRepo := mocks.NewMockBatchRetryRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			queuer := mocks.NewMockQueuer(ctrl)
-			logger := log.NewLogger(os.Stdout)
+			logger := log.New("convoy", log.LevelInfo)
 
 			if tc.dbFn != nil {
 				tc.dbFn(batchRetryRepo, eventDeliveryRepo, queuer, tc.batchRetry)

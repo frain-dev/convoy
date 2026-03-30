@@ -3,7 +3,7 @@ package circuit_breaker
 import (
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
@@ -32,10 +32,10 @@ type CircuitBreaker struct {
 	// Number of notifications (maximum of 3) sent in the observability window
 	NotificationsSent uint64 `json:"notifications_sent"`
 
-	logger *log.Logger
+	logger log.Logger
 }
 
-func NewCircuitBreaker(key, tenantId string, logger *log.Logger) *CircuitBreaker {
+func NewCircuitBreaker(key, tenantId string, logger log.Logger) *CircuitBreaker {
 	return &CircuitBreaker{
 		Key:               key,
 		TenantId:          tenantId,
@@ -45,7 +45,7 @@ func NewCircuitBreaker(key, tenantId string, logger *log.Logger) *CircuitBreaker
 	}
 }
 
-func NewCircuitBreakerFromStore(b []byte, logger *log.Logger) (*CircuitBreaker, error) {
+func NewCircuitBreakerFromStore(b []byte, logger log.Logger) (*CircuitBreaker, error) {
 	var c *CircuitBreaker
 	innerErr := msgpack.DecodeMsgPack(b, &c)
 	if innerErr != nil {
@@ -61,7 +61,7 @@ func (b *CircuitBreaker) String() (s string) {
 	bytes, err := msgpack.EncodeMsgPack(b)
 	if err != nil {
 		if b.logger != nil {
-			b.logger.WithError(err).Error("[circuit breaker] failed to encode circuit breaker")
+			b.logger.Error("[circuit breaker] failed to encode circuit breaker", "error", err)
 		}
 		return ""
 	}

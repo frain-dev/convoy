@@ -10,6 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
@@ -23,6 +24,7 @@ type RedisQueue struct {
 	opts      queue.QueueOptions
 	client    *asynq.Client
 	inspector *asynq.Inspector
+	logger    log.Logger
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
@@ -46,6 +48,7 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 		client:    client,
 		opts:      opts,
 		inspector: inspector,
+		logger:    log.New("convoy", log.LevelInfo),
 	}
 }
 

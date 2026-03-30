@@ -18,6 +18,7 @@ func provideUpdateUserService(ctrl *gomock.Controller, data *models.UpdateUser, 
 		UserRepo: mocks.NewMockUserRepository(ctrl),
 		Data:     data,
 		User:     user,
+		Logger:   mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -89,6 +90,9 @@ func TestUpdateUserService_Run(t *testing.T) {
 			dbFn: func(u *UpdateUserService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
 				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Return(errors.New("an error occurred while updating user"))
+
+				ml, _ := u.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update user", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update user",

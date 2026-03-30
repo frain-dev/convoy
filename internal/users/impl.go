@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/users/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 var (
@@ -23,7 +23,7 @@ var (
 
 // Service implements the UserRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier
 	db     *pgxpool.Pool
 }
@@ -32,7 +32,7 @@ type Service struct {
 var _ datastore.UserRepository = (*Service)(nil)
 
 // New creates a new User Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -52,7 +52,7 @@ func (s *Service) CreateUser(ctx context.Context, user *datastore.User) error {
 		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique constraint") {
 			return datastore.ErrDuplicateEmail
 		}
-		s.logger.WithError(err).Error("failed to create user")
+		s.logger.Error("failed to create user", "error", err)
 		return err
 	}
 
@@ -68,7 +68,7 @@ func (s *Service) UpdateUser(ctx context.Context, user *datastore.User) error {
 
 	result, err := s.repo.UpdateUser(ctx, params)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update user")
+		s.logger.Error("failed to update user", "error", err)
 		return err
 	}
 
@@ -90,7 +90,7 @@ func (s *Service) FindUserByID(ctx context.Context, id string) (*datastore.User,
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
 		}
-		s.logger.WithError(err).Error("failed to find user by ID")
+		s.logger.Error("failed to find user by ID", "error", err)
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func (s *Service) FindUserByEmail(ctx context.Context, email string) (*datastore
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
 		}
-		s.logger.WithError(err).Error("failed to find user by email")
+		s.logger.Error("failed to find user by email", "error", err)
 		return nil, err
 	}
 
@@ -116,7 +116,7 @@ func (s *Service) FindUserByToken(ctx context.Context, token string) (*datastore
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
 		}
-		s.logger.WithError(err).Error("failed to find user by token")
+		s.logger.Error("failed to find user by token", "error", err)
 		return nil, err
 	}
 
@@ -129,7 +129,7 @@ func (s *Service) FindUserByEmailVerificationToken(ctx context.Context, token st
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
 		}
-		s.logger.WithError(err).Error("failed to find user by email verification token")
+		s.logger.Error("failed to find user by email verification token", "error", err)
 		return nil, err
 	}
 
@@ -143,7 +143,7 @@ func (s *Service) FindUserByEmailVerificationToken(ctx context.Context, token st
 func (s *Service) CountUsers(ctx context.Context) (int64, error) {
 	count, err := s.repo.CountUsers(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to count users")
+		s.logger.Error("failed to count users", "error", err)
 		return 0, err
 	}
 

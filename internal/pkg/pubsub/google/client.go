@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
@@ -26,12 +26,12 @@ type Google struct {
 	workers     int
 	ctx         context.Context
 	handler     datastore.PubSubHandler
-	log         log.StdLogger
+	log         log.Logger
 	rateLimiter limiter.RateLimiter
 	licenser    license.Licenser
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser) *Google {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.Logger, rateLimiter limiter.RateLimiter, licenser license.Licenser) *Google {
 	return &Google{
 		Cfg:         source.PubSub.Google,
 		source:      source,
@@ -57,7 +57,7 @@ func (g *Google) Verify() error {
 	// The SDK automatically detects PUBSUB_EMULATOR_HOST and disables authentication when set
 	client, err := pubsub.NewClient(ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 	if err != nil {
-		log.WithError(err).Error("failed to create new Google PubSub client")
+		g.log.Error("failed to create new Google PubSub client", "error", err)
 		return ErrInvalidCredentials
 	}
 
@@ -65,7 +65,7 @@ func (g *Google) Verify() error {
 
 	exists, err := client.Subscription(g.Cfg.SubscriptionID).Exists(ctx)
 	if err != nil {
-		log.WithError(err).Error("failed to find subscription")
+		g.log.Error("failed to find subscription", "error", err)
 		return ErrInvalidCredentials
 	}
 
@@ -80,7 +80,7 @@ func (g *Google) consume() {
 	// The SDK automatically detects PUBSUB_EMULATOR_HOST and disables authentication when set
 	client, err := pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 	if err != nil {
-		g.log.WithError(err).Error("failed to create new Google PubSub client")
+		g.log.Error("failed to create new Google PubSub client", "error", err)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (g *Google) consume() {
 
 		attributes, err := msgpack.EncodeMsgPack(m.Attributes)
 		if err != nil {
-			g.log.WithError(err).Error("failed to marshall message attributes")
+			g.log.Error("failed to marshall message attributes", "error", err)
 			return
 		}
 
@@ -116,7 +116,7 @@ func (g *Google) consume() {
 			emptyMap := map[string]string{}
 			emptyBytes, err := msgpack.EncodeMsgPack(emptyMap)
 			if err != nil {
-				g.log.WithError(err).Error("an error occurred creating an empty attributes map")
+				g.log.Error("an error occurred creating an empty attributes map", "error", err)
 				return
 			}
 			attributes = emptyBytes
@@ -126,7 +126,7 @@ func (g *Google) consume() {
 		mm.IncrementIngestTotal(g.source.UID, g.source.ProjectID)
 
 		if err := g.handler(ctx, g.source, string(m.Data), attributes); err != nil {
-			g.log.WithError(err).Error("failed to write message to create event queue - google pub sub")
+			g.log.Error("failed to write message to create event queue - google pub sub", "error", err)
 			mm.IncrementIngestErrorsTotal(g.source)
 		} else {
 			m.Ack()
@@ -135,17 +135,17 @@ func (g *Google) consume() {
 	})
 
 	if err != nil {
-		g.log.WithError(err).Error("subscription receive error - google pub sub")
+		g.log.Error("subscription receive error - google pub sub", "error", err)
 		return
 	}
 }
 
 func (g *Google) handleError(client *pubsub.Client) {
 	if err := client.Close(); err != nil {
-		g.log.WithError(err).Error("an error occurred while closing the client")
+		g.log.Error("an error occurred while closing the client", "error", err)
 	}
 
 	if err := recover(); err != nil {
-		g.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", g.source.UID, err)).Error("google pubsub source crashed")
+		g.log.Error("google pubsub source crashed", "error", fmt.Errorf("sourceID: %s, Error: %s", g.source.UID, err))
 	}
 }
