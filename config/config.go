@@ -393,9 +393,10 @@ type AnalyticsConfiguration struct {
 }
 
 type StoragePolicyConfiguration struct {
-	Type   string        `json:"type" envconfig:"CONVOY_STORAGE_POLICY_TYPE"`
-	S3     S3Storage     `json:"s3"`
-	OnPrem OnPremStorage `json:"on_prem"`
+	Type      string           `json:"type" envconfig:"CONVOY_STORAGE_POLICY_TYPE"`
+	S3        S3Storage        `json:"s3"`
+	OnPrem    OnPremStorage    `json:"on_prem"`
+	AzureBlob AzureBlobStorage `json:"azure_blob"`
 }
 
 type S3Storage struct {
@@ -410,6 +411,14 @@ type S3Storage struct {
 
 type OnPremStorage struct {
 	Path string `json:"path" envconfig:"CONVOY_STORAGE_PREM_PATH"`
+}
+
+type AzureBlobStorage struct {
+	AccountName   string `json:"account_name" envconfig:"CONVOY_STORAGE_AZURE_ACCOUNT_NAME"`
+	AccountKey    string `json:"account_key" envconfig:"CONVOY_STORAGE_AZURE_ACCOUNT_KEY"`
+	ContainerName string `json:"container_name" envconfig:"CONVOY_STORAGE_AZURE_CONTAINER_NAME"`
+	Endpoint      string `json:"endpoint" envconfig:"CONVOY_STORAGE_AZURE_ENDPOINT"`
+	Prefix        string `json:"prefix" envconfig:"CONVOY_STORAGE_AZURE_PREFIX"`
 }
 
 type MetricsConfiguration struct {
