@@ -2,7 +2,9 @@ package backup
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -567,4 +569,116 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	require.Contains(t, eventsFiles[0], expectedEventsPath, "events file should be in correct directory")
 	require.Contains(t, deliveriesFiles[0], expectedDeliveriesPath, "deliveries file should be in correct directory")
 	require.Contains(t, attemptsFiles[0], expectedAttemptsPath, "attempts file should be in correct directory")
+}
+
+func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
+	if infra.NewAzuriteClient == nil {
+		t.Skip("Azurite not available")
+	}
+
+	env := SetupE2EWithoutWorker(t)
+	ctx := context.Background()
+
+	// Get Azurite client
+	azClient, azEndpoint, err := (*infra.NewAzuriteClient)(t)
+	require.NoError(t, err)
+
+	// Get database and repositories
+	db := env.App.DB
+	logger := log.New("convoy", log.LevelInfo)
+	projectRepo := projects.New(logger, db)
+	configRepo := configuration.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
+
+	org := env.Organisation
+	project := env.Project
+
+	// Configure Azure Blob storage
+	createAzuriteConfig(t, db, ctx, azEndpoint)
+
+	// Seed an endpoint
+	endpoint := &datastore.Endpoint{
+		UID:       ulid.Make().String(),
+		ProjectID: project.UID,
+		OwnerID:   project.UID,
+		Url:       "https://example.com/webhook",
+		Name:      "Test Endpoint Azure",
+		Secrets: []datastore.Secret{
+			{UID: ulid.Make().String(), Value: "test-secret"},
+		},
+		Status:         datastore.ActiveEndpointStatus,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Authentication: &datastore.EndpointAuthentication{},
+	}
+	endpointRepo := endpoints.New(logger, db)
+	err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Seed old data (26 hours old - should be exported)
+	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 26)
+	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 26)
+	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
+
+	// Seed recent data (12 hours old - should NOT be exported)
+	recentEvent := seedOldEvent(t, db, ctx, project, endpoint, 12)
+	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 12)
+	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
+
+	// Invoke BackupProjectData task
+	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+		asynq.Queue(string(convoy.ScheduleQueue)))
+
+	err = task.BackupProjectData(
+		configRepo,
+		projectRepo,
+		eventRepo,
+		eventDeliveryRepo,
+		attemptsRepo,
+		env.App.Redis,
+		logger,
+	)(ctx, backupTask)
+	require.NoError(t, err)
+
+	// List exported blobs
+	prefix := fmt.Sprintf("orgs/%s/projects/%s/", org.UID, project.UID)
+	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", prefix)
+	require.Len(t, blobs, 3, "should have 3 export files (events, deliveries, attempts)")
+
+	// Find blobs by path
+	var eventsBlob, deliveriesBlob, attemptsBlob string
+	for _, b := range blobs {
+		switch {
+		case strings.Contains(b, "/events/"):
+			eventsBlob = b
+		case strings.Contains(b, "/eventdeliveries/"):
+			deliveriesBlob = b
+		case strings.Contains(b, "/deliveryattempts/"):
+			attemptsBlob = b
+		}
+	}
+	require.NotEmpty(t, eventsBlob, "should have events export")
+	require.NotEmpty(t, deliveriesBlob, "should have deliveries export")
+	require.NotEmpty(t, attemptsBlob, "should have attempts export")
+
+	// Download and verify events
+	eventsData := downloadAzuriteBlob(t, azClient, "convoy-test-exports", eventsBlob)
+	evts := parseJSONL(t, eventsData)
+	require.Len(t, evts, 1, "should have 1 old event exported")
+	require.Equal(t, oldEvent.UID, evts[0]["uid"], "exported event should be the old one")
+
+	verifyTimeFiltering(t, eventsData)
+	verifyProjectIsolation(t, eventsData, project.UID)
+
+	// Download and verify deliveries
+	deliveriesData := downloadAzuriteBlob(t, azClient, "convoy-test-exports", deliveriesBlob)
+	dlvrs := parseJSONL(t, deliveriesData)
+	require.Len(t, dlvrs, 1, "should have 1 old delivery exported")
+
+	// Download and verify attempts
+	attemptsData := downloadAzuriteBlob(t, azClient, "convoy-test-exports", attemptsBlob)
+	atmpts := parseJSONL(t, attemptsData)
+	require.Len(t, atmpts, 1, "should have 1 old delivery attempt exported")
 }

@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/dchest/uniuri"
 	"github.com/minio/minio-go/v7"
 	"github.com/oklog/ulid/v2"
@@ -425,6 +426,69 @@ func createOnPremConfig(t *testing.T, db database.Database, ctx context.Context,
 	return config
 }
 
+// createAzuriteConfig updates the existing configuration with Azure Blob storage settings
+func createAzuriteConfig(t *testing.T, db database.Database, ctx context.Context, endpoint string) *datastore.Configuration {
+	t.Helper()
+
+	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
+
+	cfg, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err, "failed to load existing configuration")
+
+	cfg.StoragePolicy = &datastore.StoragePolicyConfiguration{
+		Type: datastore.AzureBlob,
+		AzureBlob: &datastore.AzureBlobStorage{
+			AccountName:   null.NewString("devstoreaccount1", true),
+			AccountKey:    null.NewString("Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==", true),
+			ContainerName: null.NewString("convoy-test-exports", true),
+			Endpoint:      null.NewString(endpoint, true),
+		},
+	}
+	cfg.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
+		IsRetentionPolicyEnabled: true,
+		Policy:                   "720h",
+	}
+
+	err = configRepo.UpdateConfiguration(ctx, cfg)
+	require.NoError(t, err, "failed to update Azure configuration")
+
+	return cfg
+}
+
+// listAzuriteBlobs lists all blobs in the Azurite container with the given prefix
+func listAzuriteBlobs(t *testing.T, client *azblob.Client, container, prefix string) []string {
+	t.Helper()
+
+	var blobs []string
+	pager := client.NewListBlobsFlatPager(container, &azblob.ListBlobsFlatOptions{
+		Prefix: &prefix,
+	})
+
+	for pager.More() {
+		resp, err := pager.NextPage(context.Background())
+		require.NoError(t, err, "failed to list azurite blobs")
+		for _, blob := range resp.Segment.BlobItems {
+			blobs = append(blobs, *blob.Name)
+		}
+	}
+
+	return blobs
+}
+
+// downloadAzuriteBlob downloads a blob from Azurite, decompresses gzip, and returns the raw contents
+func downloadAzuriteBlob(t *testing.T, client *azblob.Client, container, blobName string) []byte {
+	t.Helper()
+
+	resp, err := client.DownloadStream(context.Background(), container, blobName, nil)
+	require.NoError(t, err, "failed to download azurite blob")
+	defer resp.Body.Close()
+
+	compressed, err := io.ReadAll(resp.Body)
+	require.NoError(t, err, "failed to read azurite blob data")
+
+	return decompressGzip(t, compressed)
+}
+
 // Verification Functions
 
 // verifyTimeFiltering verifies that all records in the JSONL data are older than the specified cutoff hours
@@ -487,7 +551,7 @@ func getExportPath(baseDir, orgID, projectID, tableName string) string {
 
 // getMinIOPrefix constructs the MinIO prefix for listing objects
 func getMinIOPrefix(orgID, projectID string) string {
-	return fmt.Sprintf("convoy/export/orgs/%s/projects/%s/", orgID, projectID)
+	return fmt.Sprintf("orgs/%s/projects/%s/", orgID, projectID)
 }
 
 // Common Database Assertion Helpers
