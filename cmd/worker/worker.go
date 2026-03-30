@@ -181,7 +181,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		net.LoggerOption(lo),
 		net.TracerOption(a.TracerBackend),
 		net.DetailedTraceOption(true),
-		net.ProxyOption(cfg.Server.HTTP.HttpProxy),
+		net.ProxyOption(cfg.Server.HTTP.HttpProxy, cfg.Server.HTTP.NoProxy),
 		net.AllowListOption(cfg.Dispatcher.AllowList),
 		net.BlockListOption(cfg.Dispatcher.BlockList),
 		net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),

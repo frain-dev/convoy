@@ -1087,3 +1087,275 @@ C6azzwqUOSsfDcuAS5sfJp/6
 	require.Error(t, err)
 	require.ErrorIs(t, err, netjail.ErrDenied)
 }
+
+func TestUseProxy(t *testing.T) {
+	tests := []struct {
+		name       string
+		host       string
+		cfgNoProxy string
+		envNoProxy string
+		envLower   string
+		want       bool
+	}{
+		{
+			name: "no_no_proxy_set",
+			host: "example.com",
+			want: true,
+		},
+		{
+			name:       "exact_host_match_from_config",
+			host:       "internal.example.com",
+			cfgNoProxy: "internal.example.com",
+			want:       false,
+		},
+		{
+			name:       "suffix_match_with_leading_dot",
+			host:       "foo.azurewebsites.net",
+			cfgNoProxy: ".azurewebsites.net",
+			want:       false,
+		},
+		{
+			name:       "suffix_match_deep_subdomain",
+			host:       "my-app.eastus2-01.azurewebsites.net",
+			cfgNoProxy: ".azurewebsites.net",
+			want:       false,
+		},
+		{
+			name:       "suffix_match_without_leading_dot",
+			host:       "foo.azurewebsites.net",
+			cfgNoProxy: "azurewebsites.net",
+			want:       false,
+		},
+		{
+			name:       "no_match_different_domain",
+			host:       "other.example.com",
+			cfgNoProxy: ".azurewebsites.net",
+			want:       true,
+		},
+		{
+			name:       "wildcard_star_matches_all",
+			host:       "anything.example.com",
+			cfgNoProxy: "*",
+			want:       false,
+		},
+		{
+			name:       "cidr_match",
+			host:       "10.0.6.5",
+			cfgNoProxy: "10.0.0.0/8",
+			want:       false,
+		},
+		{
+			name:       "cidr_no_match",
+			host:       "192.168.1.1",
+			cfgNoProxy: "10.0.0.0/8",
+			want:       true,
+		},
+		{
+			name:       "multiple_entries_match_second",
+			host:       "app.internal.net",
+			cfgNoProxy: ".azurewebsites.net,.internal.net,localhost",
+			want:       false,
+		},
+		{
+			name:       "multiple_entries_no_match",
+			host:       "external.example.com",
+			cfgNoProxy: ".azurewebsites.net,.internal.net,localhost",
+			want:       true,
+		},
+		{
+			name:       "host_with_port",
+			host:       "internal.example.com:443",
+			cfgNoProxy: "internal.example.com",
+			want:       false,
+		},
+		{
+			name:       "case_insensitive",
+			host:       "FOO.AzureWebsites.NET",
+			cfgNoProxy: ".azurewebsites.net",
+			want:       false,
+		},
+		{
+			name:       "env_NO_PROXY_fallback",
+			host:       "app.azurewebsites.net",
+			envNoProxy: ".azurewebsites.net",
+			want:       false,
+		},
+		{
+			name:     "env_no_proxy_lowercase_fallback",
+			host:     "app.azurewebsites.net",
+			envLower: ".azurewebsites.net",
+			want:     false,
+		},
+		{
+			name:       "config_takes_precedence_over_env",
+			host:       "app.azurewebsites.net",
+			cfgNoProxy: "other.com",
+			envNoProxy: ".azurewebsites.net",
+			want:       true,
+		},
+		{
+			name:       "env_NO_PROXY_takes_precedence_over_no_proxy",
+			host:       "app.azurewebsites.net",
+			envNoProxy: "other.com",
+			envLower:   ".azurewebsites.net",
+			want:       true,
+		},
+		{
+			name:       "go_wildcard_syntax_not_supported",
+			host:       "app.azurewebsites.net",
+			cfgNoProxy: "*.azurewebsites.net",
+			want:       true,
+		},
+		{
+			name:       "empty_entries_ignored",
+			host:       "app.azurewebsites.net",
+			cfgNoProxy: ",,  ,.azurewebsites.net,,",
+			want:       false,
+		},
+		{
+			name:       "localhost_exact",
+			host:       "localhost",
+			cfgNoProxy: "localhost",
+			want:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("NO_PROXY", tt.envNoProxy)
+			t.Setenv("no_proxy", tt.envLower)
+
+			got := useProxy(tt.host, tt.cfgNoProxy)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestDispatcherProxyWithNoProxy(t *testing.T) {
+	proxyHit := false
+	proxyServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proxyHit = true
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"proxied": true}`))
+	}))
+	defer proxyServer.Close()
+
+	directServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"direct": true}`))
+	}))
+	defer directServer.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("should_bypass_proxy_for_no_proxy_host", func(t *testing.T) {
+		proxyHit = false
+		t.Setenv("NO_PROXY", "127.0.0.1,localhost")
+
+		licenser := mocks.NewMockLicenser(ctrl)
+		licenser.EXPECT().UseForwardProxy().Return(true)
+		licenser.EXPECT().IpRules().AnyTimes().Return(false)
+		licenser.EXPECT().CustomCertificateAuthority().Return(false)
+
+		dispatcher, err := NewDispatcher(
+			licenser,
+			fflag.NewFFlag(nil),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
+			ProxyOption(proxyServer.URL),
+			TLSConfigOption(false, licenser, nil),
+		)
+		require.NoError(t, err)
+
+		resp, err := dispatcher.SendWebhook(
+			context.Background(),
+			directServer.URL,
+			json.RawMessage(`{"test": true}`),
+			"X-Signature",
+			"test-hmac",
+			1024,
+			nil,
+			"",
+			5*time.Second,
+			constants.ContentTypeJSON,
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, `{"direct": true}`, string(resp.Body))
+		require.False(t, proxyHit, "proxy should not have been hit for NO_PROXY host")
+	})
+}
+
+func TestDispatcherDefaultProxyFromEnvironment(t *testing.T) {
+	directServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"direct": true}`))
+	}))
+	defer directServer.Close()
+
+	t.Run("should_respect_env_proxy_when_no_config_proxy", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		t.Setenv("NO_PROXY", "127.0.0.1,localhost")
+
+		licenser := mocks.NewMockLicenser(ctrl)
+		licenser.EXPECT().IpRules().AnyTimes().Return(false)
+		licenser.EXPECT().CustomCertificateAuthority().Return(false)
+
+		dispatcher, err := NewDispatcher(
+			licenser,
+			fflag.NewFFlag(nil),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
+			ProxyOption(""),
+			TLSConfigOption(false, licenser, nil),
+		)
+		require.NoError(t, err)
+
+		resp, err := dispatcher.SendWebhook(
+			context.Background(),
+			directServer.URL,
+			json.RawMessage(`{"test": true}`),
+			"X-Signature",
+			"test-hmac",
+			1024,
+			nil,
+			"",
+			5*time.Second,
+			constants.ContentTypeJSON,
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, `{"direct": true}`, string(resp.Body))
+	})
+}
+
+func TestNewDispatcherWithNoProxy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("should_set_proxy_with_no_proxy_config", func(t *testing.T) {
+		licenser := mocks.NewMockLicenser(ctrl)
+		licenser.EXPECT().UseForwardProxy().Return(true)
+		licenser.EXPECT().IpRules().Return(true)
+		licenser.EXPECT().CustomCertificateAuthority().Return(false)
+
+		d, err := NewDispatcher(
+			licenser,
+			fflag.NewFFlag([]string{string(fflag.IpRules)}),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
+			TLSConfigOption(false, licenser, nil),
+			ProxyOption("https://proxy.example.com:3128", ".azurewebsites.net,10.0.0.0/8"),
+		)
+		require.NoError(t, err)
+
+		customTransport, ok := d.client.Transport.(*CustomTransport)
+		require.True(t, ok)
+
+		netJailTransport := customTransport.netJailTransport
+		require.NotNil(t, netJailTransport)
+		require.NotNil(t, netJailTransport.New().Proxy)
+	})
+}

@@ -221,6 +221,7 @@ type HTTPServerConfiguration struct {
 	SocketPort  uint32 `json:"socket_port" envconfig:"SOCKET_PORT"`
 	DomainPort  uint32 `json:"domain_port" envconfig:"DOMAIN_PORT"`
 	HttpProxy   string `json:"proxy" envconfig:"HTTP_PROXY"`
+	NoProxy     string `json:"no_proxy" envconfig:"NO_PROXY"`
 }
 
 type PrometheusConfiguration struct {

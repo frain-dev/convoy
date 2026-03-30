@@ -9,10 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	net_std "net"
 	"net/http"
 	"net/http/httptrace"
 	"net/netip"
 	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/stealthrocket/netjail"
@@ -176,6 +179,7 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		client: &http.Client{},
 		rules:  &netjail.Rules{},
 		transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
 			MaxIdleConns:          1000,
 			IdleConnTimeout:       30 * time.Second,
 			MaxIdleConnsPerHost:   100,
@@ -210,8 +214,11 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	return d, nil
 }
 
-// ProxyOption defines an HTTP proxy which the client will use. It fails-open the string isn't a valid HTTP URL
-func ProxyOption(httpProxy string) DispatcherOption {
+// ProxyOption defines an HTTP proxy which the client will use. It fails-open if the string isn't a valid HTTP URL.
+// When a proxy is configured, NO_PROXY/no_proxy from the config or environment variables
+// are still respected: requests to hosts matching the no-proxy list bypass the configured
+// proxy and connect directly.
+func ProxyOption(httpProxy string, noProxy ...string) DispatcherOption {
 	return func(d *Dispatcher) error {
 		if httpProxy == "" {
 			return nil
@@ -224,12 +231,111 @@ func ProxyOption(httpProxy string) DispatcherOption {
 			}
 
 			if isValid {
-				d.transport.Proxy = http.ProxyURL(proxyUrl)
+				var cfgNoProxy string
+				if len(noProxy) > 0 {
+					cfgNoProxy = noProxy[0]
+				}
+				d.transport.Proxy = newProxyFuncWithNoProxy(proxyUrl, cfgNoProxy)
 			}
 		}
 
 		return nil
 	}
+}
+
+// newProxyFuncWithNoProxy returns a proxy function that uses the given proxy URL
+// but respects the no-proxy list. The no-proxy value is resolved from (in order):
+// 1. The cfgNoProxy parameter (from convoy.json "no_proxy" field)
+// 2. The NO_PROXY environment variable
+// 3. The no_proxy environment variable
+func newProxyFuncWithNoProxy(proxyURL *url.URL, cfgNoProxy string) func(*http.Request) (*url.URL, error) {
+	return func(req *http.Request) (*url.URL, error) {
+		if useProxy(req.URL.Host, cfgNoProxy) {
+			return proxyURL, nil
+		}
+		return nil, nil
+	}
+}
+
+// resolveNoProxy returns the effective no-proxy value by checking (in order):
+// 1. The config value (from convoy.json)
+// 2. The NO_PROXY environment variable
+// 3. The no_proxy environment variable
+func resolveNoProxy(cfgNoProxy string) string {
+	if cfgNoProxy != "" {
+		return cfgNoProxy
+	}
+	if v := os.Getenv("NO_PROXY"); v != "" {
+		return v
+	}
+	return os.Getenv("no_proxy")
+}
+
+// useProxy reports whether the given host should be proxied. It returns false
+// if the host matches the resolved no-proxy list (config value, then NO_PROXY,
+// then no_proxy env var).
+//
+// The no-proxy value is a comma-separated list of entries. Each entry is one of:
+//   - a domain suffix starting with "." (e.g. ".example.com" matches "foo.example.com")
+//   - an exact hostname (e.g. "example.com")
+//   - a CIDR block (e.g. "10.0.0.0/8")
+//   - a literal "*" which matches everything
+func useProxy(host, cfgNoProxy string) bool {
+	noProxy := resolveNoProxy(cfgNoProxy)
+	if noProxy == "" {
+		return true
+	}
+
+	if noProxy == "*" {
+		return false
+	}
+
+	host = strings.TrimSpace(host)
+	if h, _, err := net_std.SplitHostPort(host); err == nil {
+		host = h
+	}
+	host = strings.ToLower(host)
+
+	for _, entry := range strings.Split(noProxy, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		entry = strings.ToLower(entry)
+
+		if entry == "*" {
+			return false
+		}
+
+		// CIDR match
+		if strings.Contains(entry, "/") {
+			if prefix, err := netip.ParsePrefix(entry); err == nil {
+				if addr, err := netip.ParseAddr(host); err == nil {
+					if prefix.Contains(addr) {
+						return false
+					}
+				}
+			}
+			continue
+		}
+
+		// Exact match
+		if host == entry {
+			return false
+		}
+
+		// Suffix match: ".example.com" matches "foo.example.com"
+		if strings.HasPrefix(entry, ".") && strings.HasSuffix(host, entry) {
+			return false
+		}
+
+		// Also match "example.com" as a suffix for "foo.example.com"
+		if !strings.HasPrefix(entry, ".") && strings.HasSuffix(host, "."+entry) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // AllowListOption sets a list of IP prefixes which will outgoing traffic will be granted access
