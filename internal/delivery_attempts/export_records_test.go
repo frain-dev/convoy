@@ -1,6 +1,7 @@
 package delivery_attempts
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"testing"
@@ -12,6 +13,25 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
+
+// parseJSONL parses JSONL (newline-delimited JSON) into a slice of maps.
+func parseJSONL(t *testing.T, data []byte) []map[string]interface{} {
+	t.Helper()
+	var results []map[string]interface{}
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+		var record map[string]interface{}
+		err := json.Unmarshal(line, &record)
+		require.NoError(t, err, "each JSONL line must be valid JSON")
+		results = append(results, record)
+	}
+	require.NoError(t, scanner.Err())
+	return results
+}
 
 func TestExportRecords_EmptyResult(t *testing.T) {
 	db, ctx := setupTestDB(t)
@@ -67,10 +87,8 @@ func TestExportRecords_WithData(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(5), count)
 
-	// Verify JSON structure
-	var exported []map[string]interface{}
-	err = json.Unmarshal(buf.Bytes(), &exported)
-	require.NoError(t, err)
+	// Verify JSONL structure
+	exported := parseJSONL(t, buf.Bytes())
 	require.Len(t, exported, 5)
 
 	// Verify all UIDs are present
@@ -142,9 +160,7 @@ func TestExportRecords_ProjectIsolation(t *testing.T) {
 	require.Equal(t, int64(3), count, "Should only export project1's attempts")
 
 	// Verify no project2 data is included
-	var exported []map[string]interface{}
-	err = json.Unmarshal(buf.Bytes(), &exported)
-	require.NoError(t, err)
+	exported := parseJSONL(t, buf.Bytes())
 	require.Len(t, exported, 3)
 
 	for _, record := range exported {
@@ -197,8 +213,6 @@ func TestExportRecords_TimeFiltering(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(3), count)
 
-	var exported []map[string]interface{}
-	err = json.Unmarshal(buf.Bytes(), &exported)
-	require.NoError(t, err)
+	exported := parseJSONL(t, buf.Bytes())
 	require.Len(t, exported, 3)
 }

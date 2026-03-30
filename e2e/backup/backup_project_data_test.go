@@ -2,7 +2,6 @@ package backup
 
 import (
 	"context"
-	"encoding/json"
 	"path/filepath"
 	"testing"
 	"time"
@@ -102,9 +101,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	require.NotNil(t, eventsObj, "should have events export in MinIO")
 
 	eventsData := downloadMinIOObject(t, minioClient, "convoy-test-exports", eventsObj.Key)
-	var events []map[string]interface{}
-	err = json.Unmarshal(eventsData, &events)
-	require.NoError(t, err)
+	events := parseJSONL(t, eventsData)
 	require.Len(t, events, 1, "should have 1 old event exported")
 	require.Equal(t, oldEvent.UID, events[0]["uid"], "exported event should be the old one")
 
@@ -117,9 +114,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	require.NotNil(t, deliveriesObj, "should have event deliveries export in MinIO")
 
 	deliveriesData := downloadMinIOObject(t, minioClient, "convoy-test-exports", deliveriesObj.Key)
-	var deliveries []map[string]interface{}
-	err = json.Unmarshal(deliveriesData, &deliveries)
-	require.NoError(t, err)
+	deliveries := parseJSONL(t, deliveriesData)
 	require.Len(t, deliveries, 1, "should have 1 old event delivery exported")
 	require.Equal(t, oldDelivery.UID, deliveries[0]["uid"], "exported delivery should be the old one")
 
@@ -131,9 +126,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	require.NotNil(t, attemptsObj, "should have delivery attempts export in MinIO")
 
 	attemptsData := downloadMinIOObject(t, minioClient, "convoy-test-exports", attemptsObj.Key)
-	var attempts []map[string]interface{}
-	err = json.Unmarshal(attemptsData, &attempts)
-	require.NoError(t, err)
+	attempts := parseJSONL(t, attemptsData)
 	require.Len(t, attempts, 1, "should have 1 old delivery attempt exported")
 
 	verifyTimeFiltering(t, attemptsData)
@@ -225,10 +218,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 
 	// Verify events export content
 	eventsData := readExportFile(t, eventsFiles[0])
-	var events []map[string]interface{}
-
-	err = json.Unmarshal(eventsData, &events)
-	require.NoError(t, err)
+	events := parseJSONL(t, eventsData)
 	require.Len(t, events, 1, "should have 1 old event exported")
 	require.Equal(t, oldEvent.UID, events[0]["uid"], "exported event should be the old one")
 
@@ -238,9 +228,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 
 	// Verify event deliveries export content
 	deliveriesData := readExportFile(t, deliveriesFiles[0])
-	var deliveries []map[string]interface{}
-	err = json.Unmarshal(deliveriesData, &deliveries)
-	require.NoError(t, err)
+	deliveries := parseJSONL(t, deliveriesData)
 	require.Len(t, deliveries, 1, "should have 1 old event delivery exported")
 	require.Equal(t, oldDelivery.UID, deliveries[0]["uid"], "exported delivery should be the old one")
 
@@ -249,9 +237,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 
 	// Verify delivery attempts export content
 	attemptsData := readExportFile(t, attemptsFiles[0])
-	var attempts []map[string]interface{}
-	err = json.Unmarshal(attemptsData, &attempts)
-	require.NoError(t, err)
+	attempts := parseJSONL(t, attemptsData)
 	require.Len(t, attempts, 1, "should have 1 old delivery attempt exported")
 
 	verifyTimeFiltering(t, attemptsData)
@@ -378,9 +364,7 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 
 	project1EventsData := readExportFile(t, project1EventsFiles[0])
 	verifyProjectIsolation(t, project1EventsData, project1.UID)
-	var project1Events []map[string]interface{}
-	err = json.Unmarshal(project1EventsData, &project1Events)
-	require.NoError(t, err)
+	project1Events := parseJSONL(t, project1EventsData)
 	require.Len(t, project1Events, 3, "project1 should have 3 events")
 
 	// Verify project2 exports (should have 2 records each)
@@ -390,9 +374,7 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 
 	project2EventsData := readExportFile(t, project2EventsFiles[0])
 	verifyProjectIsolation(t, project2EventsData, project2.UID)
-	var project2Events []map[string]interface{}
-	err = json.Unmarshal(project2EventsData, &project2Events)
-	require.NoError(t, err)
+	project2Events := parseJSONL(t, project2EventsData)
 	require.Len(t, project2Events, 2, "project2 should have 2 events")
 }
 
@@ -478,9 +460,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	require.Len(t, eventsFiles, 1, "should have 1 events export file")
 
 	eventsData := readExportFile(t, eventsFiles[0])
-	var events []map[string]interface{}
-	err = json.Unmarshal(eventsData, &events)
-	require.NoError(t, err)
+	events := parseJSONL(t, eventsData)
 	require.Len(t, events, 2, "should have exactly 2 old events (26h and 25h)")
 
 	// Verify all exported events are older than 24 hours
@@ -491,9 +471,7 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	require.Len(t, attemptsFiles, 1, "should have 1 delivery attempts export file")
 
 	attemptsData := readExportFile(t, attemptsFiles[0])
-	var attempts []map[string]interface{}
-	err = json.Unmarshal(attemptsData, &attempts)
-	require.NoError(t, err)
+	attempts := parseJSONL(t, attemptsData)
 	require.Len(t, attempts, 2, "should have exactly 2 old delivery attempts")
 
 	verifyTimeFiltering(t, attemptsData)
@@ -573,13 +551,13 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 
 	// Verify all files contain valid JSON with at least 1 record
 	eventsData := readExportFile(t, eventsFiles[0])
-	verifyJSONStructure(t, eventsData, 1)
+	verifyJSONLStructure(t, eventsData, 1)
 
 	deliveriesData := readExportFile(t, deliveriesFiles[0])
-	verifyJSONStructure(t, deliveriesData, 1)
+	verifyJSONLStructure(t, deliveriesData, 1)
 
 	attemptsData := readExportFile(t, attemptsFiles[0])
-	verifyJSONStructure(t, attemptsData, 1)
+	verifyJSONLStructure(t, attemptsData, 1)
 
 	// Verify directory structure is correct
 	expectedEventsPath := filepath.Join(tmpDir, "orgs", org.UID, "projects", project.UID, "events")
