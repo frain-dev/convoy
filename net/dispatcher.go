@@ -13,10 +13,12 @@ import (
 	"net/http/httptrace"
 	"net/netip"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/stealthrocket/netjail"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"golang.org/x/net/http/httpproxy"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -176,6 +178,7 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		client: &http.Client{},
 		rules:  &netjail.Rules{},
 		transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
 			MaxIdleConns:          1000,
 			IdleConnTimeout:       30 * time.Second,
 			MaxIdleConnsPerHost:   100,
@@ -210,22 +213,37 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	return d, nil
 }
 
-// ProxyOption defines an HTTP proxy which the client will use. It fails-open the string isn't a valid HTTP URL
-func ProxyOption(httpProxy string) DispatcherOption {
+// ProxyOption configures an HTTP proxy with NO_PROXY support.
+// It fails-open if the string isn't a valid HTTP URL. When a proxy is set,
+// NO_PROXY/no_proxy from config or environment is respected via Go's
+// httpproxy.Config (same logic as http.ProxyFromEnvironment).
+func ProxyOption(httpProxy string, noProxy ...string) DispatcherOption {
 	return func(d *Dispatcher) error {
-		if httpProxy == "" {
+		if httpProxy == "" || !d.l.UseForwardProxy() {
 			return nil
 		}
 
-		if d.l.UseForwardProxy() {
-			proxyUrl, isValid, err := d.validateProxy(httpProxy)
-			if err != nil {
-				return err
+		cfgNoProxy := ""
+		if len(noProxy) > 0 {
+			cfgNoProxy = noProxy[0]
+		}
+		if cfgNoProxy == "" {
+			if v := os.Getenv("NO_PROXY"); v != "" {
+				cfgNoProxy = v
+			} else {
+				cfgNoProxy = os.Getenv("no_proxy")
 			}
+		}
 
-			if isValid {
-				d.transport.Proxy = http.ProxyURL(proxyUrl)
-			}
+		cfg := httpproxy.Config{
+			HTTPProxy:  httpProxy,
+			HTTPSProxy: httpProxy,
+			NoProxy:    cfgNoProxy,
+		}
+		proxyFunc := cfg.ProxyFunc()
+
+		d.transport.Proxy = func(req *http.Request) (*url.URL, error) {
+			return proxyFunc(req.URL)
 		}
 
 		return nil
@@ -333,23 +351,6 @@ func DetailedTraceOption(enabled bool) DispatcherOption {
 		d.detailedTrace.Enabled = enabled
 		return nil
 	}
-}
-
-func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
-	if !util.IsStringEmpty(proxyURL) {
-		pUrl, err := url.Parse(proxyURL)
-		if err != nil {
-			return nil, false, err
-		}
-
-		// we should only use the proxy if the url is valid
-		if !util.IsStringEmpty(pUrl.Host) && !util.IsStringEmpty(pUrl.Scheme) {
-			return pUrl, true, nil
-		}
-
-		return pUrl, false, nil
-	}
-	return nil, false, nil
 }
 
 // createClientWithMTLS creates an HTTP client configured with the provided mTLS certificate.

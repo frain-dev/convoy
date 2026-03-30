@@ -1087,3 +1087,132 @@ C6azzwqUOSsfDcuAS5sfJp/6
 	require.Error(t, err)
 	require.ErrorIs(t, err, netjail.ErrDenied)
 }
+
+func TestDispatcherProxyWithNoProxy(t *testing.T) {
+	proxyHit := false
+	proxyServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proxyHit = true
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"proxied": true}`))
+	}))
+	defer proxyServer.Close()
+
+	directServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"direct": true}`))
+	}))
+	defer directServer.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("should_bypass_proxy_for_no_proxy_host", func(t *testing.T) {
+		proxyHit = false
+		t.Setenv("NO_PROXY", "127.0.0.1,localhost")
+
+		licenser := mocks.NewMockLicenser(ctrl)
+		licenser.EXPECT().UseForwardProxy().Return(true)
+		licenser.EXPECT().IpRules().AnyTimes().Return(false)
+		licenser.EXPECT().CustomCertificateAuthority().Return(false)
+
+		dispatcher, err := NewDispatcher(
+			licenser,
+			fflag.NewFFlag(nil),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
+			ProxyOption(proxyServer.URL),
+			TLSConfigOption(false, licenser, nil),
+		)
+		require.NoError(t, err)
+
+		resp, err := dispatcher.SendWebhook(
+			context.Background(),
+			directServer.URL,
+			json.RawMessage(`{"test": true}`),
+			"X-Signature",
+			"test-hmac",
+			1024,
+			nil,
+			"",
+			5*time.Second,
+			constants.ContentTypeJSON,
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, `{"direct": true}`, string(resp.Body))
+		require.False(t, proxyHit, "proxy should not have been hit for NO_PROXY host")
+	})
+}
+
+func TestDispatcherDefaultProxyFromEnvironment(t *testing.T) {
+	directServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"direct": true}`))
+	}))
+	defer directServer.Close()
+
+	t.Run("should_respect_env_proxy_when_no_config_proxy", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		t.Setenv("NO_PROXY", "127.0.0.1,localhost")
+
+		licenser := mocks.NewMockLicenser(ctrl)
+		licenser.EXPECT().IpRules().AnyTimes().Return(false)
+		licenser.EXPECT().CustomCertificateAuthority().Return(false)
+
+		dispatcher, err := NewDispatcher(
+			licenser,
+			fflag.NewFFlag(nil),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
+			ProxyOption(""),
+			TLSConfigOption(false, licenser, nil),
+		)
+		require.NoError(t, err)
+
+		resp, err := dispatcher.SendWebhook(
+			context.Background(),
+			directServer.URL,
+			json.RawMessage(`{"test": true}`),
+			"X-Signature",
+			"test-hmac",
+			1024,
+			nil,
+			"",
+			5*time.Second,
+			constants.ContentTypeJSON,
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, `{"direct": true}`, string(resp.Body))
+	})
+}
+
+func TestNewDispatcherWithNoProxy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("should_set_proxy_with_no_proxy_config", func(t *testing.T) {
+		licenser := mocks.NewMockLicenser(ctrl)
+		licenser.EXPECT().UseForwardProxy().Return(true)
+		licenser.EXPECT().IpRules().Return(true)
+		licenser.EXPECT().CustomCertificateAuthority().Return(false)
+
+		d, err := NewDispatcher(
+			licenser,
+			fflag.NewFFlag([]string{string(fflag.IpRules)}),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
+			TLSConfigOption(false, licenser, nil),
+			ProxyOption("https://proxy.example.com:3128", ".azurewebsites.net,10.0.0.0/8"),
+		)
+		require.NoError(t, err)
+
+		customTransport, ok := d.client.Transport.(*CustomTransport)
+		require.True(t, ok)
+
+		netJailTransport := customTransport.netJailTransport
+		require.NotNil(t, netJailTransport)
+		require.NotNil(t, netJailTransport.New().Proxy)
+	})
+}

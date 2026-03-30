@@ -261,7 +261,7 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			a.Licenser,
 			a.FeatureFlag,
 			net.LoggerOption(a.Logger),
-			net.ProxyOption(cfg.Server.HTTP.HttpProxy),
+			net.ProxyOption(cfg.Server.HTTP.HttpProxy, cfg.Server.HTTP.NoProxy),
 			net.AllowListOption(cfg.Dispatcher.AllowList),
 			net.BlockListOption(cfg.Dispatcher.BlockList),
 			net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),
