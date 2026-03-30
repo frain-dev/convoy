@@ -219,20 +219,7 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 // httpproxy.Config (same logic as http.ProxyFromEnvironment).
 func ProxyOption(httpProxy string, noProxy ...string) DispatcherOption {
 	return func(d *Dispatcher) error {
-		if httpProxy == "" {
-			return nil
-		}
-
-		if !d.l.UseForwardProxy() {
-			return nil
-		}
-
-		proxyUrl, isValid, err := d.validateProxy(httpProxy)
-		if err != nil {
-			return err
-		}
-
-		if !isValid {
+		if httpProxy == "" || !d.l.UseForwardProxy() {
 			return nil
 		}
 
@@ -248,10 +235,9 @@ func ProxyOption(httpProxy string, noProxy ...string) DispatcherOption {
 			}
 		}
 
-		proxy := proxyUrl.String()
 		cfg := httpproxy.Config{
-			HTTPProxy:  proxy,
-			HTTPSProxy: proxy,
+			HTTPProxy:  httpProxy,
+			HTTPSProxy: httpProxy,
 			NoProxy:    cfgNoProxy,
 		}
 		proxyFunc := cfg.ProxyFunc()
@@ -365,23 +351,6 @@ func DetailedTraceOption(enabled bool) DispatcherOption {
 		d.detailedTrace.Enabled = enabled
 		return nil
 	}
-}
-
-func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
-	if !util.IsStringEmpty(proxyURL) {
-		pUrl, err := url.Parse(proxyURL)
-		if err != nil {
-			return nil, false, err
-		}
-
-		// we should only use the proxy if the url is valid
-		if !util.IsStringEmpty(pUrl.Host) && !util.IsStringEmpty(pUrl.Scheme) {
-			return pUrl, true, nil
-		}
-
-		return pUrl, false, nil
-	}
-	return nil, false, nil
 }
 
 // createClientWithMTLS creates an HTTP client configured with the provided mTLS certificate.
