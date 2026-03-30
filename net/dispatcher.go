@@ -213,61 +213,54 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	return d, nil
 }
 
-// ProxyOption defines an HTTP proxy which the client will use. It fails-open if the string isn't a valid HTTP URL.
-// When a proxy is configured, NO_PROXY/no_proxy from the config or environment variables
-// are still respected: requests to hosts matching the no-proxy list bypass the configured
-// proxy and connect directly.
+// ProxyOption configures an HTTP proxy with NO_PROXY support.
+// It fails-open if the string isn't a valid HTTP URL. When a proxy is set,
+// NO_PROXY/no_proxy from config or environment is respected via Go's
+// httpproxy.Config (same logic as http.ProxyFromEnvironment).
 func ProxyOption(httpProxy string, noProxy ...string) DispatcherOption {
 	return func(d *Dispatcher) error {
 		if httpProxy == "" {
 			return nil
 		}
 
-		if d.l.UseForwardProxy() {
-			proxyUrl, isValid, err := d.validateProxy(httpProxy)
-			if err != nil {
-				return err
-			}
+		if !d.l.UseForwardProxy() {
+			return nil
+		}
 
-			if isValid {
-				var cfgNoProxy string
-				if len(noProxy) > 0 {
-					cfgNoProxy = noProxy[0]
-				}
-				d.transport.Proxy = newProxyFuncWithNoProxy(proxyUrl, cfgNoProxy)
+		proxyUrl, isValid, err := d.validateProxy(httpProxy)
+		if err != nil {
+			return err
+		}
+
+		if !isValid {
+			return nil
+		}
+
+		cfgNoProxy := ""
+		if len(noProxy) > 0 {
+			cfgNoProxy = noProxy[0]
+		}
+		if cfgNoProxy == "" {
+			if v := os.Getenv("NO_PROXY"); v != "" {
+				cfgNoProxy = v
+			} else {
+				cfgNoProxy = os.Getenv("no_proxy")
 			}
+		}
+
+		proxy := proxyUrl.String()
+		cfg := httpproxy.Config{
+			HTTPProxy:  proxy,
+			HTTPSProxy: proxy,
+			NoProxy:    cfgNoProxy,
+		}
+		proxyFunc := cfg.ProxyFunc()
+
+		d.transport.Proxy = func(req *http.Request) (*url.URL, error) {
+			return proxyFunc(req.URL)
 		}
 
 		return nil
-	}
-}
-
-// newProxyFuncWithNoProxy returns a proxy function that uses the given proxy URL
-// but respects the no-proxy list via Go's httpproxy.Config (same logic as
-// http.ProxyFromEnvironment). The no-proxy value is resolved from (in order):
-// 1. The cfgNoProxy parameter (from convoy.json "no_proxy" field)
-// 2. The NO_PROXY environment variable
-// 3. The no_proxy environment variable
-func newProxyFuncWithNoProxy(proxyURL *url.URL, cfgNoProxy string) func(*http.Request) (*url.URL, error) {
-	noProxy := cfgNoProxy
-	if noProxy == "" {
-		if v := os.Getenv("NO_PROXY"); v != "" {
-			noProxy = v
-		} else {
-			noProxy = os.Getenv("no_proxy")
-		}
-	}
-
-	proxy := proxyURL.String()
-	cfg := httpproxy.Config{
-		HTTPProxy:  proxy,
-		HTTPSProxy: proxy,
-		NoProxy:    noProxy,
-	}
-	proxyFunc := cfg.ProxyFunc()
-
-	return func(req *http.Request) (*url.URL, error) {
-		return proxyFunc(req.URL)
 	}
 }
 
