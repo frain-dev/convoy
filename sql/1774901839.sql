@@ -16,9 +16,11 @@ CREATE TABLE IF NOT EXISTS convoy.backup_jobs (
     UNIQUE(project_id, hour_start)
 );
 
+-- +migrate Up notransaction
 CREATE INDEX idx_backup_jobs_pending ON convoy.backup_jobs(status, created_at)
     WHERE status IN ('pending', 'claimed');
 
+-- +migrate Up notransaction
 CREATE INDEX idx_backup_jobs_project ON convoy.backup_jobs(project_id, hour_start DESC);
 
 -- +migrate Down
