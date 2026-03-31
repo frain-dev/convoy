@@ -74,6 +74,7 @@ var DefaultConfiguration = Configuration{
 	RetentionPolicy: RetentionPolicyConfiguration{
 		Policy:                   "720h",
 		IsRetentionPolicyEnabled: false,
+		BackupInterval:           "1h",
 	},
 	CircuitBreaker: CircuitBreakerConfiguration{
 		SampleRate:                  30,
@@ -375,6 +376,7 @@ type DatadogConfiguration struct {
 type RetentionPolicyConfiguration struct {
 	Policy                   string `json:"policy" envconfig:"CONVOY_RETENTION_POLICY"`
 	IsRetentionPolicyEnabled bool   `json:"enabled" envconfig:"CONVOY_RETENTION_POLICY_ENABLED"`
+	BackupInterval           string `json:"backup_interval" envconfig:"CONVOY_BACKUP_INTERVAL"`
 }
 
 type CircuitBreakerConfiguration struct {

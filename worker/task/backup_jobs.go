@@ -8,6 +8,7 @@ import (
 
 	"github.com/hibiken/asynq"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
@@ -23,12 +24,12 @@ func EnqueueBackupJobs(
 	logger log.Logger,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		config, err := configRepo.LoadConfiguration(ctx)
+		dbConfig, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
 			return err
 		}
 
-		if !config.RetentionPolicy.IsRetentionPolicyEnabled {
+		if !dbConfig.RetentionPolicy.IsRetentionPolicyEnabled {
 			return nil
 		}
 
@@ -41,12 +42,17 @@ func EnqueueBackupJobs(
 			return nil
 		}
 
-		// Calculate the hour window: [hourStart, hourEnd) for the previous hour
-		hourEnd := time.Now().UTC().Truncate(time.Hour)
-		hourStart := hourEnd.Add(-time.Hour)
+		// Derive window from CONVOY_BACKUP_INTERVAL (default: 1h)
+		interval := exporter.DefaultBackupInterval
+		if cfg, cfgErr := config.Get(); cfgErr == nil {
+			interval = exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+		}
+
+		windowEnd := time.Now().UTC().Truncate(interval)
+		windowStart := windowEnd.Add(-interval)
 
 		for _, p := range projects {
-			if err := backupJobRepo.EnqueueBackupJob(ctx, p.UID, hourStart, hourEnd); err != nil {
+			if err = backupJobRepo.EnqueueBackupJob(ctx, p.UID, windowStart, windowEnd); err != nil {
 				logger.Error(fmt.Sprintf("failed to enqueue backup job for project %s: %v", p.UID, err))
 			}
 		}
@@ -76,12 +82,12 @@ func ProcessBackupJob(
 	logger log.Logger,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		config, err := configRepo.LoadConfiguration(ctx)
+		dbConfig, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
 			return err
 		}
 
-		if !config.RetentionPolicy.IsRetentionPolicyEnabled {
+		if !dbConfig.RetentionPolicy.IsRetentionPolicyEnabled {
 			return nil
 		}
 
@@ -107,14 +113,14 @@ func ProcessBackupJob(
 		}
 
 		// Create blob store client
-		blobStoreClient, err := blobstore.NewBlobStoreClient(config.StoragePolicy, logger)
+		blobStoreClient, err := blobstore.NewBlobStoreClient(dbConfig.StoragePolicy, logger)
 		if err != nil {
 			_ = backupJobRepo.FailBackupJob(ctx, job.ID, fmt.Sprintf("create blob store: %v", err))
 			return err
 		}
 
 		// Create exporter and stream to blob storage
-		e, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, project, config, attemptsRepo, logger)
+		e, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, project, dbConfig, attemptsRepo, logger)
 		if err != nil {
 			_ = backupJobRepo.FailBackupJob(ctx, job.ID, fmt.Sprintf("create exporter: %v", err))
 			return err

@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -187,16 +188,17 @@ func StartConvoyServer(a *cli.App) error {
 	// 	lo.Infof("Registered metrics materialized view refresh every %d min", refreshInterval)
 	// }
 
-	if a.Licenser.RetentionPolicy() {
-		// Enqueue backup jobs at :05 every hour (inserts pending rows for all projects)
-		s.RegisterTask("5 * * * *", convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
-		// Process backup jobs at :10 every hour (claims and exports one pending job)
-		s.RegisterTask("10 * * * *", convoy.ScheduleQueue, convoy.ProcessBackupJob)
-		// Legacy: keep BackupProjectData for backwards compat during rollout
-		s.RegisterTask("0 22 * * *", convoy.ScheduleQueue, convoy.BackupProjectData)
-		// Retention runs at 1am
-		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
-	}
+	// if a.Licenser.RetentionPolicy() {
+	// Derive cron schedule from CONVOY_BACKUP_INTERVAL (default: 1h)
+	backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+	backupCron := exporter.DurationToCron(backupInterval)
+
+	s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
+	s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
+	s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.BackupProjectData)
+	// Retention runs at 1am
+	s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
+	// }
 
 	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 	if err != nil {
