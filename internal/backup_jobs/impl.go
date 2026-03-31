@@ -59,7 +59,7 @@ func (s *Service) CompleteBackupJob(ctx context.Context, jobID string, recordCou
 	})
 }
 
-func (s *Service) FailBackupJob(ctx context.Context, jobID string, errMsg string) error {
+func (s *Service) FailBackupJob(ctx context.Context, jobID, errMsg string) error {
 	return s.repo.FailBackupJob(ctx, repo.FailBackupJobParams{
 		ID:    jobID,
 		Error: pgtype.Text{String: errMsg, Valid: true},
