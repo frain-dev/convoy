@@ -3,6 +3,7 @@ package testenv
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -70,12 +71,11 @@ func newAzuriteClientFunc(container testcontainers.Container) AzuriteClientFunc 
 			return nil, "", fmt.Errorf("failed to create azurite client: %w", err)
 		}
 
-		// Create default container for tests
+		// Create default container for tests (ignore "already exists" errors)
 		ctx := t.Context()
 		_, err = client.CreateContainer(ctx, azuriteContainer, nil)
-		if err != nil {
-			// Ignore "container already exists" errors
-			// Azurite returns a StorageError for this case
+		if err != nil && !strings.Contains(err.Error(), "ContainerAlreadyExists") {
+			return nil, "", fmt.Errorf("failed to create container: %w", err)
 		}
 
 		return client, endpoint, nil
