@@ -12,12 +12,12 @@ import (
 )
 
 type Querier interface {
-	EnqueueBackupJob(ctx context.Context, arg EnqueueBackupJobParams) error
 	ClaimBackupJob(ctx context.Context, workerID pgtype.Text) (ClaimBackupJobRow, error)
 	CompleteBackupJob(ctx context.Context, arg CompleteBackupJobParams) error
+	EnqueueBackupJob(ctx context.Context, arg EnqueueBackupJobParams) error
 	FailBackupJob(ctx context.Context, arg FailBackupJobParams) error
-	ReclaimStaleJobs(ctx context.Context, staleMinutes pgtype.Int4) (pgconn.CommandTag, error)
 	FindLatestCompletedBackup(ctx context.Context, projectID pgtype.Text) (FindLatestCompletedBackupRow, error)
+	ReclaimStaleJobs(ctx context.Context, staleMinutes pgtype.Int4) (pgconn.CommandTag, error)
 }
 
 var _ Querier = (*Queries)(nil)

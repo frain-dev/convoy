@@ -5,7 +5,7 @@ ON CONFLICT (project_id, hour_start) DO NOTHING;
 
 -- name: ClaimBackupJob :one
 UPDATE convoy.backup_jobs
-SET status = 'claimed', worker_id = @worker_id, claimed_at = NOW()
+SET status = 'claimed', worker_id = sqlc.arg(worker_id), claimed_at = NOW()
 WHERE id = (
     SELECT id FROM convoy.backup_jobs
     WHERE status = 'pending'
@@ -13,7 +13,7 @@ WHERE id = (
     LIMIT 1
     FOR UPDATE SKIP LOCKED
 )
-RETURNING *;
+RETURNING id, project_id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at;
 
 -- name: CompleteBackupJob :exec
 UPDATE convoy.backup_jobs
@@ -31,7 +31,8 @@ SET status = 'pending', worker_id = NULL, claimed_at = NULL
 WHERE status = 'claimed' AND claimed_at < NOW() - MAKE_INTERVAL(mins := @stale_minutes);
 
 -- name: FindLatestCompletedBackup :one
-SELECT * FROM convoy.backup_jobs
-WHERE project_id = @project_id AND status = 'completed'
+SELECT id, project_id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
+FROM convoy.backup_jobs
+WHERE project_id = sqlc.arg(project_id) AND status = 'completed'
 ORDER BY hour_start DESC
 LIMIT 1;

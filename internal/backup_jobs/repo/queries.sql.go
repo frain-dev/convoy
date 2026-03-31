@@ -12,22 +12,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type EnqueueBackupJobParams struct {
-	ProjectID pgtype.Text
-	HourStart pgtype.Timestamptz
-	HourEnd   pgtype.Timestamptz
-}
-
-const enqueueBackupJob = `-- name: EnqueueBackupJob :exec
-INSERT INTO convoy.backup_jobs (project_id, hour_start, hour_end, status)
-VALUES (@project_id, @hour_start, @hour_end, 'pending')
-ON CONFLICT (project_id, hour_start) DO NOTHING
+const claimBackupJob = `-- name: ClaimBackupJob :one
+UPDATE convoy.backup_jobs
+SET status = 'claimed', worker_id = $1, claimed_at = NOW()
+WHERE id = (
+    SELECT id FROM convoy.backup_jobs
+    WHERE status = 'pending'
+    ORDER BY created_at ASC
+    LIMIT 1
+    FOR UPDATE SKIP LOCKED
+)
+RETURNING id, project_id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
 `
-
-func (q *Queries) EnqueueBackupJob(ctx context.Context, arg EnqueueBackupJobParams) error {
-	_, err := q.db.Exec(ctx, enqueueBackupJob, arg.ProjectID, arg.HourStart, arg.HourEnd)
-	return err
-}
 
 type ClaimBackupJobRow struct {
 	ID           string
@@ -43,19 +39,6 @@ type ClaimBackupJobRow struct {
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 }
-
-const claimBackupJob = `-- name: ClaimBackupJob :one
-UPDATE convoy.backup_jobs
-SET status = 'claimed', worker_id = @worker_id, claimed_at = NOW()
-WHERE id = (
-    SELECT id FROM convoy.backup_jobs
-    WHERE status = 'pending'
-    ORDER BY created_at ASC
-    LIMIT 1
-    FOR UPDATE SKIP LOCKED
-)
-RETURNING id, project_id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
-`
 
 func (q *Queries) ClaimBackupJob(ctx context.Context, workerID pgtype.Text) (ClaimBackupJobRow, error) {
 	row := q.db.QueryRow(ctx, claimBackupJob, workerID)
@@ -77,47 +60,62 @@ func (q *Queries) ClaimBackupJob(ctx context.Context, workerID pgtype.Text) (Cla
 	return i, err
 }
 
-type CompleteBackupJobParams struct {
-	ID           string
-	RecordCounts []byte
-}
-
 const completeBackupJob = `-- name: CompleteBackupJob :exec
 UPDATE convoy.backup_jobs
-SET status = 'completed', completed_at = NOW(), record_counts = @record_counts
-WHERE id = @id
+SET status = 'completed', completed_at = NOW(), record_counts = $1
+WHERE id = $2
 `
+
+type CompleteBackupJobParams struct {
+	RecordCounts []byte
+	ID           pgtype.Text
+}
 
 func (q *Queries) CompleteBackupJob(ctx context.Context, arg CompleteBackupJobParams) error {
 	_, err := q.db.Exec(ctx, completeBackupJob, arg.RecordCounts, arg.ID)
 	return err
 }
 
-type FailBackupJobParams struct {
-	ID    string
-	Error pgtype.Text
+const enqueueBackupJob = `-- name: EnqueueBackupJob :exec
+INSERT INTO convoy.backup_jobs (project_id, hour_start, hour_end, status)
+VALUES ($1, $2, $3, 'pending')
+ON CONFLICT (project_id, hour_start) DO NOTHING
+`
+
+type EnqueueBackupJobParams struct {
+	ProjectID pgtype.Text
+	HourStart pgtype.Timestamptz
+	HourEnd   pgtype.Timestamptz
+}
+
+func (q *Queries) EnqueueBackupJob(ctx context.Context, arg EnqueueBackupJobParams) error {
+	_, err := q.db.Exec(ctx, enqueueBackupJob, arg.ProjectID, arg.HourStart, arg.HourEnd)
+	return err
 }
 
 const failBackupJob = `-- name: FailBackupJob :exec
 UPDATE convoy.backup_jobs
-SET status = 'failed', error = @error, completed_at = NOW()
-WHERE id = @id
+SET status = 'failed', error = $1, completed_at = NOW()
+WHERE id = $2
 `
+
+type FailBackupJobParams struct {
+	Error pgtype.Text
+	ID    pgtype.Text
+}
 
 func (q *Queries) FailBackupJob(ctx context.Context, arg FailBackupJobParams) error {
 	_, err := q.db.Exec(ctx, failBackupJob, arg.Error, arg.ID)
 	return err
 }
 
-const reclaimStaleJobs = `-- name: ReclaimStaleJobs :execresult
-UPDATE convoy.backup_jobs
-SET status = 'pending', worker_id = NULL, claimed_at = NULL
-WHERE status = 'claimed' AND claimed_at < NOW() - MAKE_INTERVAL(mins := @stale_minutes)
+const findLatestCompletedBackup = `-- name: FindLatestCompletedBackup :one
+SELECT id, project_id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
+FROM convoy.backup_jobs
+WHERE project_id = $1 AND status = 'completed'
+ORDER BY hour_start DESC
+LIMIT 1
 `
-
-func (q *Queries) ReclaimStaleJobs(ctx context.Context, staleMinutes pgtype.Int4) (pgconn.CommandTag, error) {
-	return q.db.Exec(ctx, reclaimStaleJobs, staleMinutes)
-}
 
 type FindLatestCompletedBackupRow struct {
 	ID           string
@@ -133,13 +131,6 @@ type FindLatestCompletedBackupRow struct {
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 }
-
-const findLatestCompletedBackup = `-- name: FindLatestCompletedBackup :one
-SELECT id, project_id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at FROM convoy.backup_jobs
-WHERE project_id = @project_id AND status = 'completed'
-ORDER BY hour_start DESC
-LIMIT 1
-`
 
 func (q *Queries) FindLatestCompletedBackup(ctx context.Context, projectID pgtype.Text) (FindLatestCompletedBackupRow, error) {
 	row := q.db.QueryRow(ctx, findLatestCompletedBackup, projectID)
@@ -159,4 +150,14 @@ func (q *Queries) FindLatestCompletedBackup(ctx context.Context, projectID pgtyp
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const reclaimStaleJobs = `-- name: ReclaimStaleJobs :execresult
+UPDATE convoy.backup_jobs
+SET status = 'pending', worker_id = NULL, claimed_at = NULL
+WHERE status = 'claimed' AND claimed_at < NOW() - MAKE_INTERVAL(mins := $1)
+`
+
+func (q *Queries) ReclaimStaleJobs(ctx context.Context, staleMinutes pgtype.Int4) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, reclaimStaleJobs, staleMinutes)
 }

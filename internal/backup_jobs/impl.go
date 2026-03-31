@@ -54,14 +54,14 @@ func (s *Service) CompleteBackupJob(ctx context.Context, jobID string, recordCou
 	}
 
 	return s.repo.CompleteBackupJob(ctx, repo.CompleteBackupJobParams{
-		ID:           jobID,
+		ID:           common.StringToPgText(jobID),
 		RecordCounts: countsJSON,
 	})
 }
 
 func (s *Service) FailBackupJob(ctx context.Context, jobID, errMsg string) error {
 	return s.repo.FailBackupJob(ctx, repo.FailBackupJobParams{
-		ID:    jobID,
+		ID:    common.StringToPgText(jobID),
 		Error: pgtype.Text{String: errMsg, Valid: true},
 	})
 }
