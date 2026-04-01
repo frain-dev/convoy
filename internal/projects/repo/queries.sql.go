@@ -658,14 +658,14 @@ type UpdateProjectEndpointStatusParams struct {
 
 type UpdateProjectEndpointStatusRow struct {
 	ID                              string
-	Name                            string
+	Name                            pgtype.Text
 	Status                          string
 	OwnerID                         pgtype.Text
-	Url                             string
+	Url                             pgtype.Text
 	Description                     pgtype.Text
-	HttpTimeout                     int32
+	HttpTimeout                     pgtype.Int4
 	RateLimit                       int32
-	RateLimitDuration               int32
+	RateLimitDuration               pgtype.Int4
 	AdvancedSignatures              bool
 	SlackWebhookUrl                 pgtype.Text
 	SupportEmail                    pgtype.Text
