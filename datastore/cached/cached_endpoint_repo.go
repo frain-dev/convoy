@@ -44,7 +44,7 @@ type cachedEndpoints struct {
 	Endpoints []datastore.Endpoint
 }
 
-func (c *CachedEndpointRepository) FindEndpointByID(ctx context.Context, id string, projectID string) (*datastore.Endpoint, error) {
+func (c *CachedEndpointRepository) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
 	key := endpointCacheKey(projectID, id)
 
 	var endpoint datastore.Endpoint
@@ -102,7 +102,7 @@ func (c *CachedEndpointRepository) DeleteEndpoint(ctx context.Context, endpoint 
 	return nil
 }
 
-func (c *CachedEndpointRepository) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {
+func (c *CachedEndpointRepository) UpdateSecrets(ctx context.Context, endpointID, projectID string, secrets datastore.Secrets) error {
 	err := c.inner.UpdateSecrets(ctx, endpointID, projectID, secrets)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (c *CachedEndpointRepository) UpdateSecrets(ctx context.Context, endpointID
 	return nil
 }
 
-func (c *CachedEndpointRepository) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID string, projectID string) error {
+func (c *CachedEndpointRepository) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID, projectID string) error {
 	err := c.inner.DeleteSecret(ctx, endpoint, secretID, projectID)
 	if err != nil {
 		return err
@@ -155,11 +155,11 @@ func (c *CachedEndpointRepository) FindEndpointsByID(ctx context.Context, ids []
 	return c.inner.FindEndpointsByID(ctx, ids, projectID)
 }
 
-func (c *CachedEndpointRepository) FindEndpointsByAppID(ctx context.Context, appID string, projectID string) ([]datastore.Endpoint, error) {
+func (c *CachedEndpointRepository) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
 	return c.inner.FindEndpointsByAppID(ctx, appID, projectID)
 }
 
-func (c *CachedEndpointRepository) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
+func (c *CachedEndpointRepository) FindEndpointsByOwnerID(ctx context.Context, projectID, ownerID string) ([]datastore.Endpoint, error) {
 	key := endpointsByOwnerCacheKey(projectID, ownerID)
 
 	var cached cachedEndpoints
@@ -186,11 +186,11 @@ func (c *CachedEndpointRepository) FindEndpointsByOwnerID(ctx context.Context, p
 	return eps, nil
 }
 
-func (c *CachedEndpointRepository) FetchEndpointIDsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]string, error) {
+func (c *CachedEndpointRepository) FetchEndpointIDsByOwnerID(ctx context.Context, projectID, ownerID string) ([]string, error) {
 	return c.inner.FetchEndpointIDsByOwnerID(ctx, projectID, ownerID)
 }
 
-func (c *CachedEndpointRepository) FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*datastore.Endpoint, error) {
+func (c *CachedEndpointRepository) FindEndpointByTargetURL(ctx context.Context, projectID, targetURL string) (*datastore.Endpoint, error) {
 	return c.inner.FindEndpointByTargetURL(ctx, projectID, targetURL)
 }
 

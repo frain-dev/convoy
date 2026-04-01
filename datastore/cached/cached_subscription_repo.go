@@ -38,7 +38,7 @@ func subsByEndpointCacheKey(projectID, endpointID string) string {
 	return fmt.Sprintf("%s:%s:%s", subsByEndpointKeyPrefix, projectID, endpointID)
 }
 
-func (c *CachedSubscriptionRepository) FindSubscriptionsByEndpointID(ctx context.Context, projectID string, endpointID string) ([]datastore.Subscription, error) {
+func (c *CachedSubscriptionRepository) FindSubscriptionsByEndpointID(ctx context.Context, projectID, endpointID string) ([]datastore.Subscription, error) {
 	key := subsByEndpointCacheKey(projectID, endpointID)
 
 	var cached cachedSubscriptions
@@ -123,7 +123,7 @@ func (c *CachedSubscriptionRepository) FindCLISubscriptions(ctx context.Context,
 	return c.inner.FindCLISubscriptions(ctx, projectID)
 }
 
-func (c *CachedSubscriptionRepository) CountEndpointSubscriptions(ctx context.Context, a string, b string, d string) (int64, error) {
+func (c *CachedSubscriptionRepository) CountEndpointSubscriptions(ctx context.Context, a, b, d string) (int64, error) {
 	return c.inner.CountEndpointSubscriptions(ctx, a, b, d)
 }
 
@@ -147,6 +147,6 @@ func (c *CachedSubscriptionRepository) FetchUpdatedSubscriptions(ctx context.Con
 	return c.inner.FetchUpdatedSubscriptions(ctx, projectIDs, subscriptionUpdates, pageSize)
 }
 
-func (c *CachedSubscriptionRepository) FetchNewSubscriptions(ctx context.Context, projectIDs []string, knownSubscriptionIDs []string, lastSyncTime time.Time, pageSize int64) ([]datastore.Subscription, error) {
+func (c *CachedSubscriptionRepository) FetchNewSubscriptions(ctx context.Context, projectIDs, knownSubscriptionIDs []string, lastSyncTime time.Time, pageSize int64) ([]datastore.Subscription, error) {
 	return c.inner.FetchNewSubscriptions(ctx, projectIDs, knownSubscriptionIDs, lastSyncTime, pageSize)
 }
