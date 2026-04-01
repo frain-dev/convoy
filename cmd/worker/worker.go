@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/backup_jobs"
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/configuration"
@@ -116,17 +117,17 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		}
 	}
 
-	projectRepo := projects.New(a.Logger, a.DB)
+	projectRepo := cached.NewCachedProjectRepository(projects.New(a.Logger, a.DB), a.Cache, 5*time.Minute, lo)
 	metaEventRepo := meta_events.New(a.Logger, a.DB)
-	endpointRepo := endpoints.New(a.Logger, a.DB)
+	endpointRepo := cached.NewCachedEndpointRepository(endpoints.New(a.Logger, a.DB), a.Cache, 2*time.Minute, lo)
 	eventRepo := events.New(a.Logger, a.DB)
 	jobRepo := postgres.NewJobRepo(a.DB)
 	eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
-	subRepo := subscriptions.New(a.Logger, a.DB)
+	subRepo := cached.NewCachedSubscriptionRepository(subscriptions.New(a.Logger, a.DB), a.Cache, 30*time.Second, lo)
 	configRepo := configuration.New(a.Logger, a.DB)
 	attemptRepo := delivery_attempts.New(a.Logger, a.DB)
 	backupJobRepo := backup_jobs.New(a.Logger, a.DB)
-	filterRepo := filters.New(a.Logger, a.DB)
+	filterRepo := cached.NewCachedFilterRepository(filters.New(a.Logger, a.DB), a.Cache, 2*time.Minute, lo)
 	batchRetryRepo := batch_retries.New(lo, a.DB)
 
 	rd, err := rdb.NewClientFromRedisConfig(cfg.Redis)
