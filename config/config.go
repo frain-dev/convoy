@@ -377,6 +377,8 @@ type RetentionPolicyConfiguration struct {
 	Policy                   string `json:"policy" envconfig:"CONVOY_RETENTION_POLICY"`
 	IsRetentionPolicyEnabled bool   `json:"enabled" envconfig:"CONVOY_RETENTION_POLICY_ENABLED"`
 	BackupInterval           string `json:"backup_interval" envconfig:"CONVOY_BACKUP_INTERVAL"`
+	CDCBackupEnabled         bool   `json:"cdc_backup_enabled" envconfig:"CONVOY_CDC_BACKUP_ENABLED"`
+	ReplicationDSN           string `json:"replication_dsn" envconfig:"CONVOY_REPLICATION_DSN"`
 }
 
 type CircuitBreakerConfiguration struct {
