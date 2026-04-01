@@ -37,15 +37,15 @@ func TestExportRecords_EmptyResult(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	project := seedTestData(t, db, ctx)
+	_ = seedTestData(t, db, ctx)
 	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create a buffer to write exported data
 	var buf bytes.Buffer
 
-	// Export with a future date (should return empty)
+	// Export with a future date (should return empty since no data seeded)
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err := service.ExportRecords(ctx, project.UID, futureDate, &buf)
+	count, err := service.ExportRecords(ctx, futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(0), count)
@@ -82,7 +82,7 @@ func TestExportRecords_WithData(t *testing.T) {
 	// Export all attempts
 	var buf bytes.Buffer
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err := service.ExportRecords(ctx, project.UID, futureDate, &buf)
+	count, err := service.ExportRecords(ctx, futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(5), count)
@@ -154,7 +154,7 @@ func TestExportRecords_ProjectIsolation(t *testing.T) {
 	// Export project1 only
 	var buf bytes.Buffer
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err := service.ExportRecords(ctx, project1.UID, futureDate, &buf)
+	count, err := service.ExportRecords(ctx, futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(3), count, "Should only export project1's attempts")
@@ -199,7 +199,7 @@ func TestExportRecords_TimeFiltering(t *testing.T) {
 	// Export with past date (should return 0)
 	var buf bytes.Buffer
 	pastDate := time.Now().Add(-1 * time.Hour)
-	count, err := service.ExportRecords(ctx, project.UID, pastDate, &buf)
+	count, err := service.ExportRecords(ctx, pastDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(0), count)
@@ -208,7 +208,7 @@ func TestExportRecords_TimeFiltering(t *testing.T) {
 	// Export with future date (should return all 3)
 	buf.Reset()
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err = service.ExportRecords(ctx, project.UID, futureDate, &buf)
+	count, err = service.ExportRecords(ctx, futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(3), count)

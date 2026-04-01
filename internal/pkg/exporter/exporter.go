@@ -168,7 +168,7 @@ func (ex *Exporter) streamExportTable(ctx context.Context, store blobstore.BlobS
 	go func() {
 		gzw := gzip.NewWriter(pw)
 
-		n, exportErr := exportRepo.ExportRecords(exportCtx, ex.project.UID, expDate, gzw)
+		n, exportErr := exportRepo.ExportRecords(exportCtx, expDate, gzw)
 		numDocs = n
 
 		// MUST close gzip before pipe — flush trailer (checksum + size)
@@ -234,7 +234,7 @@ func (ex *Exporter) exportTableToDisk(ctx context.Context, table tableName, expD
 		return result, err
 	}
 
-	numDocs, err := exportRepo.ExportRecords(ctx, ex.project.UID, expDate, gzw)
+	numDocs, err := exportRepo.ExportRecords(ctx, expDate, gzw)
 	if err != nil {
 		ex.logger.Error("failed to export records", "error", err)
 		return result, err

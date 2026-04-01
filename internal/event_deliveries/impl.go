@@ -548,7 +548,7 @@ func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID st
 
 // ExportRecords exports event deliveries to a writer as JSONL (one JSON object per line).
 // It uses a REPEATABLE READ transaction for snapshot consistency across batches.
-func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error) {
 	// Begin REPEATABLE READ transaction for snapshot consistency
 	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
@@ -559,7 +559,6 @@ func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt
 	txRepo := repo.New(tx)
 
 	count, err := txRepo.CountExportedEventDeliveries(ctx, repo.CountExportedEventDeliveriesParams{
-		ProjectID: common.StringToPgTextNullable(projectID),
 		CreatedAt: common.TimeToPgTimestamptz(createdAt),
 		Cursor:    common.StringToPgText(""),
 	})
@@ -581,7 +580,6 @@ func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt
 
 	for i := 0; i < numBatches; i++ {
 		params := repo.ExportEventDeliveriesParams{
-			ProjectID: common.StringToPgTextNullable(projectID),
 			CreatedAt: common.TimeToPgTimestamptz(createdAt),
 			Cursor:    common.StringToPgText(lastID),
 			PageLimit: pgtype.Int8{Int64: int64(batchSize), Valid: true},

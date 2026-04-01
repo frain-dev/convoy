@@ -555,7 +555,7 @@ func (s *Service) CopyRows(ctx context.Context, projectID string, interval int) 
 
 // ExportRecords exports events to a writer as JSONL (one JSON object per line).
 // It uses a REPEATABLE READ transaction for snapshot consistency across batches.
-func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error) {
 	// Begin REPEATABLE READ transaction for snapshot consistency
 	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
@@ -567,7 +567,6 @@ func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt
 
 	// Count total exportable events
 	count, err := txRepo.CountExportedEvents(ctx, repo.CountExportedEventsParams{
-		ProjectID: common.StringToPgTextNullable(projectID),
 		CreatedAt: common.TimeToPgTimestamptz(createdAt),
 		Cursor:    common.StringToPgText(""),
 	})
@@ -589,7 +588,6 @@ func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt
 
 	for i := 0; i < numBatches; i++ {
 		params := repo.ExportEventsParams{
-			ProjectID: common.StringToPgTextNullable(projectID),
 			CreatedAt: common.TimeToPgTimestamptz(createdAt),
 			Cursor:    common.StringToPgText(lastID),
 			PageLimit: pgtype.Int8{Int64: int64(batchSize), Valid: true},

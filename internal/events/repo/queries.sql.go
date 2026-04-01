@@ -65,20 +65,18 @@ func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (pgtyp
 
 const countExportedEvents = `-- name: CountExportedEvents :one
 SELECT COUNT(*) as count FROM convoy.events
-WHERE project_id = $1
-  AND created_at < $2
-  AND (id > $3 OR $3 = '')
+WHERE created_at < $1
+  AND (id > $2 OR $2 = '')
   AND deleted_at IS NULL
 `
 
 type CountExportedEventsParams struct {
-	ProjectID pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	Cursor    pgtype.Text
 }
 
 func (q *Queries) CountExportedEvents(ctx context.Context, arg CountExportedEventsParams) (pgtype.Int8, error) {
-	row := q.db.QueryRow(ctx, countExportedEvents, arg.ProjectID, arg.CreatedAt, arg.Cursor)
+	row := q.db.QueryRow(ctx, countExportedEvents, arg.CreatedAt, arg.Cursor)
 	var count pgtype.Int8
 	err := row.Scan(&count)
 	return count, err
@@ -316,16 +314,14 @@ const exportEvents = `-- name: ExportEvents :many
 SELECT ed.id,
        TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
 FROM convoy.events AS ed
-WHERE project_id = $1
-  AND created_at < $2
-  AND (id > $3 OR $3 = '')
+WHERE created_at < $1
+  AND (id > $2 OR $2 = '')
   AND deleted_at IS NULL
 ORDER BY id
-LIMIT $4
+LIMIT $3
 `
 
 type ExportEventsParams struct {
-	ProjectID pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	Cursor    pgtype.Text
 	PageLimit pgtype.Int8
@@ -337,12 +333,7 @@ type ExportEventsRow struct {
 }
 
 func (q *Queries) ExportEvents(ctx context.Context, arg ExportEventsParams) ([]ExportEventsRow, error) {
-	rows, err := q.db.Query(ctx, exportEvents,
-		arg.ProjectID,
-		arg.CreatedAt,
-		arg.Cursor,
-		arg.PageLimit,
-	)
+	rows, err := q.db.Query(ctx, exportEvents, arg.CreatedAt, arg.Cursor, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}

@@ -284,7 +284,7 @@ type MetaEventRepository interface {
 }
 
 type ExportRepository interface {
-	ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error)
+	ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error)
 }
 
 type DeliveryAttemptsRepository interface {

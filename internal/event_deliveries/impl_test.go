@@ -1124,7 +1124,7 @@ func TestExportRecords(t *testing.T) {
 
 		var buf bytes.Buffer
 		// Export uses created_at < @created_at, so pass a future time to include recent deliveries
-		count, err := service.ExportRecords(ctx, project.UID, time.Now().Add(1*time.Hour), &buf)
+		count, err := service.ExportRecords(ctx, time.Now().Add(1*time.Hour), &buf)
 		require.NoError(t, err)
 		require.GreaterOrEqual(t, count, int64(5))
 
@@ -1139,10 +1139,10 @@ func TestExportRecords(t *testing.T) {
 	})
 
 	t.Run("Empty", func(t *testing.T) {
-		emptyProject := seedTestProject(t, db)
+		_ = seedTestProject(t, db)
 
 		var buf bytes.Buffer
-		count, err := service.ExportRecords(ctx, emptyProject.UID, time.Now().Add(1*time.Hour), &buf)
+		count, err := service.ExportRecords(ctx, time.Now().Add(1*time.Hour), &buf)
 		require.NoError(t, err)
 		require.Equal(t, int64(0), count)
 		require.Empty(t, buf.String())

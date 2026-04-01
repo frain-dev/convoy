@@ -215,25 +215,23 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 
 // ExportRecords exports delivery attempts to a writer as JSONL (one JSON object per line).
 // It uses a REPEATABLE READ transaction for snapshot consistency across batches.
-func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error) {
 	const (
 		countQuery = `
 			SELECT COUNT(*)
 			FROM convoy.delivery_attempts
 			WHERE deleted_at IS NULL
-			  AND project_id = $1
-			  AND created_at < $2
+			  AND created_at < $1
 		`
 
 		exportQuery = `
 			SELECT da.id, TO_JSONB(da) - 'id' || JSONB_BUILD_OBJECT('uid', da.id) AS json_output
 			FROM convoy.delivery_attempts AS da
 			WHERE deleted_at IS NULL
-			  AND project_id = $1
-			  AND created_at < $2
-			  AND (id > $3 OR $3 = '')
+			  AND created_at < $1
+			  AND (id > $2 OR $2 = '')
 			ORDER BY id ASC
-			LIMIT $4
+			LIMIT $3
 		`
 	)
 
@@ -245,7 +243,7 @@ func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt
 	defer tx.Rollback(ctx) //nolint:errcheck
 
 	var count int64
-	err = tx.QueryRow(ctx, countQuery, projectID, createdAt).Scan(&count)
+	err = tx.QueryRow(ctx, countQuery, createdAt).Scan(&count)
 	if err != nil {
 		return 0, util.NewServiceError(500, fmt.Errorf("failed to count records: %w", err))
 	}
@@ -261,7 +259,7 @@ func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt
 	)
 
 	for {
-		rows, err := tx.Query(ctx, exportQuery, projectID, createdAt, lastID, batchSize)
+		rows, err := tx.Query(ctx, exportQuery, createdAt, lastID, batchSize)
 		if err != nil {
 			return 0, util.NewServiceError(500, fmt.Errorf("failed to query batch: %w", err))
 		}
