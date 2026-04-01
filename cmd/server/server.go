@@ -188,17 +188,18 @@ func StartConvoyServer(a *cli.App) error {
 	// 	lo.Infof("Registered metrics materialized view refresh every %d min", refreshInterval)
 	// }
 
-	// if a.Licenser.RetentionPolicy() {
-	// Derive cron schedule from CONVOY_BACKUP_INTERVAL (default: 1h)
-	backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
-	backupCron := exporter.DurationToCron(backupInterval)
+	// Register cron-based backup tasks only when CDC backup is not enabled.
+	// When CDC is active, the BackupCollector in the worker handles exports continuously.
+	if !cfg.RetentionPolicy.CDCBackupEnabled {
+		backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+		backupCron := exporter.DurationToCron(backupInterval)
 
-	s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
-	s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
-	s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.BackupProjectData)
-	// Retention runs at 1am
+		s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
+		s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
+		s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.BackupProjectData)
+	}
+	// Retention always runs at 1am
 	s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
-	// }
 
 	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 	if err != nil {
