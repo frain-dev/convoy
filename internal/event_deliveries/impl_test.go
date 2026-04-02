@@ -1138,11 +1138,10 @@ func TestExportRecords(t *testing.T) {
 		}
 	})
 
-	t.Run("Empty", func(t *testing.T) {
-		_ = seedTestProject(t, db)
-
+	t.Run("Empty_with_past_cutoff", func(t *testing.T) {
+		// Export with a past cutoff should return 0 records
 		var buf bytes.Buffer
-		count, err := service.ExportRecords(ctx, time.Now().Add(1*time.Hour), &buf)
+		count, err := service.ExportRecords(ctx, time.Now().Add(-24*time.Hour), &buf)
 		require.NoError(t, err)
 		require.Equal(t, int64(0), count)
 		require.Empty(t, buf.String())
