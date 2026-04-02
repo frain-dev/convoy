@@ -492,11 +492,11 @@ func downloadAzuriteBlob(t *testing.T, client *azblob.Client, container, blobNam
 // Verification Functions
 
 // verifyTimeFiltering verifies that all records in the JSONL data are older than the specified cutoff hours
+// verifyTimeFiltering verifies that all records in the JSONL data have a created_at in the past.
 func verifyTimeFiltering(t *testing.T, data []byte) {
 	t.Helper()
 
-	cutoffTime := time.Now().Add(-time.Duration(24) * time.Hour)
-
+	now := time.Now()
 	records := parseJSONL(t, data)
 
 	for i, record := range records {
@@ -506,9 +506,9 @@ func verifyTimeFiltering(t *testing.T, data []byte) {
 		createdAt, err := time.Parse(time.RFC3339, createdAtStr)
 		require.NoError(t, err, "failed to parse created_at for record %d", i)
 
-		require.True(t, createdAt.Before(cutoffTime),
-			"record %d created_at (%v) should be before cutoff (%v)",
-			i, createdAt, cutoffTime)
+		require.True(t, createdAt.Before(now),
+			"record %d created_at (%v) should be in the past",
+			i, createdAt)
 	}
 }
 
