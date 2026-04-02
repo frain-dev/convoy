@@ -554,6 +554,16 @@ func getMinIOPrefix(orgID, projectID string) string {
 	return fmt.Sprintf("orgs/%s/projects/%s/", orgID, projectID)
 }
 
+// containsUID checks if any record in the JSONL results has the given UID.
+func containsUID(records []map[string]interface{}, uid string) bool {
+	for _, r := range records {
+		if r["uid"] == uid {
+			return true
+		}
+	}
+	return false
+}
+
 // Common Database Assertion Helpers
 
 // AssertNoEventDeliveryCreated verifies that NO event delivery was created for a specific
