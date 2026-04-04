@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/util"
 )
@@ -61,7 +63,7 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 				if cachedOrg := r.Context().Value(convoy.OrganisationCtx); cachedOrg != nil {
 					org = cachedOrg.(*datastore.Organisation)
 				} else {
-					orgRepo := organisations.New(h.A.Logger, h.A.DB)
+					orgRepo := cached.NewCachedOrganisationRepository(organisations.New(h.A.Logger, h.A.DB), h.A.Cache, 5*time.Minute, h.A.Logger)
 					org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 					if err != nil {
 						h.A.Logger.Error("Failed to fetch organisation for disabled check", "error", err)

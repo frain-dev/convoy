@@ -47,7 +47,7 @@ type ConfigurationResponse struct {
 }
 
 type StoragePolicyConfiguration struct {
-	// Storage policy type e.g on_prem or s3
+	// Storage policy type e.g on_prem, s3, or azure_blob
 	Type datastore.StorageType `json:"type,omitempty" valid:"supported_storage~please provide a valid storage type,required"`
 
 	// S3 Bucket creds
@@ -55,6 +55,9 @@ type StoragePolicyConfiguration struct {
 
 	// On_Prem directory
 	OnPrem *OnPremStorage `json:"on_prem"`
+
+	// Azure Blob Storage creds
+	AzureBlob *AzureBlobStorage `json:"azure_blob"`
 }
 
 func (sc *StoragePolicyConfiguration) Transform() *datastore.StoragePolicyConfiguration {
@@ -63,9 +66,10 @@ func (sc *StoragePolicyConfiguration) Transform() *datastore.StoragePolicyConfig
 	}
 
 	return &datastore.StoragePolicyConfiguration{
-		Type:   sc.Type,
-		S3:     sc.S3.transform(),
-		OnPrem: sc.OnPrem.transform(),
+		Type:      sc.Type,
+		S3:        sc.S3.transform(),
+		OnPrem:    sc.OnPrem.transform(),
+		AzureBlob: sc.AzureBlob.transform(),
 	}
 }
 
@@ -118,4 +122,26 @@ func (os *OnPremStorage) transform() *datastore.OnPremStorage {
 	}
 
 	return &datastore.OnPremStorage{Path: os.Path}
+}
+
+type AzureBlobStorage struct {
+	AccountName   null.String `json:"account_name"`
+	AccountKey    null.String `json:"account_key,omitempty"`
+	ContainerName null.String `json:"container_name"`
+	Endpoint      null.String `json:"endpoint,omitempty"`
+	Prefix        null.String `json:"prefix,omitempty"`
+}
+
+func (az *AzureBlobStorage) transform() *datastore.AzureBlobStorage {
+	if az == nil {
+		return nil
+	}
+
+	return &datastore.AzureBlobStorage{
+		AccountName:   az.AccountName,
+		AccountKey:    az.AccountKey,
+		ContainerName: az.ContainerName,
+		Endpoint:      az.Endpoint,
+		Prefix:        az.Prefix,
+	}
 }

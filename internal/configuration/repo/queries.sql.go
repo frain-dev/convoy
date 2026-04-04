@@ -27,6 +27,11 @@ INSERT INTO convoy.configurations (
 	s3_region,
 	s3_session_token,
 	s3_endpoint,
+	azure_account_name,
+	azure_account_key,
+	azure_container_name,
+	azure_endpoint,
+	azure_prefix,
 	retention_policy_policy,
 	retention_policy_enabled
 ) VALUES (
@@ -43,7 +48,12 @@ INSERT INTO convoy.configurations (
 	$11,
 	$12,
 	$13,
-	$14
+	$14,
+	$15,
+	$16,
+	$17,
+	$18,
+	$19
 )
 `
 
@@ -60,6 +70,11 @@ type CreateConfigurationParams struct {
 	S3Region               pgtype.Text
 	S3SessionToken         pgtype.Text
 	S3Endpoint             pgtype.Text
+	AzureAccountName       pgtype.Text
+	AzureAccountKey        pgtype.Text
+	AzureContainerName     pgtype.Text
+	AzureEndpoint          pgtype.Text
+	AzurePrefix            pgtype.Text
 	RetentionPolicyPolicy  pgtype.Text
 	RetentionPolicyEnabled pgtype.Bool
 }
@@ -80,6 +95,11 @@ func (q *Queries) CreateConfiguration(ctx context.Context, arg CreateConfigurati
 		arg.S3Region,
 		arg.S3SessionToken,
 		arg.S3Endpoint,
+		arg.AzureAccountName,
+		arg.AzureAccountKey,
+		arg.AzureContainerName,
+		arg.AzureEndpoint,
+		arg.AzurePrefix,
 		arg.RetentionPolicyPolicy,
 		arg.RetentionPolicyEnabled,
 	)
@@ -100,6 +120,11 @@ SELECT
 	s3_region,
 	s3_session_token,
 	s3_endpoint,
+	azure_account_name,
+	azure_account_key,
+	azure_container_name,
+	azure_endpoint,
+	azure_prefix,
 	retention_policy_policy,
 	retention_policy_enabled,
 	created_at,
@@ -123,6 +148,11 @@ type LoadConfigurationRow struct {
 	S3Region               pgtype.Text
 	S3SessionToken         pgtype.Text
 	S3Endpoint             pgtype.Text
+	AzureAccountName       pgtype.Text
+	AzureAccountKey        pgtype.Text
+	AzureContainerName     pgtype.Text
+	AzureEndpoint          pgtype.Text
+	AzurePrefix            pgtype.Text
 	RetentionPolicyPolicy  string
 	RetentionPolicyEnabled bool
 	CreatedAt              pgtype.Timestamptz
@@ -147,6 +177,11 @@ func (q *Queries) LoadConfiguration(ctx context.Context) (LoadConfigurationRow, 
 		&i.S3Region,
 		&i.S3SessionToken,
 		&i.S3Endpoint,
+		&i.AzureAccountName,
+		&i.AzureAccountKey,
+		&i.AzureContainerName,
+		&i.AzureEndpoint,
+		&i.AzurePrefix,
 		&i.RetentionPolicyPolicy,
 		&i.RetentionPolicyEnabled,
 		&i.CreatedAt,
@@ -170,10 +205,15 @@ SET
 	s3_region = $9,
 	s3_session_token = $10,
 	s3_endpoint = $11,
-	retention_policy_policy = $12,
-	retention_policy_enabled = $13,
+	azure_account_name = $12,
+	azure_account_key = $13,
+	azure_container_name = $14,
+	azure_endpoint = $15,
+	azure_prefix = $16,
+	retention_policy_policy = $17,
+	retention_policy_enabled = $18,
 	updated_at = NOW()
-WHERE id = $14 AND deleted_at IS NULL
+WHERE id = $19 AND deleted_at IS NULL
 `
 
 type UpdateConfigurationParams struct {
@@ -188,6 +228,11 @@ type UpdateConfigurationParams struct {
 	S3Region               pgtype.Text
 	S3SessionToken         pgtype.Text
 	S3Endpoint             pgtype.Text
+	AzureAccountName       pgtype.Text
+	AzureAccountKey        pgtype.Text
+	AzureContainerName     pgtype.Text
+	AzureEndpoint          pgtype.Text
+	AzurePrefix            pgtype.Text
 	RetentionPolicyPolicy  pgtype.Text
 	RetentionPolicyEnabled pgtype.Bool
 	ID                     pgtype.Text
@@ -206,6 +251,11 @@ func (q *Queries) UpdateConfiguration(ctx context.Context, arg UpdateConfigurati
 		arg.S3Region,
 		arg.S3SessionToken,
 		arg.S3Endpoint,
+		arg.AzureAccountName,
+		arg.AzureAccountKey,
+		arg.AzureContainerName,
+		arg.AzureEndpoint,
+		arg.AzurePrefix,
 		arg.RetentionPolicyPolicy,
 		arg.RetentionPolicyEnabled,
 		arg.ID,

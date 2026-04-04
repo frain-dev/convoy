@@ -15,6 +15,7 @@ import (
 	ingestSrv "github.com/frain-dev/convoy/cmd/ingest"
 	workerSrv "github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -150,9 +151,9 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 	lo.Info("Starting Convoy data plane")
 
 	userRepo := users.New(a.Logger, a.DB)
-	apiKeyRepo := api_keys.New(a.Logger, a.DB)
+	apiKeyRepo := cached.NewCachedAPIKeyRepository(api_keys.New(a.Logger, a.DB), a.Cache, 5*time.Minute, a.Logger)
 	configRepo := configuration.New(a.Logger, a.DB)
-	portalLinkRepo := portal_links.New(a.Logger, a.DB)
+	portalLinkRepo := cached.NewCachedPortalLinkRepository(portal_links.New(a.Logger, a.DB), a.Cache, 5*time.Minute, a.Logger)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize realm chain: %w", err)

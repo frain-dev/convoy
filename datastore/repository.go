@@ -284,7 +284,7 @@ type MetaEventRepository interface {
 }
 
 type ExportRepository interface {
-	ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error)
+	ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error)
 }
 
 type DeliveryAttemptsRepository interface {
@@ -296,6 +296,15 @@ type DeliveryAttemptsRepository interface {
 	GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (resultsMap map[string]circuit_breaker.PollResult, err error)
 	PartitionDeliveryAttemptsTable(ctx context.Context) error
 	UnPartitionDeliveryAttemptsTable(ctx context.Context) error
+}
+
+type BackupJobRepository interface {
+	EnqueueBackupJob(ctx context.Context, projectID string, hourStart, hourEnd time.Time) error
+	ClaimBackupJob(ctx context.Context, workerID string) (*BackupJob, error)
+	CompleteBackupJob(ctx context.Context, jobID string, recordCounts map[string]int64) error
+	FailBackupJob(ctx context.Context, jobID string, errMsg string) error
+	ReclaimStaleJobs(ctx context.Context, staleMinutes int32) (int64, error)
+	FindLatestCompletedBackup(ctx context.Context, projectID string) (*BackupJob, error)
 }
 
 type EventTypesRepository interface {

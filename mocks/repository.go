@@ -118,18 +118,18 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) DeleteProjectEventDeliveries(
 }
 
 // ExportRecords mocks base method.
-func (m *MockEventDeliveryRepository) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+func (m *MockEventDeliveryRepository) ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExportRecords", ctx, projectID, createdAt, w)
+	ret := m.ctrl.Call(m, "ExportRecords", ctx, createdAt, w)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ExportRecords indicates an expected call of ExportRecords.
-func (mr *MockEventDeliveryRepositoryMockRecorder) ExportRecords(ctx, projectID, createdAt, w any) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) ExportRecords(ctx, createdAt, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockEventDeliveryRepository)(nil).ExportRecords), ctx, projectID, createdAt, w)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockEventDeliveryRepository)(nil).ExportRecords), ctx, createdAt, w)
 }
 
 // FindDiscardedEventDeliveries mocks base method.
@@ -434,18 +434,18 @@ func (mr *MockEventRepositoryMockRecorder) DeleteProjectTokenizedEvents(ctx, pro
 }
 
 // ExportRecords mocks base method.
-func (m *MockEventRepository) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+func (m *MockEventRepository) ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExportRecords", ctx, projectID, createdAt, w)
+	ret := m.ctrl.Call(m, "ExportRecords", ctx, createdAt, w)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ExportRecords indicates an expected call of ExportRecords.
-func (mr *MockEventRepositoryMockRecorder) ExportRecords(ctx, projectID, createdAt, w any) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) ExportRecords(ctx, createdAt, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockEventRepository)(nil).ExportRecords), ctx, projectID, createdAt, w)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockEventRepository)(nil).ExportRecords), ctx, createdAt, w)
 }
 
 // FindEventByID mocks base method.
@@ -2826,18 +2826,18 @@ func (m *MockExportRepository) EXPECT() *MockExportRepositoryMockRecorder {
 }
 
 // ExportRecords mocks base method.
-func (m *MockExportRepository) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+func (m *MockExportRepository) ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExportRecords", ctx, projectID, createdAt, w)
+	ret := m.ctrl.Call(m, "ExportRecords", ctx, createdAt, w)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ExportRecords indicates an expected call of ExportRecords.
-func (mr *MockExportRepositoryMockRecorder) ExportRecords(ctx, projectID, createdAt, w any) *gomock.Call {
+func (mr *MockExportRepositoryMockRecorder) ExportRecords(ctx, createdAt, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockExportRepository)(nil).ExportRecords), ctx, projectID, createdAt, w)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockExportRepository)(nil).ExportRecords), ctx, createdAt, w)
 }
 
 // MockDeliveryAttemptsRepository is a mock of DeliveryAttemptsRepository interface.
@@ -2893,18 +2893,18 @@ func (mr *MockDeliveryAttemptsRepositoryMockRecorder) DeleteProjectDeliveriesAtt
 }
 
 // ExportRecords mocks base method.
-func (m *MockDeliveryAttemptsRepository) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+func (m *MockDeliveryAttemptsRepository) ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExportRecords", ctx, projectID, createdAt, w)
+	ret := m.ctrl.Call(m, "ExportRecords", ctx, createdAt, w)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ExportRecords indicates an expected call of ExportRecords.
-func (mr *MockDeliveryAttemptsRepositoryMockRecorder) ExportRecords(ctx, projectID, createdAt, w any) *gomock.Call {
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) ExportRecords(ctx, createdAt, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).ExportRecords), ctx, projectID, createdAt, w)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).ExportRecords), ctx, createdAt, w)
 }
 
 // FindDeliveryAttemptById mocks base method.

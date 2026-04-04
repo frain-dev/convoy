@@ -8,7 +8,7 @@
 go = "1.25.7"
 golangci-lint = "2.4.0"
 nodejs = "24.10.0"
-# postgres = "15.1"
+ postgres = "18"
 
 "asdf:jonathanmorley/asdf-pre-commit" = "latest"
 "aqua:pvolok/mprocs" = "0.7.2"

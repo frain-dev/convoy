@@ -277,7 +277,6 @@ func GetTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, bool, error) {
 	return tx, isWrapped, nil
 }
 
-
 func closeWithError(closer io.Closer) {
 	err := closer.Close()
 	if err != nil {

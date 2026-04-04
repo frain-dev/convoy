@@ -75,7 +75,8 @@ func seedConfiguration(t *testing.T, db database.Database, storageType datastore
 		},
 	}
 
-	if storageType == datastore.S3 {
+	switch storageType {
+	case datastore.S3:
 		cfg.StoragePolicy.S3 = &datastore.S3Storage{
 			Bucket:    null.StringFrom("test-bucket"),
 			AccessKey: null.StringFrom("test-access-key"),
@@ -84,21 +85,17 @@ func seedConfiguration(t *testing.T, db database.Database, storageType datastore
 			Prefix:    null.StringFrom("convoy/"),
 			Endpoint:  null.StringFrom("https://s3.amazonaws.com"),
 		}
-		cfg.StoragePolicy.OnPrem = &datastore.OnPremStorage{
-			Path: null.NewString("", false),
+	case datastore.AzureBlob:
+		cfg.StoragePolicy.AzureBlob = &datastore.AzureBlobStorage{
+			AccountName:   null.StringFrom("testaccount"),
+			AccountKey:    null.StringFrom("testkey"),
+			ContainerName: null.StringFrom("test-container"),
+			Endpoint:      null.StringFrom("https://testaccount.blob.core.windows.net"),
+			Prefix:        null.StringFrom("convoy/"),
 		}
-	} else {
+	default: // OnPrem
 		cfg.StoragePolicy.OnPrem = &datastore.OnPremStorage{
 			Path: null.StringFrom("/var/convoy/storage"),
-		}
-		cfg.StoragePolicy.S3 = &datastore.S3Storage{
-			Prefix:       null.NewString("", false),
-			Bucket:       null.NewString("", false),
-			AccessKey:    null.NewString("", false),
-			SecretKey:    null.NewString("", false),
-			Region:       null.NewString("", false),
-			SessionToken: null.NewString("", false),
-			Endpoint:     null.NewString("", false),
 		}
 	}
 
@@ -200,9 +197,8 @@ func TestCreateConfiguration_WithOnPremStorage(t *testing.T) {
 	require.Equal(t, datastore.OnPrem, loaded.StoragePolicy.Type)
 	require.Equal(t, "/mnt/convoy-storage", loaded.StoragePolicy.OnPrem.Path.String)
 	require.True(t, loaded.StoragePolicy.OnPrem.Path.Valid)
-	// Verify S3 fields are empty
-	require.False(t, loaded.StoragePolicy.S3.Bucket.Valid)
-	require.False(t, loaded.StoragePolicy.S3.AccessKey.Valid)
+	// S3 should be nil for OnPrem type
+	require.Nil(t, loaded.StoragePolicy.S3)
 	require.Equal(t, "720h", loaded.RetentionPolicy.Policy)
 	require.False(t, loaded.RetentionPolicy.IsRetentionPolicyEnabled)
 }
@@ -283,11 +279,11 @@ func TestCreateConfiguration_S3StorageNormalization(t *testing.T) {
 	err := service.CreateConfiguration(ctx, cfg)
 	require.NoError(t, err)
 
-	// Verify OnPrem was normalized (cleared) for S3 storage type
+	// Verify OnPrem was cleared for S3 storage type
 	loaded, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
 	require.Equal(t, datastore.S3, loaded.StoragePolicy.Type)
-	require.False(t, loaded.StoragePolicy.OnPrem.Path.Valid)
+	require.Nil(t, loaded.StoragePolicy.OnPrem)
 }
 
 func TestCreateConfiguration_OnPremStorageNormalization(t *testing.T) {
@@ -321,13 +317,55 @@ func TestCreateConfiguration_OnPremStorageNormalization(t *testing.T) {
 	err := service.CreateConfiguration(ctx, cfg)
 	require.NoError(t, err)
 
-	// Verify S3 was normalized (cleared) for OnPrem storage type
+	// Verify S3 was cleared for OnPrem storage type
 	loaded, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
 	require.Equal(t, datastore.OnPrem, loaded.StoragePolicy.Type)
-	require.False(t, loaded.StoragePolicy.S3.Bucket.Valid)
-	require.False(t, loaded.StoragePolicy.S3.AccessKey.Valid)
-	require.False(t, loaded.StoragePolicy.S3.SecretKey.Valid)
+	require.Nil(t, loaded.StoragePolicy.S3)
+}
+
+func TestCreateConfiguration_WithAzureBlobStorage(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+
+	cfg := &datastore.Configuration{
+		UID:                ulid.Make().String(),
+		IsAnalyticsEnabled: true,
+		IsSignupEnabled:    true,
+		StoragePolicy: &datastore.StoragePolicyConfiguration{
+			Type: datastore.AzureBlob,
+			AzureBlob: &datastore.AzureBlobStorage{
+				AccountName:   null.StringFrom("myaccount"),
+				AccountKey:    null.StringFrom("mykey123"),
+				ContainerName: null.StringFrom("convoy-exports"),
+				Endpoint:      null.StringFrom("https://myaccount.blob.core.windows.net"),
+				Prefix:        null.StringFrom("backups/"),
+			},
+		},
+		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
+			Policy:                   "720h",
+			IsRetentionPolicyEnabled: true,
+		},
+	}
+
+	err := service.CreateConfiguration(ctx, cfg)
+	require.NoError(t, err)
+
+	loaded, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.Equal(t, cfg.UID, loaded.UID)
+	require.Equal(t, datastore.AzureBlob, loaded.StoragePolicy.Type)
+	require.NotNil(t, loaded.StoragePolicy.AzureBlob)
+	require.Equal(t, "myaccount", loaded.StoragePolicy.AzureBlob.AccountName.String)
+	require.Equal(t, "mykey123", loaded.StoragePolicy.AzureBlob.AccountKey.String)
+	require.Equal(t, "convoy-exports", loaded.StoragePolicy.AzureBlob.ContainerName.String)
+	require.Equal(t, "https://myaccount.blob.core.windows.net", loaded.StoragePolicy.AzureBlob.Endpoint.String)
+	require.Equal(t, "backups/", loaded.StoragePolicy.AzureBlob.Prefix.String)
+	// Verify S3 and OnPrem are nil for Azure type
+	require.Nil(t, loaded.StoragePolicy.S3)
+	require.Nil(t, loaded.StoragePolicy.OnPrem)
 }
 
 func TestCreateConfiguration_VerifyTimestamps(t *testing.T) {

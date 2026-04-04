@@ -51,6 +51,28 @@ func TestLoadConfiguration_OnPremStorage(t *testing.T) {
 	require.Equal(t, "/var/convoy/storage", loaded.StoragePolicy.OnPrem.Path.String)
 }
 
+func TestLoadConfiguration_AzureBlobStorage(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+
+	seeded := seedConfiguration(t, db, datastore.AzureBlob)
+
+	loaded, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, loaded)
+	require.Equal(t, seeded.UID, loaded.UID)
+	require.Equal(t, datastore.AzureBlob, loaded.StoragePolicy.Type)
+	require.NotNil(t, loaded.StoragePolicy.AzureBlob)
+	require.True(t, loaded.StoragePolicy.AzureBlob.AccountName.Valid)
+	require.Equal(t, "testaccount", loaded.StoragePolicy.AzureBlob.AccountName.String)
+	require.Equal(t, "test-container", loaded.StoragePolicy.AzureBlob.ContainerName.String)
+	// S3 and OnPrem should be nil
+	require.Nil(t, loaded.StoragePolicy.S3)
+	require.Nil(t, loaded.StoragePolicy.OnPrem)
+}
+
 func TestLoadConfiguration_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
@@ -103,9 +125,9 @@ func TestLoadConfiguration_VerifyS3FieldsReconstructed(t *testing.T) {
 	require.True(t, loaded.StoragePolicy.S3.Prefix.Valid)
 	require.True(t, loaded.StoragePolicy.S3.Endpoint.Valid)
 
-	// Verify OnPrem is empty struct (backward compatibility)
-	require.NotNil(t, loaded.StoragePolicy.OnPrem)
-	require.False(t, loaded.StoragePolicy.OnPrem.Path.Valid)
+	// OnPrem and Azure should be nil for S3 type
+	require.Nil(t, loaded.StoragePolicy.OnPrem)
+	require.Nil(t, loaded.StoragePolicy.AzureBlob)
 }
 
 func TestLoadConfiguration_VerifyOnPremFieldsReconstructed(t *testing.T) {
@@ -126,11 +148,9 @@ func TestLoadConfiguration_VerifyOnPremFieldsReconstructed(t *testing.T) {
 	require.NotNil(t, loaded.StoragePolicy.OnPrem)
 	require.True(t, loaded.StoragePolicy.OnPrem.Path.Valid)
 
-	// Verify S3 is empty struct (backward compatibility)
-	require.NotNil(t, loaded.StoragePolicy.S3)
-	require.False(t, loaded.StoragePolicy.S3.Bucket.Valid)
-	require.False(t, loaded.StoragePolicy.S3.AccessKey.Valid)
-	require.False(t, loaded.StoragePolicy.S3.SecretKey.Valid)
+	// S3 and Azure should be nil for OnPrem type
+	require.Nil(t, loaded.StoragePolicy.S3)
+	require.Nil(t, loaded.StoragePolicy.AzureBlob)
 }
 
 func TestLoadConfiguration_VerifyBooleanConversion(t *testing.T) {

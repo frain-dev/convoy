@@ -1,6 +1,9 @@
 package backup
 
 import (
+	"bufio"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/dchest/uniuri"
 	"github.com/minio/minio-go/v7"
 	"github.com/oklog/ulid/v2"
@@ -27,6 +31,36 @@ import (
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
+
+// decompressGzip decompresses gzip data and returns the raw bytes.
+func decompressGzip(t *testing.T, data []byte) []byte {
+	t.Helper()
+	gr, err := gzip.NewReader(bytes.NewReader(data))
+	require.NoError(t, err, "failed to create gzip reader")
+	defer gr.Close()
+	out, err := io.ReadAll(gr)
+	require.NoError(t, err, "failed to decompress gzip data")
+	return out
+}
+
+// parseJSONL parses JSONL (newline-delimited JSON) into a slice of maps.
+func parseJSONL(t *testing.T, data []byte) []map[string]interface{} {
+	t.Helper()
+	var results []map[string]interface{}
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+		var record map[string]interface{}
+		err := json.Unmarshal(line, &record)
+		require.NoError(t, err, "each JSONL line must be valid JSON")
+		results = append(results, record)
+	}
+	require.NoError(t, scanner.Err())
+	return results
+}
 
 // MinIO Operations
 
@@ -50,7 +84,7 @@ func listMinIOObjects(t *testing.T, client *minio.Client, bucket, prefix string)
 	return objects
 }
 
-// downloadMinIOObject downloads an object from MinIO and returns its contents
+// downloadMinIOObject downloads an object from MinIO, decompresses gzip, and returns the raw contents.
 func downloadMinIOObject(t *testing.T, client *minio.Client, bucket, key string) []byte {
 	t.Helper()
 
@@ -59,10 +93,10 @@ func downloadMinIOObject(t *testing.T, client *minio.Client, bucket, key string)
 	require.NoError(t, err, "failed to get object from MinIO")
 	defer object.Close()
 
-	data, err := io.ReadAll(object)
+	compressed, err := io.ReadAll(object)
 	require.NoError(t, err, "failed to read object data")
 
-	return data
+	return decompressGzip(t, compressed)
 }
 
 // findObject finds an object in the list that contains the given path substring
@@ -77,14 +111,14 @@ func findObject(objects []minio.ObjectInfo, pathSubstring string) *minio.ObjectI
 
 // OnPrem Operations
 
-// readExportFile reads an export file from the filesystem
+// readExportFile reads a gzip-compressed export file from the filesystem and returns the decompressed contents.
 func readExportFile(t *testing.T, filePath string) []byte {
 	t.Helper()
 
-	data, err := os.ReadFile(filePath)
+	compressed, err := os.ReadFile(filePath)
 	require.NoError(t, err, "failed to read export file")
 
-	return data
+	return decompressGzip(t, compressed)
 }
 
 // findExportFiles finds export files in the base directory that contain the table name
@@ -96,7 +130,7 @@ func findExportFiles(t *testing.T, baseDir, tableName string) []string {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && strings.Contains(path, tableName) && strings.HasSuffix(path, ".json") {
+		if !info.IsDir() && strings.Contains(path, tableName) && strings.HasSuffix(path, ".jsonl.gz") {
 			files = append(files, path)
 		}
 		return nil
@@ -392,30 +426,89 @@ func createOnPremConfig(t *testing.T, db database.Database, ctx context.Context,
 	return config
 }
 
+// createAzuriteConfig updates the existing configuration with Azure Blob storage settings
+func createAzuriteConfig(t *testing.T, db database.Database, ctx context.Context, endpoint string) *datastore.Configuration {
+	t.Helper()
+
+	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
+
+	cfg, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err, "failed to load existing configuration")
+
+	cfg.StoragePolicy = &datastore.StoragePolicyConfiguration{
+		Type: datastore.AzureBlob,
+		AzureBlob: &datastore.AzureBlobStorage{
+			AccountName:   null.NewString("devstoreaccount1", true),
+			AccountKey:    null.NewString("Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==", true),
+			ContainerName: null.NewString("convoy-test-exports", true),
+			Endpoint:      null.NewString(endpoint, true),
+		},
+	}
+	cfg.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
+		IsRetentionPolicyEnabled: true,
+		Policy:                   "720h",
+	}
+
+	err = configRepo.UpdateConfiguration(ctx, cfg)
+	require.NoError(t, err, "failed to update Azure configuration")
+
+	return cfg
+}
+
+// listAzuriteBlobs lists all blobs in the Azurite container with the given prefix
+func listAzuriteBlobs(t *testing.T, client *azblob.Client, container, prefix string) []string {
+	t.Helper()
+
+	var blobs []string
+	pager := client.NewListBlobsFlatPager(container, &azblob.ListBlobsFlatOptions{
+		Prefix: &prefix,
+	})
+
+	for pager.More() {
+		resp, err := pager.NextPage(context.Background())
+		require.NoError(t, err, "failed to list azurite blobs")
+		for _, blob := range resp.Segment.BlobItems {
+			blobs = append(blobs, *blob.Name)
+		}
+	}
+
+	return blobs
+}
+
+// downloadAzuriteBlob downloads a blob from Azurite, decompresses gzip, and returns the raw contents
+func downloadAzuriteBlob(t *testing.T, client *azblob.Client, container, blobName string) []byte {
+	t.Helper()
+
+	resp, err := client.DownloadStream(context.Background(), container, blobName, nil)
+	require.NoError(t, err, "failed to download azurite blob")
+	defer resp.Body.Close()
+
+	compressed, err := io.ReadAll(resp.Body)
+	require.NoError(t, err, "failed to read azurite blob data")
+
+	return decompressGzip(t, compressed)
+}
+
 // Verification Functions
 
-// verifyTimeFiltering verifies that all records in the data are older than the specified cutoff hours
+// verifyTimeFiltering verifies that all records in the JSONL data are older than the specified cutoff hours
+// verifyTimeFiltering verifies that all records in the JSONL data have a created_at in the past.
 func verifyTimeFiltering(t *testing.T, data []byte) {
 	t.Helper()
 
-	cutoffTime := time.Now().Add(-time.Duration(24) * time.Hour)
-
-	// Try to unmarshal as a slice of maps to handle generic JSON
-	var records []map[string]interface{}
-	err := json.Unmarshal(data, &records)
-	require.NoError(t, err, "failed to unmarshal records for time filtering verification")
+	now := time.Now()
+	records := parseJSONL(t, data)
 
 	for i, record := range records {
-		// Check for the created_at field
 		createdAtStr, ok := record["created_at"].(string)
 		require.True(t, ok, "record %d missing or invalid created_at field", i)
 
 		createdAt, err := time.Parse(time.RFC3339, createdAtStr)
 		require.NoError(t, err, "failed to parse created_at for record %d", i)
 
-		require.True(t, createdAt.Before(cutoffTime),
-			"record %d created_at (%v) should be before cutoff (%v)",
-			i, createdAt, cutoffTime)
+		require.True(t, createdAt.Before(now),
+			"record %d created_at (%v) should be in the past",
+			i, createdAt)
 	}
 }
 
@@ -423,13 +516,9 @@ func verifyTimeFiltering(t *testing.T, data []byte) {
 func verifyProjectIsolation(t *testing.T, data []byte, projectID string) {
 	t.Helper()
 
-	// Try to unmarshal as a slice of maps to handle generic JSON
-	var records []map[string]interface{}
-	err := json.Unmarshal(data, &records)
-	require.NoError(t, err, "failed to unmarshal records for project isolation verification")
+	records := parseJSONL(t, data)
 
 	for i, record := range records {
-		// Check for project_id field
 		recordProjectID, ok := record["project_id"].(string)
 		require.True(t, ok, "record %d missing or invalid project_id field", i)
 
@@ -438,19 +527,16 @@ func verifyProjectIsolation(t *testing.T, data []byte, projectID string) {
 	}
 }
 
-// verifyJSONStructure verifies that the data is valid JSON and has the expected structure
-func verifyJSONStructure(t *testing.T, data []byte, expectedCount int) {
+// verifyJSONLStructure verifies that the data is valid JSONL and has the expected structure
+func verifyJSONLStructure(t *testing.T, data []byte, expectedCount int) {
 	t.Helper()
 
-	var records []map[string]interface{}
-	err := json.Unmarshal(data, &records)
-	require.NoError(t, err, "failed to unmarshal JSON")
+	records := parseJSONL(t, data)
 
 	if expectedCount >= 0 {
 		require.Len(t, records, expectedCount, "unexpected number of records")
 	}
 
-	// Verify each record has required fields
 	for i, record := range records {
 		require.Contains(t, record, "uid", "record %d missing uid field", i)
 		require.Contains(t, record, "created_at", "record %d missing created_at field", i)
@@ -465,7 +551,17 @@ func getExportPath(baseDir, orgID, projectID, tableName string) string {
 
 // getMinIOPrefix constructs the MinIO prefix for listing objects
 func getMinIOPrefix(orgID, projectID string) string {
-	return fmt.Sprintf("convoy/export/orgs/%s/projects/%s/", orgID, projectID)
+	return fmt.Sprintf("orgs/%s/projects/%s/", orgID, projectID)
+}
+
+// containsUID checks if any record in the JSONL results has the given UID.
+func containsUID(records []map[string]interface{}, uid string) bool {
+	for _, r := range records {
+		if r["uid"] == uid {
+			return true
+		}
+	}
+	return false
 }
 
 // Common Database Assertion Helpers

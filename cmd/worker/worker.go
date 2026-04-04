@@ -14,6 +14,8 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
+	"github.com/frain-dev/convoy/internal/backup_jobs"
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
@@ -23,8 +25,11 @@ import (
 	"github.com/frain-dev/convoy/internal/filters"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
+	backup_collector "github.com/frain-dev/convoy/internal/pkg/backup_collector"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -50,8 +55,9 @@ import (
 )
 
 type Worker struct {
-	consumer *worker.Consumer
-	logger   log.Logger
+	consumer        *worker.Consumer
+	backupCollector *backup_collector.BackupCollector // nil if CDC backup disabled
+	logger          log.Logger
 }
 
 // NewWorker initializes all worker components and returns a Worker instance.
@@ -115,16 +121,17 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		}
 	}
 
-	projectRepo := projects.New(a.Logger, a.DB)
+	projectRepo := cached.NewCachedProjectRepository(projects.New(a.Logger, a.DB), a.Cache, 5*time.Minute, lo)
 	metaEventRepo := meta_events.New(a.Logger, a.DB)
-	endpointRepo := endpoints.New(a.Logger, a.DB)
+	endpointRepo := cached.NewCachedEndpointRepository(endpoints.New(a.Logger, a.DB), a.Cache, 2*time.Minute, lo)
 	eventRepo := events.New(a.Logger, a.DB)
 	jobRepo := postgres.NewJobRepo(a.DB)
 	eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
-	subRepo := subscriptions.New(a.Logger, a.DB)
+	subRepo := cached.NewCachedSubscriptionRepository(subscriptions.New(a.Logger, a.DB), a.Cache, 30*time.Second, lo)
 	configRepo := configuration.New(a.Logger, a.DB)
 	attemptRepo := delivery_attempts.New(a.Logger, a.DB)
-	filterRepo := filters.New(a.Logger, a.DB)
+	backupJobRepo := backup_jobs.New(a.Logger, a.DB)
+	filterRepo := cached.NewCachedFilterRepository(filters.New(a.Logger, a.DB), a.Cache, 2*time.Minute, lo)
 	batchRetryRepo := batch_retries.New(lo, a.DB)
 
 	rd, err := rdb.NewClientFromRedisConfig(cfg.Redis)
@@ -352,6 +359,8 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	if a.Licenser.RetentionPolicy() {
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret, lo), nil)
 		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd.Client(), lo), nil)
+		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, projectRepo, backupJobRepo, lo), nil)
+		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, lo), nil)
 	}
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
@@ -417,9 +426,31 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		return nil, fmt.Errorf("failed to register queue metrics: %w", err)
 	}
 
+	// Optionally start CDC-based backup collector
+	var collector *backup_collector.BackupCollector
+	lo.Info(fmt.Sprintf("CDC backup config: enabled=%v, retention=%v", cfg.RetentionPolicy.CDCBackupEnabled, cfg.RetentionPolicy.IsRetentionPolicyEnabled))
+	if cfg.RetentionPolicy.CDCBackupEnabled && cfg.RetentionPolicy.IsRetentionPolicyEnabled {
+		blobStoreClient, blobErr := blobstore.NewBlobStoreClient(configuration.StoragePolicy, lo)
+		if blobErr != nil {
+			return nil, fmt.Errorf("failed to create blob store for CDC backup: %w", blobErr)
+		}
+
+		flushInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+
+		// ReplicationDSN connects directly to Postgres (bypassing pgbouncer)
+		// for the WAL replication protocol. Falls back to normal DSN if not set.
+		replDSN := cfg.RetentionPolicy.ReplicationDSN
+		if replDSN == "" {
+			replDSN = cfg.Database.BuildDsn()
+		}
+
+		collector = backup_collector.NewBackupCollector(a.DB.GetConn(), replDSN, blobStoreClient, flushInterval, lo)
+	}
+
 	return &Worker{
-		consumer: consumer,
-		logger:   lo,
+		consumer:        consumer,
+		backupCollector: collector,
+		logger:          lo,
 	}, nil
 }
 
@@ -429,6 +460,14 @@ func (w *Worker) Run(ctx context.Context, workerReady chan struct{}) error {
 	}
 	w.logger.Printf("Starting Convoy Consumer Pool")
 
+	// Start CDC backup collector if enabled
+	if w.backupCollector != nil {
+		if err := w.backupCollector.Start(ctx); err != nil {
+			w.logger.Error(fmt.Sprintf("failed to start backup collector: %v", err))
+			// Non-fatal — worker can still process events without CDC backup
+		}
+	}
+
 	if workerReady != nil {
 		close(workerReady)
 	}
@@ -436,6 +475,11 @@ func (w *Worker) Run(ctx context.Context, workerReady chan struct{}) error {
 	// Wait for context to be canceled before returning
 	<-ctx.Done()
 	w.logger.Printf("Context canceled, stopping Convoy Consumer Pool...")
+
+	if w.backupCollector != nil {
+		w.backupCollector.Stop(ctx)
+	}
+
 	w.consumer.Stop()
 	w.logger.Printf("Convoy Consumer Pool stopped")
 

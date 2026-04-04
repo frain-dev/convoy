@@ -380,8 +380,7 @@ SELECT ed.id,
            'updated_at', ed.updated_at
        ) AS json_output
 FROM convoy.event_deliveries AS ed
-WHERE project_id = @project_id
-  AND created_at < @created_at
+WHERE created_at < @created_at
   AND (id > @cursor OR @cursor = '')
   AND deleted_at IS NULL
 ORDER BY id
@@ -389,7 +388,6 @@ LIMIT @page_limit;
 
 -- name: CountExportedEventDeliveries :one
 SELECT COUNT(*) AS count FROM convoy.event_deliveries
-WHERE project_id = @project_id
-  AND created_at < @created_at
+WHERE created_at < @created_at
   AND (id > @cursor OR @cursor = '')
   AND deleted_at IS NULL;
