@@ -45,8 +45,24 @@ func (o *OnPremClient) Upload(ctx context.Context, key string, r io.Reader) erro
 	}
 	defer f.Close()
 
-	if _, err := io.Copy(f, r); err != nil {
-		return fmt.Errorf("write to %q: %w", fullPath, err)
+	// Context-aware copy: check for cancellation during write
+	buf := make([]byte, 32*1024)
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		n, readErr := r.Read(buf)
+		if n > 0 {
+			if _, writeErr := f.Write(buf[:n]); writeErr != nil {
+				return fmt.Errorf("write to %q: %w", fullPath, writeErr)
+			}
+		}
+		if readErr == io.EOF {
+			break
+		}
+		if readErr != nil {
+			return fmt.Errorf("read for %q: %w", fullPath, readErr)
+		}
 	}
 
 	o.logger.Info(fmt.Sprintf("saved %q", fullPath))
