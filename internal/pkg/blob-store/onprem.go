@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
@@ -26,7 +27,13 @@ func NewOnPremClient(opts BlobStoreOptions, logger log.Logger) (BlobStore, error
 
 // Upload writes the stream to the local filesystem at the given key path.
 func (o *OnPremClient) Upload(ctx context.Context, key string, r io.Reader) error {
-	fullPath := filepath.Join(o.opts.OnPremStorageDir, key)
+	baseDir := filepath.Clean(o.opts.OnPremStorageDir)
+	fullPath := filepath.Join(baseDir, filepath.Clean(key))
+
+	// Guard against path traversal (e.g. key = "../../etc/passwd")
+	if !strings.HasPrefix(fullPath, baseDir+string(filepath.Separator)) && fullPath != baseDir {
+		return fmt.Errorf("path traversal detected: %q resolves outside base directory", key)
+	}
 
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
 		return fmt.Errorf("create directory for %q: %w", fullPath, err)
