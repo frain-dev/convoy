@@ -10,7 +10,7 @@ import (
 )
 
 type Runtime struct {
-	deps     RuntimeOpts
+	opts     RuntimeOpts
 	cfg      config.Configuration
 	interval int
 	worker   *Worker
@@ -23,7 +23,7 @@ func New(ctx context.Context, opts RuntimeOpts, cfg config.Configuration, interv
 	}
 
 	return &Runtime{
-		deps:     opts,
+		opts:     opts,
 		cfg:      cfg,
 		interval: interval,
 		worker:   worker,
@@ -48,16 +48,16 @@ func (r *Runtime) Run(ctx context.Context) error {
 	case err := <-workerErr:
 		return fmt.Errorf("worker failed to start: %w", err)
 	case <-workerReady:
-		r.deps.Logger.Info("Worker is ready")
+		r.opts.Logger.Info("Worker is ready")
 	case <-time.After(30 * time.Second):
 		return fmt.Errorf("worker failed to become ready within 30 seconds")
 	}
 
-	if err := StartIngest(ctx, r.deps, r.cfg); err != nil {
+	if err := StartIngest(ctx, r.opts, r.cfg); err != nil {
 		return fmt.Errorf("error starting data plane ingest component: %w", err)
 	}
 
-	if err := StartServer(r.deps, r.cfg); err != nil {
+	if err := StartServer(r.opts, r.cfg); err != nil {
 		return fmt.Errorf("error starting data plane server component: %w", err)
 	}
 
