@@ -16,11 +16,11 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	rcache "github.com/frain-dev/convoy/cache/redis"
 	cmdserver "github.com/frain-dev/convoy/cmd/server"
-	cmdworker "github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/dataplane"
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -227,7 +227,7 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	workerCtx, cancelWorker := context.WithCancel(serverCtx)
 	go func() {
 		t.Logf("Starting worker for test: %s", t.Name())
-		worker, err := cmdworker.NewWorker(workerCtx, app, cfg)
+		worker, err := dataplane.NewWorker(workerCtx, app, cfg)
 		if err != nil {
 			t.Logf("Worker initialization error for test %s: %v", t.Name(), err)
 			logger.Error("Worker initialization error", "error", err)

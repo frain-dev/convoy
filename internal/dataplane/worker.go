@@ -1,4 +1,4 @@
-package worker
+package dataplane
 
 import (
 	"context"
@@ -104,10 +104,8 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		return nil, err
 	}
 
-	// register worker.
 	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo, lvl)
 
-	// Inject job tracker if set (for E2E tests)
 	if a.JobTracker != nil {
 		if tracker, ok := a.JobTracker.(worker.JobTracker); ok {
 			consumer.SetJobTracker(tracker)
@@ -138,7 +136,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	}
 
 	counter := &telemetry.EventsCounter{}
-
 	pb := telemetry.NewposthogBackend()
 	mb := telemetry.NewmixpanelBackend()
 
@@ -150,7 +147,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, lo, 0)
 	subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
 
-	// Store subscription loader and table in App for E2E test access
 	a.SubscriptionLoader = subscriptionsLoader
 	a.SubscriptionTable = subscriptionsTable
 
@@ -159,7 +155,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		return nil, err
 	}
 
-	// initial sync.
 	err = subscriptionsLoader.SyncChanges(ctx, subscriptionsTable)
 	if err != nil {
 		return nil, err
@@ -194,7 +189,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	var circuitBreakerManager *cb.CircuitBreakerManager
 
 	if featureFlag.CanAccessFeature(fflag.CircuitBreaker) {
-		// Use circuit breaker config from application configuration
 		masterDefaults := cb.CircuitBreakerConfig{
 			SampleRate:                  cfg.CircuitBreaker.SampleRate,
 			BreakerTimeout:              cfg.CircuitBreaker.ErrorTimeout,
@@ -219,7 +213,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 					lo.Warnf("Project %s has no circuit breaker config, using default", projectID)
 					return &masterDefaults
 				}
-				// Convert config.CircuitBreakerConfiguration to cb.CircuitBreakerConfig
 				return &cb.CircuitBreakerConfig{
 					SampleRate:                  project.Config.CircuitBreaker.SampleRate,
 					BreakerTimeout:              project.Config.CircuitBreaker.ErrorTimeout,
@@ -247,13 +240,11 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 
 				switch n {
 				case cb.TypeDisableResource:
-					// Disable the endpoint
 					breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
 					if breakerErr != nil {
 						return breakerErr
 					}
 
-					// Send notification emails (support + owner)
 					orgRepo := organisations.New(lo, a.DB)
 					ownerEmail := ""
 					if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
@@ -293,7 +284,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		ret.Start(ctx, time.Minute)
 	} else {
 		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
-
 		ret = retention.NewDeleteRetentionPolicy(a.DB, lo)
 	}
 
@@ -303,7 +293,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
-	// Initialize OAuth2 token service
 	oauth2TokenService := services.NewOAuth2TokenService(a.Cache, lo)
 
 	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
@@ -342,11 +331,8 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	}
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
-
 	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
-
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps), newTelemetry)
-
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
 
 	if a.Licenser.RetentionPolicy() {
@@ -374,9 +360,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd, lo), nil)
-
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
-
 	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, rd), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
@@ -433,7 +417,6 @@ func (w *Worker) Run(ctx context.Context, workerReady chan struct{}) error {
 		close(workerReady)
 	}
 
-	// Wait for context to be canceled before returning
 	<-ctx.Done()
 	w.logger.Printf("Context canceled, stopping Convoy Consumer Pool...")
 	w.consumer.Stop()

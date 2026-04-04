@@ -1,4 +1,4 @@
-package ingest
+package dataplane
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
+func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration) error {
 	sourceRepo := sources.New(a.Logger, a.DB)
 	projectRepo := projects.New(a.Logger, a.DB)
 	endpointRepo := endpoints.New(a.Logger, a.DB)

@@ -27,21 +27,9 @@ services:
         networks:
             - backendCluster
 
-    worker:
+    agent:
         image: getconvoy/convoy:latest
-        command: ["./cmd", "worker", "--config", "convoy.json"]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: on-failure
-        depends_on:
-            - postgres
-            - redis_server
-        networks:
-            - backendCluster
-
-    ingest:
-        image: getconvoy/convoy:latest
-        command: ["./cmd", "ingest", "--config", "convoy.json"]
+        command: ["./cmd", "agent", "--config", "convoy.json"]
         volumes:
           - ./convoy.json:/convoy.json
         restart: on-failure

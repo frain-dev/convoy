@@ -1,4 +1,4 @@
-package worker
+package dataplane
 
 import (
 	"testing"
@@ -34,9 +34,8 @@ func TestEnqueueCircuitBreakerEmails(t *testing.T) {
 
 	err := EnqueueCircuitBreakerEmails(q, lo, project, endpoint, "owner@x.y", 42.0)
 	require.NoError(t, err)
-	require.Len(t, q.wrote, 2) // endpoint + owner
+	require.Len(t, q.wrote, 2)
 
-	// When no support email
 	q2 := &testQueue{}
 	endpoint2 := &datastore.Endpoint{Name: "E2", Url: "http://e2", SupportEmail: ""}
 	err = EnqueueCircuitBreakerEmails(q2, lo, project, endpoint2, "owner@x.y", 0.0)
