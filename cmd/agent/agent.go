@@ -23,7 +23,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -140,8 +139,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 }
 
 func startServerComponent(_ context.Context, a *cli.App) error {
-	lo := a.Logger.(*log.Logger)
-	lo.SetPrefix("agent")
+	lo := a.Logger
 
 	cfg, err := config.Get()
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/frain-dev/convoy/datastore"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type ObjectStore interface {
@@ -21,7 +22,7 @@ type ObjectStoreOptions struct {
 	OnPremStorageDir string
 }
 
-func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (ObjectStore, error) {
+func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration, logger log.Logger) (ObjectStore, error) {
 	switch storage.Type {
 	case datastore.S3:
 		objectStoreOpts := ObjectStoreOptions{
@@ -34,7 +35,7 @@ func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (Object
 			Region:       storage.S3.Region.ValueOrZero(),
 		}
 
-		objectStoreClient, err := NewS3Client(objectStoreOpts)
+		objectStoreClient, err := NewS3Client(objectStoreOpts, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +46,7 @@ func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (Object
 		objectStoreOpts := ObjectStoreOptions{
 			OnPremStorageDir: exportDir.String,
 		}
-		objectStoreClient, err := NewOnPremClient(objectStoreOpts)
+		objectStoreClient, err := NewOnPremClient(objectStoreOpts, logger)
 		if err != nil {
 			return nil, err
 		}

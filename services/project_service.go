@@ -13,28 +13,18 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 type ProjectService struct {
-	apiKeyRepo        datastore.APIKeyRepository
-	projectRepo       datastore.ProjectRepository
-	eventRepo         datastore.EventRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	eventTypesRepo    datastore.EventTypesRepository
+	ApiKeyRepo        datastore.APIKeyRepository
+	ProjectRepo       datastore.ProjectRepository
+	EventRepo         datastore.EventRepository
+	EventDeliveryRepo datastore.EventDeliveryRepository
+	EventTypesRepo    datastore.EventTypesRepository
 	Licenser          license.Licenser
-}
-
-func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
-	return &ProjectService{
-		apiKeyRepo:        apiKeyRepo,
-		projectRepo:       projectRepo,
-		eventRepo:         eventRepo,
-		eventDeliveryRepo: eventDeliveryRepo,
-		eventTypesRepo:    eventTypesRepo,
-		Licenser:          licenser,
-	}, nil
+	Logger            log.Logger
 }
 
 var ErrProjectLimit = errors.New("your instance has reached it's project limit, upgrade to create more projects")
@@ -104,9 +94,9 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		UpdatedAt:      time.Now(),
 	}
 
-	err = ps.projectRepo.CreateProject(ctx, project)
+	err = ps.ProjectRepo.CreateProject(ctx, project)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create project")
+		ps.Logger.ErrorContext(ctx, "failed to create project", "error", err)
 		if errors.Is(err, datastore.ErrDuplicateProjectName) {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -114,9 +104,9 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create project"))
 	}
 
-	err = ps.eventTypesRepo.CreateDefaultEventType(ctx, project.UID)
+	err = ps.EventTypesRepo.CreateDefaultEventType(ctx, project.UID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create default event types")
+		ps.Logger.ErrorContext(ctx, "failed to create default event types", "error", err)
 	}
 
 	newAPIKey := &datastore.APIKey{
@@ -128,8 +118,8 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	}
 
 	cak := CreateAPIKeyService{
-		ProjectRepo: ps.projectRepo,
-		APIKeyRepo:  ps.apiKeyRepo,
+		ProjectRepo: ps.ProjectRepo,
+		APIKeyRepo:  ps.ApiKeyRepo,
 		Member:      member,
 		NewApiKey:   newAPIKey,
 	}
@@ -191,9 +181,9 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 		project.Config.SearchPolicy = ""
 	}
 
-	err := ps.projectRepo.UpdateProject(ctx, project)
+	err := ps.ProjectRepo.UpdateProject(ctx, project)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to to update project")
+		ps.Logger.ErrorContext(ctx, "failed to to update project", "error", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 

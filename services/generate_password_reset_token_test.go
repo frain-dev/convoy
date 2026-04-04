@@ -18,6 +18,7 @@ func provideGeneratePasswordResetTokenService(ctrl *gomock.Controller, baseURL s
 	return &GeneratePasswordResetTokenService{
 		UserRepo: mocks.NewMockUserRepository(ctrl),
 		Queue:    mocks.NewMockQueuer(ctrl),
+		Logger:   mocks.NewMockLogger(ctrl),
 		BaseURL:  baseURL,
 		Data:     data,
 	}
@@ -93,6 +94,9 @@ func TestGeneratePasswordResetTokenService_Run(t *testing.T) {
 					nil,
 					errors.New("failed"),
 				)
+
+				ml, _ := u.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to find user by email", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to find user by email",
@@ -114,6 +118,9 @@ func TestGeneratePasswordResetTokenService_Run(t *testing.T) {
 				)
 
 				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+
+				ml, _ := u.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update user", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update user",
@@ -138,6 +145,10 @@ func TestGeneratePasswordResetTokenService_Run(t *testing.T) {
 
 				q, _ := u.Queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EmailProcessor, convoy.DefaultQueue, gomock.Any()).Times(1).Return(errors.New("failed to write to queue"))
+
+				ml, _ := u.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to write new notification to the queue", "error", gomock.Any()).Times(1)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to queue password reset email", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to write to queue",

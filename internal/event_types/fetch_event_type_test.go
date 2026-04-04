@@ -1,7 +1,6 @@
 package event_types
 
 import (
-	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -9,7 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/projects"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestService_FetchEventTypeById(t *testing.T) {
@@ -178,7 +177,7 @@ func TestService_FetchEventTypes_DifferentProjects(t *testing.T) {
 		OrganisationID: org.UID,
 		Config:         &datastore.DefaultProjectConfig,
 	}
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	err := projectRepo.CreateProject(ctx, project2)
 	require.NoError(t, err)
 

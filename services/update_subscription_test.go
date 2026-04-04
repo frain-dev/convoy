@@ -23,6 +23,7 @@ func provideUpdateSubscriptionService(ctrl *gomock.Controller, projectID string,
 		ProjectId:      projectID,
 		SubscriptionId: subID,
 		Update:         update,
+		Logger:         mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -127,6 +128,9 @@ func TestUpdateSubscriptionService_Run(t *testing.T) {
 
 				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(int64(0), nil)
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update subscription", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update subscription",

@@ -13,13 +13,13 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/organisation_invites/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 // Service implements the OrganisationInviteRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier      // SQLc-generated interface
 	db     *pgxpool.Pool     // Connection pool
 	legacy database.Database // For gradual migration if needed
@@ -29,7 +29,7 @@ type Service struct {
 var _ datastore.OrganisationInviteRepository = (*Service)(nil)
 
 // New creates a new Organisation Invite Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -113,7 +113,7 @@ func (s *Service) CreateOrganisationInvite(ctx context.Context, iv *datastore.Or
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create organisation invite")
+		s.logger.Error("failed to create organisation invite", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -140,7 +140,7 @@ func (s *Service) UpdateOrganisationInvite(ctx context.Context, iv *datastore.Or
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update organisation invite")
+		s.logger.Error("failed to update organisation invite", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -151,7 +151,7 @@ func (s *Service) UpdateOrganisationInvite(ctx context.Context, iv *datastore.Or
 func (s *Service) DeleteOrganisationInvite(ctx context.Context, uid string) error {
 	err := s.repo.DeleteOrganisationInvite(ctx, common.StringToPgText(uid))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete organisation invite")
+		s.logger.Error("failed to delete organisation invite", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -165,7 +165,7 @@ func (s *Service) FetchOrganisationInviteByID(ctx context.Context, uid string) (
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgInviteNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch organisation invite by id")
+		s.logger.Error("failed to fetch organisation invite by id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -180,7 +180,7 @@ func (s *Service) FetchOrganisationInviteByToken(ctx context.Context, token stri
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgInviteNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch organisation invite by token")
+		s.logger.Error("failed to fetch organisation invite by token", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -205,7 +205,7 @@ func (s *Service) LoadOrganisationsInvitesPaged(ctx context.Context, orgID strin
 		LimitVal:       pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load organisation invites paged")
+		s.logger.Error("failed to load organisation invites paged", "error", err)
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -236,7 +236,7 @@ func (s *Service) LoadOrganisationsInvitesPaged(ctx context.Context, orgID strin
 			Cursor: common.StringToPgText(first.UID),
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to count prev organisation invites")
+			s.logger.Error("failed to count prev organisation invites", "error", err)
 			return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err)
 		}
 		prevRowCount.Count = int(count.Int64)

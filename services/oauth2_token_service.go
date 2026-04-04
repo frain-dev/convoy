@@ -22,7 +22,7 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const (
@@ -51,11 +51,11 @@ type CachedToken struct {
 
 type OAuth2TokenService struct {
 	Cache      cache.Cache
-	Logger     log.StdLogger
+	Logger     log.Logger
 	HTTPClient *http.Client
 }
 
-func NewOAuth2TokenService(cache cache.Cache, logger log.StdLogger) *OAuth2TokenService {
+func NewOAuth2TokenService(cache cache.Cache, logger log.Logger) *OAuth2TokenService {
 	return &OAuth2TokenService{
 		Cache:  cache,
 		Logger: logger,
@@ -127,7 +127,7 @@ func (s *OAuth2TokenService) GetAuthorizationHeader(ctx context.Context, endpoin
 
 	err = s.Cache.Set(ctx, cacheKey, cachedToken, expiresIn)
 	if err != nil {
-		s.Logger.WithError(err).Warn("failed to cache OAuth2 token")
+		s.Logger.Warn("failed to cache OAuth2 token", "error", err)
 	}
 
 	tokenType := token.TokenType

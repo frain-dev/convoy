@@ -4,26 +4,28 @@ servers:
   - engine: postgresql
     uri: postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable
 
-# nice to have but we'd need to sort out the UUIDv4 in prod
-#overrides:
-#  go:
-#    overrides:
-#      - column: convoy.portal_links.id
-#        go_type:
-#          import: github.com/oklog/ulid/v2
-#          type: ULID
-#          pointer: false
-#      - column: convoy.portal_links.project_id
-#        go_type:
-#          import: github.com/oklog/ulid/v2
-#          type: ULID
-#          pointer: false
-
 sql:
+  - queries: ./internal/endpoints/queries.sql
+    engine: postgresql
+    database: &db_config
+      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/endpoints/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true
+        overrides:
+          - column: "convoy.endpoints.status"
+            go_type: "string"
+          - column: "convoy.endpoints.authentication_type"
+            go_type: "string"
+          - column: "convoy.endpoints.content_type"
+            go_type: "string"
   - queries: ./internal/portal_links/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -36,8 +38,7 @@ sql:
             go_type: "string"
   - queries: ./internal/api_keys/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -47,8 +48,7 @@ sql:
         emit_interface: true
   - queries: ./internal/organisations/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -58,8 +58,7 @@ sql:
         emit_interface: true
   - queries: ./internal/organisation_members/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -69,8 +68,7 @@ sql:
         emit_interface: true
   - queries: ./internal/organisation_invites/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -80,8 +78,7 @@ sql:
         emit_interface: true
   - queries: ./internal/delivery_attempts/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -91,8 +88,7 @@ sql:
         emit_interface: true
   - queries: ./internal/configuration/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -102,8 +98,7 @@ sql:
         emit_interface: true
   - queries: ./internal/projects/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -113,8 +108,7 @@ sql:
         emit_interface: true
   - queries: ./internal/sources/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -124,8 +118,7 @@ sql:
         emit_interface: true
   - queries: ./internal/filters/repo/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -135,8 +128,7 @@ sql:
         emit_interface: true
   - queries: ./internal/batch_retries/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -146,8 +138,7 @@ sql:
         emit_interface: true
   - queries: ./internal/subscriptions/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -160,8 +151,7 @@ sql:
             go_type: "string"
   - queries: ./internal/users/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -171,8 +161,7 @@ sql:
         emit_interface: true
   - queries: ./internal/meta_events/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -182,8 +171,7 @@ sql:
         emit_interface: true
   - queries: ./internal/event_types/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -193,8 +181,7 @@ sql:
         emit_interface: true
   - queries: ./internal/events/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"
@@ -204,8 +191,7 @@ sql:
         emit_interface: true
   - queries: ./internal/event_deliveries/queries.sql
     engine: postgresql
-    database:
-      uri: "postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable"
+    database: *db_config
     gen:
       go:
         package: "repo"

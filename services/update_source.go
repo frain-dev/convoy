@@ -6,7 +6,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type UpdateSourceService struct {
@@ -14,6 +14,7 @@ type UpdateSourceService struct {
 	Project      *datastore.Project
 	SourceUpdate *models.UpdateSource
 	Source       *datastore.Source
+	Logger       log.Logger
 }
 
 func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error) {
@@ -73,7 +74,7 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 
 	err := s.SourceRepo.UpdateSource(ctx, s.Project.UID, s.Source)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update source")
+		s.Logger.ErrorContext(ctx, "failed to update source", "error", err)
 		return nil, &ServiceError{ErrMsg: "an error occurred while updating source", Err: err}
 	}
 

@@ -5,16 +5,16 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // subscriptionTableManager implements SubscriptionTableManager
 type subscriptionTableManager struct {
-	log log.StdLogger
+	log log.Logger
 }
 
 // NewSubscriptionTableManager creates a new table manager
-func NewSubscriptionTableManager(log log.StdLogger) SubscriptionTableManager {
+func NewSubscriptionTableManager(log log.Logger) SubscriptionTableManager {
 	return &subscriptionTableManager{
 		log: log,
 	}

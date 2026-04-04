@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 const (
@@ -222,6 +221,7 @@ type HTTPServerConfiguration struct {
 	SocketPort  uint32 `json:"socket_port" envconfig:"SOCKET_PORT"`
 	DomainPort  uint32 `json:"domain_port" envconfig:"DOMAIN_PORT"`
 	HttpProxy   string `json:"proxy" envconfig:"HTTP_PROXY"`
+	NoProxy     string `json:"no_proxy" envconfig:"NO_PROXY"`
 }
 
 type PrometheusConfiguration struct {
@@ -734,7 +734,7 @@ func LoadConfig(p string, opts ...ConfigFunc) error {
 		}
 		applyServiceDefaults(&c)
 	} else if !errors.Is(err, os.ErrNotExist) {
-		log.WithError(err).Fatal("failed to check if config file exists")
+		return fmt.Errorf("failed to check if config file exists: %w", err)
 	}
 
 	// override config from environment variables

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
@@ -80,7 +80,7 @@ type PollResult struct {
 }
 
 type CircuitBreakerManager struct {
-	logger         *log.Logger
+	logger         log.Logger
 	clock          clock.Clock
 	store          CircuitBreakerStore
 	notificationFn func(NotificationType, CircuitBreakerConfig, CircuitBreaker) error
@@ -150,7 +150,7 @@ func ConfigProviderOption(provider func(projectID string) *CircuitBreakerConfig)
 	}
 }
 
-func LoggerOption(logger *log.Logger) CircuitBreakerOption {
+func LoggerOption(logger log.Logger) CircuitBreakerOption {
 	return func(cb *CircuitBreakerManager) error {
 		if logger == nil {
 			return ErrLoggerMustNotBeNil
@@ -223,7 +223,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 
 		c, innerErr := NewCircuitBreakerFromStore([]byte(str), cb.logger)
 		if innerErr != nil {
-			cb.logger.WithError(innerErr).Errorf("[circuit breaker] an error occurred loading circuit breaker (%s) state from the store", keys[i])
+			cb.logger.Errorf("[circuit breaker] an error occurred loading circuit breaker (%s) state from the store", keys[i]+": %v", innerErr)
 			continue
 		}
 
@@ -265,7 +265,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 			if breaker.ConsecutiveFailures >= projectConfig.ConsecutiveFailureThreshold {
 				innerErr := cb.notificationFn(TypeDisableResource, projectConfig, breaker)
 				if innerErr != nil {
-					cb.logger.WithError(innerErr).Errorf("[circuit breaker] failed to execute disable resource notification function")
+					cb.logger.Errorf("[circuit breaker] failed to execute disable resource notification function"+": %v", innerErr)
 				}
 				cb.logger.Debug("[circuit breaker] executed disable resource notification function")
 			}
@@ -275,7 +275,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 	}
 
 	if err = cb.updateCircuitBreakers(ctx, circuitBreakers); err != nil {
-		cb.logger.WithError(err).Error("[circuit breaker] failed to update state")
+		cb.logger.Error("[circuit breaker] failed to update state", "error", err)
 		return err
 	}
 
@@ -316,7 +316,7 @@ func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]Cir
 		case string:
 			c, innerErr := NewCircuitBreakerFromStore([]byte(v), cb.logger)
 			if innerErr != nil {
-				cb.logger.WithError(innerErr).Errorf("[circuit breaker] an error occurred loading circuit breaker (%s) state from the store", keys[i])
+				cb.logger.Errorf("[circuit breaker] an error occurred loading circuit breaker (%s) state from the store", keys[i]+": %v", innerErr)
 				continue
 			}
 			circuitBreakers[i] = *c
@@ -419,7 +419,7 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 	mu, err := cb.store.Lock(ctx, mutexKey, masterConfig.SampleRate)
 	if err != nil {
 		isLeader = false
-		cb.logger.WithError(err).Debugf("[circuit breaker] failed to acquire lock")
+		cb.logger.Debugf("[circuit breaker] failed to acquire lock"+": %v", err)
 		return err
 	}
 
@@ -438,7 +438,7 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 
 		innerErr := cb.store.Unlock(ctx, mu)
 		if innerErr != nil {
-			cb.logger.WithError(innerErr).Debugf("[circuit breaker] failed to unlock mutex")
+			cb.logger.Debugf("[circuit breaker] failed to unlock mutex"+": %v", innerErr)
 		}
 
 		if isLeader {
@@ -455,7 +455,7 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 
 	bs, err := cb.loadCircuitBreakers(ctx)
 	if err != nil {
-		cb.logger.WithError(err).Error("[circuit breaker] failed to load circuitBreakers")
+		cb.logger.Error("[circuit breaker] failed to load circuitBreakers", "error", err)
 		return err
 	}
 
@@ -526,7 +526,7 @@ func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
 			return
 		case <-ticker.C:
 			if err := cb.sampleAndUpdate(ctx, pollFunc); err != nil {
-				cb.logger.WithError(err).Debug("[circuit breaker] failed to sample and update circuit breakers")
+				cb.logger.Debug("[circuit breaker] failed to sample and update circuit breakers", "error", err)
 			}
 		}
 	}

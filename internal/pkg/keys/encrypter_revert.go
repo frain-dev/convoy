@@ -7,14 +7,14 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func RevertEncryption(lo log.StdLogger, db database.Database, encryptionKey string, timeout int) error {
+func RevertEncryption(lo log.Logger, db database.Database, encryptionKey string, timeout int) error {
 	// Start a transaction
 	tx, err := db.GetDB().Beginx()
 	if err != nil {
-		lo.WithError(err).Error("failed to begin transaction")
+		lo.Error("failed to begin transaction", "error", err)
 		return err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -54,7 +54,7 @@ func RevertEncryption(lo log.StdLogger, db database.Database, encryptionKey stri
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
-		lo.WithError(err).Error("failed to commit transaction")
+		lo.Error("failed to commit transaction", "error", err)
 		return err
 	}
 
@@ -63,7 +63,7 @@ func RevertEncryption(lo log.StdLogger, db database.Database, encryptionKey stri
 }
 
 // decryptAndRestoreColumn decrypts the cipher column and restores the data to the plain column.
-func decryptAndRestoreColumn(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
+func decryptAndRestoreColumn(lo log.Logger, ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
 	// Decrypt the cipher column and update the plain column, casting as needed
 	columnType, err := getColumnType(lo, ctx, tx, table, column)
 	if err != nil {
@@ -91,7 +91,7 @@ func decryptAndRestoreColumn(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx,
 	return nil
 }
 
-func getColumnType(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
+func getColumnType(lo log.Logger, ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
 	query := `SELECT data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2;`
 	var columnType string
 	err := tx.GetContext(ctx, &columnType, query, table, column)

@@ -1,17 +1,16 @@
 package projects
 
 import (
-	"os"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestDeleteProject(t *testing.T) {
@@ -86,19 +85,19 @@ func TestDeleteProject_CascadeDeletes(t *testing.T) {
 	require.ErrorIs(t, err, datastore.ErrProjectNotFound)
 
 	// Verify endpoints are soft deleted
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 	fetchedEndpoint, err := endpointRepo.FindEndpointByID(ctx, endpoint.UID, project.UID)
 	require.Error(t, err)
 	require.Nil(t, fetchedEndpoint)
 
 	// Verify events are soft deleted
-	eventRepo := events.New(log.NewLogger(os.Stdout), db)
+	eventRepo := events.New(log.New("convoy", log.LevelInfo), db)
 	fetchedEvent, err := eventRepo.FindEventByID(ctx, project.UID, event.UID)
 	require.Error(t, err)
 	require.Nil(t, fetchedEvent)
 
 	// Verify subscriptions are soft deleted
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), db)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), db)
 	fetchedSub, err := subRepo.FindSubscriptionByID(ctx, project.UID, subscription.UID)
 	require.Error(t, err)
 	require.Nil(t, fetchedSub)
@@ -122,7 +121,7 @@ func TestDeleteProject_WithMultipleEndpoints(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify all endpoints are deleted
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 
 	_, err = endpointRepo.FindEndpointByID(ctx, endpoint1.UID, project.UID)
 	require.Error(t, err)

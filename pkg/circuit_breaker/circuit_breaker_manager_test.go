@@ -3,7 +3,6 @@ package circuit_breaker
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -11,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func getRedis(t *testing.T) (client redis.UniversalClient, err error) {
@@ -100,7 +99,7 @@ func TestCircuitBreakerManager(t *testing.T) {
 		ClockOption(testClock),
 		StoreOption(store),
 		ConfigProviderOption(createTestConfigProvider(c)),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(t, err)
 
@@ -154,7 +153,7 @@ func TestCircuitBreakerManager_AddNewBreakerMidway(t *testing.T) {
 		ObservabilityWindow:         5,
 		ConsecutiveFailureThreshold: 10,
 	}
-	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(createTestConfigProvider(c)), LoggerOption(log.NewLogger(os.Stdout)))
+	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(createTestConfigProvider(c)), LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	endpoint1 := "endpoint-1"
@@ -208,7 +207,7 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 		ObservabilityWindow:         5,
 		ConsecutiveFailureThreshold: 10,
 	}
-	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(createTestConfigProvider(c)), LoggerOption(log.NewLogger(os.Stdout)))
+	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(createTestConfigProvider(c)), LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	endpointId := "endpoint-1"
@@ -273,7 +272,7 @@ func TestCircuitBreakerManager_ConsecutiveFailures(t *testing.T) {
 		ObservabilityWindow:         5,
 		ConsecutiveFailureThreshold: 3,
 	}
-	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(func(projectID string) *CircuitBreakerConfig { return c }), LoggerOption(log.NewLogger(os.Stdout)))
+	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(func(projectID string) *CircuitBreakerConfig { return c }), LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	endpointId := "endpoint-1"
@@ -325,7 +324,7 @@ func TestCircuitBreakerManager_MultipleEndpoints(t *testing.T) {
 		MinimumRequestCount:         10,
 		ConsecutiveFailureThreshold: 10,
 	}
-	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(createTestConfigProvider(c)), LoggerOption(log.NewLogger(os.Stdout)))
+	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(createTestConfigProvider(c)), LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	endpoint1 := "endpoint-1"
@@ -378,7 +377,7 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 			ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
 				return config
 			}),
-			LoggerOption(log.NewLogger(os.Stdout)),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
 		)
 
 		require.NoError(t, err)
@@ -393,7 +392,7 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 			ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
 				return config
 			}),
-			LoggerOption(log.NewLogger(os.Stdout)),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
 		)
 
 		require.Error(t, err)
@@ -406,7 +405,7 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 			ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
 				return config
 			}),
-			LoggerOption(log.NewLogger(os.Stdout)),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
 		)
 
 		require.Error(t, err)
@@ -417,7 +416,7 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 		_, err := NewCircuitBreakerManager(
 			StoreOption(mockStore),
 			ClockOption(mockClock),
-			LoggerOption(log.NewLogger(os.Stdout)),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
 		)
 
 		require.Error(t, err)
@@ -486,7 +485,7 @@ func TestCircuitBreakerManager_SampleStore(t *testing.T) {
 		ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
 			return config
 		}),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(t, err)
 
@@ -534,7 +533,7 @@ func TestCircuitBreakerManager_UpdateCircuitBreakers(t *testing.T) {
 		ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
 			return config
 		}),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(t, err)
 
@@ -592,7 +591,7 @@ func TestCircuitBreakerManager_LoadCircuitBreakers_TestStore(t *testing.T) {
 		StoreOption(mockStore),
 		ClockOption(mockClock),
 		ConfigProviderOption(createTestConfigProvider(config)),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(t, err)
 
@@ -663,7 +662,7 @@ func TestCircuitBreakerManager_LoadCircuitBreakers_RedisStore(t *testing.T) {
 		StoreOption(store),
 		ClockOption(mockClock),
 		ConfigProviderOption(createTestConfigProvider(config)),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(t, err)
 
@@ -719,7 +718,7 @@ func TestCircuitBreakerManager_CanExecute(t *testing.T) {
 		StoreOption(mockStore),
 		ClockOption(mockClock),
 		ConfigProviderOption(createTestConfigProvider(config)),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(t, err)
 
@@ -799,7 +798,7 @@ func TestCircuitBreakerManager_GetCircuitBreaker(t *testing.T) {
 		StoreOption(mockStore),
 		ClockOption(mockClock),
 		ConfigProviderOption(createTestConfigProvider(config)),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(t, err)
 
@@ -863,7 +862,7 @@ func TestCircuitBreakerManager_CanExecute_MultiProject(t *testing.T) {
 		}
 	}
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(mockStore),
@@ -921,7 +920,7 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 		StoreOption(mockStore),
 		ClockOption(mockClock),
 		ConfigProviderOption(createTestConfigProvider(config)),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(t, err)
 
@@ -988,8 +987,7 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 		ConsecutiveFailureThreshold: 3,
 	}
 
-	logger := log.NewLogger(os.Stdout)
-	logger.SetLevel(log.InfoLevel)
+	logger := log.New("convoy", log.LevelInfo)
 
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(mockStore),
@@ -1040,7 +1038,7 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 func TestCircuitBreakerManager_ProjectSpecificConfig(t *testing.T) {
 	store := NewTestStore()
 	clockS := clock.NewSimulatedClock(time.Now())
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 
 	// Create custom project configuration
 	customConfig := &CircuitBreakerConfig{

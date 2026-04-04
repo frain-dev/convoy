@@ -12,12 +12,12 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/queue/redis"
 )
 
-func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis, logger log.Logger) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
 
@@ -34,13 +34,13 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 		}
 
 		defer func() {
-			tctx, cancel := context.WithTimeout(ctx, time.Second*2)
+			tctx, cancel = context.WithTimeout(ctx, time.Second*2)
 			defer cancel()
 
 			// Release the lock so other processes or threads can obtain a lock.
 			ok, err := mutex.UnlockContext(tctx)
 			if !ok || err != nil {
-				log.WithError(err).Error("failed to release lock")
+				logger.Error("failed to release lock", "error", err)
 			}
 		}()
 
@@ -57,14 +57,14 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 		var q *redis.RedisQueue
 		q, ok := r.(*redis.RedisQueue)
 		if !ok {
-			log.FromContext(ctx).WithError(err).Errorf("invalid queue type: %T", r)
+			logger.ErrorContext(ctx, fmt.Sprintf("invalid queue type: %T: %v", r, err))
 			return errors.New("invalid queue type")
 		}
 
 		for _, qu := range queues {
-			_, err := q.Inspector().DeleteAllArchivedTasks(qu)
+			_, err = q.Inspector().DeleteAllArchivedTasks(qu)
 			if err != nil {
-				log.FromContext(ctx).WithError(err).Errorf("failed to delete archived task from queue - %s", qu)
+				logger.ErrorContext(ctx, fmt.Sprintf("failed to delete archived task from queue - %s: %v", qu, err))
 				continue
 			}
 		}

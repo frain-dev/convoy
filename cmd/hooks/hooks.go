@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -40,7 +41,7 @@ import (
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
@@ -91,13 +92,16 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return nil
 		}
 
-		lo := log.NewLogger(os.Stdout)
-
-		lvl, err := log.ParseLevel(cfg.Logger.Level)
-		if err != nil {
-			return err
+		logLevel, parseErr := log.ParseLevel(cfg.Logger.Level)
+		if parseErr != nil {
+			slog.Warn("error parsing log level",
+				slog.String("using default log level: ", log.LevelError.String()),
+				slog.String(" for log level: ", cfg.Logger.Level),
+				slog.String(" err: ", parseErr.Error()))
+			logLevel = log.LevelError
 		}
-		lo.SetLevel(lvl)
+
+		lo := log.New("convoy", logLevel)
 
 		postgresDB, err := postgres.NewDB(cfg)
 		if err != nil {
@@ -146,14 +150,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		hooks := dbhook.Init()
 
 		// the order matters here
-		projectListener := listener.NewProjectListener(q)
+		projectListener := listener.NewProjectListener(q, lo)
 		hooks.RegisterHook(datastore.ProjectUpdated, projectListener.AfterUpdate)
 		projectRepo := projects.New(lo, postgresDB)
 
 		metaEventRepo := meta_events.New(lo, postgresDB)
 		attemptsRepo := delivery_attempts.New(lo, postgresDB)
-		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
-		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo, attemptsRepo)
+		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo, lo)
+		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo, attemptsRepo, lo)
 
 		hooks.RegisterHook(datastore.EndpointCreated, endpointListener.AfterCreate)
 		hooks.RegisterHook(datastore.EndpointUpdated, endpointListener.AfterUpdate)
@@ -216,7 +220,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				BillingEnabled: cfg.Billing.Enabled,
 				Client:         licenseClient,
 				OrgRepo:        organisations.New(lo, app.DB),
-				UserRepo:       users.New(log.NewLogger(io.Discard), app.DB),
+				UserRepo:       users.New(log.New("convoy", log.LevelError), app.DB),
 				ProjectRepo:    projectRepo,
 				Logger:         lo,
 			},
@@ -241,7 +245,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			configRepo := configuration.New(app.Logger, app.DB)
 			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
 			if err != nil {
-				lo.WithError(err).Error("Failed to load configuration")
+				lo.Error("Failed to load configuration", "error", err)
 			} else {
 				cfg.InstanceId = instCfg.UID
 				if err := config.Override(&cfg); err != nil {
@@ -516,7 +520,7 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			readReplicas = append(readReplicas, replica)
 		}
 	} else if len(replicaDSNs) > 0 {
-		log.Errorln("read-replicas feature flag required before use")
+		slog.Error("read-replicas feature flag required before use")
 	}
 
 	c.Database = config.DatabaseConfiguration{
@@ -767,10 +771,10 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 				}
 			}
 		} else {
-			log.Warn("metrics backend not specified")
+			slog.Warn("metrics backend not specified")
 		}
 	} else {
-		log.Info(fflag2.ErrPrometheusMetricsNotEnabled)
+		slog.Info(fflag2.ErrPrometheusMetricsNotEnabled.Error())
 	}
 
 	maxRetrySeconds, err := cmd.Flags().GetUint64("max-retry-seconds")
@@ -822,7 +826,7 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	return c, nil
 }
 
-func checkPendingMigrations(lo *log.Logger, db database.Database) error {
+func checkPendingMigrations(lo log.Logger, db database.Database) error {
 	p, ok := db.(*postgres.Postgres)
 	if !ok {
 		return errors.New("failed to open database")
@@ -949,7 +953,7 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	return nil
 }
 
-func closeWithError(lo *log.Logger, closer io.Closer) {
+func closeWithError(lo log.Logger, closer io.Closer) {
 	err := closer.Close()
 	if err != nil {
 		lo.Printf("%v, an error occurred while closing the client", err)

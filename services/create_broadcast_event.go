@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -20,6 +21,7 @@ type CreateBroadcastEventService struct {
 	BroadcastEvent *models.BroadcastEvent
 	Project        *datastore.Project
 	Queue          queue.Queuer
+	Logger         log.Logger
 }
 
 func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
@@ -49,7 +51,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 
 	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)
 	if err != nil {
-		log.FromContext(ctx).Errorf("Error occurred sending new broadcast event to the queue %s", err)
+		e.Logger.ErrorContext(ctx, fmt.Sprintf("Error occurred sending new broadcast event to the queue %s", err))
 		return &ServiceError{ErrMsg: "failed to create dynamic event"}
 	}
 

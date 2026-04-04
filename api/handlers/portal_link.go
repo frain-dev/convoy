@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/render"
 
 	apiModels "github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	endpointsvc "github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/util"
@@ -34,21 +34,21 @@ import (
 func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		h.A.Logger.Errorf("Failed to create migrator: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to read request body: %v", err)
+		h.A.Logger.Errorf("Failed to read request body: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
 		return
 	}
 
 	var newPortalLink datastore.CreatePortalLinkRequest
 	if err = migrator.Unmarshal(body, &newPortalLink); err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse portal link creation request: %v", err)
+		h.A.Logger.Errorf("Failed to parse portal link creation request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -59,7 +59,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = newPortalLink.Validate(); err != nil {
-		h.A.Logger.WithError(err).Errorf("Portal link creation validation failed: %v", err)
+		h.A.Logger.Errorf("Portal link creation validation failed: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
@@ -159,14 +159,14 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		h.A.Logger.Errorf("Failed to create migrator: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to read request body: %v", err)
+		h.A.Logger.Errorf("Failed to read request body: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
 		return
 	}
@@ -174,7 +174,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	var updatePortalLink datastore.UpdatePortalLinkRequest
 	err = migrator.Unmarshal(body, &updatePortalLink)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse portal link update request: %v", err)
+		h.A.Logger.Errorf("Failed to parse portal link update request: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -185,7 +185,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := updatePortalLink.Validate(); err != nil {
-		h.A.Logger.WithError(err).Errorf("Portal link update validation failed: %v", err)
+		h.A.Logger.Errorf("Portal link update validation failed: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
@@ -201,7 +201,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	portalLink, err := svc.GetPortalLink(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
-			h.A.Logger.WithError(err).Errorf("Portal link not found during update: %v", err)
+			h.A.Logger.Errorf("Portal link not found during update: %v: %v", err, err)
 			_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 			return
 		}
@@ -377,7 +377,7 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) datastore.Port
 func (h *Handler) getEndpoints(r *http.Request, pl *datastore.PortalLink) ([]string, error) {
 	results := make([]string, 0)
 	if !util.IsStringEmpty(pl.OwnerID) {
-		endpointRepo := postgres.NewEndpointRepo(h.A.DB)
+		endpointRepo := endpointsvc.New(h.A.Logger, h.A.DB)
 		endpoints, err := endpointRepo.FindEndpointsByOwnerID(r.Context(), pl.ProjectID, pl.OwnerID)
 		if err != nil {
 			return nil, err

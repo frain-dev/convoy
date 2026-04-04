@@ -12,7 +12,7 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -23,6 +23,7 @@ type CreatePersonalAPIKeyService struct {
 
 	User      *datastore.User
 	NewApiKey *models.PersonalAPIKey
+	Logger    log.Logger
 }
 
 func (cpa *CreatePersonalAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, string, error) {
@@ -30,7 +31,7 @@ func (cpa *CreatePersonalAPIKeyService) Run(ctx context.Context) (*datastore.API
 
 	salt, err := util.GenerateSecret()
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to generate salt")
+		cpa.Logger.ErrorContext(ctx, "failed to generate salt", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "something went wrong", Err: err}
 	}
 
@@ -59,7 +60,7 @@ func (cpa *CreatePersonalAPIKeyService) Run(ctx context.Context) (*datastore.API
 
 	err = cpa.APIKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create api key")
+		cpa.Logger.ErrorContext(ctx, "failed to create api key", "error", err)
 		return nil, "", &ServiceError{ErrMsg: "failed to create api key", Err: err}
 	}
 

@@ -10,6 +10,7 @@ const (
 	PageableCtx     ContextKey = "pageable"
 	ProjectCtx      ContextKey = "project"
 	OrganisationCtx ContextKey = "organisation"
+	RequestIDKey    ContextKey = "requestId"
 )
 
 type ContextKey string

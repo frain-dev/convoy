@@ -4,17 +4,17 @@ import (
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
 type Scheduler struct {
-	log   log.StdLogger
+	log   log.Logger
 	queue queue.Queuer
 	inner *asynq.Scheduler
 }
 
-func NewScheduler(queue queue.Queuer, log log.StdLogger) *Scheduler {
+func NewScheduler(queue queue.Queuer, log log.Logger) *Scheduler {
 	opts := queue.Options()
 	var redisConnOpt asynq.RedisConnOpt
 	if opts.RedisFailoverOpt != nil {
@@ -35,7 +35,7 @@ func NewScheduler(queue queue.Queuer, log log.StdLogger) *Scheduler {
 
 func (s *Scheduler) Start() {
 	if err := s.inner.Start(); err != nil {
-		s.log.WithError(err).Fatal("Could not start scheduler")
+		s.log.Fatal("Could not start scheduler", "error", err)
 	}
 }
 
@@ -43,7 +43,7 @@ func (s *Scheduler) RegisterTask(cronSpec string, queue convoy.QueueName, taskNa
 	task := asynq.NewTask(string(taskName), nil)
 	id, err := s.inner.Register(cronSpec, task, asynq.Queue(string(queue)))
 	if err != nil {
-		s.log.WithError(err).Fatalf("Failed to register %s scheduler task", taskName)
+		s.log.Fatalf("Failed to register %s scheduler task: %v", taskName, err)
 	}
 	s.log.Infof("Registered task %v with id %v", taskName, id)
 }

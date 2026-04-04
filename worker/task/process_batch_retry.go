@@ -11,7 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
@@ -29,20 +29,20 @@ func ProcessBatchRetry(
 	batchRetryRepo datastore.BatchRetryRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	queuer queue.Queuer,
-	lo *log.Logger,
+	lo log.Logger,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var br *datastore.BatchRetry
 		err := msgpack.DecodeMsgPack(t.Payload(), &br)
 		if err != nil {
-			lo.WithError(err).Error("failed to unmarshal batch retry payload")
+			lo.Error("failed to unmarshal batch retry payload", "error", err)
 			return err
 		}
 
 		// Check if there's an active batch retry
 		activeRetry, err := batchRetryRepo.FindActiveBatchRetry(ctx, br.ProjectID)
 		if err != nil && !errors.Is(err, datastore.ErrBatchRetryNotFound) {
-			lo.WithError(err).Error("failed to check for active batch retry")
+			lo.Error("failed to check for active batch retry", "error", err)
 			return err
 		}
 
@@ -62,7 +62,7 @@ func ProcessBatchRetry(
 		activeRetry.Status = datastore.BatchRetryStatusProcessing
 		err = batchRetryRepo.UpdateBatchRetry(ctx, activeRetry)
 		if err != nil {
-			lo.WithError(err).Error("failed to update batch retry status")
+			lo.Error("failed to update batch retry status", "error", err)
 			return err
 		}
 
@@ -72,13 +72,13 @@ func ProcessBatchRetry(
 		for {
 			activeRetry, err = batchRetryRepo.FindActiveBatchRetry(ctx, br.ProjectID)
 			if err != nil && !errors.Is(err, datastore.ErrBatchRetryNotFound) {
-				lo.WithError(err).Error("failed to check for active batch retry")
+				lo.Error("failed to check for active batch retry", "error", err)
 				return err
 			}
 
 			f, filterErr := activeRetry.GetFilter()
 			if filterErr != nil {
-				lo.WithError(filterErr).Error("failed to get filter")
+				lo.Error("failed to get filter", "error", filterErr)
 				return filterErr
 			}
 
@@ -106,7 +106,7 @@ func ProcessBatchRetry(
 				SearchParams:   f.SearchParams,
 			}
 
-			lo.WithFields(map[string]interface{}{"next_page_cursor": filter}).Info("start of loop")
+			lo.Info("start of loop", "next_page_cursor", filter)
 
 			// Load events in batches
 			deliveries, pgData, innerErr := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx,
@@ -121,7 +121,7 @@ func ProcessBatchRetry(
 				filter.EventType,
 				filter.BrokerMessageId)
 			if innerErr != nil {
-				lo.WithError(innerErr).Error("failed to load deliveries")
+				lo.Error("failed to load deliveries", "error", innerErr)
 				now := time.Now()
 				activeRetry.Status = datastore.BatchRetryStatusFailed
 				activeRetry.Error = innerErr.Error()
@@ -129,7 +129,7 @@ func ProcessBatchRetry(
 				activeRetry.CompletedAt = null.TimeFrom(now)
 				filterErr = batchRetryRepo.UpdateBatchRetry(ctx, activeRetry)
 				if filterErr != nil {
-					lo.WithError(filterErr).Error("failed to mark batch retry as failed")
+					lo.Error("failed to mark batch retry as failed", "error", filterErr)
 				}
 				return errors.Join(filterErr, innerErr)
 			}
@@ -184,7 +184,7 @@ func ProcessBatchRetry(
 
 			innerErr = batchRetryRepo.UpdateBatchRetry(ctx, activeRetry)
 			if innerErr != nil {
-				lo.WithError(innerErr).Error("failed to update batch retry progress")
+				lo.Error("failed to update batch retry progress", "error", innerErr)
 			}
 
 			if !pgData.HasNextPage {
@@ -199,7 +199,7 @@ func ProcessBatchRetry(
 		activeRetry.CompletedAt = null.TimeFrom(now)
 		err = batchRetryRepo.UpdateBatchRetry(ctx, activeRetry)
 		if err != nil {
-			lo.WithError(err).Error("failed to mark batch retry as completed")
+			lo.Error("failed to mark batch retry as completed", "error", err)
 			return err
 		}
 

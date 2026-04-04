@@ -17,13 +17,14 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -74,14 +75,14 @@ func setupTestDB(t *testing.T) (*Service, database.Database) {
 	err = keys.Set(km)
 	require.NoError(t, err)
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	return New(logger, db), db
 }
 
 func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
 	t.Helper()
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 
 	// Create user with unique email
@@ -107,7 +108,7 @@ func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
 	require.NoError(t, err)
 
 	// Create project
-	projectRepo := projects.New(log.NewLogger(os.Stdout), db)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), db)
 	projectConfig := datastore.DefaultProjectConfig
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -128,7 +129,7 @@ func seedTestEndpoint(t *testing.T, db database.Database, projectID string) *dat
 	t.Helper()
 
 	ctx := context.Background()
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := endpoints.New(log.New("convoy", log.LevelInfo), db)
 
 	endpointID := ulid.Make().String()
 	endpoint := &datastore.Endpoint{
@@ -138,9 +139,11 @@ func seedTestEndpoint(t *testing.T, db database.Database, projectID string) *dat
 		Url:          fmt.Sprintf("https://example.com/webhook/%s", endpointID),
 		Status:       datastore.ActiveEndpointStatus,
 		SupportEmail: fmt.Sprintf("test-%s@example.com", endpointID),
-		Secrets:      datastore.Secrets{},
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		Secrets: datastore.Secrets{
+			{UID: ulid.Make().String(), Value: "test-secret-value"},
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, projectID)
 	require.NoError(t, err)
@@ -151,7 +154,7 @@ func seedTestEndpoint(t *testing.T, db database.Database, projectID string) *dat
 func seedTestSource(t *testing.T, db database.Database, projectID string) *datastore.Source {
 	t.Helper()
 
-	logger := log.NewLogger(os.Stdout)
+	logger := log.New("convoy", log.LevelInfo)
 	ctx := context.Background()
 	sourceRepo := sources.New(logger, db)
 

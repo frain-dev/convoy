@@ -67,6 +67,11 @@ func provideLoginUserSSOService(ctrl *gomock.Controller, t *testing.T) (*LoginUs
 		RetryCount:   1,
 	})
 
+	ml := mocks.NewMockLogger(ctrl)
+	ml.EXPECT().Info(gomock.Any()).AnyTimes()
+	ml.EXPECT().Error(gomock.Any()).AnyTimes()
+	ml.EXPECT().ErrorContext(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
 	return &LoginUserSSOService{
 		UserRepo:      mocks.NewMockUserRepository(ctrl),
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
@@ -74,6 +79,7 @@ func provideLoginUserSSOService(ctrl *gomock.Controller, t *testing.T) (*LoginUs
 		JWT:           jwtInstance,
 		ConfigRepo:    mocks.NewMockConfigurationRepository(ctrl),
 		Licenser:      mocks.NewMockLicenser(ctrl),
+		Logger:        ml,
 		SSOClient:     ssoClient,
 		LicenseKey:    "test-license-key",
 		Host:          "https://convoy.example.com",

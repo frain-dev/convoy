@@ -13,14 +13,13 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	endpointsvc "github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/constants"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -45,14 +44,14 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		h.A.Logger.Errorf("Failed to create migrator: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to read request body: %v", err)
+		h.A.Logger.Errorf("Failed to read request body: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
 		return
 	}
@@ -60,7 +59,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.CreateEndpoint
 	err = migrator.Unmarshal(body, &e)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse endpoint creation request: %v", err)
+		h.A.Logger.Errorf("Failed to parse endpoint creation request: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -72,14 +71,14 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err = e.Validate()
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Endpoint creation validation failed: %v", err)
+		h.A.Logger.Errorf("Endpoint creation validation failed: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
 
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
+		h.A.Logger.Errorf("Failed to retrieve project: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
@@ -95,7 +94,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.CreateEndpointService{
-		EndpointRepo:               postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo:               endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectRepo:                projects.New(h.A.Logger, h.A.DB),
 		Licenser:                   h.A.Licenser,
 		E:                          e,
@@ -153,14 +152,14 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		h.A.Logger.Errorf("Failed to create migrator: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
 		return
 	}
 
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
+		h.A.Logger.Errorf("Failed to retrieve project: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
@@ -168,7 +167,7 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpointID := chi.URLParam(r, "endpointID")
 	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to retrieve endpoint: %v", err)
+		h.A.Logger.Errorf("Failed to retrieve endpoint: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 		return
 	}
@@ -213,14 +212,14 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		h.A.Logger.Errorf("Failed to create migrator: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
 		return
 	}
 
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
+		h.A.Logger.Errorf("Failed to retrieve project: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
@@ -251,9 +250,9 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		data.Filter.EndpointIDs = endpointIDs
 	}
 
-	endpoints, paginationData, err := postgres.NewEndpointRepo(h.A.DB).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
+	endpoints, paginationData, err := endpointsvc.New(h.A.Logger, h.A.DB).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
 	if err != nil {
-		h.A.Logger.WithError(err).Error("failed to load endpoints")
+		h.A.Logger.Error("failed to load endpoints", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Failed to load endpoints", http.StatusBadRequest))
 		return
 	}
@@ -334,7 +333,7 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		h.A.Logger.Errorf("Failed to create migrator: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
 		return
 	}
@@ -379,7 +378,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	ce := services.UpdateEndpointService{
 		Cache:                      h.A.Cache,
-		EndpointRepo:               postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo:               endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectRepo:                projects.New(h.A.Logger, h.A.DB),
 		Licenser:                   h.A.Licenser,
 		FeatureFlag:                h.A.FFlag,
@@ -449,9 +448,9 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewEndpointRepo(h.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
+	err = endpointsvc.New(h.A.Logger, h.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to delete endpoint")
+		h.A.Logger.ErrorContext(r.Context(), "failed to delete endpoint", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete endpoint", http.StatusBadRequest))
 		return
 	}
@@ -498,7 +497,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	xs := services.ExpireSecretService{
 		Queuer:       h.A.Queue,
 		Cache:        h.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectRepo:  projects.New(h.A.Logger, h.A.DB),
 		S:            e,
 		Endpoint:     endpoint,
@@ -533,7 +532,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		h.A.Logger.Errorf("Failed to create migrator: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
 		return
 	}
@@ -545,7 +544,7 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ps := services.PauseEndpointService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -596,7 +595,7 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to create migrator: %v", err)
+		h.A.Logger.Errorf("Failed to create migrator: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid API version", http.StatusBadRequest))
 		return
 	}
@@ -608,7 +607,7 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aes := services.ActivateEndpointService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -621,18 +620,18 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	cbs, err := h.A.Redis.Get(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID)).Result()
 	if err != nil {
-		h.A.Logger.WithError(err).Error("failed to find circuit breaker")
+		h.A.Logger.Error("failed to find circuit breaker", "error", err)
 	}
 
 	if len(cbs) > 0 {
-		c, innerErr := circuit_breaker.NewCircuitBreakerFromStore([]byte(cbs), h.A.Logger.(*log.Logger))
+		c, innerErr := circuit_breaker.NewCircuitBreakerFromStore([]byte(cbs), h.A.Logger)
 		if innerErr != nil {
-			h.A.Logger.WithError(innerErr).Error("failed to decode circuit breaker")
+			h.A.Logger.Error("failed to decode circuit breaker", "error", innerErr)
 		} else {
 			c.Reset(time.Now())
 			b, msgPackErr := msgpack.EncodeMsgPack(c)
 			if msgPackErr != nil {
-				h.A.Logger.WithError(msgPackErr).Error("failed to encode circuit breaker")
+				h.A.Logger.Error("failed to encode circuit breaker", "error", msgPackErr)
 			}
 			h.A.Redis.Set(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID), b, time.Minute*5)
 		}
@@ -679,14 +678,14 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 	var testReq models.TestOAuth2Request
 	err := util.ReadJSON(r, &testReq)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("Failed to parse OAuth2 test request: %v", err)
+		h.A.Logger.Errorf("Failed to parse OAuth2 test request: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	err = testReq.Validate()
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("OAuth2 test request validation failed: %v", err)
+		h.A.Logger.Errorf("OAuth2 test request validation failed: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
@@ -717,7 +716,7 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 	// Get authorization header (includes token type)
 	authHeader, err := oauth2Service.GetAuthorizationHeader(r.Context(), testEndpoint)
 	if err != nil {
-		h.A.Logger.WithError(err).Errorf("OAuth2 token exchange failed: %v", err)
+		h.A.Logger.Errorf("OAuth2 token exchange failed: %v: %v", err, err)
 		_ = render.Render(w, r, util.NewServerResponse(
 			"OAuth2 connection test failed",
 			models.TestOAuth2Response{
@@ -775,6 +774,6 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) retrieveEndpoint(ctx context.Context, endpointID, projectID string) (*datastore.Endpoint, error) {
-	endpointRepo := postgres.NewEndpointRepo(h.A.DB)
+	endpointRepo := endpointsvc.New(h.A.Logger, h.A.DB)
 	return endpointRepo.FindEndpointByID(ctx, endpointID, projectID)
 }

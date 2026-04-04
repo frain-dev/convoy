@@ -3,22 +3,24 @@ package listener
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/r3labs/diff/v3"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
 type ProjectListener struct {
-	queue queue.Queuer
+	queue  queue.Queuer
+	logger log.Logger
 }
 
-func NewProjectListener(queue queue.Queuer) *ProjectListener {
-	return &ProjectListener{queue: queue}
+func NewProjectListener(queue queue.Queuer, logger log.Logger) *ProjectListener {
+	return &ProjectListener{queue: queue, logger: logger}
 }
 
 func (e *ProjectListener) AfterUpdate(ctx context.Context, data, changelog interface{}) {
@@ -28,7 +30,7 @@ func (e *ProjectListener) AfterUpdate(ctx context.Context, data, changelog inter
 func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventType, data, changelog interface{}) {
 	project, ok := data.(*datastore.Project)
 	if !ok {
-		log.Errorf("invalid type for project - %s", eventType)
+		e.logger.Error(fmt.Sprintf("invalid type for project - %s", eventType))
 		return
 	}
 
@@ -40,7 +42,7 @@ func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventTy
 					if testSliceEq(change.Path, []string{"Config", "RetentionPolicy", "SearchPolicy"}) {
 						dur, err := time.ParseDuration(project.Config.SearchPolicy)
 						if err != nil {
-							log.WithError(err).Errorf("%s is not a valid time duration", project.Config.SearchPolicy)
+							e.logger.Error(fmt.Sprintf("%s is not a valid time duration: %v", project.Config.SearchPolicy, err))
 							return
 						}
 
@@ -51,7 +53,7 @@ func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventTy
 
 						bytes, err := json.Marshal(params)
 						if err != nil {
-							log.WithError(err).Error("an error occurred marshalling the payload")
+							e.logger.Error("an error occurred marshalling the payload", "error", err)
 							return
 						}
 
@@ -63,7 +65,7 @@ func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventTy
 
 						err = e.queue.Write(convoy.TokenizeSearchForProject, convoy.ScheduleQueue, job)
 						if err != nil {
-							log.WithError(err).Error("an error occurred writing the job to the queue")
+							e.logger.Error("an error occurred writing the job to the queue", "error", err)
 							return
 						}
 					}

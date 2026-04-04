@@ -21,6 +21,7 @@ func provideCreateSourceService(ctrl *gomock.Controller, t *testing.T, newSource
 	return &CreateSourceService{
 		SourceRepo: mocks.NewMockSourceRepository(ctrl),
 		Cache:      mocks.NewMockCache(ctrl),
+		Logger:     mocks.NewMockLogger(ctrl),
 		NewSource:  newSource,
 		Project:    project,
 	}
@@ -187,6 +188,8 @@ func TestCreateSourceService_Run(t *testing.T) {
 			dbFn: func(so *CreateSourceService) {
 				s, _ := so.SourceRepo.(*mocks.MockSourceRepository)
 				s.EXPECT().CreateSource(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				ml, _ := so.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create source", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create source",

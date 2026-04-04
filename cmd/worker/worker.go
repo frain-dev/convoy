@@ -17,6 +17,7 @@ import (
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/filters"
@@ -40,7 +41,7 @@ import (
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/services"
@@ -50,13 +51,12 @@ import (
 
 type Worker struct {
 	consumer *worker.Consumer
-	logger   *log.Logger
+	logger   log.Logger
 }
 
 // NewWorker initializes all worker components and returns a Worker instance.
 func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Worker, error) {
-	lo := a.Logger.(*log.Logger)
-	lo.SetPrefix("worker")
+	lo := a.Logger
 
 	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
 	if km.IsSet() {
@@ -72,9 +72,9 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		return nil, err
 	}
 
-	sc, err := smtp.NewClient(&cfg.SMTP)
+	sc, err := smtp.NewClient(&cfg.SMTP, lo)
 	if err != nil {
-		lo.WithError(err).Error("Failed to create smtp client")
+		lo.Error("Failed to create smtp client", "error", err)
 		return nil, err
 	}
 
@@ -99,7 +99,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 
 	q := redisQueue.NewQueue(opts)
 
-	ctx = log.NewContext(ctx, lo, log.Fields{})
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
 		return nil, err
@@ -118,7 +117,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 
 	projectRepo := projects.New(a.Logger, a.DB)
 	metaEventRepo := meta_events.New(a.Logger, a.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.DB)
+	endpointRepo := endpoints.New(a.Logger, a.DB)
 	eventRepo := events.New(a.Logger, a.DB)
 	jobRepo := postgres.NewJobRepo(a.DB)
 	eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
@@ -183,7 +182,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		net.LoggerOption(lo),
 		net.TracerOption(a.TracerBackend),
 		net.DetailedTraceOption(true),
-		net.ProxyOption(cfg.Server.HTTP.HttpProxy),
+		net.ProxyOption(cfg.Server.HTTP.HttpProxy, cfg.Server.HTTP.NoProxy),
 		net.AllowListOption(cfg.Dispatcher.AllowList),
 		net.BlockListOption(cfg.Dispatcher.BlockList),
 		net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),
@@ -213,7 +212,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 			cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
 				project, err := projectRepo.FetchProjectByID(ctx, projectID)
 				if err != nil {
-					lo.WithError(err).Warnf("Failed to fetch project %s for circuit breaker config, using default", projectID)
+					lo.Warnf("Failed to fetch project %s for circuit breaker config, using default: %v", projectID, err)
 					return &masterDefaults
 				}
 				if project.Config.CircuitBreaker == nil {
@@ -322,6 +321,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
 		TracerBackend:              a.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,
+		Logger:                     lo,
 	}
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
@@ -338,6 +338,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		OAuth2TokenService: oauth2TokenService,
 		FeatureFlag:        featureFlag,
 		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
+		Logger:             lo,
 	}
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
@@ -349,8 +350,8 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
 
 	if a.Licenser.RetentionPolicy() {
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret), nil)
-		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd.Client()), nil)
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret, lo), nil)
+		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd.Client(), lo), nil)
 	}
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
@@ -368,10 +369,11 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
+		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd), nil)
+	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd, lo), nil)
 
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 
@@ -379,13 +381,13 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
 	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {
-		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
-		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
+		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd, lo), nil)
+		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo, lo), nil)
 	}
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend), nil)
-	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend, lo), nil)
+	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd, lo), nil)
 
 	//nolint:gocritic
 	// consumer.RegisterHandlers(convoy.RefreshMetricsMaterializedViews, task.RefreshMetricsMaterializedViews(a.DB, rd), nil)
@@ -400,6 +402,7 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
+		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
 

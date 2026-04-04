@@ -17,7 +17,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
 )
@@ -28,13 +28,13 @@ type Kafka struct {
 	workers     int
 	ctx         context.Context
 	handler     datastore.PubSubHandler
-	log         log.StdLogger
+	log         log.Logger
 	rateLimiter limiter.RateLimiter
 	licenser    license.Licenser
 	instanceId  string
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) *Kafka {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.Logger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) *Kafka {
 	return &Kafka{
 		Cfg:         source.PubSub.Kafka,
 		source:      source,
@@ -117,7 +117,7 @@ func (k *Kafka) Verify() error {
 func (k *Kafka) consume() {
 	dialer, err := k.dialer()
 	if err != nil {
-		log.WithError(err).Errorf("failed to fetch auth for kafka source %s with id %s", k.source.Name, k.source.UID)
+		k.log.Error(fmt.Sprintf("failed to fetch auth for kafka source %s with id %s: %v", k.source.Name, k.source.UID, err))
 		return
 	}
 
@@ -140,7 +140,7 @@ func (k *Kafka) consume() {
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
+		k.log.Error(fmt.Sprintf("failed to load config.Get() in kafka source %s with id %s: %v", k.source.Name, k.source.UID, err))
 		return
 	}
 
@@ -159,7 +159,7 @@ func (k *Kafka) consume() {
 
 			m, err := r.FetchMessage(k.ctx)
 			if err != nil {
-				log.WithError(err).Errorf("failed to fetch message from kafka source %s with id %s from topic %s - kafka", k.source.Name, k.source.UID, k.Cfg.TopicName)
+				k.log.Error(fmt.Sprintf("failed to fetch message from kafka source %s with id %s from topic %s - kafka: %v", k.source.Name, k.source.UID, k.Cfg.TopicName, err))
 				continue
 			}
 
@@ -174,17 +174,17 @@ func (k *Kafka) consume() {
 
 			headers, err := msgpack.EncodeMsgPack(d.Map())
 			if err != nil {
-				k.log.WithError(err).Error("failed to marshall message headers")
+				k.log.Error("failed to marshall message headers", "error", err)
 			}
 
 			if err := k.handler(k.ctx, k.source, string(m.Value), headers); err != nil {
-				k.log.WithError(err).Errorf("failed to write message from kafka source %s with id %s to create event queue - kafka pub sub", k.source.Name, k.source.UID)
+				k.log.Error(fmt.Sprintf("failed to write message from kafka source %s with id %s to create event queue - kafka pub sub: %v", k.source.Name, k.source.UID, err))
 				mm.IncrementIngestErrorsTotal(k.source)
 			} else {
 				// acknowledge the message
 				err := r.CommitMessages(k.ctx, m)
 				if err != nil {
-					k.log.WithError(err).Error("failed to commit message - kafka pub sub")
+					k.log.Error("failed to commit message - kafka pub sub", "error", err)
 					mm.IncrementIngestErrorsTotal(k.source)
 				} else {
 					mm.IncrementIngestConsumedTotal(k.source)
@@ -196,11 +196,11 @@ func (k *Kafka) consume() {
 
 func (k *Kafka) handleError(reader *kafka.Reader) {
 	if err := reader.Close(); err != nil {
-		k.log.WithError(err).Error("an error occurred while closing the kafka client")
+		k.log.Error("an error occurred while closing the kafka client", "error", err)
 	}
 
 	if err := recover(); err != nil {
-		k.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", k.source.UID, err)).Error("kafka pubsub source crashed")
+		k.log.Error("kafka pubsub source crashed", "error", fmt.Errorf("sourceID: %s, Error: %s", k.source.UID, err))
 	}
 }
 

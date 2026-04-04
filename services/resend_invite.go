@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -16,13 +16,14 @@ type ResendOrgMemberService struct {
 	InviteID     string
 	User         *datastore.User
 	Organisation *datastore.Organisation
+	Logger       log.Logger
 }
 
 func (rs *ResendOrgMemberService) Run(ctx context.Context) (*datastore.OrganisationInvite, error) {
 	iv, err := rs.InviteRepo.FetchOrganisationInviteByID(ctx, rs.InviteID)
 	if err != nil {
 		errMsg := "failed to fetch organisation by invitee id"
-		log.FromContext(ctx).WithError(err).Error(errMsg)
+		rs.Logger.ErrorContext(ctx, errMsg, "error", err)
 		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
@@ -31,7 +32,7 @@ func (rs *ResendOrgMemberService) Run(ctx context.Context) (*datastore.Organisat
 	err = rs.InviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
 		errMsg := "failed to update organisation member invite"
-		log.FromContext(ctx).WithError(err).Error(errMsg)
+		rs.Logger.ErrorContext(ctx, errMsg, "error", err)
 		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 

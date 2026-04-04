@@ -18,6 +18,7 @@ import (
 
 	"github.com/stealthrocket/netjail"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"golang.org/x/net/http/httpproxy"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -26,7 +27,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -160,7 +161,7 @@ type Dispatcher struct {
 	ff *fflag.FFlag
 	l  license.Licenser
 
-	logger        log.StdLogger
+	logger        log.Logger
 	transport     *http.Transport
 	client        *http.Client
 	rules         *netjail.Rules
@@ -172,11 +173,12 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	d := &Dispatcher{
 		ff:     ff,
 		l:      l,
-		logger: log.NewLogger(os.Stdout),
+		logger: log.New("convoy", log.LevelInfo),
 		tracer: tracer.NoOpBackend{},
 		client: &http.Client{},
 		rules:  &netjail.Rules{},
 		transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
 			MaxIdleConns:          1000,
 			IdleConnTimeout:       30 * time.Second,
 			MaxIdleConnsPerHost:   100,
@@ -211,22 +213,37 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	return d, nil
 }
 
-// ProxyOption defines an HTTP proxy which the client will use. It fails-open the string isn't a valid HTTP URL
-func ProxyOption(httpProxy string) DispatcherOption {
+// ProxyOption configures an HTTP proxy with NO_PROXY support.
+// It fails-open if the string isn't a valid HTTP URL. When a proxy is set,
+// NO_PROXY/no_proxy from config or environment is respected via Go's
+// httpproxy.Config (same logic as http.ProxyFromEnvironment).
+func ProxyOption(httpProxy string, noProxy ...string) DispatcherOption {
 	return func(d *Dispatcher) error {
-		if httpProxy == "" {
+		if httpProxy == "" || !d.l.UseForwardProxy() {
 			return nil
 		}
 
-		if d.l.UseForwardProxy() {
-			proxyUrl, isValid, err := d.validateProxy(httpProxy)
-			if err != nil {
-				return err
+		cfgNoProxy := ""
+		if len(noProxy) > 0 {
+			cfgNoProxy = noProxy[0]
+		}
+		if cfgNoProxy == "" {
+			if v := os.Getenv("NO_PROXY"); v != "" {
+				cfgNoProxy = v
+			} else {
+				cfgNoProxy = os.Getenv("no_proxy")
 			}
+		}
 
-			if isValid {
-				d.transport.Proxy = http.ProxyURL(proxyUrl)
-			}
+		cfg := httpproxy.Config{
+			HTTPProxy:  httpProxy,
+			HTTPSProxy: httpProxy,
+			NoProxy:    cfgNoProxy,
+		}
+		proxyFunc := cfg.ProxyFunc()
+
+		d.transport.Proxy = func(req *http.Request) (*url.URL, error) {
+			return proxyFunc(req.URL)
 		}
 
 		return nil
@@ -306,7 +323,7 @@ func TLSConfigOption(insecureSkipVerify bool, licenser license.Licenser, caCertT
 	}
 }
 
-func LoggerOption(logger log.StdLogger) DispatcherOption {
+func LoggerOption(logger log.Logger) DispatcherOption {
 	return func(d *Dispatcher) error {
 		if logger == nil {
 			return ErrLoggerIsRequired
@@ -334,23 +351,6 @@ func DetailedTraceOption(enabled bool) DispatcherOption {
 		d.detailedTrace.Enabled = enabled
 		return nil
 	}
-}
-
-func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
-	if !util.IsStringEmpty(proxyURL) {
-		pUrl, err := url.Parse(proxyURL)
-		if err != nil {
-			return nil, false, err
-		}
-
-		// we should only use the proxy if the url is valid
-		if !util.IsStringEmpty(pUrl.Host) && !util.IsStringEmpty(pUrl.Scheme) {
-			return pUrl, true, nil
-		}
-
-		return pUrl, false, nil
-	}
-	return nil, false, nil
 }
 
 // createClientWithMTLS creates an HTTP client configured with the provided mTLS certificate.
@@ -413,7 +413,7 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 	r := &Response{}
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
 		err := errors.New("signature header and hmac are required")
-		d.logger.WithError(err).Error("Dispatcher invalid arguments")
+		d.logger.Error("Dispatcher invalid arguments", "error", err)
 		r.Error = err.Error()
 		return r, err
 	}
@@ -426,14 +426,14 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 	converter := getConverter(contentType)
 	requestBody, err := converter.Convert(jsonData)
 	if err != nil {
-		d.logger.WithError(err).Error("error converting JSON data")
+		d.logger.Error("error converting JSON data", "error", err)
 		r.Error = err.Error()
 		return r, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
-		d.logger.WithError(err).Error("error occurred while creating request")
+		d.logger.Error("error occurred while creating request", "error", err)
 		return r, err
 	}
 
@@ -548,7 +548,7 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 
 	response, err := client.Do(req)
 	if err != nil {
-		d.logger.WithError(err).Error("error sending request to API endpoint")
+		d.logger.Error("error sending request to API endpoint", "error", err)
 		res.Error = err.Error()
 		return err
 	}
@@ -580,7 +580,7 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 	updateDispatchHeaders(res, response)
 
 	if err != nil {
-		d.logger.WithError(err).Error("couldn't parse response body")
+		d.logger.Error("couldn't parse response body", "error", err)
 		return err
 	}
 
@@ -619,7 +619,7 @@ func (d *Dispatcher) Ping(ctx context.Context, opts PingOptions) error {
 	var methods []string
 	cfg, err := config.Get()
 	if err != nil {
-		d.logger.WithError(err).Warn("Failed to get config, using default ping methods")
+		d.logger.Warn("Failed to get config, using default ping methods", "error", err)
 		methods = []string{"HEAD", "GET", "POST"}
 	} else {
 		methods = cfg.Dispatcher.PingMethods

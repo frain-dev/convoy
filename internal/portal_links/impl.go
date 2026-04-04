@@ -20,11 +20,11 @@ import (
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
+	endpointspkg "github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/portal_links/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -43,7 +43,7 @@ func (s *ServiceError) Unwrap() error {
 }
 
 type Service struct {
-	logger       log.StdLogger
+	logger       log.Logger
 	repo         repo.Querier
 	db           *pgxpool.Pool
 	endpointRepo datastore.EndpointRepository
@@ -52,12 +52,12 @@ type Service struct {
 // Ensure Service implements datastore.PortalLinkRepository at compile time
 var _ datastore.PortalLinkRepository = (*Service)(nil)
 
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger:       logger,
 		repo:         repo.New(db.GetConn()),
 		db:           db.GetConn(),
-		endpointRepo: postgres.NewEndpointRepo(db),
+		endpointRepo: endpointspkg.New(logger, db),
 	}
 }
 
@@ -168,7 +168,7 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 	// Start transaction
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -187,7 +187,7 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 		Endpoints:         stringsToPgText(request.Endpoints),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create portal link")
+		s.logger.Error("failed to create portal link", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
 	}
 
@@ -220,7 +220,7 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 	if datastore.PortalAuthType(request.AuthType) == datastore.PortalAuthTypeRefreshToken {
 		portalToken, err := generateToken(uid)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to generate auth token")
+			s.logger.Error("failed to generate auth token", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to generate auth token", Err: err}
 		}
 
@@ -234,7 +234,7 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 			TokenExpiresAt: pgtype.Timestamptz{Time: portalToken.ExpiresAt.Time, Valid: portalToken.ExpiresAt.Valid},
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to create portal link auth token")
+			s.logger.Error("failed to create portal link auth token", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to create auth token", Err: err}
 		}
 
@@ -242,7 +242,7 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
 	}
 
@@ -273,7 +273,7 @@ func (s *Service) UpdatePortalLink(ctx context.Context, projectID string, portal
 	// Start transaction
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to update portal link", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -291,7 +291,7 @@ func (s *Service) UpdatePortalLink(ctx context.Context, projectID string, portal
 		AuthType:          request.AuthType,
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update portal link")
+		s.logger.Error("failed to update portal link", "error", err)
 		return nil, &ServiceError{ErrMsg: "an error occurred while updating portal link", Err: err}
 	}
 
@@ -328,7 +328,7 @@ func (s *Service) UpdatePortalLink(ctx context.Context, projectID string, portal
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to update portal link", Err: err}
 	}
 
@@ -356,14 +356,14 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &ServiceError{ErrMsg: "portal link not found", Err: datastore.ErrPortalLinkNotFound}
 		}
-		s.logger.WithError(err).Error("failed to fetch portal link")
+		s.logger.Error("failed to fetch portal link", "error", err)
 		return nil, &ServiceError{ErrMsg: "error retrieving portal link", Err: err}
 	}
 
 	// Start transaction
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -375,7 +375,7 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 	if datastore.PortalAuthType(row.AuthType) == datastore.PortalAuthTypeRefreshToken {
 		portalToken, err := generateToken(portalLinkID)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to generate auth token")
+			s.logger.Error("failed to generate auth token", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to generate auth token", Err: err}
 		}
 
@@ -389,7 +389,7 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 			TokenExpiresAt: pgtype.Timestamptz{Time: portalToken.ExpiresAt.Time, Valid: portalToken.ExpiresAt.Valid},
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to create portal link auth token")
+			s.logger.Error("failed to create portal link auth token", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to create auth token", Err: err}
 		}
 
@@ -397,7 +397,7 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
 	}
 
@@ -414,7 +414,7 @@ func (s *Service) GetPortalLinkByToken(ctx context.Context, token string) (*data
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &ServiceError{ErrMsg: "portal link not found", Err: datastore.ErrPortalLinkNotFound}
 		}
-		s.logger.WithError(err).Error("failed to fetch portal link by token")
+		s.logger.Error("failed to fetch portal link by token", "error", err)
 		return nil, &ServiceError{ErrMsg: "error retrieving portal link", Err: err}
 	}
 
@@ -432,14 +432,14 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &ServiceError{ErrMsg: "portal link not found", Err: datastore.ErrPortalLinkNotFound}
 		}
-		s.logger.WithError(err).Error("failed to fetch portal link by owner ID")
+		s.logger.Error("failed to fetch portal link by owner ID", "error", err)
 		return nil, &ServiceError{ErrMsg: "error retrieving portal link", Err: err}
 	}
 
 	// Start transaction
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -451,7 +451,7 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 	if datastore.PortalAuthType(row.AuthType) == datastore.PortalAuthTypeRefreshToken {
 		portalToken, err := generateToken(row.ID)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to generate auth token")
+			s.logger.Error("failed to generate auth token", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to generate auth token", Err: err}
 		}
 
@@ -465,7 +465,7 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 			TokenExpiresAt: pgtype.Timestamptz{Time: portalToken.ExpiresAt.Time, Valid: portalToken.ExpiresAt.Valid},
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to create portal link auth token")
+			s.logger.Error("failed to create portal link auth token", "error", err)
 			return nil, &ServiceError{ErrMsg: "failed to create auth token", Err: err}
 		}
 
@@ -473,7 +473,7 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
 	}
 
@@ -497,7 +497,7 @@ func (s *Service) RefreshPortalLinkAuthToken(ctx context.Context, projectID, por
 	// Generate salt
 	salt, err := util.GenerateSecret()
 	if err != nil {
-		s.logger.WithError(err).Error("failed to generate salt")
+		s.logger.Error("failed to generate salt", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to generate auth token", Err: err}
 	}
 
@@ -511,7 +511,7 @@ func (s *Service) RefreshPortalLinkAuthToken(ctx context.Context, projectID, por
 	// Start transaction to insert auth token
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to start transaction")
+		s.logger.Error("failed to start transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to refresh auth token", Err: err}
 	}
 	defer tx.Rollback(ctx)
@@ -528,12 +528,12 @@ func (s *Service) RefreshPortalLinkAuthToken(ctx context.Context, projectID, por
 		TokenExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create portal link auth token")
+		s.logger.Error("failed to create portal link auth token", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to refresh auth token", Err: err}
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		s.logger.WithError(err).Error("failed to commit transaction")
+		s.logger.Error("failed to commit transaction", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to refresh auth token", Err: err}
 	}
 
@@ -549,7 +549,7 @@ func (s *Service) RevokePortalLink(ctx context.Context, projectID, portalLinkID 
 		ProjectID: common.StringToPgText(projectID),
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to revoke portal link")
+		s.logger.Error("failed to revoke portal link", "error", err)
 		return &ServiceError{ErrMsg: "failed to revoke portal link", Err: err}
 	}
 
@@ -586,7 +586,7 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 		LimitVal:          pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load portal links paged")
+		s.logger.Error("failed to load portal links paged", "error", err)
 		return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "an error occurred while fetching portal links", Err: err}
 	}
 
@@ -619,7 +619,7 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 			EndpointIds:       endpointIDs,
 		})
 		if err != nil {
-			s.logger.WithError(err).Error("failed to count prev portal links")
+			s.logger.Error("failed to count prev portal links", "error", err)
 			return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "an error occurred while counting portal links", Err: err}
 		}
 		prevRowCount.Count = int(count.Int64)
@@ -640,7 +640,7 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 			// Generate auth token
 			portalToken, err := generateToken(portalLinks[i].UID)
 			if err != nil {
-				s.logger.WithError(err).Error("failed to generate auth token")
+				s.logger.Error("failed to generate auth token", "error", err)
 				return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
 			}
 
@@ -654,7 +654,7 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 		if len(authTokens) > 0 {
 			tx, err := s.db.Begin(ctx)
 			if err != nil {
-				s.logger.WithError(err).Error("failed to start transaction for auth tokens")
+				s.logger.Error("failed to start transaction for auth tokens", "error", err)
 				return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
 			}
 			defer tx.Rollback(ctx)
@@ -670,13 +670,13 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 					TokenExpiresAt: pgtype.Timestamptz{Time: token.ExpiresAt.Time, Valid: token.ExpiresAt.Valid},
 				})
 				if err != nil {
-					s.logger.WithError(err).Error("failed to create portal link auth token")
+					s.logger.Error("failed to create portal link auth token", "error", err)
 					return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
 				}
 			}
 
 			if err = tx.Commit(ctx); err != nil {
-				s.logger.WithError(err).Error("failed to commit auth tokens transaction")
+				s.logger.Error("failed to commit auth tokens transaction", "error", err)
 				return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
 			}
 		}
@@ -691,7 +691,7 @@ func (s *Service) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &ServiceError{ErrMsg: "portal links not found", Err: datastore.ErrPortalLinkNotFound}
 		}
-		s.logger.WithError(err).Error("failed to fetch portal links by owner ID")
+		s.logger.Error("failed to fetch portal links by owner ID", "error", err)
 		return nil, &ServiceError{ErrMsg: "error retrieving portal links", Err: err}
 	}
 
@@ -713,7 +713,7 @@ func (s *Service) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) 
 			// Generate auth token
 			portalToken, err := generateToken(portalLinks[i].UID)
 			if err != nil {
-				s.logger.WithError(err).Error("failed to generate auth token")
+				s.logger.Error("failed to generate auth token", "error", err)
 				return nil, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
 			}
 
@@ -727,7 +727,7 @@ func (s *Service) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) 
 		if len(authTokens) > 0 {
 			tx, err := s.db.Begin(ctx)
 			if err != nil {
-				s.logger.WithError(err).Error("failed to start transaction for auth tokens")
+				s.logger.Error("failed to start transaction for auth tokens", "error", err)
 				return nil, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
 			}
 			defer tx.Rollback(ctx)
@@ -743,13 +743,13 @@ func (s *Service) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) 
 					TokenExpiresAt: pgtype.Timestamptz{Time: token.ExpiresAt.Time, Valid: token.ExpiresAt.Valid},
 				})
 				if err != nil {
-					s.logger.WithError(err).Error("failed to create portal link auth token")
+					s.logger.Error("failed to create portal link auth token", "error", err)
 					return nil, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
 				}
 			}
 
 			if err = tx.Commit(ctx); err != nil {
-				s.logger.WithError(err).Error("failed to commit auth tokens transaction")
+				s.logger.Error("failed to commit auth tokens transaction", "error", err)
 				return nil, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
 			}
 		}
@@ -764,7 +764,7 @@ func (s *Service) FindPortalLinkByMaskId(ctx context.Context, maskId string) (*d
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &ServiceError{ErrMsg: "portal link not found", Err: datastore.ErrPortalLinkNotFound}
 		}
-		s.logger.WithError(err).Error("failed to fetch portal link by mask ID")
+		s.logger.Error("failed to fetch portal link by mask ID", "error", err)
 		return nil, &ServiceError{ErrMsg: "error retrieving portal link", Err: err}
 	}
 

@@ -16,12 +16,12 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const orgStatusUpdatePerPage = 50
 
-func UpdateOrganisationStatus(db database.Database, billingClient billing.Client, rd *rdb.Redis, logger log.StdLogger) func(context.Context, *asynq.Task) error {
+func UpdateOrganisationStatus(db database.Database, billingClient billing.Client, rd *rdb.Redis, logger log.Logger) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
 
@@ -58,7 +58,7 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 
 			ok, err := mutex.UnlockContext(tctx)
 			if !ok || err != nil {
-				logger.WithError(err).Error("failed to release lock")
+				logger.Error("failed to release lock", "error", err)
 			}
 		}()
 
@@ -76,7 +76,7 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 		for _, org := range orgs {
 			resp, err := billingClient.GetSubscription(ctx, org.UID)
 			if err != nil {
-				logger.WithError(err).Errorf("Failed to fetch subscription for organisation %s", org.UID)
+				logger.Errorf("Failed to fetch subscription for organisation %s: %v", org.UID, err)
 				errorCount++
 				continue
 			}
@@ -87,7 +87,7 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 				if org.DisabledAt.Valid {
 					org.DisabledAt = null.Time{}
 					if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
-						logger.WithError(err).Errorf("Failed to clear organisation %s disabled_at", org.UID)
+						logger.Errorf("Failed to clear organisation %s disabled_at: %v", org.UID, err)
 						errorCount++
 						continue
 					}
@@ -98,7 +98,7 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 				if !org.DisabledAt.Valid {
 					org.DisabledAt = null.NewTime(time.Now(), true)
 					if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
-						logger.WithError(err).Errorf("Failed to set organisation %s disabled_at", org.UID)
+						logger.Errorf("Failed to set organisation %s disabled_at: %v", org.UID, err)
 						errorCount++
 						continue
 					}

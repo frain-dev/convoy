@@ -18,8 +18,9 @@ import (
 
 func provideOrganisationMemberService(ctrl *gomock.Controller) *OrganisationMemberService {
 	orgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
-	l := mocks.NewMockLicenser(ctrl)
-	return NewOrganisationMemberService(orgMemberRepo, l)
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
+	return NewOrganisationMemberService(orgMemberRepo, mockLicenser, mockLogger)
 }
 
 func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
@@ -121,6 +122,9 @@ func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				a.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				ml, _ := os.logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create organisation member", "error", gomock.Any()).Times(1)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -277,6 +281,9 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				a.EXPECT().UpdateOrganisationMember(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				ml, _ := os.logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to to update organisation member", "error", gomock.Any()).Times(1)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -376,6 +383,9 @@ func TestOrganisationMemberService_DeleteOrganisationMember(t *testing.T) {
 				a.EXPECT().FetchOrganisationMemberByID(gomock.Any(), "123", "abc").Times(1).Return(&datastore.OrganisationMember{UID: "12345", UserID: "123"}, nil)
 				a.EXPECT().DeleteOrganisationMember(gomock.Any(), "123", "abc").
 					Times(1).Return(errors.New("failed"))
+
+				ml, _ := os.logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to delete organisation member", "error", gomock.Any()).Times(1)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,

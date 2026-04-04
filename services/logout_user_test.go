@@ -27,6 +27,7 @@ func provideLogoutUserService(ctrl *gomock.Controller, t *testing.T, token strin
 	return &LogoutUserService{
 		JWT:      jwt.NewJwt(&config.Auth.Jwt, c),
 		UserRepo: mocks.NewMockUserRepository(ctrl),
+		Logger:   mocks.NewMockLogger(ctrl),
 		Token:    token,
 	}, c
 }
@@ -79,6 +80,9 @@ func TestLogoutUserService_Run(t *testing.T) {
 			dbFn: func(u *LogoutUserService, cache cache.Cache) {
 				ca, _ := cache.(*mocks.MockCache)
 				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				ml, _ := u.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to validate token", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to validate token",

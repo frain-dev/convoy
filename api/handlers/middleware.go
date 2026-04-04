@@ -64,7 +64,7 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 					orgRepo := organisations.New(h.A.Logger, h.A.DB)
 					org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 					if err != nil {
-						h.A.Logger.WithError(err).Error("Failed to fetch organisation for disabled check")
+						h.A.Logger.Error("Failed to fetch organisation for disabled check", "error", err)
 						_ = render.Render(w, r, util.NewErrorResponse("Failed to verify organization status", http.StatusInternalServerError))
 						return
 					}

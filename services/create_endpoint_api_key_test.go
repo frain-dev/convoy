@@ -21,6 +21,7 @@ func provideCreateEndpointAPIKeyService(ctrl *gomock.Controller, d *models.Creat
 	return &CreateEndpointAPIKeyService{
 		APIKeyRepo: mocks.NewMockAPIKeyRepository(ctrl),
 		D:          d,
+		Logger:     mocks.NewMockLogger(ctrl),
 	}
 }
 
@@ -132,6 +133,9 @@ func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
 				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				ml, _ := ss.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create api key", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create api key",

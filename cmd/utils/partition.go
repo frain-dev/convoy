@@ -26,7 +26,7 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
-				a.Logger.WithError(err).Fatal("Failed to load configuration")
+				a.Logger.Fatal("Failed to load configuration", "error", err)
 			}
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
@@ -110,7 +110,7 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
-				a.Logger.WithError(err).Fatal("Failed to load configuration")
+				a.Logger.Fatal("Failed to load configuration", "error", err)
 			}
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)

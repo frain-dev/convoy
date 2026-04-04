@@ -17,12 +17,12 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/telemetry"
-	pkglog "github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const perPage = 50
 
-func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func PushDailyTelemetry(lo log.Logger, db database.Database, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
 	// Create a pool with go-redis
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
@@ -52,34 +52,35 @@ func PushDailyTelemetry(log *pkglog.Logger, db database.Database, rd *rdb.Redis)
 			// Release the lock so other processes or threads can obtain a lock.
 			ok, err := mutex.UnlockContext(tctx)
 			if !ok || err != nil {
-				log.WithError(err).Error("failed to release lock")
+				lo.Error("failed to release lock", "error", err)
 			}
 		}()
 
-		orgRepo := organisations.New(log, db)
+		orgRepo := organisations.New(lo, db)
 		orgs, err := getAllOrganisations(ctx, orgRepo)
 		if err != nil {
 			return err
 		}
 
-		configRepo := configuration.New(log, db)
+		configRepo := configuration.New(lo, db)
 		loadConfiguration, err := configRepo.LoadConfiguration(context.Background())
 		if err != nil {
 			return err
 		}
-		eventRepo := events.New(log, db)
-		projectRepo := projects.New(log, db)
+		eventRepo := events.New(lo, db)
+		projectRepo := projects.New(lo, db)
 
 		totalEventsTracker := &telemetry.TotalEventsTracker{
 			Orgs:        orgs,
 			EventRepo:   eventRepo,
 			ProjectRepo: projectRepo,
+			Logger:      lo,
 		}
 
 		pb := telemetry.NewposthogBackend()
 		mb := telemetry.NewmixpanelBackend()
 
-		newTelemetry := telemetry.NewTelemetry(log, loadConfiguration,
+		newTelemetry := telemetry.NewTelemetry(lo, loadConfiguration,
 			telemetry.OptionTracker(totalEventsTracker),
 			telemetry.OptionBackend(pb),
 			telemetry.OptionBackend(mb))

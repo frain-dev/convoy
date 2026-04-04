@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -24,7 +24,7 @@ type APIOptions struct {
 	DB                         database.Database
 	Redis                      redis.UniversalClient
 	Queue                      queue.Queuer
-	Logger                     log.StdLogger
+	Logger                     logger.Logger
 	Cache                      cache.Cache
 	Authz                      *authz.Authz
 	Rate                       limiter.RateLimiter

@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type chainMap map[string]auth.Realm
@@ -45,7 +45,7 @@ func Init(authConfig *config.AuthConfiguration,
 	apiKeyRepo datastore.APIKeyRepository,
 	userRepo datastore.UserRepository,
 	portalLinkService datastore.PortalLinkRepository,
-	cache cache.Cache, logger log.StdLogger) error {
+	cache cache.Cache, logger log.Logger) error {
 	rc := newRealmChain()
 
 	// validate authentication realms

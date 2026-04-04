@@ -2,21 +2,22 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/queue/redis"
 )
 
-func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDeliveryRepository, q queue.Queuer) {
+func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDeliveryRepository, q queue.Queuer, logger log.Logger) {
 	for {
 		evs, err := edRepo.FindStuckEventDeliveriesByStatus(context.Background(), datastore.ScheduledEventStatus)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Errorf("an error occurred fetching stuck event deliveries")
+			logger.ErrorContext(ctx, fmt.Sprintf("an error occurred fetching stuck event deliveries: %v", err))
 			continue
 		}
 
@@ -30,7 +31,7 @@ func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDelive
 
 		err = q.(*redis.RedisQueue).DeleteEventDeliveriesFromQueue(convoy.EventQueue, ids)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("an error occurred removing task with id from the queue")
+			logger.ErrorContext(ctx, "an error occurred removing task with id from the queue", "error", err)
 		}
 
 		for i := 0; i < len(evs); i++ {
@@ -43,7 +44,7 @@ func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDelive
 
 			data, err := msgpack.EncodeMsgPack(payload)
 			if err != nil {
-				log.FromContext(ctx).WithError(err).Errorf("an error occurred encoding stuck event delivery with id %s", eventDelivery.UID)
+				logger.ErrorContext(ctx, fmt.Sprintf("an error occurred encoding stuck event delivery with id %s: %v", eventDelivery.UID, err))
 				continue
 			}
 
@@ -55,7 +56,7 @@ func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDelive
 
 			err = q.Write(convoy.EventProcessor, convoy.EventQueue, job)
 			if err != nil {
-				log.FromContext(ctx).WithError(err).Errorf("an error occurred queueing stuck event delivery with id %s", eventDelivery.UID)
+				logger.ErrorContext(ctx, fmt.Sprintf("an error occurred queueing stuck event delivery with id %s: %v", eventDelivery.UID, err))
 				continue
 			}
 		}

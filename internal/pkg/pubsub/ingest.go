@@ -18,7 +18,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/queue"
@@ -37,13 +37,13 @@ type Ingest struct {
 	rateLimiter  limiter.RateLimiter
 	sources      map[memorystore.Key]*PubSubSource
 	table        *memorystore.Table
-	log          log.StdLogger
+	log          log.Logger
 	instanceId   string
 	licenser     license.Licenser
 	endpointRepo datastore.EndpointRepository
 }
 
-func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger,
+func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.Logger,
 	rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string, endpointRepo datastore.EndpointRepository) (*Ingest, error) {
 	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
@@ -76,7 +76,7 @@ func (i *Ingest) Run() {
 			i.log.Infof("Ingest ticker fired")
 			err := i.run()
 			if err != nil {
-				i.log.WithError(err).Error("ingest runner failed")
+				i.log.Error("ingest runner failed", "error", err)
 			}
 
 		case <-i.ctx.Done():
@@ -133,7 +133,7 @@ func (i *Ingest) run() error {
 		i.log.Infof("Starting new source: %s (type: %s, project: %s)", ss.UID, ss.Type, ss.ProjectID)
 		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.licenser, i.instanceId)
 		if err != nil {
-			i.log.WithError(err).Error("Failed to create PubSubSource")
+			i.log.Error("Failed to create PubSubSource", "error", err)
 			return err
 		}
 
@@ -154,7 +154,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 	// unmarshal to an interface{} struct
 	var raw any
 	if err := json.Unmarshal([]byte(msg), &raw); err != nil {
-		i.log.WithError(err).Error("Failed to unmarshal AMQP message")
+		i.log.Error("Failed to unmarshal AMQP message", "error", err)
 		return err
 	}
 
@@ -192,8 +192,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 
 	// check the payload structure to be sure it satisfies what convoy can ingest else discard and nack it.
 	if err = decoder.Decode(&convoyEvent); err != nil {
-		i.log.WithError(err).Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or"+
-			" use transform functions to properly format it, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
+		i.log.Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or use transform functions to properly format it, got: %q (event_type: %q): %v", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType, err)
 		return err
 	}
 
@@ -296,7 +295,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		i.log.Infof("Writing CreateEvent job to queue for event %s (endpoint: %s, project: %s)", id, ce.Params.EndpointID, ce.Params.ProjectID)
 		err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
-			i.log.WithError(err).Error("Failed to write CreateEvent job to queue")
+			i.log.Error("Failed to write CreateEvent job to queue", "error", err)
 			return err
 		}
 		i.log.Infof("Successfully wrote CreateEvent job to queue for event %s", id)

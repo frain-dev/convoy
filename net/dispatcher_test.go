@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -25,7 +24,7 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 var successBody = []byte("received webhook successfully")
@@ -118,7 +117,7 @@ func TestDispatcher_Ping(t *testing.T) {
 			defer server.Close()
 
 			// Create dispatcher
-			dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+			dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", log.LevelInfo)))
 			require.NoError(t, err)
 
 			// Test ping
@@ -150,7 +149,7 @@ func TestDispatcher_tryPingMethod(t *testing.T) {
 	// Setup default mocks
 	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
 
-	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -258,7 +257,7 @@ func TestDispatcher_PingWithDefaultMethods(t *testing.T) {
 	// Setup default mocks
 	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
 
-	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	// Test with default ping methods (HEAD, GET, POST)
@@ -292,7 +291,7 @@ func TestDispatcher_PingWithOAuth2(t *testing.T) {
 	// Setup default mocks
 	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
 
-	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.New("convoy", log.LevelInfo)))
 	require.NoError(t, err)
 
 	// Setup mock OAuth2 token server
@@ -678,7 +677,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &Dispatcher{client: client, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
+			d := &Dispatcher{client: client, logger: log.New("convoy", log.LevelInfo), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
 
 			if tt.nFn != nil {
 				deferFn := tt.nFn()
@@ -720,7 +719,7 @@ func TestDispatcher_SendFormDataWithSignature(t *testing.T) {
 	}))
 	defer server.Close()
 
-	d := &Dispatcher{client: http.DefaultClient, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
+	d := &Dispatcher{client: http.DefaultClient, logger: log.New("convoy", log.LevelInfo), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
 
 	jsonData := json.RawMessage(`{"name":"test","value":"123"}`)
 	project := &datastore.Project{
@@ -811,7 +810,7 @@ func TestNewDispatcher(t *testing.T) {
 			d, err := NewDispatcher(
 				licenser,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
-				LoggerOption(log.NewLogger(os.Stdout)),
+				LoggerOption(log.New("convoy", log.LevelInfo)),
 				TLSConfigOption(tt.args.enforceSecure, licenser, nil),
 				ProxyOption(tt.args.httpProxy),
 			)
@@ -863,7 +862,7 @@ func TestDispatcherSendRequest(t *testing.T) {
 	dispatcher, err := NewDispatcher(
 		licenser,
 		fflag.NewFFlag([]string{string(fflag.IpRules)}),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"10.0.0.0/8"}),
@@ -915,7 +914,7 @@ func TestDispatcherWithTimeout(t *testing.T) {
 	dispatcher, err := NewDispatcher(
 		licenser,
 		fflag.NewFFlag([]string{string(fflag.IpRules)}),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"10.0.0.0/8"}),
@@ -961,7 +960,7 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 	dispatcher, err := NewDispatcher(
 		licenser,
 		fflag.NewFFlag([]string{string(fflag.IpRules)}),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"127.0.0.0/8"}),
@@ -1058,7 +1057,7 @@ C6azzwqUOSsfDcuAS5sfJp/6
 	dispatcher, err := NewDispatcher(
 		licenser,
 		fflag.NewFFlag([]string{string(fflag.IpRules)}),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
 		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"127.0.0.0/8"}),
@@ -1087,4 +1086,133 @@ C6azzwqUOSsfDcuAS5sfJp/6
 	// Should be blocked by netjail due to blocklist
 	require.Error(t, err)
 	require.ErrorIs(t, err, netjail.ErrDenied)
+}
+
+func TestDispatcherProxyWithNoProxy(t *testing.T) {
+	proxyHit := false
+	proxyServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proxyHit = true
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"proxied": true}`))
+	}))
+	defer proxyServer.Close()
+
+	directServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"direct": true}`))
+	}))
+	defer directServer.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("should_bypass_proxy_for_no_proxy_host", func(t *testing.T) {
+		proxyHit = false
+		t.Setenv("NO_PROXY", "127.0.0.1,localhost")
+
+		licenser := mocks.NewMockLicenser(ctrl)
+		licenser.EXPECT().UseForwardProxy().Return(true)
+		licenser.EXPECT().IpRules().AnyTimes().Return(false)
+		licenser.EXPECT().CustomCertificateAuthority().Return(false)
+
+		dispatcher, err := NewDispatcher(
+			licenser,
+			fflag.NewFFlag(nil),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
+			ProxyOption(proxyServer.URL),
+			TLSConfigOption(false, licenser, nil),
+		)
+		require.NoError(t, err)
+
+		resp, err := dispatcher.SendWebhook(
+			context.Background(),
+			directServer.URL,
+			json.RawMessage(`{"test": true}`),
+			"X-Signature",
+			"test-hmac",
+			1024,
+			nil,
+			"",
+			5*time.Second,
+			constants.ContentTypeJSON,
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, `{"direct": true}`, string(resp.Body))
+		require.False(t, proxyHit, "proxy should not have been hit for NO_PROXY host")
+	})
+}
+
+func TestDispatcherDefaultProxyFromEnvironment(t *testing.T) {
+	directServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"direct": true}`))
+	}))
+	defer directServer.Close()
+
+	t.Run("should_respect_env_proxy_when_no_config_proxy", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		t.Setenv("NO_PROXY", "127.0.0.1,localhost")
+
+		licenser := mocks.NewMockLicenser(ctrl)
+		licenser.EXPECT().IpRules().AnyTimes().Return(false)
+		licenser.EXPECT().CustomCertificateAuthority().Return(false)
+
+		dispatcher, err := NewDispatcher(
+			licenser,
+			fflag.NewFFlag(nil),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
+			ProxyOption(""),
+			TLSConfigOption(false, licenser, nil),
+		)
+		require.NoError(t, err)
+
+		resp, err := dispatcher.SendWebhook(
+			context.Background(),
+			directServer.URL,
+			json.RawMessage(`{"test": true}`),
+			"X-Signature",
+			"test-hmac",
+			1024,
+			nil,
+			"",
+			5*time.Second,
+			constants.ContentTypeJSON,
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, `{"direct": true}`, string(resp.Body))
+	})
+}
+
+func TestNewDispatcherWithNoProxy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("should_set_proxy_with_no_proxy_config", func(t *testing.T) {
+		licenser := mocks.NewMockLicenser(ctrl)
+		licenser.EXPECT().UseForwardProxy().Return(true)
+		licenser.EXPECT().IpRules().Return(true)
+		licenser.EXPECT().CustomCertificateAuthority().Return(false)
+
+		d, err := NewDispatcher(
+			licenser,
+			fflag.NewFFlag([]string{string(fflag.IpRules)}),
+			LoggerOption(log.New("convoy", log.LevelInfo)),
+			TLSConfigOption(false, licenser, nil),
+			ProxyOption("https://proxy.example.com:3128", ".azurewebsites.net,10.0.0.0/8"),
+		)
+		require.NoError(t, err)
+
+		customTransport, ok := d.client.Transport.(*CustomTransport)
+		require.True(t, ok)
+
+		netJailTransport := customTransport.netJailTransport
+		require.NotNil(t, netJailTransport)
+		require.NotNil(t, netJailTransport.New().Proxy)
+	})
 }

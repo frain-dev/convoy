@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -19,7 +18,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // TestE2E_AMQP_Single_BasicDelivery tests basic single message delivery via AMQP
@@ -283,7 +282,7 @@ func TestE2E_AMQP_Broadcast_AllSubscribers(t *testing.T) {
 	// Debug: Check if event deliveries were created for broadcast event
 	time.Sleep(5 * time.Second) // Give worker extra time to create deliveries from broadcast
 	t.Logf("Checking if event deliveries were created for broadcast event...")
-	edRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
+	edRepo := event_deliveries.New(log.New("convoy", log.LevelError), db)
 	deliveries, err1 := edRepo.FindEventDeliveriesByEventID(context.Background(), env.Project.UID, event.UID)
 	if err1 == nil && len(deliveries) > 0 {
 		t.Logf("✓ Found %d event deliveries for broadcast event %s", len(deliveries), event.UID)
@@ -773,7 +772,7 @@ func TestE2E_AMQP_Broadcast_EventTypeFilter(t *testing.T) {
 
 	// Debug: Check if event deliveries were created
 	t.Log("Checking if event deliveries were created...")
-	edRepo := event_deliveries.New(log.NewLogger(io.Discard), db)
+	edRepo := event_deliveries.New(log.New("convoy", log.LevelError), db)
 	deliveries, err := edRepo.FindEventDeliveriesByEventID(env.ctx, env.Project.UID, event1.UID)
 	if err == nil && len(deliveries) > 0 {
 		t.Logf("✓ Found %d event deliveries", len(deliveries))

@@ -9,7 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
@@ -20,13 +20,14 @@ type BatchRetryEventDeliveryService struct {
 	Queue             queue.Queuer
 	Filter            *datastore.Filter
 	ProjectID         string
+	Logger            log.Logger
 }
 
 func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) error {
 	// Check if there's an active batch retry
 	activeRetry, err := e.BatchRetryRepo.FindActiveBatchRetry(ctx, e.ProjectID)
 	if err != nil && !errors.Is(err, datastore.ErrBatchRetryNotFound) {
-		log.FromContext(ctx).WithError(err).Error("failed to check for active batch retry")
+		e.Logger.ErrorContext(ctx, "failed to check for active batch retry", "error", err)
 		return &ServiceError{ErrMsg: "failed to check for active batch retry", Err: err}
 	}
 
@@ -37,7 +38,7 @@ func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) error {
 	// Count total events
 	count, err := e.EventDeliveryRepo.CountEventDeliveries(ctx, e.ProjectID, e.Filter.EndpointIDs, e.Filter.EventID, e.Filter.Status, e.Filter.SearchParams)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to count events")
+		e.Logger.ErrorContext(ctx, "failed to count events", "error", err)
 		return &ServiceError{ErrMsg: "failed to count events", Err: err}
 	}
 
@@ -56,13 +57,13 @@ func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) error {
 
 	err = e.BatchRetryRepo.CreateBatchRetry(ctx, batchRetry)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create batch retry")
+		e.Logger.ErrorContext(ctx, "failed to create batch retry", "error", err)
 		return &ServiceError{ErrMsg: "failed to create batch retry", Err: err}
 	}
 
 	data, err := msgpack.EncodeMsgPack(batchRetry)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to encode batch retry payload")
+		e.Logger.ErrorContext(ctx, "failed to encode batch retry payload", "error", err)
 		return &ServiceError{ErrMsg: "failed to encode batch retry payload", Err: err}
 	}
 
@@ -74,7 +75,7 @@ func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) error {
 
 	err = e.Queue.WriteWithoutTimeout(convoy.BatchRetryProcessor, convoy.BatchRetryQueue, job)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to queue batch retry job")
+		e.Logger.ErrorContext(ctx, "failed to queue batch retry job", "error", err)
 		return &ServiceError{ErrMsg: "failed to queue batch retry job", Err: err}
 	}
 

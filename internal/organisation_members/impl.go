@@ -13,13 +13,13 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/organisation_members/repo"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
 // Service implements the OrganisationMemberRepository using SQLc-generated queries
 type Service struct {
-	logger log.StdLogger
+	logger log.Logger
 	repo   repo.Querier  // SQLc-generated interface
 	db     *pgxpool.Pool // Connection pool
 }
@@ -28,7 +28,7 @@ type Service struct {
 var _ datastore.OrganisationMemberRepository = (*Service)(nil)
 
 // New creates a new Organisation Member Service
-func New(logger log.StdLogger, db database.Database) *Service {
+func New(logger log.Logger, db database.Database) *Service {
 	return &Service{
 		logger: logger,
 		repo:   repo.New(db.GetConn()),
@@ -156,7 +156,7 @@ func (s *Service) CreateOrganisationMember(ctx context.Context, member *datastor
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create organisation member")
+		s.logger.Error("failed to create organisation member", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -179,7 +179,7 @@ func (s *Service) UpdateOrganisationMember(ctx context.Context, member *datastor
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to update organisation member")
+		s.logger.Error("failed to update organisation member", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -194,7 +194,7 @@ func (s *Service) DeleteOrganisationMember(ctx context.Context, memberID, orgID 
 	})
 
 	if err != nil {
-		s.logger.WithError(err).Error("failed to delete organisation member")
+		s.logger.Error("failed to delete organisation member", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -211,7 +211,7 @@ func (s *Service) FetchOrganisationMemberByID(ctx context.Context, memberID, org
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgMemberNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch organisation member by id")
+		s.logger.Error("failed to fetch organisation member by id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -229,7 +229,7 @@ func (s *Service) FetchOrganisationMemberByUserID(ctx context.Context, userID, o
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgMemberNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch organisation member by user id")
+		s.logger.Error("failed to fetch organisation member by user id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -244,7 +244,7 @@ func (s *Service) FetchInstanceAdminByUserID(ctx context.Context, userID string)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgMemberNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch instance admin by user id")
+		s.logger.Error("failed to fetch instance admin by user id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -259,7 +259,7 @@ func (s *Service) FetchAnyOrganisationAdminByUserID(ctx context.Context, userID 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, datastore.ErrOrgMemberNotFound
 		}
-		s.logger.WithError(err).Error("failed to fetch organisation admin by user id")
+		s.logger.Error("failed to fetch organisation admin by user id", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -271,7 +271,7 @@ func (s *Service) FetchAnyOrganisationAdminByUserID(ctx context.Context, userID 
 func (s *Service) CountInstanceAdminUsers(ctx context.Context) (int64, error) {
 	count, err := s.repo.CountInstanceAdminUsers(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to count instance admin users")
+		s.logger.Error("failed to count instance admin users", "error", err)
 		return 0, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -282,7 +282,7 @@ func (s *Service) CountInstanceAdminUsers(ctx context.Context) (int64, error) {
 func (s *Service) CountOrganisationAdminUsers(ctx context.Context) (int64, error) {
 	count, err := s.repo.CountOrganisationAdminUsers(ctx)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to count organisation admin users")
+		s.logger.Error("failed to count organisation admin users", "error", err)
 		return 0, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -293,7 +293,7 @@ func (s *Service) CountOrganisationAdminUsers(ctx context.Context) (int64, error
 func (s *Service) HasInstanceAdminAccess(ctx context.Context, userID string) (bool, error) {
 	result, err := s.repo.HasInstanceAdminAccess(ctx, common.StringToPgText(userID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to check instance admin access")
+		s.logger.Error("failed to check instance admin access", "error", err)
 		return false, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -304,7 +304,7 @@ func (s *Service) HasInstanceAdminAccess(ctx context.Context, userID string) (bo
 func (s *Service) IsFirstInstanceAdmin(ctx context.Context, userID string) (bool, error) {
 	isFirst, err := s.repo.IsFirstInstanceAdmin(ctx, common.StringToPgText(userID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to check if user is first instance admin")
+		s.logger.Error("failed to check if user is first instance admin", "error", err)
 		return false, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -328,7 +328,7 @@ func (s *Service) LoadOrganisationMembersPaged(ctx context.Context, organisation
 		LimitVal:       pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load organisation members paged")
+		s.logger.Error("failed to load organisation members paged", "error", err)
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -359,7 +359,7 @@ func (s *Service) LoadOrganisationMembersPaged(ctx context.Context, organisation
 			Cursor:         common.StringToPgText(first.UID),
 		})
 		if err2 != nil {
-			s.logger.WithError(err2).Error("failed to count prev organisation members")
+			s.logger.Error("failed to count prev organisation members", "error", err2)
 			return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err2)
 		}
 		prevRowCount.Count = int(count.Int64)
@@ -388,7 +388,7 @@ func (s *Service) LoadUserOrganisationsPaged(ctx context.Context, userID string,
 		LimitVal:  pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
 	if err != nil {
-		s.logger.WithError(err).Error("failed to load user organisations paged")
+		s.logger.Error("failed to load user organisations paged", "error", err)
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
@@ -419,7 +419,7 @@ func (s *Service) LoadUserOrganisationsPaged(ctx context.Context, userID string,
 			Cursor: common.StringToPgText(first.UID),
 		})
 		if err2 != nil {
-			s.logger.WithError(err2).Error("failed to count prev user organisations")
+			s.logger.Error("failed to count prev user organisations", "error", err2)
 			return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, err2)
 		}
 		prevRowCount.Count = int(count.Int64)
@@ -436,7 +436,7 @@ func (s *Service) LoadUserOrganisationsPaged(ctx context.Context, userID string,
 func (s *Service) FindUserProjects(ctx context.Context, userID string) ([]datastore.Project, error) {
 	rows, err := s.repo.FindUserProjects(ctx, common.StringToPgText(userID))
 	if err != nil {
-		s.logger.WithError(err).Error("failed to find user projects")
+		s.logger.Error("failed to find user projects", "error", err)
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 

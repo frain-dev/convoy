@@ -9,7 +9,7 @@ import (
 	_ "embed"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -17,12 +17,12 @@ type SmtpClient interface {
 	SendEmail(emailAddr, subject string, body bytes.Buffer) error
 }
 
-func NewClient(cfg *config.SMTPConfiguration) (SmtpClient, error) {
+func NewClient(cfg *config.SMTPConfiguration, logger log.Logger) (SmtpClient, error) {
 	if *cfg == (config.SMTPConfiguration{}) {
 		return NewNoopClient()
 	}
 
-	return NewSMTP(cfg)
+	return NewSMTP(cfg, logger)
 }
 
 type SMTPClient struct {
@@ -31,33 +31,33 @@ type SMTPClient struct {
 	ssl                                    bool
 }
 
-func NewSMTP(cfg *config.SMTPConfiguration) (SmtpClient, error) {
+func NewSMTP(cfg *config.SMTPConfiguration, logger log.Logger) (SmtpClient, error) {
 	var err error
 
 	errMsg := "Missing SMTP Config - %s"
 	if util.IsStringEmpty(cfg.URL) {
 		err = fmt.Errorf(errMsg, "URL")
-		log.WithError(err).Error()
+		logger.Error("smtp error", "error", err)
 	}
 
 	if cfg.Port == 0 {
 		err = fmt.Errorf(errMsg, "Port")
-		log.WithError(err).Error()
+		logger.Error("smtp error", "error", err)
 	}
 
 	if util.IsStringEmpty(cfg.Username) {
 		err = fmt.Errorf(errMsg, "username")
-		log.WithError(err).Error()
+		logger.Error("smtp error", "error", err)
 	}
 
 	if util.IsStringEmpty(cfg.Password) {
 		err = fmt.Errorf(errMsg, "password")
-		log.WithError(err).Error()
+		logger.Error("smtp error", "error", err)
 	}
 
 	if util.IsStringEmpty(cfg.From) {
 		err = fmt.Errorf(errMsg, "from")
-		log.WithError(err).Error()
+		logger.Error("smtp error", "error", err)
 	}
 
 	return &SMTPClient{

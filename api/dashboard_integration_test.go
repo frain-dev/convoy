@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -24,9 +22,9 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
@@ -36,7 +34,7 @@ import (
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/users"
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type pagedResponse struct {
@@ -360,13 +358,15 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		UID:          "abc",
 		ProjectID:    s.DefaultProject.UID,
 		Name:         "test-app",
-		Secrets:      datastore.Secrets{},
+		Url:          "http://localhost:8889",
+		Status:       datastore.ActiveEndpointStatus,
+		Secrets:      datastore.Secrets{{UID: ulid.Make().String(), Value: "1234"}},
 		SupportEmail: "test@suport.com",
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, endpoint.ProjectID)
 	require.NoError(s.T(), err)
 
@@ -434,7 +434,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		},
 	}
 
-	eventDelivery := event_deliveries.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
+	eventDelivery := event_deliveries.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
 	for i := range eventDeliveries {
 		err = eventDelivery.CreateEventDelivery(ctx, &eventDeliveries[i])
 		require.NoError(s.T(), err)
@@ -678,7 +678,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -747,7 +747,7 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
@@ -836,7 +836,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -867,7 +867,7 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	_, err = endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
@@ -951,7 +951,7 @@ func (s *EndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	endpoint2, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.NotEmpty(s.T(), endpoint2.Secrets[0].ExpiresAt)
@@ -982,7 +982,7 @@ func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
 	var endpoint *datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointId, dbEndpoint.UID)
@@ -1014,7 +1014,7 @@ func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_ActiveStatus() {
 	var endpoint *datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointId, dbEndpoint.UID)
@@ -1110,13 +1110,14 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 		Name:      fmt.Sprintf("TestEndpoint-%s", endpointID),
 		ProjectID: s.DefaultProject.UID,
 		AppID:     appID,
+		Url:       "http://localhost:8889",
+		Status:    datastore.ActiveEndpointStatus,
 		Secrets: datastore.Secrets{
-			{UID: ulid.Make().String()},
+			{UID: ulid.Make().String(), Value: "1234"},
 		},
-		Status: datastore.ActiveEndpointStatus,
 	}
 
-	err := postgres.NewEndpointRepo(s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
+	err := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 
 	body := serialize(`{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`, appID)
@@ -2997,7 +2998,7 @@ func (s *ProjectIntegrationTestSuite) TestDeleteProject() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	projectRepo := projects.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), s.ConvoyApp.A.DB)
 	_, err = projectRepo.FetchProjectByID(context.Background(), project.UID)
 	require.Equal(s.T(), datastore.ErrProjectNotFound, err)
 }
@@ -3114,7 +3115,7 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-	projectRepo := projects.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
+	projectRepo := projects.New(log.New("convoy", log.LevelInfo), s.ConvoyApp.A.DB)
 	g, err := projectRepo.FetchProjectByID(context.Background(), project.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), "project_1", g.Name)
@@ -3289,7 +3290,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	sourceRepo := sources.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
 	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
@@ -3478,7 +3479,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	sourceRepo := sources.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
 	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
@@ -3510,7 +3511,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	sourceRepo := sources.New(log.NewLogger(io.Discard), s.ConvoyApp.A.DB)
+	sourceRepo := sources.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
 	_, err = sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
@@ -3614,7 +3615,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
@@ -3673,7 +3674,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
@@ -3812,7 +3813,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -3863,7 +3864,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -3936,7 +3937,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), s.ConvoyApp.A.DB)
 	_, err = subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.ErrorIs(s.T(), err, datastore.ErrSubscriptionNotFound)
 }
@@ -3992,7 +3993,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := subscriptions.New(log.NewLogger(os.Stdout), s.ConvoyApp.A.DB)
+	subRepo := subscriptions.New(log.New("convoy", log.LevelInfo), s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))

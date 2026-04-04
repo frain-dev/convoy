@@ -18,6 +18,7 @@ func provideReplayEventService(ctrl *gomock.Controller, event *datastore.Event) 
 	return &ReplayEventService{
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
 		Queue:        mocks.NewMockQueuer(ctrl),
+		Logger:       mocks.NewMockLogger(ctrl),
 		Event:        event,
 	}
 }
@@ -61,6 +62,9 @@ func TestReplayEventService_Run(t *testing.T) {
 				eq, _ := es.Queue.(*mocks.MockQueuer)
 				eq.EXPECT().Write(convoy.CreateEventProcessor, gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				ml, _ := es.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "replay_event: failed to write event to the queue", "error", gomock.Any()).Times(1)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to write event to queue",

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/log"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const (
@@ -33,7 +33,7 @@ type Config struct {
 	LicenseKey      string
 	OrgID           string
 	// Logger is optional; when set, read/close errors during requests are logged.
-	Logger log.StdLogger
+	Logger log.Logger
 }
 
 type Client struct {
@@ -47,7 +47,7 @@ type Client struct {
 	apiKey          string
 	licenseKey      string
 	orgID           string
-	logger          log.StdLogger
+	logger          log.Logger
 }
 
 func NewClient(cfg Config) *Client {
@@ -114,10 +114,10 @@ func (c *Client) doRequest(req *http.Request, opName string) ([]byte, error) {
 		}
 		rb, err := io.ReadAll(resp.Body)
 		if err != nil && c.logger != nil {
-			c.logger.WithError(err).Error(opName + ": read response body failed")
+			c.logger.Error(opName+": read response body failed", "error", err)
 		}
 		if closeErr := resp.Body.Close(); closeErr != nil && c.logger != nil {
-			c.logger.WithError(closeErr).Error(opName + ": close response body failed")
+			c.logger.Error(opName+": close response body failed", "error", closeErr)
 		}
 		if err != nil {
 			lastErr = err
