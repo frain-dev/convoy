@@ -26,8 +26,10 @@ func (c *BackupCollector) flushLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Final flush on shutdown
-			c.doFlush(ctx)
+			// Final flush — use fresh context since ctx is cancelled
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			c.doFlush(shutdownCtx)
+			shutdownCancel()
 			return
 		case <-ticker.C:
 			c.doFlush(ctx)
@@ -35,6 +37,11 @@ func (c *BackupCollector) flushLoop(ctx context.Context) {
 	}
 }
 
+// doFlush swaps the buffer and uploads each table's entries to blob storage.
+// At-least-once semantics: if any table fails, the LSN is NOT advanced.
+// On restart, the WAL replays from the last good LSN, re-exporting all tables
+// (including ones that succeeded). This is simpler and safer than re-queuing
+// failed entries, which risks unbounded memory growth.
 func (c *BackupCollector) doFlush(ctx context.Context) {
 	records, swapLSN := c.buffer.Swap()
 	if len(records) == 0 {
@@ -56,7 +63,7 @@ func (c *BackupCollector) doFlush(ctx context.Context) {
 	}
 
 	if allOK && swapLSN > 0 {
-		c.flushedLSN = swapLSN
+		c.flushedLSN.Store(uint64(swapLSN))
 		c.logger.Info(fmt.Sprintf("advanced flushed LSN to %s", swapLSN))
 	}
 }

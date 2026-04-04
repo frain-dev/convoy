@@ -2,11 +2,14 @@ package backup_collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pglogrepl"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,7 +36,7 @@ type BackupCollector struct {
 	replConn   *pgconn.PgConn
 	relations  map[uint32]*pglogrepl.RelationMessage
 	clientLSN  pglogrepl.LSN
-	flushedLSN pglogrepl.LSN
+	flushedLSN atomic.Uint64
 
 	buffer *Buffer
 	store  blobstore.BlobStore
@@ -80,11 +83,12 @@ func (c *BackupCollector) Start(ctx context.Context) error {
 	var restartLSNStr *string
 
 	err = c.pool.QueryRow(ctx,
-		"SELECT restart_lsn::text FROM pg_replication_slots WHERE slot_name = $1",
+		"SELECT restart_lsn::TEXT FROM pg_replication_slots WHERE slot_name = $1",
 		c.slotName,
 	).Scan(&restartLSNStr)
 
-	if err == nil && restartLSNStr != nil {
+	switch {
+	case err == nil && restartLSNStr != nil:
 		// Slot exists — resume from restart LSN
 		startLSN, err = pglogrepl.ParseLSN(*restartLSNStr)
 		if err != nil {
@@ -92,7 +96,11 @@ func (c *BackupCollector) Start(ctx context.Context) error {
 			return fmt.Errorf("parse restart LSN: %w", err)
 		}
 		c.logger.Info(fmt.Sprintf("resuming from existing slot %q at LSN %s", c.slotName, startLSN))
-	} else {
+	case err != nil && !errors.Is(err, pgx.ErrNoRows):
+		// Unexpected error (network, permissions, etc.)
+		c.replConn.Close(ctx)
+		return fmt.Errorf("check replication slot: %w", err)
+	default:
 		// Slot does not exist — create it
 		result, createErr := pglogrepl.CreateReplicationSlot(
 			ctx, c.replConn, c.slotName, "pgoutput",
@@ -117,7 +125,7 @@ func (c *BackupCollector) Start(ctx context.Context) error {
 	}
 
 	c.clientLSN = startLSN
-	c.flushedLSN = startLSN
+	c.flushedLSN.Store(uint64(startLSN))
 
 	err = pglogrepl.StartReplication(
 		ctx, c.replConn, c.slotName, startLSN,
@@ -199,12 +207,14 @@ func (c *BackupCollector) streamLoop(ctx context.Context) {
 				continue
 			}
 			c.logger.Error(fmt.Sprintf("receive WAL message: %v", err))
+			c.cancel() // signal flushLoop to do final flush and exit
 			return
 		}
 
 		if errMsg, ok := rawMsg.(*pgproto3.ErrorResponse); ok {
 			c.logger.Error(fmt.Sprintf("WAL stream error: severity=%s message=%s code=%s",
 				errMsg.Severity, errMsg.Message, string(errMsg.Code)))
+			c.cancel() // signal flushLoop to do final flush and exit
 			return
 		}
 
@@ -243,7 +253,7 @@ func (c *BackupCollector) streamLoop(ctx context.Context) {
 
 func (c *BackupCollector) sendStandbyStatus(ctx context.Context) error {
 	return pglogrepl.SendStandbyStatusUpdate(ctx, c.replConn, pglogrepl.StandbyStatusUpdate{
-		WALWritePosition: c.flushedLSN,
+		WALWritePosition: pglogrepl.LSN(c.flushedLSN.Load()),
 	})
 }
 
