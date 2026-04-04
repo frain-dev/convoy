@@ -34,6 +34,10 @@ type BlobStoreOptions struct {
 
 // NewBlobStoreClient creates a BlobStore from the given storage policy configuration.
 func NewBlobStoreClient(storage *datastore.StoragePolicyConfiguration, logger log.Logger) (BlobStore, error) {
+	if storage == nil {
+		return nil, errors.New("storage policy configuration is nil")
+	}
+
 	switch storage.Type {
 	case datastore.S3:
 		opts := BlobStoreOptions{
