@@ -3,9 +3,11 @@ package backup_jobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -41,6 +43,9 @@ func (s *Service) EnqueueBackupJob(ctx context.Context, projectID string, hourSt
 func (s *Service) ClaimBackupJob(ctx context.Context, workerID string) (*datastore.BackupJob, error) {
 	row, err := s.repo.ClaimBackupJob(ctx, common.StringToPgText(workerID))
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
