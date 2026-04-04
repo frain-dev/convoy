@@ -12,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 )
 
-type RuntimeDeps struct {
+type RuntimeOpts struct {
 	DB            database.Database
 	Redis         redis.UniversalClient
 	Queue         queue.Queuer
@@ -28,7 +28,7 @@ type RuntimeDeps struct {
 	SetSubscriptionTable  func(interface{})
 }
 
-func (d RuntimeDeps) setSubscriptionState(loader, table interface{}) {
+func (d RuntimeOpts) setSubscriptionState(loader, table interface{}) {
 	if d.SetSubscriptionLoader != nil {
 		d.SetSubscriptionLoader(loader)
 	}

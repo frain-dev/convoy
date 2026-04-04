@@ -57,7 +57,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("failed to load configuration: %w", err)
 			}
 
-			runtime, err := dataplane.New(ctx, buildRuntimeDeps(a), cfg, interval)
+			runtime, err := dataplane.New(ctx, buildRuntimeOpts(a), cfg, interval)
 			if err != nil {
 				return err
 			}
@@ -207,8 +207,8 @@ func buildAgentCliConfiguration(cmd *cobra.Command) (*config.Configuration, erro
 	return c, nil
 }
 
-func buildRuntimeDeps(a *cli.App) dataplane.RuntimeDeps {
-	return dataplane.RuntimeDeps{
+func buildRuntimeOpts(a *cli.App) dataplane.RuntimeOpts {
+	return dataplane.RuntimeOpts{
 		DB:            a.DB,
 		Redis:         a.Redis,
 		Queue:         a.Queue,

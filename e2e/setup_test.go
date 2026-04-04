@@ -249,7 +249,7 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	workerCtx, cancelWorker := context.WithCancel(serverCtx)
 	go func() {
 		t.Logf("Starting worker for test: %s", t.Name())
-		worker, err := dataplane.NewWorker(workerCtx, dataplaneDeps(app), cfg)
+		worker, err := dataplane.NewWorker(workerCtx, dataplaneOpts(app), cfg)
 		if err != nil {
 			t.Logf("Worker initialization error for test %s: %v", t.Name(), err)
 			logger.Error("Worker initialization error", "error", err)
@@ -528,8 +528,8 @@ func waitForServer(t *testing.T, url string, timeout time.Duration) {
 	t.Fatalf("Server did not start within %v", timeout)
 }
 
-func dataplaneDeps(app *cli.App) dataplane.RuntimeDeps {
-	return dataplane.RuntimeDeps{
+func dataplaneOpts(app *cli.App) dataplane.RuntimeOpts {
+	return dataplane.RuntimeOpts{
 		DB:            app.DB,
 		Redis:         app.Redis,
 		Queue:         app.Queue,

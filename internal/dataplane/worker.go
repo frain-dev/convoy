@@ -54,10 +54,10 @@ type Worker struct {
 }
 
 // NewWorker initializes all worker components and returns a Worker instance.
-func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) (*Worker, error) {
-	lo := deps.Logger
+func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) (*Worker, error) {
+	lo := opts.Logger
 
-	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, deps.Licenser, deps.Cache)
+	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, opts.Licenser, opts.Cache)
 	if km.IsSet() {
 		if _, err := km.GetCurrentKeyFromCache(); err != nil {
 			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
@@ -82,7 +82,7 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 		return nil, err
 	}
 
-	if !deps.Licenser.AgentExecutionMode() {
+	if !opts.Licenser.AgentExecutionMode() {
 		cfg.WorkerExecutionMode = config.DefaultExecutionMode
 	}
 
@@ -91,12 +91,12 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 		return nil, err
 	}
 
-	opts, err := getQueueOptions(&cfg, redis)
+	queueOpts, err := getQueueOptions(&cfg, redis)
 	if err != nil {
 		return nil, err
 	}
 
-	q := redisQueue.NewQueue(opts)
+	q := redisQueue.NewQueue(queueOpts)
 
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
@@ -105,24 +105,24 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 
 	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo, lvl)
 
-	if deps.JobTracker != nil {
-		if tracker, ok := deps.JobTracker.(worker.JobTracker); ok {
+	if opts.JobTracker != nil {
+		if tracker, ok := opts.JobTracker.(worker.JobTracker); ok {
 			consumer.SetJobTracker(tracker)
 			lo.Info("Job tracker injected into worker consumer")
 		}
 	}
 
-	projectRepo := projects.New(deps.Logger, deps.DB)
-	metaEventRepo := meta_events.New(deps.Logger, deps.DB)
-	endpointRepo := endpoints.New(deps.Logger, deps.DB)
-	eventRepo := events.New(deps.Logger, deps.DB)
-	jobRepo := postgres.NewJobRepo(deps.DB)
-	eventDeliveryRepo := event_deliveries.New(deps.Logger, deps.DB)
-	subRepo := subscriptions.New(deps.Logger, deps.DB)
-	configRepo := configuration.New(deps.Logger, deps.DB)
-	attemptRepo := delivery_attempts.New(deps.Logger, deps.DB)
-	filterRepo := filters.New(deps.Logger, deps.DB)
-	batchRetryRepo := batch_retries.New(lo, deps.DB)
+	projectRepo := projects.New(opts.Logger, opts.DB)
+	metaEventRepo := meta_events.New(opts.Logger, opts.DB)
+	endpointRepo := endpoints.New(opts.Logger, opts.DB)
+	eventRepo := events.New(opts.Logger, opts.DB)
+	jobRepo := postgres.NewJobRepo(opts.DB)
+	eventDeliveryRepo := event_deliveries.New(opts.Logger, opts.DB)
+	subRepo := subscriptions.New(opts.Logger, opts.DB)
+	configRepo := configuration.New(opts.Logger, opts.DB)
+	attemptRepo := delivery_attempts.New(opts.Logger, opts.DB)
+	filterRepo := filters.New(opts.Logger, opts.DB)
+	batchRetryRepo := batch_retries.New(lo, opts.DB)
 
 	rd, err := rdb.NewClientFromRedisConfig(cfg.Redis)
 	if err != nil {
@@ -146,7 +146,7 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, lo, 0)
 	subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
 
-	deps.setSubscriptionState(subscriptionsLoader, subscriptionsTable)
+	opts.setSubscriptionState(subscriptionsLoader, subscriptionsTable)
 
 	err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
 	if err != nil {
@@ -170,15 +170,15 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 	}
 
 	dispatcher, err := net.NewDispatcher(
-		deps.Licenser,
+		opts.Licenser,
 		featureFlag,
 		net.LoggerOption(lo),
-		net.TracerOption(deps.TracerBackend),
+		net.TracerOption(opts.TracerBackend),
 		net.DetailedTraceOption(true),
 		net.ProxyOption(cfg.Server.HTTP.HttpProxy, cfg.Server.HTTP.NoProxy),
 		net.AllowListOption(cfg.Dispatcher.AllowList),
 		net.BlockListOption(cfg.Dispatcher.BlockList),
-		net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, deps.Licenser, caCertTLSCfg),
+		net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, opts.Licenser, caCertTLSCfg),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new net dispatcher: %w", err)
@@ -243,14 +243,14 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 						return breakerErr
 					}
 
-					orgRepo := organisations.New(lo, deps.DB)
+					orgRepo := organisations.New(lo, opts.DB)
 					ownerEmail := ""
 					if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
-						if owner, err := users.New(deps.Logger, deps.DB).FindUserByID(ctx, org.OwnerID); err == nil {
+						if owner, err := users.New(opts.Logger, opts.DB).FindUserByID(ctx, org.OwnerID); err == nil {
 							ownerEmail = owner.Email
 						}
 					}
-					_ = EnqueueCircuitBreakerEmails(deps.Queue, lo, project, endpoint, ownerEmail, b.FailureRate)
+					_ = EnqueueCircuitBreakerEmails(opts.Queue, lo, project, endpoint, ownerEmail, b.FailureRate)
 
 				default:
 					return fmt.Errorf("unsupported circuit breaker notification type: %s", n)
@@ -268,13 +268,13 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 	}
 
 	var ret retention.Retentioner
-	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && deps.Licenser.RetentionPolicy() {
+	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && opts.Licenser.RetentionPolicy() {
 		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
 		if _err != nil {
 			return nil, fmt.Errorf("failed to parse retention policy: %w", _err)
 		}
 
-		ret, err = retention.NewPartitionRetentionPolicy(deps.DB, lo, policy)
+		ret, err = retention.NewPartitionRetentionPolicy(opts.DB, lo, policy)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create retention policy: %w", err)
 		}
@@ -282,7 +282,7 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 		ret.Start(ctx, time.Minute)
 	} else {
 		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
-		ret = retention.NewDeleteRetentionPolicy(deps.DB, lo)
+		ret = retention.NewDeleteRetentionPolicy(opts.DB, lo)
 	}
 
 	channels := make(map[string]task.EventChannel)
@@ -291,22 +291,22 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
-	oauth2TokenService := services.NewOAuth2TokenService(deps.Cache, lo)
+	oauth2TokenService := services.NewOAuth2TokenService(opts.Cache, lo)
 
 	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
 		EndpointRepo:               endpointRepo,
 		EventDeliveryRepo:          eventDeliveryRepo,
-		Licenser:                   deps.Licenser,
+		Licenser:                   opts.Licenser,
 		ProjectRepo:                projectRepo,
-		Queue:                      deps.Queue,
+		Queue:                      opts.Queue,
 		RateLimiter:                rateLimiter,
 		Dispatcher:                 dispatcher,
 		AttemptsRepo:               attemptRepo,
 		CircuitBreakerManager:      circuitBreakerManager,
 		FeatureFlag:                featureFlag,
-		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(deps.DB),
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(deps.DB),
-		TracerBackend:              deps.TracerBackend,
+		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
+		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
+		TracerBackend:              opts.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,
 		Logger:                     lo,
 	}
@@ -317,14 +317,14 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 		EndpointRepo:       endpointRepo,
 		EventRepo:          eventRepo,
 		ProjectRepo:        projectRepo,
-		EventQueue:         deps.Queue,
+		EventQueue:         opts.Queue,
 		SubRepo:            subRepo,
 		FilterRepo:         filterRepo,
-		Licenser:           deps.Licenser,
-		TracerBackend:      deps.TracerBackend,
+		Licenser:           opts.Licenser,
+		TracerBackend:      opts.TracerBackend,
 		OAuth2TokenService: oauth2TokenService,
 		FeatureFlag:        featureFlag,
-		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(deps.DB),
+		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(opts.DB),
 		Logger:             lo,
 	}
 
@@ -333,7 +333,7 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps), newTelemetry)
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
 
-	if deps.Licenser.RetentionPolicy() {
+	if opts.Licenser.RetentionPolicy() {
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret, lo), nil)
 		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd.Client(), lo), nil)
 	}
@@ -344,46 +344,46 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 		EventRepo:                  eventRepo,
 		ProjectRepo:                projectRepo,
 		EventDeliveryRepo:          eventDeliveryRepo,
-		EventQueue:                 deps.Queue,
+		EventQueue:                 opts.Queue,
 		SubRepo:                    subRepo,
 		FilterRepo:                 filterRepo,
-		Licenser:                   deps.Licenser,
-		TracerBackend:              deps.TracerBackend,
+		Licenser:                   opts.Licenser,
+		TracerBackend:              opts.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,
 		FeatureFlag:                featureFlag,
-		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(deps.DB),
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(deps.DB),
+		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
+		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
 		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(deps.DB, deps.Queue, rd, lo), nil)
+	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(opts.DB, opts.Queue, rd, lo), nil)
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
-	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, deps.DB, rd), nil)
+	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, opts.DB, rd), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
-	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && deps.Licenser.AdvancedWebhookFiltering() {
+	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && opts.Licenser.AdvancedWebhookFiltering() {
 		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd, lo), nil)
 		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo, lo), nil)
 	}
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, deps.TracerBackend, lo), nil)
-	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(deps.Queue, rd, lo), nil)
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, opts.TracerBackend, lo), nil)
+	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(opts.Queue, rd, lo), nil)
 
 	//nolint:gocritic
-	// consumer.RegisterHandlers(convoy.RefreshMetricsMaterializedViews, task.RefreshMetricsMaterializedViews(deps.DB, rd), nil)
+	// consumer.RegisterHandlers(convoy.RefreshMetricsMaterializedViews, task.RefreshMetricsMaterializedViews(opts.DB, rd), nil)
 
-	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, deps.Queue, lo), nil)
+	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, opts.Queue, lo), nil)
 
 	bulkOnboardDeps := task.BulkOnboardDeps{
 		EndpointRepo:               endpointRepo,
 		SubRepo:                    subRepo,
 		ProjectRepo:                projectRepo,
-		Licenser:                   deps.Licenser,
+		Licenser:                   opts.Licenser,
 		FeatureFlag:                featureFlag,
-		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(deps.DB),
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(deps.DB),
+		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
+		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
 		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
@@ -391,10 +391,10 @@ func NewWorker(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) 
 	var billingClient billing.Client
 	if cfg.Billing.Enabled {
 		billingClient = billing.NewClient(cfg.Billing)
-		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(deps.DB, billingClient, rd, lo), nil)
+		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, rd, lo), nil)
 	}
 
-	err = metrics.RegisterQueueMetrics(deps.Queue, deps.DB, circuitBreakerManager)
+	err = metrics.RegisterQueueMetrics(opts.Queue, opts.DB, circuitBreakerManager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to register queue metrics: %w", err)
 	}

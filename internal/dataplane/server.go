@@ -16,17 +16,17 @@ import (
 	"github.com/frain-dev/convoy/internal/users"
 )
 
-func StartServer(deps RuntimeDeps, cfg config.Configuration) error {
-	lo := deps.Logger
+func StartServer(opts RuntimeOpts, cfg config.Configuration) error {
+	lo := opts.Logger
 
 	start := time.Now()
 	lo.Info("Starting Convoy data plane")
 
-	userRepo := users.New(deps.Logger, deps.DB)
-	apiKeyRepo := api_keys.New(deps.Logger, deps.DB)
-	configRepo := configuration.New(deps.Logger, deps.DB)
-	portalLinkRepo := portal_links.New(deps.Logger, deps.DB)
-	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, deps.Cache, deps.Logger)
+	userRepo := users.New(opts.Logger, opts.DB)
+	apiKeyRepo := api_keys.New(opts.Logger, opts.DB)
+	configRepo := configuration.New(opts.Logger, opts.DB)
+	portalLinkRepo := portal_links.New(opts.Logger, opts.DB)
+	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, opts.Cache, opts.Logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize realm chain: %w", err)
 	}
@@ -37,13 +37,13 @@ func StartServer(deps RuntimeDeps, cfg config.Configuration) error {
 	evHandler, err := api.NewApplicationHandler(
 		&types.APIOptions{
 			FFlag:      flag,
-			DB:         deps.DB,
-			Queue:      deps.Queue,
+			DB:         opts.DB,
+			Queue:      opts.Queue,
 			Logger:     lo,
-			Cache:      deps.Cache,
-			Rate:       deps.Rate,
-			Redis:      deps.Redis,
-			Licenser:   deps.Licenser,
+			Cache:      opts.Cache,
+			Rate:       opts.Rate,
+			Redis:      opts.Redis,
+			Licenser:   opts.Licenser,
 			Cfg:        cfg,
 			ConfigRepo: configRepo,
 		})
@@ -57,7 +57,7 @@ func StartServer(deps RuntimeDeps, cfg config.Configuration) error {
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
-		deps.Logger.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+		opts.Logger.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 		srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 		return nil
 	}

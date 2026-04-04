@@ -10,20 +10,20 @@ import (
 )
 
 type Runtime struct {
-	deps     RuntimeDeps
+	deps     RuntimeOpts
 	cfg      config.Configuration
 	interval int
 	worker   *Worker
 }
 
-func New(ctx context.Context, deps RuntimeDeps, cfg config.Configuration, interval int) (*Runtime, error) {
-	worker, err := NewWorker(ctx, deps, cfg)
+func New(ctx context.Context, opts RuntimeOpts, cfg config.Configuration, interval int) (*Runtime, error) {
+	worker, err := NewWorker(ctx, opts, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing data plane worker component: %w", err)
 	}
 
 	return &Runtime{
-		deps:     deps,
+		deps:     opts,
 		cfg:      cfg,
 		interval: interval,
 		worker:   worker,

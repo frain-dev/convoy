@@ -14,13 +14,13 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func StartIngest(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) error {
-	sourceRepo := sources.New(deps.Logger, deps.DB)
-	projectRepo := projects.New(deps.Logger, deps.DB)
-	endpointRepo := endpoints.New(deps.Logger, deps.DB)
-	configRepo := configuration.New(deps.Logger, deps.DB)
+func StartIngest(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) error {
+	sourceRepo := sources.New(opts.Logger, opts.DB)
+	projectRepo := projects.New(opts.Logger, opts.DB)
+	endpointRepo := endpoints.New(opts.Logger, opts.DB)
+	configRepo := configuration.New(opts.Logger, opts.DB)
 
-	lo := deps.Logger
+	lo := opts.Logger
 
 	_, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
@@ -37,7 +37,7 @@ func StartIngest(ctx context.Context, deps RuntimeDeps, cfg config.Configuration
 
 	instCfg, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
-		deps.Logger.Error("Failed to load configuration", "error", err)
+		opts.Logger.Error("Failed to load configuration", "error", err)
 	}
 
 	var host string
@@ -50,14 +50,14 @@ func StartIngest(ctx context.Context, deps RuntimeDeps, cfg config.Configuration
 		return err
 	}
 
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, deps.Queue, lo, rateLimiter, deps.Licenser, host, endpointRepo)
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, opts.Queue, lo, rateLimiter, opts.Licenser, host, endpointRepo)
 	if err != nil {
 		return err
 	}
 
 	go ingest.Run()
 
-	deps.Logger.Info("Starting Convoy Ingester")
+	opts.Logger.Info("Starting Convoy Ingester")
 
 	return nil
 }
