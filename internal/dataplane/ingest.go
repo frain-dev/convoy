@@ -6,7 +6,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/endpoints"
-	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
@@ -15,13 +14,13 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration) error {
-	sourceRepo := sources.New(a.Logger, a.DB)
-	projectRepo := projects.New(a.Logger, a.DB)
-	endpointRepo := endpoints.New(a.Logger, a.DB)
-	configRepo := configuration.New(a.Logger, a.DB)
+func StartIngest(ctx context.Context, deps RuntimeDeps, cfg config.Configuration) error {
+	sourceRepo := sources.New(deps.Logger, deps.DB)
+	projectRepo := projects.New(deps.Logger, deps.DB)
+	endpointRepo := endpoints.New(deps.Logger, deps.DB)
+	configRepo := configuration.New(deps.Logger, deps.DB)
 
-	lo := a.Logger
+	lo := deps.Logger
 
 	_, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
@@ -38,7 +37,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 
 	instCfg, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
-		a.Logger.Error("Failed to load configuration", "error", err)
+		deps.Logger.Error("Failed to load configuration", "error", err)
 	}
 
 	var host string
@@ -51,14 +50,14 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		return err
 	}
 
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, lo, rateLimiter, a.Licenser, host, endpointRepo)
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, deps.Queue, lo, rateLimiter, deps.Licenser, host, endpointRepo)
 	if err != nil {
 		return err
 	}
 
 	go ingest.Run()
 
-	a.Logger.Info("Starting Convoy Ingester")
+	deps.Logger.Info("Starting Convoy Ingester")
 
 	return nil
 }

@@ -10,24 +10,23 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
-	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
 )
 
-func StartServer(a *cli.App, cfg config.Configuration) error {
-	lo := a.Logger
+func StartServer(deps RuntimeDeps, cfg config.Configuration) error {
+	lo := deps.Logger
 
 	start := time.Now()
 	lo.Info("Starting Convoy data plane")
 
-	userRepo := users.New(a.Logger, a.DB)
-	apiKeyRepo := api_keys.New(a.Logger, a.DB)
-	configRepo := configuration.New(a.Logger, a.DB)
-	portalLinkRepo := portal_links.New(a.Logger, a.DB)
-	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
+	userRepo := users.New(deps.Logger, deps.DB)
+	apiKeyRepo := api_keys.New(deps.Logger, deps.DB)
+	configRepo := configuration.New(deps.Logger, deps.DB)
+	portalLinkRepo := portal_links.New(deps.Logger, deps.DB)
+	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, deps.Cache, deps.Logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize realm chain: %w", err)
 	}
@@ -38,13 +37,13 @@ func StartServer(a *cli.App, cfg config.Configuration) error {
 	evHandler, err := api.NewApplicationHandler(
 		&types.APIOptions{
 			FFlag:      flag,
-			DB:         a.DB,
-			Queue:      a.Queue,
+			DB:         deps.DB,
+			Queue:      deps.Queue,
 			Logger:     lo,
-			Cache:      a.Cache,
-			Rate:       a.Rate,
-			Redis:      a.Redis,
-			Licenser:   a.Licenser,
+			Cache:      deps.Cache,
+			Rate:       deps.Rate,
+			Redis:      deps.Redis,
+			Licenser:   deps.Licenser,
 			Cfg:        cfg,
 			ConfigRepo: configRepo,
 		})
@@ -58,7 +57,7 @@ func StartServer(a *cli.App, cfg config.Configuration) error {
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
-		a.Logger.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+		deps.Logger.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 		srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 		return nil
 	}

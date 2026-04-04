@@ -6,25 +6,24 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 )
 
 type Runtime struct {
-	app      *cli.App
+	deps     RuntimeDeps
 	cfg      config.Configuration
 	interval int
 	worker   *Worker
 }
 
-func New(ctx context.Context, app *cli.App, cfg config.Configuration, interval int) (*Runtime, error) {
-	worker, err := NewWorker(ctx, app, cfg)
+func New(ctx context.Context, deps RuntimeDeps, cfg config.Configuration, interval int) (*Runtime, error) {
+	worker, err := NewWorker(ctx, deps, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing data plane worker component: %w", err)
 	}
 
 	return &Runtime{
-		app:      app,
+		deps:     deps,
 		cfg:      cfg,
 		interval: interval,
 		worker:   worker,
@@ -49,16 +48,16 @@ func (r *Runtime) Run(ctx context.Context) error {
 	case err := <-workerErr:
 		return fmt.Errorf("worker failed to start: %w", err)
 	case <-workerReady:
-		r.app.Logger.Info("Worker is ready")
+		r.deps.Logger.Info("Worker is ready")
 	case <-time.After(30 * time.Second):
 		return fmt.Errorf("worker failed to become ready within 30 seconds")
 	}
 
-	if err := StartIngest(ctx, r.app, r.cfg); err != nil {
+	if err := StartIngest(ctx, r.deps, r.cfg); err != nil {
 		return fmt.Errorf("error starting data plane ingest component: %w", err)
 	}
 
-	if err := StartServer(r.app, r.cfg); err != nil {
+	if err := StartServer(r.deps, r.cfg); err != nil {
 		return fmt.Errorf("error starting data plane server component: %w", err)
 	}
 
