@@ -30,21 +30,7 @@ jobs:
 
       - name: Get changed SQL files
         id: changed-files
-        run: |
-          # Get list of changed SQL files in this PR
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.base_ref }}...HEAD -- 'sql/*.sql' || echo "")
-
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No SQL files changed"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-          else
-            echo "Changed SQL files:"
-            echo "$CHANGED_FILES"
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            # Convert newlines to spaces for squawk
-            FILES_LIST=$(echo "$CHANGED_FILES" | tr '\n' ' ')
-            echo "files=$FILES_LIST" >> $GITHUB_OUTPUT
-          fi
+        run: ./scripts/ci/get-changed-sql-files.sh "${{ github.base_ref }}"
 
       - name: Validate migration structure
         if: steps.changed-files.outputs.has_changes == 'true'
