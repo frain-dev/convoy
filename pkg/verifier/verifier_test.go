@@ -158,11 +158,12 @@ func Test_HmacVerifier_VerifyRequest(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			// Arrange.
-			v := NewHmacVerifier(tc.opts)
+			v, err := NewHmacVerifier(tc.opts)
+			require.NoError(t, err)
 			req := tc.requestFn(t)
 
 			// Assert.
-			err := v.VerifyRequest(req, tc.payload)
+			err = v.VerifyRequest(req, tc.payload)
 
 			// Act.
 			require.ErrorIs(t, err, tc.expectedError)
