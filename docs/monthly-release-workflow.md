@@ -2,6 +2,21 @@
 
 This document explains how the monthly binary release process trails Cloud by one month while still allowing guarded patch promotions.
 
+## Local Script Entry Points
+
+The GitHub Actions workflows now call reusable scripts under `scripts/` so the same logic can be exercised locally:
+
+```text
+./scripts/release-workflow.sh should-run --event-name schedule --today 2026-04-30
+./scripts/release-workflow.sh monthly-plan --today 2026-04-30
+./scripts/release-workflow.sh resolve-target --release-cutoff-tag release-cutoff-2026-03 --version 26.3.0
+./scripts/release-workflow.sh read-manifest
+./scripts/release-workflow.sh plan-patch --release-line 26.3
+./scripts/release-workflow.sh validate-patch --commit-sha <sha> --base-tag v26.3.0 --next-cutoff-tag release-cutoff-2026-04
+./scripts/calver.sh 26 3
+./scripts/tag-release.sh 26.3.0 <sha>
+```
+
 ## Monthly Release Flow
 
 ```text

@@ -18,8 +18,16 @@ EOF
 }
 
 if [ "$#" -eq 0 ]; then
-  YEAR=$(date -u +%y)
-  MONTH=$(date -u +%-m)
+  YEAR="$(python3 - <<'PY'
+from datetime import datetime, timezone
+print(datetime.now(timezone.utc).strftime("%y"))
+PY
+)"
+  MONTH="$(python3 - <<'PY'
+from datetime import datetime, timezone
+print(datetime.now(timezone.utc).month)
+PY
+)"
 elif [ "$#" -eq 2 ]; then
   YEAR="$1"
   MONTH="$2"
