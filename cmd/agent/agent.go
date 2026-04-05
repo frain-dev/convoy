@@ -5,24 +5,12 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/api"
-	"github.com/frain-dev/convoy/api/types"
-	"github.com/frain-dev/convoy/auth/realm_chain"
-	ingestSrv "github.com/frain-dev/convoy/cmd/ingest"
-	workerSrv "github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/api_keys"
-	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/dataplane"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/internal/pkg/server"
-	"github.com/frain-dev/convoy/internal/portal_links"
-	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -69,49 +57,24 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("failed to load configuration: %w", err)
 			}
 
-			// start sync configuration from the database.
-			go memorystore.DefaultStore.Sync(ctx, interval)
-
-			worker, err := workerSrv.NewWorker(ctx, a, cfg)
+			runtime, err := dataplane.New(ctx, buildRuntimeOpts(a), cfg, interval)
 			if err != nil {
-				a.Logger.Errorf("Error initializing data plane worker component, err: %v", err)
 				return err
 			}
 
-			workerReady := make(chan struct{})
-			workerErr := make(chan error, 1)
-
+			runtimeErr := make(chan error, 1)
 			go func() {
-				if err := worker.Run(ctx, workerReady); err != nil {
-					if ctx.Err() == nil {
-						workerErr <- err
-					}
-				}
+				runtimeErr <- runtime.Run(ctx)
 			}()
 
 			select {
-			case err := <-workerErr:
-				return fmt.Errorf("worker failed to start: %w", err)
-			case <-workerReady:
-				a.Logger.Info("Worker is ready")
-			case <-time.After(30 * time.Second):
-				return fmt.Errorf("worker failed to become ready within 30 seconds")
-			}
-
-			err = ingestSrv.StartIngest(cmd.Context(), a, cfg, interval)
-			if err != nil {
-				a.Logger.Errorf("Error starting data plane ingest component: %v", err)
-				return err
-			}
-
-			err = startServerComponent(ctx, a)
-			if err != nil {
-				a.Logger.Errorf("Error starting data plane server component: %v", err)
-				return err
-			}
-
-			select {
 			case <-quit:
+				cancel()
+				return nil
+			case err := <-runtimeErr:
+				if err != nil && err != context.Canceled {
+					return err
+				}
 				return nil
 			case <-ctx.Done():
 			}
@@ -136,67 +99,6 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&executionMode, "mode", "", "Execution Mode (one of events, retry and default)")
 
 	return cmd
-}
-
-func startServerComponent(_ context.Context, a *cli.App) error {
-	lo := a.Logger
-
-	cfg, err := config.Get()
-	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
-	}
-
-	start := time.Now()
-	lo.Info("Starting Convoy data plane")
-
-	userRepo := users.New(a.Logger, a.DB)
-	apiKeyRepo := api_keys.New(a.Logger, a.DB)
-	configRepo := configuration.New(a.Logger, a.DB)
-	portalLinkRepo := portal_links.New(a.Logger, a.DB)
-	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
-	if err != nil {
-		return fmt.Errorf("failed to initialize realm chain: %w", err)
-	}
-
-	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
-
-	srv := server.NewServer(cfg.Server.HTTP.AgentPort, func() {})
-
-	evHandler, err := api.NewApplicationHandler(
-		&types.APIOptions{
-			FFlag:      flag,
-			DB:         a.DB,
-			Queue:      a.Queue,
-			Logger:     lo,
-			Cache:      a.Cache,
-			Rate:       a.Rate,
-			Redis:      a.Redis,
-			Licenser:   a.Licenser,
-			Cfg:        cfg,
-			ConfigRepo: configRepo,
-		})
-	if err != nil {
-		return fmt.Errorf("failed to create application handler: %w", err)
-	}
-
-	srv.SetHandler(evHandler.BuildDataPlaneRoutes())
-
-	lo.Infof("Started convoy server in %s", time.Since(start))
-
-	httpConfig := cfg.Server.HTTP
-	if httpConfig.SSL {
-		a.Logger.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
-		srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
-		return nil
-	}
-
-	lo.Infof("Starting Convoy Agent on port %v", cfg.Server.HTTP.AgentPort)
-
-	go func() {
-		srv.Listen()
-	}()
-
-	return nil
 }
 
 func buildAgentCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
@@ -303,4 +205,17 @@ func buildAgentCliConfiguration(cmd *cobra.Command) (*config.Configuration, erro
 	}
 
 	return c, nil
+}
+
+func buildRuntimeOpts(a *cli.App) dataplane.RuntimeOpts {
+	return dataplane.RuntimeOpts{
+		DB:            a.DB,
+		Redis:         a.Redis,
+		Queue:         a.Queue,
+		Logger:        a.Logger,
+		Cache:         a.Cache,
+		Rate:          a.Rate,
+		Licenser:      a.Licenser,
+		TracerBackend: a.TracerBackend,
+	}
 }
