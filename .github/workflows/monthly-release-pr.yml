@@ -22,7 +22,19 @@ jobs:
     steps:
       - name: Check if last day of month (schedule only)
         id: check-day
-        run: ./scripts/release-workflow.sh should-run --event-name "${{ github.event_name }}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "$(date -u -d "tomorrow" +%d)" != "01" ]; then
+              echo "Not the last day of the month; skipping release."
+              echo "should_run=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "Last day of month; proceeding with release."
+              echo "should_run=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "Manual or PR trigger; proceeding with release."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         if: ${{ steps.check-day.outputs.should_run == 'true' }}
@@ -38,16 +50,63 @@ jobs:
       - name: Build release plan
         id: release-plan
         if: ${{ steps.check-day.outputs.should_run == 'true' }}
-        run: ./scripts/release-workflow.sh monthly-plan >> "$GITHUB_OUTPUT"
+        run: |
+          CURRENT_YEAR="$(date -u +%Y)"
+          CURRENT_MONTH_PADDED="$(date -u +%m)"
+          PREVIOUS_MONTH_DATE="$(date -u -d "$(date -u +%Y-%m-01) -1 day" +%Y-%m-%d)"
+          RELEASE_YEAR_FULL="$(date -u -d "${PREVIOUS_MONTH_DATE}" +%Y)"
+          RELEASE_YEAR="$(date -u -d "${PREVIOUS_MONTH_DATE}" +%y)"
+          RELEASE_MONTH="$(date -u -d "${PREVIOUS_MONTH_DATE}" +%-m)"
+          RELEASE_MONTH_PADDED="$(date -u -d "${PREVIOUS_MONTH_DATE}" +%m)"
+          RELEASE_VERSION="$(./scripts/calver.sh "${RELEASE_YEAR}" "${RELEASE_MONTH}")"
+          CURRENT_CUTOFF_TAG="release-cutoff-${CURRENT_YEAR}-${CURRENT_MONTH_PADDED}"
+          RELEASE_CUTOFF_TAG="release-cutoff-${RELEASE_YEAR_FULL}-${RELEASE_MONTH_PADDED}"
+          RELEASE_LINE="${RELEASE_YEAR}.${RELEASE_MONTH}"
+
+          echo "version=${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "release_line=${RELEASE_LINE}" >> "$GITHUB_OUTPUT"
+          echo "current_cutoff_tag=${CURRENT_CUTOFF_TAG}" >> "$GITHUB_OUTPUT"
+          echo "release_cutoff_tag=${RELEASE_CUTOFF_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Create current month cutoff tag
         if: ${{ steps.check-day.outputs.should_run == 'true' }}
-        run: ./scripts/release-workflow.sh ensure-cutoff-tag --tag "${{ steps.release-plan.outputs.current_cutoff_tag }}"
+        run: |
+          CURRENT_CUTOFF_TAG="${{ steps.release-plan.outputs.current_cutoff_tag }}"
+          CURRENT_SHA="$(git rev-parse HEAD)"
+
+          if git rev-parse --verify "refs/tags/${CURRENT_CUTOFF_TAG}" >/dev/null 2>&1; then
+            echo "Cutoff tag ${CURRENT_CUTOFF_TAG} already exists."
+            exit 0
+          fi
+
+          git tag "${CURRENT_CUTOFF_TAG}" "${CURRENT_SHA}"
+          git push origin "refs/tags/${CURRENT_CUTOFF_TAG}"
 
       - name: Resolve release target
         id: release-target
         if: ${{ steps.check-day.outputs.should_run == 'true' }}
-        run: ./scripts/release-workflow.sh resolve-target --release-cutoff-tag "${{ steps.release-plan.outputs.release_cutoff_tag }}" --version "${{ steps.release-plan.outputs.version }}" >> "$GITHUB_OUTPUT"
+        run: |
+          RELEASE_CUTOFF_TAG="${{ steps.release-plan.outputs.release_cutoff_tag }}"
+          VERSION="${{ steps.release-plan.outputs.version }}"
+
+          if ! git rev-parse --verify "refs/tags/${RELEASE_CUTOFF_TAG}" >/dev/null 2>&1; then
+            echo "No prior cutoff tag ${RELEASE_CUTOFF_TAG}; bootstrap month only."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git rev-parse --verify "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "Release tag v${VERSION} already exists; skipping."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          TARGET_SHA="$(git rev-list -n 1 "${RELEASE_CUTOFF_TAG}")"
+          PREVIOUS_STABLE_TAG="$(git tag --merged "${TARGET_SHA}" --list 'v*' --sort=-version:refname | sed -n '1p')"
+
+          echo "target_sha=${TARGET_SHA}" >> "$GITHUB_OUTPUT"
+          echo "previous_stable_tag=${PREVIOUS_STABLE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "should_run=true" >> "$GITHUB_OUTPUT"
 
       - name: Install git-cliff
         if: ${{ steps.release-target.outputs.should_run == 'true' }}
@@ -57,11 +116,31 @@ jobs:
 
       - name: Update changelog
         if: ${{ steps.release-target.outputs.should_run == 'true' }}
-        run: ./scripts/release-workflow.sh render-changelog --version "${{ steps.release-plan.outputs.version }}" --target-sha "${{ steps.release-target.outputs.target_sha }}" --previous-stable-tag "${{ steps.release-target.outputs.previous_stable_tag }}"
+        run: |
+          VERSION="${{ steps.release-plan.outputs.version }}"
+          TARGET_SHA="${{ steps.release-target.outputs.target_sha }}"
+          PREVIOUS_STABLE_TAG="${{ steps.release-target.outputs.previous_stable_tag }}"
+
+          if [ -n "${PREVIOUS_STABLE_TAG}" ]; then
+            git-cliff "${PREVIOUS_STABLE_TAG}..${TARGET_SHA}" --config .git-cliff.toml --tag "v${VERSION}" --prepend CHANGELOG.md
+          else
+            git-cliff "${TARGET_SHA}" --config .git-cliff.toml --tag "v${VERSION}" --prepend CHANGELOG.md
+          fi
 
       - name: Write release manifest
         if: ${{ steps.release-target.outputs.should_run == 'true' }}
-        run: ./scripts/release-workflow.sh write-manifest --version "${{ steps.release-plan.outputs.version }}" --release-line "${{ steps.release-plan.outputs.release_line }}" --target-sha "${{ steps.release-target.outputs.target_sha }}" --cutoff-tag "${{ steps.release-plan.outputs.release_cutoff_tag }}" --next-cutoff-tag "${{ steps.release-plan.outputs.current_cutoff_tag }}" --previous-stable-tag "${{ steps.release-target.outputs.previous_stable_tag }}"
+        run: |
+          cat <<EOF > .github/release-manifest.json
+          {
+            "version": "${{ steps.release-plan.outputs.version }}",
+            "release_line": "${{ steps.release-plan.outputs.release_line }}",
+            "target_sha": "${{ steps.release-target.outputs.target_sha }}",
+            "cutoff_tag": "${{ steps.release-plan.outputs.release_cutoff_tag }}",
+            "next_cutoff_tag": "${{ steps.release-plan.outputs.current_cutoff_tag }}",
+            "previous_stable_tag": "${{ steps.release-target.outputs.previous_stable_tag }}",
+            "generated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
 
       - name: Create release PR
         if: ${{ steps.release-target.outputs.should_run == 'true' }}
@@ -91,7 +170,17 @@ jobs:
 
       - name: Read release manifest
         id: manifest
-        run: ./scripts/release-workflow.sh read-manifest >> "$GITHUB_OUTPUT"
+        run: |
+          VERSION="$(jq -r '.version // empty' .github/release-manifest.json)"
+          TARGET_SHA="$(jq -r '.target_sha // empty' .github/release-manifest.json)"
+
+          if [ -z "$VERSION" ] || [ -z "$TARGET_SHA" ]; then
+            echo "Failed to extract release metadata from .github/release-manifest.json"
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "target_sha=${TARGET_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Trigger tag-stable-release workflow
         env:
