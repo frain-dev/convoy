@@ -25,6 +25,11 @@ var (
 	ErrInvalidHeaderStructure             = errors.New("invalid header structure")
 	ErrInvalidAuthLength                  = errors.New("invalid basic auth length")
 	ErrInvalidEncoding                    = errors.New("invalid header encoding")
+	ErrMissingHmacOptions                 = errors.New("missing HMAC options")
+	ErrMissingHeader                      = errors.New("header cannot be empty")
+	ErrMissingHash                        = errors.New("hash algorithm cannot be empty")
+	ErrMissingSecret                      = errors.New("secret cannot be empty")
+	ErrMissingEncoding                    = errors.New("encoding cannot be empty")
 )
 
 type Verifier interface {
@@ -43,10 +48,24 @@ type HmacVerifier struct {
 	opts *HmacOptions
 }
 
-func NewHmacVerifier(opts *HmacOptions) *HmacVerifier {
-	// TODO(subomi): assert that they're all non-nil values.
+func NewHmacVerifier(opts *HmacOptions) (*HmacVerifier, error) {
+	if opts == nil {
+		return nil, ErrMissingHmacOptions
+	}
+	if opts.Header == "" && opts.GetSignature == nil {
+		return nil, ErrMissingHeader
+	}
+	if opts.Hash == "" {
+		return nil, ErrMissingHash
+	}
+	if opts.Secret == "" {
+		return nil, ErrMissingSecret
+	}
+	if opts.Encoding == "" {
+		return nil, ErrMissingEncoding
+	}
 
-	return &HmacVerifier{opts}
+	return &HmacVerifier{opts}, nil
 }
 
 func (hV *HmacVerifier) VerifyRequest(r *http.Request, payload []byte) error {
