@@ -7,6 +7,10 @@ on:
         description: "CalVer version to tag (e.g., 26.2.0)"
         required: true
         type: string
+      target_sha:
+        description: "Commit SHA to tag for this release"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -24,16 +28,10 @@ jobs:
         run: git fetch --tags --force
 
       - name: Log version
-        run: 'echo "Tagging version: v${{ inputs.version }} "'
+        run: |
+          echo "Tagging version: v${{ inputs.version }}"
+          echo "Target SHA: ${{ inputs.target_sha }}"
 
       - name: Create and push tag
         run: |
-          TAG="v${{ inputs.version }}"
-          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists; exiting."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
+          ./scripts/tag-release.sh "${{ inputs.version }}" "${{ inputs.target_sha }}"
