@@ -176,3 +176,42 @@ jobs:
           docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }} \
             ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}-amd64 \
             ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}-arm64
+
+  sbom:
+    name: SBOM Generation
+    runs-on: ubuntu-latest
+    needs: [build-and-push-default, set-image-tag]
+    permissions:
+      contents: read
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ env.DOCKER_HUB_TOKEN }}
+
+      - name: Resolve image reference
+        id: image
+        run: |
+          if [ "${{ needs.set-image-tag.outputs.release_kind }}" = "tag" ]; then
+            echo "ref=${{ env.IMAGE_NAME }}:${{ needs.set-image-tag.outputs.image_tag }}" >> "$GITHUB_OUTPUT"
+            echo "slug=${{ needs.set-image-tag.outputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}" >> "$GITHUB_OUTPUT"
+            echo "slug=main-${{ needs.set-image-tag.outputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ${{ steps.image.outputs.ref }}
+          format: spdx-json
+          output-file: convoy.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sbom-spdx-${{ steps.image.outputs.slug }}
+          path: convoy.spdx.json
