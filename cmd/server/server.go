@@ -197,7 +197,6 @@ func StartConvoyServer(a *cli.App) error {
 
 		s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
 		s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
-		s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.ExportTableData)
 	}
 	// Retention always runs at 1am
 	s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)

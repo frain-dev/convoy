@@ -358,7 +358,6 @@ func NewWorker(ctx context.Context, a *cli.App, cfg config.Configuration) (*Work
 
 	if a.Licenser.RetentionPolicy() {
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret, lo), nil)
-		consumer.RegisterHandlers(convoy.ExportTableData, task.ExportTableData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd.Client(), lo), nil)
 		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, projectRepo, backupJobRepo, lo), nil)
 		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, lo), nil)
 	}

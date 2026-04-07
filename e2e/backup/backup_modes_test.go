@@ -7,11 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
@@ -20,9 +18,9 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/backup_collector"
 	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
+	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/projects"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/worker/task"
 )
 
 // seedTestData seeds events, deliveries, and attempts for backup testing.
@@ -311,10 +309,19 @@ func TestBackup_Export_OnPrem(t *testing.T) {
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
 
-	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-	err := task.ExportTableData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptsRepo, env.App.Redis, logger)(ctx, backupTask)
+	// Run export via Exporter.StreamExport directly
+	cfg, err := configRepo.LoadConfiguration(ctx)
 	require.NoError(t, err)
+
+	store, err := blobstore.NewOnPremClient(blobstore.BlobStoreOptions{OnPremStorageDir: tmpDir}, logger)
+	require.NoError(t, err)
+
+	for _, p := range []*datastore.Project{env.Project} {
+		exp, expErr := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, cfg, attemptsRepo, logger)
+		require.NoError(t, expErr)
+		_, expErr = exp.StreamExport(ctx, store)
+		require.NoError(t, expErr)
+	}
 
 	// Verify files and record counts
 	eventsFiles := findExportFiles(t, tmpDir, "events")
@@ -355,9 +362,15 @@ func TestBackup_Export_S3(t *testing.T) {
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
 
-	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-	err = task.ExportTableData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptsRepo, env.App.Redis, logger)(ctx, backupTask)
+	cfg, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err)
+
+	store, err := blobstore.NewBlobStoreClient(cfg.StoragePolicy, logger)
+	require.NoError(t, err)
+
+	exp, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, env.Project, cfg, attemptsRepo, logger)
+	require.NoError(t, err)
+	_, err = exp.StreamExport(ctx, store)
 	require.NoError(t, err)
 
 	minioClient, _, err := (*infra.NewMinIOClient)(t)
@@ -397,9 +410,15 @@ func TestBackup_Export_Azure(t *testing.T) {
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
 
-	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-	err = task.ExportTableData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptsRepo, env.App.Redis, logger)(ctx, backupTask)
+	cfg, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err)
+
+	store, err := blobstore.NewBlobStoreClient(cfg.StoragePolicy, logger)
+	require.NoError(t, err)
+
+	exp, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, env.Project, cfg, attemptsRepo, logger)
+	require.NoError(t, err)
+	_, err = exp.StreamExport(ctx, store)
 	require.NoError(t, err)
 
 	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", "orgs/")

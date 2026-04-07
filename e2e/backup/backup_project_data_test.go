@@ -8,21 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
-	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/endpoints"
-	"github.com/frain-dev/convoy/internal/event_deliveries"
-	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/projects"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/worker/task"
 )
 
 func TestE2E_BackupProjectData_MinIO(t *testing.T) {
@@ -33,20 +27,10 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	minioClient, minioEndpoint, err := (*infra.NewMinIOClient)(t)
 	require.NoError(t, err, "failed to create MinIO client")
 
-	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", log.LevelInfo)
-	projectRepo := projects.New(logger, db)
-	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
-
-	// Create organization and project
 	org := env.Organisation
 	project := env.Project
 
-	// Create MinIO storage configuration
 	_ = createMinIOConfig(t, db, ctx, minioEndpoint)
 
 	// Seed an endpoint
@@ -78,20 +62,8 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 12)
 	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.ExportTableData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Run export
+	runExport(t, env)
 
 	// List objects in MinIO
 	prefix := getMinIOPrefix(org.UID, project.UID)
@@ -142,11 +114,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	// Get database and repositories
 	db := env.App.DB
 	logger := log.New("convoy", log.LevelInfo)
-	projectRepo := projects.New(logger, db)
 	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	project := env.Project
@@ -190,20 +158,8 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 12)
 	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.ExportTableData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Run export
+	runExport(t, env)
 
 	// Verify export files were created
 	eventsFiles := findExportFiles(t, tmpDir, "events")
@@ -251,10 +207,6 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 	db := env.App.DB
 	logger := log.New("convoy", log.LevelInfo)
 	projectRepo := projects.New(logger, db)
-	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
 	endpointRepo := endpoints.New(logger, db)
 	orgService := organisations.New(logger, db)
 
@@ -338,20 +290,8 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 		seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint2, 26)
 	}
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.ExportTableData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Run export
+	runExport(t, env)
 
 	// Export is global — all events from both projects in one file
 	eventsFiles := findExportFiles(t, tmpDir, "events")
@@ -372,12 +312,6 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", log.LevelInfo)
-	projectRepo := projects.New(logger, db)
-	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	project := env.Project
@@ -425,20 +359,8 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	delivery1h := seedOldEventDelivery(t, db, ctx, event1h, endpoint, 1)
 	seedOldDeliveryAttempt(t, db, ctx, delivery1h, endpoint, 1)
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.ExportTableData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Run export
+	runExport(t, env)
 
 	// Verify only old events (>24h) were exported
 	eventsFiles := findExportFiles(t, tmpDir, "events")
@@ -471,12 +393,6 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", log.LevelInfo)
-	projectRepo := projects.New(logger, db)
-	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	org := env.Organisation
@@ -509,20 +425,8 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 26)
 	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.ExportTableData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Run export
+	runExport(t, env)
 
 	// Verify all 3 tables have export files
 	eventsFiles := findExportFiles(t, tmpDir, "events")
@@ -569,11 +473,6 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	// Get database and repositories
 	db := env.App.DB
 	logger := log.New("convoy", log.LevelInfo)
-	projectRepo := projects.New(logger, db)
-	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
 
 	org := env.Organisation
 	project := env.Project
@@ -610,20 +509,8 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 12)
 	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.ExportTableData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Run export
+	runExport(t, env)
 
 	// List exported blobs
 	prefix := fmt.Sprintf("orgs/%s/projects/%s/", org.UID, project.UID)

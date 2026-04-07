@@ -25,8 +25,12 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
+	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
+	"github.com/frain-dev/convoy/internal/pkg/exporter"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -562,6 +566,32 @@ func containsUID(records []map[string]interface{}, uid string) bool {
 		}
 	}
 	return false
+}
+
+// runExport runs the Exporter.StreamExport for a project using the DB configuration.
+func runExport(t *testing.T, env *E2ETestEnv) {
+	t.Helper()
+	ctx := context.Background()
+	db := env.App.DB
+	logger := log.New("convoy", log.LevelInfo)
+
+	configRepo := configuration.New(logger, db)
+	projectRepo := projects.New(logger, db)
+	eventRepo := events.New(logger, db)
+	eventDeliveryRepo := event_deliveries.New(logger, db)
+	attemptsRepo := delivery_attempts.New(logger, db)
+
+	cfg, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err)
+
+	store, blobErr := blobstore.NewBlobStoreClient(cfg.StoragePolicy, logger)
+	require.NoError(t, blobErr)
+
+	exp, expErr := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, env.Project, cfg, attemptsRepo, logger)
+	require.NoError(t, expErr)
+
+	_, expErr = exp.StreamExport(ctx, store)
+	require.NoError(t, expErr)
 }
 
 // Common Database Assertion Helpers
