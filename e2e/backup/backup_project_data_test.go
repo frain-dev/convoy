@@ -79,10 +79,10 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
 		asynq.Queue(string(convoy.ScheduleQueue)))
 
-	err = task.BackupProjectData(
+	err = task.ExportTableData(
 		configRepo,
 		projectRepo,
 		eventRepo,
@@ -191,10 +191,10 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
 		asynq.Queue(string(convoy.ScheduleQueue)))
 
-	err = task.BackupProjectData(
+	err = task.ExportTableData(
 		configRepo,
 		projectRepo,
 		eventRepo,
@@ -339,10 +339,10 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 	}
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
 		asynq.Queue(string(convoy.ScheduleQueue)))
 
-	err = task.BackupProjectData(
+	err = task.ExportTableData(
 		configRepo,
 		projectRepo,
 		eventRepo,
@@ -426,10 +426,10 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	seedOldDeliveryAttempt(t, db, ctx, delivery1h, endpoint, 1)
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
 		asynq.Queue(string(convoy.ScheduleQueue)))
 
-	err = task.BackupProjectData(
+	err = task.ExportTableData(
 		configRepo,
 		projectRepo,
 		eventRepo,
@@ -510,10 +510,10 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
 		asynq.Queue(string(convoy.ScheduleQueue)))
 
-	err = task.BackupProjectData(
+	err = task.ExportTableData(
 		configRepo,
 		projectRepo,
 		eventRepo,
@@ -611,10 +611,10 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
 
 	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
 		asynq.Queue(string(convoy.ScheduleQueue)))
 
-	err = task.BackupProjectData(
+	err = task.ExportTableData(
 		configRepo,
 		projectRepo,
 		eventRepo,

@@ -197,11 +197,11 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 
 	// call handler
 	retentionTask := asynq.NewTask(string(convoy.RetentionPolicies), nil, asynq.Queue(string(convoy.ScheduleQueue)))
-	backUpTask := asynq.NewTask(string(convoy.BackupProjectData), nil, asynq.Queue(string(convoy.ScheduleQueue)))
+	backUpTask := asynq.NewTask(string(convoy.ExportTableData), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
 	clock.AdvanceTime(duration + time.Hour)
 
-	err = BackupProjectData(
+	err = ExportTableData(
 		r.ConvoyApp.configRepo,
 		r.ConvoyApp.projectRepo,
 		r.ConvoyApp.eventRepo,

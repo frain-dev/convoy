@@ -18,7 +18,7 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository,
+func ExportTableData(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository,
 	eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd redis.UniversalClient, logger log.Logger) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd)
 	rs := redsync.New(pool)

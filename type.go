@@ -107,7 +107,7 @@ const (
 	StreamCliEventsProcessor         TaskName = "StreamCliEventsProcessor"
 	MonitorTwitterSources            TaskName = "MonitorTwitterSources"
 	RetentionPolicies                TaskName = "RetentionPolicies"
-	BackupProjectData                TaskName = "BackupProjectData"
+	ExportTableData                  TaskName = "ExportTableData"
 	EnqueueBackupJobs                TaskName = "EnqueueBackupJobs"
 	ProcessBackupJob                 TaskName = "ProcessBackupJob"
 	EmailProcessor                   TaskName = "EmailProcessor"

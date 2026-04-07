@@ -311,9 +311,9 @@ func TestBackup_Export_OnPrem(t *testing.T) {
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
 
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
 		asynq.Queue(string(convoy.ScheduleQueue)))
-	err := task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptsRepo, env.App.Redis, logger)(ctx, backupTask)
+	err := task.ExportTableData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptsRepo, env.App.Redis, logger)(ctx, backupTask)
 	require.NoError(t, err)
 
 	// Verify files and record counts
@@ -355,9 +355,9 @@ func TestBackup_Export_S3(t *testing.T) {
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
 
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
 		asynq.Queue(string(convoy.ScheduleQueue)))
-	err = task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptsRepo, env.App.Redis, logger)(ctx, backupTask)
+	err = task.ExportTableData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptsRepo, env.App.Redis, logger)(ctx, backupTask)
 	require.NoError(t, err)
 
 	minioClient, _, err := (*infra.NewMinIOClient)(t)
@@ -397,9 +397,9 @@ func TestBackup_Export_Azure(t *testing.T) {
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
 
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
+	backupTask := asynq.NewTask(string(convoy.ExportTableData), nil,
 		asynq.Queue(string(convoy.ScheduleQueue)))
-	err = task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptsRepo, env.App.Redis, logger)(ctx, backupTask)
+	err = task.ExportTableData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptsRepo, env.App.Redis, logger)(ctx, backupTask)
 	require.NoError(t, err)
 
 	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", "orgs/")
