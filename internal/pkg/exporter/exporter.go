@@ -81,17 +81,17 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 	attemptsRepo datastore.DeliveryAttemptsRepository,
 	logger log.Logger,
 ) (*Exporter, error) {
-	// Derive lookback from CONVOY_BACKUP_INTERVAL (defaults to 1h)
-	lookback := DefaultBackupInterval
+	// Derive the look back duration from CONVOY_BACKUP_INTERVAL (defaults to 1h)
+	lookBackDur := DefaultBackupInterval
 	if cfg, err := config.Get(); err == nil {
-		lookback = ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+		lookBackDur = ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
 	}
 
 	return &Exporter{
 		config:  c,
 		project: p,
 		result:  ExportResult{},
-		expDate: time.Now().Add(-lookback),
+		expDate: time.Now().Add(-lookBackDur),
 
 		eventRepo:            eventRepo,
 		projectRepo:          projectRepo,
