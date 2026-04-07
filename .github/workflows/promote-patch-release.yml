@@ -1,0 +1,51 @@
+name: Promote Patch Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_line:
+        description: "Release line to patch (e.g. 26.3)"
+        required: true
+        type: string
+      commit_sha:
+        description: "Main commit SHA to promote into the patch release"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  promote-patch-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch main and tags
+        run: |
+          git fetch --force origin main:refs/remotes/origin/main
+          git fetch --tags --force origin
+
+      - name: Build promotion plan
+        id: plan
+        run: ./scripts/ci/build-promotion-plan.sh "${{ inputs.release_line }}"
+
+      - name: Validate candidate commit
+        id: validate
+        run: >-
+          ./scripts/ci/validate-candidate-commit.sh
+          "${{ inputs.commit_sha }}"
+          "${{ steps.plan.outputs.next_cutoff_tag }}"
+          "${{ steps.plan.outputs.base_tag }}"
+
+      - name: Log promotion plan
+        run: |
+          echo "Promoting ${{ inputs.commit_sha }} to v${{ steps.plan.outputs.version }}"
+          echo "Next cutoff gate: ${{ steps.plan.outputs.next_cutoff_tag }} (${{ steps.validate.outputs.next_cutoff_sha }})"
+
+      - name: Create and push patch tag
+        run: |
+          ./scripts/tag-release.sh "${{ steps.plan.outputs.version }}" "${{ inputs.commit_sha }}"

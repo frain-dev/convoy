@@ -16,11 +16,11 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	rcache "github.com/frain-dev/convoy/cache/redis"
 	cmdserver "github.com/frain-dev/convoy/cmd/server"
-	cmdworker "github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/dataplane"
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -229,7 +229,7 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	workerCtx, cancelWorker := context.WithCancel(serverCtx)
 	go func() {
 		t.Logf("Starting worker for test: %s", t.Name())
-		worker, err := cmdworker.NewWorker(workerCtx, app, cfg)
+		worker, err := dataplane.NewWorker(workerCtx, dataplaneOpts(app), cfg)
 		if err != nil {
 			t.Logf("Worker initialization error for test %s: %v", t.Name(), err)
 			logger.Error("Worker initialization error", "error", err)
@@ -462,4 +462,24 @@ func waitForServer(t *testing.T, url string, timeout time.Duration) {
 	}
 
 	t.Fatalf("Server did not start within %v", timeout)
+}
+
+func dataplaneOpts(app *cli.App) dataplane.RuntimeOpts {
+	return dataplane.RuntimeOpts{
+		DB:            app.DB,
+		Redis:         app.Redis,
+		Queue:         app.Queue,
+		Logger:        app.Logger,
+		Cache:         app.Cache,
+		Rate:          app.Rate,
+		Licenser:      app.Licenser,
+		TracerBackend: app.TracerBackend,
+		JobTracker:    app.JobTracker,
+		SetSubscriptionLoader: func(loader interface{}) {
+			app.SubscriptionLoader = loader
+		},
+		SetSubscriptionTable: func(table interface{}) {
+			app.SubscriptionTable = table
+		},
+	}
 }
