@@ -94,7 +94,14 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 				Secret:   verifierConfig.HMac.Secret,
 				Encoding: string(verifierConfig.HMac.Encoding),
 			}
-			v = verifier.NewHmacVerifier(opts)
+			v, err = verifier.NewHmacVerifier(opts)
+			if err != nil {
+				a.A.Logger.Error("failed to initialize HMAC verifier", "error", err)
+
+				_ = render.Render(w, r, util.NewErrorResponse("failed to initialize HMAC verifier", http.StatusInternalServerError))
+
+				return
+			}
 
 		case datastore.BasicAuthVerifier:
 			v = verifier.NewBasicAuthVerifier(
