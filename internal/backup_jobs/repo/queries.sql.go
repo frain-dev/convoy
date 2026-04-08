@@ -22,12 +22,11 @@ WHERE id = (
     LIMIT 1
     FOR UPDATE SKIP LOCKED
 )
-RETURNING id, project_id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
+RETURNING id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
 `
 
 type ClaimBackupJobRow struct {
 	ID           string
-	ProjectID    string
 	HourStart    pgtype.Timestamptz
 	HourEnd      pgtype.Timestamptz
 	Status       string
@@ -45,7 +44,6 @@ func (q *Queries) ClaimBackupJob(ctx context.Context, workerID pgtype.Text) (Cla
 	var i ClaimBackupJobRow
 	err := row.Scan(
 		&i.ID,
-		&i.ProjectID,
 		&i.HourStart,
 		&i.HourEnd,
 		&i.Status,
@@ -117,7 +115,6 @@ LIMIT 1
 
 type FindLatestCompletedBackupRow struct {
 	ID           string
-	ProjectID    string
 	HourStart    pgtype.Timestamptz
 	HourEnd      pgtype.Timestamptz
 	Status       string
@@ -130,12 +127,11 @@ type FindLatestCompletedBackupRow struct {
 	UpdatedAt    pgtype.Timestamptz
 }
 
-func (q *Queries) FindLatestCompletedBackup(ctx context.Context, projectID pgtype.Text) (FindLatestCompletedBackupRow, error) {
-	row := q.db.QueryRow(ctx, findLatestCompletedBackup, projectID)
+func (q *Queries) FindLatestCompletedBackup(ctx context.Context) (FindLatestCompletedBackupRow, error) {
+	row := q.db.QueryRow(ctx, findLatestCompletedBackup)
 	var i FindLatestCompletedBackupRow
 	err := row.Scan(
 		&i.ID,
-		&i.ProjectID,
 		&i.HourStart,
 		&i.HourEnd,
 		&i.Status,
