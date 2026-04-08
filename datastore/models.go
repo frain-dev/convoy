@@ -1682,7 +1682,6 @@ type AzureBlobStorage struct {
 
 type BackupJob struct {
 	ID           string           `json:"id" db:"id"`
-	ProjectID    string           `json:"project_id" db:"project_id"`
 	HourStart    time.Time        `json:"hour_start" db:"hour_start"`
 	HourEnd      time.Time        `json:"hour_end" db:"hour_end"`
 	Status       string           `json:"status" db:"status"`
