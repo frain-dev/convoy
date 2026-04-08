@@ -49,8 +49,8 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			if err = config.Override(cliConfig); err != nil {
-				return err
+			if oErr := config.Override(cliConfig); oErr != nil {
+				return oErr
 			}
 
 			cfg, err := config.Get()
