@@ -2,8 +2,6 @@ package backup
 
 import (
 	"context"
-	"fmt"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -28,7 +26,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	require.NoError(t, err, "failed to create MinIO client")
 
 	db := env.App.DB
-	org := env.Organisation
+	_ = env.Organisation
 	project := env.Project
 
 	_ = createMinIOConfig(t, db, ctx, minioEndpoint)
@@ -66,8 +64,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	runExport(t, env)
 
 	// List objects in MinIO
-	prefix := getMinIOPrefix(org.UID, project.UID)
-	objects := listMinIOObjects(t, minioClient, "convoy-test-exports", prefix)
+	objects := listMinIOObjects(t, minioClient, "convoy-test-exports", "backup/")
 	require.Len(t, objects, 3, "should have 3 export files (events, deliveries, attempts)")
 
 	// Find and verify events export
@@ -395,7 +392,7 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	db := env.App.DB
 
 	// Create organization and project
-	org := env.Organisation
+	_ = env.Organisation
 	project := env.Project
 
 	// Create OnPrem storage configuration
@@ -448,14 +445,11 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	attemptsData := readExportFile(t, attemptsFiles[0])
 	verifyJSONLStructure(t, attemptsData, 1)
 
-	// Verify directory structure is correct
-	expectedEventsPath := filepath.Join(tmpDir, "orgs", org.UID, "projects", project.UID, "events")
-	expectedDeliveriesPath := filepath.Join(tmpDir, "orgs", org.UID, "projects", project.UID, "eventdeliveries")
-	expectedAttemptsPath := filepath.Join(tmpDir, "orgs", org.UID, "projects", project.UID, "deliveryattempts")
-
-	require.Contains(t, eventsFiles[0], expectedEventsPath, "events file should be in correct directory")
-	require.Contains(t, deliveriesFiles[0], expectedDeliveriesPath, "deliveries file should be in correct directory")
-	require.Contains(t, attemptsFiles[0], expectedAttemptsPath, "attempts file should be in correct directory")
+	// Verify directory structure uses backup/{date}/{table}/ format
+	require.Contains(t, eventsFiles[0], "/backup/", "events file should use backup/ path")
+	require.Contains(t, eventsFiles[0], "/events/", "events file should be in events directory")
+	require.Contains(t, deliveriesFiles[0], "/eventdeliveries/", "deliveries file should be in eventdeliveries directory")
+	require.Contains(t, attemptsFiles[0], "/deliveryattempts/", "attempts file should be in deliveryattempts directory")
 }
 
 func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
@@ -474,7 +468,7 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	db := env.App.DB
 	logger := log.New("convoy", log.LevelInfo)
 
-	org := env.Organisation
+	_ = env.Organisation
 	project := env.Project
 
 	// Configure Azure Blob storage
@@ -513,8 +507,7 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	runExport(t, env)
 
 	// List exported blobs
-	prefix := fmt.Sprintf("orgs/%s/projects/%s/", org.UID, project.UID)
-	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", prefix)
+	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", "backup/")
 	require.Len(t, blobs, 3, "should have 3 export files (events, deliveries, attempts)")
 
 	// Find blobs by path

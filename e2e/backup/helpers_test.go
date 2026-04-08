@@ -30,7 +30,6 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
-	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -576,7 +575,6 @@ func runExport(t *testing.T, env *E2ETestEnv) {
 	logger := log.New("convoy", log.LevelInfo)
 
 	configRepo := configuration.New(logger, db)
-	projectRepo := projects.New(logger, db)
 	eventRepo := events.New(logger, db)
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
@@ -587,7 +585,7 @@ func runExport(t *testing.T, env *E2ETestEnv) {
 	store, blobErr := blobstore.NewBlobStoreClient(cfg.StoragePolicy, logger)
 	require.NoError(t, blobErr)
 
-	exp, expErr := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, env.Project, cfg, attemptsRepo, logger)
+	exp, expErr := exporter.NewExporter(eventRepo, eventDeliveryRepo, cfg, attemptsRepo, logger)
 	require.NoError(t, expErr)
 
 	_, expErr = exp.StreamExport(ctx, store)

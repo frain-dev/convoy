@@ -19,7 +19,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/backup_collector"
 	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
-	"github.com/frain-dev/convoy/internal/projects"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -304,24 +303,20 @@ func TestBackup_Export_OnPrem(t *testing.T) {
 	seedTestData(t, env, 3)
 
 	configRepo := configuration.New(logger, db)
-	projectRepo := projects.New(logger, db)
 	eventRepo := events.New(logger, db)
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
 
-	// Run export via Exporter.StreamExport directly
 	cfg, err := configRepo.LoadConfiguration(ctx)
 	require.NoError(t, err)
 
 	store, err := blobstore.NewOnPremClient(blobstore.BlobStoreOptions{OnPremStorageDir: tmpDir}, logger)
 	require.NoError(t, err)
 
-	for _, p := range []*datastore.Project{env.Project} {
-		exp, expErr := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, cfg, attemptsRepo, logger)
-		require.NoError(t, expErr)
-		_, expErr = exp.StreamExport(ctx, store)
-		require.NoError(t, expErr)
-	}
+	exp, err := exporter.NewExporter(eventRepo, eventDeliveryRepo, cfg, attemptsRepo, logger)
+	require.NoError(t, err)
+	_, err = exp.StreamExport(ctx, store)
+	require.NoError(t, err)
 
 	// Verify files and record counts
 	eventsFiles := findExportFiles(t, tmpDir, "events")
@@ -357,7 +352,6 @@ func TestBackup_Export_S3(t *testing.T) {
 	seedTestData(t, env, 3)
 
 	configRepo := configuration.New(logger, db)
-	projectRepo := projects.New(logger, db)
 	eventRepo := events.New(logger, db)
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
@@ -368,7 +362,7 @@ func TestBackup_Export_S3(t *testing.T) {
 	store, err := blobstore.NewBlobStoreClient(cfg.StoragePolicy, logger)
 	require.NoError(t, err)
 
-	exp, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, env.Project, cfg, attemptsRepo, logger)
+	exp, err := exporter.NewExporter(eventRepo, eventDeliveryRepo, cfg, attemptsRepo, logger)
 	require.NoError(t, err)
 	_, err = exp.StreamExport(ctx, store)
 	require.NoError(t, err)
@@ -376,7 +370,7 @@ func TestBackup_Export_S3(t *testing.T) {
 	minioClient, _, err := (*infra.NewMinIOClient)(t)
 	require.NoError(t, err)
 
-	objects := listMinIOObjects(t, minioClient, "convoy-test-exports", "orgs/")
+	objects := listMinIOObjects(t, minioClient, "convoy-test-exports", "backup/")
 	require.NotEmpty(t, objects, "should have exported objects in MinIO")
 
 	for _, table := range []string{"events", "eventdeliveries", "deliveryattempts"} {
@@ -405,7 +399,6 @@ func TestBackup_Export_Azure(t *testing.T) {
 	seedTestData(t, env, 3)
 
 	configRepo := configuration.New(logger, db)
-	projectRepo := projects.New(logger, db)
 	eventRepo := events.New(logger, db)
 	eventDeliveryRepo := event_deliveries.New(logger, db)
 	attemptsRepo := delivery_attempts.New(logger, db)
@@ -416,12 +409,12 @@ func TestBackup_Export_Azure(t *testing.T) {
 	store, err := blobstore.NewBlobStoreClient(cfg.StoragePolicy, logger)
 	require.NoError(t, err)
 
-	exp, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, env.Project, cfg, attemptsRepo, logger)
+	exp, err := exporter.NewExporter(eventRepo, eventDeliveryRepo, cfg, attemptsRepo, logger)
 	require.NoError(t, err)
 	_, err = exp.StreamExport(ctx, store)
 	require.NoError(t, err)
 
-	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", "orgs/")
+	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", "backup/")
 	require.NotEmpty(t, blobs, "should have exported blobs in Azurite")
 
 	for _, table := range []string{"events", "eventdeliveries", "deliveryattempts"} {
