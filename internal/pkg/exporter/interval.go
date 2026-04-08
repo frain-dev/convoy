@@ -24,19 +24,29 @@ func ParseBackupInterval(s string) time.Duration {
 // Sub-hour durations produce minute-level cron (e.g. */5 * * * *).
 // Hour-or-above durations produce hour-level cron (e.g. 0 */6 * * *).
 func DurationToCron(d time.Duration) string {
+	return durationToCronWithOffset(d, 0)
+}
+
+// DurationToCronOffset returns a cron spec offset by the given minutes.
+// Used to stagger tasks that depend on each other (e.g. enqueue at :00, process at :01).
+func DurationToCronOffset(d time.Duration, offsetMinutes int) string {
+	return durationToCronWithOffset(d, offsetMinutes)
+}
+
+func durationToCronWithOffset(d time.Duration, offset int) string {
 	minutes := int(d.Minutes())
 	switch {
 	case minutes <= 0:
-		return "5 * * * *" // fallback: hourly at :05
+		return fmt.Sprintf("%d * * * *", 5+offset) // fallback: hourly
 	case minutes < 60:
-		return fmt.Sprintf("*/%d * * * *", minutes)
+		return fmt.Sprintf("%d-59/%d * * * *", offset, minutes)
 	case minutes == 60:
-		return "5 * * * *" // hourly at :05
+		return fmt.Sprintf("%d * * * *", offset) // hourly
 	default:
 		hours := int(d.Hours())
 		if hours <= 0 {
 			hours = 1
 		}
-		return fmt.Sprintf("0 */%d * * *", hours)
+		return fmt.Sprintf("%d */%d * * *", offset, hours)
 	}
 }
