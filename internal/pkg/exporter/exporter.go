@@ -59,25 +59,23 @@ type (
 )
 
 type Exporter struct {
-	config  *datastore.Configuration
-	project *datastore.Project
+	config *datastore.Configuration
 
 	expDate time.Time
 	result  ExportResult
 
 	// repositories
 	eventRepo            datastore.EventRepository
-	projectRepo          datastore.ProjectRepository
 	eventDeliveryRepo    datastore.EventDeliveryRepository
 	deliveryAttemptsRepo datastore.DeliveryAttemptsRepository
 
 	logger log.Logger
 }
 
-func NewExporter(projectRepo datastore.ProjectRepository,
+func NewExporter(
 	eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
-	p *datastore.Project, c *datastore.Configuration,
+	c *datastore.Configuration,
 	attemptsRepo datastore.DeliveryAttemptsRepository,
 	logger log.Logger,
 ) (*Exporter, error) {
@@ -89,12 +87,10 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 
 	return &Exporter{
 		config:  c,
-		project: p,
 		result:  ExportResult{},
 		expDate: time.Now().Add(-lookBackDur),
 
 		eventRepo:            eventRepo,
-		projectRepo:          projectRepo,
 		deliveryAttemptsRepo: attemptsRepo,
 		eventDeliveryRepo:    eventDeliveryRepo,
 		logger:               logger,
