@@ -38,16 +38,16 @@ const (
 var tables = []tableName{deliveryAttemptsTable, eventDeliveriesTable, eventsTable}
 
 var tableToBlobKeyMapping = map[tableName]string{
-	eventsTable:           "orgs/%s/projects/%s/events/%s.jsonl.gz",
-	eventDeliveriesTable:  "orgs/%s/projects/%s/eventdeliveries/%s.jsonl.gz",
-	deliveryAttemptsTable: "orgs/%s/projects/%s/deliveryattempts/%s.jsonl.gz",
+	eventsTable:           "backup/%s/events/%s.jsonl.gz",
+	eventDeliveriesTable:  "backup/%s/eventdeliveries/%s.jsonl.gz",
+	deliveryAttemptsTable: "backup/%s/deliveryattempts/%s.jsonl.gz",
 }
 
 // tableToFileMapping is used by the disk-based Export() path.
 var tableToFileMapping = map[tableName]string{
-	eventsTable:           "%s/orgs/%s/projects/%s/events/%s.jsonl.gz",
-	eventDeliveriesTable:  "%s/orgs/%s/projects/%s/eventdeliveries/%s.jsonl.gz",
-	deliveryAttemptsTable: "%s/orgs/%s/projects/%s/deliveryattempts/%s.jsonl.gz",
+	eventsTable:           "%s/backup/%s/events/%s.jsonl.gz",
+	eventDeliveriesTable:  "%s/backup/%s/eventdeliveries/%s.jsonl.gz",
+	deliveryAttemptsTable: "%s/backup/%s/deliveryattempts/%s.jsonl.gz",
 }
 
 type (
@@ -150,8 +150,10 @@ func (ex *Exporter) streamExportTable(ctx context.Context, store blobstore.BlobS
 		return nil, ErrInvalidTable
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339)
-	key := fmt.Sprintf(keyFormat, ex.project.OrganisationID, ex.project.UID, now)
+	now := time.Now().UTC()
+	date := now.Format("2006-01-02")
+	ts := now.Format(time.RFC3339)
+	key := fmt.Sprintf(keyFormat, date, ts)
 
 	exportRepo, err := ex.getRepo(table)
 	if err != nil {
@@ -209,8 +211,10 @@ func (ex *Exporter) exportTableToDisk(ctx context.Context, table tableName, expD
 		return result, err
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339)
-	exportFile := fmt.Sprintf(exportFileFormat, exportDir, ex.project.OrganisationID, ex.project.UID, now)
+	now := time.Now().UTC()
+	date := now.Format("2006-01-02")
+	ts := now.Format(time.RFC3339)
+	exportFile := fmt.Sprintf(exportFileFormat, exportDir, date, ts)
 
 	fileWriter, err := getOutputWriter(exportFile)
 	if err != nil {
