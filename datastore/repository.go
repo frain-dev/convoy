@@ -299,12 +299,14 @@ type DeliveryAttemptsRepository interface {
 }
 
 type BackupJobRepository interface {
-	EnqueueBackupJob(ctx context.Context, projectID string, hourStart, hourEnd time.Time) error
+	EnqueueBackupJob(ctx context.Context, hourStart, hourEnd time.Time) error
+	EnqueueBackupJobIfIdle(ctx context.Context, now time.Time) error
 	ClaimBackupJob(ctx context.Context, workerID string) (*BackupJob, error)
 	CompleteBackupJob(ctx context.Context, jobID string, recordCounts map[string]int64) error
 	FailBackupJob(ctx context.Context, jobID string, errMsg string) error
 	ReclaimStaleJobs(ctx context.Context, staleMinutes int32) (int64, error)
-	FindLatestCompletedBackup(ctx context.Context, projectID string) (*BackupJob, error)
+	DeleteCompletedJobs(ctx context.Context) (int64, error)
+	FindLatestCompletedBackup(ctx context.Context) (*BackupJob, error)
 }
 
 type EventTypesRepository interface {

@@ -32,9 +32,8 @@ func New(logger log.Logger, db database.Database) *Service {
 	}
 }
 
-func (s *Service) EnqueueBackupJob(ctx context.Context, projectID string, hourStart, hourEnd time.Time) error {
+func (s *Service) EnqueueBackupJob(ctx context.Context, hourStart, hourEnd time.Time) error {
 	return s.repo.EnqueueBackupJob(ctx, repo.EnqueueBackupJobParams{
-		ProjectID: common.StringToPgText(projectID),
 		HourStart: common.TimeToPgTimestamptz(hourStart),
 		HourEnd:   common.TimeToPgTimestamptz(hourEnd),
 	})
@@ -71,6 +70,27 @@ func (s *Service) FailBackupJob(ctx context.Context, jobID, errMsg string) error
 	})
 }
 
+func (s *Service) EnqueueBackupJobIfIdle(ctx context.Context, now time.Time) error {
+	const query = `
+		INSERT INTO convoy.backup_jobs (hour_start, hour_end, status)
+		SELECT $1, $1, 'pending'
+		WHERE NOT EXISTS (
+			SELECT 1 FROM convoy.backup_jobs WHERE status IN ('pending', 'claimed')
+		)
+	`
+	_, err := s.db.Exec(ctx, query, now)
+	return err
+}
+
+func (s *Service) DeleteCompletedJobs(ctx context.Context) (int64, error) {
+	const query = `DELETE FROM convoy.backup_jobs WHERE status IN ('completed', 'failed')`
+	tag, err := s.db.Exec(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
+}
+
 func (s *Service) ReclaimStaleJobs(ctx context.Context, staleMinutes int32) (int64, error) {
 	tag, err := s.repo.ReclaimStaleJobs(ctx, pgtype.Int4{Int32: staleMinutes, Valid: true})
 	if err != nil {
@@ -79,8 +99,8 @@ func (s *Service) ReclaimStaleJobs(ctx context.Context, staleMinutes int32) (int
 	return tag.RowsAffected(), nil
 }
 
-func (s *Service) FindLatestCompletedBackup(ctx context.Context, projectID string) (*datastore.BackupJob, error) {
-	row, err := s.repo.FindLatestCompletedBackup(ctx, common.StringToPgText(projectID))
+func (s *Service) FindLatestCompletedBackup(ctx context.Context) (*datastore.BackupJob, error) {
+	row, err := s.repo.FindLatestCompletedBackup(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -90,11 +110,11 @@ func (s *Service) FindLatestCompletedBackup(ctx context.Context, projectID strin
 
 func rowToBackupJob(row repo.ClaimBackupJobRow) *datastore.BackupJob {
 	job := &datastore.BackupJob{
-		ID:        row.ID,
-		ProjectID: row.ProjectID,
-		Status:    row.Status,
-		WorkerID:  common.PgTextToString(row.WorkerID),
-		Error:     common.PgTextToString(row.Error),
+		ID: row.ID,
+
+		Status:   row.Status,
+		WorkerID: common.PgTextToString(row.WorkerID),
+		Error:    common.PgTextToString(row.Error),
 	}
 
 	if row.HourStart.Valid {
@@ -126,11 +146,11 @@ func rowToBackupJob(row repo.ClaimBackupJobRow) *datastore.BackupJob {
 
 func rowToLatestBackupJob(row repo.FindLatestCompletedBackupRow) *datastore.BackupJob {
 	job := &datastore.BackupJob{
-		ID:        row.ID,
-		ProjectID: row.ProjectID,
-		Status:    row.Status,
-		WorkerID:  common.PgTextToString(row.WorkerID),
-		Error:     common.PgTextToString(row.Error),
+		ID: row.ID,
+
+		Status:   row.Status,
+		WorkerID: common.PgTextToString(row.WorkerID),
+		Error:    common.PgTextToString(row.Error),
 	}
 
 	if row.HourStart.Valid {
