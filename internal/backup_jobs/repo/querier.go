@@ -16,7 +16,7 @@ type Querier interface {
 	CompleteBackupJob(ctx context.Context, arg CompleteBackupJobParams) error
 	EnqueueBackupJob(ctx context.Context, arg EnqueueBackupJobParams) error
 	FailBackupJob(ctx context.Context, arg FailBackupJobParams) error
-	FindLatestCompletedBackup(ctx context.Context, projectID pgtype.Text) (FindLatestCompletedBackupRow, error)
+	FindLatestCompletedBackup(ctx context.Context) (FindLatestCompletedBackupRow, error)
 	ReclaimStaleJobs(ctx context.Context, staleMinutes pgtype.Int4) (pgconn.CommandTag, error)
 }
 

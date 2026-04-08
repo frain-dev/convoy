@@ -77,19 +77,17 @@ func (q *Queries) CompleteBackupJob(ctx context.Context, arg CompleteBackupJobPa
 }
 
 const enqueueBackupJob = `-- name: EnqueueBackupJob :exec
-INSERT INTO convoy.backup_jobs (project_id, hour_start, hour_end, status)
-VALUES ($1, $2, $3, 'pending')
-ON CONFLICT (project_id, hour_start) DO NOTHING
+INSERT INTO convoy.backup_jobs (hour_start, hour_end, status)
+VALUES ($1, $2, 'pending')
 `
 
 type EnqueueBackupJobParams struct {
-	ProjectID pgtype.Text
 	HourStart pgtype.Timestamptz
 	HourEnd   pgtype.Timestamptz
 }
 
 func (q *Queries) EnqueueBackupJob(ctx context.Context, arg EnqueueBackupJobParams) error {
-	_, err := q.db.Exec(ctx, enqueueBackupJob, arg.ProjectID, arg.HourStart, arg.HourEnd)
+	_, err := q.db.Exec(ctx, enqueueBackupJob, arg.HourStart, arg.HourEnd)
 	return err
 }
 
@@ -110,10 +108,10 @@ func (q *Queries) FailBackupJob(ctx context.Context, arg FailBackupJobParams) er
 }
 
 const findLatestCompletedBackup = `-- name: FindLatestCompletedBackup :one
-SELECT id, project_id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
+SELECT id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
 FROM convoy.backup_jobs
-WHERE project_id = $1 AND status = 'completed'
-ORDER BY hour_start DESC
+WHERE status = 'completed'
+ORDER BY completed_at DESC
 LIMIT 1
 `
 
