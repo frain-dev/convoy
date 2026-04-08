@@ -8,7 +8,6 @@ import (
 
 	"github.com/hibiken/asynq"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
@@ -19,7 +18,6 @@ import (
 // (project, hour) pair and reclaims any stale claimed jobs.
 func EnqueueBackupJobs(
 	configRepo datastore.ConfigurationRepository,
-	projectRepo datastore.ProjectRepository,
 	backupJobRepo datastore.BackupJobRepository,
 	logger log.Logger,
 ) func(context.Context, *asynq.Task) error {
@@ -33,28 +31,11 @@ func EnqueueBackupJobs(
 			return nil
 		}
 
-		projects, err := projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
-		if err != nil {
-			return err
-		}
-
-		if len(projects) == 0 {
-			return nil
-		}
-
-		// Derive window from CONVOY_BACKUP_INTERVAL (default: 1h)
-		interval := exporter.DefaultBackupInterval
-		if cfg, cfgErr := config.Get(); cfgErr == nil {
-			interval = exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
-		}
-
-		windowEnd := time.Now().UTC().Truncate(interval)
-		windowStart := windowEnd.Add(-interval)
-
-		for _, p := range projects {
-			if err = backupJobRepo.EnqueueBackupJob(ctx, p.UID, windowStart, windowEnd); err != nil {
-				logger.Error(fmt.Sprintf("failed to enqueue backup job for project %s: %v", p.UID, err))
-			}
+		// Enqueue a global backup job only if no job is currently pending or claimed.
+		// Completed/failed jobs are kept for audit — they don't block new jobs.
+		now := time.Now().UTC()
+		if err = backupJobRepo.EnqueueBackupJobIfIdle(ctx, now); err != nil {
+			logger.Error(fmt.Sprintf("failed to enqueue backup job: %v", err))
 		}
 
 		// Reclaim jobs that have been stuck in 'claimed' for > 30 minutes
@@ -74,7 +55,6 @@ func EnqueueBackupJobs(
 // SKIP LOCKED ensures exactly-once processing.
 func ProcessBackupJob(
 	configRepo datastore.ConfigurationRepository,
-	projectRepo datastore.ProjectRepository,
 	eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	attemptsRepo datastore.DeliveryAttemptsRepository,
@@ -102,15 +82,8 @@ func ProcessBackupJob(
 			return nil // no work available
 		}
 
-		logger.Info(fmt.Sprintf("processing backup job %s for project %s [%s, %s)",
-			job.ID, job.ProjectID, job.HourStart.Format(time.RFC3339), job.HourEnd.Format(time.RFC3339)))
-
-		// Find the project
-		project, err := projectRepo.FetchProjectByID(ctx, job.ProjectID)
-		if err != nil {
-			_ = backupJobRepo.FailBackupJob(ctx, job.ID, fmt.Sprintf("fetch project: %v", err))
-			return err
-		}
+		logger.Info(fmt.Sprintf("processing backup job %s [%s, %s)",
+			job.ID, job.HourStart.Format(time.RFC3339), job.HourEnd.Format(time.RFC3339)))
 
 		// Create blob store client
 		blobStoreClient, err := blobstore.NewBlobStoreClient(dbConfig.StoragePolicy, logger)
@@ -120,7 +93,7 @@ func ProcessBackupJob(
 		}
 
 		// Create exporter and stream to blob storage
-		e, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, project, dbConfig, attemptsRepo, logger)
+		e, err := exporter.NewExporter(eventRepo, eventDeliveryRepo, dbConfig, attemptsRepo, logger)
 		if err != nil {
 			_ = backupJobRepo.FailBackupJob(ctx, job.ID, fmt.Sprintf("create exporter: %v", err))
 			return err
@@ -142,7 +115,7 @@ func ProcessBackupJob(
 			return fmt.Errorf("complete backup job: %w", err)
 		}
 
-		logger.Info(fmt.Sprintf("completed backup job %s for project %s", job.ID, job.ProjectID))
+		logger.Info(fmt.Sprintf("completed backup job %s", job.ID))
 		return nil
 	}
 }
