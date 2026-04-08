@@ -193,10 +193,11 @@ func StartConvoyServer(a *cli.App) error {
 	// When CDC is active, the BackupCollector in the worker handles exports continuously.
 	if !cfg.RetentionPolicy.CDCBackupEnabled {
 		backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
-		backupCron := exporter.DurationToCron(backupInterval)
+		enqueueCron := exporter.DurationToCron(backupInterval)
+		processCron := exporter.DurationToCronOffset(backupInterval, 1) // +1 min offset so enqueue runs first
 
-		s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
-		s.RegisterTask(backupCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
+		s.RegisterTask(enqueueCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
+		s.RegisterTask(processCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
 	}
 	// Retention always runs at 1am
 	s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
