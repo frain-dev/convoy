@@ -61,8 +61,9 @@ type (
 type Exporter struct {
 	config *datastore.Configuration
 
-	expDate time.Time
-	result  ExportResult
+	expStart time.Time
+	expEnd   time.Time
+	result   ExportResult
 
 	// repositories
 	eventRepo            datastore.EventRepository
@@ -86,9 +87,10 @@ func NewExporter(
 	}
 
 	return &Exporter{
-		config:  c,
-		result:  ExportResult{},
-		expDate: time.Now().Add(-lookBackDur),
+		config:   c,
+		result:   ExportResult{},
+		expEnd:   time.Now(),
+		expStart: time.Now().Add(-lookBackDur),
 
 		eventRepo:            eventRepo,
 		deliveryAttemptsRepo: attemptsRepo,
