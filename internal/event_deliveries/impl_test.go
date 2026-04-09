@@ -1123,8 +1123,8 @@ func TestExportRecords(t *testing.T) {
 		}
 
 		var buf bytes.Buffer
-		// Export uses created_at < @created_at, so pass a future time to include recent deliveries
-		count, err := service.ExportRecords(ctx, time.Now().Add(1*time.Hour), &buf)
+		// Export uses created_at < end AND created_at >= start, so pass epoch as start and future time as end
+		count, err := service.ExportRecords(ctx, time.Time{}, time.Now().Add(1*time.Hour), &buf)
 		require.NoError(t, err)
 		require.GreaterOrEqual(t, count, int64(5))
 
@@ -1141,7 +1141,7 @@ func TestExportRecords(t *testing.T) {
 	t.Run("Empty_with_past_cutoff", func(t *testing.T) {
 		// Export with a past cutoff should return 0 records
 		var buf bytes.Buffer
-		count, err := service.ExportRecords(ctx, time.Now().Add(-24*time.Hour), &buf)
+		count, err := service.ExportRecords(ctx, time.Time{}, time.Now().Add(-24*time.Hour), &buf)
 		require.NoError(t, err)
 		require.Equal(t, int64(0), count)
 		require.Empty(t, buf.String())

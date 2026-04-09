@@ -43,9 +43,9 @@ func TestExportRecords_EmptyResult(t *testing.T) {
 	// Create a buffer to write exported data
 	var buf bytes.Buffer
 
-	// Export with a future date (should return empty since no data seeded)
+	// Export with a future date as end (should return empty since no data seeded)
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err := service.ExportRecords(ctx, futureDate, &buf)
+	count, err := service.ExportRecords(ctx, time.Time{}, futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(0), count)
@@ -82,7 +82,7 @@ func TestExportRecords_WithData(t *testing.T) {
 	// Export all attempts
 	var buf bytes.Buffer
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err := service.ExportRecords(ctx, futureDate, &buf)
+	count, err := service.ExportRecords(ctx, time.Time{}, futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(5), count)
@@ -130,19 +130,19 @@ func TestExportRecords_TimeFiltering(t *testing.T) {
 		time.Sleep(10 * time.Millisecond) // Small delay to ensure different timestamps
 	}
 
-	// Export with past date (should return 0)
+	// Export with past date as end (should return 0)
 	var buf bytes.Buffer
 	pastDate := time.Now().Add(-1 * time.Hour)
-	count, err := service.ExportRecords(ctx, pastDate, &buf)
+	count, err := service.ExportRecords(ctx, time.Time{}, pastDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(0), count)
 	require.Empty(t, buf.String())
 
-	// Export with future date (should return all 3)
+	// Export with future date as end (should return all 3)
 	buf.Reset()
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err = service.ExportRecords(ctx, futureDate, &buf)
+	count, err = service.ExportRecords(ctx, time.Time{}, futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(3), count)
