@@ -215,13 +215,14 @@ func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDurati
 
 // ExportRecords exports delivery attempts to a writer as JSONL (one JSON object per line).
 // It uses a REPEATABLE READ transaction for snapshot consistency across batches.
-func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error) {
+func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.Writer) (int64, error) {
 	const (
 		countQuery = `
 			SELECT COUNT(*)
 			FROM convoy.delivery_attempts
 			WHERE deleted_at IS NULL
 			  AND created_at < $1
+			  AND created_at >= $2
 		`
 
 		exportQuery = `
@@ -229,9 +230,10 @@ func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.W
 			FROM convoy.delivery_attempts AS da
 			WHERE deleted_at IS NULL
 			  AND created_at < $1
-			  AND (id > $2 OR $2 = '')
+			  AND created_at >= $2
+			  AND (id > $3 OR $3 = '')
 			ORDER BY id ASC
-			LIMIT $3
+			LIMIT $4
 		`
 	)
 
@@ -243,7 +245,7 @@ func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.W
 	defer tx.Rollback(ctx) //nolint:errcheck
 
 	var count int64
-	err = tx.QueryRow(ctx, countQuery, createdAt).Scan(&count)
+	err = tx.QueryRow(ctx, countQuery, end, start).Scan(&count)
 	if err != nil {
 		return 0, util.NewServiceError(500, fmt.Errorf("failed to count records: %w", err))
 	}
@@ -259,7 +261,7 @@ func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.W
 	)
 
 	for {
-		rows, err := tx.Query(ctx, exportQuery, createdAt, lastID, batchSize)
+		rows, err := tx.Query(ctx, exportQuery, end, start, lastID, batchSize)
 		if err != nil {
 			return 0, util.NewServiceError(500, fmt.Errorf("failed to query batch: %w", err))
 		}

@@ -107,7 +107,7 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 	}
 
 	for _, table := range tables {
-		result, err := ex.exportTableToDisk(ctx, table, ex.expDate)
+		result, err := ex.exportTableToDisk(ctx, table, ex.expStart, ex.expEnd)
 		if err != nil {
 			return nil, err
 		}
@@ -129,7 +129,7 @@ func (ex *Exporter) StreamExport(ctx context.Context, store blobstore.BlobStore)
 	result := ExportResult{}
 
 	for _, table := range tables {
-		tableResult, err := ex.streamExportTable(ctx, store, table, ex.expDate)
+		tableResult, err := ex.streamExportTable(ctx, store, table, ex.expStart, ex.expEnd)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +142,7 @@ func (ex *Exporter) StreamExport(ctx context.Context, store blobstore.BlobStore)
 }
 
 // streamExportTable pipes ExportRecords → gzip → BlobStore.Upload without touching disk.
-func (ex *Exporter) streamExportTable(ctx context.Context, store blobstore.BlobStore, table tableName, expDate time.Time) (*ExportTableResult, error) {
+func (ex *Exporter) streamExportTable(ctx context.Context, store blobstore.BlobStore, table tableName, expStart, expEnd time.Time) (*ExportTableResult, error) {
 	keyFormat, ok := tableToBlobKeyMapping[table]
 	if !ok {
 		return nil, ErrInvalidTable
@@ -168,7 +168,7 @@ func (ex *Exporter) streamExportTable(ctx context.Context, store blobstore.BlobS
 	go func() {
 		gzw := gzip.NewWriter(pw)
 
-		n, exportErr := exportRepo.ExportRecords(exportCtx, expDate, gzw)
+		n, exportErr := exportRepo.ExportRecords(exportCtx, expStart, expEnd, gzw)
 		numDocs = n
 
 		// MUST close gzip before pipe — flush trailer (checksum + size)
@@ -197,7 +197,7 @@ func (ex *Exporter) streamExportTable(ctx context.Context, store blobstore.BlobS
 }
 
 // exportTableToDisk writes gzip-compressed JSONL to a local file (legacy path).
-func (ex *Exporter) exportTableToDisk(ctx context.Context, table tableName, expDate time.Time) (*ExportTableResult, error) {
+func (ex *Exporter) exportTableToDisk(ctx context.Context, table tableName, expStart, expEnd time.Time) (*ExportTableResult, error) {
 	result := &ExportTableResult{}
 	exportFileFormat, ok := tableToFileMapping[table]
 	if !ok {
@@ -236,7 +236,7 @@ func (ex *Exporter) exportTableToDisk(ctx context.Context, table tableName, expD
 		return result, err
 	}
 
-	numDocs, err := exportRepo.ExportRecords(ctx, expDate, gzw)
+	numDocs, err := exportRepo.ExportRecords(ctx, expStart, expEnd, gzw)
 	if err != nil {
 		ex.logger.Error("failed to export records", "error", err)
 		return result, err

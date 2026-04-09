@@ -555,7 +555,7 @@ func (s *Service) CopyRows(ctx context.Context, projectID string, interval int) 
 
 // ExportRecords exports events to a writer as JSONL (one JSON object per line).
 // It uses a REPEATABLE READ transaction for snapshot consistency across batches.
-func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.Writer) (int64, error) {
+func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.Writer) (int64, error) {
 	// Begin REPEATABLE READ transaction for snapshot consistency
 	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
@@ -565,10 +565,10 @@ func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.W
 
 	txRepo := repo.New(tx)
 
-	// Count total exportable events
+	// Count total exportable events in the window [start, end)
 	count, err := txRepo.CountExportedEvents(ctx, repo.CountExportedEventsParams{
-		CreatedAt: common.TimeToPgTimestamptz(createdAt),
-		Cursor:    common.StringToPgText(""),
+		CreatedAtEnd:   common.TimeToPgTimestamptz(end),
+		CreatedAtStart: common.TimeToPgTimestamptz(start),
 	})
 	if err != nil {
 		return 0, err
@@ -588,9 +588,10 @@ func (s *Service) ExportRecords(ctx context.Context, createdAt time.Time, w io.W
 
 	for i := 0; i < numBatches; i++ {
 		params := repo.ExportEventsParams{
-			CreatedAt: common.TimeToPgTimestamptz(createdAt),
-			Cursor:    common.StringToPgText(lastID),
-			PageLimit: pgtype.Int8{Int64: int64(batchSize), Valid: true},
+			CreatedAtEnd:   common.TimeToPgTimestamptz(end),
+			CreatedAtStart: common.TimeToPgTimestamptz(start),
+			Cursor:         common.StringToPgText(lastID),
+			PageLimit:      pgtype.Int8{Int64: int64(batchSize), Valid: true},
 		}
 
 		rows, exportErr := txRepo.ExportEvents(ctx, params)
