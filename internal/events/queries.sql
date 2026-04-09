@@ -414,17 +414,16 @@ SELECT convoy.copy_rows(@project_id, @batch_size);
 SELECT ed.id,
        TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
 FROM convoy.events AS ed
-WHERE created_at < @created_at
+WHERE created_at < @created_at_end
+  AND created_at >= @created_at_start
   AND (id > @cursor OR @cursor = '')
-  AND deleted_at IS NULL
 ORDER BY id
 LIMIT @page_limit;
 
 -- name: CountExportedEvents :one
 SELECT COUNT(*) as count FROM convoy.events
-WHERE created_at < @created_at
-  AND (id > @cursor OR @cursor = '')
-  AND deleted_at IS NULL;
+WHERE created_at < @created_at_end
+  AND created_at >= @created_at_start;
 
 -- ============================================================================
 -- Group 5: Partition Management (4 queries)

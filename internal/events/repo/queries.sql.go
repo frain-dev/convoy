@@ -66,17 +66,16 @@ func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (pgtyp
 const countExportedEvents = `-- name: CountExportedEvents :one
 SELECT COUNT(*) as count FROM convoy.events
 WHERE created_at < $1
-  AND (id > $2 OR $2 = '')
-  AND deleted_at IS NULL
+  AND created_at >= $2
 `
 
 type CountExportedEventsParams struct {
-	CreatedAt pgtype.Timestamptz
-	Cursor    pgtype.Text
+	CreatedAtEnd   pgtype.Timestamptz
+	CreatedAtStart pgtype.Timestamptz
 }
 
 func (q *Queries) CountExportedEvents(ctx context.Context, arg CountExportedEventsParams) (pgtype.Int8, error) {
-	row := q.db.QueryRow(ctx, countExportedEvents, arg.CreatedAt, arg.Cursor)
+	row := q.db.QueryRow(ctx, countExportedEvents, arg.CreatedAtEnd, arg.CreatedAtStart)
 	var count pgtype.Int8
 	err := row.Scan(&count)
 	return count, err
@@ -315,16 +314,17 @@ SELECT ed.id,
        TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
 FROM convoy.events AS ed
 WHERE created_at < $1
-  AND (id > $2 OR $2 = '')
-  AND deleted_at IS NULL
+  AND created_at >= $2
+  AND (id > $3 OR $3 = '')
 ORDER BY id
-LIMIT $3
+LIMIT $4
 `
 
 type ExportEventsParams struct {
-	CreatedAt pgtype.Timestamptz
-	Cursor    pgtype.Text
-	PageLimit pgtype.Int8
+	CreatedAtEnd   pgtype.Timestamptz
+	CreatedAtStart pgtype.Timestamptz
+	Cursor         pgtype.Text
+	PageLimit      pgtype.Int8
 }
 
 type ExportEventsRow struct {
@@ -333,7 +333,7 @@ type ExportEventsRow struct {
 }
 
 func (q *Queries) ExportEvents(ctx context.Context, arg ExportEventsParams) ([]ExportEventsRow, error) {
-	rows, err := q.db.Query(ctx, exportEvents, arg.CreatedAt, arg.Cursor, arg.PageLimit)
+	rows, err := q.db.Query(ctx, exportEvents, arg.CreatedAtEnd, arg.CreatedAtStart, arg.Cursor, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}
