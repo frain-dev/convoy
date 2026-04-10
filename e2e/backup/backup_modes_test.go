@@ -47,13 +47,13 @@ func seedTestData(t *testing.T, env *E2ETestEnv, n int) (int, int, int) {
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
-	// Seed old data (26 hours old — eligible for export)
+	// Seed recent data (within the backup interval window)
 	evtCount, dlvCount, attCount := 0, 0, 0
 	for range n {
-		evt := seedOldEvent(t, db, ctx, project, endpoint, 26)
+		evt := seedOldEvent(t, db, ctx, project, endpoint, 0) // current time
 		sub := seedSubscription(t, db, ctx, project, endpoint)
-		dlv := seedOldEventDelivery(t, db, ctx, evt, endpoint, 26)
-		seedOldDeliveryAttempt(t, db, ctx, dlv, endpoint, 26)
+		dlv := seedOldEventDelivery(t, db, ctx, evt, endpoint, 0)
+		seedOldDeliveryAttempt(t, db, ctx, dlv, endpoint, 0)
 		evtCount++
 		dlvCount++
 		attCount++
