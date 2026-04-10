@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -116,6 +117,56 @@ func ProcessBackupJob(
 		}
 
 		logger.Info(fmt.Sprintf("completed backup job %s", job.ID))
+		return nil
+	}
+}
+
+// ManualBackup runs a one-time backup with an explicit time window.
+// It always uses the cron-based Exporter, never CDC, regardless of config.
+func ManualBackup(
+	configRepo datastore.ConfigurationRepository,
+	eventRepo datastore.EventRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	attemptsRepo datastore.DeliveryAttemptsRepository,
+	logger log.Logger,
+) func(context.Context, *asynq.Task) error {
+	return func(ctx context.Context, t *asynq.Task) error {
+		var payload struct {
+			Start time.Time `json:"start"`
+			End   time.Time `json:"end"`
+		}
+
+		if err := json.Unmarshal(t.Payload(), &payload); err != nil {
+			return fmt.Errorf("decode manual backup payload: %w", err)
+		}
+
+		dbConfig, err := configRepo.LoadConfiguration(ctx)
+		if err != nil {
+			return fmt.Errorf("load configuration: %w", err)
+		}
+
+		store, err := blobstore.NewBlobStoreClient(dbConfig.StoragePolicy, logger)
+		if err != nil {
+			return fmt.Errorf("create blob store: %w", err)
+		}
+
+		exp, err := exporter.NewExporterWithWindow(
+			eventRepo, eventDeliveryRepo, dbConfig, attemptsRepo,
+			payload.Start, payload.End, logger,
+		)
+		if err != nil {
+			return fmt.Errorf("create exporter: %w", err)
+		}
+
+		result, err := exp.StreamExport(ctx, store)
+		if err != nil {
+			return fmt.Errorf("stream export: %w", err)
+		}
+
+		for table, r := range result {
+			logger.Info(fmt.Sprintf("manual backup: %s — %d records → %s", table, r.NumDocs, r.ExportFile))
+		}
+
 		return nil
 	}
 }
