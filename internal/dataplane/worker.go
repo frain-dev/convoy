@@ -342,11 +342,11 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps), newTelemetry)
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
 
-	// if opts.Licenser.RetentionPolicy() {
-	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret, lo), nil)
-	consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo), nil)
-	consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, lo), nil)
-	// }
+	if opts.Licenser.RetentionPolicy() {
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret, lo), nil)
+		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo), nil)
+		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, lo), nil)
+	}
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
 		Channels:                   channels,

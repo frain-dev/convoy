@@ -170,37 +170,24 @@ func StartConvoyServer(a *cli.App) error {
 
 	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
-	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
-	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
+	// s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
+	// s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
-	// if cfg.Metrics.IsEnabled && cfg.Metrics.Backend == config.PrometheusMetricsProvider {
-	// 	refreshInterval := cfg.Metrics.Prometheus.MaterializedViewRefreshInterval
-	// 	if refreshInterval < 1 {
-	// 		refreshInterval = 1
-	// 	}
-	// 	if refreshInterval > 60 {
-	// 		refreshInterval = 60
-	// 	}
+	if a.Licenser.RetentionPolicy() {
+		// Register cron-based backup tasks only when CDC backup is not enabled.
+		// When CDC is active, the BackupCollector in the worker handles exports continuously.
+		if !cfg.RetentionPolicy.CDCBackupEnabled {
+			backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+			enqueueCron := exporter.DurationToCron(backupInterval)
+			processCron := exporter.DurationToCronOffset(backupInterval, 1) // +1 min offset so enqueue runs first
 
-	//nolint:gocritic
-	// 	cronSpec := fmt.Sprintf("*/%d * * * *", refreshInterval)
-	// 	s.RegisterTask(cronSpec, convoy.ScheduleQueue, convoy.RefreshMetricsMaterializedViews)
+			s.RegisterTask(enqueueCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
+			s.RegisterTask(processCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
+		}
 
-	// 	lo.Infof("Registered metrics materialized view refresh every %d min", refreshInterval)
-	// }
-
-	// Register cron-based backup tasks only when CDC backup is not enabled.
-	// When CDC is active, the BackupCollector in the worker handles exports continuously.
-	if !cfg.RetentionPolicy.CDCBackupEnabled {
-		backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
-		enqueueCron := exporter.DurationToCron(backupInterval)
-		processCron := exporter.DurationToCronOffset(backupInterval, 1) // +1 min offset so enqueue runs first
-
-		s.RegisterTask(enqueueCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
-		s.RegisterTask(processCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
+		// Retention always runs at 1am
+		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
-	// Retention always runs at 1am
-	s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 
 	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 	if err != nil {
