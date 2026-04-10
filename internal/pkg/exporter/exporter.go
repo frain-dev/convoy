@@ -99,6 +99,29 @@ func NewExporter(
 	}, nil
 }
 
+// NewExporterWithWindow creates an Exporter with an explicit time window,
+// bypassing the config-derived backup interval. Used by manual/ad-hoc backups.
+func NewExporterWithWindow(
+	eventRepo datastore.EventRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	c *datastore.Configuration,
+	attemptsRepo datastore.DeliveryAttemptsRepository,
+	start, end time.Time,
+	logger log.Logger,
+) (*Exporter, error) {
+	return &Exporter{
+		config:   c,
+		result:   ExportResult{},
+		expEnd:   end,
+		expStart: start,
+
+		eventRepo:            eventRepo,
+		deliveryAttemptsRepo: attemptsRepo,
+		eventDeliveryRepo:    eventDeliveryRepo,
+		logger:               logger,
+	}, nil
+}
+
 // Export writes gzip-compressed JSONL files to disk. Used by the legacy
 // file-based backup flow and E2E tests.
 func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
