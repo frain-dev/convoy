@@ -109,6 +109,7 @@ const (
 	RetentionPolicies                TaskName = "RetentionPolicies"
 	EnqueueBackupJobs                TaskName = "EnqueueBackupJobs"
 	ProcessBackupJob                 TaskName = "ProcessBackupJob"
+	ManualBackupJob                  TaskName = "ManualBackupJob"
 	EmailProcessor                   TaskName = "EmailProcessor"
 	ExpireSecretsProcessor           TaskName = "ExpireSecretsProcessor"
 	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"
