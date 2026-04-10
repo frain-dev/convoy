@@ -46,7 +46,6 @@ func (r *CachedProjectRepository) DeleteProject(ctx context.Context, uid string)
 	return err
 }
 
-// Passthrough
 func (r *CachedProjectRepository) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) ([]*datastore.Project, error) {
 	return r.inner.LoadProjects(ctx, f)
 }
@@ -137,7 +136,6 @@ func (r *CachedEndpointRepository) DeleteSecret(ctx context.Context, endpoint *d
 	return err
 }
 
-// Passthrough
 func (r *CachedEndpointRepository) FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]datastore.Endpoint, error) {
 	return r.inner.FindEndpointsByID(ctx, ids, projectID)
 }
@@ -203,7 +201,6 @@ func (r *CachedSubscriptionRepository) DeleteSubscription(ctx context.Context, p
 	return err
 }
 
-// Passthrough
 func (r *CachedSubscriptionRepository) LoadSubscriptionsPaged(ctx context.Context, projectID string, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
 	return r.inner.LoadSubscriptionsPaged(ctx, projectID, filter, pageable)
 }
@@ -297,8 +294,8 @@ func (r *CachedFilterRepository) UpdateFilters(ctx context.Context, filters []da
 	return err
 }
 
-// Passthrough (DeleteFilter lacks subscriptionID/eventType for targeted invalidation — TTL handles it)
 func (r *CachedFilterRepository) DeleteFilter(ctx context.Context, filterID string) error {
+	// DeleteFilter lacks subscriptionID/eventType for targeted invalidation — TTL handles it
 	return r.inner.DeleteFilter(ctx, filterID)
 }
 func (r *CachedFilterRepository) FindFilterByID(ctx context.Context, filterID string) (*datastore.EventTypeFilter, error) {
@@ -340,7 +337,6 @@ func (r *CachedAPIKeyRepository) UpdateAPIKey(ctx context.Context, apiKey *datas
 	return err
 }
 
-// Passthrough (RevokeAPIKeys lacks maskIDs — TTL handles it)
 func (r *CachedAPIKeyRepository) CreateAPIKey(ctx context.Context, a *datastore.APIKey) error {
 	return r.inner.CreateAPIKey(ctx, a)
 }
@@ -389,7 +385,6 @@ func (r *CachedPortalLinkRepository) UpdatePortalLink(ctx context.Context, proje
 	return result, err
 }
 
-// Passthrough (Revoke/Refresh lack maskID — TTL handles it)
 func (r *CachedPortalLinkRepository) CreatePortalLink(ctx context.Context, projectID string, req *datastore.CreatePortalLinkRequest) (*datastore.PortalLink, error) {
 	return r.inner.CreatePortalLink(ctx, projectID, req)
 }
@@ -460,7 +455,6 @@ func (r *CachedOrganisationRepository) DeleteOrganisation(ctx context.Context, i
 	return err
 }
 
-// Passthrough
 func (r *CachedOrganisationRepository) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
 	return r.inner.CreateOrganisation(ctx, org)
 }

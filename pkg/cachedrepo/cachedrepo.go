@@ -1,5 +1,3 @@
-// Package cachedrepo provides generic cache-aside helpers for repository patterns.
-// It has no external dependencies and can be imported in any Go project.
 package cachedrepo
 
 import (
