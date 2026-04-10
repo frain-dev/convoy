@@ -67,6 +67,45 @@ func parseJSONL(t *testing.T, data []byte) []map[string]interface{} {
 
 // MinIO Operations
 
+// createTestMinioBucket creates a unique MinIO bucket for test isolation.
+func createTestMinioBucket(t *testing.T, client *minio.Client) string {
+	t.Helper()
+	bucket := fmt.Sprintf("test-%s", strings.ToLower(ulid.Make().String()))
+	err := client.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{})
+	require.NoError(t, err, "failed to create test bucket")
+	t.Cleanup(func() {
+		// Remove all objects then delete bucket
+		objectCh := client.ListObjects(context.Background(), bucket, minio.ListObjectsOptions{Recursive: true})
+		for obj := range objectCh {
+			_ = client.RemoveObject(context.Background(), bucket, obj.Key, minio.RemoveObjectOptions{})
+		}
+		_ = client.RemoveBucket(context.Background(), bucket)
+	})
+	return bucket
+}
+
+// createTestAzuriteContainer creates a unique Azurite container for test isolation.
+func createTestAzuriteContainer(t *testing.T, client *azblob.Client) string {
+	t.Helper()
+	container := fmt.Sprintf("test-%s", strings.ToLower(ulid.Make().String()))
+	_, err := client.CreateContainer(context.Background(), container, nil)
+	require.NoError(t, err, "failed to create test container")
+	t.Cleanup(func() {
+		pager := client.NewListBlobsFlatPager(container, nil)
+		for pager.More() {
+			resp, listErr := pager.NextPage(context.Background())
+			if listErr != nil {
+				break
+			}
+			for _, blob := range resp.Segment.BlobItems {
+				_, _ = client.DeleteBlob(context.Background(), container, *blob.Name, nil)
+			}
+		}
+		_, _ = client.DeleteContainer(context.Background(), container, nil)
+	})
+	return container
+}
+
 // listMinIOObjects lists all objects in a MinIO bucket with the given prefix
 func listMinIOObjects(t *testing.T, client *minio.Client, bucket, prefix string) []minio.ObjectInfo {
 	t.Helper()
@@ -368,7 +407,7 @@ func createMinIOConfig(t *testing.T, db database.Database, ctx context.Context, 
 		endpoint = "http://" + endpoint
 	}
 
-	// Update with MinIO storage settings
+	// Update with MinIO storage settings (default bucket)
 	config.StoragePolicy = &datastore.StoragePolicyConfiguration{
 		Type: datastore.S3,
 		S3: &datastore.S3Storage{
@@ -389,6 +428,67 @@ func createMinIOConfig(t *testing.T, db database.Database, ctx context.Context, 
 	err = configRepo.UpdateConfiguration(ctx, config)
 	require.NoError(t, err, "failed to update MinIO configuration")
 
+	return config
+}
+
+// createMinIOConfigWithBucket is like createMinIOConfig but uses a custom bucket name for test isolation.
+func createMinIOConfigWithBucket(t *testing.T, db database.Database, ctx context.Context, endpoint, bucket string) *datastore.Configuration {
+	t.Helper()
+
+	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
+	config, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err)
+
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		endpoint = "http://" + endpoint
+	}
+
+	config.StoragePolicy = &datastore.StoragePolicyConfiguration{
+		Type: datastore.S3,
+		S3: &datastore.S3Storage{
+			Prefix:       null.NewString("", false),
+			Bucket:       null.NewString(bucket, true),
+			AccessKey:    null.NewString("minioadmin", true),
+			SecretKey:    null.NewString("minioadmin", true),
+			Region:       null.NewString("us-east-1", true),
+			SessionToken: null.NewString("", false),
+			Endpoint:     null.NewString(endpoint, true),
+		},
+	}
+	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
+		IsRetentionPolicyEnabled: true,
+		Policy:                   "720h",
+	}
+
+	err = configRepo.UpdateConfiguration(ctx, config)
+	require.NoError(t, err)
+	return config
+}
+
+// createAzuriteConfigWithContainer is like createAzuriteConfig but uses a custom container name.
+func createAzuriteConfigWithContainer(t *testing.T, db database.Database, ctx context.Context, endpoint, container string) *datastore.Configuration {
+	t.Helper()
+
+	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
+	config, err := configRepo.LoadConfiguration(ctx)
+	require.NoError(t, err)
+
+	config.StoragePolicy = &datastore.StoragePolicyConfiguration{
+		Type: datastore.AzureBlob,
+		AzureBlob: &datastore.AzureBlobStorage{
+			AccountName:   null.NewString("devstoreaccount1", true),
+			AccountKey:    null.NewString("Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==", true),
+			ContainerName: null.NewString(container, true),
+			Endpoint:      null.NewString(endpoint, true),
+		},
+	}
+	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
+		IsRetentionPolicyEnabled: true,
+		Policy:                   "720h",
+	}
+
+	err = configRepo.UpdateConfiguration(ctx, config)
+	require.NoError(t, err)
 	return config
 }
 

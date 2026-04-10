@@ -25,11 +25,14 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	minioClient, minioEndpoint, err := (*infra.NewMinIOClient)(t)
 	require.NoError(t, err, "failed to create MinIO client")
 
+	// Create unique bucket for test isolation
+	bucket := createTestMinioBucket(t, minioClient)
+
 	db := env.App.DB
 	_ = env.Organisation
 	project := env.Project
 
-	_ = createMinIOConfig(t, db, ctx, minioEndpoint)
+	_ = createMinIOConfigWithBucket(t, db, ctx, minioEndpoint, bucket)
 
 	// Seed an endpoint
 	endpoint := &datastore.Endpoint{
@@ -64,14 +67,14 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	runExport(t, env)
 
 	// List objects in MinIO
-	objects := listMinIOObjects(t, minioClient, "convoy-test-exports", "backup/")
+	objects := listMinIOObjects(t, minioClient, bucket, "backup/")
 	require.GreaterOrEqual(t, len(objects), 3, "should have at least 3 export files")
 
 	// Find and verify events export
 	eventsObj := findObject(objects, "events")
 	require.NotNil(t, eventsObj, "should have events export in MinIO")
 
-	eventsData := downloadMinIOObject(t, minioClient, "convoy-test-exports", eventsObj.Key)
+	eventsData := downloadMinIOObject(t, minioClient, bucket, eventsObj.Key)
 	events := parseJSONL(t, eventsData)
 	require.GreaterOrEqual(t, len(events), 1, "should have at least 1 old event exported")
 	require.True(t, containsUID(events, oldEvent.UID), "exported events should contain the old event")
@@ -83,7 +86,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	deliveriesObj := findObject(objects, "eventdeliveries")
 	require.NotNil(t, deliveriesObj, "should have event deliveries export in MinIO")
 
-	deliveriesData := downloadMinIOObject(t, minioClient, "convoy-test-exports", deliveriesObj.Key)
+	deliveriesData := downloadMinIOObject(t, minioClient, bucket, deliveriesObj.Key)
 	deliveries := parseJSONL(t, deliveriesData)
 	require.GreaterOrEqual(t, len(deliveries), 1, "should have at least 1 old event delivery exported")
 	require.True(t, containsUID(deliveries, oldDelivery.UID), "exported deliveries should contain the old delivery")
@@ -94,7 +97,7 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	attemptsObj := findObject(objects, "deliveryattempts")
 	require.NotNil(t, attemptsObj, "should have delivery attempts export in MinIO")
 
-	attemptsData := downloadMinIOObject(t, minioClient, "convoy-test-exports", attemptsObj.Key)
+	attemptsData := downloadMinIOObject(t, minioClient, bucket, attemptsObj.Key)
 	attempts := parseJSONL(t, attemptsData)
 	require.GreaterOrEqual(t, len(attempts), 1, "should have at least 1 old delivery attempt exported")
 
@@ -450,6 +453,9 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	azClient, azEndpoint, err := (*infra.NewAzuriteClient)(t)
 	require.NoError(t, err)
 
+	// Create unique container for test isolation
+	bucket := createTestAzuriteContainer(t, azClient)
+
 	// Get database and repositories
 	db := env.App.DB
 	logger := log.New("convoy", log.LevelInfo)
@@ -457,8 +463,8 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	_ = env.Organisation
 	project := env.Project
 
-	// Configure Azure Blob storage
-	createAzuriteConfig(t, db, ctx, azEndpoint)
+	// Configure Azure Blob storage with unique container
+	createAzuriteConfigWithContainer(t, db, ctx, azEndpoint, bucket)
 
 	// Seed an endpoint
 	endpoint := &datastore.Endpoint{
@@ -493,7 +499,7 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	runExport(t, env)
 
 	// List exported blobs
-	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", "backup/")
+	blobs := listAzuriteBlobs(t, azClient, bucket, "backup/")
 	require.GreaterOrEqual(t, len(blobs), 3, "should have at least 3 export files")
 
 	// Find blobs by path
@@ -513,7 +519,7 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	require.NotEmpty(t, attemptsBlob, "should have attempts export")
 
 	// Download and verify events
-	eventsData := downloadAzuriteBlob(t, azClient, "convoy-test-exports", eventsBlob)
+	eventsData := downloadAzuriteBlob(t, azClient, bucket, eventsBlob)
 	evts := parseJSONL(t, eventsData)
 	require.GreaterOrEqual(t, len(evts), 1, "should have at least 1 old event exported")
 	require.Equal(t, oldEvent.UID, evts[0]["uid"], "exported event should be the old one")
@@ -521,12 +527,12 @@ func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
 	verifyTimeFiltering(t, eventsData)
 
 	// Download and verify deliveries
-	deliveriesData := downloadAzuriteBlob(t, azClient, "convoy-test-exports", deliveriesBlob)
+	deliveriesData := downloadAzuriteBlob(t, azClient, bucket, deliveriesBlob)
 	dlvrs := parseJSONL(t, deliveriesData)
 	require.GreaterOrEqual(t, len(dlvrs), 1, "should have at least 1 old delivery exported")
 
 	// Download and verify attempts
-	attemptsData := downloadAzuriteBlob(t, azClient, "convoy-test-exports", attemptsBlob)
+	attemptsData := downloadAzuriteBlob(t, azClient, bucket, attemptsBlob)
 	atmpts := parseJSONL(t, attemptsData)
 	require.GreaterOrEqual(t, len(atmpts), 1, "should have at least 1 old delivery attempt exported")
 }

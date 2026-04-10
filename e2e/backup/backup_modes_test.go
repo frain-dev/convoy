@@ -156,6 +156,7 @@ func TestBackup_CDC_S3(t *testing.T) {
 
 	minioClient, minioEndpoint, err := (*infra.NewMinIOClient)(t)
 	require.NoError(t, err)
+	bucket := createTestMinioBucket(t, minioClient)
 
 	pool := env.App.DB.GetConn()
 	cfg := pool.Config().ConnConfig
@@ -172,7 +173,7 @@ func TestBackup_CDC_S3(t *testing.T) {
 	require.NoError(t, err)
 
 	store, err := blobstore.NewS3Client(blobstore.BlobStoreOptions{
-		Bucket:    "convoy-test-exports",
+		Bucket:    bucket,
 		AccessKey: "minioadmin",
 		SecretKey: "minioadmin",
 		Region:    "us-east-1",
@@ -204,13 +205,13 @@ func TestBackup_CDC_S3(t *testing.T) {
 	defer func() { _, _ = pool.Exec(ctx, "SELECT pg_drop_replication_slot('convoy_backup')") }()
 
 	// Verify objects and record counts in MinIO
-	objects := listMinIOObjects(t, minioClient, "convoy-test-exports", "backup/")
+	objects := listMinIOObjects(t, minioClient, bucket, "backup/")
 	require.NotEmpty(t, objects, "should have CDC backup objects in MinIO")
 
 	eventsObj := findObject(objects, "events")
 	require.NotNil(t, eventsObj, "should have events backup in MinIO")
 
-	eventsData := downloadMinIOObject(t, minioClient, "convoy-test-exports", eventsObj.Key)
+	eventsData := downloadMinIOObject(t, minioClient, bucket, eventsObj.Key)
 	eventsRecords := parseJSONL(t, eventsData)
 	require.GreaterOrEqual(t, len(eventsRecords), 5, "should have at least 5 CDC-captured events in S3")
 }
@@ -226,6 +227,7 @@ func TestBackup_CDC_Azure(t *testing.T) {
 
 	azClient, azEndpoint, err := (*infra.NewAzuriteClient)(t)
 	require.NoError(t, err)
+	bucket := createTestAzuriteContainer(t, azClient)
 
 	pool := env.App.DB.GetConn()
 	cfg := pool.Config().ConnConfig
@@ -244,7 +246,7 @@ func TestBackup_CDC_Azure(t *testing.T) {
 	store, err := blobstore.NewAzureBlobClient(blobstore.BlobStoreOptions{
 		AzureAccountName:   "devstoreaccount1",
 		AzureAccountKey:    "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==",
-		AzureContainerName: "convoy-test-exports",
+		AzureContainerName: bucket,
 		AzureEndpoint:      azEndpoint,
 	}, logger)
 	require.NoError(t, err)
@@ -271,7 +273,7 @@ func TestBackup_CDC_Azure(t *testing.T) {
 	collector.Stop(ctx)
 	defer func() { _, _ = pool.Exec(ctx, "SELECT pg_drop_replication_slot('convoy_backup')") }()
 
-	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", "backup/")
+	blobs := listAzuriteBlobs(t, azClient, bucket, "backup/")
 	require.NotEmpty(t, blobs, "should have CDC backup blobs in Azurite")
 
 	var eventsBlob string
@@ -283,7 +285,7 @@ func TestBackup_CDC_Azure(t *testing.T) {
 	}
 	require.NotEmpty(t, eventsBlob, "should have events backup in Azurite")
 
-	eventsData := downloadAzuriteBlob(t, azClient, "convoy-test-exports", eventsBlob)
+	eventsData := downloadAzuriteBlob(t, azClient, bucket, eventsBlob)
 	eventsRecords := parseJSONL(t, eventsData)
 	require.GreaterOrEqual(t, len(eventsRecords), 5, "should have at least 5 CDC-captured events in Azure")
 }
@@ -344,11 +346,12 @@ func TestBackup_Export_S3(t *testing.T) {
 	ctx := context.Background()
 	logger := log.New("convoy", log.LevelInfo)
 
-	_, minioEndpoint, err := (*infra.NewMinIOClient)(t)
+	minioClient, minioEndpoint, err := (*infra.NewMinIOClient)(t)
 	require.NoError(t, err)
+	bucket := createTestMinioBucket(t, minioClient)
 
 	db := env.App.DB
-	createMinIOConfig(t, db, ctx, minioEndpoint)
+	createMinIOConfigWithBucket(t, db, ctx, minioEndpoint, bucket)
 	seedTestData(t, env, 3)
 
 	configRepo := configuration.New(logger, db)
@@ -367,16 +370,13 @@ func TestBackup_Export_S3(t *testing.T) {
 	_, err = exp.StreamExport(ctx, store)
 	require.NoError(t, err)
 
-	minioClient, _, err := (*infra.NewMinIOClient)(t)
-	require.NoError(t, err)
-
-	objects := listMinIOObjects(t, minioClient, "convoy-test-exports", "backup/")
+	objects := listMinIOObjects(t, minioClient, bucket, "backup/")
 	require.NotEmpty(t, objects, "should have exported objects in MinIO")
 
 	for _, table := range []string{"events", "eventdeliveries", "deliveryattempts"} {
 		obj := findObject(objects, table)
 		require.NotNil(t, obj, "should have %s backup in MinIO", table)
-		data := downloadMinIOObject(t, minioClient, "convoy-test-exports", obj.Key)
+		data := downloadMinIOObject(t, minioClient, bucket, obj.Key)
 		records := parseJSONL(t, data)
 		require.GreaterOrEqual(t, len(records), 3, "should have at least 3 exported %s in S3", table)
 	}
@@ -393,9 +393,10 @@ func TestBackup_Export_Azure(t *testing.T) {
 
 	azClient, azEndpoint, err := (*infra.NewAzuriteClient)(t)
 	require.NoError(t, err)
+	bucket := createTestAzuriteContainer(t, azClient)
 
 	db := env.App.DB
-	createAzuriteConfig(t, db, ctx, azEndpoint)
+	createAzuriteConfigWithContainer(t, db, ctx, azEndpoint, bucket)
 	seedTestData(t, env, 3)
 
 	configRepo := configuration.New(logger, db)
@@ -414,7 +415,7 @@ func TestBackup_Export_Azure(t *testing.T) {
 	_, err = exp.StreamExport(ctx, store)
 	require.NoError(t, err)
 
-	blobs := listAzuriteBlobs(t, azClient, "convoy-test-exports", "backup/")
+	blobs := listAzuriteBlobs(t, azClient, bucket, "backup/")
 	require.NotEmpty(t, blobs, "should have exported blobs in Azurite")
 
 	for _, table := range []string{"events", "eventdeliveries", "deliveryattempts"} {
@@ -426,7 +427,7 @@ func TestBackup_Export_Azure(t *testing.T) {
 			}
 		}
 		require.NotEmpty(t, blobName, "should have %s backup in Azurite", table)
-		data := downloadAzuriteBlob(t, azClient, "convoy-test-exports", blobName)
+		data := downloadAzuriteBlob(t, azClient, bucket, blobName)
 		records := parseJSONL(t, data)
 		require.GreaterOrEqual(t, len(records), 3, "should have at least 3 exported %s in Azure", table)
 	}
