@@ -26,10 +26,7 @@ func provideCreateEndpointAPIKeyService(ctrl *gomock.Controller, d *models.Creat
 }
 
 func sameMinute(date1, date2 time.Time) bool {
-	s1 := date1.Format(time.Stamp)
-	s2 := date2.Format(time.Stamp)
-
-	return s1 == s2
+	return date1.UTC().Truncate(time.Minute).Equal(date2.UTC().Truncate(time.Minute))
 }
 
 func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
