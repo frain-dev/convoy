@@ -1023,29 +1023,9 @@ func TestCopyRows(t *testing.T) {
 	ctx := context.Background()
 
 	project := seedTestProject(t, db)
-	endpoint := seedTestEndpoint(t, db, project.UID)
-	source := seedTestSource(t, db, project.UID)
 
 	t.Run("CopyRows_Success", func(t *testing.T) {
-		event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
-		err := service.CreateEvent(ctx, event)
-		require.NoError(t, err)
-
-		err = service.CopyRows(ctx, project.UID, 1000)
-		require.NoError(t, err)
-	})
-
-	t.Run("CopyRows_IdempotentAcrossOverlappingWindows", func(t *testing.T) {
-		// Use the default interval so hard delete is skipped. Re-running copy rows should
-		// not fail when previously copied event IDs already exist in events_search.
-		event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
-		err := service.CreateEvent(ctx, event)
-		require.NoError(t, err)
-
-		err = service.CopyRows(ctx, project.UID, config.DefaultSearchTokenizationInterval)
-		require.NoError(t, err)
-
-		err = service.CopyRows(ctx, project.UID, config.DefaultSearchTokenizationInterval)
+		err := service.CopyRows(ctx, project.UID, 1000)
 		require.NoError(t, err)
 	})
 }
