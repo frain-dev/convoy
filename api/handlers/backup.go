@@ -28,9 +28,19 @@ type triggerBackupPayload struct {
 // TriggerBackup enqueues an asynchronous manual backup job.
 // POST /ui/backups/trigger
 func (h *Handler) TriggerBackup(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
 	cfg, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusInternalServerError))
+		return
+	}
+
+	if !cfg.RetentionPolicy.IsRetentionPolicyEnabled {
+		_ = render.Render(w, r, util.NewErrorResponse("backup is not enabled in configuration", http.StatusUnprocessableEntity))
 		return
 	}
 
