@@ -255,7 +255,8 @@ func (r *CachedFilterRepository) FindFilterBySubscriptionAndEventType(ctx contex
 		func() (*datastore.EventTypeFilter, error) {
 			return r.inner.FindFilterBySubscriptionAndEventType(ctx, subscriptionID, eventType)
 		},
-		func(err error) bool { return err.Error() == datastore.ErrFilterNotFound.Error() })
+		func(err error) bool { return err.Error() == datastore.ErrFilterNotFound.Error() },
+		datastore.ErrFilterNotFound)
 }
 
 func (r *CachedFilterRepository) CreateFilter(ctx context.Context, filter *datastore.EventTypeFilter) error {

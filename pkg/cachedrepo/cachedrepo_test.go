@@ -217,7 +217,8 @@ func TestFetchWithNotFound_CacheMiss_Found(t *testing.T) {
 
 	result, err := FetchWithNotFound(context.Background(), ca, logger, "key:123", time.Minute,
 		func() (*testEntity, error) { return entity, nil },
-		func(err error) bool { return errors.Is(err, errNotFound) })
+		func(err error) bool { return errors.Is(err, errNotFound) },
+		errNotFound)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -236,7 +237,8 @@ func TestFetchWithNotFound_CacheMiss_NotFound_Cached(t *testing.T) {
 
 	result, err := FetchWithNotFound(context.Background(), ca, logger, "key:123", time.Minute,
 		func() (*testEntity, error) { return nil, errNotFound },
-		func(err error) bool { return errors.Is(err, errNotFound) })
+		func(err error) bool { return errors.Is(err, errNotFound) },
+		errNotFound)
 
 	if !errors.Is(err, errNotFound) {
 		t.Fatalf("expected errNotFound, got %v", err)
@@ -256,7 +258,8 @@ func TestFetchWithNotFound_CacheHit_Found(t *testing.T) {
 
 	result, err := FetchWithNotFound(context.Background(), ca, logger, "key:123", time.Minute,
 		func() (*testEntity, error) { return nil, errors.New("should not be called") },
-		func(err error) bool { return false })
+		func(err error) bool { return false },
+		errNotFound)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -272,10 +275,11 @@ func TestFetchWithNotFound_CacheHit_CachedNotFound(t *testing.T) {
 
 	result, err := FetchWithNotFound(context.Background(), ca, logger, "key:123", time.Minute,
 		func() (*testEntity, error) { return nil, errors.New("should not be called") },
-		func(err error) bool { return false })
+		func(err error) bool { return false },
+		errNotFound)
 
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if !errors.Is(err, errNotFound) {
+		t.Fatalf("expected errNotFound, got %v", err)
 	}
 	if result != nil {
 		t.Fatal("expected nil result for cached not-found")

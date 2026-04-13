@@ -101,6 +101,7 @@ func FetchWithNotFound[T any](
 	key string, ttl time.Duration,
 	fetch func() (*T, error),
 	isNotFound func(error) bool,
+	notFoundErr error,
 ) (*T, error) {
 	var cached foundWrapper[T]
 	err := ca.Get(ctx, key, &cached)
@@ -109,6 +110,9 @@ func FetchWithNotFound[T any](
 	}
 
 	if cached.Found {
+		if cached.Value == nil {
+			return nil, notFoundErr
+		}
 		return cached.Value, nil
 	}
 
