@@ -89,8 +89,8 @@ func NewExporter(
 	return &Exporter{
 		config:   c,
 		result:   ExportResult{},
-		expEnd:   time.Now(),
-		expStart: time.Now().Add(-lookBackDur),
+		expEnd:   time.Now().UTC(),
+		expStart: time.Now().UTC().Add(-lookBackDur),
 
 		eventRepo:            eventRepo,
 		deliveryAttemptsRepo: attemptsRepo,
@@ -109,6 +109,11 @@ func NewExporterWithWindow(
 	start, end time.Time,
 	logger log.Logger,
 ) (*Exporter, error) {
+	if !start.Before(end) {
+		return nil, fmt.Errorf("invalid export window: start (%s) must be before end (%s)",
+			start.Format(time.RFC3339), end.Format(time.RFC3339))
+	}
+
 	return &Exporter{
 		config:   c,
 		result:   ExportResult{},
