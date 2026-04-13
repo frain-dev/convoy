@@ -296,8 +296,19 @@ func (r *CachedFilterRepository) UpdateFilters(ctx context.Context, filters []da
 }
 
 func (r *CachedFilterRepository) DeleteFilter(ctx context.Context, filterID string) error {
-	// DeleteFilter lacks subscriptionID/eventType for targeted invalidation — TTL handles it
-	return r.inner.DeleteFilter(ctx, filterID)
+	filter, lookupErr := r.inner.FindFilterByID(ctx, filterID)
+	if lookupErr != nil {
+		return r.inner.DeleteFilter(ctx, filterID)
+	}
+
+	err := r.inner.DeleteFilter(ctx, filterID)
+	if err == nil {
+		cachedrepo.Invalidate(ctx, r.cache, r.logger,
+			"filters:"+filter.SubscriptionID+":"+filter.EventType,
+			"filters:"+filter.SubscriptionID+":*",
+		)
+	}
+	return err
 }
 func (r *CachedFilterRepository) FindFilterByID(ctx context.Context, filterID string) (*datastore.EventTypeFilter, error) {
 	return r.inner.FindFilterByID(ctx, filterID)
