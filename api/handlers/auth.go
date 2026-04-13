@@ -71,6 +71,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 		LicenseKey:    licenseKey,
 		Host:          host,
 		Licenser:      h.A.Licenser,
+		Logger:        h.A.Logger,
 	}
 
 	resp, err := lu.Run()
@@ -93,6 +94,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		ConfigRepo:    h.A.ConfigRepo,
 		LicenseKey:    configuration.LicenseKey,
 		Licenser:      h.A.Licenser,
+		Logger:        h.A.Logger,
 	}
 
 	tokenResp, err := lu.RedeemToken(r.URL.Query())

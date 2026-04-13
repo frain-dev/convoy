@@ -393,8 +393,17 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				}
 
 				if deps.Licenser.AdvancedEndpointMgmt() {
+					failureMsg := ""
+					responseBody := ""
+					statusCode := 0
+					if resp != nil {
+						failureMsg = resp.Error
+						responseBody = string(resp.Body)
+						statusCode = resp.StatusCode
+					}
+
 					// send endpoint deactivation notification
-					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, deps.Queue, true, resp.Error, string(resp.Body), resp.StatusCode, deps.Logger)
+					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, deps.Queue, true, failureMsg, responseBody, statusCode, deps.Logger)
 					if err != nil {
 						deps.Logger.ErrorContext(ctx, "failed to send notification", "error", err)
 					}
