@@ -300,7 +300,7 @@ type DeliveryAttemptsRepository interface {
 
 type BackupJobRepository interface {
 	EnqueueBackupJob(ctx context.Context, hourStart, hourEnd time.Time) error
-	EnqueueBackupJobIfIdle(ctx context.Context, now time.Time) error
+	EnqueueBackupJobIfIdle(ctx context.Context, start, end time.Time) error
 	ClaimBackupJob(ctx context.Context, workerID string) (*BackupJob, error)
 	CompleteBackupJob(ctx context.Context, jobID string, recordCounts map[string]int64) error
 	FailBackupJob(ctx context.Context, jobID string, errMsg string) error

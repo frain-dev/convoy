@@ -9,6 +9,7 @@ import (
 
 	"github.com/hibiken/asynq"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
@@ -34,8 +35,13 @@ func EnqueueBackupJobs(
 
 		// Enqueue a global backup job only if no job is currently pending or claimed.
 		// Completed/failed jobs are kept for audit — they don't block new jobs.
-		now := time.Now().UTC()
-		if err = backupJobRepo.EnqueueBackupJobIfIdle(ctx, now); err != nil {
+		end := time.Now().UTC()
+		backupInterval := exporter.DefaultBackupInterval
+		if envCfg, cfgErr := config.Get(); cfgErr == nil {
+			backupInterval = exporter.ParseBackupInterval(envCfg.RetentionPolicy.BackupInterval)
+		}
+		start := end.Add(-backupInterval)
+		if err = backupJobRepo.EnqueueBackupJobIfIdle(ctx, start, end); err != nil {
 			logger.Error(fmt.Sprintf("failed to enqueue backup job: %v", err))
 		}
 
@@ -93,8 +99,8 @@ func ProcessBackupJob(
 			return err
 		}
 
-		// Create exporter and stream to blob storage
-		e, err := exporter.NewExporter(eventRepo, eventDeliveryRepo, dbConfig, attemptsRepo, logger)
+		// Create exporter with the job's stored time window
+		e, err := exporter.NewExporterWithWindow(eventRepo, eventDeliveryRepo, dbConfig, attemptsRepo, job.HourStart, job.HourEnd, logger)
 		if err != nil {
 			_ = backupJobRepo.FailBackupJob(ctx, job.ID, fmt.Sprintf("create exporter: %v", err))
 			return err

@@ -70,15 +70,15 @@ func (s *Service) FailBackupJob(ctx context.Context, jobID, errMsg string) error
 	})
 }
 
-func (s *Service) EnqueueBackupJobIfIdle(ctx context.Context, now time.Time) error {
+func (s *Service) EnqueueBackupJobIfIdle(ctx context.Context, start, end time.Time) error {
 	const query = `
 		INSERT INTO convoy.backup_jobs (hour_start, hour_end, status)
-		SELECT $1, $1, 'pending'
+		SELECT $1, $2, 'pending'
 		WHERE NOT EXISTS (
 			SELECT 1 FROM convoy.backup_jobs WHERE status IN ('pending', 'claimed')
 		)
 	`
-	_, err := s.db.Exec(ctx, query, now)
+	_, err := s.db.Exec(ctx, query, start, end)
 	return err
 }
 
