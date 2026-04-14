@@ -16,10 +16,10 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	rcache "github.com/frain-dev/convoy/cache/redis"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/portal_links"
@@ -134,6 +134,7 @@ func (s *OSSLoginIntegrationTestSuite) buildServerWithMockLicenser(t *testing.T,
 
 	noopCache := rcache.NewRedisCacheFromClient(tl.Redis)
 	limiter := rlimiter.NewLimiterFromRedisClient(tl.Redis)
+	ffService := feature_flags.New(tl.Logger, db)
 
 	ah, err := NewApplicationHandler(
 		&types.APIOptions{
@@ -143,8 +144,8 @@ func (s *OSSLoginIntegrationTestSuite) buildServerWithMockLicenser(t *testing.T,
 			Logger:                     tl.Logger,
 			Cache:                      noopCache,
 			FFlag:                      fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
-			FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(db),
-			EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(db),
+			FeatureFlagFetcher:         ffService,
+			EarlyAdopterFeatureFetcher: ffService,
 			Rate:                       limiter,
 			ConfigRepo:                 configuration.New(tl.Logger, db),
 			Licenser:                   licenser,

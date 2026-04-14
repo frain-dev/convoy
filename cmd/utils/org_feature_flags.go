@@ -12,9 +12,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -51,10 +50,12 @@ func AddUpdateOrgFeatureFlagsCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("failed to fetch organisation: %w", err)
 			}
 
+			ffService := feature_flags.New(a.Logger, db)
+
 			slog.Info(fmt.Sprintf("Updating feature flags for organisation: %s (%s)", org.Name, org.UID))
 
-			errorList := processFeatureFlags(context.Background(), db, orgID, enableFlags, true)
-			errorList = append(errorList, processFeatureFlags(context.Background(), db, orgID, disableFlags, false)...)
+			errorList := processFeatureFlags(context.Background(), ffService, orgID, enableFlags, true)
+			errorList = append(errorList, processFeatureFlags(context.Background(), ffService, orgID, disableFlags, false)...)
 
 			if len(errorList) > 0 {
 				slog.Error(fmt.Sprintf("Encountered %d errors:", len(errorList)))
@@ -79,7 +80,7 @@ func AddUpdateOrgFeatureFlagsCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func processFeatureFlags(ctx context.Context, db database.Database, orgID string, flags []string, enabled bool) []string {
+func processFeatureFlags(ctx context.Context, ffService *feature_flags.Service, orgID string, flags []string, enabled bool) []string {
 	var errorList []string
 	for _, flag := range flags {
 		flagKey := strings.ToLower(strings.TrimSpace(flag))
@@ -88,7 +89,7 @@ func processFeatureFlags(ctx context.Context, db database.Database, orgID string
 			continue
 		}
 
-		err := updateOrgFeatureFlag(ctx, db, orgID, flagKey, enabled)
+		err := updateOrgFeatureFlag(ctx, ffService, orgID, flagKey, enabled)
 		if err != nil {
 			action := "enable"
 			if !enabled {
@@ -107,10 +108,10 @@ func processFeatureFlags(ctx context.Context, db database.Database, orgID string
 	return errorList
 }
 
-func updateOrgFeatureFlag(ctx context.Context, db database.Database, orgID, flagKey string, enabled bool) error {
-	featureFlag, err := postgres.FetchFeatureFlagByKey(ctx, db, flagKey)
+func updateOrgFeatureFlag(ctx context.Context, ffService *feature_flags.Service, orgID, flagKey string, enabled bool) error {
+	featureFlag, err := ffService.FetchFeatureFlagByKey(ctx, flagKey)
 	if err != nil {
-		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+		if errors.Is(err, datastore.ErrFeatureFlagNotFound) {
 			return fmt.Errorf("%w: %s", ErrFeatureFlagNotFound, flagKey)
 		}
 		return err
@@ -126,7 +127,7 @@ func updateOrgFeatureFlag(ctx context.Context, db database.Database, orgID, flag
 		if enabled {
 			feature.EnabledAt = null.TimeFrom(time.Now())
 		}
-		return postgres.UpsertEarlyAdopterFeature(ctx, db, feature)
+		return ffService.UpsertEarlyAdopterFeature(ctx, feature)
 	}
 
 	override := &datastore.FeatureFlagOverride{
@@ -141,7 +142,7 @@ func updateOrgFeatureFlag(ctx context.Context, db database.Database, orgID, flag
 		override.EnabledAt = null.TimeFrom(time.Now())
 	}
 
-	return postgres.UpsertFeatureFlagOverride(ctx, db, override)
+	return ffService.UpsertFeatureFlagOverride(ctx, override)
 }
 
 func isValidFeatureFlag(flagKey string) bool {

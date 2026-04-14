@@ -25,10 +25,10 @@ import (
 	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/endpoints"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -589,6 +589,8 @@ func (s *OAuth2IntegrationTestSuite) Test_CreateEndpoint_WithOAuth2ClientAsserti
 func enableOAuth2FeatureFlag(t *testing.T, db database.Database, orgID string) error {
 	t.Helper()
 
+	ffService := feature_flags.New(log.New("convoy", log.LevelError), db)
+
 	// Create or update early adopter feature
 	feature := &datastore.EarlyAdopterFeature{
 		OrganisationID: orgID,
@@ -597,7 +599,7 @@ func enableOAuth2FeatureFlag(t *testing.T, db database.Database, orgID string) e
 		EnabledAt:      null.TimeFrom(time.Now()),
 	}
 
-	return postgres.UpsertEarlyAdopterFeature(context.Background(), db, feature)
+	return ffService.UpsertEarlyAdopterFeature(context.Background(), feature)
 }
 
 func TestOAuth2IntegrationTestSuite(t *testing.T) {

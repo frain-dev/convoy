@@ -202,3 +202,23 @@ sql:
         overrides:
           - column: "convoy.event_deliveries.delivery_mode"
             go_type: "string"
+  - queries: ./internal/jobs/queries.sql
+    engine: postgresql
+    database: *db_config
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/jobs/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true
+  - queries: ./internal/feature_flags/queries.sql
+    engine: postgresql
+    database: *db_config
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/feature_flags/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true
