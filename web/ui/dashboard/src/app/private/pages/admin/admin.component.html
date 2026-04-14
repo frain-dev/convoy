@@ -1,5 +1,9 @@
-<div class="max-w-[1000px] mt-24px mx-auto">
-	<div class="flex gap-100px">
+<div
+	class="mt-24px mx-auto w-full"
+	[class.max-w-[1000px]]="activePage !== 'queue monitoring'"
+	[class.max-w-[1440px]]="activePage === 'queue monitoring'"
+>
+	<div class="flex" [class.gap-100px]="activePage !== 'queue monitoring'" [class.gap-40px]="activePage === 'queue monitoring'">
 		<div class="w-full max-w-[200px] settings-sidebar">
 			<div class="flex gap-8px items-center mb-24px">
 				<a routerLink="/projects" class="block p-2px rounded-100px border border-new.primary-50">
@@ -38,6 +42,10 @@
 
 			<ng-container *ngIf="activePage === 'resend events'">
 				<app-resend-events></app-resend-events>
+			</ng-container>
+
+			<ng-container *ngIf="activePage === 'queue monitoring'">
+				<convoy-queue-monitoring></convoy-queue-monitoring>
 			</ng-container>
 		</div>
 	</div>
