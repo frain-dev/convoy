@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -29,6 +30,24 @@ var (
 	cookieSigningKey     []byte
 	cookieSigningKeyOnce sync.Once
 )
+
+func shouldSetSecureCookie(r *http.Request) bool {
+	if r.TLS != nil {
+		return true
+	}
+
+	// Support TLS-terminating proxies/load balancers.
+	xfp := strings.ToLower(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")))
+	if xfp != "" {
+		first := strings.TrimSpace(strings.Split(xfp, ",")[0])
+		if first == "https" {
+			return true
+		}
+	}
+
+	forwarded := strings.ToLower(r.Header.Get("Forwarded"))
+	return strings.Contains(forwarded, "proto=https")
+}
 
 func getCookieSigningKey() []byte {
 	cookieSigningKeyOnce.Do(func() {
@@ -125,6 +144,7 @@ func (h *Handler) CreateQueueMonitoringSession(w http.ResponseWriter, r *http.Re
 		Expires:  expiry,
 		MaxAge:   int(queueMonitoringCookieTTL.Seconds()),
 		HttpOnly: true,
+		Secure:   shouldSetSecureCookie(r),
 		SameSite: http.SameSiteLaxMode,
 	})
 
@@ -148,6 +168,7 @@ func (h *Handler) RevokeQueueMonitoringSession(w http.ResponseWriter, r *http.Re
 		Path:     queueMonitoringCookiePath,
 		MaxAge:   -1,
 		HttpOnly: true,
+		Secure:   shouldSetSecureCookie(r),
 		SameSite: http.SameSiteLaxMode,
 	})
 
