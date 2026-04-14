@@ -6,6 +6,8 @@ import {PrivateService} from 'src/app/private/private.service';
 	providedIn: 'root'
 })
 export class RbacService {
+	private static readonly lastKnownRoleStorageKey = 'CONVOY_LAST_USER_ROLE';
+
 	permissions = {
 		PROJECT_VIEWER: ['Event Deliveries|VIEW', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations|VIEW', 'Organisations|ADD'],
 		PROJECT_ADMIN: ['Event Deliveries|MANAGE', 'Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Events|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE', 'Event Types|MANAGE', 'Project Setup|MANAGE', 'Organisations|ADD'],
@@ -19,21 +21,53 @@ export class RbacService {
 	async getUserRole(): Promise<ROLE> {
 		try {
 			const member = await this.privateService.getOrganizationMembership({ refresh: true });
-			const role = member.data.content[0].role.type;
-			switch (role) {
-				case 'instance_admin':
-					return 'INSTANCE_ADMIN';
-				case 'organisation_admin':
-					return 'ORGANISATION_ADMIN';
-				case 'billing_admin':
-					return 'BILLING_ADMIN';
-				case 'project_admin':
-					return 'PROJECT_ADMIN';
-				default:
-					return 'PROJECT_VIEWER';
-			}
+			const role = member.data.content[0].role.type as string | undefined;
+			const mappedRole = this.mapRole(role);
+			this.persistLastKnownRole(mappedRole);
+			return mappedRole;
 		} catch (error) {
+			const cachedRole = this.getLastKnownRole();
+			if (cachedRole) return cachedRole;
 			return 'PROJECT_VIEWER';
+		}
+	}
+
+	private mapRole(role: string | undefined): ROLE {
+		switch (role) {
+			case 'instance_admin':
+				return 'INSTANCE_ADMIN';
+			case 'organisation_admin':
+				return 'ORGANISATION_ADMIN';
+			case 'billing_admin':
+				return 'BILLING_ADMIN';
+			case 'project_admin':
+				return 'PROJECT_ADMIN';
+			default:
+				return 'PROJECT_VIEWER';
+		}
+	}
+
+	private persistLastKnownRole(role: ROLE): void {
+		try {
+			localStorage.setItem(RbacService.lastKnownRoleStorageKey, role);
+		} catch {}
+	}
+
+	private getLastKnownRole(): ROLE | null {
+		try {
+			const cachedRole = localStorage.getItem(RbacService.lastKnownRoleStorageKey);
+			switch (cachedRole) {
+				case 'INSTANCE_ADMIN':
+				case 'ORGANISATION_ADMIN':
+				case 'BILLING_ADMIN':
+				case 'PROJECT_ADMIN':
+				case 'PROJECT_VIEWER':
+					return cachedRole;
+				default:
+					return null;
+			}
+		} catch {
+			return null;
 		}
 	}
 

@@ -167,6 +167,11 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
+	if a == nil {
+		return nil, fmt.Errorf("api options is required")
+	}
+	ensureAPIRepositories(a)
+
 	appHandler := &ApplicationHandler{A: a}
 
 	cfg, err := config.Get()
@@ -806,8 +811,21 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 	if a.A.Licenser.AsynqMonitoring() {
 		router.Route("/queue", func(asynqRouter chi.Router) {
-			asynqRouter.Use(middleware.RequireAuth(handler.A.Logger))
-			asynqRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+			asynqRouter.Group(func(sessionRouter chi.Router) {
+				sessionRouter.Use(middleware.RequireAuth(handler.A.Logger))
+				sessionRouter.Post("/monitoring/session", handler.CreateQueueMonitoringSession)
+				sessionRouter.Delete("/monitoring/session", handler.RevokeQueueMonitoringSession)
+			})
+
+			rq := a.A.Queue.(*redisqueue.RedisQueue)
+			asynqRouter.Group(func(embedRouter chi.Router) {
+				embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.Cache)))
+				embedRouter.Handle("/monitoring/embed/*", rq.MonitorWithRootPath("/queue/monitoring/embed"))
+			})
+			asynqRouter.Group(func(monitorRouter chi.Router) {
+				monitorRouter.Use(middleware.RequireAuth(handler.A.Logger))
+				monitorRouter.Handle("/monitoring/*", rq.Monitor())
+			})
 		})
 	}
 
