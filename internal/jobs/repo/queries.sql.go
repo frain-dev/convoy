@@ -13,7 +13,7 @@ import (
 )
 
 const countPrevJobs = `-- name: CountPrevJobs :one
-SELECT COALESCE(COUNT(DISTINCT(id)), 0) AS count
+SELECT COUNT(id) AS count
 FROM convoy.jobs
 WHERE deleted_at IS NULL
   AND project_id = $1

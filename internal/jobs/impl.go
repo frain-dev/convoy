@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	ErrJobNotCreated = errors.New("job could not be created")
 	ErrJobNotUpdated = errors.New("job could not be updated")
 	ErrJobNotDeleted = errors.New("job could not be deleted")
 )
