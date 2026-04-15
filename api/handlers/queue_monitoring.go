@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -36,17 +37,12 @@ func shouldSetSecureCookie(r *http.Request) bool {
 		return true
 	}
 
-	// Support TLS-terminating proxies/load balancers.
-	xfp := strings.ToLower(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")))
-	if xfp != "" {
-		first := strings.TrimSpace(strings.Split(xfp, ",")[0])
-		if first == "https" {
-			return true
-		}
+	cfg, err := config.Get()
+	if err != nil {
+		return false
 	}
 
-	forwarded := strings.ToLower(r.Header.Get("Forwarded"))
-	return strings.Contains(forwarded, "proto=https")
+	return !strings.EqualFold(cfg.Environment, "development")
 }
 
 func getCookieSigningKey() []byte {

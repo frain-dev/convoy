@@ -97,12 +97,16 @@ export class PrivateComponent implements OnInit {
 		}
 
 		let token: string | null = null;
+		let userId: string | null = null;
 		try {
 			const authData = localStorage.getItem('CONVOY_AUTH');
-			token = authData ? JSON.parse(authData)?.access_token ?? null : null;
+			const auth = authData ? JSON.parse(authData) : null;
+			token = auth?.access_token ?? null;
+			userId = auth?.uid ?? null;
 		} catch (_) {
 			// Continue logout even when localStorage auth payload is malformed.
 			token = null;
+			userId = null;
 		}
 
 		// Revoke queue iframe session while dashboard auth token is still valid.
@@ -134,6 +138,9 @@ export class PrivateComponent implements OnInit {
 		localStorage.removeItem('GOOGLE_OAUTH_ID_TOKEN');
 		localStorage.removeItem('GOOGLE_OAUTH_USER_INFO');
 		localStorage.removeItem('AUTH_TYPE');
+		if (userId) {
+			localStorage.removeItem(`CONVOY_LAST_USER_ROLE_${userId}`);
+		}
 		localStorage.removeItem('CONVOY_LAST_USER_ROLE');
 
 		this.router.navigateByUrl('/login');
