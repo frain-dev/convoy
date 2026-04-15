@@ -41,14 +41,14 @@ type Postgres struct {
 	logger   log.Logger
 }
 
-func NewDB(cfg config.Configuration) (*Postgres, error) {
-	return NewDBWithLogger(cfg, pkgLogger)
+func NewDB(cfg config.Configuration, logger log.Logger) (*Postgres, error) {
+	return NewDBWithLogger(cfg, logger)
 }
 
 func NewDBWithLogger(cfg config.Configuration, logger log.Logger) (*Postgres, error) {
 	dbConfig := cfg.Database
 
-	primary, err := parseDBConfig(dbConfig)
+	primary, err := parseDBConfig(dbConfig, logger, "primary ")
 	primary.id = 0
 	primary.logger = logger
 	replicas := make([]*Postgres, 0)
@@ -59,7 +59,7 @@ func NewDBWithLogger(cfg config.Configuration, logger log.Logger) (*Postgres, er
 			if replica.Scheme == "" {
 				replica.Scheme = dbConfig.Scheme
 			}
-			r, e := parseDBConfig(replica, "replica ")
+			r, e := parseDBConfig(replica, logger, "replica ")
 			if e != nil {
 				return nil, e
 			}
@@ -86,7 +86,7 @@ func NewFromConnection(pool *pgxpool.Pool) *Postgres {
 	return &Postgres{dbx: db, pool: pool, conn: pool}
 }
 
-func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postgres, error) {
+func parseDBConfig(dbConfig config.DatabaseConfiguration, logger log.Logger, src ...string) (*Postgres, error) {
 	pgxCfg, err := pgxpool.ParseConfig(dbConfig.BuildDsn())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create %sconnection pool: %w", src, err)
@@ -97,7 +97,7 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 	maxConns := dbConfig.SetMaxOpenConnections
 	if maxConns <= 0 {
 		maxConns = 100
-		pkgLogger.Warn(fmt.Sprintf("[%s]: SetMaxOpenConnections not set or 0, using default: %d. Set CONVOY_DB_MAX_OPEN_CONN to override.", pkgName, maxConns))
+		logger.Warn(fmt.Sprintf("[%s]: SetMaxOpenConnections not set or 0, using default: %d. Set CONVOY_DB_MAX_OPEN_CONN to override.", pkgName, maxConns))
 	}
 	pgxCfg.MaxConns = int32(maxConns)
 
@@ -111,7 +111,7 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 	pool, err := pgxpool.NewWithConfig(context.Background(), pgxCfg)
 	if err != nil {
 		defer pool.Close()
-		return nil, fmt.Errorf("[%s]: failed to open %sdatabase - %v", pkgName, src, err)
+		return nil, fmt.Errorf("[%s]: failed to open %s database - %v", pkgName, src, err)
 	}
 
 	sqlDB := stdlib.OpenDBFromPool(pool)
