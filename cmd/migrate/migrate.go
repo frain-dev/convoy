@@ -35,29 +35,29 @@ func addUpCommand(a *cli.App) *cobra.Command {
 			"CheckMigration":  "false",
 			"ShouldBootstrap": "false",
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			a.Logger.Info("Running migrations...")
 
 			cfg, err := config.Get()
 			if err != nil {
-				a.Logger.Fatal("Error fetching the config.", "error", err)
+				return err
 			}
 
 			db, err := postgres.NewDB(cfg, a.Logger)
 			if err != nil {
-				a.Logger.Fatal(err)
+				return err
 			}
 			defer db.Close()
 
 			m := migrator.NewWithLogger(db, a.Logger)
 			err = m.Up()
 			if err != nil {
-				a.Logger.Fatalf("migration up failed with error: %+v", err)
+				return err
 			}
 
 			a.Logger.Info("Migration completed successfully.")
 
-			os.Exit(0)
+			return nil
 		},
 	}
 
@@ -75,29 +75,28 @@ func addDownCommand(a *cli.App) *cobra.Command {
 			"CheckMigration":  "false",
 			"ShouldBootstrap": "false",
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			a.Logger.Info("Rolling back migrations...")
 
 			cfg, err := config.Get()
 			if err != nil {
-				a.Logger.Fatal("Error fetching the config.", "error", err)
+				return err
 			}
 
 			db, err := postgres.NewDB(cfg, a.Logger)
 			if err != nil {
-				a.Logger.Fatal(err)
+				return err
 			}
 			defer db.Close()
 
 			m := migrator.NewWithLogger(db, a.Logger)
 			err = m.Down(maxMigrations)
 			if err != nil {
-				a.Logger.Fatalf("migration down failed with error: %+v", err)
+				return err
 			}
 
 			a.Logger.Info("Migration completed successfully.")
-
-			os.Exit(0)
+			return nil
 		},
 	}
 
@@ -114,13 +113,13 @@ func addCreateCommand(a *cli.App) *cobra.Command {
 			"CheckMigration":  "false",
 			"ShouldBootstrap": "false",
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			a.Logger.Info("Creating new migration file...")
 
 			fileName := fmt.Sprintf("sql/%v.sql", time.Now().Unix())
 			f, err := os.Create(fileName)
 			if err != nil {
-				a.Logger.Fatal(err)
+				return err
 			}
 
 			defer f.Close()
@@ -129,11 +128,12 @@ func addCreateCommand(a *cli.App) *cobra.Command {
 			for _, line := range lines {
 				_, err := f.WriteString(line + "\n\n")
 				if err != nil {
-					a.Logger.Fatal(err)
+					return err
 				}
 			}
 
 			a.Logger.Infof("Created migration: %s", fileName)
+			return nil
 		},
 	}
 
