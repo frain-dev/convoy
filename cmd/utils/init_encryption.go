@@ -63,7 +63,7 @@ func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 
 			a.Logger.Info("Initializing encryption with the current encryption key...")
 
-			db, err := postgres.NewDB(cfg)
+			db, err := postgres.NewDB(cfg, a.Logger)
 			if err != nil {
 				a.Logger.Error("Error connecting to database.", "error", err)
 				return err

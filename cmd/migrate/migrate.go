@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/migrator"
-	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func AddMigrateCommand(a *cli.App) *cobra.Command {
@@ -20,14 +19,14 @@ func AddMigrateCommand(a *cli.App) *cobra.Command {
 		Short: "Convoy migrations",
 	}
 
-	cmd.AddCommand(addUpCommand())
-	cmd.AddCommand(addDownCommand())
-	cmd.AddCommand(addCreateCommand())
+	cmd.AddCommand(addUpCommand(a))
+	cmd.AddCommand(addDownCommand(a))
+	cmd.AddCommand(addCreateCommand(a))
 
 	return cmd
 }
 
-func addUpCommand() *cobra.Command {
+func addUpCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "up",
 		Aliases: []string{"migrate-up"},
@@ -36,38 +35,36 @@ func addUpCommand() *cobra.Command {
 			"CheckMigration":  "false",
 			"ShouldBootstrap": "false",
 		},
-		Run: func(cmd *cobra.Command, args []string) {
-			lo := log.New("convoy", log.LevelInfo)
-
-			lo.Info("Running migrations...")
+		RunE: func(cmd *cobra.Command, args []string) error {
+			a.Logger.Info("Running migrations...")
 
 			cfg, err := config.Get()
 			if err != nil {
-				lo.Fatal("Error fetching the config.", "error", err)
+				return err
 			}
 
-			db, err := postgres.NewDB(cfg)
+			db, err := postgres.NewDB(cfg, a.Logger)
 			if err != nil {
-				lo.Fatal(err)
+				return err
 			}
 			defer db.Close()
 
-			m := migrator.NewWithLogger(db, lo)
+			m := migrator.NewWithLogger(db, a.Logger)
 			err = m.Up()
 			if err != nil {
-				lo.Fatalf("migration up failed with error: %+v", err)
+				return err
 			}
 
-			lo.Info("Migration completed successfully.")
+			a.Logger.Info("Migration completed successfully.")
 
-			os.Exit(0)
+			return nil
 		},
 	}
 
 	return cmd
 }
 
-func addDownCommand() *cobra.Command {
+func addDownCommand(a *cli.App) *cobra.Command {
 	var maxMigrations int
 
 	cmd := &cobra.Command{
@@ -78,29 +75,28 @@ func addDownCommand() *cobra.Command {
 			"CheckMigration":  "false",
 			"ShouldBootstrap": "false",
 		},
-		Run: func(cmd *cobra.Command, args []string) {
-			lo := log.New("convoy", log.LevelInfo)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			a.Logger.Info("Rolling back migrations...")
 
 			cfg, err := config.Get()
 			if err != nil {
-				lo.Fatal("Error fetching the config.", "error", err)
+				return err
 			}
 
-			db, err := postgres.NewDB(cfg)
+			db, err := postgres.NewDB(cfg, a.Logger)
 			if err != nil {
-				lo.Fatal(err)
+				return err
 			}
 			defer db.Close()
 
-			m := migrator.NewWithLogger(db, lo)
+			m := migrator.NewWithLogger(db, a.Logger)
 			err = m.Down(maxMigrations)
 			if err != nil {
-				lo.Fatalf("migration down failed with error: %+v", err)
+				return err
 			}
 
-			lo.Info("Migration completed successfully.")
-
-			os.Exit(0)
+			a.Logger.Info("Migration completed successfully.")
+			return nil
 		},
 	}
 
@@ -109,7 +105,7 @@ func addDownCommand() *cobra.Command {
 	return cmd
 }
 
-func addCreateCommand() *cobra.Command {
+func addCreateCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "creates a new migration file",
@@ -117,13 +113,13 @@ func addCreateCommand() *cobra.Command {
 			"CheckMigration":  "false",
 			"ShouldBootstrap": "false",
 		},
-		Run: func(cmd *cobra.Command, args []string) {
-			lo := log.New("convoy", log.LevelInfo)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			a.Logger.Info("Creating new migration file...")
 
 			fileName := fmt.Sprintf("sql/%v.sql", time.Now().Unix())
 			f, err := os.Create(fileName)
 			if err != nil {
-				lo.Fatal(err)
+				return err
 			}
 
 			defer f.Close()
@@ -132,11 +128,12 @@ func addCreateCommand() *cobra.Command {
 			for _, line := range lines {
 				_, err := f.WriteString(line + "\n\n")
 				if err != nil {
-					lo.Fatal(err)
+					return err
 				}
 			}
 
-			lo.Infof("Created migration: %s", fileName)
+			a.Logger.Infof("Created migration: %s", fileName)
+			return nil
 		},
 	}
 

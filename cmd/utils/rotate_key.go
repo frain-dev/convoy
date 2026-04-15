@@ -64,7 +64,7 @@ func AddRotateKeyCommand(a *cli.App) *cobra.Command {
 				return ErrOldEncryptionKeyMismatch
 			}
 
-			db, err := postgres.NewDB(cfg)
+			db, err := postgres.NewDB(cfg, a.Logger)
 			if err != nil {
 				slog.Error("Error connecting to database.", "error", err)
 				return err

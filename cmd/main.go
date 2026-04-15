@@ -22,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func main() {
@@ -34,6 +35,7 @@ func main() {
 	app := &cli.App{}
 	app.Version = convoy.GetVersion()
 	db := &postgres.Postgres{}
+	app.Logger = log.New("convoy", log.LevelDebug)
 
 	c := cli.NewCli(app)
 

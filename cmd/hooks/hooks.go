@@ -103,7 +103,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		lo := log.New("convoy", logLevel)
 
-		postgresDB, err := postgres.NewDB(cfg)
+		postgresDB, err := postgres.NewDB(cfg, lo)
 		if err != nil {
 			return errors.New("failed to connect to postgres with err: " + err.Error())
 		}
