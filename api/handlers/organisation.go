@@ -17,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
-	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
@@ -289,7 +288,7 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 	features := fflag.GetEarlyAdopterFeatures()
 	responseFeatures := make([]models.EarlyAdopterFeature, 0, len(features))
 
-	ffService := feature_flags.New(h.A.Logger, h.A.DB)
+	ffService := h.A.FeatureFlagService
 	earlyAdopterFeatures, err := ffService.LoadEarlyAdopterFeaturesByOrg(r.Context(), org.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -379,7 +378,7 @@ func (h *Handler) updateFeatureFlag(w http.ResponseWriter, r *http.Request, feat
 		feature.EnabledAt = null.TimeFrom(time.Now())
 	}
 
-	ffService := feature_flags.New(h.A.Logger, h.A.DB)
+	ffService := h.A.FeatureFlagService
 	err := ffService.UpsertEarlyAdopterFeature(r.Context(), feature)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -425,7 +424,7 @@ func (h *Handler) GetAllFeatureFlags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ffService := feature_flags.New(h.A.Logger, h.A.DB)
+	ffService := h.A.FeatureFlagService
 	flags, err := ffService.LoadFeatureFlags(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -485,7 +484,7 @@ func (h *Handler) GetOrganisationOverrides(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	ffService := feature_flags.New(h.A.Logger, h.A.DB)
+	ffService := h.A.FeatureFlagService
 	overrides, err := ffService.LoadFeatureFlagOverridesByOwner(r.Context(), "organisation", orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -541,7 +540,7 @@ func (h *Handler) UpdateOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	ffService := feature_flags.New(h.A.Logger, h.A.DB)
+	ffService := h.A.FeatureFlagService
 
 	// Fetch the feature flag
 	featureFlag, err := ffService.FetchFeatureFlagByKey(r.Context(), overrideRequest.FeatureKey)
@@ -600,7 +599,7 @@ func (h *Handler) DeleteOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	ffService := feature_flags.New(h.A.Logger, h.A.DB)
+	ffService := h.A.FeatureFlagService
 
 	// Fetch the feature flag to get its ID
 	featureFlag, err := ffService.FetchFeatureFlagByKey(r.Context(), featureKey)
@@ -912,7 +911,7 @@ func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ffService := feature_flags.New(h.A.Logger, h.A.DB)
+	ffService := h.A.FeatureFlagService
 
 	// Fetch the feature flag
 	featureFlag, err := ffService.FetchFeatureFlagByKey(r.Context(), featureKey)

@@ -142,6 +142,7 @@ func StartConvoyServer(a *cli.App) error {
 			FFlag:                      flag,
 			FeatureFlagFetcher:         featureFlagSvc,
 			EarlyAdopterFeatureFetcher: featureFlagSvc,
+			FeatureFlagService:         featureFlagSvc,
 			DB:                         a.DB,
 			Queue:                      a.Queue,
 			Logger:                     lo,
