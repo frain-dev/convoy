@@ -13,7 +13,8 @@ export class InstanceAdminGuard implements CanActivate {
 
 	async canActivate(): Promise<boolean> {
 		try {
-			const userRole = await this.rbacService.getUserRole();
+			// Require a live role check for admin route access.
+			const userRole = await this.rbacService.getUserRole({ allowCachedOnError: false });
 			if (userRole === 'INSTANCE_ADMIN') {
 				return true;
 			}

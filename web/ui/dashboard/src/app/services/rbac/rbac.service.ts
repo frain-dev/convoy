@@ -6,7 +6,7 @@ import {PrivateService} from 'src/app/private/private.service';
 	providedIn: 'root'
 })
 export class RbacService {
-	private static readonly lastKnownRoleStorageKey = 'CONVOY_LAST_USER_ROLE';
+	private static readonly lastKnownRoleStorageKeyPrefix = 'CONVOY_LAST_USER_ROLE_';
 
 	permissions = {
 		PROJECT_VIEWER: ['Event Deliveries|VIEW', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations|VIEW', 'Organisations|ADD'],
@@ -18,7 +18,8 @@ export class RbacService {
 
 	constructor(private privateService: PrivateService, private route: ActivatedRoute) {}
 
-	async getUserRole(): Promise<ROLE> {
+	async getUserRole(options?: { allowCachedOnError?: boolean }): Promise<ROLE> {
+		const allowCachedOnError = options?.allowCachedOnError ?? true;
 		try {
 			const member = await this.privateService.getOrganizationMembership({ refresh: true });
 			const role = member.data.content[0].role.type as string | undefined;
@@ -26,8 +27,11 @@ export class RbacService {
 			this.persistLastKnownRole(mappedRole);
 			return mappedRole;
 		} catch (error) {
-			const cachedRole = this.getLastKnownRole();
-			if (cachedRole) return cachedRole;
+			if (allowCachedOnError) {
+				const cachedRole = this.getLastKnownRole();
+				// Never recover admin access from cache on fetch failures.
+				if (cachedRole && cachedRole !== 'INSTANCE_ADMIN') return cachedRole;
+			}
 			return 'PROJECT_VIEWER';
 		}
 	}
@@ -49,13 +53,17 @@ export class RbacService {
 
 	private persistLastKnownRole(role: ROLE): void {
 		try {
-			localStorage.setItem(RbacService.lastKnownRoleStorageKey, role);
+			const userId = this.getCurrentUserId();
+			if (!userId) return;
+			localStorage.setItem(`${RbacService.lastKnownRoleStorageKeyPrefix}${userId}`, role);
 		} catch {}
 	}
 
 	private getLastKnownRole(): ROLE | null {
 		try {
-			const cachedRole = localStorage.getItem(RbacService.lastKnownRoleStorageKey);
+			const userId = this.getCurrentUserId();
+			if (!userId) return null;
+			const cachedRole = localStorage.getItem(`${RbacService.lastKnownRoleStorageKeyPrefix}${userId}`);
 			switch (cachedRole) {
 				case 'INSTANCE_ADMIN':
 				case 'ORGANISATION_ADMIN':
@@ -66,6 +74,16 @@ export class RbacService {
 				default:
 					return null;
 			}
+		} catch {
+			return null;
+		}
+	}
+
+	private getCurrentUserId(): string | null {
+		try {
+			const authData = localStorage.getItem('CONVOY_AUTH');
+			const auth = authData ? JSON.parse(authData) : null;
+			return auth?.uid ?? null;
 		} catch {
 			return null;
 		}
