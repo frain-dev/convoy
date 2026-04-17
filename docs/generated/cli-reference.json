@@ -1,0 +1,4388 @@
+{
+  "source": "cobra tree: scripts/docs/gencliref (mirrors cmd/main.go root flags + server|agent|migrate|config)",
+  "commands": [
+    {
+      "path": [],
+      "use": "Convoy",
+      "short": "High Performance Webhooks Gateway",
+      "flags": [
+        {
+          "name": "api-rate-limit",
+          "usage": "API rate limit",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "billing-api-key",
+          "usage": "Billing service API key (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "billing-url",
+          "usage": "Billing service URL (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "config",
+          "usage": "Configuration file for convoy",
+          "default": "./convoy.json",
+          "def_value": "./convoy.json",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "datadog-agent-url",
+          "usage": "Datadog agent URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "db-database",
+          "usage": "Database Database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "db-host",
+          "usage": "Database Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "db-options",
+          "usage": "Database Options",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "db-password",
+          "usage": "Database Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "db-port",
+          "usage": "Database Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "db-scheme",
+          "usage": "Database Scheme",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "db-type",
+          "usage": "Database provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "db-username",
+          "usage": "Database Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "enable-billing",
+          "usage": "Enable billing functionality",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "enable-feature-flag",
+          "usage": "List of feature flags to enable e.g. \"full-text-search,prometheus\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "enable-profiling",
+          "usage": "Enable profiling and exporting profile data to pyroscope",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "hcp-app-name",
+          "usage": "HCP Vault app name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "hcp-cache-duration",
+          "usage": "HCP Vault key cache duration",
+          "default": "5m0s",
+          "def_value": "5m0s",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "hcp-client-id",
+          "usage": "HCP Vault client ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "hcp-client-secret",
+          "usage": "HCP Vault client secret",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "hcp-org-id",
+          "usage": "HCP Vault organization ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "hcp-project-id",
+          "usage": "HCP Vault project ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "hcp-secret-name",
+          "usage": "HCP Vault secret name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "instance-ingest-rate",
+          "usage": "Instance ingest Rate",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "ip-allow-list",
+          "usage": "List of IPs CIDRs to allow e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "ip-block-list",
+          "usage": "List of IPs CIDRs to block e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "license-key",
+          "usage": "Convoy license key",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "log-level",
+          "usage": "Log level",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "max-retry-seconds",
+          "usage": "Max retry seconds exponential backoff",
+          "default": "7200",
+          "def_value": "7200",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "metrics-backend",
+          "usage": "Metrics backend e.g. prometheus. ('prometheus' feature flag required",
+          "default": "prometheus",
+          "def_value": "prometheus",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "metrics-prometheus-materialized-view-refresh-interval",
+          "usage": "Materialized view refresh interval in minutes",
+          "default": "2",
+          "def_value": "2",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "metrics-prometheus-query-timeout",
+          "usage": "Prometheus metrics query timeout in seconds",
+          "default": "30",
+          "def_value": "30",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "metrics-prometheus-sample-time",
+          "usage": "Prometheus metrics sample time",
+          "default": "5",
+          "def_value": "5",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "otel-auth-header-name",
+          "usage": "OTel backend auth header name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "otel-auth-header-value",
+          "usage": "OTel backend auth header value",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "otel-collector-url",
+          "usage": "OTel collector URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "otel-sample-rate",
+          "usage": "OTel tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "read-replicas-dsn",
+          "usage": "Comma-separated list of read replica DSNs e.g. postgres://convoy:convoy@host1:5436/db,postgres://convoy:convoy@host2:5437/db",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-addresses",
+          "usage": "Redis addresses (comma-separated, for cluster or sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-database",
+          "usage": "Redis database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-host",
+          "usage": "Redis Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-password",
+          "usage": "Redis Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-port",
+          "usage": "Redis Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-scheme",
+          "usage": "Redis Scheme (redis, redis-sentinel, rediss)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-sentinel-master-name",
+          "usage": "Redis Sentinel master name (required when scheme is redis-sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-sentinel-password",
+          "usage": "Redis Sentinel password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-sentinel-username",
+          "usage": "Redis Sentinel username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-type",
+          "usage": "Redis provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "redis-username",
+          "usage": "Redis Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "retention-policy",
+          "usage": "Retention Policy Duration",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "retention-policy-enabled",
+          "usage": "Retention Policy Enabled",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "root-path",
+          "usage": "Root path for routing behind load balancers (e.g., /convoy)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "sentry-debug",
+          "usage": "Enable Sentry debug logging",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "sentry-dsn",
+          "usage": "Sentry backend dsn",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "sentry-sample-rate",
+          "usage": "Sentry tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "tracer-type",
+          "usage": "Tracer backend, e.g. sentry, datadog or otel",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        }
+      ],
+      "flag_order": [
+        "api-rate-limit",
+        "billing-api-key",
+        "billing-url",
+        "config",
+        "datadog-agent-url",
+        "db-database",
+        "db-host",
+        "db-options",
+        "db-password",
+        "db-port",
+        "db-scheme",
+        "db-type",
+        "db-username",
+        "enable-billing",
+        "enable-feature-flag",
+        "enable-profiling",
+        "hcp-app-name",
+        "hcp-cache-duration",
+        "hcp-client-id",
+        "hcp-client-secret",
+        "hcp-org-id",
+        "hcp-project-id",
+        "hcp-secret-name",
+        "instance-ingest-rate",
+        "ip-allow-list",
+        "ip-block-list",
+        "license-key",
+        "log-level",
+        "max-retry-seconds",
+        "metrics-backend",
+        "metrics-prometheus-materialized-view-refresh-interval",
+        "metrics-prometheus-query-timeout",
+        "metrics-prometheus-sample-time",
+        "otel-auth-header-name",
+        "otel-auth-header-value",
+        "otel-collector-url",
+        "otel-sample-rate",
+        "read-replicas-dsn",
+        "redis-addresses",
+        "redis-database",
+        "redis-host",
+        "redis-password",
+        "redis-port",
+        "redis-scheme",
+        "redis-sentinel-master-name",
+        "redis-sentinel-password",
+        "redis-sentinel-username",
+        "redis-type",
+        "redis-username",
+        "retention-policy",
+        "retention-policy-enabled",
+        "root-path",
+        "sentry-debug",
+        "sentry-dsn",
+        "sentry-sample-rate",
+        "tracer-type"
+      ]
+    },
+    {
+      "path": [
+        "agent"
+      ],
+      "use": "agent",
+      "short": "Start agent instance",
+      "flags": [
+        {
+          "name": "api-rate-limit",
+          "usage": "API rate limit",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-api-key",
+          "usage": "Billing service API key (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-url",
+          "usage": "Billing service URL (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "config",
+          "usage": "Configuration file for convoy",
+          "default": "./convoy.json",
+          "def_value": "./convoy.json",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "consumers",
+          "usage": "Size of the consumers pool.",
+          "default": "-1",
+          "def_value": "-1",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "datadog-agent-url",
+          "usage": "Datadog agent URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-database",
+          "usage": "Database Database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-host",
+          "usage": "Database Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-options",
+          "usage": "Database Options",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-password",
+          "usage": "Database Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-port",
+          "usage": "Database Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-scheme",
+          "usage": "Database Scheme",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-type",
+          "usage": "Database provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-username",
+          "usage": "Database Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-billing",
+          "usage": "Enable billing functionality",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-feature-flag",
+          "usage": "List of feature flags to enable e.g. \"full-text-search,prometheus\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-profiling",
+          "usage": "Enable profiling and exporting profile data to pyroscope",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-app-name",
+          "usage": "HCP Vault app name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-cache-duration",
+          "usage": "HCP Vault key cache duration",
+          "default": "5m0s",
+          "def_value": "5m0s",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-id",
+          "usage": "HCP Vault client ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-secret",
+          "usage": "HCP Vault client secret",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-org-id",
+          "usage": "HCP Vault organization ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-project-id",
+          "usage": "HCP Vault project ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-secret-name",
+          "usage": "HCP Vault secret name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "instance-ingest-rate",
+          "usage": "Instance ingest Rate",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "interval",
+          "usage": "the time interval, measured in seconds to update the in-memory store from the database",
+          "default": "10",
+          "def_value": "10",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "ip-allow-list",
+          "usage": "List of IPs CIDRs to allow e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-block-list",
+          "usage": "List of IPs CIDRs to block e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "license-key",
+          "usage": "Convoy license key",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "log-level",
+          "usage": "Log level",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "max-retry-seconds",
+          "usage": "Max retry seconds exponential backoff",
+          "default": "7200",
+          "def_value": "7200",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-backend",
+          "usage": "Metrics backend e.g. prometheus. ('prometheus' feature flag required",
+          "default": "prometheus",
+          "def_value": "prometheus",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-materialized-view-refresh-interval",
+          "usage": "Materialized view refresh interval in minutes",
+          "default": "2",
+          "def_value": "2",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-query-timeout",
+          "usage": "Prometheus metrics query timeout in seconds",
+          "default": "30",
+          "def_value": "30",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-sample-time",
+          "usage": "Prometheus metrics sample time",
+          "default": "5",
+          "def_value": "5",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "mode",
+          "usage": "Execution Mode (one of events, retry and default)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "otel-auth-header-name",
+          "usage": "OTel backend auth header name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-value",
+          "usage": "OTel backend auth header value",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-collector-url",
+          "usage": "OTel collector URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-sample-rate",
+          "usage": "OTel tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "port",
+          "usage": "Agent port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "read-replicas-dsn",
+          "usage": "Comma-separated list of read replica DSNs e.g. postgres://convoy:convoy@host1:5436/db,postgres://convoy:convoy@host2:5437/db",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-addresses",
+          "usage": "Redis addresses (comma-separated, for cluster or sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-database",
+          "usage": "Redis database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-host",
+          "usage": "Redis Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-password",
+          "usage": "Redis Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-port",
+          "usage": "Redis Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-scheme",
+          "usage": "Redis Scheme (redis, redis-sentinel, rediss)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-master-name",
+          "usage": "Redis Sentinel master name (required when scheme is redis-sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-password",
+          "usage": "Redis Sentinel password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-username",
+          "usage": "Redis Sentinel username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-type",
+          "usage": "Redis provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-username",
+          "usage": "Redis Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy",
+          "usage": "Retention Policy Duration",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy-enabled",
+          "usage": "Retention Policy Enabled",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "root-path",
+          "usage": "Root path for routing behind load balancers (e.g., /convoy)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-debug",
+          "usage": "Enable Sentry debug logging",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-dsn",
+          "usage": "Sentry backend dsn",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-sample-rate",
+          "usage": "Sentry tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "smtp-from",
+          "usage": "Sender email address",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "smtp-password",
+          "usage": "SMTP authentication password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "smtp-port",
+          "usage": "SMTP Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "smtp-provider",
+          "usage": "SMTP provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "smtp-reply-to",
+          "usage": "Email address to reply to",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "smtp-ssl",
+          "usage": "Enable SMTP SSL",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "smtp-url",
+          "usage": "SMTP provider URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "smtp-username",
+          "usage": "SMTP authentication username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "tracer-type",
+          "usage": "Tracer backend, e.g. sentry, datadog or otel",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        }
+      ],
+      "flag_order": [
+        "api-rate-limit",
+        "billing-api-key",
+        "billing-url",
+        "config",
+        "datadog-agent-url",
+        "db-database",
+        "db-host",
+        "db-options",
+        "db-password",
+        "db-port",
+        "db-scheme",
+        "db-type",
+        "db-username",
+        "enable-billing",
+        "enable-feature-flag",
+        "enable-profiling",
+        "hcp-app-name",
+        "hcp-cache-duration",
+        "hcp-client-id",
+        "hcp-client-secret",
+        "hcp-org-id",
+        "hcp-project-id",
+        "hcp-secret-name",
+        "instance-ingest-rate",
+        "ip-allow-list",
+        "ip-block-list",
+        "license-key",
+        "log-level",
+        "max-retry-seconds",
+        "metrics-backend",
+        "metrics-prometheus-materialized-view-refresh-interval",
+        "metrics-prometheus-query-timeout",
+        "metrics-prometheus-sample-time",
+        "otel-auth-header-name",
+        "otel-auth-header-value",
+        "otel-collector-url",
+        "otel-sample-rate",
+        "read-replicas-dsn",
+        "redis-addresses",
+        "redis-database",
+        "redis-host",
+        "redis-password",
+        "redis-port",
+        "redis-scheme",
+        "redis-sentinel-master-name",
+        "redis-sentinel-password",
+        "redis-sentinel-username",
+        "redis-type",
+        "redis-username",
+        "retention-policy",
+        "retention-policy-enabled",
+        "root-path",
+        "sentry-debug",
+        "sentry-dsn",
+        "sentry-sample-rate",
+        "tracer-type",
+        "consumers",
+        "interval",
+        "mode",
+        "port",
+        "smtp-from",
+        "smtp-password",
+        "smtp-port",
+        "smtp-provider",
+        "smtp-reply-to",
+        "smtp-ssl",
+        "smtp-url",
+        "smtp-username"
+      ]
+    },
+    {
+      "path": [
+        "config"
+      ],
+      "use": "config",
+      "short": "config outputs your instances computed configuration",
+      "flags": [
+        {
+          "name": "api-rate-limit",
+          "usage": "API rate limit",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-api-key",
+          "usage": "Billing service API key (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-url",
+          "usage": "Billing service URL (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "config",
+          "usage": "Configuration file for convoy",
+          "default": "./convoy.json",
+          "def_value": "./convoy.json",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "datadog-agent-url",
+          "usage": "Datadog agent URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-database",
+          "usage": "Database Database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-host",
+          "usage": "Database Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-options",
+          "usage": "Database Options",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-password",
+          "usage": "Database Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-port",
+          "usage": "Database Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-scheme",
+          "usage": "Database Scheme",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-type",
+          "usage": "Database provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-username",
+          "usage": "Database Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-billing",
+          "usage": "Enable billing functionality",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-feature-flag",
+          "usage": "List of feature flags to enable e.g. \"full-text-search,prometheus\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-profiling",
+          "usage": "Enable profiling and exporting profile data to pyroscope",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-app-name",
+          "usage": "HCP Vault app name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-cache-duration",
+          "usage": "HCP Vault key cache duration",
+          "default": "5m0s",
+          "def_value": "5m0s",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-id",
+          "usage": "HCP Vault client ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-secret",
+          "usage": "HCP Vault client secret",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-org-id",
+          "usage": "HCP Vault organization ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-project-id",
+          "usage": "HCP Vault project ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-secret-name",
+          "usage": "HCP Vault secret name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "instance-ingest-rate",
+          "usage": "Instance ingest Rate",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-allow-list",
+          "usage": "List of IPs CIDRs to allow e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-block-list",
+          "usage": "List of IPs CIDRs to block e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "license-key",
+          "usage": "Convoy license key",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "log-level",
+          "usage": "Log level",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "max-retry-seconds",
+          "usage": "Max retry seconds exponential backoff",
+          "default": "7200",
+          "def_value": "7200",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-backend",
+          "usage": "Metrics backend e.g. prometheus. ('prometheus' feature flag required",
+          "default": "prometheus",
+          "def_value": "prometheus",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-materialized-view-refresh-interval",
+          "usage": "Materialized view refresh interval in minutes",
+          "default": "2",
+          "def_value": "2",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-query-timeout",
+          "usage": "Prometheus metrics query timeout in seconds",
+          "default": "30",
+          "def_value": "30",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-sample-time",
+          "usage": "Prometheus metrics sample time",
+          "default": "5",
+          "def_value": "5",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-name",
+          "usage": "OTel backend auth header name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-value",
+          "usage": "OTel backend auth header value",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-collector-url",
+          "usage": "OTel collector URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-sample-rate",
+          "usage": "OTel tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "read-replicas-dsn",
+          "usage": "Comma-separated list of read replica DSNs e.g. postgres://convoy:convoy@host1:5436/db,postgres://convoy:convoy@host2:5437/db",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-addresses",
+          "usage": "Redis addresses (comma-separated, for cluster or sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-database",
+          "usage": "Redis database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-host",
+          "usage": "Redis Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-password",
+          "usage": "Redis Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-port",
+          "usage": "Redis Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-scheme",
+          "usage": "Redis Scheme (redis, redis-sentinel, rediss)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-master-name",
+          "usage": "Redis Sentinel master name (required when scheme is redis-sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-password",
+          "usage": "Redis Sentinel password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-username",
+          "usage": "Redis Sentinel username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-type",
+          "usage": "Redis provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-username",
+          "usage": "Redis Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy",
+          "usage": "Retention Policy Duration",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy-enabled",
+          "usage": "Retention Policy Enabled",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "root-path",
+          "usage": "Root path for routing behind load balancers (e.g., /convoy)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-debug",
+          "usage": "Enable Sentry debug logging",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-dsn",
+          "usage": "Sentry backend dsn",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-sample-rate",
+          "usage": "Sentry tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "tracer-type",
+          "usage": "Tracer backend, e.g. sentry, datadog or otel",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        }
+      ],
+      "flag_order": [
+        "api-rate-limit",
+        "billing-api-key",
+        "billing-url",
+        "config",
+        "datadog-agent-url",
+        "db-database",
+        "db-host",
+        "db-options",
+        "db-password",
+        "db-port",
+        "db-scheme",
+        "db-type",
+        "db-username",
+        "enable-billing",
+        "enable-feature-flag",
+        "enable-profiling",
+        "hcp-app-name",
+        "hcp-cache-duration",
+        "hcp-client-id",
+        "hcp-client-secret",
+        "hcp-org-id",
+        "hcp-project-id",
+        "hcp-secret-name",
+        "instance-ingest-rate",
+        "ip-allow-list",
+        "ip-block-list",
+        "license-key",
+        "log-level",
+        "max-retry-seconds",
+        "metrics-backend",
+        "metrics-prometheus-materialized-view-refresh-interval",
+        "metrics-prometheus-query-timeout",
+        "metrics-prometheus-sample-time",
+        "otel-auth-header-name",
+        "otel-auth-header-value",
+        "otel-collector-url",
+        "otel-sample-rate",
+        "read-replicas-dsn",
+        "redis-addresses",
+        "redis-database",
+        "redis-host",
+        "redis-password",
+        "redis-port",
+        "redis-scheme",
+        "redis-sentinel-master-name",
+        "redis-sentinel-password",
+        "redis-sentinel-username",
+        "redis-type",
+        "redis-username",
+        "retention-policy",
+        "retention-policy-enabled",
+        "root-path",
+        "sentry-debug",
+        "sentry-dsn",
+        "sentry-sample-rate",
+        "tracer-type"
+      ]
+    },
+    {
+      "path": [
+        "migrate"
+      ],
+      "use": "migrate",
+      "short": "Convoy migrations",
+      "flags": [
+        {
+          "name": "api-rate-limit",
+          "usage": "API rate limit",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-api-key",
+          "usage": "Billing service API key (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-url",
+          "usage": "Billing service URL (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "config",
+          "usage": "Configuration file for convoy",
+          "default": "./convoy.json",
+          "def_value": "./convoy.json",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "datadog-agent-url",
+          "usage": "Datadog agent URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-database",
+          "usage": "Database Database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-host",
+          "usage": "Database Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-options",
+          "usage": "Database Options",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-password",
+          "usage": "Database Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-port",
+          "usage": "Database Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-scheme",
+          "usage": "Database Scheme",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-type",
+          "usage": "Database provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-username",
+          "usage": "Database Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-billing",
+          "usage": "Enable billing functionality",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-feature-flag",
+          "usage": "List of feature flags to enable e.g. \"full-text-search,prometheus\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-profiling",
+          "usage": "Enable profiling and exporting profile data to pyroscope",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-app-name",
+          "usage": "HCP Vault app name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-cache-duration",
+          "usage": "HCP Vault key cache duration",
+          "default": "5m0s",
+          "def_value": "5m0s",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-id",
+          "usage": "HCP Vault client ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-secret",
+          "usage": "HCP Vault client secret",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-org-id",
+          "usage": "HCP Vault organization ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-project-id",
+          "usage": "HCP Vault project ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-secret-name",
+          "usage": "HCP Vault secret name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "instance-ingest-rate",
+          "usage": "Instance ingest Rate",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-allow-list",
+          "usage": "List of IPs CIDRs to allow e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-block-list",
+          "usage": "List of IPs CIDRs to block e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "license-key",
+          "usage": "Convoy license key",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "log-level",
+          "usage": "Log level",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "max-retry-seconds",
+          "usage": "Max retry seconds exponential backoff",
+          "default": "7200",
+          "def_value": "7200",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-backend",
+          "usage": "Metrics backend e.g. prometheus. ('prometheus' feature flag required",
+          "default": "prometheus",
+          "def_value": "prometheus",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-materialized-view-refresh-interval",
+          "usage": "Materialized view refresh interval in minutes",
+          "default": "2",
+          "def_value": "2",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-query-timeout",
+          "usage": "Prometheus metrics query timeout in seconds",
+          "default": "30",
+          "def_value": "30",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-sample-time",
+          "usage": "Prometheus metrics sample time",
+          "default": "5",
+          "def_value": "5",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-name",
+          "usage": "OTel backend auth header name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-value",
+          "usage": "OTel backend auth header value",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-collector-url",
+          "usage": "OTel collector URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-sample-rate",
+          "usage": "OTel tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "read-replicas-dsn",
+          "usage": "Comma-separated list of read replica DSNs e.g. postgres://convoy:convoy@host1:5436/db,postgres://convoy:convoy@host2:5437/db",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-addresses",
+          "usage": "Redis addresses (comma-separated, for cluster or sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-database",
+          "usage": "Redis database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-host",
+          "usage": "Redis Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-password",
+          "usage": "Redis Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-port",
+          "usage": "Redis Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-scheme",
+          "usage": "Redis Scheme (redis, redis-sentinel, rediss)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-master-name",
+          "usage": "Redis Sentinel master name (required when scheme is redis-sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-password",
+          "usage": "Redis Sentinel password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-username",
+          "usage": "Redis Sentinel username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-type",
+          "usage": "Redis provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-username",
+          "usage": "Redis Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy",
+          "usage": "Retention Policy Duration",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy-enabled",
+          "usage": "Retention Policy Enabled",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "root-path",
+          "usage": "Root path for routing behind load balancers (e.g., /convoy)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-debug",
+          "usage": "Enable Sentry debug logging",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-dsn",
+          "usage": "Sentry backend dsn",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-sample-rate",
+          "usage": "Sentry tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "tracer-type",
+          "usage": "Tracer backend, e.g. sentry, datadog or otel",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        }
+      ],
+      "flag_order": [
+        "api-rate-limit",
+        "billing-api-key",
+        "billing-url",
+        "config",
+        "datadog-agent-url",
+        "db-database",
+        "db-host",
+        "db-options",
+        "db-password",
+        "db-port",
+        "db-scheme",
+        "db-type",
+        "db-username",
+        "enable-billing",
+        "enable-feature-flag",
+        "enable-profiling",
+        "hcp-app-name",
+        "hcp-cache-duration",
+        "hcp-client-id",
+        "hcp-client-secret",
+        "hcp-org-id",
+        "hcp-project-id",
+        "hcp-secret-name",
+        "instance-ingest-rate",
+        "ip-allow-list",
+        "ip-block-list",
+        "license-key",
+        "log-level",
+        "max-retry-seconds",
+        "metrics-backend",
+        "metrics-prometheus-materialized-view-refresh-interval",
+        "metrics-prometheus-query-timeout",
+        "metrics-prometheus-sample-time",
+        "otel-auth-header-name",
+        "otel-auth-header-value",
+        "otel-collector-url",
+        "otel-sample-rate",
+        "read-replicas-dsn",
+        "redis-addresses",
+        "redis-database",
+        "redis-host",
+        "redis-password",
+        "redis-port",
+        "redis-scheme",
+        "redis-sentinel-master-name",
+        "redis-sentinel-password",
+        "redis-sentinel-username",
+        "redis-type",
+        "redis-username",
+        "retention-policy",
+        "retention-policy-enabled",
+        "root-path",
+        "sentry-debug",
+        "sentry-dsn",
+        "sentry-sample-rate",
+        "tracer-type"
+      ]
+    },
+    {
+      "path": [
+        "migrate",
+        "create"
+      ],
+      "use": "create",
+      "short": "creates a new migration file",
+      "flags": [
+        {
+          "name": "api-rate-limit",
+          "usage": "API rate limit",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-api-key",
+          "usage": "Billing service API key (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-url",
+          "usage": "Billing service URL (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "config",
+          "usage": "Configuration file for convoy",
+          "default": "./convoy.json",
+          "def_value": "./convoy.json",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "datadog-agent-url",
+          "usage": "Datadog agent URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-database",
+          "usage": "Database Database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-host",
+          "usage": "Database Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-options",
+          "usage": "Database Options",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-password",
+          "usage": "Database Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-port",
+          "usage": "Database Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-scheme",
+          "usage": "Database Scheme",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-type",
+          "usage": "Database provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-username",
+          "usage": "Database Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-billing",
+          "usage": "Enable billing functionality",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-feature-flag",
+          "usage": "List of feature flags to enable e.g. \"full-text-search,prometheus\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-profiling",
+          "usage": "Enable profiling and exporting profile data to pyroscope",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-app-name",
+          "usage": "HCP Vault app name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-cache-duration",
+          "usage": "HCP Vault key cache duration",
+          "default": "5m0s",
+          "def_value": "5m0s",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-id",
+          "usage": "HCP Vault client ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-secret",
+          "usage": "HCP Vault client secret",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-org-id",
+          "usage": "HCP Vault organization ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-project-id",
+          "usage": "HCP Vault project ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-secret-name",
+          "usage": "HCP Vault secret name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "instance-ingest-rate",
+          "usage": "Instance ingest Rate",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-allow-list",
+          "usage": "List of IPs CIDRs to allow e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-block-list",
+          "usage": "List of IPs CIDRs to block e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "license-key",
+          "usage": "Convoy license key",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "log-level",
+          "usage": "Log level",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "max-retry-seconds",
+          "usage": "Max retry seconds exponential backoff",
+          "default": "7200",
+          "def_value": "7200",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-backend",
+          "usage": "Metrics backend e.g. prometheus. ('prometheus' feature flag required",
+          "default": "prometheus",
+          "def_value": "prometheus",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-materialized-view-refresh-interval",
+          "usage": "Materialized view refresh interval in minutes",
+          "default": "2",
+          "def_value": "2",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-query-timeout",
+          "usage": "Prometheus metrics query timeout in seconds",
+          "default": "30",
+          "def_value": "30",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-sample-time",
+          "usage": "Prometheus metrics sample time",
+          "default": "5",
+          "def_value": "5",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-name",
+          "usage": "OTel backend auth header name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-value",
+          "usage": "OTel backend auth header value",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-collector-url",
+          "usage": "OTel collector URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-sample-rate",
+          "usage": "OTel tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "read-replicas-dsn",
+          "usage": "Comma-separated list of read replica DSNs e.g. postgres://convoy:convoy@host1:5436/db,postgres://convoy:convoy@host2:5437/db",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-addresses",
+          "usage": "Redis addresses (comma-separated, for cluster or sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-database",
+          "usage": "Redis database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-host",
+          "usage": "Redis Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-password",
+          "usage": "Redis Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-port",
+          "usage": "Redis Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-scheme",
+          "usage": "Redis Scheme (redis, redis-sentinel, rediss)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-master-name",
+          "usage": "Redis Sentinel master name (required when scheme is redis-sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-password",
+          "usage": "Redis Sentinel password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-username",
+          "usage": "Redis Sentinel username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-type",
+          "usage": "Redis provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-username",
+          "usage": "Redis Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy",
+          "usage": "Retention Policy Duration",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy-enabled",
+          "usage": "Retention Policy Enabled",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "root-path",
+          "usage": "Root path for routing behind load balancers (e.g., /convoy)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-debug",
+          "usage": "Enable Sentry debug logging",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-dsn",
+          "usage": "Sentry backend dsn",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-sample-rate",
+          "usage": "Sentry tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "tracer-type",
+          "usage": "Tracer backend, e.g. sentry, datadog or otel",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        }
+      ],
+      "flag_order": [
+        "api-rate-limit",
+        "billing-api-key",
+        "billing-url",
+        "config",
+        "datadog-agent-url",
+        "db-database",
+        "db-host",
+        "db-options",
+        "db-password",
+        "db-port",
+        "db-scheme",
+        "db-type",
+        "db-username",
+        "enable-billing",
+        "enable-feature-flag",
+        "enable-profiling",
+        "hcp-app-name",
+        "hcp-cache-duration",
+        "hcp-client-id",
+        "hcp-client-secret",
+        "hcp-org-id",
+        "hcp-project-id",
+        "hcp-secret-name",
+        "instance-ingest-rate",
+        "ip-allow-list",
+        "ip-block-list",
+        "license-key",
+        "log-level",
+        "max-retry-seconds",
+        "metrics-backend",
+        "metrics-prometheus-materialized-view-refresh-interval",
+        "metrics-prometheus-query-timeout",
+        "metrics-prometheus-sample-time",
+        "otel-auth-header-name",
+        "otel-auth-header-value",
+        "otel-collector-url",
+        "otel-sample-rate",
+        "read-replicas-dsn",
+        "redis-addresses",
+        "redis-database",
+        "redis-host",
+        "redis-password",
+        "redis-port",
+        "redis-scheme",
+        "redis-sentinel-master-name",
+        "redis-sentinel-password",
+        "redis-sentinel-username",
+        "redis-type",
+        "redis-username",
+        "retention-policy",
+        "retention-policy-enabled",
+        "root-path",
+        "sentry-debug",
+        "sentry-dsn",
+        "sentry-sample-rate",
+        "tracer-type"
+      ]
+    },
+    {
+      "path": [
+        "migrate",
+        "down"
+      ],
+      "use": "down",
+      "short": "Rollback migrations",
+      "aliases": [
+        "migrate-down"
+      ],
+      "flags": [
+        {
+          "name": "api-rate-limit",
+          "usage": "API rate limit",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-api-key",
+          "usage": "Billing service API key (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-url",
+          "usage": "Billing service URL (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "config",
+          "usage": "Configuration file for convoy",
+          "default": "./convoy.json",
+          "def_value": "./convoy.json",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "datadog-agent-url",
+          "usage": "Datadog agent URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-database",
+          "usage": "Database Database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-host",
+          "usage": "Database Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-options",
+          "usage": "Database Options",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-password",
+          "usage": "Database Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-port",
+          "usage": "Database Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-scheme",
+          "usage": "Database Scheme",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-type",
+          "usage": "Database provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-username",
+          "usage": "Database Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-billing",
+          "usage": "Enable billing functionality",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-feature-flag",
+          "usage": "List of feature flags to enable e.g. \"full-text-search,prometheus\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-profiling",
+          "usage": "Enable profiling and exporting profile data to pyroscope",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-app-name",
+          "usage": "HCP Vault app name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-cache-duration",
+          "usage": "HCP Vault key cache duration",
+          "default": "5m0s",
+          "def_value": "5m0s",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-id",
+          "usage": "HCP Vault client ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-secret",
+          "usage": "HCP Vault client secret",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-org-id",
+          "usage": "HCP Vault organization ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-project-id",
+          "usage": "HCP Vault project ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-secret-name",
+          "usage": "HCP Vault secret name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "instance-ingest-rate",
+          "usage": "Instance ingest Rate",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-allow-list",
+          "usage": "List of IPs CIDRs to allow e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-block-list",
+          "usage": "List of IPs CIDRs to block e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "license-key",
+          "usage": "Convoy license key",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "log-level",
+          "usage": "Log level",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "max",
+          "usage": "The maximum number of migrations to rollback",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "max-retry-seconds",
+          "usage": "Max retry seconds exponential backoff",
+          "default": "7200",
+          "def_value": "7200",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-backend",
+          "usage": "Metrics backend e.g. prometheus. ('prometheus' feature flag required",
+          "default": "prometheus",
+          "def_value": "prometheus",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-materialized-view-refresh-interval",
+          "usage": "Materialized view refresh interval in minutes",
+          "default": "2",
+          "def_value": "2",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-query-timeout",
+          "usage": "Prometheus metrics query timeout in seconds",
+          "default": "30",
+          "def_value": "30",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-sample-time",
+          "usage": "Prometheus metrics sample time",
+          "default": "5",
+          "def_value": "5",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-name",
+          "usage": "OTel backend auth header name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-value",
+          "usage": "OTel backend auth header value",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-collector-url",
+          "usage": "OTel collector URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-sample-rate",
+          "usage": "OTel tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "read-replicas-dsn",
+          "usage": "Comma-separated list of read replica DSNs e.g. postgres://convoy:convoy@host1:5436/db,postgres://convoy:convoy@host2:5437/db",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-addresses",
+          "usage": "Redis addresses (comma-separated, for cluster or sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-database",
+          "usage": "Redis database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-host",
+          "usage": "Redis Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-password",
+          "usage": "Redis Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-port",
+          "usage": "Redis Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-scheme",
+          "usage": "Redis Scheme (redis, redis-sentinel, rediss)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-master-name",
+          "usage": "Redis Sentinel master name (required when scheme is redis-sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-password",
+          "usage": "Redis Sentinel password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-username",
+          "usage": "Redis Sentinel username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-type",
+          "usage": "Redis provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-username",
+          "usage": "Redis Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy",
+          "usage": "Retention Policy Duration",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy-enabled",
+          "usage": "Retention Policy Enabled",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "root-path",
+          "usage": "Root path for routing behind load balancers (e.g., /convoy)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-debug",
+          "usage": "Enable Sentry debug logging",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-dsn",
+          "usage": "Sentry backend dsn",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-sample-rate",
+          "usage": "Sentry tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "tracer-type",
+          "usage": "Tracer backend, e.g. sentry, datadog or otel",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        }
+      ],
+      "flag_order": [
+        "api-rate-limit",
+        "billing-api-key",
+        "billing-url",
+        "config",
+        "datadog-agent-url",
+        "db-database",
+        "db-host",
+        "db-options",
+        "db-password",
+        "db-port",
+        "db-scheme",
+        "db-type",
+        "db-username",
+        "enable-billing",
+        "enable-feature-flag",
+        "enable-profiling",
+        "hcp-app-name",
+        "hcp-cache-duration",
+        "hcp-client-id",
+        "hcp-client-secret",
+        "hcp-org-id",
+        "hcp-project-id",
+        "hcp-secret-name",
+        "instance-ingest-rate",
+        "ip-allow-list",
+        "ip-block-list",
+        "license-key",
+        "log-level",
+        "max-retry-seconds",
+        "metrics-backend",
+        "metrics-prometheus-materialized-view-refresh-interval",
+        "metrics-prometheus-query-timeout",
+        "metrics-prometheus-sample-time",
+        "otel-auth-header-name",
+        "otel-auth-header-value",
+        "otel-collector-url",
+        "otel-sample-rate",
+        "read-replicas-dsn",
+        "redis-addresses",
+        "redis-database",
+        "redis-host",
+        "redis-password",
+        "redis-port",
+        "redis-scheme",
+        "redis-sentinel-master-name",
+        "redis-sentinel-password",
+        "redis-sentinel-username",
+        "redis-type",
+        "redis-username",
+        "retention-policy",
+        "retention-policy-enabled",
+        "root-path",
+        "sentry-debug",
+        "sentry-dsn",
+        "sentry-sample-rate",
+        "tracer-type",
+        "max"
+      ]
+    },
+    {
+      "path": [
+        "migrate",
+        "up"
+      ],
+      "use": "up",
+      "short": "Run all pending migrations",
+      "aliases": [
+        "migrate-up"
+      ],
+      "flags": [
+        {
+          "name": "api-rate-limit",
+          "usage": "API rate limit",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-api-key",
+          "usage": "Billing service API key (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-url",
+          "usage": "Billing service URL (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "config",
+          "usage": "Configuration file for convoy",
+          "default": "./convoy.json",
+          "def_value": "./convoy.json",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "datadog-agent-url",
+          "usage": "Datadog agent URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-database",
+          "usage": "Database Database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-host",
+          "usage": "Database Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-options",
+          "usage": "Database Options",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-password",
+          "usage": "Database Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-port",
+          "usage": "Database Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-scheme",
+          "usage": "Database Scheme",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-type",
+          "usage": "Database provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-username",
+          "usage": "Database Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-billing",
+          "usage": "Enable billing functionality",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-feature-flag",
+          "usage": "List of feature flags to enable e.g. \"full-text-search,prometheus\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-profiling",
+          "usage": "Enable profiling and exporting profile data to pyroscope",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-app-name",
+          "usage": "HCP Vault app name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-cache-duration",
+          "usage": "HCP Vault key cache duration",
+          "default": "5m0s",
+          "def_value": "5m0s",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-id",
+          "usage": "HCP Vault client ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-secret",
+          "usage": "HCP Vault client secret",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-org-id",
+          "usage": "HCP Vault organization ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-project-id",
+          "usage": "HCP Vault project ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-secret-name",
+          "usage": "HCP Vault secret name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "instance-ingest-rate",
+          "usage": "Instance ingest Rate",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-allow-list",
+          "usage": "List of IPs CIDRs to allow e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-block-list",
+          "usage": "List of IPs CIDRs to block e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "license-key",
+          "usage": "Convoy license key",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "log-level",
+          "usage": "Log level",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "max-retry-seconds",
+          "usage": "Max retry seconds exponential backoff",
+          "default": "7200",
+          "def_value": "7200",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-backend",
+          "usage": "Metrics backend e.g. prometheus. ('prometheus' feature flag required",
+          "default": "prometheus",
+          "def_value": "prometheus",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-materialized-view-refresh-interval",
+          "usage": "Materialized view refresh interval in minutes",
+          "default": "2",
+          "def_value": "2",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-query-timeout",
+          "usage": "Prometheus metrics query timeout in seconds",
+          "default": "30",
+          "def_value": "30",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-sample-time",
+          "usage": "Prometheus metrics sample time",
+          "default": "5",
+          "def_value": "5",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-name",
+          "usage": "OTel backend auth header name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-value",
+          "usage": "OTel backend auth header value",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-collector-url",
+          "usage": "OTel collector URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-sample-rate",
+          "usage": "OTel tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "read-replicas-dsn",
+          "usage": "Comma-separated list of read replica DSNs e.g. postgres://convoy:convoy@host1:5436/db,postgres://convoy:convoy@host2:5437/db",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-addresses",
+          "usage": "Redis addresses (comma-separated, for cluster or sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-database",
+          "usage": "Redis database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-host",
+          "usage": "Redis Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-password",
+          "usage": "Redis Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-port",
+          "usage": "Redis Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-scheme",
+          "usage": "Redis Scheme (redis, redis-sentinel, rediss)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-master-name",
+          "usage": "Redis Sentinel master name (required when scheme is redis-sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-password",
+          "usage": "Redis Sentinel password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-username",
+          "usage": "Redis Sentinel username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-type",
+          "usage": "Redis provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-username",
+          "usage": "Redis Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy",
+          "usage": "Retention Policy Duration",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy-enabled",
+          "usage": "Retention Policy Enabled",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "root-path",
+          "usage": "Root path for routing behind load balancers (e.g., /convoy)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-debug",
+          "usage": "Enable Sentry debug logging",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-dsn",
+          "usage": "Sentry backend dsn",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-sample-rate",
+          "usage": "Sentry tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "tracer-type",
+          "usage": "Tracer backend, e.g. sentry, datadog or otel",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        }
+      ],
+      "flag_order": [
+        "api-rate-limit",
+        "billing-api-key",
+        "billing-url",
+        "config",
+        "datadog-agent-url",
+        "db-database",
+        "db-host",
+        "db-options",
+        "db-password",
+        "db-port",
+        "db-scheme",
+        "db-type",
+        "db-username",
+        "enable-billing",
+        "enable-feature-flag",
+        "enable-profiling",
+        "hcp-app-name",
+        "hcp-cache-duration",
+        "hcp-client-id",
+        "hcp-client-secret",
+        "hcp-org-id",
+        "hcp-project-id",
+        "hcp-secret-name",
+        "instance-ingest-rate",
+        "ip-allow-list",
+        "ip-block-list",
+        "license-key",
+        "log-level",
+        "max-retry-seconds",
+        "metrics-backend",
+        "metrics-prometheus-materialized-view-refresh-interval",
+        "metrics-prometheus-query-timeout",
+        "metrics-prometheus-sample-time",
+        "otel-auth-header-name",
+        "otel-auth-header-value",
+        "otel-collector-url",
+        "otel-sample-rate",
+        "read-replicas-dsn",
+        "redis-addresses",
+        "redis-database",
+        "redis-host",
+        "redis-password",
+        "redis-port",
+        "redis-scheme",
+        "redis-sentinel-master-name",
+        "redis-sentinel-password",
+        "redis-sentinel-username",
+        "redis-type",
+        "redis-username",
+        "retention-policy",
+        "retention-policy-enabled",
+        "root-path",
+        "sentry-debug",
+        "sentry-dsn",
+        "sentry-sample-rate",
+        "tracer-type"
+      ]
+    },
+    {
+      "path": [
+        "server"
+      ],
+      "use": "server",
+      "short": "Start the HTTP server",
+      "aliases": [
+        "serve",
+        "s"
+      ],
+      "flags": [
+        {
+          "name": "api-auth",
+          "usage": "API-Key authentication credentials",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "api-rate-limit",
+          "usage": "API rate limit",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "basic-auth",
+          "usage": "Basic authentication credentials",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "billing-api-key",
+          "usage": "Billing service API key (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "billing-url",
+          "usage": "Billing service URL (required when billing is enabled)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "cache",
+          "usage": "Cache Provider (\"redis\" or \"in-memory\")",
+          "default": "redis",
+          "def_value": "redis",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "config",
+          "usage": "Configuration file for convoy",
+          "default": "./convoy.json",
+          "def_value": "./convoy.json",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "datadog-agent-url",
+          "usage": "Datadog agent URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-database",
+          "usage": "Database Database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-host",
+          "usage": "Database Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-options",
+          "usage": "Database Options",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-password",
+          "usage": "Database Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-port",
+          "usage": "Database Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-scheme",
+          "usage": "Database Scheme",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-type",
+          "usage": "Database provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "db-username",
+          "usage": "Database Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-billing",
+          "usage": "Enable billing functionality",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-feature-flag",
+          "usage": "List of feature flags to enable e.g. \"full-text-search,prometheus\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "enable-profiling",
+          "usage": "Enable profiling and exporting profile data to pyroscope",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "env",
+          "usage": "Convoy environment",
+          "default": "development",
+          "def_value": "development",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "hcp-app-name",
+          "usage": "HCP Vault app name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-cache-duration",
+          "usage": "HCP Vault key cache duration",
+          "default": "5m0s",
+          "def_value": "5m0s",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-id",
+          "usage": "HCP Vault client ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-client-secret",
+          "usage": "HCP Vault client secret",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-org-id",
+          "usage": "HCP Vault organization ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-project-id",
+          "usage": "HCP Vault project ID",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "hcp-secret-name",
+          "usage": "HCP Vault secret name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "host",
+          "usage": "Host - The application host name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "instance-ingest-rate",
+          "usage": "Instance ingest Rate",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-allow-list",
+          "usage": "List of IPs CIDRs to allow e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ip-block-list",
+          "usage": "List of IPs CIDRs to block e.g. \" 0.0.0.0/0,127.0.0.0/8\"",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "license-key",
+          "usage": "Convoy license key",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "limiter",
+          "usage": "Rate limiter provider (\"redis\" or \"in-memory\")",
+          "default": "redis",
+          "def_value": "redis",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "log-level",
+          "usage": "Log level",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "logger",
+          "usage": "Logger",
+          "default": "info",
+          "def_value": "info",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "max-response-size",
+          "usage": "Max response size",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "max-retry-seconds",
+          "usage": "Max retry seconds exponential backoff",
+          "default": "7200",
+          "def_value": "7200",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-backend",
+          "usage": "Metrics backend e.g. prometheus. ('prometheus' feature flag required",
+          "default": "prometheus",
+          "def_value": "prometheus",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-materialized-view-refresh-interval",
+          "usage": "Materialized view refresh interval in minutes",
+          "default": "2",
+          "def_value": "2",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-query-timeout",
+          "usage": "Prometheus metrics query timeout in seconds",
+          "default": "30",
+          "def_value": "30",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "metrics-prometheus-sample-time",
+          "usage": "Prometheus metrics sample time",
+          "default": "5",
+          "def_value": "5",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "native",
+          "usage": "Enable native-realm authentication",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "otel-auth-header-name",
+          "usage": "OTel backend auth header name",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-auth-header-value",
+          "usage": "OTel backend auth header value",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-collector-url",
+          "usage": "OTel collector URL",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "otel-sample-rate",
+          "usage": "OTel tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "port",
+          "usage": "Server port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "promaddr",
+          "usage": "Prometheus dsn",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "proxy",
+          "usage": "HTTP Proxy",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "read-replicas-dsn",
+          "usage": "Comma-separated list of read replica DSNs e.g. postgres://convoy:convoy@host1:5436/db,postgres://convoy:convoy@host2:5437/db",
+          "default": "[]",
+          "def_value": "[]",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-addresses",
+          "usage": "Redis addresses (comma-separated, for cluster or sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-database",
+          "usage": "Redis database",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-host",
+          "usage": "Redis Host",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-password",
+          "usage": "Redis Password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-port",
+          "usage": "Redis Port",
+          "default": "0",
+          "def_value": "0",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-scheme",
+          "usage": "Redis Scheme (redis, redis-sentinel, rediss)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-master-name",
+          "usage": "Redis Sentinel master name (required when scheme is redis-sentinel)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-password",
+          "usage": "Redis Sentinel password",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-sentinel-username",
+          "usage": "Redis Sentinel username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-type",
+          "usage": "Redis provider",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "redis-username",
+          "usage": "Redis Username",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy",
+          "usage": "Retention Policy Duration",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-policy-enabled",
+          "usage": "Retention Policy Enabled",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "root-path",
+          "usage": "Root path for routing behind load balancers (e.g., /convoy)",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-debug",
+          "usage": "Enable Sentry debug logging",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-dsn",
+          "usage": "Sentry backend dsn",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "sentry-sample-rate",
+          "usage": "Sentry tracing sample rate",
+          "default": "1",
+          "def_value": "1",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "ssl",
+          "usage": "Configure SSL",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "ssl-cert-file",
+          "usage": "SSL certificate file",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "ssl-key-file",
+          "usage": "SSL key file",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "local"
+        },
+        {
+          "name": "tracer-type",
+          "usage": "Tracer backend, e.g. sentry, datadog or otel",
+          "default": "",
+          "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        }
+      ],
+      "flag_order": [
+        "api-rate-limit",
+        "billing-api-key",
+        "billing-url",
+        "config",
+        "datadog-agent-url",
+        "db-database",
+        "db-host",
+        "db-options",
+        "db-password",
+        "db-port",
+        "db-scheme",
+        "db-type",
+        "db-username",
+        "enable-billing",
+        "enable-feature-flag",
+        "enable-profiling",
+        "hcp-app-name",
+        "hcp-cache-duration",
+        "hcp-client-id",
+        "hcp-client-secret",
+        "hcp-org-id",
+        "hcp-project-id",
+        "hcp-secret-name",
+        "instance-ingest-rate",
+        "ip-allow-list",
+        "ip-block-list",
+        "license-key",
+        "log-level",
+        "max-retry-seconds",
+        "metrics-backend",
+        "metrics-prometheus-materialized-view-refresh-interval",
+        "metrics-prometheus-query-timeout",
+        "metrics-prometheus-sample-time",
+        "otel-auth-header-name",
+        "otel-auth-header-value",
+        "otel-collector-url",
+        "otel-sample-rate",
+        "read-replicas-dsn",
+        "redis-addresses",
+        "redis-database",
+        "redis-host",
+        "redis-password",
+        "redis-port",
+        "redis-scheme",
+        "redis-sentinel-master-name",
+        "redis-sentinel-password",
+        "redis-sentinel-username",
+        "redis-type",
+        "redis-username",
+        "retention-policy",
+        "retention-policy-enabled",
+        "root-path",
+        "sentry-debug",
+        "sentry-dsn",
+        "sentry-sample-rate",
+        "tracer-type",
+        "api-auth",
+        "basic-auth",
+        "cache",
+        "env",
+        "host",
+        "limiter",
+        "logger",
+        "max-response-size",
+        "native",
+        "port",
+        "promaddr",
+        "proxy",
+        "ssl",
+        "ssl-cert-file",
+        "ssl-key-file"
+      ]
+    }
+  ]
+}

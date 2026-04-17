@@ -105,5 +105,11 @@ migrate_create:
 generate_docs:
 	swag init --generatedTime --parseDependency --parseInternal -d api/ api/*
 
+.PHONY: docs-generated
+docs-generated:
+	@mkdir -p docs/generated
+	go run ./scripts/docs/genconfigref -output docs/generated/config-reference.json
+	go run ./scripts/docs/gencliref -output docs/generated/cli-reference.json
+
 run_dependencies:
 	docker compose -f docker-compose.dep.yml up -d
