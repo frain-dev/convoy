@@ -125,6 +125,7 @@ func TestLoadConfig(t *testing.T) {
 				RetentionPolicy: RetentionPolicyConfiguration{
 					Policy:                   "720h",
 					IsRetentionPolicyEnabled: true,
+					BackupInterval:           "1h",
 				},
 				CircuitBreaker: CircuitBreakerConfiguration{
 					SampleRate:                  30,
@@ -208,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
-				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h"},
+				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -307,7 +308,7 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg: Configuration{
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
-				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h"},
+				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
 				ConsumerPoolSize: 100,
 				CircuitBreaker: CircuitBreakerConfiguration{
 					SampleRate:                  30,

@@ -364,10 +364,19 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		Path: null.NewString(cfg.StoragePolicy.OnPrem.Path, true),
 	}
 
+	azureBlob := datastore.AzureBlobStorage{
+		AccountName:   null.NewString(cfg.StoragePolicy.AzureBlob.AccountName, true),
+		AccountKey:    null.NewString(cfg.StoragePolicy.AzureBlob.AccountKey, true),
+		ContainerName: null.NewString(cfg.StoragePolicy.AzureBlob.ContainerName, true),
+		Endpoint:      null.NewString(cfg.StoragePolicy.AzureBlob.Endpoint, true),
+		Prefix:        null.NewString(cfg.StoragePolicy.AzureBlob.Prefix, true),
+	}
+
 	storagePolicy := &datastore.StoragePolicyConfiguration{
-		Type:   datastore.StorageType(cfg.StoragePolicy.Type),
-		S3:     &s3,
-		OnPrem: &onPrem,
+		Type:      datastore.StorageType(cfg.StoragePolicy.Type),
+		S3:        &s3,
+		OnPrem:    &onPrem,
+		AzureBlob: &azureBlob,
 	}
 
 	retentionPolicy := &datastore.RetentionPolicyConfiguration{

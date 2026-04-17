@@ -24,6 +24,7 @@ type launchConfig struct {
 	enablePostgres   bool
 	enableRedis      bool
 	enableMinIO      bool
+	enableAzurite    bool
 	enableRabbitMQ   bool
 	enableLocalStack bool
 	enableKafka      bool
@@ -64,6 +65,13 @@ func WithMinIO() LaunchOption {
 	}
 }
 
+// WithAzurite enables Azurite (Azure Blob Storage emulator) container
+func WithAzurite() LaunchOption {
+	return func(c *launchConfig) {
+		c.enableAzurite = true
+	}
+}
+
 // WithRabbitMQ enables RabbitMQ container
 func WithRabbitMQ() LaunchOption {
 	return func(c *launchConfig) {
@@ -97,6 +105,7 @@ type launchState struct {
 	pgcontainer         testcontainers.Container
 	rediscontainer      testcontainers.Container
 	miniocontainer      testcontainers.Container
+	azuritecontainer    testcontainers.Container
 	rabbitmqcontainer   *RabbitMQContainer
 	localstackcontainer testcontainers.Container
 	kafkacontainer      testcontainers.Container
@@ -111,6 +120,7 @@ type Environment struct {
 
 	// Optional dependencies (nil if not started)
 	NewMinIOClient        *MinIOClientFunc
+	NewAzuriteClient      *AzuriteClientFunc
 	NewRabbitMQConnect    *RabbitMQConnectionFunc
 	NewLocalStackConnect  *LocalStackConnectionFunc
 	NewKafkaConnect       *KafkaConnectionFunc
@@ -170,6 +180,18 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 		minioFactory = &factoryCopy
 	}
 
+	// Start Azurite if enabled
+	var azuriteFactory *AzuriteClientFunc
+	if config.enableAzurite {
+		azuritecontainer, factory, err := NewTestAzurite(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("start azurite container: %w", err)
+		}
+		state.azuritecontainer = azuritecontainer
+		factoryCopy := factory
+		azuriteFactory = &factoryCopy
+	}
+
 	// Start RabbitMQ if enabled
 	var rmqFactory *RabbitMQConnectionFunc
 	var restartRabbitMQ *RabbitMQRestartFunc
@@ -226,6 +248,7 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 		NewRedisClient:        rcFactory,
 		NewQueueInspector:     inspectorFactory,
 		NewMinIOClient:        minioFactory,
+		NewAzuriteClient:      azuriteFactory,
 		NewRabbitMQConnect:    rmqFactory,
 		NewLocalStackConnect:  localstackFactory,
 		NewKafkaConnect:       kafkaFactory,
@@ -267,6 +290,18 @@ func Launch(ctx context.Context, opts ...LaunchOption) (*Environment, func() err
 				defer cancel()
 				if termErr := state.miniocontainer.Terminate(c); termErr != nil {
 					slog.Info(fmt.Sprintf("terminate minio container: %v", termErr))
+				}
+				return nil
+			})
+		}
+
+		// Terminate Azurite if it was started
+		if state.azuritecontainer != nil {
+			eg.Go(func() error {
+				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				if termErr := state.azuritecontainer.Terminate(c); termErr != nil {
+					slog.Info(fmt.Sprintf("terminate azurite container: %v", termErr))
 				}
 				return nil
 			})

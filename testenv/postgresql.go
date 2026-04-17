@@ -44,6 +44,8 @@ func NewTestPostgres(ctx context.Context) (*postgres.PostgresContainer, Postgres
 		testcontainers.WithTmpfs(map[string]string{"/var/lib/postgresql/data": "rw"}),
 		testcontainers.WithEnv(map[string]string{"PGDATA": "/var/lib/postgresql/data"}),
 		testcontainers.WithLogger(log.New("postgres", log.LevelDebug)),
+		// Enable logical WAL for CDC backup tests (superset of replica, no cost to non-CDC tests)
+		testcontainers.WithCmdArgs("-c", "wal_level=logical"),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("start postgres container: %w", err)

@@ -24,6 +24,7 @@ func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(
 		context.Background(),
 		testenv.WithMinIO(),
+		testenv.WithAzurite(),
 	)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "TestMain: Failed to launch test infrastructure: %v\n", err)

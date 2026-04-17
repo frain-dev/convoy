@@ -663,6 +663,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			configRouter.Get("/auth", handler.GetAuthConfiguration)
 		})
 
+		uiRouter.Route("/backups", func(backupRouter chi.Router) {
+			backupRouter.Post("/trigger", handler.TriggerBackup)
+		})
+
 		billingHandler := &handlers.BillingHandler{
 			Handler:       handler,
 			BillingClient: a.A.BillingClient,

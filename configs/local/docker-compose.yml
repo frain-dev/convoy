@@ -61,8 +61,10 @@ services:
                 condition: service_healthy
 
     postgres:
-        image: postgres:15.2-alpine
+        image: postgres:18-alpine
         restart: unless-stopped
+        ports:
+            - "5433:5432"
         environment:
             POSTGRES_DB: convoy
             POSTGRES_USER: convoy
@@ -76,11 +78,17 @@ services:
             timeout: 5s
             retries: 5
             start_period: 10s
+        command:
+            - "postgres"
+            - "-c"
+            - "wal_level=logical"
 
     pgbouncer:
         image: bitnamilegacy/pgbouncer
         hostname: pgbouncer
         restart: unless-stopped
+        ports:
+            - "6432:6432"
         depends_on:
             postgres:
                 condition: service_healthy
@@ -101,8 +109,37 @@ services:
             - ./conf/redis/redis-server-cert.pem:/usr/local/etc/redis/certs/redis-server-cert.pem:ro
             - ./conf/redis/redis-server-key.pem:/usr/local/etc/redis/certs/redis-server-key.pem:ro
 
+    minio:
+        image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+        restart: unless-stopped
+        ports:
+            - "9000:9000"
+            - "9001:9001"
+        environment:
+            MINIO_ROOT_USER: convoyadmin
+            MINIO_ROOT_PASSWORD: convoyadmin
+        command: server /data --console-address ":9001"
+        volumes:
+            - minio_data:/data
+        healthcheck:
+            test: ["CMD", "mc", "ready", "local"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    azurite:
+        image: mcr.microsoft.com/azure-storage/azurite:3.31.0
+        restart: unless-stopped
+        ports:
+            - "10000:10000"
+        command: ["azurite-blob", "--blobHost", "0.0.0.0", "--blobPort", "10000", "--skipApiVersionCheck"]
+        volumes:
+            - azurite_data:/data
+
 
 volumes:
     postgres_data:
     redis_data:
     caddy_data:
+    minio_data:
+    azurite_data:

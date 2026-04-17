@@ -197,18 +197,10 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 
 	// call handler
 	retentionTask := asynq.NewTask(string(convoy.RetentionPolicies), nil, asynq.Queue(string(convoy.ScheduleQueue)))
-	backUpTask := asynq.NewTask(string(convoy.BackupProjectData), nil, asynq.Queue(string(convoy.ScheduleQueue)))
-
 	clock.AdvanceTime(duration + time.Hour)
 
-	err = BackupProjectData(
-		r.ConvoyApp.configRepo,
-		r.ConvoyApp.projectRepo,
-		r.ConvoyApp.eventRepo,
-		r.ConvoyApp.eventDeliveryRepo,
-		r.ConvoyApp.deliveryRepo,
-		r.ConvoyApp.redis, r.ConvoyApp.logger)(context.Background(), backUpTask)
-	require.NoError(r.T(), err)
+	// Backup is now handled separately by CDC collector or ProcessBackupJob task.
+	// This test only validates retention (deletion) behavior.
 
 	err = RetentionPolicies(r.ConvoyApp.redis, ret, r.ConvoyApp.logger)(context.Background(), retentionTask)
 	require.NoError(r.T(), err)
