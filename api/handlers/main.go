@@ -15,15 +15,12 @@ package handlers
 //	@license.url	https://www.mozilla.org/en-US/MPL/2.0/
 
 //	@schemes	https
-//	@host		dashboard.getconvoy.io
+//	@host		us.getconvoy.cloud
 //	@BasePath	/api
 
 //	@securityDefinitions.apikey	ApiKeyAuth
 //	@in							header
 //	@name						Authorization
-
-//	@tag.name			Organisations
-//	@tag.description	Organisation related APIs
 
 //	@tag.name			Subscriptions
 //	@tag.description	Subscription related APIs
@@ -43,14 +40,20 @@ package handlers
 //	@tag.name			Delivery Attempts
 //	@tag.description	Delivery Attempt related APIs
 
-//	@tag.name			Projects
-//	@tag.description	Project related APIs
-
 //	@tag.name			Portal Links
 //	@tag.description	Portal Links related APIs
 
 //	@tag.name			Meta Events
 //	@tag.description	Meta Events related APIs
+
+//	@tag.name			EventTypes
+//	@tag.description	Event Types related APIs
+
+//	@tag.name			Filters
+//	@tag.description	Filters related APIs
+
+//	@tag.name			Onboard
+//	@tag.description	Onboard related APIs
 
 // Stub represents empty json or arbitrary json bodies for our doc annotations
 type Stub struct{}
