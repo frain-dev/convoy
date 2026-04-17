@@ -22,8 +22,6 @@ export class QueueMonitoringComponent implements OnInit {
 
 	/** Iframe loads here (session cookie path matches this prefix only). */
 	embedMonitoringUrl = '';
-	/** Main Asynqmon URL (Bearer/Basic only; not used by iframe). */
-	directMonitoringUrl = '';
 
 	sessionStatus: 'idle' | 'minting' | 'ready' | 'error' = 'idle';
 	sessionError: string | null = null;
@@ -47,7 +45,6 @@ export class QueueMonitoringComponent implements OnInit {
 		}
 
 		this.embedMonitoringUrl = this.buildEmbedMonitoringUrl();
-		this.directMonitoringUrl = this.buildDirectMonitoringUrl();
 
 		this.loadFullscreenPreference();
 
@@ -109,10 +106,6 @@ export class QueueMonitoringComponent implements OnInit {
 		}
 	}
 
-	openDirectInNewTab(): void {
-		window.open(this.directMonitoringUrl, '_blank', 'noopener,noreferrer');
-	}
-
 	private getSessionToken(): string | null {
 		// Queue monitoring session minting requires the dashboard user token.
 		const userToken = this.httpService.authDetails()?.access_token || null;
@@ -138,10 +131,6 @@ export class QueueMonitoringComponent implements OnInit {
 	private buildEmbedReloadUrl(): string {
 		const separator = this.embedMonitoringUrl.includes('?') ? '&' : '?';
 		return `${this.embedMonitoringUrl}${separator}_r=${Date.now()}`;
-	}
-
-	private buildDirectMonitoringUrl(): string {
-		return `${this.apiBase()}/queue/monitoring/`;
 	}
 
 	private buildSessionUrl(): string {
