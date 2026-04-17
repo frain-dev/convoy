@@ -103,7 +103,25 @@ migrate_create:
 	@go run cmd/main.go migrate create
 
 generate_docs:
-	swag init --generatedTime --parseDependency --parseInternal -d api/ api/*
+	@echo "Checking required tools..."
+	@command -v swag >/dev/null 2>&1 || { echo "swag not found. Install: go install github.com/swaggo/swag/cmd/swag@latest"; exit 1; }
+	@command -v jq >/dev/null 2>&1 || { echo "jq not found. Install: brew install jq (macOS) or apt-get install jq (Linux)"; exit 1; }
+	@command -v yq >/dev/null 2>&1 || { echo "yq not found. Install: brew install yq (macOS) or snap install yq (Linux)"; exit 1; }
+	@command -v api-spec-converter >/dev/null 2>&1 || { echo "api-spec-converter not found. Install: npm install -g api-spec-converter"; exit 1; }
+	@command -v openapi >/dev/null 2>&1 || { echo "openapi not found. Install: go install github.com/speakeasy-api/openapi/cmd/openapi@latest"; exit 1; }
+	@echo "Generating docs..."
+	go run docs/annotate_dtos/main.go
+	swag init --generatedTime --parseDependency --parseDependencyLevel 3 --parseInternal -g handlers/main.go -d api/ api/*
+	swag fmt -d ./api
+	bash docs/fix_openapi_spec.sh
+	api-spec-converter --from=swagger_2 --to=openapi_3 -s yaml ./docs/swagger.yaml > ./docs/v3/openapi3.yaml
+	api-spec-converter --from=swagger_2 --to=openapi_3 ./docs/swagger.json > ./docs/v3/openapi3.json
+	yq -i '.servers[0].description = "US Region" | .servers += [{"url": "https://eu.getconvoy.cloud/api", "description": "EU Region"}]' ./docs/v3/openapi3.yaml
+	jq '.servers[0].description = "US Region" | .servers += [{"url": "https://eu.getconvoy.cloud/api", "description": "EU Region"}]' ./docs/v3/openapi3.json > ./docs/v3/openapi3.json.tmp && mv ./docs/v3/openapi3.json.tmp ./docs/v3/openapi3.json
+	@echo "Validating specs..."
+	openapi swagger validate ./docs/swagger.json
+	openapi swagger validate ./docs/swagger.yaml
+	openapi spec validate ./docs/v3/openapi3.yaml
 
 run_dependencies:
 	docker compose -f docker-compose.dep.yml up -d

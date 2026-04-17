@@ -3,15 +3,6 @@
 
 echo "🔥 Fixing Swagger 2.0 specs (all issues in one pass)..."
 
-# Check OS for sed compatibility
-if [[ "$(uname)" == "Darwin" ]]; then
-    # macOS requires an empty string argument after -i
-    sed_inplace() { sed -i '' "$@"; }
-else
-    # Linux
-    sed_inplace() { sed -i "$@"; }
-fi
-
 # Check for required tools
 if ! command -v jq &> /dev/null; then
     echo "❌ jq is required. Install with: brew install jq (macOS) or apt-get install jq (Linux)"
@@ -34,30 +25,7 @@ fix_file_inplace() {
 
     echo "Processing: $file"
 
-    # Create backup
-    cp "$file" "${file}.bak"
-
-    # Step 1: First fix nullable with sed (works on both JSON and YAML)
-    echo "  Step 1: Fixing nullable fields..."
-
-    if [[ "$file" == *.json ]]; then
-        # JSON fixes
-        sed_inplace 's/"x-nullable": true/"nullable": true/g' "$file"
-        sed_inplace 's/"x-nullable": false//g' "$file"
-        # Clean up extra commas
-        sed_inplace 's/,,/,/g' "$file"
-        sed_inplace 's/{,/{/g' "$file"
-        sed_inplace 's/,}/}/g' "$file"
-
-    elif [[ "$file" == *.yaml ]] || [[ "$file" == *.yml ]]; then
-        # YAML fixes
-        sed_inplace 's/x-nullable: true/nullable: true/g' "$file"
-        sed_inplace '/x-nullable: false/d' "$file"
-        sed_inplace '/^[[:space:]]*x-nullable:/d' "$file"
-    fi
-
-    # Step 2: Use jq/yq for structural fixes
-    echo "  Step 2: Fixing content-type, produces, and allOf structures..."
+    echo "  Fixing content-type, produces, and allOf structures..."
 
     # Create temp file
     tmpfile=$(mktemp)
@@ -135,7 +103,6 @@ fix_file_inplace() {
 
     # Cleanup
     rm "$tmpfile"
-    rm "${file}.bak"
 
     echo ""
 }
