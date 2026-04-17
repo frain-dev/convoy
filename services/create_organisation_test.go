@@ -17,6 +17,14 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
+type panicOnCreateBillingClient struct {
+	*billing.MockBillingClient
+}
+
+func (panicOnCreateBillingClient) CreateOrganisation(context.Context, billing.BillingOrganisation) (*billing.Response[billing.BillingOrganisation], error) {
+	panic("CreateOrganisation must not be called when owner email is empty")
+}
+
 func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *datastore.OrganisationRequest, user *datastore.User) *CreateOrganisationService {
 	return &CreateOrganisationService{
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
@@ -214,5 +222,15 @@ func TestRunBillingOrganisationSync(t *testing.T) {
 		// CreateOrganisationLicenseKey and GetOrganisationLicenseKey left empty
 
 		RunBillingOrganisationSync(ctx, mockBilling, org, cfg, userEmail, billingHost, mockOrgRepo, log.New("convoy", log.LevelInfo))
+	})
+
+	t.Run("skips_billing_sync_when_owner_email_is_empty", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+		mockBilling := panicOnCreateBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+
+		RunBillingOrganisationSync(ctx, &mockBilling, org, cfg, "", billingHost, mockOrgRepo, log.New("convoy", log.LevelInfo))
 	})
 }

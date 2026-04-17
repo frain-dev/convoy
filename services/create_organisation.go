@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -122,10 +123,17 @@ func RunBillingOrganisationSync(
 	if logger == nil {
 		panic("RunBillingOrganisationSync: logger is required and must not be nil")
 	}
+
+	trimmedEmail := strings.TrimSpace(userEmail)
+	if trimmedEmail == "" {
+		logger.Error("create_organisation: owner email is empty, skipping billing sync", "org_id", org.UID)
+		return
+	}
+
 	orgData := billing.BillingOrganisation{
 		Name:         org.Name,
 		ExternalID:   org.UID,
-		BillingEmail: userEmail,
+		BillingEmail: trimmedEmail,
 		Host:         billingHost,
 	}
 	resp, createErr := billingClient.CreateOrganisation(ctx, orgData)
