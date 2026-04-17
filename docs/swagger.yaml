@@ -1708,7 +1708,7 @@ definitions:
       pagination:
         allOf:
           - $ref: '#/definitions/datastore.PaginationData'
-        nullable: true
+        x-nullable: true
     type: object
   models.PubSubConfig:
     properties:
@@ -1889,10 +1889,10 @@ definitions:
     properties:
       body:
         type: string
-        nullable: true
+        x-nullable: true
       content_type:
         type: string
-        nullable: true
+        x-nullable: true
     type: object
   models.UpdateEndpoint:
     properties:
@@ -2110,13 +2110,13 @@ info:
     email: support@getconvoy.io
     name: Convoy Support
     url: https://getconvoy.io/docs
-  description: Convoy is a fast and secure webhooks proxy. This document contains datastore.s API specification.
+  description: Convoy is a fast and secure webhooks proxy. This document contains datastore's API specification.
   license:
     name: Mozilla Public License 2.0
     url: https://www.mozilla.org/en-US/MPL/2.0/
   termsOfService: https://getconvoy.io/terms
   title: Convoy API Reference
-  version: 24.1.4
+  version: 26.3.5
 paths:
   /v1/projects/{projectID}/endpoints:
     get:
