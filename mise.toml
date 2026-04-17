@@ -15,6 +15,8 @@ nodejs = "24.10.0"
 "npm:squawk-cli" = { version = "latest", bin = "squawk" }
 "go:github.com/ogen-go/ogen/cmd/ogen" = "v1.16.0"
 "go:github.com/swaggo/swag/cmd/swag" = "latest"
+"npm:api-spec-converter" = "latest"
+yq = "latest"
 "go:go.uber.org/mock/mockgen" = "latest"
 "go:github.com/sqlc-dev/sqlc/cmd/sqlc" = "1.30.0"
 "go:github.com/daixiang0/gci" = "latest"
