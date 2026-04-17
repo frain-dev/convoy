@@ -78,10 +78,10 @@ export class QueueMonitoringComponent implements OnInit {
 		this.sessionError = null;
 		this.iframeVisible = false;
 
-		const token = this.getToken();
+		const token = this.getSessionToken();
 		if (!token) {
 			this.sessionStatus = 'error';
-			this.sessionError = 'No Bearer token in storage (log in again).';
+			this.sessionError = 'No dashboard user token found (log in again).';
 			return;
 		}
 
@@ -113,13 +113,18 @@ export class QueueMonitoringComponent implements OnInit {
 		window.open(this.directMonitoringUrl, '_blank', 'noopener,noreferrer');
 	}
 
-	private getToken(): string | null {
-		return (
-			this.httpService.getPortalLinkAuthToken() ||
-			this.httpService.token ||
-			this.httpService.authDetails()?.access_token ||
-			null
-		);
+	private getSessionToken(): string | null {
+		// Queue monitoring session minting requires the dashboard user token.
+		const userToken = this.httpService.authDetails()?.access_token || null;
+		if (!userToken) {
+			return null;
+		}
+
+		return this.normalizeToken(userToken);
+	}
+
+	private normalizeToken(token: string): string {
+		return token.replace(/^Bearer\s+/i, '').trim();
 	}
 
 	private apiBase(): string {
