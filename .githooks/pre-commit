@@ -16,7 +16,7 @@ then
 else
   # check required tools
   for tool in swag jq yq api-spec-converter openapi; do
-    command -v "$tool" >/dev/null 2>&1 || { echo "❌ $tool not found. Install with 'mise install' or manually:"; echo "  swag: go install github.com/swaggo/swag/cmd/swag@latest"; echo "  jq: brew install jq"; echo "  yq: brew install yq"; echo "  api-spec-converter: npm install -g api-spec-converter"; echo "  openapi: go install github.com/speakeasy-api/openapi/cmd/openapi@latest"; exit 1; }
+    command -v "$tool" >/dev/null 2>&1 || { echo "❌ $tool not found. Run 'mise install' to install all required tools."; exit 1; }
   done
 
   # regenerate docs

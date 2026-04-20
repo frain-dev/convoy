@@ -103,12 +103,10 @@ migrate_create:
 	@go run cmd/main.go migrate create
 
 generate_docs:
-	@echo "Checking required tools..."
-	@command -v swag >/dev/null 2>&1 || { echo "swag not found. Install: go install github.com/swaggo/swag/cmd/swag@latest"; exit 1; }
-	@command -v jq >/dev/null 2>&1 || { echo "jq not found. Install: brew install jq (macOS) or apt-get install jq (Linux)"; exit 1; }
-	@command -v yq >/dev/null 2>&1 || { echo "yq not found. Install: brew install yq (macOS) or snap install yq (Linux)"; exit 1; }
-	@command -v api-spec-converter >/dev/null 2>&1 || { echo "api-spec-converter not found. Install: npm install -g api-spec-converter"; exit 1; }
-	@command -v openapi >/dev/null 2>&1 || { echo "openapi not found. Install: go install github.com/speakeasy-api/openapi/cmd/openapi@latest"; exit 1; }
+	@echo "Checking required tools (run 'mise install' to install all)..."
+	@for tool in swag jq yq api-spec-converter openapi; do \
+		command -v "$$tool" >/dev/null 2>&1 || { echo "❌ $$tool not found. Run 'mise install' to install all required tools."; exit 1; }; \
+	done
 	@echo "Generating docs..."
 	go run docs/annotate_dtos/main.go
 	swag init --generatedTime --parseDependency --parseDependencyLevel 3 --parseInternal -g handlers/main.go -d api/ api/*
