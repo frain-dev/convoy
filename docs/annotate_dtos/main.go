@@ -18,10 +18,6 @@ func main() {
 	dryRun := len(os.Args) > 1 && os.Args[1] == "--dry-run"
 
 	dtoDir := "./api/models"
-	if len(os.Args) > 2 {
-		dtoDir = os.Args[2]
-	}
-
 	fmt.Printf("Using AST to add nullable extensions in: %s\n", dtoDir)
 
 	err := filepath.Walk(dtoDir, func(path string, info os.FileInfo, err error) error {
