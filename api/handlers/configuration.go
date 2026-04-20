@@ -46,13 +46,13 @@ func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
-		h.A.Logger.Errorf("Failed to parse configuration request: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to parse configuration request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	if err := newConfig.Validate(); err != nil {
-		h.A.Logger.Errorf("Configuration validation failed: %v: %v", err, err)
+		h.A.Logger.Errorf("Configuration validation failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid configuration provided", http.StatusBadRequest))
 		return
 	}
@@ -79,13 +79,13 @@ func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
-		h.A.Logger.Errorf("Failed to parse configuration update request: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to parse configuration update request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	if err := newConfig.Validate(); err != nil {
-		h.A.Logger.Errorf("Configuration update validation failed: %v: %v", err, err)
+		h.A.Logger.Errorf("Configuration update validation failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid configuration provided", http.StatusBadRequest))
 		return
 	}
