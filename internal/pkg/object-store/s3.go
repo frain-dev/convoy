@@ -43,7 +43,7 @@ func NewS3Client(opts ObjectStoreOptions, logger log.Logger) (ObjectStore, error
 func (s3 *S3Client) Save(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
-		s3.logger.Error(fmt.Sprintf("Unable to open file %q, %v: %v", filename, err, err))
+		s3.logger.Error(fmt.Sprintf("Unable to open file %q: %v", filename, err))
 		return err
 	}
 
@@ -68,7 +68,7 @@ func (s3 *S3Client) Save(filename string) error {
 	})
 
 	if err != nil {
-		s3.logger.Error(fmt.Sprintf("Unable to save %q to %q, %v: %v", filename, s3.opts.Bucket, err, err))
+		s3.logger.Error(fmt.Sprintf("Unable to save %q to %q: %v", filename, s3.opts.Bucket, err))
 		return err
 	}
 

@@ -12,7 +12,7 @@ import (
 
 type PagedResponse struct {
 	Content    interface{}               `json:"content,omitempty"`
-	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
+	Pagination *datastore.PaginationData `json:"pagination,omitempty" extensions:"x-nullable"`
 }
 
 type Organisation struct {
@@ -39,14 +39,14 @@ type APIKeyByIDResponse struct {
 	Name      string            `json:"name"`
 	Role      auth.Role         `json:"role"`
 	Type      datastore.KeyType `json:"key_type"`
-	ExpiresAt null.Time         `json:"expires_at,omitempty"`
+	ExpiresAt null.Time         `json:"expires_at,omitempty" extensions:"x-nullable"`
 	CreatedAt time.Time         `json:"created_at,omitempty"`
 	UpdatedAt time.Time         `json:"updated_at,omitempty"`
 }
 
 type UserInviteTokenResponse struct {
-	Token *datastore.OrganisationInvite `json:"token"`
-	User  *datastore.User               `json:"user"`
+	Token *datastore.OrganisationInvite `json:"token" extensions:"x-nullable"`
+	User  *datastore.User               `json:"user" extensions:"x-nullable"`
 }
 
 type DeliveryAttempt struct {

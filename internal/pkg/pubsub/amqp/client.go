@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"net/url"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -59,13 +60,17 @@ func (a *Amqp) Start(ctx context.Context) {
 	}
 }
 
-func (a *Amqp) dialer() (*amqp.Connection, error) {
+func buildConnectionString(cfg *datastore.AmqpPubSubConfig) string {
 	auth := ""
-	if a.Cfg.Auth != nil {
-		auth = fmt.Sprintf("%s:%s@", a.Cfg.Auth.User, a.Cfg.Auth.Password)
+	if cfg.Auth != nil {
+		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(cfg.Auth.User), url.QueryEscape(cfg.Auth.Password))
 	}
 
-	connString := fmt.Sprintf("%s://%s%s:%s/%s?heartbeat=30", a.Cfg.Schema, auth, a.Cfg.Host, a.Cfg.Port, *a.Cfg.Vhost)
+	return fmt.Sprintf("%s://%s%s:%s/%s?heartbeat=30", cfg.Schema, auth, cfg.Host, cfg.Port, *cfg.Vhost)
+}
+
+func (a *Amqp) dialer() (*amqp.Connection, error) {
+	connString := buildConnectionString(a.Cfg)
 	conn, err := amqp.Dial(connString)
 	if err != nil {
 		a.log.Error("Failed to open connection to amqp", "error", err)
