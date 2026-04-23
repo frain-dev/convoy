@@ -61,8 +61,8 @@ func TestResetPasswordService_Run(t *testing.T) {
 			wantUser: &datastore.User{
 				UID:                    "1234",
 				Email:                  "test@email.com",
-				ResetPasswordToken:     "123456789",
-				ResetPasswordExpiresAt: resetEx,
+				ResetPasswordToken:     "",
+				ResetPasswordExpiresAt: time.Time{},
 			},
 		},
 		{
@@ -155,4 +155,49 @@ func TestResetPasswordService_Run(t *testing.T) {
 			require.Equal(t, tt.wantUser, user)
 		})
 	}
+}
+
+func TestResetPasswordService_Run_RejectsTokenReplayAfterSuccessfulReset(t *testing.T) {
+	ctx := context.Background()
+	resetEx := time.Now().Add(time.Hour)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	u := provideResetPasswordService(ctrl, "replay-token", &models.ResetPassword{
+		Password:             "password1",
+		PasswordConfirmation: "password1",
+	})
+
+	us, _ := u.UserRepo.(*mocks.MockUserRepository)
+	storedUser := &datastore.User{
+		UID:                    "1234",
+		Email:                  "test@email.com",
+		ResetPasswordToken:     "replay-token",
+		ResetPasswordExpiresAt: resetEx,
+	}
+
+	us.EXPECT().FindUserByToken(gomock.Any(), "replay-token").Times(2).DoAndReturn(
+		func(_ context.Context, token string) (*datastore.User, error) {
+			if storedUser.ResetPasswordToken == token && time.Now().Before(storedUser.ResetPasswordExpiresAt) {
+				return storedUser, nil
+			}
+
+			return nil, datastore.ErrUserNotFound
+		},
+	)
+
+	us.EXPECT().UpdateUser(gomock.Any(), gomock.AssignableToTypeOf(&datastore.User{})).Times(1).DoAndReturn(
+		func(_ context.Context, updatedUser *datastore.User) error {
+			storedUser = updatedUser
+			return nil
+		},
+	)
+
+	_, err := u.Run(ctx)
+	require.NoError(t, err)
+
+	_, err = u.Run(ctx)
+	require.Error(t, err)
+	require.Equal(t, "invalid password reset token", err.(*ServiceError).Error())
 }
