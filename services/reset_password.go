@@ -45,6 +45,8 @@ func (u *ResetPasswordService) Run(ctx context.Context) (*datastore.User, error)
 	}
 
 	user.Password = string(p.Hash)
+	user.ResetPasswordToken = ""
+	user.ResetPasswordExpiresAt = time.Time{}
 	err = u.UserRepo.UpdateUser(ctx, user)
 	if err != nil {
 		u.Logger.ErrorContext(ctx, "an error occurred while updating user", "error", err)
