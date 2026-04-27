@@ -1,0 +1,149 @@
+name: OSV Scanner (nightly)
+
+on:
+  schedule:
+    - cron: "15 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osv-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare-lockfile:
+    name: Prepare frontend lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+      - name: Generate package-lock.json for scan
+        working-directory: web/ui/dashboard
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Upload lockfile artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: osv-lockfiles
+          path: web/ui/dashboard/package-lock.json
+          if-no-files-found: error
+
+  osv-scan:
+    name: Scan repository for vulnerabilities
+    needs: prepare-lockfile
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.5
+    with:
+      fail-on-vuln: false
+      upload-sarif: true
+      download-artifact: osv-lockfiles
+      scan-args: |-
+        --lockfile=./go.mod
+        --lockfile=./web/ui/dashboard/package-lock.json
+
+  report-and-slack:
+    name: Build report and notify Slack
+    runs-on: ubuntu-latest
+    needs: osv-scan
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Materialize JSON report from reusable output
+        env:
+          OSV_RESULTS_JSON: ${{ needs.osv-scan.outputs.results }}
+        run: |
+          python3 - <<'PY'
+          import os
+          data = os.environ.get("OSV_RESULTS_JSON", "")
+          if not data.strip():
+              raise SystemExit("OSV scan results output is empty")
+          with open("osv-report.json", "w", encoding="utf-8") as f:
+              f.write(data)
+          PY
+
+      - name: Build Markdown and Slack detail file
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          chmod +x .github/scripts/osv-nightly-report.sh
+          .github/scripts/osv-nightly-report.sh osv-report.json osv-summary.md slack-details.txt
+
+      - name: Upload reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: osv-reports-${{ github.run_id }}
+          path: |
+            osv-report.json
+            osv-summary.md
+          if-no-files-found: error
+
+      - name: Post detailed findings to Slack
+        if: env.SLACK_WEBHOOK_URL != ''
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          webhook = os.environ["SLACK_WEBHOOK_URL"]
+          with open("slack-details.txt", "r", encoding="utf-8") as f:
+              text = f.read().strip()
+
+          if not text:
+              raise SystemExit(0)
+
+          max_chars = 2600
+          lines = text.splitlines()
+          chunks = []
+          current = []
+          size = 0
+          for line in lines:
+              line_len = len(line) + 1
+              if current and size + line_len > max_chars:
+                  chunks.append("\n".join(current))
+                  current = [line]
+                  size = line_len
+              else:
+                  current.append(line)
+                  size += line_len
+          if current:
+              chunks.append("\n".join(current))
+
+          total = len(chunks)
+          for idx, chunk in enumerate(chunks, start=1):
+              payload = {
+                  "text": f"OSV details ({idx}/{total})",
+                  "blocks": [
+                      {
+                          "type": "section",
+                          "text": {
+                              "type": "mrkdwn",
+                              "text": f"*OSV detailed findings ({idx}/{total})*\n{chunk}",
+                          },
+                      }
+                  ],
+              }
+              body = json.dumps(payload).encode("utf-8")
+              req = urllib.request.Request(
+                  webhook,
+                  data=body,
+                  headers={"Content-type": "application/json"},
+                  method="POST",
+              )
+              with urllib.request.urlopen(req):
+                  pass
+          PY
