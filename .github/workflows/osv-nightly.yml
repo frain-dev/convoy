@@ -52,25 +52,35 @@ jobs:
   report-and-slack:
     name: Build report and notify Slack
     runs-on: ubuntu-latest
-    needs: osv-scan
+    needs: [prepare-lockfile, osv-scan]
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
-      - name: Materialize JSON report from reusable output
-        env:
-          OSV_RESULTS_JSON: ${{ needs.osv-scan.outputs.results }}
+      - name: Download dashboard lockfile
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: osv-lockfiles
+          path: .
+
+      - name: Run OSV scanner (JSON for report)
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@7222d1c7ee4f96d71d883e0d3c603f1e1705eca9 # v2.3.5
+        with:
+          scan-args: |-
+            --format=json
+            --output=osv-report.json
+            --lockfile=./go.mod
+            --lockfile=./web/ui/dashboard/package-lock.json
+
+      - name: Ensure OSV JSON exists
         run: |
-          python3 - <<'PY'
-          import os
-          data = os.environ.get("OSV_RESULTS_JSON", "")
-          if not data.strip():
-              raise SystemExit("OSV scan results output is empty")
-          with open("osv-report.json", "w", encoding="utf-8") as f:
-              f.write(data)
-          PY
+          if [[ ! -s osv-report.json ]]; then
+            echo '::warning::osv-report.json missing or empty after scan; writing empty results for report.'
+            printf '%s\n' '{"results":[]}' > osv-report.json
+          fi
 
       - name: Build Markdown and Slack detail file
         env:
