@@ -1,0 +1,143 @@
+name: Bump convoy-cloud staging image tag
+
+on:
+  workflow_run:
+    workflows:
+      - Build and Push Docker Images
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      head_sha:
+        description: "Convoy commit SHA to bump to (defaults to latest main)"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  open-bump-pr:
+    if: >-
+      ${{
+        (
+          github.event_name == 'workflow_dispatch'
+        ) || (
+          github.event.workflow_run.conclusion == 'success'
+          && github.event.workflow_run.event == 'push'
+          && github.repository == 'frain-dev/convoy'
+        )
+      }}
+    runs-on: ubuntu-latest
+    env:
+      VALUES_YAML_PATH: ${{ secrets.CONVOY_CLOUD_VALUES_YAML_PATH }}
+    steps:
+      - name: Require head_sha for manual runs
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ -z "${{ inputs.head_sha }}" ]; then
+            echo "::error::workflow_dispatch requires input head_sha (full commit SHA that was built and pushed)."
+            exit 1
+          fi
+
+      - name: Checkout Convoy at built commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ inputs.head_sha || github.event.workflow_run.head_sha }}
+          fetch-depth: 1
+          path: .convoy-for-short-sha
+
+      - name: Compute image tag (same as build-image set-image-tag on main)
+        id: tag
+        run: |
+          if [ ! -d .convoy-for-short-sha/.git ]; then
+            echo "::error::Convoy checkout missing — set workflow_dispatch head_sha if empty."
+            exit 1
+          fi
+          short="$(git -C .convoy-for-short-sha rev-parse --short=7 HEAD)"
+          echo "short_sha=${short}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=main-${short}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout convoy-cloud
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: frain-dev/convoy-cloud
+          token: ${{ secrets.CONVOY_CLOUD_REPO_TOKEN }}
+          path: convoy-cloud
+
+      - name: Update staging tag
+        working-directory: convoy-cloud
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
+        run: |
+          if [ -z "$VALUES_YAML_PATH" ]; then
+            echo "::error::Set repository secret CONVOY_CLOUD_VALUES_YAML_PATH to the values file path inside convoy-cloud."
+            exit 1
+          fi
+          test -f "$VALUES_YAML_PATH"
+          if ! grep -q 'tag: &tag "' "$VALUES_YAML_PATH"; then
+            echo "::error::Expected 'tag: &tag \"...\"' in values file — update regex or secret path if YAML changed."
+            exit 1
+          fi
+          python3 <<'PY'
+          import os, re, sys
+
+          path = os.environ["VALUES_YAML_PATH"]
+          tag = os.environ["IMAGE_TAG"]
+          text = open(path, encoding="utf-8").read()
+          new, n = re.subn(r'(tag: &tag ")[^"]*(")', rf"\g<1>{tag}\2", text)
+          if n == 0:
+              print("::error::Tag line pattern matched zero times — YAML may have changed", file=sys.stderr)
+              sys.exit(1)
+          open(path, "w", encoding="utf-8").write(new)
+          PY
+          git diff -- "$VALUES_YAML_PATH"
+
+      - name: Create pull request
+        working-directory: convoy-cloud
+        env:
+          GH_TOKEN: ${{ secrets.CONVOY_CLOUD_REPO_TOKEN }}
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
+          SOURCE_SHA: ${{ inputs.head_sha || github.event.workflow_run.head_sha }}
+          SOURCE_RUN: ${{ github.event.workflow_run.html_url || '' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="bump/convoy-staging-${IMAGE_TAG}"
+
+          existing="$(gh pr list --repo frain-dev/convoy-cloud --head "$branch" --json number -q '.[0].number' 2>/dev/null || true)"
+          if [ -n "$existing" ]; then
+            echo "PR #${existing} already open for ${branch} — nothing to do."
+            exit 0
+          fi
+
+          git checkout -b "$branch"
+          git add "$VALUES_YAML_PATH"
+
+          if git diff --cached --quiet; then
+            echo "No changes (tag already ${IMAGE_TAG}); nothing to do."
+            exit 0
+          fi
+
+          run_url="${SOURCE_RUN:-n/a (manual workflow_dispatch)}"
+
+          git commit -m "chore(staging): bump Convoy image to ${IMAGE_TAG}
+
+Synced from frain-dev/convoy main after Docker publish.
+Commit: ${SOURCE_SHA}
+Workflow run: ${run_url}"
+
+          git push -u origin "$branch"
+
+          gh pr create \
+            --repo frain-dev/convoy-cloud \
+            --base main \
+            --head "$branch" \
+            --title "chore(staging): bump Convoy to ${IMAGE_TAG}" \
+            --body "Automated bump after Convoy main image publish.
+
+- **Image tag:** \`${IMAGE_TAG}\`
+- **Convoy commit:** \`${SOURCE_SHA}\`
+- **Build run:** ${run_url}"
