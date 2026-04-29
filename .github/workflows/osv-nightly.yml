@@ -47,7 +47,7 @@ jobs:
       download-artifact: osv-lockfiles
       scan-args: |-
         --lockfile=./go.mod
-        --lockfile=./web/ui/dashboard/package-lock.json
+        --lockfile=./package-lock.json
 
   report-and-slack:
     name: Build report and notify Slack
@@ -73,7 +73,7 @@ jobs:
             --format=json
             --output=osv-report.json
             --lockfile=./go.mod
-            --lockfile=./web/ui/dashboard/package-lock.json
+            --lockfile=./package-lock.json
 
       - name: Ensure OSV JSON exists
         run: |
