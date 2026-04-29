@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -56,7 +57,7 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	var project *datastore.Project
 	var err error
 
-	projectRepo := projects.New(h.A.Logger, h.A.DB)
+	projectRepo := cached.NewCachedProjectRepository(projects.New(h.A.Logger, h.A.DB), h.A.Cache, 5*time.Minute, h.A.Logger)
 
 	switch {
 	case h.IsReqWithJWT(authUser), h.IsReqWithPersonalAccessToken(authUser):
@@ -81,29 +82,10 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 
 		projectID := apiKey.Role.Project
 
-		var p datastore.Project
-
-		cacheKey := convoy.ProjectCacheKey.Get(projectID)
-		cacheErr := h.A.Cache.Get(r.Context(), cacheKey.String(), &p)
-
-		// If cache hit with valid data, return it
-		if cacheErr == nil && p.UID != "" {
-			h.A.Logger.Info("found item in cache")
-			return &p, nil
+		project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+		if err != nil {
+			return nil, err
 		}
-
-		// Cache miss - fetch from database
-		pp, fetchErr := projectRepo.FetchProjectByID(r.Context(), projectID)
-		if fetchErr != nil {
-			return nil, fetchErr
-		}
-
-		cacheErr = h.A.Cache.Set(r.Context(), cacheKey.String(), &pp, time.Hour)
-		if cacheErr != nil {
-			h.A.Logger.Error("failed to cache item", "error", cacheErr)
-		}
-
-		return pp, nil
 	case h.IsReqWithPortalLinkToken(authUser):
 		if len(authUser.Credential.Token) > 0 { // this is the legacy static token type
 			svc := portal_links.New(h.A.Logger, h.A.DB)

@@ -71,8 +71,8 @@ func TestUpdateConfiguration_ChangeStorageFromS3ToOnPrem(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, datastore.OnPrem, loaded.StoragePolicy.Type)
 	require.Equal(t, "/new/storage/path", loaded.StoragePolicy.OnPrem.Path.String)
-	// S3 fields should be cleared
-	require.False(t, loaded.StoragePolicy.S3.Bucket.Valid)
+	// S3 should be nil for OnPrem type
+	require.Nil(t, loaded.StoragePolicy.S3)
 }
 
 func TestUpdateConfiguration_ChangeStorageFromOnPremToS3(t *testing.T) {
@@ -107,8 +107,8 @@ func TestUpdateConfiguration_ChangeStorageFromOnPremToS3(t *testing.T) {
 	require.Equal(t, datastore.S3, loaded.StoragePolicy.Type)
 	require.Equal(t, "new-s3-bucket", loaded.StoragePolicy.S3.Bucket.String)
 	require.Equal(t, "eu-west-1", loaded.StoragePolicy.S3.Region.String)
-	// OnPrem path should be cleared
-	require.False(t, loaded.StoragePolicy.OnPrem.Path.Valid)
+	// OnPrem should be nil for S3 type
+	require.Nil(t, loaded.StoragePolicy.OnPrem)
 }
 
 func TestUpdateConfiguration_UpdateS3Credentials(t *testing.T) {
@@ -282,11 +282,11 @@ func TestUpdateConfiguration_StorageNormalization_S3(t *testing.T) {
 	err := service.UpdateConfiguration(ctx, cfg)
 	require.NoError(t, err)
 
-	// Verify OnPrem was normalized (cleared)
+	// Verify OnPrem was cleared
 	loaded, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
 	require.Equal(t, datastore.S3, loaded.StoragePolicy.Type)
-	require.False(t, loaded.StoragePolicy.OnPrem.Path.Valid)
+	require.Nil(t, loaded.StoragePolicy.OnPrem)
 	require.Equal(t, "normalized-bucket", loaded.StoragePolicy.S3.Bucket.String)
 }
 
@@ -310,12 +310,11 @@ func TestUpdateConfiguration_StorageNormalization_OnPrem(t *testing.T) {
 	err := service.UpdateConfiguration(ctx, cfg)
 	require.NoError(t, err)
 
-	// Verify S3 was normalized (cleared)
+	// Verify S3 was cleared
 	loaded, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
 	require.Equal(t, datastore.OnPrem, loaded.StoragePolicy.Type)
-	require.False(t, loaded.StoragePolicy.S3.Bucket.Valid)
-	require.False(t, loaded.StoragePolicy.S3.AccessKey.Valid)
+	require.Nil(t, loaded.StoragePolicy.S3)
 	require.Equal(t, "/normalized/path", loaded.StoragePolicy.OnPrem.Path.String)
 }
 
@@ -372,6 +371,58 @@ func TestUpdateConfiguration_MultipleUpdates(t *testing.T) {
 	require.False(t, loaded.IsAnalyticsEnabled)
 	require.False(t, loaded.IsSignupEnabled)
 	require.Equal(t, "1000h", loaded.RetentionPolicy.Policy)
+}
+
+func TestUpdateConfiguration_ChangeStorageFromS3ToAzureBlob(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+
+	cfg := seedConfiguration(t, db, datastore.S3)
+
+	// Switch to Azure Blob
+	cfg.StoragePolicy.Type = datastore.AzureBlob
+	cfg.StoragePolicy.AzureBlob = &datastore.AzureBlobStorage{
+		AccountName:   null.StringFrom("myaccount"),
+		AccountKey:    null.StringFrom("mykey"),
+		ContainerName: null.StringFrom("exports"),
+		Endpoint:      null.StringFrom("https://myaccount.blob.core.windows.net"),
+	}
+
+	err := service.UpdateConfiguration(ctx, cfg)
+	require.NoError(t, err)
+
+	loaded, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.Equal(t, datastore.AzureBlob, loaded.StoragePolicy.Type)
+	require.NotNil(t, loaded.StoragePolicy.AzureBlob)
+	require.Equal(t, "myaccount", loaded.StoragePolicy.AzureBlob.AccountName.String)
+	require.Equal(t, "exports", loaded.StoragePolicy.AzureBlob.ContainerName.String)
+	// S3 and OnPrem should be nil
+	require.Nil(t, loaded.StoragePolicy.S3)
+	require.Nil(t, loaded.StoragePolicy.OnPrem)
+}
+
+func TestUpdateConfiguration_UpdateAzureBlobCredentials(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+
+	cfg := seedConfiguration(t, db, datastore.AzureBlob)
+
+	// Update Azure credentials
+	cfg.StoragePolicy.AzureBlob.AccountKey = null.StringFrom("updated-key")
+	cfg.StoragePolicy.AzureBlob.ContainerName = null.StringFrom("updated-container")
+
+	err := service.UpdateConfiguration(ctx, cfg)
+	require.NoError(t, err)
+
+	loaded, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "updated-key", loaded.StoragePolicy.AzureBlob.AccountKey.String)
+	require.Equal(t, "updated-container", loaded.StoragePolicy.AzureBlob.ContainerName.String)
 }
 
 func TestUpdateConfiguration_VerifyNoRowsAffectedError(t *testing.T) {

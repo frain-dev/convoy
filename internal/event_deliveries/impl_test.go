@@ -1123,26 +1123,54 @@ func TestExportRecords(t *testing.T) {
 		}
 
 		var buf bytes.Buffer
-		// Export uses created_at < @created_at, so pass a future time to include recent deliveries
-		count, err := service.ExportRecords(ctx, project.UID, time.Now().Add(1*time.Hour), &buf)
+		// Export uses created_at < end AND created_at >= start, so pass epoch as start and future time as end
+		count, err := service.ExportRecords(ctx, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), time.Now().Add(1*time.Hour), &buf)
 		require.NoError(t, err)
 		require.GreaterOrEqual(t, count, int64(5))
 
-		// Verify valid JSON array
-		var records []json.RawMessage
-		err = json.Unmarshal(buf.Bytes(), &records)
-		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(records), 5)
+		// Verify valid JSONL (one JSON object per line)
+		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte("\n"))
+		require.GreaterOrEqual(t, len(lines), 5)
+		for _, line := range lines {
+			var record json.RawMessage
+			err = json.Unmarshal(line, &record)
+			require.NoError(t, err)
+		}
 	})
 
-	t.Run("Empty", func(t *testing.T) {
-		emptyProject := seedTestProject(t, db)
-
+	t.Run("Empty_with_past_cutoff", func(t *testing.T) {
+		// Export with end in the past should return 0 records
 		var buf bytes.Buffer
-		count, err := service.ExportRecords(ctx, emptyProject.UID, time.Now().Add(1*time.Hour), &buf)
+		count, err := service.ExportRecords(ctx, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), time.Now().Add(-24*time.Hour), &buf)
 		require.NoError(t, err)
 		require.Equal(t, int64(0), count)
-		require.Equal(t, "[]", buf.String())
+		require.Empty(t, buf.String())
+	})
+
+	t.Run("TimeWindow", func(t *testing.T) {
+		// Create more deliveries to ensure we have records
+		for i := 0; i < 3; i++ {
+			d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+			require.NoError(t, service.CreateEventDelivery(ctx, d))
+		}
+
+		// Export with a narrow window: [1 hour ago, now+1h)
+		// Should include all recently created deliveries
+		var buf bytes.Buffer
+		start := time.Now().Add(-1 * time.Hour)
+		end := time.Now().Add(1 * time.Hour)
+		count, err := service.ExportRecords(ctx, start, end, &buf)
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, count, int64(3))
+
+		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte("\n"))
+		require.GreaterOrEqual(t, len(lines), 3)
+
+		// Export with a window that excludes all records: [2h ago, 1h ago)
+		buf.Reset()
+		count, err = service.ExportRecords(ctx, time.Now().Add(-2*time.Hour), time.Now().Add(-1*time.Hour), &buf)
+		require.NoError(t, err)
+		require.Equal(t, int64(0), count)
 	})
 }
 

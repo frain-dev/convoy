@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,91 +10,9 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/exporter"
-	objectstore "github.com/frain-dev/convoy/internal/pkg/object-store"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
-
-func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository,
-	eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd redis.UniversalClient, logger log.Logger) func(context.Context, *asynq.Task) error {
-	pool := goredis.NewPool(rd)
-	rs := redsync.New(pool)
-
-	return func(ctx context.Context, t *asynq.Task) error {
-		const mutexName = "convoy:backup-project-data:mutex"
-		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
-
-		innerCtx, cancel := context.WithTimeout(ctx, time.Second*2)
-		defer cancel()
-
-		err := mutex.LockContext(innerCtx)
-		if err != nil {
-			return fmt.Errorf("failed to obtain lock: %v", err)
-		}
-
-		defer func() {
-			_ctx, _cancel := context.WithTimeout(ctx, time.Second*2)
-			defer _cancel()
-
-			ok, _err := mutex.UnlockContext(_ctx)
-			if !ok || _err != nil {
-				logger.Error("failed to release lock", "error", _err)
-			}
-		}()
-
-		c := time.Now()
-		config, err := configRepo.LoadConfiguration(ctx)
-		if err != nil {
-			if errors.Is(err, datastore.ErrConfigNotFound) {
-				return nil
-			}
-			return err
-		}
-
-		filter := &datastore.ProjectFilter{}
-		projects, err := projectRepo.LoadProjects(context.Background(), filter)
-		if err != nil {
-			return err
-		}
-
-		if len(projects) == 0 {
-			logger.Warn("no existing projects, retention policy job exiting")
-			return nil
-		}
-
-		for _, p := range projects {
-			e, innerErr := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, config, attemptsRepo, logger)
-			if innerErr != nil {
-				return innerErr
-			}
-
-			result, innerErr := e.Export(ctx)
-			if innerErr != nil {
-				logger.Error(fmt.Sprintf("Failed to archive project id's (%s) events : %v", p.UID, innerErr))
-			}
-
-			// upload to object storage.
-			objectStoreClient, innerErr := objectstore.NewObjectStoreClient(config.StoragePolicy, logger)
-			if innerErr != nil {
-				return innerErr
-			}
-
-			for _, r := range result {
-				if r.NumDocs > 0 { // skip if no record was exported
-					innerErr = objectStoreClient.Save(r.ExportFile)
-					if innerErr != nil {
-						return innerErr
-					}
-				}
-			}
-		}
-
-		logger.Info(fmt.Sprintf("Backup Project Data job took %f minutes to run", time.Since(c).Minutes()))
-		return nil
-	}
-}
 
 func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner, logger log.Logger) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd)
@@ -103,9 +20,9 @@ func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner, logg
 
 	return func(ctx context.Context, t *asynq.Task) error {
 		const mutexName = "convoy:retention:mutex"
-		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
+		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(30*time.Minute), redsync.WithTries(1))
 
-		lockCtx, cancel := context.WithTimeout(ctx, time.Second*2)
+		lockCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
 
 		err := mutex.LockContext(lockCtx)
@@ -113,7 +30,25 @@ func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner, logg
 			return fmt.Errorf("failed to obtain lock: %v", err)
 		}
 
+		// Renew lock periodically to prevent expiry during long-running retention
+		renewDone := make(chan struct{})
+		go func() {
+			ticker := time.NewTicker(10 * time.Minute)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-renewDone:
+					return
+				case <-ticker.C:
+					renewCtx, renewCancel := context.WithTimeout(ctx, 10*time.Second)
+					_, _ = mutex.ExtendContext(renewCtx)
+					renewCancel()
+				}
+			}
+		}()
+
 		defer func() {
+			close(renewDone)
 			_lockCtx, _cancel := context.WithTimeout(ctx, time.Second*2)
 			defer _cancel()
 

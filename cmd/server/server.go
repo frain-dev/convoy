@@ -14,9 +14,11 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -116,9 +118,9 @@ func StartConvoyServer(a *cli.App) error {
 		return err
 	}
 
-	apiKeyRepo := api_keys.New(a.Logger, a.DB)
+	apiKeyRepo := cached.NewCachedAPIKeyRepository(api_keys.New(a.Logger, a.DB), a.Cache, 5*time.Minute, a.Logger)
 	userRepo := users.New(a.Logger, a.DB)
-	portalLinkRepo := portal_links.New(a.Logger, a.DB)
+	portalLinkRepo := cached.NewCachedPortalLinkRepository(portal_links.New(a.Logger, a.DB), a.Cache, 5*time.Minute, a.Logger)
 	configRepo := configuration.New(a.Logger, a.DB)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
 	if err != nil {
@@ -168,30 +170,20 @@ func StartConvoyServer(a *cli.App) error {
 
 	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
-	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
-	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
-	// if cfg.Metrics.IsEnabled && cfg.Metrics.Backend == config.PrometheusMetricsProvider {
-	// 	refreshInterval := cfg.Metrics.Prometheus.MaterializedViewRefreshInterval
-	// 	if refreshInterval < 1 {
-	// 		refreshInterval = 1
-	// 	}
-	// 	if refreshInterval > 60 {
-	// 		refreshInterval = 60
-	// 	}
-
-	//nolint:gocritic
-	// 	cronSpec := fmt.Sprintf("*/%d * * * *", refreshInterval)
-	// 	s.RegisterTask(cronSpec, convoy.ScheduleQueue, convoy.RefreshMetricsMaterializedViews)
-
-	// 	lo.Infof("Registered metrics materialized view refresh every %d min", refreshInterval)
-	// }
-
-	// ensures that project data is backed up about 2 hours before they are deleted
 	if a.Licenser.RetentionPolicy() {
-		// runs at 10pm
-		s.RegisterTask("0 22 * * *", convoy.ScheduleQueue, convoy.BackupProjectData)
-		// runs at 1am
+		// Register cron-based backup tasks only when CDC backup is not enabled.
+		// When CDC is active, the BackupCollector in the worker handles exports continuously.
+		if !cfg.RetentionPolicy.CDCBackupEnabled {
+			backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+			enqueueCron := exporter.DurationToCron(backupInterval)
+			processCron := exporter.DurationToCronOffset(backupInterval, 1) // +1 min offset so enqueue runs first
+
+			s.RegisterTask(enqueueCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
+			s.RegisterTask(processCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
+		}
+
+		// Retention always runs at 1am
 		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
 

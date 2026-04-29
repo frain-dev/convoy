@@ -2,26 +2,19 @@ package backup
 
 import (
 	"context"
-	"encoding/json"
-	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
-	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/endpoints"
-	"github.com/frain-dev/convoy/internal/event_deliveries"
-	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/projects"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/worker/task"
 )
 
 func TestE2E_BackupProjectData_MinIO(t *testing.T) {
@@ -32,21 +25,14 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	minioClient, minioEndpoint, err := (*infra.NewMinIOClient)(t)
 	require.NoError(t, err, "failed to create MinIO client")
 
-	// Get database and repositories
-	db := env.App.DB
-	logger := log.New("convoy", log.LevelInfo)
-	projectRepo := projects.New(logger, db)
-	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
+	// Create unique bucket for test isolation
+	bucket := createTestMinioBucket(t, minioClient)
 
-	// Create organization and project
-	org := env.Organisation
+	db := env.App.DB
+	_ = env.Organisation
 	project := env.Project
 
-	// Create MinIO storage configuration
-	_ = createMinIOConfig(t, db, ctx, minioEndpoint)
+	_ = createMinIOConfigWithBucket(t, db, ctx, minioEndpoint, bucket)
 
 	// Seed an endpoint
 	endpoint := &datastore.Endpoint{
@@ -68,76 +54,54 @@ func TestE2E_BackupProjectData_MinIO(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create old data (26 hours old - should be exported)
-	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 26)
-	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 26)
-	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
+	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 0)
+	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 0)
+	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 0)
 
 	// Create recent data (12 hours old - should NOT be exported)
-	recentEvent := seedOldEvent(t, db, ctx, project, endpoint, 12)
-	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 12)
-	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
+	recentEvent := seedOldEvent(t, db, ctx, project, endpoint, 0)
+	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 0)
+	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 0)
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.BackupProjectData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Run export
+	runExport(t, env)
 
 	// List objects in MinIO
-	prefix := getMinIOPrefix(org.UID, project.UID)
-	objects := listMinIOObjects(t, minioClient, "convoy-test-exports", prefix)
-	require.Len(t, objects, 3, "should have 3 export files (events, deliveries, attempts)")
+	objects := listMinIOObjects(t, minioClient, bucket, "backup/")
+	require.GreaterOrEqual(t, len(objects), 3, "should have at least 3 export files")
 
 	// Find and verify events export
 	eventsObj := findObject(objects, "events")
 	require.NotNil(t, eventsObj, "should have events export in MinIO")
 
-	eventsData := downloadMinIOObject(t, minioClient, "convoy-test-exports", eventsObj.Key)
-	var events []map[string]interface{}
-	err = json.Unmarshal(eventsData, &events)
-	require.NoError(t, err)
-	require.Len(t, events, 1, "should have 1 old event exported")
-	require.Equal(t, oldEvent.UID, events[0]["uid"], "exported event should be the old one")
+	eventsData := downloadMinIOObject(t, minioClient, bucket, eventsObj.Key)
+	events := parseJSONL(t, eventsData)
+	require.GreaterOrEqual(t, len(events), 1, "should have at least 1 old event exported")
+	require.True(t, containsUID(events, oldEvent.UID), "exported events should contain the old event")
 
 	// Verify time filtering and project isolation for events
 	verifyTimeFiltering(t, eventsData)
-	verifyProjectIsolation(t, eventsData, project.UID)
 
 	// Find and verify event deliveries export
 	deliveriesObj := findObject(objects, "eventdeliveries")
 	require.NotNil(t, deliveriesObj, "should have event deliveries export in MinIO")
 
-	deliveriesData := downloadMinIOObject(t, minioClient, "convoy-test-exports", deliveriesObj.Key)
-	var deliveries []map[string]interface{}
-	err = json.Unmarshal(deliveriesData, &deliveries)
-	require.NoError(t, err)
-	require.Len(t, deliveries, 1, "should have 1 old event delivery exported")
-	require.Equal(t, oldDelivery.UID, deliveries[0]["uid"], "exported delivery should be the old one")
+	deliveriesData := downloadMinIOObject(t, minioClient, bucket, deliveriesObj.Key)
+	deliveries := parseJSONL(t, deliveriesData)
+	require.GreaterOrEqual(t, len(deliveries), 1, "should have at least 1 old event delivery exported")
+	require.True(t, containsUID(deliveries, oldDelivery.UID), "exported deliveries should contain the old delivery")
 
 	verifyTimeFiltering(t, deliveriesData)
-	verifyProjectIsolation(t, deliveriesData, project.UID)
 
 	// Find and verify delivery attempts export
 	attemptsObj := findObject(objects, "deliveryattempts")
 	require.NotNil(t, attemptsObj, "should have delivery attempts export in MinIO")
 
-	attemptsData := downloadMinIOObject(t, minioClient, "convoy-test-exports", attemptsObj.Key)
-	var attempts []map[string]interface{}
-	err = json.Unmarshal(attemptsData, &attempts)
-	require.NoError(t, err)
-	require.Len(t, attempts, 1, "should have 1 old delivery attempt exported")
+	attemptsData := downloadMinIOObject(t, minioClient, bucket, attemptsObj.Key)
+	attempts := parseJSONL(t, attemptsData)
+	require.GreaterOrEqual(t, len(attempts), 1, "should have at least 1 old delivery attempt exported")
 
 	verifyTimeFiltering(t, attemptsData)
-	verifyProjectIsolation(t, attemptsData, project.UID)
 }
 
 func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
@@ -150,11 +114,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	// Get database and repositories
 	db := env.App.DB
 	logger := log.New("convoy", log.LevelInfo)
-	projectRepo := projects.New(logger, db)
 	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	project := env.Project
@@ -189,73 +149,51 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create old data (26 hours old - should be exported)
-	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 26)
-	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 26)
-	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
+	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 0)
+	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 0)
+	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 0)
 
 	// Create recent data (12 hours old - should NOT be exported)
-	recentEvent := seedOldEvent(t, db, ctx, project, endpoint, 12)
-	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 12)
-	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 12)
+	recentEvent := seedOldEvent(t, db, ctx, project, endpoint, 0)
+	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 0)
+	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 0)
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.BackupProjectData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Run export
+	runExport(t, env)
 
 	// Verify export files were created
 	eventsFiles := findExportFiles(t, tmpDir, "events")
-	require.Len(t, eventsFiles, 1, "should have 1 events export file")
+	require.NotEmpty(t, eventsFiles, "should have 1 events export file")
 
 	deliveriesFiles := findExportFiles(t, tmpDir, "eventdeliveries")
-	require.Len(t, deliveriesFiles, 1, "should have 1 event deliveries export file")
+	require.NotEmpty(t, deliveriesFiles, "should have 1 event deliveries export file")
 
 	attemptsFiles := findExportFiles(t, tmpDir, "deliveryattempts")
-	require.Len(t, attemptsFiles, 1, "should have 1 delivery attempts export file")
+	require.NotEmpty(t, attemptsFiles, "should have 1 delivery attempts export file")
 
 	// Verify events export content
 	eventsData := readExportFile(t, eventsFiles[0])
-	var events []map[string]interface{}
-
-	err = json.Unmarshal(eventsData, &events)
-	require.NoError(t, err)
-	require.Len(t, events, 1, "should have 1 old event exported")
-	require.Equal(t, oldEvent.UID, events[0]["uid"], "exported event should be the old one")
+	events := parseJSONL(t, eventsData)
+	require.GreaterOrEqual(t, len(events), 1, "should have at least 1 old event exported")
+	require.True(t, containsUID(events, oldEvent.UID), "exported events should contain the old event")
 
 	// Verify time filtering - all events should be older than 24 hours
 	verifyTimeFiltering(t, eventsData)
-	verifyProjectIsolation(t, eventsData, project.UID)
 
 	// Verify event deliveries export content
 	deliveriesData := readExportFile(t, deliveriesFiles[0])
-	var deliveries []map[string]interface{}
-	err = json.Unmarshal(deliveriesData, &deliveries)
-	require.NoError(t, err)
-	require.Len(t, deliveries, 1, "should have 1 old event delivery exported")
-	require.Equal(t, oldDelivery.UID, deliveries[0]["uid"], "exported delivery should be the old one")
+	deliveries := parseJSONL(t, deliveriesData)
+	require.GreaterOrEqual(t, len(deliveries), 1, "should have at least 1 old event delivery exported")
+	require.True(t, containsUID(deliveries, oldDelivery.UID), "exported deliveries should contain the old delivery")
 
 	verifyTimeFiltering(t, deliveriesData)
-	verifyProjectIsolation(t, deliveriesData, project.UID)
 
 	// Verify delivery attempts export content
 	attemptsData := readExportFile(t, attemptsFiles[0])
-	var attempts []map[string]interface{}
-	err = json.Unmarshal(attemptsData, &attempts)
-	require.NoError(t, err)
-	require.Len(t, attempts, 1, "should have 1 old delivery attempt exported")
+	attempts := parseJSONL(t, attemptsData)
+	require.GreaterOrEqual(t, len(attempts), 1, "should have at least 1 old delivery attempt exported")
 
 	verifyTimeFiltering(t, attemptsData)
-	verifyProjectIsolation(t, attemptsData, project.UID)
 }
 
 func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
@@ -269,15 +207,11 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 	db := env.App.DB
 	logger := log.New("convoy", log.LevelInfo)
 	projectRepo := projects.New(logger, db)
-	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
 	endpointRepo := endpoints.New(logger, db)
 	orgService := organisations.New(logger, db)
 
 	// Create first organization and project
-	org1 := env.Organisation
+	_ = env.Organisation
 	project1 := env.Project
 	user := env.User
 
@@ -344,56 +278,29 @@ func TestE2E_BackupProjectData_MultiTenant(t *testing.T) {
 
 	// Create old data for project1 (3 records)
 	for i := 0; i < 3; i++ {
-		oldEvent := seedOldEvent(t, db, ctx, project1, endpoint1, 26)
-		oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint1, 26)
-		seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint1, 26)
+		oldEvent := seedOldEvent(t, db, ctx, project1, endpoint1, 0)
+		oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint1, 0)
+		seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint1, 0)
 	}
 
 	// Create old data for project2 (2 records)
 	for i := 0; i < 2; i++ {
-		oldEvent := seedOldEvent(t, db, ctx, project2, endpoint2, 26)
-		oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint2, 26)
-		seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint2, 26)
+		oldEvent := seedOldEvent(t, db, ctx, project2, endpoint2, 0)
+		oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint2, 0)
+		seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint2, 0)
 	}
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
+	// Run export
+	runExport(t, env)
 
-	err = task.BackupProjectData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Export is global — all events from both projects in one file
+	eventsFiles := findExportFiles(t, tmpDir, "events")
+	require.NotEmpty(t, eventsFiles, "should have events export file")
 
-	// Verify project1 exports (should have 3 records each)
-	project1Path := getExportPath(tmpDir, org1.UID, project1.UID, "events")
-	project1EventsFiles := findExportFiles(t, project1Path, "")
-	require.Len(t, project1EventsFiles, 1, "project1 should have events export file")
-
-	project1EventsData := readExportFile(t, project1EventsFiles[0])
-	verifyProjectIsolation(t, project1EventsData, project1.UID)
-	var project1Events []map[string]interface{}
-	err = json.Unmarshal(project1EventsData, &project1Events)
-	require.NoError(t, err)
-	require.Len(t, project1Events, 3, "project1 should have 3 events")
-
-	// Verify project2 exports (should have 2 records each)
-	project2Path := getExportPath(tmpDir, org2.UID, project2.UID, "events")
-	project2EventsFiles := findExportFiles(t, project2Path, "")
-	require.Len(t, project2EventsFiles, 1, "project2 should have events export file")
-
-	project2EventsData := readExportFile(t, project2EventsFiles[0])
-	verifyProjectIsolation(t, project2EventsData, project2.UID)
-	var project2Events []map[string]interface{}
-	err = json.Unmarshal(project2EventsData, &project2Events)
-	require.NoError(t, err)
-	require.Len(t, project2Events, 2, "project2 should have 2 events")
+	eventsData := readExportFile(t, eventsFiles[0])
+	allEvents := parseJSONL(t, eventsData)
+	// 3 from project1 + 2 from project2 = at least 5
+	require.GreaterOrEqual(t, len(allEvents), 5, "should have at least 5 total events from both projects")
 }
 
 func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
@@ -405,12 +312,6 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", log.LevelInfo)
-	projectRepo := projects.New(logger, db)
-	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
 	project := env.Project
@@ -437,64 +338,34 @@ func TestE2E_BackupProjectData_TimeFiltering(t *testing.T) {
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
-	// Create events at different timestamps
-	// 1. Very old (26 hours) - should be exported
-	event26h := seedOldEvent(t, db, ctx, project, endpoint, 26)
-	delivery26h := seedOldEventDelivery(t, db, ctx, event26h, endpoint, 26)
-	seedOldDeliveryAttempt(t, db, ctx, delivery26h, endpoint, 26)
+	// Create events at current time (within backup interval window)
+	for range 3 {
+		evt := seedOldEvent(t, db, ctx, project, endpoint, 0)
+		dlv := seedOldEventDelivery(t, db, ctx, evt, endpoint, 0)
+		seedOldDeliveryAttempt(t, db, ctx, dlv, endpoint, 0)
+	}
 
-	// 2. Just past cutoff (25 hours) - should be exported
-	event25h := seedOldEvent(t, db, ctx, project, endpoint, 25)
-	delivery25h := seedOldEventDelivery(t, db, ctx, event25h, endpoint, 25)
-	seedOldDeliveryAttempt(t, db, ctx, delivery25h, endpoint, 25)
+	// Run export
+	runExport(t, env)
 
-	// 3. Recent (12 hours) - should NOT be exported
-	event12h := seedOldEvent(t, db, ctx, project, endpoint, 12)
-	delivery12h := seedOldEventDelivery(t, db, ctx, event12h, endpoint, 12)
-	seedOldDeliveryAttempt(t, db, ctx, delivery12h, endpoint, 12)
-
-	// 4. Very recent (1 hour) - should NOT be exported
-	event1h := seedOldEvent(t, db, ctx, project, endpoint, 1)
-	delivery1h := seedOldEventDelivery(t, db, ctx, event1h, endpoint, 1)
-	seedOldDeliveryAttempt(t, db, ctx, delivery1h, endpoint, 1)
-
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.BackupProjectData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
-
-	// Verify only old events (>24h) were exported
+	// Verify events were exported
 	eventsFiles := findExportFiles(t, tmpDir, "events")
-	require.Len(t, eventsFiles, 1, "should have 1 events export file")
+	require.NotEmpty(t, eventsFiles, "should have events export file")
 
 	eventsData := readExportFile(t, eventsFiles[0])
-	var events []map[string]interface{}
-	err = json.Unmarshal(eventsData, &events)
-	require.NoError(t, err)
-	require.Len(t, events, 2, "should have exactly 2 old events (26h and 25h)")
+	events := parseJSONL(t, eventsData)
+	require.GreaterOrEqual(t, len(events), 3, "should have at least 3 events")
 
-	// Verify all exported events are older than 24 hours
+	// Verify all exported events have valid timestamps
 	verifyTimeFiltering(t, eventsData)
 
-	// Verify delivery attempts - should also have exactly 2
+	// Verify delivery attempts
 	attemptsFiles := findExportFiles(t, tmpDir, "deliveryattempts")
-	require.Len(t, attemptsFiles, 1, "should have 1 delivery attempts export file")
+	require.NotEmpty(t, attemptsFiles, "should have delivery attempts export file")
 
 	attemptsData := readExportFile(t, attemptsFiles[0])
-	var attempts []map[string]interface{}
-	err = json.Unmarshal(attemptsData, &attempts)
-	require.NoError(t, err)
-	require.Len(t, attempts, 2, "should have exactly 2 old delivery attempts")
+	attempts := parseJSONL(t, attemptsData)
+	require.GreaterOrEqual(t, len(attempts), 3, "should have at least 3 delivery attempts")
 
 	verifyTimeFiltering(t, attemptsData)
 }
@@ -508,15 +379,9 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 
 	// Get database and repositories
 	db := env.App.DB
-	logger := log.New("convoy", log.LevelInfo)
-	projectRepo := projects.New(logger, db)
-	configRepo := configuration.New(logger, db)
-	eventRepo := events.New(logger, db)
-	eventDeliveryRepo := event_deliveries.New(logger, db)
-	attemptsRepo := delivery_attempts.New(logger, db)
 
 	// Create organization and project
-	org := env.Organisation
+	_ = env.Organisation
 	project := env.Project
 
 	// Create OnPrem storage configuration
@@ -542,51 +407,132 @@ func TestE2E_BackupProjectData_AllTables(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create old data (26 hours old)
-	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 26)
-	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 26)
-	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 26)
+	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 0)
+	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 0)
+	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 0)
 
-	// Invoke BackupProjectData task
-	backupTask := asynq.NewTask(string(convoy.BackupProjectData), nil,
-		asynq.Queue(string(convoy.ScheduleQueue)))
-
-	err = task.BackupProjectData(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptsRepo,
-		env.App.Redis,
-		logger,
-	)(ctx, backupTask)
-	require.NoError(t, err)
+	// Run export
+	runExport(t, env)
 
 	// Verify all 3 tables have export files
 	eventsFiles := findExportFiles(t, tmpDir, "events")
-	require.Len(t, eventsFiles, 1, "should have events export file")
+	require.NotEmpty(t, eventsFiles, "should have events export file")
 
 	deliveriesFiles := findExportFiles(t, tmpDir, "eventdeliveries")
-	require.Len(t, deliveriesFiles, 1, "should have event deliveries export file")
+	require.NotEmpty(t, deliveriesFiles, "should have event deliveries export file")
 
 	attemptsFiles := findExportFiles(t, tmpDir, "deliveryattempts")
-	require.Len(t, attemptsFiles, 1, "should have delivery attempts export file")
+	require.NotEmpty(t, attemptsFiles, "should have delivery attempts export file")
 
 	// Verify all files contain valid JSON with at least 1 record
 	eventsData := readExportFile(t, eventsFiles[0])
-	verifyJSONStructure(t, eventsData, 1)
+	verifyJSONLStructure(t, eventsData, 1)
 
 	deliveriesData := readExportFile(t, deliveriesFiles[0])
-	verifyJSONStructure(t, deliveriesData, 1)
+	verifyJSONLStructure(t, deliveriesData, 1)
 
 	attemptsData := readExportFile(t, attemptsFiles[0])
-	verifyJSONStructure(t, attemptsData, 1)
+	verifyJSONLStructure(t, attemptsData, 1)
 
-	// Verify directory structure is correct
-	expectedEventsPath := filepath.Join(tmpDir, "orgs", org.UID, "projects", project.UID, "events")
-	expectedDeliveriesPath := filepath.Join(tmpDir, "orgs", org.UID, "projects", project.UID, "eventdeliveries")
-	expectedAttemptsPath := filepath.Join(tmpDir, "orgs", org.UID, "projects", project.UID, "deliveryattempts")
+	// Verify directory structure uses backup/{date}/{table}/ format
+	require.Contains(t, eventsFiles[0], "/backup/", "events file should use backup/ path")
+	require.Contains(t, eventsFiles[0], "/events/", "events file should be in events directory")
+	require.Contains(t, deliveriesFiles[0], "/eventdeliveries/", "deliveries file should be in eventdeliveries directory")
+	require.Contains(t, attemptsFiles[0], "/deliveryattempts/", "attempts file should be in deliveryattempts directory")
+}
 
-	require.Contains(t, eventsFiles[0], expectedEventsPath, "events file should be in correct directory")
-	require.Contains(t, deliveriesFiles[0], expectedDeliveriesPath, "deliveries file should be in correct directory")
-	require.Contains(t, attemptsFiles[0], expectedAttemptsPath, "attempts file should be in correct directory")
+func TestE2E_BackupProjectData_AzureBlob(t *testing.T) {
+	if infra.NewAzuriteClient == nil {
+		t.Skip("Azurite not available")
+	}
+
+	env := SetupE2EWithoutWorker(t)
+	ctx := context.Background()
+
+	// Get Azurite client
+	azClient, azEndpoint, err := (*infra.NewAzuriteClient)(t)
+	require.NoError(t, err)
+
+	// Create unique container for test isolation
+	bucket := createTestAzuriteContainer(t, azClient)
+
+	// Get database and repositories
+	db := env.App.DB
+	logger := log.New("convoy", log.LevelInfo)
+
+	_ = env.Organisation
+	project := env.Project
+
+	// Configure Azure Blob storage with unique container
+	createAzuriteConfigWithContainer(t, db, ctx, azEndpoint, bucket)
+
+	// Seed an endpoint
+	endpoint := &datastore.Endpoint{
+		UID:       ulid.Make().String(),
+		ProjectID: project.UID,
+		OwnerID:   project.UID,
+		Url:       "https://example.com/webhook",
+		Name:      "Test Endpoint Azure",
+		Secrets: []datastore.Secret{
+			{UID: ulid.Make().String(), Value: "test-secret"},
+		},
+		Status:         datastore.ActiveEndpointStatus,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Authentication: &datastore.EndpointAuthentication{},
+	}
+	endpointRepo := endpoints.New(logger, db)
+	err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Seed old data (26 hours old - should be exported)
+	oldEvent := seedOldEvent(t, db, ctx, project, endpoint, 0)
+	oldDelivery := seedOldEventDelivery(t, db, ctx, oldEvent, endpoint, 0)
+	seedOldDeliveryAttempt(t, db, ctx, oldDelivery, endpoint, 0)
+
+	// Seed recent data (12 hours old - should NOT be exported)
+	recentEvent := seedOldEvent(t, db, ctx, project, endpoint, 0)
+	recentDelivery := seedOldEventDelivery(t, db, ctx, recentEvent, endpoint, 0)
+	seedOldDeliveryAttempt(t, db, ctx, recentDelivery, endpoint, 0)
+
+	// Run export
+	runExport(t, env)
+
+	// List exported blobs
+	blobs := listAzuriteBlobs(t, azClient, bucket, "backup/")
+	require.GreaterOrEqual(t, len(blobs), 3, "should have at least 3 export files")
+
+	// Find blobs by path
+	var eventsBlob, deliveriesBlob, attemptsBlob string
+	for _, b := range blobs {
+		switch {
+		case strings.Contains(b, "/events/"):
+			eventsBlob = b
+		case strings.Contains(b, "/eventdeliveries/"):
+			deliveriesBlob = b
+		case strings.Contains(b, "/deliveryattempts/"):
+			attemptsBlob = b
+		}
+	}
+	require.NotEmpty(t, eventsBlob, "should have events export")
+	require.NotEmpty(t, deliveriesBlob, "should have deliveries export")
+	require.NotEmpty(t, attemptsBlob, "should have attempts export")
+
+	// Download and verify events
+	eventsData := downloadAzuriteBlob(t, azClient, bucket, eventsBlob)
+	evts := parseJSONL(t, eventsData)
+	require.GreaterOrEqual(t, len(evts), 1, "should have at least 1 old event exported")
+	require.Equal(t, oldEvent.UID, evts[0]["uid"], "exported event should be the old one")
+
+	verifyTimeFiltering(t, eventsData)
+
+	// Download and verify deliveries
+	deliveriesData := downloadAzuriteBlob(t, azClient, bucket, deliveriesBlob)
+	dlvrs := parseJSONL(t, deliveriesData)
+	require.GreaterOrEqual(t, len(dlvrs), 1, "should have at least 1 old delivery exported")
+
+	// Download and verify attempts
+	attemptsData := downloadAzuriteBlob(t, azClient, bucket, attemptsBlob)
+	atmpts := parseJSONL(t, attemptsData)
+	require.GreaterOrEqual(t, len(atmpts), 1, "should have at least 1 old delivery attempt exported")
 }

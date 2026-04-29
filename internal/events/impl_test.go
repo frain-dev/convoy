@@ -1,6 +1,7 @@
 package events
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -206,6 +207,74 @@ func defaultSearchParams() datastore.SearchParams {
 		CreatedAtStart: time.Now().Add(-24 * time.Hour).Unix(),
 		CreatedAtEnd:   time.Now().Add(1 * time.Hour).Unix(),
 	}
+}
+
+func TestExportRecords(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+
+	t.Run("Success", func(t *testing.T) {
+		for range 5 {
+			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+			require.NoError(t, service.CreateEvent(ctx, event))
+		}
+
+		var buf bytes.Buffer
+		epoch := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		count, err := service.ExportRecords(ctx, epoch, time.Now().Add(1*time.Hour), &buf)
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, count, int64(5))
+
+		// Verify valid JSONL
+		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte("\n"))
+		require.GreaterOrEqual(t, len(lines), 5)
+		for _, line := range lines {
+			var record map[string]any
+			err = json.Unmarshal(line, &record)
+			require.NoError(t, err)
+			// id should be renamed to uid
+			require.NotEmpty(t, record["uid"], "each record should have uid")
+			require.Nil(t, record["id"], "id should be renamed to uid")
+		}
+	})
+
+	t.Run("Empty_with_past_cutoff", func(t *testing.T) {
+		var buf bytes.Buffer
+		epoch := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		count, err := service.ExportRecords(ctx, epoch, time.Now().Add(-24*time.Hour), &buf)
+		require.NoError(t, err)
+		require.Equal(t, int64(0), count)
+		require.Empty(t, buf.String())
+	})
+
+	t.Run("TimeWindow", func(t *testing.T) {
+		// Create more events
+		for range 3 {
+			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+			require.NoError(t, service.CreateEvent(ctx, event))
+		}
+
+		// Export with window [1h ago, now+1h) — should include all recently created
+		var buf bytes.Buffer
+		start := time.Now().Add(-1 * time.Hour)
+		end := time.Now().Add(1 * time.Hour)
+		count, err := service.ExportRecords(ctx, start, end, &buf)
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, count, int64(3))
+
+		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte("\n"))
+		require.GreaterOrEqual(t, len(lines), 3)
+
+		// Export with window that excludes all: [2h ago, 1h ago)
+		buf.Reset()
+		count, err = service.ExportRecords(ctx, time.Now().Add(-2*time.Hour), time.Now().Add(-1*time.Hour), &buf)
+		require.NoError(t, err)
+		require.Equal(t, int64(0), count)
+	})
 }
 
 func TestCreateEvent(t *testing.T) {

@@ -546,23 +546,28 @@ func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID st
 	return intervals, nil
 }
 
-func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
-	count, err := s.repo.CountExportedEventDeliveries(ctx, repo.CountExportedEventDeliveriesParams{
-		ProjectID: common.StringToPgTextNullable(projectID),
-		CreatedAt: common.TimeToPgTimestamptz(createdAt),
-		Cursor:    common.StringToPgText(""),
+// ExportRecords exports event deliveries to a writer as JSONL (one JSON object per line).
+// It uses a REPEATABLE READ transaction for snapshot consistency across batches.
+func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.Writer) (int64, error) {
+	// Begin REPEATABLE READ transaction for snapshot consistency
+	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return 0, fmt.Errorf("begin snapshot tx: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	txRepo := repo.New(tx)
+
+	count, err := txRepo.CountExportedEventDeliveries(ctx, repo.CountExportedEventDeliveriesParams{
+		CreatedAtEnd:   common.TimeToPgTimestamptz(end),
+		CreatedAtStart: common.TimeToPgTimestamptz(start),
 	})
 	if err != nil {
 		return 0, err
 	}
 
 	count64 := common.PgInt8ToInt64(count)
-
 	if count64 == 0 {
-		_, err = w.Write([]byte(`[]`))
-		if err != nil {
-			return 0, err
-		}
 		return 0, nil
 	}
 
@@ -573,46 +578,30 @@ func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt
 		lastID     string
 	)
 
-	_, err = w.Write([]byte(`[`))
-	if err != nil {
-		return 0, err
-	}
-
-	isFirstRecord := true
-
 	for i := 0; i < numBatches; i++ {
 		params := repo.ExportEventDeliveriesParams{
-			ProjectID: common.StringToPgTextNullable(projectID),
-			CreatedAt: common.TimeToPgTimestamptz(createdAt),
-			Cursor:    common.StringToPgText(lastID),
-			PageLimit: pgtype.Int8{Int64: int64(batchSize), Valid: true},
+			CreatedAtEnd:   common.TimeToPgTimestamptz(end),
+			CreatedAtStart: common.TimeToPgTimestamptz(start),
+			Cursor:         common.StringToPgText(lastID),
+			PageLimit:      pgtype.Int8{Int64: int64(batchSize), Valid: true},
 		}
 
-		rows, exportErr := s.repo.ExportEventDeliveries(ctx, params)
+		rows, exportErr := txRepo.ExportEventDeliveries(ctx, params)
 		if exportErr != nil {
 			return 0, fmt.Errorf("failed to query batch %d: %w", i, exportErr)
 		}
 
 		for _, row := range rows {
-			if !isFirstRecord {
-				if _, writeErr := w.Write([]byte(`,`)); writeErr != nil {
-					return 0, writeErr
-				}
-			}
-			isFirstRecord = false
-
 			if _, writeErr := w.Write(row.JsonOutput); writeErr != nil {
+				return 0, writeErr
+			}
+			if _, writeErr := w.Write([]byte("\n")); writeErr != nil {
 				return 0, writeErr
 			}
 
 			numDocs++
 			lastID = row.ID
 		}
-	}
-
-	_, err = w.Write([]byte(`]`))
-	if err != nil {
-		return 0, err
 	}
 
 	return numDocs, nil

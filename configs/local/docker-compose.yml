@@ -63,6 +63,8 @@ services:
     postgres:
         image: postgres:15.2-alpine
         restart: unless-stopped
+        ports:
+            - "5433:5432"
         environment:
             POSTGRES_DB: convoy
             POSTGRES_USER: convoy
@@ -76,11 +78,17 @@ services:
             timeout: 5s
             retries: 5
             start_period: 10s
+        command:
+            - "postgres"
+            - "-c"
+            - "wal_level=logical"
 
     pgbouncer:
         image: bitnamilegacy/pgbouncer
         hostname: pgbouncer
         restart: unless-stopped
+        ports:
+            - "6432:6432"
         depends_on:
             postgres:
                 condition: service_healthy
@@ -106,3 +114,5 @@ volumes:
     postgres_data:
     redis_data:
     caddy_data:
+    minio_data:
+    azurite_data:

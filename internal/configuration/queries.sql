@@ -15,6 +15,11 @@ INSERT INTO convoy.configurations (
 	s3_region,
 	s3_session_token,
 	s3_endpoint,
+	azure_account_name,
+	azure_account_key,
+	azure_container_name,
+	azure_endpoint,
+	azure_prefix,
 	retention_policy_policy,
 	retention_policy_enabled
 ) VALUES (
@@ -30,6 +35,11 @@ INSERT INTO convoy.configurations (
 	@s3_region,
 	@s3_session_token,
 	@s3_endpoint,
+	@azure_account_name,
+	@azure_account_key,
+	@azure_container_name,
+	@azure_endpoint,
+	@azure_prefix,
 	@retention_policy_policy,
 	@retention_policy_enabled
 );
@@ -49,6 +59,11 @@ SELECT
 	s3_region,
 	s3_session_token,
 	s3_endpoint,
+	azure_account_name,
+	azure_account_key,
+	azure_container_name,
+	azure_endpoint,
+	azure_prefix,
 	retention_policy_policy,
 	retention_policy_enabled,
 	created_at,
@@ -72,6 +87,11 @@ SET
 	s3_region = @s3_region,
 	s3_session_token = @s3_session_token,
 	s3_endpoint = @s3_endpoint,
+	azure_account_name = @azure_account_name,
+	azure_account_key = @azure_account_key,
+	azure_container_name = @azure_container_name,
+	azure_endpoint = @azure_endpoint,
+	azure_prefix = @azure_prefix,
 	retention_policy_policy = @retention_policy_policy,
 	retention_policy_enabled = @retention_policy_enabled,
 	updated_at = NOW()

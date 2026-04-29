@@ -85,8 +85,9 @@ func init() {
 
 	govalidator.TagMap["supported_storage"] = func(encoder string) bool {
 		encoders := map[string]bool{
-			string(datastore.S3):     true,
-			string(datastore.OnPrem): true,
+			string(datastore.S3):        true,
+			string(datastore.OnPrem):    true,
+			string(datastore.AzureBlob): true,
 		}
 
 		if _, ok := encoders[encoder]; !ok {
