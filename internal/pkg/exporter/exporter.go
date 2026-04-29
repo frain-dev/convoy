@@ -278,7 +278,7 @@ func (ex *Exporter) exportTableToDisk(ctx context.Context, table tableName, expS
 
 func (ex *Exporter) getExportDir() (string, error) {
 	switch ex.config.StoragePolicy.Type {
-	case datastore.S3:
+	case datastore.S3, datastore.AzureBlob:
 		return convoy.TmpExportDir, nil
 	case datastore.OnPrem:
 		if ex.config.StoragePolicy.OnPrem.Path.IsZero() {
