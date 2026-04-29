@@ -1,0 +1,71 @@
+:host {
+	display: block;
+	// Leave room for fixed header (~60px), admin layout, footer bar, caption (~260px total).
+	--qm-main-min-h: clamp(520px, calc(100dvh - 260px), 1200px);
+}
+
+.qm-layout {
+	&--fullscreen {
+		position: fixed;
+		inset: 0;
+		z-index: 200;
+		padding: 16px;
+		background: #424242;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+
+		.qm-card {
+			flex: 1;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.qm-main {
+			flex: 1;
+			min-height: 0;
+		}
+
+		.qm-iframe {
+			min-height: 0;
+			height: 100%;
+		}
+
+		p.text-12 {
+			display: none;
+		}
+	}
+}
+
+.qm-card {
+	min-height: calc(var(--qm-main-min-h) + 3.25rem);
+}
+
+.qm-main {
+	flex: 1;
+	min-height: var(--qm-main-min-h);
+	display: flex;
+	flex-direction: column;
+}
+
+.qm-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	min-height: var(--qm-main-min-h);
+	padding: 48px;
+}
+
+.qm-iframe {
+	flex: 1;
+	min-height: 0;
+	width: 100%;
+	border: 0;
+	display: block;
+}
+
+.qm-footer {
+	flex-shrink: 0;
+}

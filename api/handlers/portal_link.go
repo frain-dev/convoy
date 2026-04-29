@@ -59,7 +59,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = newPortalLink.Validate(); err != nil {
-		h.A.Logger.Errorf("Portal link creation validation failed: %v: %v", err, err)
+		h.A.Logger.Errorf("Portal link creation validation failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
@@ -174,7 +174,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	var updatePortalLink datastore.UpdatePortalLinkRequest
 	err = migrator.Unmarshal(body, &updatePortalLink)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to parse portal link update request: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to parse portal link update request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -185,7 +185,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := updatePortalLink.Validate(); err != nil {
-		h.A.Logger.Errorf("Portal link update validation failed: %v: %v", err, err)
+		h.A.Logger.Errorf("Portal link update validation failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
@@ -201,7 +201,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	portalLink, err := svc.GetPortalLink(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
-			h.A.Logger.Errorf("Portal link not found during update: %v: %v", err, err)
+			h.A.Logger.Errorf("Portal link not found during update: %v", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 			return
 		}

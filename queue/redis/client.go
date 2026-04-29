@@ -118,6 +118,11 @@ func (q *RedisQueue) Options() queue.QueueOptions {
 }
 
 func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
+	return q.MonitorWithRootPath("/queue/monitoring")
+}
+
+// MonitorWithRootPath builds an Asynqmon handler for a custom mount path.
+func (q *RedisQueue) MonitorWithRootPath(rootPath string) *asynqmon.HTTPHandler {
 	var redisConnOpt asynq.RedisConnOpt
 	if q.opts.RedisFailoverOpt != nil {
 		redisConnOpt = *q.opts.RedisFailoverOpt
@@ -126,7 +131,7 @@ func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
 	}
 
 	h := asynqmon.New(asynqmon.Options{
-		RootPath:          "/queue/monitoring",
+		RootPath:          rootPath,
 		RedisConnOpt:      redisConnOpt,
 		PrometheusAddress: q.opts.PrometheusAddress,
 		PayloadFormatter:  Formatter{},

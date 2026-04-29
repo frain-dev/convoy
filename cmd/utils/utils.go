@@ -24,5 +24,6 @@ func AddUtilsCommand(app *cli.App) *cobra.Command {
 	utilsCmd.AddCommand(AddRevertEncryptionCommand(app))
 	utilsCmd.AddCommand(AddCircuitBreakersCommand(app))
 	utilsCmd.AddCommand(AddUpdateOrgFeatureFlagsCommand(app))
+	utilsCmd.AddCommand(AddPromoteInstanceAdminCommand(app))
 	return utilsCmd
 }

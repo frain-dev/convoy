@@ -71,11 +71,12 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 		LicenseKey:    licenseKey,
 		Host:          host,
 		Licenser:      h.A.Licenser,
+		Logger:        h.A.Logger,
 	}
 
 	resp, err := lu.Run()
 	if err != nil {
-		h.A.Logger.Errorf("SSO initialization failed: %v: %v", err, err)
+		h.A.Logger.Errorf("SSO initialization failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 		return
 	}
@@ -93,11 +94,12 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		ConfigRepo:    h.A.ConfigRepo,
 		LicenseKey:    configuration.LicenseKey,
 		Licenser:      h.A.Licenser,
+		Logger:        h.A.Logger,
 	}
 
 	tokenResp, err := lu.RedeemToken(r.URL.Query())
 	if err != nil {
-		h.A.Logger.Errorf("SSO token redemption failed: %v: %v", err, err)
+		h.A.Logger.Errorf("SSO token redemption failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 		return
 	}
@@ -105,7 +107,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 	user, token, err := lu.LoginSSOUser(r.Context(), tokenResp)
 	if err != nil {
 		if !errors.Is(err, datastore.ErrUserNotFound) {
-			h.A.Logger.Errorf("SSO callback login failed: %v: %v", err, err)
+			h.A.Logger.Errorf("SSO callback login failed: %v", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 			return
 		}
@@ -114,7 +116,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 			user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
 		}
 		if err != nil {
-			h.A.Logger.Errorf("SSO callback registration failed: %v: %v", err, err)
+			h.A.Logger.Errorf("SSO callback registration failed: %v", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Registration failed", http.StatusForbidden))
 			return
 		}
@@ -185,7 +187,7 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := ssoClient.GetAdminPortalURL(ctx, configuration.LicenseKey, returnURL, successURL)
 	if err != nil {
-		h.A.Logger.Errorf("SSO admin portal failed: %v: %v", err, err)
+		h.A.Logger.Errorf("SSO admin portal failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Failed to get SSO admin portal URL", http.StatusForbidden))
 		return
 	}
@@ -200,7 +202,7 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.LoginUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
-		h.A.Logger.Errorf("Failed to parse login request body: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to parse login request body: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -223,7 +225,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	user, token, err := lu.Run(r.Context())
 	if err != nil {
-		h.A.Logger.Errorf("User login failed: %v: %v", err, err)
+		h.A.Logger.Errorf("User login failed: %v", err)
 
 		var errMsg string
 
@@ -262,13 +264,13 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var refreshToken models.Token
 	if err := util.ReadJSON(r, &refreshToken); err != nil {
-		h.A.Logger.Errorf("Failed to parse refresh token request: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to parse refresh token request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	if err := refreshToken.Validate(); err != nil {
-		h.A.Logger.Errorf("Refresh token validation failed: %v: %v", err, err)
+		h.A.Logger.Errorf("Refresh token validation failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid token", http.StatusBadRequest))
 		return
 	}
@@ -288,7 +290,7 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 	token, err := rf.Run(r.Context())
 	if err != nil {
-		h.A.Logger.Errorf("Token refresh failed: %v: %v", err, err)
+		h.A.Logger.Errorf("Token refresh failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid or expired token", http.StatusUnauthorized))
 		return
 	}
@@ -299,7 +301,7 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	auth, err := middleware.GetAuthFromRequest(r)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to get auth from request: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to get auth from request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
 		return
 	}
@@ -361,7 +363,7 @@ func (h *Handler) GoogleOAuthToken(w http.ResponseWriter, r *http.Request) {
 
 	user, token, err := googleOAuthService.HandleIDToken(r.Context(), request.IDToken, h.A)
 	if err != nil {
-		h.A.Logger.Errorf("Google OAuth authentication failed: %v: %v", err, err)
+		h.A.Logger.Errorf("Google OAuth authentication failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 		return
 	}

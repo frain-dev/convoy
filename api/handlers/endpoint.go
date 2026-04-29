@@ -59,7 +59,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.CreateEndpoint
 	err = migrator.Unmarshal(body, &e)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to parse endpoint creation request: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to parse endpoint creation request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -71,14 +71,14 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err = e.Validate()
 	if err != nil {
-		h.A.Logger.Errorf("Endpoint creation validation failed: %v: %v", err, err)
+		h.A.Logger.Errorf("Endpoint creation validation failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
 
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to retrieve project: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to retrieve project: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
@@ -159,7 +159,7 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to retrieve project: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to retrieve project: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
@@ -167,7 +167,7 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpointID := chi.URLParam(r, "endpointID")
 	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to retrieve endpoint: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to retrieve endpoint: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 		return
 	}
@@ -219,7 +219,7 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to retrieve project: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to retrieve project: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
@@ -678,14 +678,14 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 	var testReq models.TestOAuth2Request
 	err := util.ReadJSON(r, &testReq)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to parse OAuth2 test request: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to parse OAuth2 test request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	err = testReq.Validate()
 	if err != nil {
-		h.A.Logger.Errorf("OAuth2 test request validation failed: %v: %v", err, err)
+		h.A.Logger.Errorf("OAuth2 test request validation failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
@@ -716,7 +716,7 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 	// Get authorization header (includes token type)
 	authHeader, err := oauth2Service.GetAuthorizationHeader(r.Context(), testEndpoint)
 	if err != nil {
-		h.A.Logger.Errorf("OAuth2 token exchange failed: %v: %v", err, err)
+		h.A.Logger.Errorf("OAuth2 token exchange failed: %v", err)
 		_ = render.Render(w, r, util.NewServerResponse(
 			"OAuth2 connection test failed",
 			models.TestOAuth2Response{

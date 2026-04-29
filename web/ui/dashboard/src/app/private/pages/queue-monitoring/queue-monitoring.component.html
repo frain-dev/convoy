@@ -1,0 +1,44 @@
+<div *ngIf="!hasAsynqLicense()" convoy-card class="p-20px border border-warning-100 bg-warning-a3 mb-16px">
+	<p class="text-14 text-neutral-12">Your license does not include Asynq monitoring.</p>
+</div>
+
+<ng-container *ngIf="hasAsynqLicense()">
+	<div *ngIf="sessionStatus === 'error'" class="text-13 text-danger-11 bg-danger-a3 border border-danger-100 rounded-8px p-12px mb-16px">
+		{{ sessionError }}
+	</div>
+
+	<div class="qm-layout" [class.qm-layout--fullscreen]="iframeFullscreen && iframeVisible">
+		<div convoy-card class="qm-card p-0 overflow-hidden flex flex-col">
+			<div class="qm-main">
+				<div *ngIf="sessionStatus === 'minting' && !iframeVisible" class="qm-loading">
+					<convoy-loader position="relative"></convoy-loader>
+				</div>
+				<iframe
+					*ngIf="iframeVisible"
+					#monitorIframe
+					title="Asynqmon queue monitoring"
+					class="qm-iframe w-full bg-neutral-2"
+				></iframe>
+			</div>
+
+			<div class="qm-footer flex flex-wrap items-center gap-8px px-16px py-12px border-t border-neutral-a3 bg-neutral-2">
+				<span class="text-13 font-semibold text-neutral-12 mr-auto">Queue monitoring</span>
+				<button
+					convoy-button
+					size="sm"
+					fill="outline"
+					type="button"
+					[disabled]="!iframeVisible"
+					(click)="toggleIframeFullscreen()"
+				>
+					{{ iframeFullscreen ? 'Exit Fullscreen' : 'Expand Fullscreen' }}
+				</button>
+				<button convoy-button size="sm" type="button" [disabled]="sessionStatus === 'minting'" (click)="mintSessionAndLoad()">
+					{{ sessionStatus === 'minting' ? 'Refreshing…' : sessionStatus === 'ready' ? 'Refresh' : 'Retry' }}
+				</button>
+			</div>
+		</div>
+
+		<p class="text-12 text-neutral-10 mt-12px">Asynq queues and tasks</p>
+	</div>
+</ng-container>
