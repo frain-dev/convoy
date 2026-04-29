@@ -77,7 +77,7 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newOrg datastore.OrganisationRequest
 	err := util.ReadJSON(r, &newOrg)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to parse organisation creation request: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to parse organisation creation request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
@@ -116,7 +116,7 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var orgUpdate datastore.OrganisationRequest
 	err := util.ReadJSON(r, &orgUpdate)
 	if err != nil {
-		h.A.Logger.Errorf("Failed to parse organisation update request: %v: %v", err, err)
+		h.A.Logger.Errorf("Failed to parse organisation update request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}

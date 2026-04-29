@@ -14,7 +14,7 @@ jobs:
         if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
         strategy:
             matrix:
-                go-version: [1.25.7]
+                go-version: [1.25.9]
                 os: [ubuntu-latest]
                 postgres-version: ["15"]
                 redis-version: ["6.2.6"]

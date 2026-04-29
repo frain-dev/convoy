@@ -5,7 +5,7 @@
 # file, you can specify more tools or different version of listed ones below as
 # well as overriding environment variables.
 [tools]
-go = "1.25.7"
+go = "1.25.9"
 golangci-lint = "2.4.0"
 nodejs = "24.10.0"
 # postgres = "15.1"
@@ -15,9 +15,12 @@ nodejs = "24.10.0"
 "npm:squawk-cli" = { version = "latest", bin = "squawk" }
 "go:github.com/ogen-go/ogen/cmd/ogen" = "v1.16.0"
 "go:github.com/swaggo/swag/cmd/swag" = "latest"
+"npm:api-spec-converter" = "latest"
+yq = "latest"
 "go:go.uber.org/mock/mockgen" = "latest"
 "go:github.com/sqlc-dev/sqlc/cmd/sqlc" = "1.30.0"
 "go:github.com/daixiang0/gci" = "latest"
+"ubi:speakeasy-api/openapi" = "latest"
 
 # ℹ️ The settings below are sensible defaults for local development. When
 # deploying to production, you will want to configure these more carefully.

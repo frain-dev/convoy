@@ -231,8 +231,8 @@ type CustomResponse struct {
 }
 
 type UpdateCustomResponse struct {
-	Body        *string `json:"body"`
-	ContentType *string `json:"content_type"`
+	Body        *string `json:"body" extensions:"x-nullable"`
+	ContentType *string `json:"content_type" extensions:"x-nullable"`
 }
 
 type VerifierConfig struct {

@@ -203,8 +203,8 @@ type ProjectResponse struct {
 }
 
 type CreateProjectResponse struct {
-	APIKey  *datastore.APIKeyResponse `json:"api_key"`
-	Project *ProjectResponse          `json:"project"`
+	APIKey  *datastore.APIKeyResponse `json:"api_key" extensions:"x-nullable"`
+	Project *ProjectResponse          `json:"project" extensions:"x-nullable"`
 }
 
 func NewListProjectResponse(projects []*datastore.Project) []*ProjectResponse {

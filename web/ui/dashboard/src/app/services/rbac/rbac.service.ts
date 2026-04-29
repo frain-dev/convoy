@@ -6,6 +6,8 @@ import {PrivateService} from 'src/app/private/private.service';
 	providedIn: 'root'
 })
 export class RbacService {
+	private static readonly lastKnownRoleStorageKeyPrefix = 'CONVOY_LAST_USER_ROLE_';
+
 	permissions = {
 		PROJECT_VIEWER: ['Event Deliveries|VIEW', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations|VIEW', 'Organisations|ADD'],
 		PROJECT_ADMIN: ['Event Deliveries|MANAGE', 'Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Events|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE', 'Event Types|MANAGE', 'Project Setup|MANAGE', 'Organisations|ADD'],
@@ -16,24 +18,74 @@ export class RbacService {
 
 	constructor(private privateService: PrivateService, private route: ActivatedRoute) {}
 
-	async getUserRole(): Promise<ROLE> {
+	async getUserRole(options?: { allowCachedOnError?: boolean }): Promise<ROLE> {
+		const allowCachedOnError = options?.allowCachedOnError ?? true;
 		try {
 			const member = await this.privateService.getOrganizationMembership({ refresh: true });
-			const role = member.data.content[0].role.type;
-			switch (role) {
-				case 'instance_admin':
-					return 'INSTANCE_ADMIN';
-				case 'organisation_admin':
-					return 'ORGANISATION_ADMIN';
-				case 'billing_admin':
-					return 'BILLING_ADMIN';
-				case 'project_admin':
-					return 'PROJECT_ADMIN';
-				default:
-					return 'PROJECT_VIEWER';
-			}
+			const role = member.data.content[0].role.type as string | undefined;
+			const mappedRole = this.mapRole(role);
+			this.persistLastKnownRole(mappedRole);
+			return mappedRole;
 		} catch (error) {
+			if (allowCachedOnError) {
+				const cachedRole = this.getLastKnownRole();
+				// Never recover admin access from cache on fetch failures.
+				if (cachedRole && cachedRole !== 'INSTANCE_ADMIN') return cachedRole;
+			}
 			return 'PROJECT_VIEWER';
+		}
+	}
+
+	private mapRole(role: string | undefined): ROLE {
+		switch (role) {
+			case 'instance_admin':
+				return 'INSTANCE_ADMIN';
+			case 'organisation_admin':
+				return 'ORGANISATION_ADMIN';
+			case 'billing_admin':
+				return 'BILLING_ADMIN';
+			case 'project_admin':
+				return 'PROJECT_ADMIN';
+			default:
+				return 'PROJECT_VIEWER';
+		}
+	}
+
+	private persistLastKnownRole(role: ROLE): void {
+		try {
+			const userId = this.getCurrentUserId();
+			if (!userId) return;
+			localStorage.setItem(`${RbacService.lastKnownRoleStorageKeyPrefix}${userId}`, role);
+		} catch {}
+	}
+
+	private getLastKnownRole(): ROLE | null {
+		try {
+			const userId = this.getCurrentUserId();
+			if (!userId) return null;
+			const cachedRole = localStorage.getItem(`${RbacService.lastKnownRoleStorageKeyPrefix}${userId}`);
+			switch (cachedRole) {
+				case 'INSTANCE_ADMIN':
+				case 'ORGANISATION_ADMIN':
+				case 'BILLING_ADMIN':
+				case 'PROJECT_ADMIN':
+				case 'PROJECT_VIEWER':
+					return cachedRole;
+				default:
+					return null;
+			}
+		} catch {
+			return null;
+		}
+	}
+
+	private getCurrentUserId(): string | null {
+		try {
+			const authData = localStorage.getItem('CONVOY_AUTH');
+			const auth = authData ? JSON.parse(authData) : null;
+			return auth?.uid ?? null;
+		} catch {
+			return null;
 		}
 	}
 

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
-export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend events';
+export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring';
 
 @Component({
 	selector: 'app-admin',
@@ -13,7 +13,8 @@ export class AdminComponent implements OnInit {
 	adminMenu: { name: ADMIN_PAGE; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: 'feature flags', icon: 'settings', svg: 'fill' },
 		{ name: 'circuit breaker config', icon: 'shield', svg: 'fill' },
-		{ name: 'resend events', icon: 'retry', svg: 'fill' }
+		{ name: 'resend events', icon: 'retry', svg: 'fill' },
+		{ name: 'queue monitoring', icon: 'logs', svg: 'stroke' }
 	];
 
 	constructor(private route: ActivatedRoute) {}
@@ -25,7 +26,12 @@ export class AdminComponent implements OnInit {
 	}
 
 	toggleActivePage(page: string) {
-		if (page === 'feature flags' || page === 'circuit breaker config' || page === 'resend events') {
+		if (
+			page === 'feature flags' ||
+			page === 'circuit breaker config' ||
+			page === 'resend events' ||
+			page === 'queue monitoring'
+		) {
 			this.activePage = page as ADMIN_PAGE;
 		} else {
 			this.activePage = 'feature flags';

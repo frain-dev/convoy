@@ -48,11 +48,11 @@ linters:
     - thelper
     - tparallel
     - unused
+    - depguard
   #    - wrapcheck
 
   disable:
     # Disable linters that conflict with Tiger Style principles
-    - depguard # Allow external dependencies when needed
     - forbidigo # Allow specific patterns when justified
     - gochecknoinits # Allow init functions when necessary
     - gochecknoglobals # Allow global variables when justified
@@ -69,6 +69,14 @@ linters:
     - dupl # Duplicate code
     - err113 # Error wrapping
   settings:
+    depguard:
+      rules:
+        deny-global-log:
+          deny:
+            - pkg: "log"
+              desc: "Use pkg/logger instead of the standard log package"
+            - pkg: "log/slog"
+              desc: "Use pkg/logger instead of log/slog directly"
     dupl:
       threshold: 200
     # Safety: Control flow and limits
@@ -235,10 +243,12 @@ linters:
           - gocritic
           - unused
           - unparam
+          - depguard # Tests may use log/slog directly
       - path: cmd/
         linters:
           - funlen # Allow longer functions in main commands
           - errcheck #Allow uncheked e.g db.CLose
+          - depguard # Entrypoints may use log/slog directly
 
       - path: e2e/
         linters:
@@ -257,6 +267,15 @@ linters:
         linters:
           - all
           - cyclop
+      - path: "pkg/logger/"
+        linters:
+          - depguard # Logger implementation uses log/slog directly
+      - path: "pkg/log/"
+        linters:
+          - depguard # Compatibility shim uses log/slog directly
+      - path: "testenv/"
+        linters:
+          - depguard # Test environment setup may use log/slog directly
       - path: ".*/pkg/.*"
         linters:
           - unused #certain functions in e.g clients may not be used

@@ -14,6 +14,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { LoaderModule } from '../../components/loader/loader.module';
 import { LabelComponent, InputFieldDirective, InputErrorComponent, InputDirective } from 'src/app/components/input/input.component';
 import { CardComponent } from 'src/app/components/card/card.component';
+import { QueueMonitoringComponent } from '../queue-monitoring/queue-monitoring.component';
 
 const routes: Routes = [{ path: '', component: AdminComponent }];
 
@@ -29,6 +30,7 @@ const routes: Routes = [{ path: '', component: AdminComponent }];
 		CommonModule,
 		RouterModule.forChild(routes),
 		ReactiveFormsModule,
+		QueueMonitoringComponent,
 		CardComponent,
 		SelectComponent,
 		ToggleComponent,
