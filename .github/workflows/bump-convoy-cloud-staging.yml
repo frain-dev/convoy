@@ -123,21 +123,31 @@ jobs:
 
           run_url="${SOURCE_RUN:-n/a (manual workflow_dispatch)}"
 
-          git commit -m "chore(staging): bump Convoy image to ${IMAGE_TAG}
-
-Synced from frain-dev/convoy main after Docker publish.
-Commit: ${SOURCE_SHA}
-Workflow run: ${run_url}"
+          commit_msg="$(mktemp)"
+          {
+            echo "chore(staging): bump Convoy image to ${IMAGE_TAG}"
+            echo ""
+            echo "Synced from frain-dev/convoy main after Docker publish."
+            echo "Commit: ${SOURCE_SHA}"
+            echo "Workflow run: ${run_url}"
+          } >"$commit_msg"
+          git commit -F "$commit_msg"
+          rm -f "$commit_msg"
 
           git push -u origin "$branch"
 
+          pr_body="$(mktemp)"
+          {
+            echo "Automated bump after Convoy main image publish."
+            echo ""
+            echo "- **Image tag:** \`${IMAGE_TAG}\`"
+            echo "- **Convoy commit:** \`${SOURCE_SHA}\`"
+            echo "- **Build run:** ${run_url}"
+          } >"$pr_body"
           gh pr create \
             --repo frain-dev/convoy-cloud \
             --base main \
             --head "$branch" \
             --title "chore(staging): bump Convoy to ${IMAGE_TAG}" \
-            --body "Automated bump after Convoy main image publish.
-
-- **Image tag:** \`${IMAGE_TAG}\`
-- **Convoy commit:** \`${SOURCE_SHA}\`
-- **Build run:** ${run_url}"
+            --body-file "$pr_body"
+          rm -f "$pr_body"
