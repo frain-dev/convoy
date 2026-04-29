@@ -9,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cmd/agent"
+	"github.com/frain-dev/convoy/cmd/backup"
 	"github.com/frain-dev/convoy/cmd/bootstrap"
 	configCmd "github.com/frain-dev/convoy/cmd/config"
 	"github.com/frain-dev/convoy/cmd/ff"
@@ -168,6 +169,7 @@ func main() {
 
 	c.AddCommand(version.AddVersionCommand())
 	c.AddCommand(server.AddServerCommand(app))
+	c.AddCommand(backup.AddBackupCommand(app))
 	c.AddCommand(retry.AddRetryCommand(app))
 	c.AddCommand(migrate.AddMigrateCommand(app))
 	c.AddCommand(configCmd.AddConfigCommand())

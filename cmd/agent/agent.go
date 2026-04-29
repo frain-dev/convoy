@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -48,8 +49,8 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			if err := config.Override(cliConfig); err != nil {
-				return err
+			if oErr := config.Override(cliConfig); oErr != nil {
+				return oErr
 			}
 
 			cfg, err := config.Get()
@@ -71,9 +72,9 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 			case <-quit:
 				cancel()
 				return nil
-			case err := <-runtimeErr:
-				if err != nil && err != context.Canceled {
-					return err
+			case eRrr := <-runtimeErr:
+				if eRrr != nil && !errors.Is(eRrr, context.Canceled) {
+					return eRrr
 				}
 				return nil
 			case <-ctx.Done():

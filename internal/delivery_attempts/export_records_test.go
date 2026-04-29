@@ -1,6 +1,7 @@
 package delivery_attempts
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"testing"
@@ -13,19 +14,38 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
+// parseJSONL parses JSONL (newline-delimited JSON) into a slice of maps.
+func parseJSONL(t *testing.T, data []byte) []map[string]interface{} {
+	t.Helper()
+	var results []map[string]interface{}
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+		var record map[string]interface{}
+		err := json.Unmarshal(line, &record)
+		require.NoError(t, err, "each JSONL line must be valid JSON")
+		results = append(results, record)
+	}
+	require.NoError(t, scanner.Err())
+	return results
+}
+
 func TestExportRecords_EmptyResult(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
-	project := seedTestData(t, db, ctx)
+	_ = seedTestData(t, db, ctx)
 	service := New(log.New("convoy", log.LevelInfo), db)
 
 	// Create a buffer to write exported data
 	var buf bytes.Buffer
 
-	// Export with a future date (should return empty)
+	// Export with a future date as end (should return empty since no data seeded)
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err := service.ExportRecords(ctx, project.UID, futureDate, &buf)
+	count, err := service.ExportRecords(ctx, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(0), count)
@@ -62,15 +82,13 @@ func TestExportRecords_WithData(t *testing.T) {
 	// Export all attempts
 	var buf bytes.Buffer
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err := service.ExportRecords(ctx, project.UID, futureDate, &buf)
+	count, err := service.ExportRecords(ctx, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(5), count)
 
-	// Verify JSON structure
-	var exported []map[string]interface{}
-	err = json.Unmarshal(buf.Bytes(), &exported)
-	require.NoError(t, err)
+	// Verify JSONL structure
+	exported := parseJSONL(t, buf.Bytes())
 	require.Len(t, exported, 5)
 
 	// Verify all UIDs are present
@@ -83,74 +101,6 @@ func TestExportRecords_WithData(t *testing.T) {
 
 	for _, expectedUID := range attemptIDs {
 		require.True(t, exportedUIDs[expectedUID], "Expected UID %s should be in exported data", expectedUID)
-	}
-}
-
-func TestExportRecords_ProjectIsolation(t *testing.T) {
-	db, ctx := setupTestDB(t)
-	defer db.Close()
-
-	service := New(log.New("convoy", log.LevelInfo), db)
-
-	// Create two projects with delivery attempts
-	project1 := seedTestData(t, db, ctx)
-	endpoint1 := seedEndpoint(t, db, ctx, project1)
-	eventDelivery1 := seedEventDelivery(t, db, ctx, project1, endpoint1)
-
-	project2 := seedTestData(t, db, ctx)
-	endpoint2 := seedEndpoint(t, db, ctx, project2)
-	eventDelivery2 := seedEventDelivery(t, db, ctx, project2, endpoint2)
-
-	// Create 3 attempts for project1
-	for i := 0; i < 3; i++ {
-		attempt := &datastore.DeliveryAttempt{
-			UID:             ulid.Make().String(),
-			URL:             "https://example.com/webhook",
-			Method:          "POST",
-			APIVersion:      "2023.12.25",
-			EndpointID:      endpoint1.UID,
-			EventDeliveryId: eventDelivery1.UID,
-			ProjectId:       project1.UID,
-			Status:          true,
-		}
-		err := service.CreateDeliveryAttempt(ctx, attempt)
-		require.NoError(t, err)
-	}
-
-	// Create 2 attempts for project2
-	for i := 0; i < 2; i++ {
-		attempt := &datastore.DeliveryAttempt{
-			UID:             ulid.Make().String(),
-			URL:             "https://example.com/webhook",
-			Method:          "POST",
-			APIVersion:      "2023.12.25",
-			EndpointID:      endpoint2.UID,
-			EventDeliveryId: eventDelivery2.UID,
-			ProjectId:       project2.UID,
-			Status:          true,
-		}
-		err := service.CreateDeliveryAttempt(ctx, attempt)
-		require.NoError(t, err)
-	}
-
-	// Export project1 only
-	var buf bytes.Buffer
-	futureDate := time.Now().Add(24 * time.Hour)
-	count, err := service.ExportRecords(ctx, project1.UID, futureDate, &buf)
-
-	require.NoError(t, err)
-	require.Equal(t, int64(3), count, "Should only export project1's attempts")
-
-	// Verify no project2 data is included
-	var exported []map[string]interface{}
-	err = json.Unmarshal(buf.Bytes(), &exported)
-	require.NoError(t, err)
-	require.Len(t, exported, 3)
-
-	for _, record := range exported {
-		projectID, ok := record["project_id"].(string)
-		require.True(t, ok)
-		require.Equal(t, project1.UID, projectID, "All records should belong to project1")
 	}
 }
 
@@ -180,25 +130,73 @@ func TestExportRecords_TimeFiltering(t *testing.T) {
 		time.Sleep(10 * time.Millisecond) // Small delay to ensure different timestamps
 	}
 
-	// Export with past date (should return 0)
+	// Export with past date as end (should return 0)
 	var buf bytes.Buffer
 	pastDate := time.Now().Add(-1 * time.Hour)
-	count, err := service.ExportRecords(ctx, project.UID, pastDate, &buf)
+	count, err := service.ExportRecords(ctx, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), pastDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(0), count)
 	require.Empty(t, buf.String())
 
-	// Export with future date (should return all 3)
+	// Export with future date as end (should return all 3)
 	buf.Reset()
 	futureDate := time.Now().Add(24 * time.Hour)
-	count, err = service.ExportRecords(ctx, project.UID, futureDate, &buf)
+	count, err = service.ExportRecords(ctx, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), futureDate, &buf)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(3), count)
 
-	var exported []map[string]interface{}
-	err = json.Unmarshal(buf.Bytes(), &exported)
-	require.NoError(t, err)
+	exported := parseJSONL(t, buf.Bytes())
 	require.Len(t, exported, 3)
+}
+
+func TestExportRecords_TimeWindow(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db, ctx)
+	endpoint := seedEndpoint(t, db, ctx, project)
+	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
+	service := New(log.New("convoy", log.LevelInfo), db)
+
+	// Create 5 attempts
+	for i := 0; i < 5; i++ {
+		attempt := &datastore.DeliveryAttempt{
+			UID:             ulid.Make().String(),
+			URL:             "https://example.com/webhook",
+			Method:          "POST",
+			APIVersion:      "2023.12.25",
+			EndpointID:      endpoint.UID,
+			EventDeliveryId: eventDelivery.UID,
+			ProjectId:       project.UID,
+			Status:          true,
+		}
+		err := service.CreateDeliveryAttempt(ctx, attempt)
+		require.NoError(t, err)
+	}
+
+	// Export with window [1h ago, now+1h) — should include all
+	var buf bytes.Buffer
+	start := time.Now().Add(-1 * time.Hour)
+	end := time.Now().Add(1 * time.Hour)
+	count, err := service.ExportRecords(ctx, start, end, &buf)
+	require.NoError(t, err)
+	require.Equal(t, int64(5), count)
+
+	exported := parseJSONL(t, buf.Bytes())
+	require.Len(t, exported, 5)
+
+	// Each record should have a uid field
+	for _, record := range exported {
+		_, ok := record["uid"].(string)
+		require.True(t, ok, "each record should have uid")
+	}
+
+	// Export with window that excludes all: [2h ago, 1h ago)
+	buf.Reset()
+	count, err = service.ExportRecords(ctx, time.Now().Add(-2*time.Hour), time.Now().Add(-1*time.Hour), &buf)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), count)
+	require.Empty(t, buf.String())
 }

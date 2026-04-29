@@ -553,26 +553,29 @@ func (s *Service) CopyRows(ctx context.Context, projectID string, interval int) 
 	return tx.Commit(ctx)
 }
 
-// ExportRecords exports events to a writer as a JSON array
-// It processes records in batches to avoid memory issues with large datasets
-func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
-	// Count total exportable events (with empty cursor for initial count)
-	count, err := s.repo.CountExportedEvents(ctx, repo.CountExportedEventsParams{
-		ProjectID: common.StringToPgTextNullable(projectID),
-		CreatedAt: common.TimeToPgTimestamptz(createdAt),
-		Cursor:    common.StringToPgText(""), // Use Filter to keep Valid=true for SQL comparison
+// ExportRecords exports events to a writer as JSONL (one JSON object per line).
+// It uses a REPEATABLE READ transaction for snapshot consistency across batches.
+func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.Writer) (int64, error) {
+	// Begin REPEATABLE READ transaction for snapshot consistency
+	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return 0, fmt.Errorf("begin snapshot tx: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	txRepo := repo.New(tx)
+
+	// Count total exportable events in the window [start, end)
+	count, err := txRepo.CountExportedEvents(ctx, repo.CountExportedEventsParams{
+		CreatedAtEnd:   common.TimeToPgTimestamptz(end),
+		CreatedAtStart: common.TimeToPgTimestamptz(start),
 	})
 	if err != nil {
 		return 0, err
 	}
 
 	count64 := common.PgInt8ToInt64(count)
-
-	if count64 == 0 { // nothing to export, write empty JSON array
-		_, err = w.Write([]byte(`[]`))
-		if err != nil {
-			return 0, err
-		}
+	if count64 == 0 {
 		return 0, nil
 	}
 
@@ -583,56 +586,30 @@ func (s *Service) ExportRecords(ctx context.Context, projectID string, createdAt
 		lastID     string
 	)
 
-	// Write opening bracket for JSON array
-	_, err = w.Write([]byte(`[`))
-	if err != nil {
-		return 0, err
-	}
-
-	isFirstRecord := true
-
 	for i := 0; i < numBatches; i++ {
-		// Fetch batch of events as JSON
 		params := repo.ExportEventsParams{
-			ProjectID: common.StringToPgTextNullable(projectID),
-			CreatedAt: common.TimeToPgTimestamptz(createdAt),
-			Cursor:    common.StringToPgText(lastID), // Use Filter to keep Valid=true for SQL comparison
-			PageLimit: pgtype.Int8{Int64: int64(batchSize), Valid: true},
+			CreatedAtEnd:   common.TimeToPgTimestamptz(end),
+			CreatedAtStart: common.TimeToPgTimestamptz(start),
+			Cursor:         common.StringToPgText(lastID),
+			PageLimit:      pgtype.Int8{Int64: int64(batchSize), Valid: true},
 		}
 
-		rows, exportErr := s.repo.ExportEvents(ctx, params)
+		rows, exportErr := txRepo.ExportEvents(ctx, params)
 		if exportErr != nil {
 			return 0, fmt.Errorf("failed to query batch %d: %w", i, exportErr)
 		}
 
-		// Write each JSON record to the writer
 		for _, row := range rows {
-			// Add a comma separator between records (not before the first record)
-			if !isFirstRecord {
-				_, writeErr := w.Write([]byte(`,`))
-				if writeErr != nil {
-					return 0, writeErr
-				}
+			if _, writeErr := w.Write(row.JsonOutput); writeErr != nil {
+				return 0, writeErr
 			}
-			isFirstRecord = false
-
-			// Write the JSON record
-			_, writeErr := w.Write(row.JsonOutput)
-			if writeErr != nil {
+			if _, writeErr := w.Write([]byte("\n")); writeErr != nil {
 				return 0, writeErr
 			}
 
 			numDocs++
-
-			// Use the ID directly for cursor pagination (no JSON parsing needed)
 			lastID = row.ID
 		}
-	}
-
-	// Write a closing bracket for JSON array
-	_, err = w.Write([]byte(`]`))
-	if err != nil {
-		return 0, err
 	}
 
 	return numDocs, nil
