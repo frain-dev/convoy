@@ -39,8 +39,8 @@ func (s *Service) EnqueueBackupJob(ctx context.Context, hourStart, hourEnd time.
 	})
 }
 
-func (s *Service) ClaimBackupJob(ctx context.Context, workerID string) (*datastore.BackupJob, error) {
-	row, err := s.repo.ClaimBackupJob(ctx, common.StringToPgText(workerID))
+func (s *Service) ClaimBackupJob(ctx context.Context, agentID string) (*datastore.BackupJob, error) {
+	row, err := s.repo.ClaimBackupJob(ctx, common.StringToPgText(agentID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -112,9 +112,9 @@ func rowToBackupJob(row repo.ClaimBackupJobRow) *datastore.BackupJob {
 	job := &datastore.BackupJob{
 		ID: row.ID,
 
-		Status:   row.Status,
-		WorkerID: common.PgTextToString(row.WorkerID),
-		Error:    common.PgTextToString(row.Error),
+		Status:  row.Status,
+		AgentID: common.PgTextToString(row.AgentID),
+		Error:   common.PgTextToString(row.Error),
 	}
 
 	if row.HourStart.Valid {
@@ -148,9 +148,9 @@ func rowToLatestBackupJob(row repo.FindLatestCompletedBackupRow) *datastore.Back
 	job := &datastore.BackupJob{
 		ID: row.ID,
 
-		Status:   row.Status,
-		WorkerID: common.PgTextToString(row.WorkerID),
-		Error:    common.PgTextToString(row.Error),
+		Status:  row.Status,
+		AgentID: common.PgTextToString(row.AgentID),
+		Error:   common.PgTextToString(row.Error),
 	}
 
 	if row.HourStart.Valid {

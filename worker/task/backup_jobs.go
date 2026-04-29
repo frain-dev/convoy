@@ -78,10 +78,10 @@ func ProcessBackupJob(
 			return nil
 		}
 
-		workerID := generateWorkerID()
+		agentID := generateAgentID()
 
 		// Claim the next pending job (returns nil if none available)
-		job, err := backupJobRepo.ClaimBackupJob(ctx, workerID)
+		job, err := backupJobRepo.ClaimBackupJob(ctx, agentID)
 		if err != nil {
 			return fmt.Errorf("claim backup job: %w", err)
 		}
@@ -177,7 +177,7 @@ func ManualBackup(
 	}
 }
 
-func generateWorkerID() string {
+func generateAgentID() string {
 	hostname, _ := os.Hostname()
 	return fmt.Sprintf("%s-%d", hostname, os.Getpid())
 }

@@ -14,7 +14,7 @@ import (
 
 const claimBackupJob = `-- name: ClaimBackupJob :one
 UPDATE convoy.backup_jobs
-SET status = 'claimed', worker_id = $1, claimed_at = NOW()
+SET status = 'claimed', agent_id = $1, claimed_at = NOW()
 WHERE id = (
     SELECT id FROM convoy.backup_jobs
     WHERE status = 'pending'
@@ -22,7 +22,7 @@ WHERE id = (
     LIMIT 1
     FOR UPDATE SKIP LOCKED
 )
-RETURNING id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
+RETURNING id, hour_start, hour_end, status, agent_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
 `
 
 type ClaimBackupJobRow struct {
@@ -30,7 +30,7 @@ type ClaimBackupJobRow struct {
 	HourStart    pgtype.Timestamptz
 	HourEnd      pgtype.Timestamptz
 	Status       string
-	WorkerID     pgtype.Text
+	AgentID      pgtype.Text
 	ClaimedAt    pgtype.Timestamptz
 	CompletedAt  pgtype.Timestamptz
 	Error        pgtype.Text
@@ -39,15 +39,15 @@ type ClaimBackupJobRow struct {
 	UpdatedAt    pgtype.Timestamptz
 }
 
-func (q *Queries) ClaimBackupJob(ctx context.Context, workerID pgtype.Text) (ClaimBackupJobRow, error) {
-	row := q.db.QueryRow(ctx, claimBackupJob, workerID)
+func (q *Queries) ClaimBackupJob(ctx context.Context, agentID pgtype.Text) (ClaimBackupJobRow, error) {
+	row := q.db.QueryRow(ctx, claimBackupJob, agentID)
 	var i ClaimBackupJobRow
 	err := row.Scan(
 		&i.ID,
 		&i.HourStart,
 		&i.HourEnd,
 		&i.Status,
-		&i.WorkerID,
+		&i.AgentID,
 		&i.ClaimedAt,
 		&i.CompletedAt,
 		&i.Error,
@@ -106,7 +106,7 @@ func (q *Queries) FailBackupJob(ctx context.Context, arg FailBackupJobParams) er
 }
 
 const findLatestCompletedBackup = `-- name: FindLatestCompletedBackup :one
-SELECT id, hour_start, hour_end, status, worker_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
+SELECT id, hour_start, hour_end, status, agent_id, claimed_at, completed_at, error, record_counts, created_at, updated_at
 FROM convoy.backup_jobs
 WHERE status = 'completed'
 ORDER BY completed_at DESC
@@ -118,7 +118,7 @@ type FindLatestCompletedBackupRow struct {
 	HourStart    pgtype.Timestamptz
 	HourEnd      pgtype.Timestamptz
 	Status       string
-	WorkerID     pgtype.Text
+	AgentID      pgtype.Text
 	ClaimedAt    pgtype.Timestamptz
 	CompletedAt  pgtype.Timestamptz
 	Error        pgtype.Text
@@ -135,7 +135,7 @@ func (q *Queries) FindLatestCompletedBackup(ctx context.Context) (FindLatestComp
 		&i.HourStart,
 		&i.HourEnd,
 		&i.Status,
-		&i.WorkerID,
+		&i.AgentID,
 		&i.ClaimedAt,
 		&i.CompletedAt,
 		&i.Error,
@@ -148,7 +148,7 @@ func (q *Queries) FindLatestCompletedBackup(ctx context.Context) (FindLatestComp
 
 const reclaimStaleJobs = `-- name: ReclaimStaleJobs :execresult
 UPDATE convoy.backup_jobs
-SET status = 'pending', worker_id = NULL, claimed_at = NULL
+SET status = 'pending', agent_id = NULL, claimed_at = NULL
 WHERE status = 'claimed' AND claimed_at < NOW() - MAKE_INTERVAL(mins := $1)
 `
 

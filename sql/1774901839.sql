@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS convoy.backup_jobs (
     hour_start    TIMESTAMPTZ NOT NULL,
     hour_end      TIMESTAMPTZ NOT NULL,
     status        VARCHAR NOT NULL DEFAULT 'pending',
-    worker_id     VARCHAR,
+    agent_id     VARCHAR,
     claimed_at    TIMESTAMPTZ,
     completed_at  TIMESTAMPTZ,
     error         TEXT,

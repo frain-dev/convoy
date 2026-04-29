@@ -12,7 +12,7 @@ import (
 )
 
 type Querier interface {
-	ClaimBackupJob(ctx context.Context, workerID pgtype.Text) (ClaimBackupJobRow, error)
+	ClaimBackupJob(ctx context.Context, agentID pgtype.Text) (ClaimBackupJobRow, error)
 	CompleteBackupJob(ctx context.Context, arg CompleteBackupJobParams) error
 	EnqueueBackupJob(ctx context.Context, arg EnqueueBackupJobParams) error
 	FailBackupJob(ctx context.Context, arg FailBackupJobParams) error
