@@ -762,6 +762,10 @@ var (
 	ErrNoActiveSecret                = errors.New("no active secret found")
 	ErrSecretNotFound                = errors.New("secret not found")
 	ErrMetaEventNotFound             = errors.New("meta event not found")
+	ErrJobNotFound                   = errors.New("job not found")
+	ErrFeatureFlagNotFound           = errors.New("feature flag not found")
+	ErrFeatureFlagOverrideNotFound   = errors.New("feature flag override not found")
+	ErrEarlyAdopterFeatureNotFound   = errors.New("early adopter feature not found")
 )
 
 type AppMetadata struct {

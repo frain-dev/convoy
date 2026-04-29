@@ -12,7 +12,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/configuration"
@@ -20,7 +19,9 @@ import (
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/filters"
+	"github.com/frain-dev/convoy/internal/jobs"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
@@ -116,13 +117,14 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	metaEventRepo := meta_events.New(opts.Logger, opts.DB)
 	endpointRepo := endpoints.New(opts.Logger, opts.DB)
 	eventRepo := events.New(opts.Logger, opts.DB)
-	jobRepo := postgres.NewJobRepo(opts.DB)
+	jobRepo := jobs.New(opts.Logger, opts.DB)
 	eventDeliveryRepo := event_deliveries.New(opts.Logger, opts.DB)
 	subRepo := subscriptions.New(opts.Logger, opts.DB)
 	configRepo := configuration.New(opts.Logger, opts.DB)
 	attemptRepo := delivery_attempts.New(opts.Logger, opts.DB)
 	filterRepo := filters.New(opts.Logger, opts.DB)
 	batchRetryRepo := batch_retries.New(lo, opts.DB)
+	ffService := feature_flags.New(opts.Logger, opts.DB)
 
 	rd, err := rdb.NewClientFromRedisConfig(cfg.Redis)
 	if err != nil {
@@ -304,8 +306,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		AttemptsRepo:               attemptRepo,
 		CircuitBreakerManager:      circuitBreakerManager,
 		FeatureFlag:                featureFlag,
-		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
+		FeatureFlagFetcher:         ffService,
+		EarlyAdopterFeatureFetcher: ffService,
 		TracerBackend:              opts.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,
 		Logger:                     lo,
@@ -324,7 +326,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		TracerBackend:      opts.TracerBackend,
 		OAuth2TokenService: oauth2TokenService,
 		FeatureFlag:        featureFlag,
-		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(opts.DB),
+		FeatureFlagFetcher: ffService,
 		Logger:             lo,
 	}
 
@@ -351,8 +353,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		TracerBackend:              opts.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,
 		FeatureFlag:                featureFlag,
-		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
+		FeatureFlagFetcher:         ffService,
+		EarlyAdopterFeatureFetcher: ffService,
 		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
@@ -382,8 +384,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		ProjectRepo:                projectRepo,
 		Licenser:                   opts.Licenser,
 		FeatureFlag:                featureFlag,
-		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
+		FeatureFlagFetcher:         ffService,
+		EarlyAdopterFeatureFetcher: ffService,
 		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)

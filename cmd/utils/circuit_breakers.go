@@ -45,7 +45,7 @@ func AddCircuitBreakersGetCommand(a *cli.App) *cobra.Command {
 			// Remove the "breaker:" prefix if present
 			breakerID = strings.TrimPrefix(breakerID, "breaker:")
 
-			// Create circuit breaker manager with config provider
+			// Create a circuit breaker manager with the config provider
 			cbManager, err := cb.NewCircuitBreakerManager(
 				cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
 					// For get command, we don't have projectID yet, so use defaults

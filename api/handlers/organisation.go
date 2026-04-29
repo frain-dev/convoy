@@ -15,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisation_members"
@@ -289,7 +288,8 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 	features := fflag.GetEarlyAdopterFeatures()
 	responseFeatures := make([]models.EarlyAdopterFeature, 0, len(features))
 
-	earlyAdopterFeatures, err := postgres.LoadEarlyAdopterFeaturesByOrg(r.Context(), h.A.DB, org.UID)
+	ffService := h.A.FeatureFlagService
+	earlyAdopterFeatures, err := ffService.LoadEarlyAdopterFeaturesByOrg(r.Context(), org.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -378,7 +378,8 @@ func (h *Handler) updateFeatureFlag(w http.ResponseWriter, r *http.Request, feat
 		feature.EnabledAt = null.TimeFrom(time.Now())
 	}
 
-	err := postgres.UpsertEarlyAdopterFeature(r.Context(), h.A.DB, feature)
+	ffService := h.A.FeatureFlagService
+	err := ffService.UpsertEarlyAdopterFeature(r.Context(), feature)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return err
@@ -423,7 +424,8 @@ func (h *Handler) GetAllFeatureFlags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	flags, err := postgres.LoadFeatureFlags(r.Context(), h.A.DB)
+	ffService := h.A.FeatureFlagService
+	flags, err := ffService.LoadFeatureFlags(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -482,7 +484,8 @@ func (h *Handler) GetOrganisationOverrides(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	overrides, err := postgres.LoadFeatureFlagOverridesByOwner(r.Context(), h.A.DB, "organisation", orgID)
+	ffService := h.A.FeatureFlagService
+	overrides, err := ffService.LoadFeatureFlagOverridesByOwner(r.Context(), "organisation", orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -496,7 +499,7 @@ func (h *Handler) GetOrganisationOverrides(w http.ResponseWriter, r *http.Reques
 
 	enrichedOverrides := make([]OverrideWithKey, 0, len(overrides))
 	for i := range overrides {
-		featureFlag, err := postgres.FetchFeatureFlagByID(r.Context(), h.A.DB, overrides[i].FeatureFlagID)
+		featureFlag, err := ffService.FetchFeatureFlagByID(r.Context(), overrides[i].FeatureFlagID)
 		if err != nil {
 			h.A.Logger.WarnContext(r.Context(), fmt.Sprintf("Failed to fetch feature flag for override: %s: %v", overrides[i].FeatureFlagID, err))
 			continue
@@ -537,10 +540,12 @@ func (h *Handler) UpdateOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	ffService := h.A.FeatureFlagService
+
 	// Fetch the feature flag
-	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, overrideRequest.FeatureKey)
+	featureFlag, err := ffService.FetchFeatureFlagByKey(r.Context(), overrideRequest.FeatureKey)
 	if err != nil {
-		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+		if errors.Is(err, datastore.ErrFeatureFlagNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+overrideRequest.FeatureKey, http.StatusBadRequest))
 			return
 		}
@@ -566,7 +571,7 @@ func (h *Handler) UpdateOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		override.EnabledAt = null.TimeFrom(time.Now())
 	}
 
-	err = postgres.UpsertFeatureFlagOverride(r.Context(), h.A.DB, override)
+	err = ffService.UpsertFeatureFlagOverride(r.Context(), override)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -594,10 +599,12 @@ func (h *Handler) DeleteOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	ffService := h.A.FeatureFlagService
+
 	// Fetch the feature flag to get its ID
-	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
+	featureFlag, err := ffService.FetchFeatureFlagByKey(r.Context(), featureKey)
 	if err != nil {
-		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+		if errors.Is(err, datastore.ErrFeatureFlagNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
 			return
 		}
@@ -605,7 +612,7 @@ func (h *Handler) DeleteOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = postgres.DeleteFeatureFlagOverride(r.Context(), h.A.DB, "organisation", orgID, featureFlag.UID)
+	err = ffService.DeleteFeatureFlagOverride(r.Context(), "organisation", orgID, featureFlag.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -904,10 +911,12 @@ func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ffService := h.A.FeatureFlagService
+
 	// Fetch the feature flag
-	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
+	featureFlag, err := ffService.FetchFeatureFlagByKey(r.Context(), featureKey)
 	if err != nil {
-		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+		if errors.Is(err, datastore.ErrFeatureFlagNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
 			return
 		}
@@ -917,14 +926,14 @@ func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 
 	// Update enabled state if provided
 	if updateRequest.Enabled != nil {
-		err = postgres.UpdateFeatureFlag(r.Context(), h.A.DB, featureFlag.UID, *updateRequest.Enabled)
+		err = ffService.UpdateFeatureFlag(r.Context(), featureFlag.UID, *updateRequest.Enabled)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
 	}
 
-	updatedFlag, err := postgres.FetchFeatureFlagByID(r.Context(), h.A.DB, featureFlag.UID)
+	updatedFlag, err := ffService.FetchFeatureFlagByID(r.Context(), featureFlag.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

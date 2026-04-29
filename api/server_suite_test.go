@@ -30,6 +30,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
@@ -182,6 +183,7 @@ func buildServer(t *testing.T) *ApplicationHandler {
 
 	noopCache := rcache.NewRedisCacheFromClient(tl.Redis)
 	limiter := rlimiter.NewLimiterFromRedisClient(tl.Redis)
+	ffService := feature_flags.New(tl.Logger, db)
 
 	ah, err := NewApplicationHandler(
 		&types.APIOptions{
@@ -191,8 +193,8 @@ func buildServer(t *testing.T) *ApplicationHandler {
 			Logger:                     tl.Logger,
 			Cache:                      noopCache,
 			FFlag:                      fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
-			FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(db),
-			EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(db),
+			FeatureFlagFetcher:         ffService,
+			EarlyAdopterFeatureFetcher: ffService,
 			Rate:                       limiter,
 			ConfigRepo:                 configuration.New(tl.Logger, db),
 			Licenser:                   noopLicenser.NewLicenser(),
