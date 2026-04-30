@@ -8,10 +8,10 @@ import (
 
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
 
 	"github.com/frain-dev/convoy/config"
@@ -24,6 +24,7 @@ type DatadogTracer struct {
 	cfg          config.DatadogConfiguration
 	StatsdClient *statsd.Client
 	Licenser     license.Licenser
+	tp           trace.TracerProvider
 	ShutdownFn   func(ctx context.Context) error
 	logger       log.Logger
 }
@@ -32,6 +33,7 @@ func NewDatadogTracer(cfg config.DatadogConfiguration, licenser license.Licenser
 	return &DatadogTracer{
 		cfg:      cfg,
 		Licenser: licenser,
+		tp:       tracenoop.NewTracerProvider(),
 		ShutdownFn: func(ctx context.Context) error {
 			return nil
 		},
@@ -54,6 +56,7 @@ func (dt *DatadogTracer) Init(componentName string) error {
 	// Configure OTel SDK.
 	otel.SetTracerProvider(provider)
 
+	dt.tp = provider
 	dt.ShutdownFn = func(context.Context) error {
 		defer dt.StatsdClient.Close()
 		return provider.Shutdown()
@@ -64,6 +67,13 @@ func (dt *DatadogTracer) Init(componentName string) error {
 
 func (dt *DatadogTracer) Type() config.TracerProvider {
 	return config.DatadogTracerProvider
+}
+
+func (dt *DatadogTracer) TracerProvider() trace.TracerProvider {
+	if dt.tp == nil {
+		return tracenoop.NewTracerProvider()
+	}
+	return dt.tp
 }
 
 func (dt *DatadogTracer) CaptureDelivery(ctx context.Context, project *datastore.Project, targetURL, status string, statusCode, bodyLength int, duration time.Duration) {
@@ -152,32 +162,4 @@ func byteArrToUint64(buf []byte) uint64 {
 		}
 	}
 	return x
-}
-
-func (dt *DatadogTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime, endTime time.Time) {
-	if !dt.Licenser.DatadogTracing() {
-		return
-	}
-
-	_, span := otel.Tracer("").Start(ctx, name, trace.WithTimestamp(startTime))
-	// End span with provided end time
-	defer span.End(trace.WithTimestamp(endTime))
-
-	// Convert and set attributes
-	attrs := make([]attribute.KeyValue, 0, len(attributes))
-	for k, v := range attributes {
-		switch val := v.(type) {
-		case string:
-			attrs = append(attrs, attribute.String(k, val))
-		case int:
-			attrs = append(attrs, attribute.Int(k, val))
-		case int64:
-			attrs = append(attrs, attribute.Int64(k, val))
-		case float64:
-			attrs = append(attrs, attribute.Float64(k, val))
-		case bool:
-			attrs = append(attrs, attribute.Bool(k, val))
-		}
-	}
-	span.SetAttributes(attrs...)
 }
