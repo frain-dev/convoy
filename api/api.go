@@ -236,7 +236,8 @@ func (a *ApplicationHandler) buildRouter() *chi.Mux {
 	router.Use(chiMiddleware.Recoverer)
 	router.Use(middleware.WriteRequestIDHeader)
 	router.Use(middleware.WriteVersionHeader(VersionHeader, a.cfg.APIVersion))
-	router.Use(middleware.InstrumentRequests(serverName, router))
+	router.Use(middleware.InstrumentRequests(serverName, router, a.A.TracerProvider()))
+	router.Use(middleware.EnrichSpanFromRoute)
 	router.Use(middleware.LogHttpRequest(a.A))
 	router.Use(chiMiddleware.Maybe(middleware.SetupCORS(a.A.Logger), shouldApplyCORS))
 
