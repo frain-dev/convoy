@@ -20,6 +20,12 @@ type Job struct {
 	ID      string        `json:"id"`
 	Payload []byte        `json:"payload"`
 	Delay   time.Duration `json:"delay"`
+
+	// Headers is an optional W3C trace-context carrier populated by
+	// tracectx.InjectIntoJob. Producers serialize it into the task envelope
+	// so the consumer can rebuild a child context. Empty for non-traced
+	// callers; consumers handle that case by starting a root span.
+	Headers map[string]string `json:"-"`
 }
 
 type QueueOptions struct {

@@ -10,6 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/queue/tracectx"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -57,7 +58,8 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
 	}
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
+	body := tracectx.Wrap(job.Headers, job.Payload)
+	t := asynq.NewTask(string(taskName), body, asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
 
 	// Optimization: Try to enqueue directly first (optimistic path)
 	// This reduces from 3 Redis calls to 1 in the common case (no duplicate)
@@ -88,7 +90,8 @@ func (q *RedisQueue) WriteWithoutTimeout(taskName convoy.TaskName, queueName con
 		job.ID = ulid.Make().String()
 	}
 
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.Timeout(0), asynq.ProcessIn(job.Delay))
+	body := tracectx.Wrap(job.Headers, job.Payload)
+	t := asynq.NewTask(string(taskName), body, asynq.Queue(s), asynq.TaskID(job.ID), asynq.Timeout(0), asynq.ProcessIn(job.Delay))
 
 	// Optimization: Try to enqueue directly first (optimistic path)
 	// This reduces from 3 Redis calls to 1 in the common case (no duplicate)
