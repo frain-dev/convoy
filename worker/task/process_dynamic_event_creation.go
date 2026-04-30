@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -38,7 +39,6 @@ func (d *DynamicEventChannel) GetConfig() *EventChannelConfig {
 
 func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
 	// Start a new trace span for event creation
-	startTime := time.Now()
 	attributes := map[string]interface{}{
 		"event.type": "dynamic.event.creation",
 		"channel":    channel,
@@ -49,7 +49,7 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	if err != nil {
 		err := json.Unmarshal(t.Payload(), &dynamicEvent)
 		if err != nil {
-			args.tracerBackend.Capture(ctx, "dynamic.event.creation.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventDynamicEventCreationError, attributes)
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 	}
@@ -63,7 +63,7 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 	project, err := args.projectRepo.FetchProjectByID(ctx, dynamicEvent.ProjectID)
 	if err != nil {
-		args.tracerBackend.Capture(ctx, "dynamic.event.creation.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventDynamicEventCreationError, attributes)
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 	}
 
@@ -71,7 +71,7 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	if len(dynamicEvent.IdempotencyKey) > 0 {
 		isDuplicate, err = args.eventRepo.FindEventsByIdempotencyKey(ctx, dynamicEvent.ProjectID, dynamicEvent.IdempotencyKey)
 		if err != nil {
-			args.tracerBackend.Capture(ctx, "dynamic.event.creation.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventDynamicEventCreationError, attributes)
 			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 	}
@@ -84,7 +84,7 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	m, err := json.Marshal(metadata)
 	if err != nil {
 		args.logger.Error("failed to marshal metadata for event", "error", err)
-		args.tracerBackend.Capture(ctx, "dynamic.event.creation.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventDynamicEventCreationError, attributes)
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
@@ -103,17 +103,16 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 	err = args.eventRepo.CreateEvent(ctx, event)
 	if err != nil {
-		args.tracerBackend.Capture(ctx, "dynamic.event.creation.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventDynamicEventCreationError, attributes)
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 	}
 
-	args.tracerBackend.Capture(ctx, "dynamic.event.creation.success", attributes, startTime, time.Now())
+	tracer.AddEvent(ctx, tracer.EventDynamicEventCreationSuccess, attributes)
 	return event, nil
 }
 
 func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, args EventChannelArgs) (*EventChannelSubResponse, error) {
 	// Start a new trace span for subscription matching
-	startTime := time.Now()
 	attributes := map[string]interface{}{
 		"event.type": "dynamic.event.subscription.matching",
 		"event.id":   metadata.Event.UID,
@@ -124,19 +123,19 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 
 	project, err := args.projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
 	if err != nil {
-		args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 	}
 
 	event, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
 	if err != nil {
-		args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
 	err = args.eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus)
 	if err != nil {
-		args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 		return nil, err
 	}
 
@@ -145,32 +144,32 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		var m map[string]string
 		err := json.Unmarshal([]byte(event.Metadata), &m)
 		if err != nil {
-			args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 		p := m["dynamicPayload"]
 		err = json.Unmarshal([]byte(p), &dynamicEvent)
 		if err != nil {
-			args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 	}
 
 	endpoint, err := findEndpoint(ctx, project, args.endpointRepo, &dynamicEvent, args.logger)
 	if err != nil {
-		args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 		return nil, err
 	}
 
 	s, err := findDynamicSubscription(ctx, &dynamicEvent, args.subRepo, project, endpoint)
 	if err != nil {
-		args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 		return nil, err
 	}
 
 	err = args.eventRepo.UpdateEventEndpoints(ctx, event, []string{endpoint.UID})
 	if err != nil {
-		args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 	}
 
@@ -179,7 +178,7 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	response.Subscriptions = []datastore.Subscription{*s}
 	response.IsDuplicateEvent = event.IsDuplicateEvent
 
-	args.tracerBackend.Capture(ctx, "dynamic.event.subscription.matching.success", attributes, startTime, time.Now())
+	tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingOK, attributes)
 	return &response, nil
 }
 
@@ -195,7 +194,6 @@ func ProcessDynamicEventCreation(deps EventProcessorDeps) func(context.Context, 
 		deps.SubRepo,
 		deps.FilterRepo,
 		deps.Licenser,
-		deps.TracerBackend,
 		deps.OAuth2TokenService,
 		deps.Logger,
 	)

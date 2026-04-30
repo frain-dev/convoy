@@ -6,9 +6,12 @@ import (
 
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/queue/tracectx"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
@@ -106,16 +109,29 @@ func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) 
 			c.jobTracker.RecordJob(t)
 		}
 
-		traceProvider := otel.GetTracerProvider()
-		tracer := traceProvider.Tracer("asynq.workers")
+		// Unwrap the trace-context envelope (if present) and rebuild the
+		// context as a child of the producer's span. Legacy/in-flight tasks
+		// without an envelope return the original payload + nil headers, so
+		// they simply produce a root span here.
+		payload, headers := tracectx.Unwrap(t.Payload())
+		ctx = tracectx.ExtractContext(ctx, headers)
+		// Hand handlers the unwrapped bytes. Task options like Queue/TaskID
+		// are enqueue-time concerns; at consumer time only Type and Payload
+		// are read, so reconstructing here is safe.
+		t = asynq.NewTask(t.Type(), payload)
 
-		newCtx, span := tracer.Start(ctx, t.Type())
+		traceProvider := otel.GetTracerProvider()
+		tr := traceProvider.Tracer(tracer.TracerNameWorker)
+
+		newCtx, span := tr.Start(ctx, tracer.SpanForTaskName(convoy.TaskName(t.Type())))
+		span.SetAttributes(attribute.String(string(tracer.AttrTaskName), t.Type()))
 		span.SetStatus(codes.Ok, "OK")
 		defer span.End()
 
 		err := h.ProcessTask(newCtx, t)
 		if err != nil {
 			c.log.Error("job failed", "error", err, "job", t.Type())
+			tracer.RecordError(span, err)
 			return err
 		}
 

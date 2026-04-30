@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -23,7 +26,22 @@ type RetryEventDeliveryService struct {
 	Logger        log.Logger
 }
 
-func (e *RetryEventDeliveryService) Run(ctx context.Context) error {
+func (e *RetryEventDeliveryService) Run(ctx context.Context) (err error) {
+	ctx, span := otel.Tracer(tracer.TracerNameServices).Start(ctx, tracer.SpanServicesEventDeliveryRetry)
+	if e.Project != nil {
+		span.SetAttributes(tracer.AttrProjectID.String(e.Project.UID))
+	}
+	if e.EventDelivery != nil {
+		span.SetAttributes(
+			tracer.AttrEventDeliveryID.String(e.EventDelivery.UID),
+			tracer.AttrEndpointID.String(e.EventDelivery.EndpointID),
+		)
+	}
+	defer func() {
+		tracer.RecordError(span, err)
+		span.End()
+	}()
+
 	switch e.EventDelivery.Status {
 	case datastore.SuccessEventStatus:
 		return &ServiceError{ErrMsg: "event already sent"}

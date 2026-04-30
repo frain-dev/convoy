@@ -18,7 +18,10 @@ import (
 
 	"github.com/stealthrocket/netjail"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/net/http/httpproxy"
+
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -36,7 +39,6 @@ var (
 	ErrBlockListIsRequired = errors.New("blocklist is required")
 	ErrLoggerIsRequired    = errors.New("logger is required")
 	ErrInvalidIPPrefix     = errors.New("invalid IP prefix")
-	ErrTracerIsRequired    = errors.New("tracer cannot be nil")
 	ErrNon2xxResponse      = errors.New("endpoint returned a non-2xx response")
 )
 
@@ -165,7 +167,6 @@ type Dispatcher struct {
 	transport     *http.Transport
 	client        *http.Client
 	rules         *netjail.Rules
-	tracer        tracer.Backend
 	detailedTrace DetailedTraceConfig
 }
 
@@ -174,7 +175,6 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		ff:     ff,
 		l:      l,
 		logger: log.New("convoy", log.LevelInfo),
-		tracer: tracer.NoOpBackend{},
 		client: &http.Client{},
 		rules:  &netjail.Rules{},
 		transport: &http.Transport{
@@ -334,18 +334,6 @@ func LoggerOption(logger log.Logger) DispatcherOption {
 	}
 }
 
-// TracerOption sets a custom tracer backend for the Dispatcher
-func TracerOption(tracer tracer.Backend) DispatcherOption {
-	return func(d *Dispatcher) error {
-		if tracer == nil {
-			return ErrTracerIsRequired
-		}
-
-		d.tracer = tracer
-		return nil
-	}
-}
-
 func DetailedTraceOption(enabled bool) DispatcherOption {
 	return func(d *Dispatcher) error {
 		d.detailedTrace.Enabled = enabled
@@ -486,63 +474,65 @@ func defaultUserAgent() string {
 
 func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64, client *http.Client) error {
 	if d.detailedTrace.Enabled {
-		trace := &httptrace.ClientTrace{
+		// Attach low-level network timings as events on the active outbound HTTP
+		// span (the span otelhttp creates around client.Do). Events are the
+		// right shape: they're point-in-time markers on a parent span, not
+		// independent operations, so they don't need their own span hierarchy.
+		addEvent := func(name string, attrs ...attribute.KeyValue) {
+			span := oteltrace.SpanFromContext(ctx)
+			if span.IsRecording() {
+				span.AddEvent(name, oteltrace.WithAttributes(attrs...))
+			}
+		}
+
+		clientTrace := &httptrace.ClientTrace{
 			DNSStart: func(info httptrace.DNSStartInfo) {
-				attrs := map[string]interface{}{
-					"dns.host": info.Host,
-					"event":    "dns_start",
-				}
-				d.tracer.Capture(ctx, "dns_lookup_start", attrs, time.Now(), time.Now())
+				addEvent(tracer.EventDispatcherDNSLookupStart, attribute.String("dns.host", info.Host))
 			},
 			DNSDone: func(info httptrace.DNSDoneInfo) {
-				attrs := map[string]interface{}{
-					"dns.addresses": fmt.Sprintf("%v", info.Addrs),
-					"dns.error":     fmt.Sprintf("%v", info.Err),
-					"event":         "dns_done",
+				attrs := []attribute.KeyValue{
+					attribute.String("dns.addresses", fmt.Sprintf("%v", info.Addrs)),
 				}
-				d.tracer.Capture(ctx, "dns_lookup_done", attrs, time.Now(), time.Now())
+				if info.Err != nil {
+					attrs = append(attrs, attribute.String("dns.error", info.Err.Error()))
+				}
+				addEvent(tracer.EventDispatcherDNSLookupDone, attrs...)
 			},
 			ConnectStart: func(network, addr string) {
-				attrs := map[string]interface{}{
-					"net.network": network,
-					"net.addr":    addr,
-					"event":       "connect_start",
-				}
-				d.tracer.Capture(ctx, "connect_start", attrs, time.Now(), time.Now())
+				addEvent(tracer.EventDispatcherConnectStart,
+					attribute.String("net.network", network),
+					attribute.String("net.addr", addr),
+				)
 			},
 			ConnectDone: func(network, addr string, err error) {
-				attrs := map[string]interface{}{
-					"net.network": network,
-					"net.addr":    addr,
-					"error":       fmt.Sprintf("%v", err),
-					"event":       "connect_done",
+				attrs := []attribute.KeyValue{
+					attribute.String("net.network", network),
+					attribute.String("net.addr", addr),
 				}
-				d.tracer.Capture(ctx, "connect_done", attrs, time.Now(), time.Now())
+				if err != nil {
+					attrs = append(attrs, attribute.String("net.error", err.Error()))
+				}
+				addEvent(tracer.EventDispatcherConnectDone, attrs...)
 			},
 			TLSHandshakeStart: func() {
-				attrs := map[string]interface{}{
-					"event": "tls_handshake_start",
-				}
-				d.tracer.Capture(ctx, "tls_handshake_start", attrs, time.Now(), time.Now())
+				addEvent(tracer.EventDispatcherTLSHandshakeStart)
 			},
 			TLSHandshakeDone: func(state tls.ConnectionState, err error) {
-				attrs := map[string]interface{}{
-					"tls.version":      state.Version,
-					"tls.cipher_suite": state.CipherSuite,
-					"error":            fmt.Sprintf("%v", err),
-					"event":            "tls_handshake_done",
+				attrs := []attribute.KeyValue{
+					attribute.Int("tls.version", int(state.Version)),
+					attribute.Int("tls.cipher_suite", int(state.CipherSuite)),
 				}
-				d.tracer.Capture(ctx, "tls_handshake_done", attrs, time.Now(), time.Now())
+				if err != nil {
+					attrs = append(attrs, attribute.String("tls.error", err.Error()))
+				}
+				addEvent(tracer.EventDispatcherTLSHandshakeDone, attrs...)
 			},
 			GotFirstResponseByte: func() {
-				attrs := map[string]interface{}{
-					"event": "first_byte_received",
-				}
-				d.tracer.Capture(ctx, "first_byte", attrs, time.Now(), time.Now())
+				addEvent(tracer.EventDispatcherFirstByte)
 			},
 		}
 
-		ctx = httptrace.WithClientTrace(ctx, trace)
+		ctx = httptrace.WithClientTrace(ctx, clientTrace)
 		req = req.WithContext(ctx)
 	}
 

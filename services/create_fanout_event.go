@@ -8,11 +8,13 @@ import (
 	"time"
 
 	"github.com/oklog/ulid/v2"
+	"go.opentelemetry.io/otel"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -52,10 +54,20 @@ type newEvent struct {
 }
 
 func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Event, err error) {
+	ctx, span := otel.Tracer(tracer.TracerNameServices).Start(ctx, tracer.SpanServicesEventCreateFanout)
+	defer func() {
+		tracer.RecordError(span, err)
+		span.End()
+	}()
+
 	serviceStart := time.Now()
 
 	if e.Project == nil {
 		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
+	}
+	span.SetAttributes(tracer.AttrProjectID.String(e.Project.UID))
+	if e.NewMessage != nil {
+		span.SetAttributes(tracer.AttrOwnerID.String(e.NewMessage.OwnerID))
 	}
 
 	if err = util.Validate(e.NewMessage); err != nil {
