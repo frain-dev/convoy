@@ -36,16 +36,17 @@ func StartServer(opts RuntimeOpts, cfg config.Configuration) error {
 
 	evHandler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:      flag,
-			DB:         opts.DB,
-			Queue:      opts.Queue,
-			Logger:     lo,
-			Cache:      opts.Cache,
-			Rate:       opts.Rate,
-			Redis:      opts.Redis,
-			Licenser:   opts.Licenser,
-			Cfg:        cfg,
-			ConfigRepo: configRepo,
+			FFlag:         flag,
+			DB:            opts.DB,
+			Queue:         opts.Queue,
+			Logger:        lo,
+			Cache:         opts.Cache,
+			Rate:          opts.Rate,
+			Redis:         opts.Redis,
+			Licenser:      opts.Licenser,
+			Cfg:           cfg,
+			TracerBackend: opts.TracerBackend,
+			ConfigRepo:    configRepo,
 		})
 	if err != nil {
 		return fmt.Errorf("failed to create application handler: %w", err)
