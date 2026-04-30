@@ -1,0 +1,9 @@
+{
+  "version": "26.3.6",
+  "release_line": "26.3",
+  "target_sha": "c81b454367441f83fc8933b5012d4e6bbae28507",
+  "cutoff_tag": "release-cutoff-2026-03",
+  "next_cutoff_tag": "release-cutoff-2026-04",
+  "previous_stable_tag": "v26.3.5",
+  "generated_at": "2026-04-30T03:02:58Z"
+}
