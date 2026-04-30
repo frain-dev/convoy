@@ -16,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/net"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -166,7 +165,7 @@ func TestProcessMetaEvent(t *testing.T) {
 				defer deferFn()
 			}
 
-			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, tracer.NoOpBackend{}, log.New("convoy", log.LevelInfo))
+			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, log.New("convoy", log.LevelInfo))
 			payload := MetaEvent{
 				MetaEventID: tc.msg.MetaEventID,
 				ProjectID:   tc.msg.ProjectID,
