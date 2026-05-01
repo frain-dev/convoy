@@ -96,6 +96,7 @@ jobs:
           git diff -- "$VALUES_YAML_PATH"
 
       - name: Create pull request
+        id: pr
         working-directory: convoy-cloud
         env:
           GH_TOKEN: ${{ secrets.CONVOY_CLOUD_REPO_TOKEN }}
@@ -144,10 +145,64 @@ jobs:
             echo "- **Convoy commit:** \`${SOURCE_SHA}\`"
             echo "- **Build run:** ${run_url}"
           } >"$pr_body"
-          gh pr create \
+          pr_url="$(gh pr create \
             --repo frain-dev/convoy-cloud \
             --base main \
             --head "$branch" \
             --title "chore(staging): bump Convoy to ${IMAGE_TAG}" \
-            --body-file "$pr_body"
+            --body-file "$pr_body")"
           rm -f "$pr_body"
+          echo "pr_url=${pr_url}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify engineering on Slack
+        if: ${{ steps.pr.outputs.pr_url != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ENGINEERING_WEBHOOK_URL }}
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
+          MENTIONS_RAW: ${{ vars.SLACK_BUMP_MENTIONS }}
+        run: |
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "SLACK_ENGINEERING_WEBHOOK_URL not set — skipping Slack."
+            exit 0
+          fi
+          python3 <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          webhook = os.environ["SLACK_WEBHOOK_URL"]
+          pr_url = os.environ["PR_URL"]
+          image_tag = os.environ["IMAGE_TAG"]
+          mentions = (os.environ.get("MENTIONS_RAW") or "").strip()
+
+          body_lines = [
+              f":package: *Convoy → convoy-cloud · staging image bump*",
+              f"Image `{image_tag}` is published. A PR is open to update staging Helm values.",
+              f":point_right: <{pr_url}|Open pull request>",
+              f"_GitHub Actions · automated_",
+          ]
+          mrkdwn = "\n".join(body_lines)
+          if mentions:
+              mrkdwn = f"{mentions} — quick heads-up: staging bump PR is ready for review.\n\n{mrkdwn}"
+
+          payload = {
+              "text": mrkdwn,
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {"type": "mrkdwn", "text": mrkdwn},
+                  }
+              ],
+          }
+          data = json.dumps(payload).encode("utf-8")
+          req = urllib.request.Request(
+              webhook,
+              data=data,
+              headers={"Content-type": "application/json"},
+              method="POST",
+          )
+          with urllib.request.urlopen(req) as resp:
+              if resp.status not in (200, 201):
+                  raise SystemExit(f"Slack webhook HTTP {resp.status}")
+          PY
