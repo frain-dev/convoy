@@ -23,6 +23,7 @@ import (
 )
 
 var ErrHostRequiredForBilling = errors.New("organisation host (assigned domain) is required for billing. Please set the assigned domain in the configuration")
+var ErrOwnerEmailRequiredForBilling = errors.New("organisation owner email is required for billing")
 
 type BillingHandler struct {
 	*Handler
@@ -58,7 +59,8 @@ func (h *BillingHandler) ensureOrganisationInBilling(w http.ResponseWriter, r *h
 
 	ownerEmail := h.getOwnerEmail(r.Context(), orgID)
 	if ownerEmail == "" {
-		h.A.Logger.Warnf("Failed to fetch owner email for organisation %s, using empty billing_email", orgID)
+		_ = render.Render(w, r, util.NewErrorResponse(ErrOwnerEmailRequiredForBilling.Error(), http.StatusUnprocessableEntity))
+		return true
 	}
 
 	orgData := billing.BillingOrganisation{
