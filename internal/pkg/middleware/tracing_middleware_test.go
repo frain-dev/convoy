@@ -1,12 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -14,12 +16,24 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 )
 
+// preserveOTelGlobals restores the global TextMapPropagator at the end of
+// the test. otelchi reads the global propagator on every request, so a sibling
+// test that mutates it (or that runs after a future change to
+// InstrumentRequests that does) would otherwise contaminate this one.
+func preserveOTelGlobals(t *testing.T) {
+	t.Helper()
+	prev := otel.GetTextMapPropagator()
+	t.Cleanup(func() { otel.SetTextMapPropagator(prev) })
+}
+
 // Verifies that InstrumentRequests + EnrichSpanFromRoute produce a span named
 // after the chi route template and decorated with the conventional convoy.*
 // attributes pulled from URL parameters.
 func TestInstrumentRequests_EnrichesAndRoutesNamesSpan(t *testing.T) {
+	preserveOTelGlobals(t)
 	exp := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exp))
+	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
 
 	router := chi.NewMux()
 	router.Use(InstrumentRequests("test-server", router, tp))
@@ -53,8 +67,10 @@ func TestInstrumentRequests_EnrichesAndRoutesNamesSpan(t *testing.T) {
 
 // Verifies the filter excludes health/metrics paths from span creation.
 func TestInstrumentRequests_FiltersHealthAndMetrics(t *testing.T) {
+	preserveOTelGlobals(t)
 	exp := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exp))
+	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
 
 	router := chi.NewMux()
 	router.Use(InstrumentRequests("test-server", router, tp))

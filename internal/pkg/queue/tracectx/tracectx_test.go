@@ -65,8 +65,20 @@ func TestUnwrap_EmptyBytesAreSafe(t *testing.T) {
 func TestInjectIntoJob_ProducesChildSpanOnExtract(t *testing.T) {
 	exp := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exp))
+
+	// Save and restore the global TP/propagator so we don't pollute sibling
+	// tests in the same binary. `make test` runs the whole module under
+	// -race -p 1; without restoration, anything that calls otel.Tracer(...)
+	// after this test would emit spans into our local exp.
+	prevTP := otel.GetTracerProvider()
+	prevProp := otel.GetTextMapPropagator()
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	t.Cleanup(func() {
+		_ = tp.Shutdown(context.Background())
+		otel.SetTracerProvider(prevTP)
+		otel.SetTextMapPropagator(prevProp)
+	})
 
 	producerCtx, producerSpan := tp.Tracer("producer").Start(context.Background(), "produce")
 	job := &queue.Job{Payload: []byte(`{"x":1}`)}
