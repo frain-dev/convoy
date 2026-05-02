@@ -7,8 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/frain-dev/convoy/queue"
 )
