@@ -42,19 +42,25 @@ func InjectIntoJob(ctx context.Context, job *queue.Job) {
 	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(job.Headers))
 }
 
-// Wrap encodes a payload + headers into an envelope and returns the bytes that
-// should be sent to the queue. On marshal failure the original payload is
-// returned so we degrade rather than drop the message.
+// Wrap encodes a payload + headers into an envelope and returns the bytes
+// that should be sent to the queue. When headers is nil or empty there is no
+// trace context to carry, so we return the payload unchanged — this skips the
+// JSON envelope entirely and avoids the ~33% size inflation that comes from
+// json.Marshal base64-encoding the []byte payload field. Unwrap detects this
+// (no magic byte) and treats it identically to a legacy/in-flight payload.
+//
+// On marshal failure we also fall back to the raw payload so a transient
+// error degrades cleanly rather than dropping the message.
 func Wrap(headers map[string]string, payload []byte) []byte {
+	if len(headers) == 0 {
+		return payload
+	}
 	env := envelope{TraceContext: headers, Payload: payload}
 	body, err := json.Marshal(env)
 	if err != nil {
 		return payload
 	}
-	out := make([]byte, 0, len(body)+1)
-	out = append(out, envelopeMagic)
-	out = append(out, body...)
-	return out
+	return append([]byte{envelopeMagic}, body...)
 }
 
 // Unwrap inspects bytes pulled from the queue. If they carry an envelope it

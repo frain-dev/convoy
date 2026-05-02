@@ -14,6 +14,19 @@ import (
 	"github.com/frain-dev/convoy/queue"
 )
 
+// Empty/nil headers must skip the envelope entirely so non-traced callers
+// pay no encoding overhead. Unwrap then treats the bytes as a legacy payload.
+func TestWrap_EmptyHeadersPassesThroughRaw(t *testing.T) {
+	payload := []byte(`{"hello":"world"}`)
+	require.Equal(t, payload, Wrap(nil, payload))
+	require.Equal(t, payload, Wrap(map[string]string{}, payload))
+
+	// Round-trips through Unwrap as a raw payload (no headers).
+	got, headers := Unwrap(Wrap(nil, payload))
+	require.Equal(t, payload, got)
+	require.Nil(t, headers)
+}
+
 func TestWrap_RoundtripPreservesPayload(t *testing.T) {
 	original := []byte(`{"hello":"world"}`)
 	wrapped := Wrap(map[string]string{"traceparent": "abc"}, original)
