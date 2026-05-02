@@ -1,8 +1,11 @@
 package worker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"reflect"
+	"unsafe"
 
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel"
@@ -104,21 +107,28 @@ func (c *Consumer) SetJobTracker(tracker JobTracker) {
 
 func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) asynq.Handler {
 	return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
-		// Record job ID if tracker is set (for E2E tests)
-		if c.jobTracker != nil {
-			c.jobTracker.RecordJob(t)
-		}
-
 		// Unwrap the trace-context envelope (if present) and rebuild the
 		// context as a child of the producer's span. Legacy/in-flight tasks
 		// without an envelope return the original payload + nil headers, so
 		// they simply produce a root span here.
 		payload, headers := tracectx.Unwrap(t.Payload())
 		ctx = tracectx.ExtractContext(ctx, headers)
-		// Hand handlers the unwrapped bytes. Task options like Queue/TaskID
-		// are enqueue-time concerns; at consumer time only Type and Payload
-		// are read, so reconstructing here is safe.
-		t = asynq.NewTask(t.Type(), payload)
+		// Swap the payload in place so handlers see the unwrapped bytes.
+		// Reconstructing the task with asynq.NewTask would drop the
+		// ResultWriter that asynq's dispatcher attached, and any caller
+		// that reads t.ResultWriter().TaskID() — e.g. JobTracker in e2e
+		// tests — would nil-deref. asynq exposes no public setter for
+		// the payload field, hence the reflection/unsafe.
+		if !bytes.Equal(t.Payload(), payload) {
+			swapTaskPayload(t, payload)
+		}
+
+		// Record job ID if tracker is set (for E2E tests). After the
+		// in-place unwrap so JobTracker sees the original payload bytes
+		// the producer enqueued, not the envelope wrapper.
+		if c.jobTracker != nil {
+			c.jobTracker.RecordJob(t)
+		}
 
 		traceProvider := otel.GetTracerProvider()
 		tr := traceProvider.Tracer(tracer.TracerNameWorker)
