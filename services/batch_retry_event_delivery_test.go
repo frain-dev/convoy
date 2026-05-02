@@ -74,7 +74,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 					Return(int64(10), nil)
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any())
+				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{
@@ -111,7 +111,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			wantSuccesses: 1,
@@ -220,7 +220,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 
 				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
-				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("failed to queue batch retry job"))
 
 				ml.EXPECT().ErrorContext(gomock.Any(), "failed to queue batch retry job", "error", gomock.Any()).Times(1)
@@ -271,7 +271,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 
 				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
-				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any())
+				q.EXPECT().WriteWithoutTimeout(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 	}

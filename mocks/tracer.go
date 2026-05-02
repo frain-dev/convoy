@@ -15,7 +15,6 @@ import (
 
 	config "github.com/frain-dev/convoy/config"
 	trace "go.opentelemetry.io/otel/trace"
-	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -71,6 +70,20 @@ func (mr *MockBackendMockRecorder) Shutdown(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockBackend)(nil).Shutdown), ctx)
 }
 
+// TracerProvider mocks base method.
+func (m *MockBackend) TracerProvider() trace.TracerProvider {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TracerProvider")
+	ret0, _ := ret[0].(trace.TracerProvider)
+	return ret0
+}
+
+// TracerProvider indicates an expected call of TracerProvider.
+func (mr *MockBackendMockRecorder) TracerProvider() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TracerProvider", reflect.TypeOf((*MockBackend)(nil).TracerProvider))
+}
+
 // Type mocks base method.
 func (m *MockBackend) Type() config.TracerProvider {
 	m.ctrl.T.Helper()
@@ -83,21 +96,4 @@ func (m *MockBackend) Type() config.TracerProvider {
 func (mr *MockBackendMockRecorder) Type() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Type", reflect.TypeOf((*MockBackend)(nil).Type))
-}
-
-// TracerProvider mocks base method.
-func (m *MockBackend) TracerProvider() trace.TracerProvider {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TracerProvider")
-	tp, _ := ret[0].(trace.TracerProvider)
-	if tp == nil {
-		tp = tracenoop.NewTracerProvider()
-	}
-	return tp
-}
-
-// TracerProvider indicates an expected call of TracerProvider.
-func (mr *MockBackendMockRecorder) TracerProvider() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TracerProvider", reflect.TypeOf((*MockBackend)(nil).TracerProvider))
 }

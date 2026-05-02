@@ -110,7 +110,7 @@ func (s *RedisQueueIntegrationTestSuite) TestWrite() {
 			}
 
 			taskName := convoy.TaskName(id)
-			err := s.eventQueue.Write(taskName, convoy.EventQueue, job)
+			err := s.eventQueue.Write(context.Background(), taskName, convoy.EventQueue, job)
 			s.Require().NoError(err, "Failed to write to queue")
 		})
 	}
