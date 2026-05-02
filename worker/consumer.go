@@ -158,6 +158,21 @@ func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) 
 	})
 }
 
+// swapTaskPayload replaces an asynq.Task's payload in place. asynq.Task's
+// payload field is unexported and there is no public setter, so we reach in
+// via reflection + unsafe.Pointer. This is preferable to constructing a new
+// task because the new task would lack the ResultWriter that asynq's
+// processor attached during dispatch — RecordJob and any other consumer-side
+// reader of t.ResultWriter() would then nil-deref.
+//
+// asynq pins to v0.25.x in go.mod; if the Task struct ever renames or moves
+// the payload field, this falls back loudly via the reflection panic rather
+// than silently corrupting state.
+func swapTaskPayload(t *asynq.Task, payload []byte) {
+	pf := reflect.ValueOf(t).Elem().FieldByName("payload")
+	reflect.NewAt(pf.Type(), unsafe.Pointer(pf.UnsafeAddr())).Elem().SetBytes(payload)
+}
+
 func getLogLevel(lvl log.Level) asynq.LogLevel {
 	switch lvl {
 	case log.LevelDebug:
