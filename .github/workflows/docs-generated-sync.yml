@@ -1,0 +1,81 @@
+# Regenerates docs/generated after every push to main. If outputs drift, opens or
+# updates PR branch chore/docs-generated-sync (peter-evans/create-pull-request).
+# Also notifies convoy-website via repository_dispatch (event_type convoy_docs_sync).
+#
+# Cross-repo dispatch requires repository secret CONVOY_WEBSITE_DISPATCH_TOKEN on this
+# repo (see docs/generated/README.md). The token must be allowed to create repository
+# dispatch events on ${{ github.repository_owner }}/convoy-website (same org/user as
+# this repository is assumed).
+# Scope: only paths under add-paths are committed (currently docs/generated/**).
+name: Sync generated docs references
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: docs-generated-sync-${{ github.repository }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+        with:
+          go-version: "1.25.7"
+
+      - name: Cache Go modules
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-docs-generated-${{ hashFiles('go.sum') }}
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Regenerate reference artifacts
+        run: make docs-generated
+
+      - name: Open or update PR when drift exists
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6
+        with:
+          commit-message: "chore(docs): sync generated reference artifacts"
+          title: "chore(docs): sync generated reference artifacts"
+          body: |
+            This PR was opened automatically because `make docs-generated` produced changes under `docs/generated/` after a push to `main`.
+
+            **What to do:** Review the diff; if it matches the config/CLI changes on `main`, merge to clear drift.
+
+            **Branch:** `chore/docs-generated-sync` is reused and force-updated when new drift appears.
+
+            If `make docs-generated` starts writing additional paths (for example example config files), extend the workflow `add-paths` list in `.github/workflows/docs-generated-sync.yml`.
+          branch: chore/docs-generated-sync
+          base: main
+          delete-branch: false
+          add-paths: |
+            docs/generated/**
+
+  notify-convoy-website:
+    name: Notify convoy-website (repository_dispatch)
+    needs: sync
+    runs-on: ubuntu-latest
+    # Does not use GITHUB_TOKEN; dispatch uses CONVOY_WEBSITE_DISPATCH_TOKEN only.
+    permissions: {}
+    steps:
+      - name: Dispatch convoy_docs_sync
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3.0.0
+        with:
+          token: ${{ secrets.CONVOY_WEBSITE_DISPATCH_TOKEN }}
+          repository: ${{ github.repository_owner }}/convoy-website
+          event-type: convoy_docs_sync
+          client-payload: '{"convoy_ref":"${{ github.sha }}"}'

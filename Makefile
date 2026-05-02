@@ -121,5 +121,11 @@ generate_docs:
 	openapi swagger validate ./docs/swagger.yaml
 	openapi spec validate ./docs/v3/openapi3.yaml
 
+.PHONY: docs-generated
+docs-generated:
+	@mkdir -p docs/generated
+	go run ./scripts/docs/genconfigref -output docs/generated/config-reference.json
+	go run ./scripts/docs/gencliref -output docs/generated/cli-reference.json
+
 run_dependencies:
 	docker compose -f docker-compose.dep.yml up -d
