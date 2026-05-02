@@ -20,7 +20,6 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
-	"github.com/frain-dev/convoy/internal/pkg/queue/tracectx"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/httpheader"

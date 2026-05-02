@@ -16,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	internalio "github.com/frain-dev/convoy/internal/io"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/internal/pkg/queue/tracectx"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -98,9 +97,8 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		ID:      jobId,
 		Payload: eventByte,
 	}
-	tracectx.InjectIntoJob(r.Context(), job)
 
-	err = h.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = h.A.Queue.Write(r.Context(), convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 	}

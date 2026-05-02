@@ -16,7 +16,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/riandyrn/otelchi"
 
-	sdktrace "go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/types"
@@ -184,7 +184,7 @@ func InstrumentPath(l license.Licenser) func(http.Handler) http.Handler {
 	}
 }
 
-func InstrumentRequests(serverName string, r chi.Router, tp sdktrace.TracerProvider) func(next http.Handler) http.Handler {
+func InstrumentRequests(serverName string, r chi.Router, tp oteltrace.TracerProvider) func(next http.Handler) http.Handler {
 	opts := []otelchi.Option{
 		otelchi.WithChiRoutes(r),
 		otelchi.WithFilter(func(req *http.Request) bool {
@@ -210,7 +210,7 @@ func EnrichSpanFromRoute(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r)
 
-		span := sdktrace.SpanFromContext(r.Context())
+		span := oteltrace.SpanFromContext(r.Context())
 		if !span.IsRecording() {
 			return
 		}
@@ -526,7 +526,7 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 		requestFields["header"] = headerFields(r.Header)
 	}
 
-	span := sdktrace.SpanFromContext(r.Context())
+	span := oteltrace.SpanFromContext(r.Context())
 
 	requestFields["traceId"] = span.SpanContext().TraceID()
 	requestFields["spanId"] = span.SpanContext().SpanID()

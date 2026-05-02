@@ -18,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/queue/tracectx"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -81,7 +80,6 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				Delay:   delayDuration,
 				ID:      data.EventDeliveryID,
 			}
-			tracectx.InjectIntoJob(ctx, job)
 
 			// write it to the retry queue.
 			deferErr := deps.Queue.Write(ctx, convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
