@@ -258,7 +258,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 							ownerEmail = owner.Email
 						}
 					}
-					_ = EnqueueCircuitBreakerEmails(opts.Queue, lo, project, endpoint, ownerEmail, b.FailureRate)
+					_ = EnqueueCircuitBreakerEmails(ctx, opts.Queue, lo, project, endpoint, ownerEmail, b.FailureRate)
 
 				default:
 					return fmt.Errorf("unsupported circuit breaker notification type: %s", n)

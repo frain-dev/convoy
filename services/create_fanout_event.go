@@ -178,7 +178,7 @@ func createEvent(ctx context.Context, endpointIDs []string, newMessage *newEvent
 		Payload: eventByte,
 	}
 	startQueue := time.Now()
-	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = queuer.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		logger.ErrorContext(ctx, fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 		return nil, &ServiceError{ErrMsg: err.Error()}

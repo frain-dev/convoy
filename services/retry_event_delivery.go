@@ -92,7 +92,7 @@ func requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDel
 		Delay:   1 * time.Second,
 	}
 
-	err = q.Write(taskName, convoy.EventQueue, job)
+	err = q.Write(ctx, taskName, convoy.EventQueue, job)
 	if err != nil {
 		logger.ErrorContext(ctx, fmt.Sprintf("error occurred re-enqueing old event - %s: %v", eventDelivery.UID, err))
 		return &ServiceError{ErrMsg: fmt.Sprintf("error occurred re-enqueing old event - %s", eventDelivery.UID), Err: err}

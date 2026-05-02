@@ -62,7 +62,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) (err error) {
 		Payload: eventByte,
 	}
 
-	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)
+	err = e.Queue.Write(ctx, taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		e.Logger.ErrorContext(ctx, fmt.Sprintf("Error occurred sending new dynamic event to the queue %s", err))
 		return &ServiceError{ErrMsg: "failed to create dynamic event"}

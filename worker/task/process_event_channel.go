@@ -124,7 +124,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			Delay:   0,
 		}
 
-		err = eventQueue.Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
+		err = eventQueue.Write(ctx, convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
 		if err != nil {
 			logger.ErrorContext(ctx, fmt.Sprintf("[asynq]: an error occurred while matching event subs: %v", err))
 		}

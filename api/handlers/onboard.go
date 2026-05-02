@@ -169,7 +169,7 @@ func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
 
 	// Phase 2: Enqueue all jobs
 	for _, j := range jobs {
-		writeErr := h.A.Queue.Write(convoy.BulkOnboardProcessor, convoy.DefaultQueue, j.job)
+		writeErr := h.A.Queue.Write(r.Context(), convoy.BulkOnboardProcessor, convoy.DefaultQueue, j.job)
 		if writeErr != nil {
 			_ = render.Render(w, r, util.NewErrorResponse("Failed to queue batch", http.StatusInternalServerError))
 			return

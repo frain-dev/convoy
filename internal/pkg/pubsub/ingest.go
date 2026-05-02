@@ -293,7 +293,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 
 		// write to our queue if it's a normal event
 		i.log.Infof("Writing CreateEvent job to queue for event %s (endpoint: %s, project: %s)", id, ce.Params.EndpointID, ce.Params.ProjectID)
-		err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+		err = i.queue.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
 			i.log.Error("Failed to write CreateEvent job to queue", "error", err)
 			return err
@@ -336,7 +336,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 
 		// write to our queue if it's a normal event
 		i.log.Infof("Writing fanout CreateEvent job to queue for event %s (owner: %s, project: %s)", id, ce.Params.OwnerID, ce.Params.ProjectID)
-		err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+		err = i.queue.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
 			return err
 		}
@@ -368,7 +368,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 
 		// write to our queue if it's a broadcast event
 		i.log.Infof("Writing broadcast event job to queue for event %s (project: %s)", eventId, broadcastEvent.ProjectID)
-		err = i.queue.Write(convoy.CreateBroadcastEventProcessor, convoy.CreateEventQueue, job)
+		err = i.queue.Write(ctx, convoy.CreateBroadcastEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
 			return err
 		}

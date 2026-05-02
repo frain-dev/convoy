@@ -73,7 +73,7 @@ func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) error {
 		Delay:   0,
 	}
 
-	err = e.Queue.WriteWithoutTimeout(convoy.BatchRetryProcessor, convoy.BatchRetryQueue, job)
+	err = e.Queue.WriteWithoutTimeout(ctx, convoy.BatchRetryProcessor, convoy.BatchRetryQueue, job)
 	if err != nil {
 		e.Logger.ErrorContext(ctx, "failed to queue batch retry job", "error", err)
 		return &ServiceError{ErrMsg: "failed to queue batch retry job", Err: err}

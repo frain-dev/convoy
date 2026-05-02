@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -10,9 +11,12 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
+// Queuer enqueues asynq tasks. The driver injects the active OTel trace
+// context from ctx into the task's headers so worker spans become children
+// of the producer's; callers don't need to do anything special.
 type Queuer interface {
-	Write(convoy.TaskName, convoy.QueueName, *Job) error
-	WriteWithoutTimeout(convoy.TaskName, convoy.QueueName, *Job) error
+	Write(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *Job) error
+	WriteWithoutTimeout(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *Job) error
 	Options() QueueOptions
 }
 
@@ -21,10 +25,11 @@ type Job struct {
 	Payload []byte        `json:"payload"`
 	Delay   time.Duration `json:"delay"`
 
-	// Headers is an optional W3C trace-context carrier populated by
-	// tracectx.InjectIntoJob. Producers serialize it into the task envelope
-	// so the consumer can rebuild a child context. Empty for non-traced
-	// callers; consumers handle that case by starting a root span.
+	// Headers carries the W3C trace context. The Queuer driver fills this
+	// from the active OTel span on the producer's ctx and feeds it into
+	// asynq.NewTaskWithHeaders so it rides alongside the payload. Callers
+	// rarely set it directly. Empty for untraced enqueues; the consumer
+	// middleware starts a root span in that case.
 	Headers map[string]string `json:"-"`
 }
 

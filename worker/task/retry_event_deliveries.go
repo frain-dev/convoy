@@ -202,7 +202,7 @@ func processEventDeliveryBatch(ctx context.Context, s datastore.EventDeliverySta
 				Payload: data,
 				Delay:   1 * time.Second,
 			}
-			err = q.Write(taskName, convoy.EventQueue, job)
+			err = q.Write(ctx, taskName, convoy.EventQueue, job)
 			if err != nil {
 				l.Error(fmt.Sprintf("batch %d: failed to send event delivery %s to the queue: %v", batchCount, delivery.UID, err))
 				failedInBatch++

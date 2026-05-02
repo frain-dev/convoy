@@ -84,7 +84,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			tracectx.InjectIntoJob(ctx, job)
 
 			// write it to the retry queue.
-			deferErr := deps.Queue.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
+			deferErr := deps.Queue.Write(ctx, convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
 			if deferErr != nil {
 				deps.Logger.ErrorContext(ctx, "[asynq]: an error occurred sending event delivery to the retry queue", "error", deferErr)
 			}

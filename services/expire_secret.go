@@ -67,7 +67,7 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 	}
 
 	taskName := convoy.ExpireSecretsProcessor
-	err = a.Queuer.Write(taskName, convoy.DefaultQueue, job)
+	err = a.Queuer.Write(ctx, taskName, convoy.DefaultQueue, job)
 	if err != nil {
 		a.Logger.Error(fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 	}

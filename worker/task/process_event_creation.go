@@ -420,7 +420,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			}
 
 			if s.Type == datastore.SubscriptionTypeAPI {
-				err = opts.EventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+				err = opts.EventQueue.Write(ctx, convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
 					opts.Logger.ErrorContext(ctx, fmt.Sprintf("[asynq]: an error occurred sending event delivery to be dispatched: %v", err))
 				}

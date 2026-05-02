@@ -106,7 +106,7 @@ func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data i
 	}
 
 	jobId := queue.JobId{ProjectID: metaEvent.ProjectID, ResourceID: metaEvent.UID}.MetaJobId()
-	err = m.queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
+	err = m.queue.Write(ctx, convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
 		ID:      jobId,
 		Payload: bytes,
 	})
