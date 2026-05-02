@@ -7,61 +7,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/frain-dev/convoy/queue"
 )
 
-// Empty/nil headers must skip the envelope entirely so non-traced callers
-// pay no encoding overhead. Unwrap then treats the bytes as a legacy payload.
-func TestWrap_EmptyHeadersPassesThroughRaw(t *testing.T) {
-	payload := []byte(`{"hello":"world"}`)
-	require.Equal(t, payload, Wrap(nil, payload))
-	require.Equal(t, payload, Wrap(map[string]string{}, payload))
-
-	// Round-trips through Unwrap as a raw payload (no headers).
-	got, headers := Unwrap(Wrap(nil, payload))
-	require.Equal(t, payload, got)
-	require.Nil(t, headers)
-}
-
-func TestWrap_RoundtripPreservesPayload(t *testing.T) {
-	original := []byte(`{"hello":"world"}`)
-	wrapped := Wrap(map[string]string{"traceparent": "abc"}, original)
-	require.NotEqual(t, original, wrapped, "wrapped bytes must differ from raw payload")
-	require.Equal(t, envelopeMagic, wrapped[0])
-
-	got, headers := Unwrap(wrapped)
-	require.Equal(t, original, got)
-	require.Equal(t, "abc", headers["traceparent"])
-}
-
-func TestUnwrap_LegacyPayloadPassesThrough(t *testing.T) {
-	// A payload enqueued before the envelope existed must keep flowing through.
-	legacy := []byte(`{"hello":"world"}`) // starts with '{'
-	got, headers := Unwrap(legacy)
-	require.Equal(t, legacy, got)
-	require.Nil(t, headers)
-}
-
-func TestUnwrap_MalformedEnvelopeFallsBackToRaw(t *testing.T) {
-	// Magic byte but invalid JSON body — fall back rather than crash.
-	bad := append([]byte{envelopeMagic}, []byte("not-json")...)
-	got, headers := Unwrap(bad)
-	require.Equal(t, bad, got)
-	require.Nil(t, headers)
-}
-
-func TestUnwrap_EmptyBytesAreSafe(t *testing.T) {
-	got, headers := Unwrap(nil)
-	require.Nil(t, got)
-	require.Nil(t, headers)
-}
-
-// End-to-end: a span on the producer side ends up as the parent of a span
-// started on the consumer side after the payload survives an enqueue/dequeue.
+// End-to-end without the asynq queue: a span on the producer side ends up as
+// the parent of a span started on the consumer side after the trace context
+// round-trips through queue.Job.Headers. This is the contract the production
+// code relies on when it calls asynq.NewTaskWithHeaders(payload, job.Headers)
+// on one side and asynq.Task.Headers() on the other.
 func TestInjectIntoJob_ProducesChildSpanOnExtract(t *testing.T) {
 	exp := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exp))
@@ -86,22 +42,40 @@ func TestInjectIntoJob_ProducesChildSpanOnExtract(t *testing.T) {
 	producerSpan.End()
 
 	require.NotEmpty(t, job.Headers, "InjectIntoJob must populate Headers when there is an active span")
+	require.Contains(t, job.Headers, "traceparent", "expected W3C traceparent header")
 
-	wrapped := Wrap(job.Headers, job.Payload)
-
-	// On the consumer side: unwrap, extract context, start a span — its parent
-	// trace ID should match the producer's.
-	payload, headers := Unwrap(wrapped)
-	require.Equal(t, job.Payload, payload)
-	require.NotEmpty(t, headers)
-
-	consumerCtx := ExtractContext(context.Background(), headers)
+	// Consumer side: extract context from the same headers (which is what
+	// the worker middleware now reads off asynq.Task.Headers()) and start
+	// a child span. It must share the producer's trace ID.
+	consumerCtx := ExtractContext(context.Background(), job.Headers)
 	_, consumerSpan := tp.Tracer("consumer").Start(consumerCtx, "consume")
 	consumerSpan.End()
 
 	require.NoError(t, tp.ForceFlush(t.Context()))
 	spans := exp.GetSpans()
 	require.Len(t, spans, 2)
-	// Both spans must share the same trace ID.
-	require.Equal(t, spans[0].SpanContext.TraceID(), spans[1].SpanContext.TraceID())
+	require.Equal(t, spans[0].SpanContext.TraceID(), spans[1].SpanContext.TraceID(),
+		"consumer span must share trace ID with producer when headers carry the context")
+}
+
+// InjectIntoJob with no active span leaves headers empty so the consumer
+// starts a fresh root span. ExtractContext on empty headers is a no-op.
+func TestInjectIntoJob_NoActiveSpan(t *testing.T) {
+	prevProp := otel.GetTextMapPropagator()
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	t.Cleanup(func() { otel.SetTextMapPropagator(prevProp) })
+
+	job := &queue.Job{Payload: []byte("raw")}
+	InjectIntoJob(context.Background(), job)
+	require.Empty(t, job.Headers, "no active span → no traceparent injected")
+
+	// Round-trip with empty headers must be a no-op on the context.
+	got := ExtractContext(context.Background(), job.Headers)
+	require.Equal(t, context.Background(), got)
+}
+
+func TestInjectIntoJob_NilJobIsSafe(t *testing.T) {
+	require.NotPanics(t, func() {
+		InjectIntoJob(context.Background(), nil)
+	})
 }
