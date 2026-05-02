@@ -8,6 +8,7 @@ import (
 
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
@@ -55,6 +56,14 @@ func (dt *DatadogTracer) Init(componentName string) error {
 
 	// Configure OTel SDK.
 	otel.SetTracerProvider(provider)
+
+	// Configure Propagator. Without this the global propagator stays as the
+	// default no-op, which silently drops trace context at every queue
+	// boundary (tracectx.InjectIntoJob would never populate Headers, so the
+	// consumer always starts a root span). Match the OTel backend's choice
+	// of W3C TraceContext + Baggage so behaviour is identical across
+	// backends; the ddotel bridge handles W3C natively.
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	dt.tp = provider
 	dt.ShutdownFn = func(context.Context) error {

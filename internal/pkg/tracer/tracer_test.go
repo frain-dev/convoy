@@ -6,8 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
@@ -56,6 +59,42 @@ func TestTracerProvider_BeforeInit_ReturnsNonNil(t *testing.T) {
 	require.NotNil(t, NewSentryTracer(config.SentryConfiguration{}).TracerProvider())
 	// Datadog backend has external deps in its constructor; covered by the
 	// shared invariant test above.
+}
+
+// Datadog Init must register a real TextMapPropagator. Without this, the
+// global stays as the default no-op and tracectx.InjectIntoJob silently
+// produces empty headers — every consumer span starts a fresh trace instead
+// of becoming a child of the producer's. Regression for the Issue 8 gap
+// found post-merge in Epic 9.
+func TestDatadogTracer_Init_SetsTextMapPropagator(t *testing.T) {
+	// Save and restore the globals so we don't poison sibling tests.
+	prevTP := otel.GetTracerProvider()
+	prevProp := otel.GetTextMapPropagator()
+	t.Cleanup(func() {
+		otel.SetTracerProvider(prevTP)
+		otel.SetTextMapPropagator(prevProp)
+	})
+
+	// Force the propagator back to a stand-in that injects nothing, so the
+	// assertion below is meaningful (i.e. we observe Init replacing it).
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator())
+
+	dt := NewDatadogTracer(config.DatadogConfiguration{}, nil)
+	require.NoError(t, dt.Init("convoy/test"))
+	t.Cleanup(func() { _ = dt.Shutdown(context.Background()) })
+
+	// The newly-installed propagator must inject a `traceparent` header for
+	// any sampled span. We synthesize a span via a separate SDK provider so
+	// the test doesn't depend on the dd-trace-go agent connection.
+	sdkTP := sdktrace.NewTracerProvider(sdktrace.WithSampler(sdktrace.AlwaysSample()))
+	ctx, span := sdkTP.Tracer("test").Start(context.Background(), "op")
+	defer span.End()
+
+	carrier := propagation.MapCarrier{}
+	otel.GetTextMapPropagator().Inject(trace.ContextWithSpan(ctx, span), carrier)
+
+	require.Contains(t, carrier, "traceparent",
+		"DatadogTracer.Init must register a propagator that injects W3C TraceContext (got %v)", carrier)
 }
 
 func TestRecordError(t *testing.T) {
