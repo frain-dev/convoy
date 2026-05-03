@@ -153,9 +153,7 @@ func (c *Consumer) runWithSpan(ctx context.Context, h asynq.Handler, t *asynq.Ta
 
 	if tel != nil {
 		switch convoy.TaskName(t.Type()) {
-		case convoy.EventProcessor:
-		case convoy.CreateEventProcessor:
-		case convoy.CreateDynamicEventProcessor:
+		case convoy.EventProcessor, convoy.CreateEventProcessor, convoy.CreateDynamicEventProcessor:
 			_ = tel.Capture(newCtx)
 		}
 	}
