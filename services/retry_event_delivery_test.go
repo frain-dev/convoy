@@ -47,7 +47,7 @@ func TestRetryEventDeliveryService_Run(t *testing.T) {
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{
@@ -83,7 +83,7 @@ func TestRetryEventDeliveryService_Run(t *testing.T) {
 				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{

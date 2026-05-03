@@ -118,9 +118,20 @@ func TestE2E_ReplayEvent_MultipleReplays(t *testing.T) {
 	// Clear validator before replays
 	validator.Clear()
 
-	// Replay the event twice
+	// Replay the event twice. The replay JobID is deterministic
+	// (replay:{ProjectID}:{ResourceID}); asynq returns ErrTaskIDConflict if
+	// the previous replay's task is still pending/active. Wait for the worker
+	// to record the prior job before enqueuing the next one — the validator
+	// records on handler entry, by which point asynq has cleared the task key.
 	client := &http.Client{}
 	for i := 1; i <= 2; i++ {
+		if i == 2 {
+			require.Eventuallyf(t, func() bool {
+				return len(validator.GetJobIDsWithPrefix("replay:")) >= 1
+			}, 5*time.Second, 25*time.Millisecond,
+				"expected first replay to be processed before second enqueue")
+		}
+
 		replayReq, err := http.NewRequest("PUT",
 			fmt.Sprintf("%s/api/v1/projects/%s/events/%s/replay", env.ServerURL, env.Project.UID, event.UID),
 			nil)
@@ -133,17 +144,17 @@ func TestE2E_ReplayEvent_MultipleReplays(t *testing.T) {
 		replayResp.Body.Close()
 
 		t.Logf("Replay %d completed for event: %s", i, event.UID)
-		time.Sleep(500 * time.Millisecond)
 	}
 
-	// Wait for replay jobs to be processed
-	time.Sleep(2 * time.Second)
+	// Wait for both replay jobs to be processed.
+	require.Eventuallyf(t, func() bool {
+		return len(validator.GetJobIDsWithPrefix("replay:")) >= 2
+	}, 5*time.Second, 25*time.Millisecond,
+		"expected at least 2 replay jobs to be captured")
 
-	// Get captured job IDs from validator
 	jobIDs := validator.GetJobIDsWithPrefix("replay:")
 	t.Logf("Captured %d replay job(s)", len(jobIDs))
 
-	// We should have captured 2 replay jobs
 	require.GreaterOrEqual(t, len(jobIDs), 2, "Should have captured at least 2 replay jobs")
 
 	t.Log("✅ E2E test passed: Multiple replay events processed correctly")

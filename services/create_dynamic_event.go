@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"github.com/oklog/ulid/v2"
+	"go.opentelemetry.io/otel"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -25,10 +27,17 @@ type CreateDynamicEventService struct {
 	Logger       log.Logger
 }
 
-func (e *CreateDynamicEventService) Run(ctx context.Context) error {
+func (e *CreateDynamicEventService) Run(ctx context.Context) (err error) {
+	ctx, span := otel.Tracer(tracer.TracerNameServices).Start(ctx, tracer.SpanServicesEventCreateDynamic)
+	defer func() {
+		tracer.RecordError(span, err)
+		span.End()
+	}()
+
 	if e.Project == nil {
 		return &ServiceError{ErrMsg: "an error occurred while creating dynamic event - invalid project"}
 	}
+	span.SetAttributes(tracer.AttrProjectID.String(e.Project.UID))
 	id := ulid.Make().String()
 	jobId := queue.JobId{ProjectID: e.Project.UID, ResourceID: id}.DynamicJobId()
 
@@ -53,7 +62,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 		Payload: eventByte,
 	}
 
-	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)
+	err = e.Queue.Write(ctx, taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		e.Logger.ErrorContext(ctx, fmt.Sprintf("Error occurred sending new dynamic event to the queue %s", err))
 		return &ServiceError{ErrMsg: "failed to create dynamic event"}

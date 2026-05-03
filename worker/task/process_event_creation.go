@@ -66,7 +66,6 @@ type EventProcessorDeps struct {
 	SubRepo                    datastore.SubscriptionRepository
 	FilterRepo                 datastore.FilterRepository
 	Licenser                   license.Licenser
-	TracerBackend              tracer.Backend
 	OAuth2TokenService         OAuth2TokenService
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
@@ -94,7 +93,6 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	var projectID string
 
 	// Start a new trace span for event creation
-	startTime := time.Now()
 	attributes := map[string]interface{}{
 		"event.type": "event.creation",
 		"channel":    channel,
@@ -104,7 +102,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	if err != nil {
 		err = json.Unmarshal(t.Payload(), &createEvent)
 		if err != nil {
-			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 	}
@@ -119,14 +117,14 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 	project, err := args.projectRepo.FetchProjectByID(ctx, projectID)
 	if err != nil {
-		args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
 	if createEvent.Event == nil {
 		event, err = buildEvent(ctx, args.eventRepo, args.endpointRepo, &createEvent.Params, project, args.logger)
 		if err != nil {
-			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 	} else {
@@ -139,7 +137,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	if err != nil { // 404
 		err = updateEventMetadata(channel, event, createEvent.CreateSubscription, args.logger)
 		if err != nil {
-			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
 			return nil, err
 		}
 
@@ -147,7 +145,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		if len(event.IdempotencyKey) > 0 {
 			isDuplicate, err = args.eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
 			if err != nil {
-				args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
+				tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
 				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 		}
@@ -155,12 +153,12 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 		err = args.eventRepo.CreateEvent(ctx, event)
 		if err != nil {
-			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 	}
 
-	args.tracerBackend.Capture(ctx, "event.creation.success", attributes, startTime, time.Now())
+	tracer.AddEvent(ctx, tracer.EventEventCreationSuccess, attributes)
 	return event, nil
 }
 
@@ -233,7 +231,6 @@ func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.
 		deps.SubRepo,
 		deps.FilterRepo,
 		deps.Licenser,
-		deps.TracerBackend,
 		deps.OAuth2TokenService,
 		deps.Logger,
 	)
@@ -423,7 +420,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			}
 
 			if s.Type == datastore.SubscriptionTypeAPI {
-				err = opts.EventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+				err = opts.EventQueue.Write(ctx, convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
 					opts.Logger.ErrorContext(ctx, fmt.Sprintf("[asynq]: an error occurred sending event delivery to be dispatched: %v", err))
 				}

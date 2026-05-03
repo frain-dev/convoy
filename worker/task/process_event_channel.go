@@ -38,7 +38,6 @@ type EventChannelArgs struct {
 	subRepo            datastore.SubscriptionRepository
 	filterRepo         datastore.FilterRepository
 	licenser           license.Licenser
-	tracerBackend      tracer.Backend
 	oauth2TokenService OAuth2TokenService
 	logger             log.Logger
 }
@@ -59,7 +58,7 @@ type EventChannel interface {
 func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository,
 	eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
-	licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService OAuth2TokenService, logger log.Logger) func(context.Context, *asynq.Task) error {
+	licenser license.Licenser, oauth2TokenService OAuth2TokenService, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
@@ -86,7 +85,6 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 				subRepo:            subRepo,
 				filterRepo:         filterRepo,
 				licenser:           licenser,
-				tracerBackend:      tracerBackend,
 				oauth2TokenService: oauth2TokenService,
 				logger:             logger,
 			})
@@ -126,7 +124,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			Delay:   0,
 		}
 
-		err = eventQueue.Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
+		err = eventQueue.Write(ctx, convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
 		if err != nil {
 			logger.ErrorContext(ctx, fmt.Sprintf("[asynq]: an error occurred while matching event subs: %v", err))
 		}
@@ -145,7 +143,6 @@ type MatchSubscriptionsDeps struct {
 	SubRepo                    datastore.SubscriptionRepository
 	FilterRepo                 datastore.FilterRepository
 	Licenser                   license.Licenser
-	TracerBackend              tracer.Backend
 	OAuth2TokenService         OAuth2TokenService
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
@@ -156,7 +153,6 @@ type MatchSubscriptionsDeps struct {
 func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		// Start a new trace span for subscription matching and event delivery creation
-		startTime := time.Now()
 		attributes := map[string]interface{}{
 			"event.type": "event.subscription.matching",
 		}
@@ -164,7 +160,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		var metadata EventChannelMetadata
 		err := getTaskPayload(t, &metadata)
 		if err != nil {
-			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return err
 		}
 
@@ -173,7 +169,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		channel := deps.Channels[metadata.Config.Channel]
 		if channel == nil {
 			deps.Logger.Error(fmt.Sprintf("Invalid channel %s\n", metadata.Config.Channel))
-			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return nil
 		}
 
@@ -188,16 +184,15 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			subRepo:            deps.SubRepo,
 			filterRepo:         deps.FilterRepo,
 			licenser:           deps.Licenser,
-			tracerBackend:      deps.TracerBackend,
 			oauth2TokenService: deps.OAuth2TokenService,
 			logger:             deps.Logger,
 		})
 		if err != nil {
-			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return err
 		}
 		if subResponse == nil {
-			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return &EndpointError{Err: fmt.Errorf("CODE: 1010, failed to create event subscriptions via channel: %s", cfg.Channel), delay: cfg.DefaultDelay}
 		}
 
@@ -207,7 +202,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		if len(subscriptions) < 1 {
 			err = &EndpointError{Err: fmt.Errorf("CODE: 1011, empty subscriptions via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
 			deps.Logger.Error(fmt.Sprintf("failed to send %s: %v", event.UID, err))
-			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return deps.EventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
 		}
 
@@ -221,13 +216,13 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 
 		err = deps.EventRepo.UpdateEventEndpoints(ctx, event, event.Endpoints)
 		if err != nil {
-			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		if subResponse.IsDuplicateEvent {
 			deps.Logger.InfoContext(ctx, fmt.Sprintf("CODE: 1007, duplicate event with idempotency key %v will not be sent", event.IdempotencyKey))
-			deps.TracerBackend.Capture(ctx, "event.subscription.matching.duplicate", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingDuplicate, attributes)
 			return nil
 		}
 
@@ -251,18 +246,18 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			writeErr := fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error())
 			err = &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
 			_ = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.RetryStatus)
-			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return err
 		}
 
 		err = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.SuccessStatus)
 		if err != nil {
 			deps.Logger.Error(fmt.Sprintf("failed to update event status: %s: %v", event.UID, err))
-			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return err
 		}
 
-		deps.TracerBackend.Capture(ctx, "event.subscription.matching.success", attributes, startTime, time.Now())
+		tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingSuccess, attributes)
 		return err
 	}
 }

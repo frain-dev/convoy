@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
 	"github.com/frain-dev/convoy/config"
 )
 
@@ -63,12 +65,12 @@ func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
-			Transport: &http.Transport{
+			Transport: otelhttp.NewTransport(&http.Transport{
 				DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 					dialer := &net.Dialer{}
 					return tls.DialWithDialer(dialer, network, addr, tlsConfig)
 				},
-			},
+			}),
 		}
 
 		resp, getErr := client.Get(u.String())

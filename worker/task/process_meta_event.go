@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
-	tracer2 "github.com/frain-dev/convoy/internal/pkg/tracer"
+	tracer "github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -29,7 +29,7 @@ type MetaEvent struct {
 	ProjectID   string
 }
 
-func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher, tracerBackend tracer2.Backend, logger log.Logger) func(context.Context, *asynq.Task) error {
+func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data MetaEvent
 
@@ -74,7 +74,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*metaEvent.Metadata).NextDuration(metaEvent.Metadata.NumTrials)
 
-		resp, err := sendUrlRequest(ctx, project, metaEvent, dispatch, tracerBackend, logger)
+		resp, err := sendUrlRequest(ctx, project, metaEvent, dispatch, logger)
 		metaEvent.Metadata.NumTrials++
 
 		if resp != nil {
@@ -122,7 +122,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 	}
 }
 
-func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *datastore.MetaEvent, dispatch *net.Dispatcher, tracerBackend tracer2.Backend, logger log.Logger) (*net.Response, error) {
+func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *datastore.MetaEvent, dispatch *net.Dispatcher, logger log.Logger) (*net.Response, error) {
 	cfg, err := config.Get()
 	if err != nil {
 		return nil, err
@@ -184,9 +184,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 		"meta_event.id":        metaEvent.UID,
 	}
 
-	startTime := time.Now().Add(-duration)
-	endTime := time.Now()
-	tracerBackend.Capture(ctx, "meta_event_delivery", attributes, startTime, endTime)
+	tracer.AddEvent(ctx, tracer.EventMetaEventDelivery, attributes)
 
 	logger.Error(append([]any{metaEvent.UID}, logAttrs...)...)
 	return resp, errors.New(resp.Error)

@@ -98,7 +98,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		Payload: eventByte,
 	}
 
-	err = h.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = h.A.Queue.Write(r.Context(), convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 	}

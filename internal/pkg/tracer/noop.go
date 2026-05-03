@@ -2,7 +2,10 @@ package tracer
 
 import (
 	"context"
-	"time"
+
+	"go.opentelemetry.io/otel/trace"
+
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/frain-dev/convoy/config"
 )
@@ -14,7 +17,9 @@ func (NoOpBackend) Init(string) error { return nil }
 func (NoOpBackend) Type() config.TracerProvider {
 	return ""
 }
-func (NoOpBackend) Capture(context.Context, string, map[string]interface{}, time.Time, time.Time) {}
+func (NoOpBackend) TracerProvider() trace.TracerProvider {
+	return tracenoop.NewTracerProvider()
+}
 func (NoOpBackend) Shutdown(context.Context) error {
 	return nil
 }

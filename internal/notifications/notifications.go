@@ -40,7 +40,7 @@ type SlackNotification struct {
 // NOTIFICATIONS
 
 func SendEndpointNotification(
-	_ context.Context,
+	ctx context.Context,
 	endpoint *datastore.Endpoint,
 	project *datastore.Project,
 	status datastore.EndpointStatus,
@@ -112,7 +112,7 @@ func SendEndpointNotification(
 			Payload: buf,
 		}
 
-		err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
+		err = q.Write(ctx, convoy.NotificationProcessor, convoy.DefaultQueue, job)
 		if err != nil {
 			logger.Error("Failed to write new notification to the queue", "error", err)
 		}

@@ -3,7 +3,6 @@ package tracer
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -16,6 +15,7 @@ import (
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -28,12 +28,14 @@ var ErrFailedToCreateTLSCredentials = errors.New("failed to create tls credentia
 
 type OTelTracer struct {
 	cfg        config.OTelConfiguration
+	tp         trace.TracerProvider
 	ShutdownFn func(ctx context.Context) error
 }
 
 func NewOTelTracer(cfg config.OTelConfiguration) *OTelTracer {
 	return &OTelTracer{
 		cfg: cfg,
+		tp:  tracenoop.NewTracerProvider(),
 		ShutdownFn: func(ctx context.Context) error {
 			return nil
 		},
@@ -98,6 +100,7 @@ func (ot *OTelTracer) Init(componentName string) error {
 	// Configure Propagator
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
+	ot.tp = tp
 	ot.ShutdownFn = tp.Shutdown
 
 	return nil
@@ -107,30 +110,11 @@ func (ot *OTelTracer) Type() config.TracerProvider {
 	return config.OTelTracerProvider
 }
 
-func (ot *OTelTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime, endTime time.Time) {
-	_, span := otel.Tracer("").Start(ctx, name,
-		trace.WithTimestamp(startTime))
-
-	// End span with provided end time
-	defer span.End(trace.WithTimestamp(endTime))
-
-	// Convert and set attributes
-	attrs := make([]attribute.KeyValue, 0, len(attributes))
-	for k, v := range attributes {
-		switch val := v.(type) {
-		case string:
-			attrs = append(attrs, attribute.String(k, val))
-		case int:
-			attrs = append(attrs, attribute.Int(k, val))
-		case int64:
-			attrs = append(attrs, attribute.Int64(k, val))
-		case float64:
-			attrs = append(attrs, attribute.Float64(k, val))
-		case bool:
-			attrs = append(attrs, attribute.Bool(k, val))
-		}
+func (ot *OTelTracer) TracerProvider() trace.TracerProvider {
+	if ot.tp == nil {
+		return tracenoop.NewTracerProvider()
 	}
-	span.SetAttributes(attrs...)
+	return ot.tp
 }
 
 func (ot *OTelTracer) Shutdown(ctx context.Context) error {

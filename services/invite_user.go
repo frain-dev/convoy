@@ -78,7 +78,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
-	err = sendInviteEmail(iv, iu.User, iu.Organisation, iu.Queue)
+	err = sendInviteEmail(ctx, iv, iu.User, iu.Organisation, iu.Queue)
 	if err != nil {
 		iu.Logger.ErrorContext(ctx, "failed to send email invite", "error", err)
 	}
@@ -86,7 +86,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	return iv, nil
 }
 
-func sendInviteEmail(iv *datastore.OrganisationInvite, user *datastore.User, org *datastore.Organisation, queuer queue.Queuer) error {
+func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user *datastore.User, org *datastore.Organisation, queuer queue.Queuer) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func sendInviteEmail(iv *datastore.OrganisationInvite, user *datastore.User, org
 		Payload: bytes,
 	}
 
-	err = queuer.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
+	err = queuer.Write(ctx, convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		return err
 	}

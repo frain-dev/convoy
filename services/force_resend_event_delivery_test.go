@@ -81,7 +81,7 @@ func TestForceResendEventDeliveriesService_Run(t *testing.T) {
 					Times(2).Return(nil)
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).Return(nil)
 			},
 			wantSuccesses: 2,
@@ -176,7 +176,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{
@@ -283,7 +283,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				eq, _ := es.queuer.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
 					Times(1).Return(nil)
 			},
 		},
@@ -318,7 +318,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				eq, _ := es.queuer.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 
 				ml, _ := es.logger.(*mocks.MockLogger)

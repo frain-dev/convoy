@@ -152,6 +152,7 @@ func StartConvoyServer(a *cli.App) error {
 			Rate:                       a.Rate,
 			Licenser:                   a.Licenser,
 			Cfg:                        cfg,
+			TracerBackend:              a.TracerBackend,
 			ConfigRepo:                 configRepo,
 		})
 	if err != nil {

@@ -49,7 +49,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 		Payload: eventByte,
 	}
 
-	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)
+	err = e.Queue.Write(ctx, taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		e.Logger.ErrorContext(ctx, fmt.Sprintf("Error occurred sending new broadcast event to the queue %s", err))
 		return &ServiceError{ErrMsg: "failed to create dynamic event"}

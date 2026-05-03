@@ -3,8 +3,10 @@ package cli
 import (
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/trace"
 
 	flag "github.com/spf13/pflag"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
@@ -43,6 +45,16 @@ type App struct {
 
 type ConvoyCli struct {
 	cmd *cobra.Command
+}
+
+// TracerProvider returns the trace.TracerProvider for span creation. Always
+// returns a non-nil provider; if the tracer backend has not been initialised
+// (e.g. early in startup or in tests) it returns a no-op provider.
+func (a *App) TracerProvider() trace.TracerProvider {
+	if a == nil || a.TracerBackend == nil {
+		return tracenoop.NewTracerProvider()
+	}
+	return a.TracerBackend.TracerProvider()
 }
 
 func NewCli(app *App) *ConvoyCli {

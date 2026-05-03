@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -76,7 +78,7 @@ func NewClient(cfg Config) *Client {
 		adminPortalPath: cfg.AdminPortalPath,
 		timeout:         cfg.Timeout,
 		retryCount:      cfg.RetryCount,
-		httpClient:      &http.Client{Timeout: cfg.Timeout},
+		httpClient:      &http.Client{Timeout: cfg.Timeout, Transport: otelhttp.NewTransport(http.DefaultTransport)},
 		apiKey:          cfg.APIKey,
 		licenseKey:      cfg.LicenseKey,
 		orgID:           cfg.OrgID,
