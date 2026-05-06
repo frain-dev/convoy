@@ -8,7 +8,6 @@
 		"postbuild": "mkdir -p ./source-maps && mv `pwd`/dist/*.map ./source-maps",
 		"watch": "ng build --watch --configuration development",
 		"test": "ng test",
-		"test:countries:live": "node scripts/test-countries-live.mjs",
 		"build:ee": "ng build --configuration ee"
 	},
 	"private": true,
