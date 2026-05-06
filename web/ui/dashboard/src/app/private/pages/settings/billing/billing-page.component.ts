@@ -477,7 +477,8 @@ export class BillingPageComponent implements OnInit {
         }
         this.isLoadingStates = false;
       },
-      error: () => {
+      error: (error) => {
+        console.error('Failed to load states:', error);
         this.states = [];
         this.updateStateControlValidation();
         this.loadCitiesByCountry(countryName, previousCity);
@@ -523,7 +524,8 @@ export class BillingPageComponent implements OnInit {
         this.updateCityControlValidation();
         this.isLoadingCities = false;
       },
-      error: () => {
+      error: (error) => {
+        console.error('Failed to load cities:', error);
         this.isLoadingCities = false;
         this.cities = [];
         this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
@@ -545,7 +547,8 @@ export class BillingPageComponent implements OnInit {
         this.updateCityControlValidation();
         this.isLoadingCities = false;
       },
-      error: () => {
+      error: (error) => {
+        console.error('Failed to load cities by state:', error);
         this.isLoadingCities = false;
         this.cities = this.withPreferredCity([], preferredCity);
         if (preferredCity) {
