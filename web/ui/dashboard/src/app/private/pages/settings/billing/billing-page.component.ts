@@ -64,9 +64,11 @@ export class BillingPageComponent implements OnInit {
   vatCountries: { code: string; name: string }[] = []; // Countries with tax ID types from billing service
   taxIdTypes: any[] = []; // Store tax ID types with examples
   vatPlaceholder = 'Enter VAT number'; // Dynamic placeholder based on selected country
+  states: string[] = [];
   cities: string[] = [];
   isLoadingCountries = false;
   isLoadingVatCountries = false;
+  isLoadingStates = false;
   isLoadingCities = false;
 
   // API error message
@@ -123,6 +125,9 @@ export class BillingPageComponent implements OnInit {
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);
+    });
+    this.billingAddressForm.get('state')?.valueChanges.subscribe(stateName => {
+      this.onStateChange(stateName);
     });
 
     this.vatForm.get('country')?.valueChanges.subscribe(countryCode => {
@@ -434,28 +439,124 @@ export class BillingPageComponent implements OnInit {
     }
   }
 
-  onCountryChange(countryCode: string) {
+  onCountryChange(countryCode: string, preferredState: string = '', preferredCity: string = '') {
     if (!countryCode) {
+      this.states = [];
       this.cities = [];
-      this.billingAddressForm.get('city')?.setValue('');
+      this.billingAddressForm.get('state')?.setValue('', { emitEvent: false });
+      this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+      this.updateStateControlValidation();
+      this.updateCityControlValidation();
       return;
     }
 
-    this.billingAddressForm.get('city')?.setValue('');
+    const previousState = preferredState || this.billingAddressForm.get('state')?.value;
+    const previousCity = preferredCity || this.billingAddressForm.get('city')?.value;
+    this.billingAddressForm.get('state')?.setValue('', { emitEvent: false });
+    this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+    this.states = [];
     this.cities = [];
+    this.updateCityControlValidation();
 
     const countryName = this.getCountryName(countryCode);
+    this.isLoadingStates = true;
+    this.countriesService.getStatesForCountry(countryName).subscribe({
+      next: (states) => {
+        this.states = states;
+        this.updateStateControlValidation();
+        if (this.states.length > 0) {
+          if (previousState && this.states.includes(previousState)) {
+            this.billingAddressForm.get('state')?.setValue(previousState, { emitEvent: false });
+            this.loadCitiesByState(countryName, previousState, previousCity);
+          } else if (previousCity && !previousState) {
+            // Legacy records may only have city; keep options visible until user chooses state.
+            this.loadCitiesByCountry(countryName, previousCity);
+          }
+        } else {
+          this.loadCitiesByCountry(countryName, previousCity);
+        }
+        this.isLoadingStates = false;
+      },
+      error: (error) => {
+        console.error('Failed to load states:', error);
+        this.states = [];
+        this.updateStateControlValidation();
+        this.loadCitiesByCountry(countryName, previousCity);
+        this.isLoadingStates = false;
+      }
+    });
+  }
 
+  onStateChange(stateName: string) {
+    const countryCode = this.billingAddressForm.get('country')?.value;
+    if (!countryCode) {
+      return;
+    }
+
+    const countryName = this.getCountryName(countryCode);
+    if (!stateName) {
+      if (this.states.length > 0) {
+        this.cities = [];
+        this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+        this.updateCityControlValidation();
+        return;
+      }
+
+      this.loadCitiesByCountry(countryName);
+      return;
+    }
+
+    // On user state changes, do not preserve previous city value
+    // to avoid invalid state/city combinations being silently carried over.
+    this.loadCitiesByState(countryName, stateName);
+  }
+
+  private loadCitiesByCountry(countryName: string, preferredCity: string = '') {
     this.isLoadingCities = true;
     this.countriesService.getCitiesForCountry(countryName).subscribe({
       next: (cities) => {
-        this.cities = cities;
+        this.cities = this.withPreferredCity(cities, preferredCity);
+        if (preferredCity && this.cities.includes(preferredCity)) {
+          this.billingAddressForm.get('city')?.setValue(preferredCity, { emitEvent: false });
+        } else {
+          this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+        }
+        this.updateCityControlValidation();
         this.isLoadingCities = false;
       },
       error: (error) => {
         console.error('Failed to load cities:', error);
         this.isLoadingCities = false;
         this.cities = [];
+        this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+        this.updateCityControlValidation();
+      }
+    });
+  }
+
+  private loadCitiesByState(countryName: string, stateName: string, preferredCity: string = '') {
+    this.isLoadingCities = true;
+    this.countriesService.getCitiesForCountryAndState(countryName, stateName).subscribe({
+      next: (cities) => {
+        this.cities = this.withPreferredCity(cities, preferredCity);
+        if (preferredCity && this.cities.includes(preferredCity)) {
+          this.billingAddressForm.get('city')?.setValue(preferredCity, { emitEvent: false });
+        } else {
+          this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+        }
+        this.updateCityControlValidation();
+        this.isLoadingCities = false;
+      },
+      error: (error) => {
+        console.error('Failed to load cities by state:', error);
+        this.isLoadingCities = false;
+        this.cities = this.withPreferredCity([], preferredCity);
+        if (preferredCity) {
+          this.billingAddressForm.get('city')?.setValue(preferredCity, { emitEvent: false });
+        } else {
+          this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+        }
+        this.updateCityControlValidation();
       }
     });
   }
@@ -466,7 +567,8 @@ export class BillingPageComponent implements OnInit {
       addressLine1: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(200)]],
       addressLine2: ['', [Validators.maxLength(200)]],
       country: ['', Validators.required],
-      city: ['', Validators.required],
+      state: [''],
+      city: [''],
       zipCode: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(20), this.zipCodeValidator()]]
     });
 
@@ -900,7 +1002,8 @@ export class BillingPageComponent implements OnInit {
     this.isEditingBillingAddress = true;
     if (this.billingAddressDetails) {
       const formData = { ...this.billingAddressDetails };
-      this.billingAddressForm.patchValue(formData);
+      this.billingAddressForm.patchValue(formData, { emitEvent: false });
+      this.onCountryChange(formData.country || '', formData.state || '', formData.city || '');
     }
   }
 
@@ -1138,8 +1241,19 @@ export class BillingPageComponent implements OnInit {
 
 
   onUpdateBillingAddress() {
+    if (this.isLoadingStates || this.isLoadingCities) {
+      return;
+    }
+
+    const stateControl = this.billingAddressForm.get('state');
     const cityControl = this.billingAddressForm.get('city');
-    if (!cityControl || !cityControl.value || !this.cities.includes(cityControl.value)) {
+    if (this.states.length > 0 && (!stateControl || !stateControl.value || !this.states.includes(stateControl.value))) {
+      stateControl?.setErrors({ required: true });
+      this.markFormGroupTouched(this.billingAddressForm);
+      return;
+    }
+
+    if (this.cities.length > 0 && (!cityControl || !cityControl.value || !this.cities.includes(cityControl.value))) {
       cityControl?.setErrors({ required: true });
       this.markFormGroupTouched(this.billingAddressForm);
       return;
@@ -1212,9 +1326,47 @@ export class BillingPageComponent implements OnInit {
     return !!(
       this.billingAddressDetails.addressLine1 ||
       this.billingAddressDetails.city ||
+      this.billingAddressDetails.state ||
       this.billingAddressDetails.zipCode ||
       this.billingAddressDetails.country
     );
+  }
+
+  private updateStateControlValidation() {
+    const stateControl = this.billingAddressForm.get('state');
+    if (!stateControl) return;
+
+    if (this.states.length > 0) {
+      stateControl.setValidators([Validators.required]);
+    } else {
+      stateControl.clearValidators();
+    }
+    stateControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private updateCityControlValidation() {
+    const cityControl = this.billingAddressForm.get('city');
+    if (!cityControl) return;
+
+    if (this.cities.length > 0) {
+      cityControl.setValidators([Validators.required]);
+    } else {
+      cityControl.clearValidators();
+    }
+    cityControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private withPreferredCity(cities: string[], preferredCity: string): string[] {
+    if (!preferredCity) {
+      return cities;
+    }
+
+    const match = cities.some(city => city.trim().toLowerCase() === preferredCity.trim().toLowerCase());
+    if (match) {
+      return cities;
+    }
+
+    return [preferredCity, ...cities];
   }
 
   hasVatInfo(): boolean {
