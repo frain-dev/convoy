@@ -727,18 +727,15 @@ export class BillingPageComponent implements OnInit {
     const planName = selectedPlanData.name.toLowerCase();
     const isProOrEnterprise = planName.includes('pro') || planName.includes('enterprise');
 
-    const planLower = planName.toLowerCase();
-    const planExistsInOverwatch = this.overwatchPlans.some(p => {
-          const pNameLower = p.name.toLowerCase();
-          return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
-      });
+    const { planExistsInOverwatch, planIdForApi } = this.resolvePlanForApi(selectedPlanData);
 
-    // Billing service (Overwatch) expects plan UUID, not slug; resolve from overwatch when selected plan is default slug
-    const overwatchPlan = this.overwatchPlans.find(p => {
-      const pNameLower = p.name.toLowerCase();
-      return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
-    });
-    const planIdForApi = overwatchPlan?.id ?? selectedPlanData.id;
+    if (this.isCurrentSubscriptionPlan(planIdForApi, selectedPlanData.name)) {
+      this.generalService.showNotification({
+        message: 'You are already on this plan',
+        style: 'success'
+      });
+      return;
+    }
 
     if (isProOrEnterprise && !planExistsInOverwatch) {
       const subject = encodeURIComponent(`${selectedPlanData.name} Plan Request`);
@@ -802,14 +799,12 @@ export class BillingPageComponent implements OnInit {
     if (!this.currentSubscription || !this.currentSubscription.plan) {
       return false;
     }
-    // Compare by plan ID or plan name (case-insensitive)
-    const currentPlanId = this.currentSubscription.plan.id;
-    const currentPlanName = this.currentSubscription.plan.name?.toLowerCase();
-    const plan = this.plans.find(p => p.id === planId);
 
+    const plan = this.plans.find(p => p.id === planId);
     if (!plan) return false;
 
-    return plan.id === currentPlanId || plan.name.toLowerCase() === currentPlanName;
+    const { planIdForApi } = this.resolvePlanForApi(plan);
+    return this.isCurrentSubscriptionPlan(planIdForApi, plan.name);
   }
 
   getButtonText(planId: string): string {
@@ -1367,6 +1362,51 @@ export class BillingPageComponent implements OnInit {
     }
 
     return [preferredCity, ...cities];
+  }
+
+  private resolvePlanForApi(selectedPlanData: Plan): { planExistsInOverwatch: boolean; planIdForApi: string } {
+    const planLower = selectedPlanData.name.toLowerCase();
+    const planExistsInOverwatch = this.overwatchPlans.some(p => {
+      const pNameLower = p.name.toLowerCase();
+      return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
+    });
+
+    const overwatchPlan = this.overwatchPlans.find(p => {
+      const pNameLower = p.name.toLowerCase();
+      return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
+    });
+
+    return {
+      planExistsInOverwatch,
+      planIdForApi: overwatchPlan?.id ?? selectedPlanData.id
+    };
+  }
+
+  private isCurrentSubscriptionPlan(planIdForApi: string, planName: string): boolean {
+    if (!this.currentSubscription?.plan) {
+      return false;
+    }
+
+    const currentPlanId = this.currentSubscription.plan.id || '';
+    const currentPlanName = this.normalizePlanName(this.currentSubscription.plan.name || '');
+    const selectedPlanName = this.normalizePlanName(planName || '');
+
+    const sameId = !!planIdForApi && currentPlanId === planIdForApi;
+    const sameName =
+      !!currentPlanName &&
+      !!selectedPlanName &&
+      (currentPlanName === selectedPlanName ||
+        currentPlanName.includes(selectedPlanName) ||
+        selectedPlanName.includes(currentPlanName));
+
+    return sameId || sameName;
+  }
+
+  private normalizePlanName(name: string): string {
+    return (name || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
   }
 
   hasVatInfo(): boolean {
