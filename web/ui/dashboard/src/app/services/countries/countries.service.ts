@@ -88,7 +88,7 @@ export class CountriesService {
    * Get cities for a specific country
    */
   getCitiesForCountry(countryName: string): Observable<string[]> {
-    return this.http.get<CountryCitiesResponse>(`${this.API_BASE_URL}/countries/cities?country=${encodeURIComponent(countryName)}`).pipe(
+    return this.http.get<CountryCitiesResponse>(`${this.API_BASE_URL}/countries/cities/q?country=${encodeURIComponent(countryName)}`).pipe(
       map(response => {
         if (response.error || !Array.isArray(response.data)) {
           return [];
@@ -100,7 +100,7 @@ export class CountriesService {
   }
 
   getStatesForCountry(countryName: string): Observable<string[]> {
-    return this.http.get<CountryStatesResponse>(`${this.API_BASE_URL}/countries/states?country=${encodeURIComponent(countryName)}`).pipe(
+    return this.http.get<CountryStatesResponse>(`${this.API_BASE_URL}/countries/states/q?country=${encodeURIComponent(countryName)}`).pipe(
       map(response => {
         const states = response.data?.states || [];
         if (response.error || !Array.isArray(states)) {
@@ -116,7 +116,7 @@ export class CountriesService {
     const country = encodeURIComponent(countryName);
     const state = encodeURIComponent(stateName);
 
-    return this.http.get<StateCitiesResponse>(`${this.API_BASE_URL}/countries/state/cities?country=${country}&state=${state}`).pipe(
+    return this.http.get<StateCitiesResponse>(`${this.API_BASE_URL}/countries/state/cities/q?country=${country}&state=${state}`).pipe(
       map(response => {
         if (response.error || !Array.isArray(response.data)) {
           return [];
