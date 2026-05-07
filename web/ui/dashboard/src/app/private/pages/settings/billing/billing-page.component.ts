@@ -116,6 +116,7 @@ export class BillingPageComponent implements OnInit {
   private locationRequestToken = 0;
   private activeCountryRequestToken = 0;
   private activeCityRequestToken = 0;
+  private cityLoadingRequestToken: number | null = null;
 
   ngOnInit() {
     this.validateOrganisation();
@@ -525,6 +526,7 @@ export class BillingPageComponent implements OnInit {
         ++this.locationRequestToken;
         this.activeCityRequestToken = this.locationRequestToken;
         this.cities = [];
+        this.isLoadingCities = false;
         this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
         this.updateCityControlValidation();
         return;
@@ -545,9 +547,14 @@ export class BillingPageComponent implements OnInit {
 
   private loadCitiesByCountry(countryName: string, preferredCity: string = '', requestToken: number = this.activeCityRequestToken) {
     this.isLoadingCities = true;
+    this.cityLoadingRequestToken = requestToken;
     this.countriesService.getCitiesForCountry(countryName).subscribe({
       next: (cities) => {
         if (this.activeCityRequestToken !== requestToken) {
+          if (this.cityLoadingRequestToken === requestToken) {
+            this.isLoadingCities = false;
+            this.cityLoadingRequestToken = null;
+          }
           return;
         }
 
@@ -560,14 +567,20 @@ export class BillingPageComponent implements OnInit {
         }
         this.updateCityControlValidation();
         this.isLoadingCities = false;
+        this.cityLoadingRequestToken = null;
       },
       error: (error) => {
         if (this.activeCityRequestToken !== requestToken) {
+          if (this.cityLoadingRequestToken === requestToken) {
+            this.isLoadingCities = false;
+            this.cityLoadingRequestToken = null;
+          }
           return;
         }
 
         console.error('Failed to load cities:', error);
         this.isLoadingCities = false;
+        this.cityLoadingRequestToken = null;
         this.cities = [];
         this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
         this.updateCityControlValidation();
@@ -577,9 +590,14 @@ export class BillingPageComponent implements OnInit {
 
   private loadCitiesByState(countryName: string, stateName: string, preferredCity: string = '', requestToken: number = this.activeCityRequestToken) {
     this.isLoadingCities = true;
+    this.cityLoadingRequestToken = requestToken;
     this.countriesService.getCitiesForCountryAndState(countryName, stateName).subscribe({
       next: (cities) => {
         if (this.activeCityRequestToken !== requestToken) {
+          if (this.cityLoadingRequestToken === requestToken) {
+            this.isLoadingCities = false;
+            this.cityLoadingRequestToken = null;
+          }
           return;
         }
 
@@ -600,6 +618,10 @@ export class BillingPageComponent implements OnInit {
       },
       error: (error) => {
         if (this.activeCityRequestToken !== requestToken) {
+          if (this.cityLoadingRequestToken === requestToken) {
+            this.isLoadingCities = false;
+            this.cityLoadingRequestToken = null;
+          }
           return;
         }
 
