@@ -113,6 +113,9 @@ export class BillingPageComponent implements OnInit {
   }
 
   private bootstrapSubscriptionPromise: Promise<void> | null = null;
+  private locationRequestToken = 0;
+  private activeCountryRequestToken = 0;
+  private activeCityRequestToken = 0;
 
   ngOnInit() {
     this.validateOrganisation();
@@ -440,9 +443,15 @@ export class BillingPageComponent implements OnInit {
   }
 
   onCountryChange(countryCode: string, preferredState: string = '', preferredCity: string = '') {
+    const requestToken = ++this.locationRequestToken;
+    this.activeCountryRequestToken = requestToken;
+    this.activeCityRequestToken = requestToken;
+
     if (!countryCode) {
       this.states = [];
       this.cities = [];
+      this.isLoadingStates = false;
+      this.isLoadingCities = false;
       this.billingAddressForm.get('state')?.setValue('', { emitEvent: false });
       this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
       this.updateStateControlValidation();
@@ -462,26 +471,39 @@ export class BillingPageComponent implements OnInit {
     this.isLoadingStates = true;
     this.countriesService.getStatesForCountry(countryName).subscribe({
       next: (states) => {
+        if (this.activeCountryRequestToken !== requestToken) {
+          return;
+        }
+
         this.states = states;
         this.updateStateControlValidation();
         if (this.states.length > 0) {
-          if (previousState && this.states.includes(previousState)) {
-            this.billingAddressForm.get('state')?.setValue(previousState, { emitEvent: false });
-            this.loadCitiesByState(countryName, previousState, previousCity);
-          } else if (previousCity && !previousState) {
+          const matchedState = this.states.find(state => state.trim().toLowerCase() === (previousState || '').trim().toLowerCase());
+          if (matchedState) {
+            this.billingAddressForm.get('state')?.setValue(matchedState, { emitEvent: false });
+            this.activeCityRequestToken = requestToken;
+            this.loadCitiesByState(countryName, matchedState, previousCity, requestToken);
+          } else if (previousCity) {
             // Legacy records may only have city; keep options visible until user chooses state.
-            this.loadCitiesByCountry(countryName, previousCity);
+            this.activeCityRequestToken = requestToken;
+            this.loadCitiesByCountry(countryName, previousCity, requestToken);
           }
         } else {
-          this.loadCitiesByCountry(countryName, previousCity);
+          this.activeCityRequestToken = requestToken;
+          this.loadCitiesByCountry(countryName, previousCity, requestToken);
         }
         this.isLoadingStates = false;
       },
       error: (error) => {
+        if (this.activeCountryRequestToken !== requestToken) {
+          return;
+        }
+
         console.error('Failed to load states:', error);
         this.states = [];
         this.updateStateControlValidation();
-        this.loadCitiesByCountry(countryName, previousCity);
+        this.activeCityRequestToken = requestToken;
+        this.loadCitiesByCountry(countryName, previousCity, requestToken);
         this.isLoadingStates = false;
       }
     });
@@ -496,25 +518,35 @@ export class BillingPageComponent implements OnInit {
     const countryName = this.getCountryName(countryCode);
     if (!stateName) {
       if (this.states.length > 0) {
+        ++this.locationRequestToken;
+        this.activeCityRequestToken = this.locationRequestToken;
         this.cities = [];
         this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
         this.updateCityControlValidation();
         return;
       }
 
-      this.loadCitiesByCountry(countryName);
+      const requestToken = ++this.locationRequestToken;
+      this.activeCityRequestToken = requestToken;
+      this.loadCitiesByCountry(countryName, '', requestToken);
       return;
     }
 
     // On user state changes, do not preserve previous city value
     // to avoid invalid state/city combinations being silently carried over.
-    this.loadCitiesByState(countryName, stateName);
+    const requestToken = ++this.locationRequestToken;
+    this.activeCityRequestToken = requestToken;
+    this.loadCitiesByState(countryName, stateName, '', requestToken);
   }
 
-  private loadCitiesByCountry(countryName: string, preferredCity: string = '') {
+  private loadCitiesByCountry(countryName: string, preferredCity: string = '', requestToken: number = this.activeCityRequestToken) {
     this.isLoadingCities = true;
     this.countriesService.getCitiesForCountry(countryName).subscribe({
       next: (cities) => {
+        if (this.activeCityRequestToken !== requestToken) {
+          return;
+        }
+
         this.cities = this.withPreferredCity(cities, preferredCity);
         if (preferredCity && this.cities.includes(preferredCity)) {
           this.billingAddressForm.get('city')?.setValue(preferredCity, { emitEvent: false });
@@ -525,6 +557,10 @@ export class BillingPageComponent implements OnInit {
         this.isLoadingCities = false;
       },
       error: (error) => {
+        if (this.activeCityRequestToken !== requestToken) {
+          return;
+        }
+
         console.error('Failed to load cities:', error);
         this.isLoadingCities = false;
         this.cities = [];
@@ -534,10 +570,14 @@ export class BillingPageComponent implements OnInit {
     });
   }
 
-  private loadCitiesByState(countryName: string, stateName: string, preferredCity: string = '') {
+  private loadCitiesByState(countryName: string, stateName: string, preferredCity: string = '', requestToken: number = this.activeCityRequestToken) {
     this.isLoadingCities = true;
     this.countriesService.getCitiesForCountryAndState(countryName, stateName).subscribe({
       next: (cities) => {
+        if (this.activeCityRequestToken !== requestToken) {
+          return;
+        }
+
         this.cities = this.withPreferredCity(cities, preferredCity);
         if (preferredCity && this.cities.includes(preferredCity)) {
           this.billingAddressForm.get('city')?.setValue(preferredCity, { emitEvent: false });
@@ -548,6 +588,10 @@ export class BillingPageComponent implements OnInit {
         this.isLoadingCities = false;
       },
       error: (error) => {
+        if (this.activeCityRequestToken !== requestToken) {
+          return;
+        }
+
         console.error('Failed to load cities by state:', error);
         this.isLoadingCities = false;
         this.cities = this.withPreferredCity([], preferredCity);
