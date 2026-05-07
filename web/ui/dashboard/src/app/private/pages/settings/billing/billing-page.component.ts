@@ -466,6 +466,7 @@ export class BillingPageComponent implements OnInit {
     this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
     this.states = [];
     this.cities = [];
+    this.isLoadingCities = false;
     this.updateCityControlValidation();
 
     const countryName = this.getCountryName(countryCode);
@@ -488,6 +489,8 @@ export class BillingPageComponent implements OnInit {
             // Legacy records may only have city; keep options visible until user chooses state.
             this.activeCityRequestToken = requestToken;
             this.loadCitiesByCountry(countryName, previousCity, requestToken);
+          } else {
+            this.isLoadingCities = false;
           }
         } else {
           this.activeCityRequestToken = requestToken;
@@ -1419,18 +1422,13 @@ export class BillingPageComponent implements OnInit {
 
   private resolvePlanForApi(selectedPlanData: Plan): { planExistsInOverwatch: boolean; planIdForApi: string } {
     const planLower = selectedPlanData.name.toLowerCase();
-    const planExistsInOverwatch = this.overwatchPlans.some(p => {
-      const pNameLower = p.name.toLowerCase();
-      return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
-    });
-
     const overwatchPlan = this.overwatchPlans.find(p => {
       const pNameLower = p.name.toLowerCase();
       return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
     });
 
     return {
-      planExistsInOverwatch,
+      planExistsInOverwatch: !!overwatchPlan,
       planIdForApi: overwatchPlan?.id ?? selectedPlanData.id
     };
   }
