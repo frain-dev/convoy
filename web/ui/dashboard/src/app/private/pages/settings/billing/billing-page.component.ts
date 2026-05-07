@@ -549,8 +549,9 @@ export class BillingPageComponent implements OnInit {
         }
 
         this.cities = this.withPreferredCity(cities, preferredCity);
-        if (preferredCity && this.cities.includes(preferredCity)) {
-          this.billingAddressForm.get('city')?.setValue(preferredCity, { emitEvent: false });
+        const matchedCity = this.findMatchingCity(this.cities, preferredCity);
+        if (matchedCity) {
+          this.billingAddressForm.get('city')?.setValue(matchedCity, { emitEvent: false });
         } else {
           this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
         }
@@ -585,8 +586,9 @@ export class BillingPageComponent implements OnInit {
         }
 
         this.cities = this.withPreferredCity(cities, preferredCity);
-        if (preferredCity && this.cities.includes(preferredCity)) {
-          this.billingAddressForm.get('city')?.setValue(preferredCity, { emitEvent: false });
+        const matchedCity = this.findMatchingCity(this.cities, preferredCity);
+        if (matchedCity) {
+          this.billingAddressForm.get('city')?.setValue(matchedCity, { emitEvent: false });
         } else {
           this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
         }
@@ -1407,6 +1409,14 @@ export class BillingPageComponent implements OnInit {
     return [preferredCity, ...cities];
   }
 
+  private findMatchingCity(cities: string[], preferredCity: string): string {
+    if (!preferredCity) {
+      return '';
+    }
+
+    return cities.find(city => city.trim().toLowerCase() === preferredCity.trim().toLowerCase()) || '';
+  }
+
   private resolvePlanForApi(selectedPlanData: Plan): { planExistsInOverwatch: boolean; planIdForApi: string } {
     const planLower = selectedPlanData.name.toLowerCase();
     const planExistsInOverwatch = this.overwatchPlans.some(p => {
@@ -1438,9 +1448,7 @@ export class BillingPageComponent implements OnInit {
     const sameName =
       !!currentPlanName &&
       !!selectedPlanName &&
-      (currentPlanName === selectedPlanName ||
-        currentPlanName.includes(selectedPlanName) ||
-        selectedPlanName.includes(currentPlanName));
+      currentPlanName === selectedPlanName;
 
     return sameId || sameName;
   }
