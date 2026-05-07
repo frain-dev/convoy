@@ -446,6 +446,7 @@ export class BillingPageComponent implements OnInit {
     const requestToken = ++this.locationRequestToken;
     this.activeCountryRequestToken = requestToken;
     this.activeCityRequestToken = requestToken;
+    const isRehydration = !!preferredState || !!preferredCity;
 
     if (!countryCode) {
       this.states = [];
@@ -459,8 +460,8 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    const previousState = preferredState || this.billingAddressForm.get('state')?.value;
-    const previousCity = preferredCity || this.billingAddressForm.get('city')?.value;
+    const previousState = isRehydration ? preferredState : '';
+    const previousCity = isRehydration ? preferredCity : '';
     this.billingAddressForm.get('state')?.setValue('', { emitEvent: false });
     this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
     this.states = [];
@@ -578,6 +579,11 @@ export class BillingPageComponent implements OnInit {
           return;
         }
 
+        if (!cities || cities.length === 0) {
+          this.loadCitiesByCountry(countryName, preferredCity, requestToken);
+          return;
+        }
+
         this.cities = this.withPreferredCity(cities, preferredCity);
         if (preferredCity && this.cities.includes(preferredCity)) {
           this.billingAddressForm.get('city')?.setValue(preferredCity, { emitEvent: false });
@@ -593,14 +599,7 @@ export class BillingPageComponent implements OnInit {
         }
 
         console.error('Failed to load cities by state:', error);
-        this.isLoadingCities = false;
-        this.cities = this.withPreferredCity([], preferredCity);
-        if (preferredCity) {
-          this.billingAddressForm.get('city')?.setValue(preferredCity, { emitEvent: false });
-        } else {
-          this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
-        }
-        this.updateCityControlValidation();
+        this.loadCitiesByCountry(countryName, preferredCity, requestToken);
       }
     });
   }
