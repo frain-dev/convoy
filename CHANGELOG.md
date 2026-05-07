@@ -1,5 +1,21 @@
 # Convoy Changes
 
+## 26.3.6
+
+
+### Improvements
+
+- refactor(dataplane,controlplane): improve logger (#2609)
+- refactor(controlplane,dataplane): endpoints sqlc migration (#2608)
+
+### Bug Fixes
+
+- fix(dataplane): add NO_PROXY support to webhook dispatcher (#2612)
+
+### Others
+
+- update trivy acion image (#2611)
+
 ## 26.2.0
 
 ### Features
