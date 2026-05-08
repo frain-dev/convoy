@@ -160,7 +160,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ENGINEERING_WEBHOOK_URL }}
           PR_URL: ${{ steps.pr.outputs.pr_url }}
           IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
-          MENTIONS_RAW: ${{ vars.SLACK_BUMP_MENTIONS }}
+          MENTIONS_RAW: ${{ vars.SLACK_BUMP_MENTIONS || secrets.SLACK_BUMP_MENTIONS }}
         run: |
           if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
             echo "SLACK_ENGINEERING_WEBHOOK_URL not set — skipping Slack."
@@ -169,12 +169,50 @@ jobs:
           python3 <<'PY'
           import json
           import os
+          import re
           import urllib.request
 
           webhook = os.environ["SLACK_WEBHOOK_URL"]
           pr_url = os.environ["PR_URL"]
           image_tag = os.environ["IMAGE_TAG"]
           mentions = (os.environ.get("MENTIONS_RAW") or "").strip()
+
+          def format_mentions(raw: str) -> str:
+              if not raw:
+                  return ""
+
+              # Accept commas or whitespace in SLACK_BUMP_MENTIONS.
+              tokens = [t for t in re.split(r"[\s,]+", raw) if t]
+              formatted = []
+
+              for token in tokens:
+                  # Preserve explicit Slack mention syntax.
+                  if token.startswith("<") and token.endswith(">"):
+                      formatted.append(token)
+                      continue
+
+                  normalized = token.lstrip("@")
+                  lower = normalized.lower()
+
+                  # Broadcast mentions must be in bang syntax to notify.
+                  if lower in {"here", "channel", "everyone"}:
+                      formatted.append(f"<!{lower}>")
+                      continue
+
+                  # User IDs and subteam IDs can be passed directly.
+                  if re.fullmatch(r"[UW][A-Z0-9]+", normalized):
+                      formatted.append(f"<@{normalized}>")
+                      continue
+                  if re.fullmatch(r"S[A-Z0-9]+", normalized):
+                      formatted.append(f"<!subteam^{normalized}>")
+                      continue
+
+                  # Fall back to raw text for unresolved aliases.
+                  formatted.append(token)
+
+              return " ".join(formatted)
+
+          mentions = format_mentions(mentions)
 
           body_lines = [
               f":package: *Convoy → convoy-cloud · staging image bump*",
@@ -188,6 +226,7 @@ jobs:
 
           payload = {
               "text": mrkdwn,
+              "link_names": 1,
               "blocks": [
                   {
                       "type": "section",
