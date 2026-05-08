@@ -615,6 +615,7 @@ export class BillingPageComponent implements OnInit {
         }
         this.updateCityControlValidation();
         this.isLoadingCities = false;
+        this.cityLoadingRequestToken = null;
       },
       error: (error) => {
         if (this.activeCityRequestToken !== requestToken) {
@@ -1476,7 +1477,7 @@ export class BillingPageComponent implements OnInit {
   private normalizePlanName(name: string): string {
     return (name || '')
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
