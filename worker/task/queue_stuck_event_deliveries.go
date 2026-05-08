@@ -54,7 +54,7 @@ func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDelive
 				Delay:   1 * time.Second,
 			}
 
-			err = q.Write(convoy.EventProcessor, convoy.EventQueue, job)
+			err = q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, job)
 			if err != nil {
 				logger.ErrorContext(ctx, fmt.Sprintf("an error occurred queueing stuck event delivery with id %s: %v", eventDelivery.UID, err))
 				continue

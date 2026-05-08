@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	convoy "github.com/frain-dev/convoy"
@@ -56,29 +57,29 @@ func (mr *MockQueuerMockRecorder) Options() *gomock.Call {
 }
 
 // Write mocks base method.
-func (m *MockQueuer) Write(arg0 convoy.TaskName, arg1 convoy.QueueName, arg2 *queue.Job) error {
+func (m *MockQueuer) Write(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Write", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Write", ctx, taskName, queueName, job)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Write indicates an expected call of Write.
-func (mr *MockQueuerMockRecorder) Write(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockQueuerMockRecorder) Write(ctx, taskName, queueName, job any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockQueuer)(nil).Write), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockQueuer)(nil).Write), ctx, taskName, queueName, job)
 }
 
 // WriteWithoutTimeout mocks base method.
-func (m *MockQueuer) WriteWithoutTimeout(arg0 convoy.TaskName, arg1 convoy.QueueName, arg2 *queue.Job) error {
+func (m *MockQueuer) WriteWithoutTimeout(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteWithoutTimeout", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "WriteWithoutTimeout", ctx, taskName, queueName, job)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // WriteWithoutTimeout indicates an expected call of WriteWithoutTimeout.
-func (mr *MockQueuerMockRecorder) WriteWithoutTimeout(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockQueuerMockRecorder) WriteWithoutTimeout(ctx, taskName, queueName, job any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteWithoutTimeout", reflect.TypeOf((*MockQueuer)(nil).WriteWithoutTimeout), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteWithoutTimeout", reflect.TypeOf((*MockQueuer)(nil).WriteWithoutTimeout), ctx, taskName, queueName, job)
 }

@@ -10,12 +10,20 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
 	"github.com/frain-dev/convoy/cache"
 	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
+
+// otelHTTPClient returns a baseline http.Client whose transport is wrapped
+// with otelhttp so outbound HCP Vault calls participate in the active trace.
+func otelHTTPClient() *http.Client {
+	return &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+}
 
 const RedisCacheKey = "HCPVaultRedisKey"
 
@@ -356,7 +364,7 @@ func NewHCPVaultKeyManager(clientID, clientSecret, orgID, projectID, appName, se
 		AppName:      appName,
 		SecretName:   secretName,
 		APIBaseURL:   HCPAPIBaseURL,
-		httpClient:   http.DefaultClient,
+		httpClient:   otelHTTPClient(),
 		isSet:        true,
 		cache:        mcache.NewMemoryCache(),
 	}
@@ -384,7 +392,7 @@ func NewHCPVaultKeyManagerFromConfigWithLogger(cfg config.HCPVaultConfig, licens
 		AppName:      cfg.AppName,
 		SecretName:   cfg.SecretName,
 		APIBaseURL:   HCPAPIBaseURL,
-		httpClient:   http.DefaultClient,
+		httpClient:   otelHTTPClient(),
 		cache:        cache,
 		licenser:     licenser,
 		isSet:        true,

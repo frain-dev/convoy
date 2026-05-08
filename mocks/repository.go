@@ -118,7 +118,7 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) DeleteProjectEventDeliveries(
 }
 
 // ExportRecords mocks base method.
-func (m *MockEventDeliveryRepository) ExportRecords(ctx context.Context, start time.Time, end time.Time, w io.Writer) (int64, error) {
+func (m *MockEventDeliveryRepository) ExportRecords(ctx context.Context, start, end time.Time, w io.Writer) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExportRecords", ctx, start, end, w)
 	ret0, _ := ret[0].(int64)
@@ -434,7 +434,7 @@ func (mr *MockEventRepositoryMockRecorder) DeleteProjectTokenizedEvents(ctx, pro
 }
 
 // ExportRecords mocks base method.
-func (m *MockEventRepository) ExportRecords(ctx context.Context, start time.Time, end time.Time, w io.Writer) (int64, error) {
+func (m *MockEventRepository) ExportRecords(ctx context.Context, start, end time.Time, w io.Writer) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExportRecords", ctx, start, end, w)
 	ret0, _ := ret[0].(int64)
@@ -2826,7 +2826,7 @@ func (m *MockExportRepository) EXPECT() *MockExportRepositoryMockRecorder {
 }
 
 // ExportRecords mocks base method.
-func (m *MockExportRepository) ExportRecords(ctx context.Context, start time.Time, end time.Time, w io.Writer) (int64, error) {
+func (m *MockExportRepository) ExportRecords(ctx context.Context, start, end time.Time, w io.Writer) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExportRecords", ctx, start, end, w)
 	ret0, _ := ret[0].(int64)
@@ -2893,7 +2893,7 @@ func (mr *MockDeliveryAttemptsRepositoryMockRecorder) DeleteProjectDeliveriesAtt
 }
 
 // ExportRecords mocks base method.
-func (m *MockDeliveryAttemptsRepository) ExportRecords(ctx context.Context, start time.Time, end time.Time, w io.Writer) (int64, error) {
+func (m *MockDeliveryAttemptsRepository) ExportRecords(ctx context.Context, start, end time.Time, w io.Writer) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExportRecords", ctx, start, end, w)
 	ret0, _ := ret[0].(int64)
@@ -2978,6 +2978,146 @@ func (m *MockDeliveryAttemptsRepository) UnPartitionDeliveryAttemptsTable(ctx co
 func (mr *MockDeliveryAttemptsRepositoryMockRecorder) UnPartitionDeliveryAttemptsTable(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnPartitionDeliveryAttemptsTable", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).UnPartitionDeliveryAttemptsTable), ctx)
+}
+
+// MockBackupJobRepository is a mock of BackupJobRepository interface.
+type MockBackupJobRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockBackupJobRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockBackupJobRepositoryMockRecorder is the mock recorder for MockBackupJobRepository.
+type MockBackupJobRepositoryMockRecorder struct {
+	mock *MockBackupJobRepository
+}
+
+// NewMockBackupJobRepository creates a new mock instance.
+func NewMockBackupJobRepository(ctrl *gomock.Controller) *MockBackupJobRepository {
+	mock := &MockBackupJobRepository{ctrl: ctrl}
+	mock.recorder = &MockBackupJobRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockBackupJobRepository) EXPECT() *MockBackupJobRepositoryMockRecorder {
+	return m.recorder
+}
+
+// ClaimBackupJob mocks base method.
+func (m *MockBackupJobRepository) ClaimBackupJob(ctx context.Context, agentID string) (*datastore.BackupJob, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClaimBackupJob", ctx, agentID)
+	ret0, _ := ret[0].(*datastore.BackupJob)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ClaimBackupJob indicates an expected call of ClaimBackupJob.
+func (mr *MockBackupJobRepositoryMockRecorder) ClaimBackupJob(ctx, agentID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClaimBackupJob", reflect.TypeOf((*MockBackupJobRepository)(nil).ClaimBackupJob), ctx, agentID)
+}
+
+// CompleteBackupJob mocks base method.
+func (m *MockBackupJobRepository) CompleteBackupJob(ctx context.Context, jobID string, recordCounts map[string]int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CompleteBackupJob", ctx, jobID, recordCounts)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CompleteBackupJob indicates an expected call of CompleteBackupJob.
+func (mr *MockBackupJobRepositoryMockRecorder) CompleteBackupJob(ctx, jobID, recordCounts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteBackupJob", reflect.TypeOf((*MockBackupJobRepository)(nil).CompleteBackupJob), ctx, jobID, recordCounts)
+}
+
+// DeleteCompletedJobs mocks base method.
+func (m *MockBackupJobRepository) DeleteCompletedJobs(ctx context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteCompletedJobs", ctx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteCompletedJobs indicates an expected call of DeleteCompletedJobs.
+func (mr *MockBackupJobRepositoryMockRecorder) DeleteCompletedJobs(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCompletedJobs", reflect.TypeOf((*MockBackupJobRepository)(nil).DeleteCompletedJobs), ctx)
+}
+
+// EnqueueBackupJob mocks base method.
+func (m *MockBackupJobRepository) EnqueueBackupJob(ctx context.Context, hourStart, hourEnd time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnqueueBackupJob", ctx, hourStart, hourEnd)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EnqueueBackupJob indicates an expected call of EnqueueBackupJob.
+func (mr *MockBackupJobRepositoryMockRecorder) EnqueueBackupJob(ctx, hourStart, hourEnd any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueBackupJob", reflect.TypeOf((*MockBackupJobRepository)(nil).EnqueueBackupJob), ctx, hourStart, hourEnd)
+}
+
+// EnqueueBackupJobIfIdle mocks base method.
+func (m *MockBackupJobRepository) EnqueueBackupJobIfIdle(ctx context.Context, start, end time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnqueueBackupJobIfIdle", ctx, start, end)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EnqueueBackupJobIfIdle indicates an expected call of EnqueueBackupJobIfIdle.
+func (mr *MockBackupJobRepositoryMockRecorder) EnqueueBackupJobIfIdle(ctx, start, end any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueBackupJobIfIdle", reflect.TypeOf((*MockBackupJobRepository)(nil).EnqueueBackupJobIfIdle), ctx, start, end)
+}
+
+// FailBackupJob mocks base method.
+func (m *MockBackupJobRepository) FailBackupJob(ctx context.Context, jobID, errMsg string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailBackupJob", ctx, jobID, errMsg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FailBackupJob indicates an expected call of FailBackupJob.
+func (mr *MockBackupJobRepositoryMockRecorder) FailBackupJob(ctx, jobID, errMsg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailBackupJob", reflect.TypeOf((*MockBackupJobRepository)(nil).FailBackupJob), ctx, jobID, errMsg)
+}
+
+// FindLatestCompletedBackup mocks base method.
+func (m *MockBackupJobRepository) FindLatestCompletedBackup(ctx context.Context) (*datastore.BackupJob, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindLatestCompletedBackup", ctx)
+	ret0, _ := ret[0].(*datastore.BackupJob)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindLatestCompletedBackup indicates an expected call of FindLatestCompletedBackup.
+func (mr *MockBackupJobRepositoryMockRecorder) FindLatestCompletedBackup(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindLatestCompletedBackup", reflect.TypeOf((*MockBackupJobRepository)(nil).FindLatestCompletedBackup), ctx)
+}
+
+// ReclaimStaleJobs mocks base method.
+func (m *MockBackupJobRepository) ReclaimStaleJobs(ctx context.Context, staleMinutes int32) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReclaimStaleJobs", ctx, staleMinutes)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReclaimStaleJobs indicates an expected call of ReclaimStaleJobs.
+func (mr *MockBackupJobRepositoryMockRecorder) ReclaimStaleJobs(ctx, staleMinutes any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReclaimStaleJobs", reflect.TypeOf((*MockBackupJobRepository)(nil).ReclaimStaleJobs), ctx, staleMinutes)
 }
 
 // MockEventTypesRepository is a mock of EventTypesRepository interface.

@@ -4,6 +4,7 @@ go 1.25.9
 
 require (
 	cloud.google.com/go/pubsub v1.50.1
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
 	github.com/DataDog/datadog-go/v5 v5.7.1
 	github.com/Subomi/go-authz v0.2.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
@@ -27,7 +28,8 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/grafana/pyroscope-go v1.2.2
 	github.com/hashicorp/vault/api v1.21.0
-	github.com/hibiken/asynq v0.24.1
+	github.com/hibiken/asynq v0.26.0
+	github.com/jackc/pglogrepl v0.0.0-20251213150135-2e8d0df862c1
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/jarcoal/httpmock v1.4.0
 	github.com/jaswdr/faker v1.19.1
@@ -44,7 +46,7 @@ require (
 	github.com/r3labs/diff/v3 v3.0.1
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/extra/redisotel/v9 v9.14.0
-	github.com/redis/go-redis/v9 v9.14.0
+	github.com/redis/go-redis/v9 v9.14.1
 	github.com/riandyrn/otelchi v0.12.1
 	github.com/rubenv/sql-migrate v1.8.0
 	github.com/sebdah/goldie/v2 v2.5.5
@@ -85,7 +87,6 @@ require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/DataDog/appsec-internal-go v1.9.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.0 // indirect
@@ -144,7 +145,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
-	github.com/jackc/pglogrepl v0.0.0-20251213150135-2e8d0df862c1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
@@ -221,7 +221,6 @@ require (
 	github.com/go-openapi/jsonreference v0.20.5 // indirect
 	github.com/go-openapi/spec v0.20.15 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
@@ -238,7 +237,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
-	github.com/spf13/cast v1.5.1 // indirect
+	github.com/spf13/cast v1.10.0 // indirect
 	github.com/vmihailenco/go-tinylfu v0.2.2 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect

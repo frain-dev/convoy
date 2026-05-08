@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -60,7 +61,8 @@ func NewOAuth2TokenService(cache cache.Cache, logger log.Logger) *OAuth2TokenSer
 		Cache:  cache,
 		Logger: logger,
 		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:   30 * time.Second,
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
 		},
 	}
 }

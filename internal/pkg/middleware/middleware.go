@@ -16,7 +16,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/riandyrn/otelchi"
 
-	sdktrace "go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/types"
@@ -29,9 +29,20 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
+
+// untracedHTTPPaths are excluded from otelchi span creation. Health probes and
+// metrics scrapes fire constantly and add no value to a trace tree; including
+// them inflates exporter cost and noise without informing any debugging.
+var untracedHTTPPaths = map[string]struct{}{
+	"/healthz":          {},
+	"/health":           {},
+	"/metrics":          {},
+	"/queue/monitoring": {},
+}
 
 // safeHeaders is the whitelist of header names that are safe to include
 // in log output. Sensitive headers (auth tokens, cookies, signatures) are
@@ -173,8 +184,55 @@ func InstrumentPath(l license.Licenser) func(http.Handler) http.Handler {
 	}
 }
 
-func InstrumentRequests(serverName string, r chi.Router) func(next http.Handler) http.Handler {
-	return otelchi.Middleware(serverName, otelchi.WithChiRoutes(r))
+func InstrumentRequests(serverName string, r chi.Router, tp oteltrace.TracerProvider) func(next http.Handler) http.Handler {
+	opts := []otelchi.Option{
+		otelchi.WithChiRoutes(r),
+		otelchi.WithFilter(func(req *http.Request) bool {
+			_, skip := untracedHTTPPaths[req.URL.Path]
+			return !skip
+		}),
+	}
+	if tp != nil {
+		opts = append(opts, otelchi.WithTracerProvider(tp))
+	}
+	return otelchi.Middleware(serverName, opts...)
+}
+
+// EnrichSpanFromRoute attaches Convoy-domain identifiers from the matched chi
+// route as attributes on the active span.
+//
+// Must run *after* InstrumentRequests so the span exists. We enrich after
+// next.ServeHTTP returns because chi populates URLParams during route walking
+// (which happens in Mux.routeHTTP, after Use-registered middleware runs). The
+// otelchi span is still recording at that point because its own middleware is
+// the outer wrapper and won't call End() until we return.
+func EnrichSpanFromRoute(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+
+		span := oteltrace.SpanFromContext(r.Context())
+		if !span.IsRecording() {
+			return
+		}
+		if v := chi.URLParam(r, "projectID"); v != "" {
+			span.SetAttributes(tracer.AttrProjectID.String(v))
+		}
+		if v := chi.URLParam(r, "endpointID"); v != "" {
+			span.SetAttributes(tracer.AttrEndpointID.String(v))
+		}
+		if v := chi.URLParam(r, "eventID"); v != "" {
+			span.SetAttributes(tracer.AttrEventID.String(v))
+		}
+		if v := chi.URLParam(r, "eventDeliveryID"); v != "" {
+			span.SetAttributes(tracer.AttrEventDeliveryID.String(v))
+		}
+		if v := chi.URLParam(r, "subscriptionID"); v != "" {
+			span.SetAttributes(tracer.AttrSubscriptionID.String(v))
+		}
+		if v := chi.URLParam(r, "deliveryAttemptID"); v != "" {
+			span.SetAttributes(tracer.AttrDeliveryAttemptID.String(v))
+		}
+	})
 }
 
 func WriteRequestIDHeader(next http.Handler) http.Handler {
@@ -468,7 +526,7 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 		requestFields["header"] = headerFields(r.Header)
 	}
 
-	span := sdktrace.SpanFromContext(r.Context())
+	span := oteltrace.SpanFromContext(r.Context())
 
 	requestFields["traceId"] = span.SpanContext().TraceID()
 	requestFields["spanId"] = span.SpanContext().SpanID()

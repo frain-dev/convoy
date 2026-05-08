@@ -3,7 +3,6 @@ package tracer
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -19,31 +18,20 @@ var (
 	pkgLogger log.Logger = log.New("tracer", log.LevelInfo)
 )
 
-type contextKey string
-
-const (
-	TracingContextKey contextKey = "tracerCtx"
-)
-
-func NewContext(ctx context.Context, tracer trace.Tracer) context.Context {
-	return context.WithValue(ctx, TracingContextKey, tracer)
-}
-
-func FromContext(ctx context.Context) trace.Tracer {
-	v := ctx.Value(TracingContextKey)
-	if v == nil {
-		panic("nil context")
-	}
-
-	// TODO(subomi): Figure out what to do here or use a tracing struct
-	return nil
-}
-
-// Backend is an abstraction for tracing backend (Datadog, Sentry, ...)
+// Backend is the lifecycle abstraction for a tracing backend (OTel, Sentry,
+// Datadog, or NoOp). It owns Init/Shutdown and exposes the underlying
+// TracerProvider; callers acquire a per-package trace.Tracer from there and
+// create hierarchical spans with Start/End.
 type Backend interface {
 	Init(componentName string) error
 	Type() config.TracerProvider
-	Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time)
+
+	// TracerProvider returns the underlying trace.TracerProvider used to
+	// acquire per-package tracers. Always returns a non-nil provider; before
+	// Init has run successfully it returns a no-op provider so callers can
+	// hold a tracer without nil-checking.
+	TracerProvider() trace.TracerProvider
+
 	Shutdown(ctx context.Context) error
 }
 

@@ -20,7 +20,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -677,7 +676,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &Dispatcher{client: client, logger: log.New("convoy", log.LevelInfo), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
+			d := &Dispatcher{client: client, logger: log.New("convoy", log.LevelInfo), ff: fflag.NewFFlag([]string{})}
 
 			if tt.nFn != nil {
 				deferFn := tt.nFn()
@@ -719,7 +718,7 @@ func TestDispatcher_SendFormDataWithSignature(t *testing.T) {
 	}))
 	defer server.Close()
 
-	d := &Dispatcher{client: http.DefaultClient, logger: log.New("convoy", log.LevelInfo), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
+	d := &Dispatcher{client: http.DefaultClient, logger: log.New("convoy", log.LevelInfo), ff: fflag.NewFFlag([]string{})}
 
 	jsonData := json.RawMessage(`{"name":"test","value":"123"}`)
 	project := &datastore.Project{

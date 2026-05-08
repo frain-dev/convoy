@@ -182,7 +182,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		opts.Licenser,
 		featureFlag,
 		net.LoggerOption(lo),
-		net.TracerOption(opts.TracerBackend),
 		net.DetailedTraceOption(true),
 		net.ProxyOption(cfg.Server.HTTP.HttpProxy, cfg.Server.HTTP.NoProxy),
 		net.AllowListOption(cfg.Dispatcher.AllowList),
@@ -259,7 +258,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 							ownerEmail = owner.Email
 						}
 					}
-					_ = EnqueueCircuitBreakerEmails(opts.Queue, lo, project, endpoint, ownerEmail, b.FailureRate)
+					_ = EnqueueCircuitBreakerEmails(ctx, opts.Queue, lo, project, endpoint, ownerEmail, b.FailureRate)
 
 				default:
 					return fmt.Errorf("unsupported circuit breaker notification type: %s", n)
@@ -315,7 +314,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
-		TracerBackend:              opts.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,
 		Logger:                     lo,
 	}
@@ -330,7 +328,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		SubRepo:            subRepo,
 		FilterRepo:         filterRepo,
 		Licenser:           opts.Licenser,
-		TracerBackend:      opts.TracerBackend,
 		OAuth2TokenService: oauth2TokenService,
 		FeatureFlag:        featureFlag,
 		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(opts.DB),
@@ -361,7 +358,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		SubRepo:                    subRepo,
 		FilterRepo:                 filterRepo,
 		Licenser:                   opts.Licenser,
-		TracerBackend:              opts.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
@@ -381,7 +377,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	}
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, opts.TracerBackend, lo), nil)
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, lo), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(opts.Queue, rd, lo), nil)
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, opts.Queue, lo), nil)

@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/oklog/ulid/v2"
+	"go.opentelemetry.io/otel"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -26,7 +28,14 @@ func NewMetaEvent(queue queue.Queuer, projectRepo datastore.ProjectRepository, m
 	return &MetaEvent{queue: queue, projectRepo: projectRepo, metaEventRepo: metaEventRepo, logger: logger}
 }
 
-func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data interface{}) error {
+func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data interface{}) (err error) {
+	ctx, span := otel.Tracer(tracer.TracerNameServices).Start(ctx, tracer.SpanServicesEventCreateMeta)
+	span.SetAttributes(tracer.AttrProjectID.String(projectID))
+	defer func() {
+		tracer.RecordError(span, err)
+		span.End()
+	}()
+
 	project, err := m.projectRepo.FetchProjectByID(ctx, projectID)
 	if err != nil {
 		return err
@@ -97,7 +106,7 @@ func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data i
 	}
 
 	jobId := queue.JobId{ProjectID: metaEvent.ProjectID, ResourceID: metaEvent.UID}.MetaJobId()
-	err = m.queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
+	err = m.queue.Write(ctx, convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
 		ID:      jobId,
 		Payload: bytes,
 	})

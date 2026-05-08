@@ -46,7 +46,7 @@ func TestReplayEventService_Run(t *testing.T) {
 			},
 			dbFn: func(es *ReplayEventService) {
 				eq, _ := es.Queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, gomock.Any(), gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			wantErr: false,
@@ -60,7 +60,7 @@ func TestReplayEventService_Run(t *testing.T) {
 			},
 			dbFn: func(es *ReplayEventService) {
 				eq, _ := es.Queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, gomock.Any(), gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 
 				ml, _ := es.Logger.(*mocks.MockLogger)
