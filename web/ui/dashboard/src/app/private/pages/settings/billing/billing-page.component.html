@@ -165,7 +165,18 @@
           <div class="text-14 font-medium mb-8px">{{ billingAddressDetails.name }}</div>
           <div class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine1 }}</div>
           <div *ngIf="billingAddressDetails.addressLine2" class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine2 }}</div>
-          <div class="text-12 text-neutral-11">{{ billingAddressDetails.city }}<span *ngIf="billingAddressDetails.state">, {{ billingAddressDetails.state }}</span>, {{ billingAddressDetails.zipCode }}, {{ getCountryName(billingAddressDetails.country) }}</div>
+          <div class="text-12 text-neutral-11">
+            <span *ngIf="billingAddressDetails.city">{{ billingAddressDetails.city }}</span>
+            <span *ngIf="billingAddressDetails.state">
+              <span *ngIf="billingAddressDetails.city">, </span>{{ billingAddressDetails.state }}
+            </span>
+            <span *ngIf="billingAddressDetails.zipCode">
+              <span *ngIf="billingAddressDetails.city || billingAddressDetails.state">, </span>{{ billingAddressDetails.zipCode }}
+            </span>
+            <span *ngIf="billingAddressDetails.country">
+              <span *ngIf="billingAddressDetails.city || billingAddressDetails.state || billingAddressDetails.zipCode">, </span>{{ getCountryName(billingAddressDetails.country) }}
+            </span>
+          </div>
         </div>
 
         <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && (!billingAddressDetails || !hasBillingAddress())" class="billing-details-display">
