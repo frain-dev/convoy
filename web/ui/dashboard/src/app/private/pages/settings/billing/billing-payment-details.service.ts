@@ -33,6 +33,7 @@ export interface BillingAddressUpdate {
   addressLine1: string;
   addressLine2?: string;
   country: string;
+  state?: string;
   city: string;
   zipCode: string;
 }
@@ -42,6 +43,7 @@ export interface BillingAddressDetails {
   addressLine1: string;
   addressLine2?: string;
   country: string;
+  state?: string;
   city: string;
   zipCode: string;
 }
@@ -173,6 +175,7 @@ export class BillingPaymentDetailsService {
           addressLine1: org.billing_address ?? '',
           addressLine2: org.billing_address_line2 ?? '',
           country: org.billing_country ?? '',
+          state: org.billing_state ?? '',
           city: org.billing_city ?? '',
           zipCode: org.billing_zip ?? ''
         };
@@ -185,6 +188,7 @@ export class BillingPaymentDetailsService {
           addressLine1: '',
           addressLine2: '',
           country: '',
+          state: '',
           city: '',
           zipCode: ''
         });
@@ -264,7 +268,7 @@ export class BillingPaymentDetailsService {
       billing_address: billingAddress.addressLine1,
       billing_address_line2: billingAddress.addressLine2 || '',
       billing_city: billingAddress.city,
-      billing_state: '',
+      billing_state: billingAddress.state || '',
       billing_zip: billingAddress.zipCode,
       billing_country: billingAddress.country
     };

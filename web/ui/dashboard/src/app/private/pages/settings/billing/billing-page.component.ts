@@ -64,9 +64,11 @@ export class BillingPageComponent implements OnInit {
   vatCountries: { code: string; name: string }[] = []; // Countries with tax ID types from billing service
   taxIdTypes: any[] = []; // Store tax ID types with examples
   vatPlaceholder = 'Enter VAT number'; // Dynamic placeholder based on selected country
+  states: string[] = [];
   cities: string[] = [];
   isLoadingCountries = false;
   isLoadingVatCountries = false;
+  isLoadingStates = false;
   isLoadingCities = false;
 
   // API error message
@@ -111,6 +113,10 @@ export class BillingPageComponent implements OnInit {
   }
 
   private bootstrapSubscriptionPromise: Promise<void> | null = null;
+  private locationRequestToken = 0;
+  private activeCountryRequestToken = 0;
+  private activeCityRequestToken = 0;
+  private cityLoadingRequestToken: number | null = null;
 
   ngOnInit() {
     this.validateOrganisation();
@@ -123,6 +129,9 @@ export class BillingPageComponent implements OnInit {
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);
+    });
+    this.billingAddressForm.get('state')?.valueChanges.subscribe(stateName => {
+      this.onStateChange(stateName);
     });
 
     this.vatForm.get('country')?.valueChanges.subscribe(countryCode => {
@@ -434,28 +443,191 @@ export class BillingPageComponent implements OnInit {
     }
   }
 
-  onCountryChange(countryCode: string) {
+  onCountryChange(countryCode: string, preferredState: string = '', preferredCity: string = '') {
+    const requestToken = ++this.locationRequestToken;
+    this.activeCountryRequestToken = requestToken;
+    this.activeCityRequestToken = requestToken;
+    const isRehydration = !!preferredState || !!preferredCity;
+
     if (!countryCode) {
+      this.states = [];
       this.cities = [];
-      this.billingAddressForm.get('city')?.setValue('');
+      this.isLoadingStates = false;
+      this.isLoadingCities = false;
+      this.billingAddressForm.get('state')?.setValue('', { emitEvent: false });
+      this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+      this.updateStateControlValidation();
+      this.updateCityControlValidation();
       return;
     }
 
-    this.billingAddressForm.get('city')?.setValue('');
+    const previousState = isRehydration ? preferredState : '';
+    const previousCity = isRehydration ? preferredCity : '';
+    this.billingAddressForm.get('state')?.setValue('', { emitEvent: false });
+    this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+    this.states = [];
     this.cities = [];
+    this.isLoadingCities = false;
+    this.updateCityControlValidation();
 
     const countryName = this.getCountryName(countryCode);
+    this.isLoadingStates = true;
+    this.countriesService.getStatesForCountry(countryName).subscribe({
+      next: (states) => {
+        if (this.activeCountryRequestToken !== requestToken) {
+          return;
+        }
 
-    this.isLoadingCities = true;
-    this.countriesService.getCitiesForCountry(countryName).subscribe({
-      next: (cities) => {
-        this.cities = cities;
-        this.isLoadingCities = false;
+        this.states = states;
+        this.updateStateControlValidation();
+        if (this.states.length > 0) {
+          const matchedState = this.states.find(state => state.trim().toLowerCase() === (previousState || '').trim().toLowerCase());
+          if (matchedState) {
+            this.billingAddressForm.get('state')?.setValue(matchedState, { emitEvent: false });
+            this.activeCityRequestToken = requestToken;
+            this.loadCitiesByState(countryName, matchedState, previousCity, requestToken);
+          } else if (previousCity) {
+            // Legacy records may only have city; keep options visible until user chooses state.
+            this.activeCityRequestToken = requestToken;
+            this.loadCitiesByCountry(countryName, previousCity, requestToken);
+          } else {
+            this.isLoadingCities = false;
+          }
+        } else {
+          this.activeCityRequestToken = requestToken;
+          this.loadCitiesByCountry(countryName, previousCity, requestToken);
+        }
+        this.isLoadingStates = false;
       },
       error: (error) => {
+        if (this.activeCountryRequestToken !== requestToken) {
+          return;
+        }
+
+        console.error('Failed to load states:', error);
+        this.states = [];
+        this.updateStateControlValidation();
+        this.activeCityRequestToken = requestToken;
+        this.loadCitiesByCountry(countryName, previousCity, requestToken);
+        this.isLoadingStates = false;
+      }
+    });
+  }
+
+  onStateChange(stateName: string) {
+    const countryCode = this.billingAddressForm.get('country')?.value;
+    if (!countryCode) {
+      return;
+    }
+
+    const countryName = this.getCountryName(countryCode);
+    if (!stateName) {
+      if (this.states.length > 0) {
+        ++this.locationRequestToken;
+        this.activeCityRequestToken = this.locationRequestToken;
+        this.cities = [];
+        this.isLoadingCities = false;
+        this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+        this.updateCityControlValidation();
+        return;
+      }
+
+      const requestToken = ++this.locationRequestToken;
+      this.activeCityRequestToken = requestToken;
+      this.loadCitiesByCountry(countryName, '', requestToken);
+      return;
+    }
+
+    // On user state changes, do not preserve previous city value
+    // to avoid invalid state/city combinations being silently carried over.
+    const requestToken = ++this.locationRequestToken;
+    this.activeCityRequestToken = requestToken;
+    this.loadCitiesByState(countryName, stateName, '', requestToken);
+  }
+
+  private loadCitiesByCountry(countryName: string, preferredCity: string = '', requestToken: number = this.activeCityRequestToken) {
+    this.isLoadingCities = true;
+    this.cityLoadingRequestToken = requestToken;
+    this.countriesService.getCitiesForCountry(countryName).subscribe({
+      next: (cities) => {
+        if (this.activeCityRequestToken !== requestToken) {
+          if (this.cityLoadingRequestToken === requestToken) {
+            this.isLoadingCities = false;
+            this.cityLoadingRequestToken = null;
+          }
+          return;
+        }
+
+        this.cities = this.withPreferredCity(cities, preferredCity);
+        const matchedCity = this.findMatchingCity(this.cities, preferredCity);
+        if (matchedCity) {
+          this.billingAddressForm.get('city')?.setValue(matchedCity, { emitEvent: false });
+        } else {
+          this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+        }
+        this.updateCityControlValidation();
+        this.isLoadingCities = false;
+        this.cityLoadingRequestToken = null;
+      },
+      error: (error) => {
+        if (this.activeCityRequestToken !== requestToken) {
+          if (this.cityLoadingRequestToken === requestToken) {
+            this.isLoadingCities = false;
+            this.cityLoadingRequestToken = null;
+          }
+          return;
+        }
+
         console.error('Failed to load cities:', error);
         this.isLoadingCities = false;
+        this.cityLoadingRequestToken = null;
         this.cities = [];
+        this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+        this.updateCityControlValidation();
+      }
+    });
+  }
+
+  private loadCitiesByState(countryName: string, stateName: string, preferredCity: string = '', requestToken: number = this.activeCityRequestToken) {
+    this.isLoadingCities = true;
+    this.cityLoadingRequestToken = requestToken;
+    this.countriesService.getCitiesForCountryAndState(countryName, stateName).subscribe({
+      next: (cities) => {
+        if (this.activeCityRequestToken !== requestToken) {
+          if (this.cityLoadingRequestToken === requestToken) {
+            this.isLoadingCities = false;
+            this.cityLoadingRequestToken = null;
+          }
+          return;
+        }
+
+        if (!cities || cities.length === 0) {
+          this.loadCitiesByCountry(countryName, preferredCity, requestToken);
+          return;
+        }
+
+        this.cities = this.withPreferredCity(cities, preferredCity);
+        const matchedCity = this.findMatchingCity(this.cities, preferredCity);
+        if (matchedCity) {
+          this.billingAddressForm.get('city')?.setValue(matchedCity, { emitEvent: false });
+        } else {
+          this.billingAddressForm.get('city')?.setValue('', { emitEvent: false });
+        }
+        this.updateCityControlValidation();
+        this.isLoadingCities = false;
+        this.cityLoadingRequestToken = null;
+      },
+      error: (error) => {
+        if (this.activeCityRequestToken !== requestToken) {
+          if (this.cityLoadingRequestToken === requestToken) {
+            this.isLoadingCities = false;
+            this.cityLoadingRequestToken = null;
+          }
+          return;
+        }
+
+        console.error('Failed to load cities by state:', error);
+        this.loadCitiesByCountry(countryName, preferredCity, requestToken);
       }
     });
   }
@@ -466,7 +638,8 @@ export class BillingPageComponent implements OnInit {
       addressLine1: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(200)]],
       addressLine2: ['', [Validators.maxLength(200)]],
       country: ['', Validators.required],
-      city: ['', Validators.required],
+      state: [''],
+      city: [''],
       zipCode: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(20), this.zipCodeValidator()]]
     });
 
@@ -625,18 +798,15 @@ export class BillingPageComponent implements OnInit {
     const planName = selectedPlanData.name.toLowerCase();
     const isProOrEnterprise = planName.includes('pro') || planName.includes('enterprise');
 
-    const planLower = planName.toLowerCase();
-    const planExistsInOverwatch = this.overwatchPlans.some(p => {
-          const pNameLower = p.name.toLowerCase();
-          return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
-      });
+    const { planExistsInOverwatch, planIdForApi } = this.resolvePlanForApi(selectedPlanData);
 
-    // Billing service (Overwatch) expects plan UUID, not slug; resolve from overwatch when selected plan is default slug
-    const overwatchPlan = this.overwatchPlans.find(p => {
-      const pNameLower = p.name.toLowerCase();
-      return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
-    });
-    const planIdForApi = overwatchPlan?.id ?? selectedPlanData.id;
+    if (this.isCurrentSubscriptionPlan(planIdForApi, selectedPlanData.name)) {
+      this.generalService.showNotification({
+        message: 'You are already on this plan',
+        style: 'success'
+      });
+      return;
+    }
 
     if (isProOrEnterprise && !planExistsInOverwatch) {
       const subject = encodeURIComponent(`${selectedPlanData.name} Plan Request`);
@@ -700,14 +870,12 @@ export class BillingPageComponent implements OnInit {
     if (!this.currentSubscription || !this.currentSubscription.plan) {
       return false;
     }
-    // Compare by plan ID or plan name (case-insensitive)
-    const currentPlanId = this.currentSubscription.plan.id;
-    const currentPlanName = this.currentSubscription.plan.name?.toLowerCase();
-    const plan = this.plans.find(p => p.id === planId);
 
+    const plan = this.plans.find(p => p.id === planId);
     if (!plan) return false;
 
-    return plan.id === currentPlanId || plan.name.toLowerCase() === currentPlanName;
+    const { planIdForApi } = this.resolvePlanForApi(plan);
+    return this.isCurrentSubscriptionPlan(planIdForApi, plan.name);
   }
 
   getButtonText(planId: string): string {
@@ -900,7 +1068,8 @@ export class BillingPageComponent implements OnInit {
     this.isEditingBillingAddress = true;
     if (this.billingAddressDetails) {
       const formData = { ...this.billingAddressDetails };
-      this.billingAddressForm.patchValue(formData);
+      this.billingAddressForm.patchValue(formData, { emitEvent: false });
+      this.onCountryChange(formData.country || '', formData.state || '', formData.city || '');
     }
   }
 
@@ -1138,8 +1307,19 @@ export class BillingPageComponent implements OnInit {
 
 
   onUpdateBillingAddress() {
+    if (this.isLoadingStates || this.isLoadingCities) {
+      return;
+    }
+
+    const stateControl = this.billingAddressForm.get('state');
     const cityControl = this.billingAddressForm.get('city');
-    if (!cityControl || !cityControl.value || !this.cities.includes(cityControl.value)) {
+    if (this.states.length > 0 && (!stateControl || !stateControl.value || !this.states.includes(stateControl.value))) {
+      stateControl?.setErrors({ required: true });
+      this.markFormGroupTouched(this.billingAddressForm);
+      return;
+    }
+
+    if (this.cities.length > 0 && (!cityControl || !cityControl.value || !this.cities.includes(cityControl.value))) {
       cityControl?.setErrors({ required: true });
       this.markFormGroupTouched(this.billingAddressForm);
       return;
@@ -1212,9 +1392,93 @@ export class BillingPageComponent implements OnInit {
     return !!(
       this.billingAddressDetails.addressLine1 ||
       this.billingAddressDetails.city ||
+      this.billingAddressDetails.state ||
       this.billingAddressDetails.zipCode ||
       this.billingAddressDetails.country
     );
+  }
+
+  private updateStateControlValidation() {
+    const stateControl = this.billingAddressForm.get('state');
+    if (!stateControl) return;
+
+    if (this.states.length > 0) {
+      stateControl.setValidators([Validators.required]);
+    } else {
+      stateControl.clearValidators();
+    }
+    stateControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private updateCityControlValidation() {
+    const cityControl = this.billingAddressForm.get('city');
+    if (!cityControl) return;
+
+    if (this.cities.length > 0) {
+      cityControl.setValidators([Validators.required]);
+    } else {
+      cityControl.clearValidators();
+    }
+    cityControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private withPreferredCity(cities: string[], preferredCity: string): string[] {
+    if (!preferredCity) {
+      return cities;
+    }
+
+    const match = cities.some(city => city.trim().toLowerCase() === preferredCity.trim().toLowerCase());
+    if (match) {
+      return cities;
+    }
+
+    return [preferredCity, ...cities];
+  }
+
+  private findMatchingCity(cities: string[], preferredCity: string): string {
+    if (!preferredCity) {
+      return '';
+    }
+
+    return cities.find(city => city.trim().toLowerCase() === preferredCity.trim().toLowerCase()) || '';
+  }
+
+  private resolvePlanForApi(selectedPlanData: Plan): { planExistsInOverwatch: boolean; planIdForApi: string } {
+    const planLower = selectedPlanData.name.toLowerCase();
+    const overwatchPlan = this.overwatchPlans.find(p => {
+      const pNameLower = p.name.toLowerCase();
+      return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
+    });
+
+    return {
+      planExistsInOverwatch: !!overwatchPlan,
+      planIdForApi: overwatchPlan?.id ?? selectedPlanData.id
+    };
+  }
+
+  private isCurrentSubscriptionPlan(planIdForApi: string, planName: string): boolean {
+    if (!this.currentSubscription?.plan) {
+      return false;
+    }
+
+    const currentPlanId = this.currentSubscription.plan.id || '';
+    const currentPlanName = this.normalizePlanName(this.currentSubscription.plan.name || '');
+    const selectedPlanName = this.normalizePlanName(planName || '');
+
+    const sameId = !!planIdForApi && currentPlanId === planIdForApi;
+    const sameName =
+      !!currentPlanName &&
+      !!selectedPlanName &&
+      currentPlanName === selectedPlanName;
+
+    return sameId || sameName;
+  }
+
+  private normalizePlanName(name: string): string {
+    return (name || '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   hasVatInfo(): boolean {

@@ -22,6 +22,29 @@ export interface CountriesResponse {
   data: CityData[];
 }
 
+interface CountryCitiesResponse {
+  error: boolean;
+  msg: string;
+  data: string[];
+}
+
+interface CountryStatesResponse {
+  error: boolean;
+  msg: string;
+  data?: {
+    states?: Array<{
+      name: string;
+      state_code: string;
+    }>;
+  };
+}
+
+interface StateCitiesResponse {
+  error: boolean;
+  msg: string;
+  data: string[];
+}
+
 interface CountriesIsoResponse {
   error: boolean;
   msg: string;
@@ -65,17 +88,41 @@ export class CountriesService {
    * Get cities for a specific country
    */
   getCitiesForCountry(countryName: string): Observable<string[]> {
-    return this.getCitiesData().pipe(
+    return this.http.get<CountryCitiesResponse>(`${this.API_BASE_URL}/countries/cities/q?country=${encodeURIComponent(countryName)}`).pipe(
       map(response => {
-        if (response.error || !response.data) {
+        if (response.error || !Array.isArray(response.data)) {
           return [];
         }
 
-        const cities = response.data
-          .filter(city => city.country === countryName)
-          .map(city => city.city);
+        return [...new Set(response.data)].sort();
+      })
+    );
+  }
 
-        return [...new Set(cities)].sort(); // Remove duplicates and sort
+  getStatesForCountry(countryName: string): Observable<string[]> {
+    return this.http.get<CountryStatesResponse>(`${this.API_BASE_URL}/countries/states/q?country=${encodeURIComponent(countryName)}`).pipe(
+      map(response => {
+        const states = response.data?.states || [];
+        if (response.error || !Array.isArray(states)) {
+          return [];
+        }
+
+        return [...new Set(states.map(state => state.name).filter(Boolean))].sort();
+      })
+    );
+  }
+
+  getCitiesForCountryAndState(countryName: string, stateName: string): Observable<string[]> {
+    const country = encodeURIComponent(countryName);
+    const state = encodeURIComponent(stateName);
+
+    return this.http.get<StateCitiesResponse>(`${this.API_BASE_URL}/countries/state/cities/q?country=${country}&state=${state}`).pipe(
+      map(response => {
+        if (response.error || !Array.isArray(response.data)) {
+          return [];
+        }
+
+        return [...new Set(response.data)].sort();
       })
     );
   }

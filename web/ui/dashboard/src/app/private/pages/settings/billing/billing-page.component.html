@@ -165,7 +165,18 @@
           <div class="text-14 font-medium mb-8px">{{ billingAddressDetails.name }}</div>
           <div class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine1 }}</div>
           <div *ngIf="billingAddressDetails.addressLine2" class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine2 }}</div>
-          <div class="text-12 text-neutral-11">{{ billingAddressDetails.city }}, {{ billingAddressDetails.zipCode }}, {{ getCountryName(billingAddressDetails.country) }}</div>
+          <div class="text-12 text-neutral-11">
+            <span *ngIf="billingAddressDetails.city">{{ billingAddressDetails.city }}</span>
+            <span *ngIf="billingAddressDetails.state">
+              <span *ngIf="billingAddressDetails.city">, </span>{{ billingAddressDetails.state }}
+            </span>
+            <span *ngIf="billingAddressDetails.zipCode">
+              <span *ngIf="billingAddressDetails.city || billingAddressDetails.state">, </span>{{ billingAddressDetails.zipCode }}
+            </span>
+            <span *ngIf="billingAddressDetails.country">
+              <span *ngIf="billingAddressDetails.city || billingAddressDetails.state || billingAddressDetails.zipCode">, </span>{{ getCountryName(billingAddressDetails.country) }}
+            </span>
+          </div>
         </div>
 
         <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && (!billingAddressDetails || !hasBillingAddress())" class="billing-details-display">
@@ -206,7 +217,7 @@
             <input type="text" id="addressLine2" convoy-input formControlName="addressLine2" placeholder="Apartment, suite, etc. (optional)" />
           </convoy-input-field>
 
-          <div class="flex gap-12px">
+          <div class="billing-location-grid">
             <convoy-input-field>
               <label for="country" convoy-label required="true">Country</label>
               <select id="country" convoy-input formControlName="country" [disabled]="isLoadingCountries">
@@ -217,9 +228,32 @@
             </convoy-input-field>
 
             <convoy-input-field>
-              <label for="city" convoy-label required="true">City</label>
-              <select id="city" convoy-input formControlName="city" [disabled]="isLoadingCities">
-                <option value="">{{ isLoadingCities ? 'Loading cities...' : (cities.length === 0 ? 'Select country first' : 'Select city') }}</option>
+              <label for="state" convoy-label [required]="states.length > 0 ? 'true' : 'false'">State/Province</label>
+              <select id="state" convoy-input formControlName="state" [disabled]="isLoadingStates || !billingAddressForm.get('country')?.value">
+                <option value="">
+                  {{
+                    !billingAddressForm.get('country')?.value
+                      ? 'Select country first'
+                      : (isLoadingStates ? 'Loading states...' : (states.length === 0 ? 'No state list available' : 'Select state'))
+                  }}
+                </option>
+                <option *ngFor="let state of states" [value]="state">{{ state }}</option>
+              </select>
+              <convoy-input-error *ngIf="billingAddressForm.get('state')?.touched && billingAddressForm.get('state')?.invalid">
+                Please select state/province
+              </convoy-input-error>
+            </convoy-input-field>
+
+            <convoy-input-field>
+              <label for="city" convoy-label [required]="cities.length > 0 ? 'true' : 'false'">City</label>
+              <select id="city" convoy-input formControlName="city" [disabled]="isLoadingCities || (states.length > 0 && !billingAddressForm.get('state')?.value)">
+                <option value="">
+                  {{
+                    states.length > 0 && !billingAddressForm.get('state')?.value
+                      ? 'Select state first'
+                      : (isLoadingCities ? 'Loading cities...' : (cities.length === 0 ? 'No cities available' : 'Select city'))
+                  }}
+                </option>
                 <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
               </select>
               <convoy-input-error *ngIf="billingAddressForm.get('city')?.touched && billingAddressForm.get('city')?.invalid">Please select city</convoy-input-error>
@@ -241,7 +275,7 @@
             <button type="button" convoy-button variant="secondary" (click)="cancelEditingBillingAddress()" [disabled]="isSavingBillingAddress">
               Cancel
             </button>
-            <button convoy-button fill="outline" [disabled]="!billingAddressForm.valid || isSavingBillingAddress" (click)="onUpdateBillingAddress()">
+            <button convoy-button fill="outline" [disabled]="!billingAddressForm.valid || isSavingBillingAddress || isLoadingStates || isLoadingCities" (click)="onUpdateBillingAddress()">
               <span *ngIf="!isSavingBillingAddress">Update</span>
               <span *ngIf="isSavingBillingAddress" class="flex items-center gap-8px">
                 <div class="animate-spin rounded-full h-12px w-12px border-2 border-current border-t-transparent"></div>
