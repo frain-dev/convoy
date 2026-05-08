@@ -12,9 +12,9 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
-	time "time"
 
 	config "github.com/frain-dev/convoy/config"
+	trace "go.opentelemetry.io/otel/trace"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,18 +40,6 @@ func NewMockBackend(ctrl *gomock.Controller) *MockBackend {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockBackend) EXPECT() *MockBackendMockRecorder {
 	return m.recorder
-}
-
-// Capture mocks base method.
-func (m *MockBackend) Capture(ctx context.Context, name string, attributes map[string]any, startTime, endTime time.Time) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Capture", ctx, name, attributes, startTime, endTime)
-}
-
-// Capture indicates an expected call of Capture.
-func (mr *MockBackendMockRecorder) Capture(ctx, name, attributes, startTime, endTime any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Capture", reflect.TypeOf((*MockBackend)(nil).Capture), ctx, name, attributes, startTime, endTime)
 }
 
 // Init mocks base method.
@@ -80,6 +68,20 @@ func (m *MockBackend) Shutdown(ctx context.Context) error {
 func (mr *MockBackendMockRecorder) Shutdown(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shutdown", reflect.TypeOf((*MockBackend)(nil).Shutdown), ctx)
+}
+
+// TracerProvider mocks base method.
+func (m *MockBackend) TracerProvider() trace.TracerProvider {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TracerProvider")
+	ret0, _ := ret[0].(trace.TracerProvider)
+	return ret0
+}
+
+// TracerProvider indicates an expected call of TracerProvider.
+func (mr *MockBackendMockRecorder) TracerProvider() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TracerProvider", reflect.TypeOf((*MockBackend)(nil).TracerProvider))
 }
 
 // Type mocks base method.

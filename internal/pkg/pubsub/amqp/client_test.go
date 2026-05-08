@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	amqp091 "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	amqp091 "github.com/rabbitmq/amqp091-go"
 
 	"github.com/frain-dev/convoy/datastore"
 )

@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/queue/tracectx"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -52,12 +54,17 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	}
 }
 
-func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
+func (q *RedisQueue) Write(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
 	s := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
 	}
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
+	// Inject the active OTel trace context into job.Headers so the worker
+	// span on the consumer side becomes a child of the producer's. No-op
+	// when ctx has no active span, so untraced callers stay zero-cost.
+	tracectx.InjectIntoJob(ctx, job)
+	t := asynq.NewTaskWithHeaders(string(taskName), job.Payload, job.Headers,
+		asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
 
 	// Optimization: Try to enqueue directly first (optimistic path)
 	// This reduces from 3 Redis calls to 1 in the common case (no duplicate)
@@ -82,13 +89,15 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 	return err
 }
 
-func (q *RedisQueue) WriteWithoutTimeout(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
+func (q *RedisQueue) WriteWithoutTimeout(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
 	s := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
 	}
 
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.Timeout(0), asynq.ProcessIn(job.Delay))
+	tracectx.InjectIntoJob(ctx, job)
+	t := asynq.NewTaskWithHeaders(string(taskName), job.Payload, job.Headers,
+		asynq.Queue(s), asynq.TaskID(job.ID), asynq.Timeout(0), asynq.ProcessIn(job.Delay))
 
 	// Optimization: Try to enqueue directly first (optimistic path)
 	// This reduces from 3 Redis calls to 1 in the common case (no duplicate)

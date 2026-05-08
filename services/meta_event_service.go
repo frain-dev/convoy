@@ -38,7 +38,7 @@ func (m *MetaEventService) Run(ctx context.Context, metaEvent *datastore.MetaEve
 	}
 
 	jobId := queue.JobId{ProjectID: metaEvent.ProjectID, ResourceID: metaEvent.UID}.MetaJobId()
-	err = m.Queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
+	err = m.Queue.Write(ctx, convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
 		ID:      jobId,
 		Payload: bytes,
 	})

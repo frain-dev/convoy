@@ -45,7 +45,7 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 		Payload: eventByte,
 	}
 
-	err = e.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = e.Queue.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		e.Logger.ErrorContext(ctx, "replay_event: failed to write event to the queue", "error", err)
 		return &ServiceError{ErrMsg: "failed to write event to queue", Err: err}

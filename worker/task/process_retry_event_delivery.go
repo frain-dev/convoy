@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -36,7 +37,6 @@ var (
 func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		// Start a new trace span for retry event delivery
-		traceStartTime := time.Now()
 		attributes := map[string]interface{}{
 			"event.type": "event.retry.delivery",
 		}
@@ -47,7 +47,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		if err != nil {
 			innerErr := json.Unmarshal(t.Payload(), &data)
 			if innerErr != nil {
-				deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 				return &EndpointError{Err: innerErr, delay: defaultEventDelay}
 			}
 		}
@@ -57,13 +57,13 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 
 		cfg, err := config.Get()
 		if err != nil {
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
 		eventDelivery, err := deps.EventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
@@ -71,7 +71,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 
 		project, err := deps.ProjectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
@@ -84,11 +84,11 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 					deps.Logger.ErrorContext(ctx, "failed to update event delivery status to discarded", "error", innerErr)
 				}
 
-				deps.TracerBackend.Capture(ctx, "event.retry.delivery.discarded", attributes, traceStartTime, time.Now())
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryDiscarded, attributes)
 				return nil
 			}
 
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
@@ -99,7 +99,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		switch eventDelivery.Status {
 		case datastore.ProcessingEventStatus,
 			datastore.SuccessEventStatus:
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.success", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliverySuccess, attributes)
 			return nil
 		}
 
@@ -107,21 +107,21 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		if err != nil {
 			deps.Logger.DebugContext(ctx, fmt.Sprintf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second), "event_delivery_id", data.EventDeliveryID, "error", err)
 
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.rate_limited", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryRateLimited, attributes)
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
 		if deps.FeatureFlag.CanAccessFeature(fflag.CircuitBreaker) && deps.Licenser.CircuitBreaking() {
 			breakerErr := deps.CircuitBreakerManager.CanExecute(ctx, endpoint.UID)
 			if breakerErr != nil {
-				deps.TracerBackend.Capture(ctx, "event.retry.delivery.circuit_breaker", attributes, traceStartTime, time.Now())
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryCircuitBreaker, attributes)
 				return &CircuitBreakerError{Err: breakerErr}
 			}
 
 			// check the circuit breaker state so we can disable the endpoint
 			cb, breakerErr := deps.CircuitBreakerManager.GetCircuitBreaker(ctx, endpoint.UID)
 			if breakerErr != nil {
-				deps.TracerBackend.Capture(ctx, "event.retry.delivery.circuit_breaker", attributes, traceStartTime, time.Now())
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryCircuitBreaker, attributes)
 				return &CircuitBreakerError{Err: breakerErr}
 			}
 
@@ -139,7 +139,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 
 		err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
 		if err != nil {
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
@@ -148,26 +148,26 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 
 		if eventDelivery.Status == datastore.SuccessEventStatus {
 			deps.Logger.DebugContext(ctx, fmt.Sprintf("endpoint %s already merged with message %s\n", endpoint.Url, eventDelivery.UID))
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.success", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliverySuccess, attributes)
 			return nil
 		}
 
 		if endpoint.Status == datastore.InactiveEndpointStatus {
 			err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
 			if err != nil {
-				deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 				return &EndpointError{Err: err, delay: defaultEventDelay}
 			}
 
 			deps.Logger.DebugContext(ctx, fmt.Sprintf("endpoint %s is inactive, failing to send.", endpoint.Url))
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.discarded", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryDiscarded, attributes)
 			return nil
 		}
 
 		sig := newSignature(endpoint, project, json.RawMessage(eventDelivery.Metadata.Raw))
 		header, err := sig.ComputeHeaderValue()
 		if err != nil {
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
@@ -176,7 +176,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
 			if err != nil {
 				deps.Logger.ErrorContext(ctx, "failed to concat url query params", "error", err)
-				deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 				return &EndpointError{Err: err, delay: defaultEventDelay}
 			}
 		}
@@ -239,7 +239,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 				if innerErr != nil {
 					deps.Logger.ErrorContext(ctx, "failed to update event delivery status to failed", "error", innerErr)
 				}
-				deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 				return nil // Return nil to avoid retrying
 			}
 
@@ -265,7 +265,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 					if innerErr != nil {
 						deps.Logger.ErrorContext(ctx, "failed to update event delivery status to failed", "error", innerErr)
 					}
-					deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+					tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 					return nil // Return nil to avoid retrying
 				}
 				mtlsCert = cert
@@ -335,9 +335,9 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		// Request failed but statusCode is 200 <= x <= 299
 		if err != nil {
 			deps.Logger.ErrorContext(ctx, fmt.Sprintf("%s failed. Reason: %s", eventDelivery.UID, err))
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 		} else {
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.success", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliverySuccess, attributes)
 		}
 
 		attempt = parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
@@ -386,19 +386,19 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		err = deps.AttemptsRepo.CreateDeliveryAttempt(ctx, &attempt)
 		if err != nil {
 			deps.Logger.ErrorContext(ctx, fmt.Sprintf("failed to create delivery attempt for event delivery with id: %s and delivery attempt: %s", eventDelivery.UID, attempt.ResponseData), "error", err)
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
 		}
 
 		err = deps.EventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
 		if err != nil {
 			deps.Logger.ErrorContext(ctx, "failed to update message", "error", err, "event_delivery_uid", eventDelivery.UID)
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error()), delay: defaultEventDelay}
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
-			deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: fmt.Errorf("%s: delivery not completed, retrying", ErrDeliveryAttemptFailed), delay: delayDuration}
 		}
 

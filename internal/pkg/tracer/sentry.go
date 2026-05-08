@@ -2,27 +2,28 @@ package tracer
 
 import (
 	"context"
-	"time"
 
 	"github.com/getsentry/sentry-go"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
 	sentryotel "github.com/getsentry/sentry-go/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/frain-dev/convoy/config"
 )
 
 type SentryTracer struct {
 	cfg        config.SentryConfiguration
+	tp         trace.TracerProvider
 	ShutdownFn func(ctx context.Context) error
 }
 
 func NewSentryTracer(cfg config.SentryConfiguration) *SentryTracer {
 	return &SentryTracer{
 		cfg: cfg,
+		tp:  tracenoop.NewTracerProvider(),
 		ShutdownFn: func(ctx context.Context) error {
 			return nil
 		},
@@ -64,6 +65,7 @@ func (st *SentryTracer) Init(componentName string) error {
 	// Configure Propagator.
 	otel.SetTextMapPropagator(sentryotel.NewSentryPropagator())
 
+	st.tp = tp
 	st.ShutdownFn = tp.Shutdown
 
 	return nil
@@ -73,30 +75,11 @@ func (st *SentryTracer) Type() config.TracerProvider {
 	return config.SentryTracerProvider
 }
 
-func (st *SentryTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime, endTime time.Time) {
-	_, span := otel.Tracer("").Start(ctx, name,
-		trace.WithTimestamp(startTime))
-
-	// End span with provided end time
-	defer span.End(trace.WithTimestamp(endTime))
-
-	// Convert and set attributes
-	attrs := make([]attribute.KeyValue, 0, len(attributes))
-	for k, v := range attributes {
-		switch val := v.(type) {
-		case string:
-			attrs = append(attrs, attribute.String(k, val))
-		case int:
-			attrs = append(attrs, attribute.Int(k, val))
-		case int64:
-			attrs = append(attrs, attribute.Int64(k, val))
-		case float64:
-			attrs = append(attrs, attribute.Float64(k, val))
-		case bool:
-			attrs = append(attrs, attribute.Bool(k, val))
-		}
+func (st *SentryTracer) TracerProvider() trace.TracerProvider {
+	if st.tp == nil {
+		return tracenoop.NewTracerProvider()
 	}
-	span.SetAttributes(attrs...)
+	return st.tp
 }
 
 func (st *SentryTracer) Shutdown(ctx context.Context) error {

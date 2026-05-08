@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
 	"github.com/frain-dev/convoy/config"
 )
 
@@ -56,7 +58,8 @@ type Response[T any] struct {
 func NewClient(cfg config.BillingConfiguration) *HTTPClient {
 	return &HTTPClient{
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:   30 * time.Second,
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
 		},
 		config: cfg,
 	}

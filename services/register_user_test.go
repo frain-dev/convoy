@@ -86,7 +86,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				orgRepo.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(true, nil)
@@ -177,7 +177,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				orgRepo.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(true, nil)

@@ -57,7 +57,7 @@ func TestGeneratePasswordResetTokenService_Run(t *testing.T) {
 				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := u.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.EmailProcessor, convoy.DefaultQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.EmailProcessor, convoy.DefaultQueue, gomock.Any()).Times(1).Return(nil)
 			},
 		},
 		{
@@ -144,7 +144,7 @@ func TestGeneratePasswordResetTokenService_Run(t *testing.T) {
 				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := u.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.EmailProcessor, convoy.DefaultQueue, gomock.Any()).Times(1).Return(errors.New("failed to write to queue"))
+				q.EXPECT().Write(gomock.Any(), convoy.EmailProcessor, convoy.DefaultQueue, gomock.Any()).Times(1).Return(errors.New("failed to write to queue"))
 
 				ml, _ := u.Logger.(*mocks.MockLogger)
 				ml.EXPECT().ErrorContext(gomock.Any(), "failed to write new notification to the queue", "error", gomock.Any()).Times(1)

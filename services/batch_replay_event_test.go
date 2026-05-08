@@ -53,7 +53,7 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 				)
 
 				q, _ := br.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(2).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(2).Return(nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -81,8 +81,8 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 				)
 
 				q, _ := br.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(2).Return(nil)
-				q.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(errors.New("failed"))
+				q.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(2).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(errors.New("failed"))
 
 				ml, _ := br.Logger.(*mocks.MockLogger)
 				ml.EXPECT().ErrorContext(gomock.Any(), "replay_event: failed to write event to the queue", "error", gomock.Any()).Times(1)

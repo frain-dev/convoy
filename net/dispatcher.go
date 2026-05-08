@@ -18,7 +18,10 @@ import (
 
 	"github.com/stealthrocket/netjail"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/net/http/httpproxy"
+
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -36,7 +39,6 @@ var (
 	ErrBlockListIsRequired = errors.New("blocklist is required")
 	ErrLoggerIsRequired    = errors.New("logger is required")
 	ErrInvalidIPPrefix     = errors.New("invalid IP prefix")
-	ErrTracerIsRequired    = errors.New("tracer cannot be nil")
 	ErrNon2xxResponse      = errors.New("endpoint returned a non-2xx response")
 )
 
@@ -118,34 +120,103 @@ func (c *CustomTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return c.otelTransport.RoundTrip(req)
 }
 
-// NewNetJailTransport creates a new CustomTransport with a netJailTransport
-func NewNetJailTransport(netJailTransport *netjail.Transport) *CustomTransport {
-	otelTransport := otelhttp.NewTransport(
-		netJailTransport,
+// dispatcherOtelOpts builds the otelhttp options shared by both the netjail
+// and vanilla transports. When detailedTrace is true we register an httptrace
+// ClientTrace through otelhttp.WithClientTrace so the network-timing events
+// land on otelhttp's child span (HTTP webhook.dispatch) instead of whatever
+// span happens to live on the dispatcher caller's ctx — otelhttp invokes
+// the function with its internal ctx already carrying the child span, so the
+// closure resolves to the correct one.
+func dispatcherOtelOpts(detailedTrace bool) []otelhttp.Option {
+	opts := []otelhttp.Option{
 		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
 			return fmt.Sprintf("%s webhook.dispatch", r.Method)
 		}),
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			return true
 		}),
-	)
+	}
+	if detailedTrace {
+		opts = append(opts, otelhttp.WithClientTrace(buildDispatchClientTrace))
+	}
+	return opts
+}
+
+// buildDispatchClientTrace returns an httptrace.ClientTrace whose hooks add
+// per-phase events to the active span on ctx. otelhttp.Transport.RoundTrip
+// calls this with its own ctx (which carries the child span it just created),
+// so AddEvent attaches to that span — not to the dispatcher caller's parent.
+func buildDispatchClientTrace(ctx context.Context) *httptrace.ClientTrace {
+	addEvent := func(name string, attrs ...attribute.KeyValue) {
+		span := oteltrace.SpanFromContext(ctx)
+		if span.IsRecording() {
+			span.AddEvent(name, oteltrace.WithAttributes(attrs...))
+		}
+	}
+	return &httptrace.ClientTrace{
+		DNSStart: func(info httptrace.DNSStartInfo) {
+			addEvent(tracer.EventDispatcherDNSLookupStart, attribute.String("dns.host", info.Host))
+		},
+		DNSDone: func(info httptrace.DNSDoneInfo) {
+			attrs := []attribute.KeyValue{
+				attribute.String("dns.addresses", fmt.Sprintf("%v", info.Addrs)),
+			}
+			if info.Err != nil {
+				attrs = append(attrs, attribute.String("dns.error", info.Err.Error()))
+			}
+			addEvent(tracer.EventDispatcherDNSLookupDone, attrs...)
+		},
+		ConnectStart: func(network, addr string) {
+			addEvent(tracer.EventDispatcherConnectStart,
+				attribute.String("net.network", network),
+				attribute.String("net.addr", addr),
+			)
+		},
+		ConnectDone: func(network, addr string, err error) {
+			attrs := []attribute.KeyValue{
+				attribute.String("net.network", network),
+				attribute.String("net.addr", addr),
+			}
+			if err != nil {
+				attrs = append(attrs, attribute.String("net.error", err.Error()))
+			}
+			addEvent(tracer.EventDispatcherConnectDone, attrs...)
+		},
+		TLSHandshakeStart: func() {
+			addEvent(tracer.EventDispatcherTLSHandshakeStart)
+		},
+		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
+			attrs := []attribute.KeyValue{
+				attribute.Int("tls.version", int(state.Version)),
+				attribute.Int("tls.cipher_suite", int(state.CipherSuite)),
+			}
+			if err != nil {
+				attrs = append(attrs, attribute.String("tls.error", err.Error()))
+			}
+			addEvent(tracer.EventDispatcherTLSHandshakeDone, attrs...)
+		},
+		GotFirstResponseByte: func() {
+			addEvent(tracer.EventDispatcherFirstByte)
+		},
+	}
+}
+
+// NewNetJailTransport creates a new CustomTransport wrapping a netjail.Transport.
+// detailedTrace controls whether per-phase network timing events are recorded
+// on the otelhttp child span via httptrace hooks.
+func NewNetJailTransport(netJailTransport *netjail.Transport, detailedTrace bool) *CustomTransport {
+	otelTransport := otelhttp.NewTransport(netJailTransport, dispatcherOtelOpts(detailedTrace)...)
 	return &CustomTransport{
 		otelTransport:    otelTransport,
 		netJailTransport: netJailTransport,
 	}
 }
 
-// NewVanillaTransport creates a new CustomTransport with a default transport
-func NewVanillaTransport(transport *http.Transport) *CustomTransport {
-	otelTransport := otelhttp.NewTransport(
-		transport,
-		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
-			return fmt.Sprintf("%s webhook.dispatch", r.Method)
-		}),
-		otelhttp.WithFilter(func(r *http.Request) bool {
-			return true
-		}),
-	)
+// NewVanillaTransport creates a new CustomTransport wrapping the vanilla transport.
+// detailedTrace controls whether per-phase network timing events are recorded
+// on the otelhttp child span via httptrace hooks.
+func NewVanillaTransport(transport *http.Transport, detailedTrace bool) *CustomTransport {
+	otelTransport := otelhttp.NewTransport(transport, dispatcherOtelOpts(detailedTrace)...)
 	return &CustomTransport{
 		otelTransport:    otelTransport,
 		vanillaTransport: transport,
@@ -165,7 +236,6 @@ type Dispatcher struct {
 	transport     *http.Transport
 	client        *http.Client
 	rules         *netjail.Rules
-	tracer        tracer.Backend
 	detailedTrace DetailedTraceConfig
 }
 
@@ -174,7 +244,6 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		ff:     ff,
 		l:      l,
 		logger: log.New("convoy", log.LevelInfo),
-		tracer: tracer.NoOpBackend{},
 		client: &http.Client{},
 		rules:  &netjail.Rules{},
 		transport: &http.Transport{
@@ -205,9 +274,9 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	}
 
 	if ff.CanAccessFeature(fflag.IpRules) && l.IpRules() {
-		d.client.Transport = NewNetJailTransport(netJailTransport)
+		d.client.Transport = NewNetJailTransport(netJailTransport, d.detailedTrace.Enabled)
 	} else {
-		d.client.Transport = NewVanillaTransport(d.transport)
+		d.client.Transport = NewVanillaTransport(d.transport, d.detailedTrace.Enabled)
 	}
 
 	return d, nil
@@ -334,18 +403,6 @@ func LoggerOption(logger log.Logger) DispatcherOption {
 	}
 }
 
-// TracerOption sets a custom tracer backend for the Dispatcher
-func TracerOption(tracer tracer.Backend) DispatcherOption {
-	return func(d *Dispatcher) error {
-		if tracer == nil {
-			return ErrTracerIsRequired
-		}
-
-		d.tracer = tracer
-		return nil
-	}
-}
-
 func DetailedTraceOption(enabled bool) DispatcherOption {
 	return func(d *Dispatcher) error {
 		d.detailedTrace.Enabled = enabled
@@ -382,10 +439,10 @@ func (d *Dispatcher) createClientWithMTLS(mtlsCert *tls.Certificate) *http.Clien
 		netJailTransport := &netjail.Transport{
 			New: func() *http.Transport { return customTransport.Clone() },
 		}
-		return &http.Client{Transport: NewNetJailTransport(netJailTransport)}
+		return &http.Client{Transport: NewNetJailTransport(netJailTransport, d.detailedTrace.Enabled)}
 	}
 
-	return &http.Client{Transport: NewVanillaTransport(customTransport)}
+	return &http.Client{Transport: NewVanillaTransport(customTransport, d.detailedTrace.Enabled)}
 }
 
 // SendWebhookWithMTLS sends a webhook request with optional mTLS client certificate configuration
@@ -454,7 +511,7 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.do(ctx, req, r, maxResponseSize, client)
+	err = d.do(req, r, maxResponseSize, client)
 	if err != nil {
 		return r, err
 	}
@@ -484,68 +541,13 @@ func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
 }
 
-func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64, client *http.Client) error {
-	if d.detailedTrace.Enabled {
-		trace := &httptrace.ClientTrace{
-			DNSStart: func(info httptrace.DNSStartInfo) {
-				attrs := map[string]interface{}{
-					"dns.host": info.Host,
-					"event":    "dns_start",
-				}
-				d.tracer.Capture(ctx, "dns_lookup_start", attrs, time.Now(), time.Now())
-			},
-			DNSDone: func(info httptrace.DNSDoneInfo) {
-				attrs := map[string]interface{}{
-					"dns.addresses": fmt.Sprintf("%v", info.Addrs),
-					"dns.error":     fmt.Sprintf("%v", info.Err),
-					"event":         "dns_done",
-				}
-				d.tracer.Capture(ctx, "dns_lookup_done", attrs, time.Now(), time.Now())
-			},
-			ConnectStart: func(network, addr string) {
-				attrs := map[string]interface{}{
-					"net.network": network,
-					"net.addr":    addr,
-					"event":       "connect_start",
-				}
-				d.tracer.Capture(ctx, "connect_start", attrs, time.Now(), time.Now())
-			},
-			ConnectDone: func(network, addr string, err error) {
-				attrs := map[string]interface{}{
-					"net.network": network,
-					"net.addr":    addr,
-					"error":       fmt.Sprintf("%v", err),
-					"event":       "connect_done",
-				}
-				d.tracer.Capture(ctx, "connect_done", attrs, time.Now(), time.Now())
-			},
-			TLSHandshakeStart: func() {
-				attrs := map[string]interface{}{
-					"event": "tls_handshake_start",
-				}
-				d.tracer.Capture(ctx, "tls_handshake_start", attrs, time.Now(), time.Now())
-			},
-			TLSHandshakeDone: func(state tls.ConnectionState, err error) {
-				attrs := map[string]interface{}{
-					"tls.version":      state.Version,
-					"tls.cipher_suite": state.CipherSuite,
-					"error":            fmt.Sprintf("%v", err),
-					"event":            "tls_handshake_done",
-				}
-				d.tracer.Capture(ctx, "tls_handshake_done", attrs, time.Now(), time.Now())
-			},
-			GotFirstResponseByte: func() {
-				attrs := map[string]interface{}{
-					"event": "first_byte_received",
-				}
-				d.tracer.Capture(ctx, "first_byte", attrs, time.Now(), time.Now())
-			},
-		}
-
-		ctx = httptrace.WithClientTrace(ctx, trace)
-		req = req.WithContext(ctx)
-	}
-
+func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64, client *http.Client) error {
+	// Detailed-trace network-timing events (DNS / connect / TLS / first byte)
+	// are wired through otelhttp.WithClientTrace at transport construction
+	// time — see dispatcherOtelOpts in this file. Registering them here from
+	// the dispatcher's outer ctx would attach the events to the caller's
+	// (worker.task.*) span instead of the otelhttp child span where they
+	// belong, so we deliberately do not call httptrace.WithClientTrace here.
 	response, err := client.Do(req)
 	if err != nil {
 		d.logger.Error("error sending request to API endpoint", "error", err)

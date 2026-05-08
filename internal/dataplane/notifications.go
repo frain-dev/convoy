@@ -1,6 +1,7 @@
 package dataplane
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/oklog/ulid/v2"
@@ -16,7 +17,7 @@ import (
 
 // EnqueueCircuitBreakerEmails enqueues notification emails to endpoint support email and project owner.
 // ownerEmail may be empty if unavailable. It is safe to call this with missing emails; those are skipped.
-func EnqueueCircuitBreakerEmails(q queue.Queuer, lo log.Logger, project *datastore.Project, endpoint *datastore.Endpoint, ownerEmail string, failureRate float64) error {
+func EnqueueCircuitBreakerEmails(ctx context.Context, q queue.Queuer, lo log.Logger, project *datastore.Project, endpoint *datastore.Endpoint, ownerEmail string, failureRate float64) error {
 	// Endpoint support email
 	if endpoint != nil && endpoint.SupportEmail != "" {
 		emailMsg := &email.Message{
@@ -34,7 +35,7 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo log.Logger, project *datasto
 				"endpoint_status": "inactive",
 			},
 		}
-		if err := enqueueEmail(q, emailMsg); err != nil {
+		if err := enqueueEmail(ctx, q, emailMsg); err != nil {
 			lo.Error("Failed to queue circuit breaker notification email", "error", err)
 		}
 	}
@@ -65,14 +66,14 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo log.Logger, project *datasto
 				"endpoint_status": "inactive",
 			},
 		}
-		if err := enqueueEmail(q, emailMsg); err != nil {
+		if err := enqueueEmail(ctx, q, emailMsg); err != nil {
 			lo.Error("Failed to queue circuit breaker notification email to owner", "error", err)
 		}
 	}
 	return nil
 }
 
-func enqueueEmail(q queue.Queuer, emailMsg *email.Message) error {
+func enqueueEmail(ctx context.Context, q queue.Queuer, emailMsg *email.Message) error {
 	// Wrap email message in notification.Notification struct
 	// ProcessNotifications expects this structure with NotificationType and Payload
 	notif := &notification.Notification{
@@ -88,5 +89,5 @@ func enqueueEmail(q queue.Queuer, emailMsg *email.Message) error {
 		ID:      ulid.Make().String(),
 		Payload: bytes,
 	}
-	return q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
+	return q.Write(ctx, convoy.NotificationProcessor, convoy.DefaultQueue, job)
 }

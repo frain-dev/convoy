@@ -79,7 +79,7 @@ func (h *Handler) TriggerBackup(w http.ResponseWriter, r *http.Request) {
 		Payload: payload,
 	}
 
-	if err := h.A.Queue.Write(convoy.ManualBackupJob, convoy.DefaultQueue, job); err != nil {
+	if err := h.A.Queue.Write(r.Context(), convoy.ManualBackupJob, convoy.DefaultQueue, job); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to enqueue backup job", http.StatusInternalServerError))
 		return
 	}
