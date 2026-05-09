@@ -9,6 +9,25 @@ on:
   push:
     branches:
       - main
+    # Only run when something in the release artifact surface changes (fail
+    # closed). Tag pushes (v*) always run; path filters apply only to branch
+    # pushes. If a new top-level package is added under the module, extend this
+    # list. Include non-Go embeds (VERSION, sql, web, email templates). Verify: go list -deps './cmd/...'.
+    paths:
+      - "**/*.go"
+      - "internal/email/templates/**"
+      - "VERSION"
+      - "go.mod"
+      - "go.sum"
+      - "sqlc.yaml"
+      - "sql/**"
+      - "web/**"
+      - "Makefile"
+      - "release.Dockerfile"
+      - "scripts/ui.sh"
+      - ".dockerignore"
+      - ".github/workflows/build-image.yml"
+
     tags:
       - v*
 
