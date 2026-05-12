@@ -1,7 +1,7 @@
 <div class="w-full">
   @if (isLoading) {
     <div class="flex justify-between h-100px">
-      @for (size of loaderSizes; track size) {
+      @for (size of loaderSizes; track $index) {
         <div class="loader mr-2px last-of-type:mr-0 flex items-end relative w-full h-full">
           <div class="min-h-[4px] w-full bg-neutral-a3 rounded-4px animate-pulse hover:cursor-pointer transition-all duration-300" [ngStyle]="{ height: size + 'px' }"></div>
         </div>
