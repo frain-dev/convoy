@@ -64,7 +64,7 @@ export class MonacoComponent implements AfterViewInit {
 				language: this.format,
 				formatOnPaste: true,
 				formatOnType: true,
-				minimap: { enabled: false, autohide: this.modifiedEditorValue ? false : true },
+				minimap: { enabled: false, autohide: 'mouseover' },
 				theme: 'custom-theme'
 			});
 
