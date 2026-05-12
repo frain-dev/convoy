@@ -4,6 +4,37 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - 'api/**'
+      - 'cmd/**'
+      - 'config/**'
+      - 'internal/**'
+      - 'pkg/**'
+      - 'plugin/**'
+      - 'services/**'
+      - 'util/**'
+      - 'worker/**'
+      - 'webhook/**'
+      - 'net/**'
+      - 'datastore/**'
+      - 'database/**'
+      - 'migrations/**'
+      - 'sql/**'
+      - 'e2e/**'
+      - 'scripts/**'
+      - 'testutil/**'
+      - 'docker-compose*.yml'
+      - 'Dockerfile*'
+      - '.github/workflows/vanilla-e2e-tests.yml'
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -11,11 +42,15 @@ permissions:
 jobs:
   pubsub-tests:
     runs-on: ubuntu-latest
+    env:
+      GO_TEST_RACE: '1'
+      GO_TEST_VERBOSE: '0'
+      TEST_VERBOSE: '0'
     strategy:
       matrix:
-        go-version: [ 1.26.2 ]
-        postgres-version: [ "15" ]
-        redis-version: [ "6.2.6" ]
+        go-version: [1.26.2]
+        postgres-version: ["15"]
+        redis-version: ["6.2.6"]
 
     services:
       postgres:
@@ -35,20 +70,14 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: ${{ matrix.go-version }}
-
-      - name: Cache go modules
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-
-      - name: Check out code
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+          cache: true
 
       - name: Get and verify dependencies
         run: go mod download && go mod verify

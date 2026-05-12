@@ -4,6 +4,20 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - 'e2e/**'
+      - 'docker-compose.sentinel.yml'
+      - 'convoy.sentinel.json.example'
+      - '.github/workflows/redis-sentinel-e2e-tests.yml'
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -11,25 +25,22 @@ permissions:
 jobs:
   sentinel-e2e-tests:
     runs-on: ubuntu-latest
+    env:
+      GO_TEST_RACE: '1'
+      GO_TEST_VERBOSE: '0'
     strategy:
       matrix:
-        go-version: [ 1.26.2 ]
+        go-version: [1.26.2]
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
       - name: Set up Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: ${{ matrix.go-version }}
-
-      - name: Cache go modules
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-
-      - name: Check out code
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+          cache: true
 
       - name: Get and verify dependencies
         run: go mod download && go mod verify
@@ -40,12 +51,11 @@ jobs:
       - name: Start Redis Sentinel Cluster
         run: |
           docker compose -f docker-compose.sentinel.yml up -d
-          # Wait for sentinel to be ready
           sleep 10
           docker ps
 
       - name: Run Redis Sentinel E2E Test
-        run: go test -race -v ./e2e/ -run TestE2E_RedisSentinel
+        run: bash scripts/ci-go-test.sh ./e2e/ -run TestE2E_RedisSentinel
         env:
           CONVOY_REDIS_SCHEME: redis-sentinel
           CONVOY_REDIS_ADDRESSES: 127.0.0.1:26379,127.0.0.1:26380,127.0.0.1:26381

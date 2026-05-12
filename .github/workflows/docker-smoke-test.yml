@@ -5,6 +5,20 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - 'Dockerfile*'
+      - 'configs/**'
+      - 'docker-compose*.yml'
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'cmd/**'
+      - 'internal/**'
+      - '.github/workflows/docker-smoke-test.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

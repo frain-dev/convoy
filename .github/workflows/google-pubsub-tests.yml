@@ -4,6 +4,22 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - 'e2e/pubsub/**'
+      - 'internal/**'
+      - 'pkg/**'
+      - 'datastore/**'
+      - 'docker-compose*.yml'
+      - '.github/workflows/google-pubsub-tests.yml'
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -11,6 +27,9 @@ permissions:
 jobs:
   pubsub-tests:
     runs-on: ubuntu-latest
+    env:
+      GO_TEST_RACE: '1'
+      GO_TEST_VERBOSE: '0'
     strategy:
       matrix:
         go-version: [1.26.2]
@@ -35,20 +54,14 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: ${{ matrix.go-version }}
-
-      - name: Cache go modules
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-
-      - name: Check out code
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+          cache: true
 
       - name: Get and verify dependencies
         run: go mod download && go mod verify
@@ -68,9 +81,9 @@ jobs:
           CONVOY_REDIS_PORT: 6379
 
       - name: Run Google Pub/Sub E2E tests (testcontainers)
-        run: go test -race -v ./e2e/pubsub -timeout 30m
+        run: bash scripts/ci-go-test.sh ./e2e/pubsub -timeout 30m
         env:
-          TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+          TEST_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
           CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
           CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
           CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true

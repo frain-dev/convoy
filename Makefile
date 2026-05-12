@@ -15,9 +15,28 @@ ui_install:
 build:
 	scripts/build.sh
 
+# GO_TEST_RACE=0 skips the race detector (optional for local speed). Default 1; CI keeps race on for all triggers.
+GO_TEST_RACE ?= 1
+ifeq ($(GO_TEST_RACE),0)
+GO_RACE_FLAG :=
+else
+GO_RACE_FLAG := -race
+endif
+
+# Package parallelism (lower under -race on small runners if you see OOM, e.g. TEST_PARALLEL=2).
+TEST_PARALLEL ?= 4
+
+# TEST_VERBOSE=0 drops -v to cut log volume in CI.
+TEST_VERBOSE ?= 1
+ifeq ($(TEST_VERBOSE),0)
+TEST_VFLAG :=
+else
+TEST_VFLAG := -v
+endif
+
 .PHONY: test
 test:
-	@go test -race -p 1 $(shell go list ./... | grep -v '/e2e') -v -timeout 30m
+	@go test $(GO_RACE_FLAG) -p $(TEST_PARALLEL) $(shell go list ./... | grep -v '/e2e') $(TEST_VFLAG) -timeout 30m
 
 # Get Docker socket from active context if DOCKER_HOST is not set
 DOCKER_HOST_VAL := $(or $(DOCKER_HOST),$(shell docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null || echo ""))
@@ -30,39 +49,14 @@ TEST_ENV := DOCKER_HOST="$(DOCKER_HOST_VAL)" TESTCONTAINERS_DOCKER_SOCKET_OVERRI
 test_e2e_fast:
 	@echo "Using docker context: $(DOCKER_CONTEXT) (DOCKER_HOST=$(DOCKER_HOST_VAL))"
 	@echo "Running Fast E2E tests (non-pubsub)..."
-	@echo "Running Direct Event tests..."
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_DirectEvent_AllSubscriptions
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_DirectEvent_MustMatchSubscription
-	@echo "Running Fanout Event tests..."
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_FanOutEvent_AllSubscriptions
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_FanOutEvent_MustMatchSubscription
-	@echo "Running Form Endpoint tests..."
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_FormEndpoint_ContentType
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_FormEndpoint_WithCustomHeaders
-	@echo "Running OAuth2 tests..."
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_OAuth2_SharedSecret
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_OAuth2_ClientAssertion
-	@echo "Running Job ID tests..."
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_SingleEvent_JobID_Format
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_SingleEvent_JobID_Deduplication
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_FanoutEvent_JobID_Format
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_FanoutEvent_MultipleOwners
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BroadcastEvent_JobID_Format
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BroadcastEvent_AllSubscribers
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_DynamicEvent_JobID_Format
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_DynamicEvent_MultipleEventTypes
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_ReplayEvent_JobID_Format
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_ReplayEvent_MultipleReplays
-	@echo "Running Bulk Onboard tests..."
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_JSON_CreatesEndpointsAndSubscriptions
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_CSV_CreatesEndpointsAndSubscriptions
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_DryRun_DoesNotCreateResources
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_DryRun_ReturnsValidationErrors
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_ValidationFailure_Returns400
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_EmptyItems_Returns400
-	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_MultipleBatches
+	@echo "Running Direct / Fanout / Form / OAuth2 suites..."
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e -timeout 30m -run 'TestE2E_(DirectEvent_AllSubscriptions|DirectEvent_MustMatchSubscription|FanOutEvent_AllSubscriptions|FanOutEvent_MustMatchSubscription|FormEndpoint_ContentType|FormEndpoint_WithCustomHeaders|OAuth2_SharedSecret|OAuth2_ClientAssertion)'
+	@echo "Running Job ID suites..."
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e -timeout 30m -run 'TestE2E_(SingleEvent_JobID_Format|SingleEvent_JobID_Deduplication|FanoutEvent_JobID_Format|FanoutEvent_MultipleOwners|BroadcastEvent_JobID_Format|BroadcastEvent_AllSubscribers|DynamicEvent_JobID_Format|DynamicEvent_MultipleEventTypes|ReplayEvent_JobID_Format|ReplayEvent_MultipleReplays)'
+	@echo "Running Bulk Onboard suites..."
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e -timeout 30m -run 'TestE2E_(BulkOnboard_JSON_CreatesEndpointsAndSubscriptions|BulkOnboard_CSV_CreatesEndpointsAndSubscriptions|BulkOnboard_DryRun_DoesNotCreateResources|BulkOnboard_DryRun_ReturnsValidationErrors|BulkOnboard_ValidationFailure_Returns400|BulkOnboard_EmptyItems_Returns400|BulkOnboard_MultipleBatches)'
 	@echo "Running Backup tests..."
-	@$(TEST_ENV) go test -race -v ./e2e/backup -timeout 15m
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e/backup -timeout 15m
 	@echo "✅ Fast E2E tests passed!"
 
 # Slow PubSub/Message Broker tests - Run daily (60+ minutes)
@@ -71,13 +65,13 @@ test_e2e_pubsub:
 	@echo "Using docker context: $(DOCKER_CONTEXT) (DOCKER_HOST=$(DOCKER_HOST_VAL))"
 	@echo "Running PubSub/Message Broker E2E tests..."
 	@echo "Running AMQP PubSub tests..."
-	@$(TEST_ENV) go test -race -v ./e2e/amqp -timeout 30m
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e/amqp -timeout 30m
 	@echo "Running SQS PubSub tests..."
-	@$(TEST_ENV) go test -race -v ./e2e/sqs -timeout 30m
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e/sqs -timeout 30m
 	@echo "Running Kafka PubSub tests..."
-	@$(TEST_ENV) go test -race -v ./e2e/kafka -timeout 30m
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e/kafka -timeout 30m
 	@echo "Running Google Pub/Sub tests..."
-	@$(TEST_ENV) go test -race -v ./e2e/pubsub -timeout 30m
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e/pubsub -timeout 30m
 	@echo "✅ All PubSub E2E tests passed!"
 
 # Original test_e2e - runs ALL tests (for local comprehensive testing)
@@ -88,13 +82,13 @@ test_e2e: test_e2e_fast test_e2e_pubsub
 # Run all E2E tests together (may be flaky, use test_e2e for CI)
 test_e2e_all:
 	@echo "Using docker context: $(DOCKER_CONTEXT) (DOCKER_HOST=$(DOCKER_HOST_VAL))"
-	@$(TEST_ENV) go test -race -v ./e2e/...
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e/...
 
 # Run a specific E2E test
 # Usage: make test_e2e_single TEST=TestE2E_DirectEvent_AllSubscriptions
 test_e2e_single:
 	@echo "Using docker context: $(DOCKER_CONTEXT) (DOCKER_HOST=$(DOCKER_HOST_VAL))"
-	@$(TEST_ENV) go test -race -v ./e2e/... -run $(TEST)
+	@$(TEST_ENV) go test $(GO_RACE_FLAG) $(TEST_VFLAG) ./e2e/... -run $(TEST)
 
 generate_migration_time:
 	@date +"%Y%m%d%H%M%S"
