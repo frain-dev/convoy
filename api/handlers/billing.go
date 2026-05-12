@@ -121,7 +121,7 @@ func (h *BillingHandler) getOwnerEmail(ctx context.Context, orgID string) string
 		return ""
 	}
 
-	return owner.Email
+	return strings.TrimSpace(owner.Email)
 }
 
 func (h *BillingHandler) updateBillingEmailIfEmpty(orgID string) {
