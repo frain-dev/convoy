@@ -39,7 +39,7 @@
               <div class="w-1/5 text-left ml-2px">Event Time</div>
               <div class="w-1/5 text-left ml-2px">Retry Time</div>
             </div>
-            @for (event of lastestEventDeliveries; track event) {
+            @for (event of lastestEventDeliveries; track event.uid) {
               <div class="flex text-left text-14 p-10px cursor-pointer hover:bg-neutral-a3" [routerLink]="['./event-deliveries/' + event.uid]">
                 <div class="w-1/5">
                   <div convoy-tag [color]="event.status | statuscolor">{{ event?.status }}</div>

@@ -95,7 +95,7 @@
         </div>
       </div>
       <div class="bg-neutral-a2 w-full transition-all ease-in-out duration-300" [class]="showConsole ? 'max-h-132px h-full overflow-auto opacity-100' : 'h-0 overflow-hidden opacity-0'">
-        @for (log of logs; track log) {
+        @for (log of logs; track $index) {
           <prism language="javascript" type="display" [code]="generalService.getCodeSnippetString('log', parseLog(log))"></prism>
         }
       </div>
