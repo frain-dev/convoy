@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TableLoaderComponent } from './table-loader.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('TableLoaderComponent', () => {
   let component: TableLoaderComponent;
@@ -8,7 +9,7 @@ describe('TableLoaderComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ TableLoaderComponent ]
+      imports: [ RouterTestingModule, TableLoaderComponent ]
     })
     .compileComponents();
   });

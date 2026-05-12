@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MetaEventsComponent } from './meta-events.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('MetaEventsComponent', () => {
   let component: MetaEventsComponent;
@@ -8,7 +9,7 @@ describe('MetaEventsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ MetaEventsComponent ]
+      imports: [ RouterTestingModule, MetaEventsComponent]
     })
     .compileComponents();
 

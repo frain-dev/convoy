@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PrismComponent } from './prism.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('PrismComponent', () => {
   let component: PrismComponent;
@@ -8,7 +9,7 @@ describe('PrismComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ PrismComponent ]
+      imports: [ RouterTestingModule, PrismComponent ]
     })
     .compileComponents();
   });

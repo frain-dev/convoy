@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CreateSubscriptionComponent } from './create-subscription.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('CreateSubscriptionComponent', () => {
   let component: CreateSubscriptionComponent;
@@ -8,7 +9,7 @@ describe('CreateSubscriptionComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CreateSubscriptionComponent ]
+      imports: [ RouterTestingModule, CreateSubscriptionComponent ]
     })
     .compileComponents();
   });

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MultiInputComponent } from './multi-input.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('MultiInputComponent', () => {
   let component: MultiInputComponent;
@@ -8,7 +9,7 @@ describe('MultiInputComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ MultiInputComponent ]
+      imports: [ RouterTestingModule, MultiInputComponent]
     })
     .compileComponents();
 

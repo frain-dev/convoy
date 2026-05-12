@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TooltipComponent } from './tooltip.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('TooltipComponent', () => {
   let component: TooltipComponent;
@@ -8,7 +9,7 @@ describe('TooltipComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ TooltipComponent ]
+      imports: [ RouterTestingModule, TooltipComponent ]
     })
     .compileComponents();
 

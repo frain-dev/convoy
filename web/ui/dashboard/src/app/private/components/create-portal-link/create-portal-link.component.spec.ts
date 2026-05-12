@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CreatePortalLinkComponent } from './create-portal-link.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('CreatePortalLinkComponent', () => {
   let component: CreatePortalLinkComponent;
@@ -8,7 +9,7 @@ describe('CreatePortalLinkComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ CreatePortalLinkComponent ]
+      imports: [ RouterTestingModule, CreatePortalLinkComponent]
     })
     .compileComponents();
 

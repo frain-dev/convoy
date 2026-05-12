@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TimePickerComponent } from './time-picker.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('TimePickerComponent', () => {
   let component: TimePickerComponent;
@@ -8,7 +9,7 @@ describe('TimePickerComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ TimePickerComponent ]
+      imports: [ RouterTestingModule, TimePickerComponent]
     })
     .compileComponents();
 

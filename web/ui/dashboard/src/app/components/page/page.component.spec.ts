@@ -1,23 +1,23 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Component } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { PageDirective } from './page.component';
 
-import { PageComponent } from './page.component';
+@Component({
+	standalone: true,
+	imports: [PageDirective],
+	template: `<div convoy-page size="md"></div>`
+})
+class PageHostComponent {}
 
-describe('PageComponent', () => {
-  let component: PageComponent;
-  let fixture: ComponentFixture<PageComponent>;
+describe('PageDirective', () => {
+	beforeEach(async () => {
+		await TestBed.configureTestingModule({
+			imports: [PageHostComponent]
+		}).compileComponents();
+	});
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      declarations: [ PageComponent ]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(PageComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+	it('should create', () => {
+		const fixture = TestBed.createComponent(PageHostComponent);
+		expect(fixture).toBeTruthy();
+	});
 });

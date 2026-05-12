@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { EventDeliveriesComponent } from './event-deliveries.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('EventDeliveriesComponent', () => {
   let component: EventDeliveriesComponent;
@@ -8,7 +9,7 @@ describe('EventDeliveriesComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ EventDeliveriesComponent ]
+      imports: [ RouterTestingModule, EventDeliveriesComponent]
     })
     .compileComponents();
 

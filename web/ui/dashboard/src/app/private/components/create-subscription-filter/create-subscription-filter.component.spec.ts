@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CreateSubscriptionFilterComponent } from './create-subscription-filter.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('CreateSubscriptionFilterComponent', () => {
   let component: CreateSubscriptionFilterComponent;
@@ -8,7 +9,7 @@ describe('CreateSubscriptionFilterComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ CreateSubscriptionFilterComponent ]
+      imports: [ RouterTestingModule, CreateSubscriptionFilterComponent]
     })
     .compileComponents();
 

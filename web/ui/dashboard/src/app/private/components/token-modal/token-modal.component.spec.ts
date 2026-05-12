@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TokenModalComponent } from './token-modal.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('TokenModalComponent', () => {
   let component: TokenModalComponent;
@@ -8,7 +9,7 @@ describe('TokenModalComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ TokenModalComponent ]
+      imports: [ RouterTestingModule, TokenModalComponent]
     })
     .compileComponents();
 

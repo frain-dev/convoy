@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FileInputComponent } from './file-input.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('FileInputComponent', () => {
 	let component: FileInputComponent;
@@ -8,7 +9,7 @@ describe('FileInputComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [FileInputComponent]
+			imports: [RouterTestingModule, FileInputComponent]
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(FileInputComponent);
