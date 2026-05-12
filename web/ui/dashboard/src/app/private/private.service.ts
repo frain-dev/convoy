@@ -390,11 +390,16 @@ export class PrivateService {
 
 	getUserDetails(requestDetails: { userId: string; refresh?: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			const userId = requestDetails?.userId;
+			if (!userId || userId === 'undefined') {
+				return reject(new Error('missing user id'));
+			}
+
 			if (this.profileDetails && !requestDetails.refresh) return resolve(this.profileDetails);
 
 			try {
 				const response = await this.http.request({
-					url: `/users/${requestDetails.userId}/profile`,
+					url: `/users/${userId}/profile`,
 					method: 'get'
 				});
 
