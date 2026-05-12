@@ -28,12 +28,11 @@ jobs:
       - name: Check out code
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
+      # No npm cache: package-lock.json is gitignored in this repo, so cache-dependency-path would fail on CI.
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: web/ui/dashboard/package-lock.json
 
       - name: Install and build
         run: npm ci && npm run build
