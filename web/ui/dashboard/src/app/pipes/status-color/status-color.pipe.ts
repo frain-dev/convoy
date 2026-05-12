@@ -2,7 +2,8 @@ import {Pipe, PipeTransform} from '@angular/core';
 import {STATUS_COLOR} from '../../models/global.model';
 
 @Pipe({
-	name: 'statuscolor'
+    name: 'statuscolor',
+    standalone: false
 })
 export class StatusColorPipe implements PipeTransform {
 	transform(value: string): STATUS_COLOR {

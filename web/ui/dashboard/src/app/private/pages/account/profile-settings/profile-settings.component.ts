@@ -6,9 +6,10 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { AccountService } from '../account.service';
 
 @Component({
-	selector: 'profile-settings',
-	templateUrl: './profile-settings.component.html',
-	styleUrls: ['./profile-settings.component.scss']
+    selector: 'profile-settings',
+    templateUrl: './profile-settings.component.html',
+    styleUrls: ['./profile-settings.component.scss'],
+    standalone: false
 })
 export class ProfileSettingsComponent implements OnInit {
 	isSavingUserDetails = false;

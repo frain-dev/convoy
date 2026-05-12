@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -8,11 +8,10 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { ForgotPasswordService } from './forgot-password.service';
 
 @Component({
-	selector: 'app-forgot-password',
-	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective],
-	templateUrl: './forgot-password.component.html',
-	styleUrls: ['./forgot-password.component.scss']
+    selector: 'app-forgot-password',
+    imports: [ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective],
+    templateUrl: './forgot-password.component.html',
+    styleUrls: ['./forgot-password.component.scss']
 })
 export class ForgotPasswordComponent implements OnInit {
 	forgotPasswordForm: FormGroup = this.formBuilder.group({

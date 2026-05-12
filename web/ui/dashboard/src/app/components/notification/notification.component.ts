@@ -1,15 +1,14 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit } from '@angular/core';
 import { NOTIFICATION_STATUS } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ButtonComponent } from '../button/button.component';
 
 @Component({
-	selector: 'convoy-notification',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent],
-	templateUrl: './notification.component.html',
-	styleUrls: ['./notification.component.scss']
+    selector: 'convoy-notification',
+    imports: [ButtonComponent],
+    templateUrl: './notification.component.html',
+    styleUrls: ['./notification.component.scss']
 })
 export class NotificationComponent implements OnInit {
 	notification!: { message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean };

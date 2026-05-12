@@ -3,9 +3,10 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
-	selector: 'app-app',
-	templateUrl: './app.component.html',
-	styleUrls: ['./app.component.scss']
+    selector: 'app-app',
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss'],
+    standalone: false
 })
 export class AppComponent implements OnInit {
 	token: string = this.route.snapshot.params.token;

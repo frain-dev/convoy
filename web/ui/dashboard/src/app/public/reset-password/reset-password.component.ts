@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -8,11 +8,10 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { ResetPasswordService } from './reset-password.service';
 
 @Component({
-	selector: 'app-reset-password',
-	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective, RouterModule],
-	templateUrl: './reset-password.component.html',
-	styleUrls: ['./reset-password.component.scss']
+    selector: 'app-reset-password',
+    imports: [ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective, RouterModule],
+    templateUrl: './reset-password.component.html',
+    styleUrls: ['./reset-password.component.scss']
 })
 export class ResetPasswordComponent implements OnInit {
 	resetPasswordForm: FormGroup = this.formBuilder.group({

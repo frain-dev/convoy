@@ -6,9 +6,10 @@ import 'prismjs/components/prism-json';
 import 'prismjs/plugins/line-numbers/prism-line-numbers';
 
 @Component({
-	selector: 'prism',
-	templateUrl: './prism.component.html',
-	styleUrls: ['./prism.component.scss']
+    selector: 'prism',
+    templateUrl: './prism.component.html',
+    styleUrls: ['./prism.component.scss'],
+    standalone: false
 })
 export class PrismComponent implements AfterViewInit, OnChanges {
 	@ViewChild('codeEle') codeEle!: ElementRef;

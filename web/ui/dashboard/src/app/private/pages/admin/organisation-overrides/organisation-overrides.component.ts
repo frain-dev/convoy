@@ -33,9 +33,10 @@ interface FeatureFlagOverride {
 }
 
 @Component({
-	selector: 'app-organisation-overrides',
-	templateUrl: './organisation-overrides.component.html',
-	styleUrls: ['./organisation-overrides.component.scss']
+    selector: 'app-organisation-overrides',
+    templateUrl: './organisation-overrides.component.html',
+    styleUrls: ['./organisation-overrides.component.scss'],
+    standalone: false
 })
 export class OrganisationOverridesComponent implements OnInit {
 	featureFlags: FeatureFlag[] = [];

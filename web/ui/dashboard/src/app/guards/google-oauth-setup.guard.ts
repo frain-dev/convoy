@@ -1,10 +1,10 @@
 import {Injectable} from '@angular/core';
-import {CanActivate, Router} from '@angular/router';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
-export class GoogleOAuthSetupGuard implements CanActivate {
+export class GoogleOAuthSetupGuard  {
   constructor(private router: Router) {}
 
   canActivate(): boolean {

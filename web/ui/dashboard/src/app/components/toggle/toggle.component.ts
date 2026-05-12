@@ -1,20 +1,19 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, forwardRef, Input, OnInit, Optional, Output } from '@angular/core';
 import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
-	selector: 'convoy-toggle',
-	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule],
-	templateUrl: './toggle.component.html',
-	styleUrls: ['./toggle.component.scss'],
-	providers: [
-		{
-			provide: NG_VALUE_ACCESSOR,
-			useExisting: forwardRef(() => ToggleComponent),
-			multi: true
-		}
-	]
+    selector: 'convoy-toggle',
+    imports: [ReactiveFormsModule],
+    templateUrl: './toggle.component.html',
+    styleUrls: ['./toggle.component.scss'],
+    providers: [
+        {
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: forwardRef(() => ToggleComponent),
+            multi: true
+        }
+    ]
 })
 export class ToggleComponent implements OnInit, ControlValueAccessor {
 	@Input('isChecked') isChecked = false;

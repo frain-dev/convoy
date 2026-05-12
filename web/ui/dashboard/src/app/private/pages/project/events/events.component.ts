@@ -10,9 +10,10 @@ import { Router } from '@angular/router';
 import { SOURCE } from 'src/app/models/source.model';
 
 @Component({
-	selector: 'app-events',
-	templateUrl: './events.component.html',
-	styleUrls: ['./events.component.scss']
+    selector: 'app-events',
+    templateUrl: './events.component.html',
+    styleUrls: ['./events.component.scss'],
+    standalone: false
 })
 export class EventsComponent implements OnInit {
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];

@@ -1,12 +1,11 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
-	selector: 'convoy-list-item, [convoy-list-item]',
-	standalone: true,
-	host: { class: 'flex items-center justify-between py-10px transition-all duration-300 hover:bg-primary-500', '[class]': 'class' },
-	imports: [CommonModule],
-	template: `
+    selector: 'convoy-list-item, [convoy-list-item]',
+    host: { class: 'flex items-center justify-between py-10px transition-all duration-300 hover:bg-primary-500', '[class]': 'class' },
+    imports: [],
+    template: `
 		<ng-content></ng-content>
 	`
 })

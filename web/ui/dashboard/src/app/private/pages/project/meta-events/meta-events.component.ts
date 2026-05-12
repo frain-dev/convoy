@@ -24,8 +24,7 @@ import {Router} from '@angular/router';
 import {PermissionDirective} from '../../../components/permission/permission.directive';
 
 @Component({
-	selector: 'convoy-meta-events',
-	standalone: true,
+    selector: 'convoy-meta-events',
     imports: [
         CommonModule,
         CardComponent,
@@ -43,8 +42,8 @@ import {PermissionDirective} from '../../../components/permission/permission.dir
         PaginationComponent,
         PermissionDirective
     ],
-	templateUrl: './meta-events.component.html',
-	styleUrls: ['./meta-events.component.scss']
+    templateUrl: './meta-events.component.html',
+    styleUrls: ['./meta-events.component.scss']
 })
 export class MetaEventsComponent implements OnInit {
 	metaEventsTableHead: string[] = ['Status', 'Event Types', 'Retries', 'Time', '', ''];

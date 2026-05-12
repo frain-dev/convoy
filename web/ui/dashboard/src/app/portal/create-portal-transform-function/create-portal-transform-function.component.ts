@@ -9,17 +9,14 @@ import { CreateSubscriptionService } from '../../private/components/create-subsc
 import { CreateSourceService } from '../../private/components/create-source/create-source.service';
 import { GeneralService } from '../../services/general/general.service';
 import { SelectComponent } from '../../components/select/select.component';
-import { languages } from 'monaco-editor';
-import json = languages.json;
 import { EVENT_TYPE } from '../../models/event.model';
 
 @Component({
-	selector: 'convoy-create-portal-transform-function',
-	standalone: true,
-	imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, PrismModule, SelectComponent],
-	providers: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
-	templateUrl: './create-portal-transform-function.component.html',
-	styleUrls: ['./create-portal-transform-function.component.scss']
+    selector: 'convoy-create-portal-transform-function',
+    imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, PrismModule, SelectComponent],
+    providers: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
+    templateUrl: './create-portal-transform-function.component.html',
+    styleUrls: ['./create-portal-transform-function.component.scss']
 })
 export class CreatePortalTransformFunctionComponent implements OnInit {
 	@ViewChild('payloadEditor') payloadEditor!: MonacoComponent;

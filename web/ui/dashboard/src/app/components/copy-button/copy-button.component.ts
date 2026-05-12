@@ -1,14 +1,13 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ButtonComponent } from '../button/button.component';
 
 @Component({
-	selector: '[convoy-copy-button] ,convoy-copy-button',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent],
-	templateUrl: './copy-button.component.html',
-	styleUrls: ['./copy-button.component.scss']
+    selector: '[convoy-copy-button] ,convoy-copy-button',
+    imports: [ButtonComponent],
+    templateUrl: './copy-button.component.html',
+    styleUrls: ['./copy-button.component.scss']
 })
 export class CopyButtonComponent implements OnInit {
 	@Input('text') textToCopy!: string;
@@ -27,7 +26,7 @@ export class CopyButtonComponent implements OnInit {
 
 	ngOnInit(): void {}
 
-	async copyItem(event: any) {
+	async copyItem(event: any): Promise<void> {
 		event.stopPropagation();
 		if (!this.textToCopy) return;
 
@@ -35,8 +34,8 @@ export class CopyButtonComponent implements OnInit {
 			await navigator.clipboard.writeText(this.textToCopy);
 			this.copy.emit();
 			if (this.notificationText) this.generalService.showNotification({ message: this.notificationText, style: 'info' });
-		} catch (err) {
-			return err;
+		} catch {
+			// clipboard API may reject; avoid surfacing as unhandled rejection
 		}
 	}
 }

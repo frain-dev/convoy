@@ -1,13 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import {CommonModule, NgOptimizedImage} from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 
 @Component({
-	selector: 'convoy-portal',
-	standalone: true,
-	imports: [CommonModule, RouterModule, NgOptimizedImage],
-	templateUrl: './portal.component.html',
-	styleUrls: ['./portal.component.scss']
+    selector: 'convoy-portal',
+    imports: [RouterModule, NgOptimizedImage],
+    templateUrl: './portal.component.html',
+    styleUrls: ['./portal.component.scss']
 })
 export class PortalComponent implements OnInit {
 	sideBarItems = [

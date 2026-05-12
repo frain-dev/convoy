@@ -29,9 +29,10 @@ interface CircuitBreakerConfig {
 }
 
 @Component({
-	selector: 'app-circuit-breaker-config',
-	templateUrl: './circuit-breaker-config.component.html',
-	styleUrls: ['./circuit-breaker-config.component.scss']
+    selector: 'app-circuit-breaker-config',
+    templateUrl: './circuit-breaker-config.component.html',
+    styleUrls: ['./circuit-breaker-config.component.scss'],
+    standalone: false
 })
 export class CircuitBreakerConfigComponent implements OnInit {
 	// Organization-related properties

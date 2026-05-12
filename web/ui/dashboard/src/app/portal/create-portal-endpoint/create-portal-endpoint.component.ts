@@ -9,7 +9,7 @@ import {
     ViewChild,
     ViewEncapsulation
 } from '@angular/core';
-import {CommonModule, NgOptimizedImage} from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import {
     ControlContainer,
     FormBuilder,
@@ -62,31 +62,29 @@ import {SelectComponent} from '../../components/select/select.component';
 
 @Component({
     selector: 'convoy-create-portal-endpoint',
-    standalone: true,
     imports: [
-        CommonModule,
-        NgOptimizedImage,
-        ReactiveFormsModule,
-        InputDirective,
-        InputFieldDirective,
-        InputErrorComponent,
-        LabelComponent,
-        ButtonComponent,
-        RadioComponent,
-        TooltipComponent,
-        CardComponent,
-        FormLoaderComponent,
-        PermissionDirective,
-        CreateSubscriptionFilterComponent,
-        CreatePortalTransformFunctionComponent,
-        NotificationComponent,
-        ConfigButtonComponent,
-        LoaderModule,
-        TagComponent,
-        DialogDirective,
-        CopyButtonComponent,
-        SelectComponent
-    ],
+    NgOptimizedImage,
+    ReactiveFormsModule,
+    InputDirective,
+    InputFieldDirective,
+    InputErrorComponent,
+    LabelComponent,
+    ButtonComponent,
+    RadioComponent,
+    TooltipComponent,
+    CardComponent,
+    FormLoaderComponent,
+    PermissionDirective,
+    CreateSubscriptionFilterComponent,
+    CreatePortalTransformFunctionComponent,
+    NotificationComponent,
+    ConfigButtonComponent,
+    LoaderModule,
+    TagComponent,
+    DialogDirective,
+    CopyButtonComponent,
+    SelectComponent
+],
     providers: [
         {
             provide: ControlContainer,

@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
-import {CommonModule, Location} from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import {ButtonComponent} from 'src/app/components/button/button.component';
 import {DatePickerComponent} from 'src/app/components/date-picker/date-picker.component';
 import {EndpointFilterComponent} from '../endpoints-filter/endpoints-filter.component';
@@ -17,11 +17,10 @@ import {GeneralService} from 'src/app/services/general/general.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
-	selector: 'convoy-event-delivery-filter',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent, DatePickerComponent, EndpointFilterComponent, DropdownComponent, DropdownOptionDirective, ListItemComponent, SkeletonLoaderComponent, FormsModule],
-	templateUrl: './event-delivery-filter.component.html',
-	styleUrls: ['./event-delivery-filter.component.scss']
+    selector: 'convoy-event-delivery-filter',
+    imports: [CommonModule, ButtonComponent, DatePickerComponent, EndpointFilterComponent, DropdownComponent, DropdownOptionDirective, ListItemComponent, SkeletonLoaderComponent, FormsModule],
+    templateUrl: './event-delivery-filter.component.html',
+    styleUrls: ['./event-delivery-filter.component.scss']
 })
 export class EventDeliveryFilterComponent implements OnInit {
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
@@ -140,7 +139,6 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 			this.eventDeliveryFilteredByStatus = [];
 			this.datePicker?.clearDate();
-			const sortParam = this.queryParams.sort;
 
 			this.queryParams = {};
 			this._location.go(`${location.pathname}${this.portalToken ? `?token=${this.portalToken}` : ''}`);

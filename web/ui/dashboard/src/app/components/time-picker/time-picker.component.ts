@@ -6,11 +6,10 @@ import { DropdownContainerComponent } from '../dropdown-container/dropdown-conta
 import { OverlayDirective } from '../overlay/overlay.directive';
 
 @Component({
-	selector: 'convoy-time-picker',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, OverlayDirective],
-	templateUrl: './time-picker.component.html',
-	styleUrls: ['./time-picker.component.scss']
+    selector: 'convoy-time-picker',
+    imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, OverlayDirective],
+    templateUrl: './time-picker.component.html',
+    styleUrls: ['./time-picker.component.scss']
 })
 export class TimePickerComponent implements OnInit {
 	@Output('applyFilter') applyFilter: EventEmitter<any> = new EventEmitter();

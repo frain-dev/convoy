@@ -1,5 +1,5 @@
 import {Component, inject, Input, OnInit} from '@angular/core';
-import {CommonModule} from '@angular/common';
+
 import {DialogHeaderComponent} from 'src/app/components/dialog/dialog.directive';
 import {
     InputDirective,
@@ -21,11 +21,10 @@ import {ToggleComponent} from 'src/app/components/toggle/toggle.component';
 import {NotificationComponent} from 'src/app/components/notification/notification.component';
 
 @Component({
-	selector: 'convoy-create-portal-link',
-	standalone: true,
-    imports: [CommonModule, DialogHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent, NotificationComponent],
-	templateUrl: './create-portal-link.component.html',
-	styleUrls: ['./create-portal-link.component.scss']
+    selector: 'convoy-create-portal-link',
+    imports: [DialogHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent, NotificationComponent],
+    templateUrl: './create-portal-link.component.html',
+    styleUrls: ['./create-portal-link.component.scss']
 })
 export class CreatePortalLinkComponent implements OnInit {
 	@Input('action') action?: 'create' | 'update';

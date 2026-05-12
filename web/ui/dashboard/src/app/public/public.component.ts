@@ -7,9 +7,10 @@ interface Testimonial {
 }
 
 @Component({
-  selector: 'convoy-public',
-  templateUrl: './public.component.html',
-  styleUrls: ['./public.component.scss']
+    selector: 'convoy-public',
+    templateUrl: './public.component.html',
+    styleUrls: ['./public.component.scss'],
+    standalone: false
 })
 export class PublicComponent implements OnInit, OnDestroy {
 	private readonly testimonials: Testimonial[] = [

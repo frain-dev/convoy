@@ -10,9 +10,10 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
-	selector: 'app-subscriptions',
-	templateUrl: './subscriptions.component.html',
-	styleUrls: ['./subscriptions.component.scss']
+    selector: 'app-subscriptions',
+    templateUrl: './subscriptions.component.html',
+    styleUrls: ['./subscriptions.component.scss'],
+    standalone: false
 })
 export class SubscriptionsComponent implements OnInit {
 	@ViewChild('subscriptionDialog', { static: true }) subscriptionDialog!: ElementRef<HTMLDialogElement>;

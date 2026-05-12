@@ -7,11 +7,10 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 type STEP = 'Setup Client' | 'Create Endpoint' | 'Send Event';
 
 @Component({
-	selector: 'sdk-documentation',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent],
-	templateUrl: './sdk-documentation.component.html',
-	styleUrls: ['./sdk-documentation.component.scss']
+    selector: 'sdk-documentation',
+    imports: [CommonModule, ButtonComponent],
+    templateUrl: './sdk-documentation.component.html',
+    styleUrls: ['./sdk-documentation.component.scss']
 })
 export class SdkDocumentationComponent implements OnInit {
 	@Output() onAction = new EventEmitter<any>();

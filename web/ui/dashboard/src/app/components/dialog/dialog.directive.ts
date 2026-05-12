@@ -4,32 +4,33 @@ import {ButtonComponent} from '../button/button.component';
 
 // dialog header
 @Component({
-	selector: '[convoy-dialog-header]',
+    selector: '[convoy-dialog-header]',
     imports: [CommonModule, ButtonComponent],
-	standalone: true,
-	template: `
+    template: `
 		<div
-			class="px-32px pt-32px pb-24px border-y border-y-neutral-4 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
-			<div class="flex justify-between items-center w-full">
-				<div class="flex items-center w-full" [ngClass]="{ 'justify-between': fullscreen === 'false' }">
-					<div class="w-full" [class]="fullscreen !== 'false' ? 'order-2' : 'order-1'">
-						<ng-content></ng-content>
-					</div>
-
-					<button convoy-button size="sm" fill="soft" class="px-8px !py-8px"
-							[class]="fullscreen !== 'false' ? 'order-1 mr-2' : 'order-2'" (click)="closeDialog.emit()">
-						<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon"/>
-					</button>
-				</div>
-
-				<a *ngIf="fullscreen === 'true'" convoy-button fill="text" target="_blank"
-				   href="https://docs.getconvoy.io" rel="noreferrer">
-					<img src="/assets/img/doc-icon-primary.svg" alt="doc icon"/>
-					<span class="font-medium text-12 text-primary-100 ml-2 whitespace-nowrap">Go to docs</span>
-				</a>
-			</div>
+		  class="px-32px pt-32px pb-24px border-y border-y-neutral-4 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
+		  <div class="flex justify-between items-center w-full">
+		    <div class="flex items-center w-full" [ngClass]="{ 'justify-between': fullscreen === 'false' }">
+		      <div class="w-full" [class]="fullscreen !== 'false' ? 'order-2' : 'order-1'">
+		        <ng-content></ng-content>
+		      </div>
+		
+		      <button convoy-button size="sm" fill="soft" class="px-8px !py-8px"
+		        [class]="fullscreen !== 'false' ? 'order-1 mr-2' : 'order-2'" (click)="closeDialog.emit()">
+		        <img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon"/>
+		      </button>
+		    </div>
+		
+		    @if (fullscreen === 'true') {
+		      <a convoy-button fill="text" target="_blank"
+		        href="https://docs.getconvoy.io" rel="noreferrer">
+		        <img src="/assets/img/doc-icon-primary.svg" alt="doc icon"/>
+		        <span class="font-medium text-12 text-primary-100 ml-2 whitespace-nowrap">Go to docs</span>
+		      </a>
+		    }
+		  </div>
 		</div>
-	`
+		`
 })
 export class DialogHeaderComponent {
 	@Input('fullscreen') fullscreen: 'true' | 'false' | 'custom' = 'false';

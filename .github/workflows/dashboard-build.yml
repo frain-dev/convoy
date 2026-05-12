@@ -35,5 +35,11 @@ jobs:
           node-version: '24'
 
       # npm ci requires a committed lockfile; dashboard uses npm install instead.
-      - name: Install and build
-        run: npm install && npm run build
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build

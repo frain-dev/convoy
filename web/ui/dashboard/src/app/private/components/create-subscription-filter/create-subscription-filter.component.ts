@@ -11,7 +11,6 @@ import {DialogHeaderComponent} from 'src/app/components/dialog/dialog.directive'
 
 @Component({
     selector: 'convoy-create-subscription-filter',
-    standalone: true,
     imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, DialogHeaderComponent],
     templateUrl: './create-subscription-filter.component.html',
     styleUrls: ['./create-subscription-filter.component.scss']

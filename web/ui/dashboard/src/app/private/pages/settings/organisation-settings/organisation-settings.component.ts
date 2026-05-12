@@ -8,9 +8,10 @@ import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
-	selector: 'organisation-settings',
-	templateUrl: './organisation-settings.component.html',
-	styleUrls: ['./organisation-settings.component.scss']
+    selector: 'organisation-settings',
+    templateUrl: './organisation-settings.component.html',
+    styleUrls: ['./organisation-settings.component.scss'],
+    standalone: false
 })
 export class OrganisationSettingsComponent implements OnInit {
 	organisationId!: string;

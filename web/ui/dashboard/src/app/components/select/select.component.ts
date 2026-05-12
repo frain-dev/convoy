@@ -18,18 +18,17 @@ import {DropdownComponent, DropdownOptionDirective} from '../dropdown/dropdown.c
 import {InputDirective, LabelComponent} from '../input/input.component';
 
 @Component({
-	selector: 'convoy-select',
-	standalone: true,
+    selector: 'convoy-select',
     imports: [CommonModule, ReactiveFormsModule, DropdownComponent, ButtonComponent, DropdownOptionDirective, LabelComponent, InputDirective],
-	templateUrl: './select.component.html',
-	styleUrls: ['./select.component.scss'],
-	providers: [
-		{
-			provide: NG_VALUE_ACCESSOR,
-			useExisting: forwardRef(() => SelectComponent),
-			multi: true
-		}
-	]
+    templateUrl: './select.component.html',
+    styleUrls: ['./select.component.scss'],
+    providers: [
+        {
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: forwardRef(() => SelectComponent),
+            multi: true
+        }
+    ]
 })
 export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAccessor {
 	private _options?: Array<any> = [];

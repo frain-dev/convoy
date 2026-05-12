@@ -1,64 +1,70 @@
 <div class="max-w-[1000px] mt-24px mx-auto">
-	<div class="flex gap-100px">
-		<div class="w-full max-w-[200px] settings-sidebar">
-			<div class="flex gap-8px items-center mb-24px">
-				<a routerLink="/projects" class="block p-2px rounded-100px border border-new.primary-50">
-					<svg width="24" height="24" class="fill-neutral-10 scale-75">
-						<use xlink:href="#arrow-left-icon"></use>
-					</svg>
-				</a>
-				<h3 class="text-12 text-neutral-12 font-semibold">Organisation Settings</h3>
-			</div>
+  <div class="flex gap-100px">
+    <div class="w-full max-w-[200px] settings-sidebar">
+      <div class="flex gap-8px items-center mb-24px">
+        <a routerLink="/projects" class="block p-2px rounded-100px border border-new.primary-50">
+          <svg width="24" height="24" class="fill-neutral-10 scale-75">
+            <use xlink:href="#arrow-left-icon"></use>
+          </svg>
+        </a>
+        <h3 class="text-12 text-neutral-12 font-semibold">Organisation Settings</h3>
+      </div>
 
-			<ul class="flex gap-24px flex-col w-full border-l-2 border-l-neutral-5">
-				<li *ngFor="let menu of settingsMenu" class="!list-none last-of-type:mr-0 -ml-2px flex items-center gap-12px">
-					<button
-						class="pt-0px pl-16px flex items-center border-l border-l-transparent transition-all"
-						[class]="activePage === menu.name ? 'border-l-new.primary-400' : ''"
-						type="button"
-						(click)="toggleActivePage(menu.name)"
-						[disabled]="menu.name === 'team' && !licenseService.hasLicense('user_limit')"
-					>
-						<svg width="18" height="18" class="mr-10px transition-all scale-75" [class]="activePage === menu.name ? menu.svg + '-new.primary-400' : menu.svg + '-neutral-10'">
-							<use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
-						</svg>
-						<span class="text-12 text-left capitalize tracking-[0.02em] mobile:min-w-[80px] !font-medium" [class]="activePage === menu.name ? 'text-new.primary-400 !font-semibold' : 'text-neutral-10'">{{ menu.name }}</span>
-					</button>
-					<div convoy-tag size="sm" color="primary" *ngIf="menu.name === 'team' && !licenseService.hasLicense('user_limit') && getUserLimitMessage()">
-						<svg width="10" height="10" class="fill-new.primary-400 scale-150">
-							<use xlink:href="#lock-icon"></use>
-						</svg>
-						{{ getUserLimitMessage() }}
-					</div>
-				</li>
-			</ul>
-		</div>
+      <ul class="flex gap-24px flex-col w-full border-l-2 border-l-neutral-5">
+        @for (menu of settingsMenu; track $index) {
+          <li class="!list-none last-of-type:mr-0 -ml-2px flex items-center gap-12px">
+            <button
+              class="pt-0px pl-16px flex items-center border-l border-l-transparent transition-all"
+              [class]="activePage === menu.name ? 'border-l-new.primary-400' : ''"
+              type="button"
+              (click)="toggleActivePage(menu.name)"
+              [disabled]="menu.name === 'team' && !licenseService.hasLicense('user_limit')"
+              >
+              <svg width="18" height="18" class="mr-10px transition-all scale-75" [class]="activePage === menu.name ? menu.svg + '-new.primary-400' : menu.svg + '-neutral-10'">
+                <use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
+              </svg>
+              <span class="text-12 text-left capitalize tracking-[0.02em] mobile:min-w-[80px] !font-medium" [class]="activePage === menu.name ? 'text-new.primary-400 !font-semibold' : 'text-neutral-10'">{{ menu.name }}</span>
+            </button>
+            @if (menu.name === 'team' && !licenseService.hasLicense('user_limit') && getUserLimitMessage()) {
+              <div convoy-tag size="sm" color="primary">
+                <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                  <use xlink:href="#lock-icon"></use>
+                </svg>
+                {{ getUserLimitMessage() }}
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </div>
 
-		<div class="min-h-[60vh] w-full relative">
-			<div *ngIf="isVerifyingSubscription" class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white bg-opacity-80 rounded-8px">
-				<convoy-loader [isTransparent]="true"></convoy-loader>
-				<p class="text-14 text-neutral-11 mt-8px">Verifying subscription status...</p>
-			</div>
+    <div class="min-h-[60vh] w-full relative">
+      @if (isVerifyingSubscription) {
+        <div class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white bg-opacity-80 rounded-8px">
+          <convoy-loader [isTransparent]="true"></convoy-loader>
+          <p class="text-14 text-neutral-11 mt-8px">Verifying subscription status...</p>
+        </div>
+      }
 
-			<ng-container *ngIf="activePage === 'organisation settings'">
-				<organisation-settings></organisation-settings>
-			</ng-container>
+      @if (activePage === 'organisation settings') {
+        <organisation-settings></organisation-settings>
+      }
 
-			<ng-container *ngIf="activePage === 'early adopter features'">
-				<early-adopter-features></early-adopter-features>
-			</ng-container>
+      @if (activePage === 'early adopter features') {
+        <early-adopter-features></early-adopter-features>
+      }
 
-			<ng-container *ngIf="activePage === 'team'">
-				<app-teams></app-teams>
-			</ng-container>
+      @if (activePage === 'team') {
+        <app-teams></app-teams>
+      }
 
-			<ng-container *ngIf="activePage === 'usage and billing' && billingEnabled">
-				<app-billing-page></app-billing-page>
-			</ng-container>
+      @if (activePage === 'usage and billing' && billingEnabled) {
+        <app-billing-page></app-billing-page>
+      }
 
-			<!-- <ng-container *ngIf="activePage === 'configuration settings'">
-				<configurations></configurations>
-			</ng-container> -->
-		</div>
-	</div>
+      <!-- <ng-container *ngIf="activePage === 'configuration settings'">
+      <configurations></configurations>
+    </ng-container> -->
+  </div>
+</div>
 </div>

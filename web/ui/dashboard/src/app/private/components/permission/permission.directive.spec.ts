@@ -5,9 +5,8 @@ import { PermissionDirective } from './permission.directive';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 
 @Component({
-	standalone: true,
-	imports: [PermissionDirective],
-	template: `<button convoy-permission="Endpoints|VIEW">action</button>`
+    imports: [PermissionDirective],
+    template: `<button convoy-permission="Endpoints|VIEW">action</button>`
 })
 class PermissionHostComponent {}
 

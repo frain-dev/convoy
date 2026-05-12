@@ -6,9 +6,10 @@ import { Location } from '@angular/common';
 
 export type STAGES = 'createProject' | 'setupSDK' | 'createSource' | 'createApplication' | 'createSubscription';
 @Component({
-	selector: 'app-create-project',
-	templateUrl: './create-project.component.html',
-	styleUrls: ['./create-project.component.scss']
+    selector: 'app-create-project',
+    templateUrl: './create-project.component.html',
+    styleUrls: ['./create-project.component.scss'],
+    standalone: false
 })
 export class CreateProjectComponent implements OnInit {
 	@ViewChild('projectDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;

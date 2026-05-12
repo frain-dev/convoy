@@ -32,7 +32,7 @@ export class PrivateService {
 
 	get getUserProfile(): USER | null {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
-		return authDetails ? JSON.parse(authDetails) : false;
+		return authDetails ? JSON.parse(authDetails) : null;
 	}
 
 	// Per-user organization storage

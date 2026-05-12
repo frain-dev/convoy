@@ -25,10 +25,11 @@ import {FILTER} from 'src/app/models/filter.model';
 import {FilterService} from './filter.service';
 
 @Component({
-	selector: 'convoy-create-subscription',
-	templateUrl: './create-subscription.component.html',
-	styleUrls: ['./create-subscription.component.scss'],
-	providers: []
+    selector: 'convoy-create-subscription',
+    templateUrl: './create-subscription.component.html',
+    styleUrls: ['./create-subscription.component.scss'],
+    providers: [],
+    standalone: false
 })
 export class CreateSubscriptionComponent implements OnInit {
 	@Output() onAction = new EventEmitter();
@@ -607,7 +608,7 @@ export class CreateSubscriptionComponent implements OnInit {
 					// Update existing filters in bulk if needed
 					if (filtersToUpdate.length > 0) {
 						try {
-							const updateResponse = await this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate);
+							await this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate);
 						} catch (error) {
 							console.error('Error calling bulkUpdateFilters:', error);
 						}

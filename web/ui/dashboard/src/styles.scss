@@ -1,25 +1,25 @@
-@import './scss/font';
+@use './scss/font' as *;
 
-@import './scss/forms';
-@import './scss/prism';
-@import './scss/material-design-reset';
-@import '~prismjs/plugins/toolbar/prism-toolbar.css';
-@import '@radix-ui/colors/gray.css';
-@import '@radix-ui/colors/gray-alpha.css';
-@import '@radix-ui/colors/gray-dark.css';
-@import '@radix-ui/colors/gray-dark-alpha.css';
-@import '@radix-ui/colors/green.css';
-@import '@radix-ui/colors/green-alpha.css';
-@import '@radix-ui/colors/green-dark.css';
-@import '@radix-ui/colors/green-dark-alpha.css';
-@import '@radix-ui/colors/red.css';
-@import '@radix-ui/colors/red-alpha.css';
-@import '@radix-ui/colors/red-dark.css';
-@import '@radix-ui/colors/red-dark-alpha.css';
-@import '@radix-ui/colors/amber.css';
-@import '@radix-ui/colors/amber-alpha.css';
-@import '@radix-ui/colors/amber-dark.css';
-@import '@radix-ui/colors/amber-dark-alpha.css';
+@use './scss/forms' as *;
+@use './scss/prism' as *;
+@use './scss/material-design-reset' as *;
+@use 'prismjs/plugins/toolbar/prism-toolbar.css' as *;
+@use '@radix-ui/colors/gray.css' as *;
+@use '@radix-ui/colors/gray-alpha.css' as *;
+@use '@radix-ui/colors/gray-dark.css' as *;
+@use '@radix-ui/colors/gray-dark-alpha.css' as *;
+@use '@radix-ui/colors/green.css' as *;
+@use '@radix-ui/colors/green-alpha.css' as *;
+@use '@radix-ui/colors/green-dark.css' as *;
+@use '@radix-ui/colors/green-dark-alpha.css' as *;
+@use '@radix-ui/colors/red.css' as *;
+@use '@radix-ui/colors/red-alpha.css' as *;
+@use '@radix-ui/colors/red-dark.css' as *;
+@use '@radix-ui/colors/red-dark-alpha.css' as *;
+@use '@radix-ui/colors/amber.css' as *;
+@use '@radix-ui/colors/amber-alpha.css' as *;
+@use '@radix-ui/colors/amber-dark.css' as *;
+@use '@radix-ui/colors/amber-dark-alpha.css' as *;
 
 @tailwind base;
 

@@ -11,9 +11,10 @@ import {TEAM} from 'src/app/models/organisation.model';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
-	selector: 'app-teams',
-	templateUrl: './teams.component.html',
-	styleUrls: ['./teams.component.scss']
+    selector: 'app-teams',
+    templateUrl: './teams.component.html',
+    styleUrls: ['./teams.component.scss'],
+    standalone: false
 })
 export class TeamsComponent implements OnInit {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;

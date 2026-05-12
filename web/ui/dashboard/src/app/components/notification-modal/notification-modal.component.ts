@@ -1,15 +1,14 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ButtonComponent } from '../button/button.component';
 import { DialogDirective } from '../dialog/dialog.directive';
 
 @Component({
-	selector: 'convoy-notification-modal',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent, DialogDirective],
-	templateUrl: './notification-modal.component.html',
-	styleUrls: ['./notification-modal.component.scss']
+    selector: 'convoy-notification-modal',
+    imports: [ButtonComponent, DialogDirective],
+    templateUrl: './notification-modal.component.html',
+    styleUrls: ['./notification-modal.component.scss']
 })
 export class NotificationModalComponent implements OnInit {
 	@ViewChild('dialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;

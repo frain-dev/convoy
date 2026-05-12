@@ -1,14 +1,13 @@
 import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
-	selector: 'convoy-button, [convoy-button]',
-	standalone: true,
-	host: { class: 'flex items-center justify-center disabled:opacity-50 cursor-pointer', '[class]': 'classes' },
-	imports: [CommonModule],
-	templateUrl: './button.component.html',
-	styleUrls: ['./button.component.scss'],
-	changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'convoy-button, [convoy-button]',
+    host: { class: 'flex items-center justify-center disabled:opacity-50 cursor-pointer', '[class]': 'classes' },
+    imports: [],
+    templateUrl: './button.component.html',
+    styleUrls: ['./button.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ButtonComponent implements OnInit {
 	@Input('buttonText') buttonText!: string;

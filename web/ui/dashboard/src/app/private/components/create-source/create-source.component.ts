@@ -9,9 +9,10 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
-	selector: 'convoy-create-source',
-	templateUrl: './create-source.component.html',
-	styleUrls: ['./create-source.component.scss']
+    selector: 'convoy-create-source',
+    templateUrl: './create-source.component.html',
+    styleUrls: ['./create-source.component.scss'],
+    standalone: false
 })
 export class CreateSourceComponent implements OnInit {
 	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
@@ -264,7 +265,7 @@ export class CreateSourceComponent implements OnInit {
 					}
 				});
 		};
-		fileReader.onerror = error => {
+		fileReader.onerror = _error => {
 			this.generalService.showNotification({ message: 'Please upload a JSON file', style: 'warning' });
 		};
 	}

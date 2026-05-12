@@ -12,10 +12,11 @@ interface EarlyAdopterFeature {
 }
 
 @Component({
-	selector: 'early-adopter-features',
-	templateUrl: './early-adopter-features.component.html',
-	styleUrls: ['./early-adopter-features.component.scss'],
-	changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'early-adopter-features',
+    templateUrl: './early-adopter-features.component.html',
+    styleUrls: ['./early-adopter-features.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class EarlyAdopterFeaturesComponent implements OnInit {
 	organisationId!: string;

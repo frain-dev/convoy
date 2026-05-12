@@ -13,12 +13,10 @@ import { EventLogsService } from './event-logs.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { SOURCE } from 'src/app/models/source.model';
 import { EVENT, EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
-import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { FormsModule } from '@angular/forms';
-import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { EventsService } from '../events/events.service';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
@@ -27,36 +25,32 @@ import { ListItemComponent } from 'src/app/components/list-item/list-item.compon
 import { EventDeliveryFilterComponent } from 'src/app/private/components/event-delivery-filter/event-delivery-filter.component';
 
 @Component({
-	selector: 'convoy-event-logs',
-	standalone: true,
-	imports: [
-		CommonModule,
-		RouterModule,
-		FormsModule,
-		StatusColorModule,
-		PrismModule,
-		LoaderModule,
-		CardComponent,
-		ButtonComponent,
-		EmptyStateComponent,
-		TagComponent,
-		TableLoaderModule,
-		TableComponent,
-		TableHeadComponent,
-		TableRowComponent,
-		TableHeadCellComponent,
-		TableCellComponent,
-		DatePickerComponent,
-		DropdownComponent,
-		PaginationComponent,
-		CopyButtonComponent,
-		ListItemComponent,
-		DropdownOptionDirective,
-		DialogDirective,
-		EventDeliveryFilterComponent
-	],
-	templateUrl: './event-logs.component.html',
-	styleUrls: ['./event-logs.component.scss']
+    selector: 'convoy-event-logs',
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        StatusColorModule,
+        PrismModule,
+        LoaderModule,
+        CardComponent,
+        ButtonComponent,
+        EmptyStateComponent,
+        TagComponent,
+        TableLoaderModule,
+        TableComponent,
+        TableHeadComponent,
+        TableRowComponent,
+        TableHeadCellComponent,
+        TableCellComponent,
+        PaginationComponent,
+        CopyButtonComponent,
+        ListItemComponent,
+        DialogDirective,
+        EventDeliveryFilterComponent
+    ],
+    templateUrl: './event-logs.component.html',
+    styleUrls: ['./event-logs.component.scss']
 })
 export class EventLogsComponent implements OnInit, OnDestroy {
 	@ViewChild('batchDialog', { static: true }) batchDialog!: ElementRef<HTMLDialogElement>;
@@ -76,7 +70,6 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
-	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
 	isLoadingSidebarDeliveries = true;
@@ -190,7 +183,6 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		this.queryParams = data;
 
 		if (!data) return;
-		const page = this.route.snapshot.queryParams.page || 1;
 		this.fetchingCount = true;
 		try {
 			const response = await this.eventsLogService.getRetryCount(data);

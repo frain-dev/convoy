@@ -1,15 +1,12 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { STATUS_COLOR } from 'src/app/models/global.model';
 
 @Component({
-	selector: 'convoy-tag, [convoy-tag]',
-	standalone: true,
-	imports: [CommonModule],
-	template: `
+    selector: 'convoy-tag, [convoy-tag]',
+    imports: [],
+    template: `
 		<ng-content></ng-content>
 	`,
-	host: { class: 'rounded-22px w-fit text-center text-12 justify-between gap-x-4px disabled:opacity-50 flex items-center justify-center', '[class]': 'classes' }
+    host: { class: 'rounded-22px w-fit text-center text-12 justify-between gap-x-4px disabled:opacity-50 flex items-center justify-center', '[class]': 'classes' }
 })
 export class TagComponent implements OnInit {
 	@Input('className') class!: string;

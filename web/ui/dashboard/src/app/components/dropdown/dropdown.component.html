@@ -1,10 +1,12 @@
-<div convoyOverlay *ngIf="show" (click)="$event.stopPropagation(); show = false; close.emit()"></div>
+@if (show) {
+  <div convoyOverlay (click)="$event.stopPropagation(); show = false; close.emit()"></div>
+}
 <div class="relative">
-	<div class="empty:hidden" #dropdownTriggerContainer>
-		<ng-content select="[dropdownTrigger]"></ng-content>
-	</div>
+  <div class="empty:hidden" #dropdownTriggerContainer>
+    <ng-content select="[dropdownTrigger]"></ng-content>
+  </div>
 
-	<div convoy-dropdown-container #dropdownContainer [position]="position" [show]="show" [size]="size">
-		<ng-content select="[dropdownOptions]"></ng-content>
-	</div>
+  <div convoy-dropdown-container #dropdownContainer [position]="position" [show]="show" [size]="size">
+    <ng-content select="[dropdownOptions]"></ng-content>
+  </div>
 </div>

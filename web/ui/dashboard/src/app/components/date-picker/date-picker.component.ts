@@ -2,10 +2,9 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../button/button.component';
 import { FormsModule } from '@angular/forms';
-import { format, isAfter, isBefore, isFuture, isWithinInterval, parseISO } from 'date-fns';
+import { format, isAfter, isBefore, isFuture, isWithinInterval } from 'date-fns';
 import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
 import { OverlayDirective } from '../overlay/overlay.directive';
-import { InputDirective, InputFieldDirective, LabelComponent } from '../input/input.component';
 
 interface CALENDAR_DAY {
 	date: number;
@@ -16,11 +15,10 @@ interface CALENDAR_DAY {
 }
 
 @Component({
-	selector: 'convoy-date-picker',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, OverlayDirective, InputFieldDirective, InputDirective, LabelComponent],
-	templateUrl: './date-picker.component.html',
-	styleUrls: ['./date-picker.component.scss']
+    selector: 'convoy-date-picker',
+    imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, OverlayDirective],
+    templateUrl: './date-picker.component.html',
+    styleUrls: ['./date-picker.component.scss']
 })
 export class DatePickerComponent implements OnInit {
 	@Output() selectedDateRange = new EventEmitter<any>();

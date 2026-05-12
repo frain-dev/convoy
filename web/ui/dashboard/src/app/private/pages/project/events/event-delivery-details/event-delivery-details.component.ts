@@ -5,13 +5,13 @@ import { EventDeliveryDetailsService } from './event-delivery-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EndpointsService } from '../../endpoints/endpoints.service';
 
 @Component({
-	selector: 'app-event-delivery-details',
-	templateUrl: './event-delivery-details.component.html',
-	styleUrls: ['./event-delivery-details.component.scss']
+    selector: 'app-event-delivery-details',
+    templateUrl: './event-delivery-details.component.html',
+    styleUrls: ['./event-delivery-details.component.scss'],
+    standalone: false
 })
 export class EventDeliveryDetailsComponent implements OnInit {
 	@Output('onViewEndpoint') onViewEndpoint = new EventEmitter<any>();
@@ -105,7 +105,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
 	}
 
-	@HostListener('window:resize', ['$event'])
+	@HostListener('window:resize')
 	onWindowResize() {
 		this.screenWidth = window.innerWidth;
 		this.checkScreenSize();

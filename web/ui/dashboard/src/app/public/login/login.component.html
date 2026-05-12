@@ -1,64 +1,94 @@
 <div class="min-h-screen flex flex-col items-center justify-center w-full">
-	<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
-	<section class="max-w-[445px] mx-auto my-0 p-24px w-full bg-white-100 shadow-default rounded-8px">
-		<form [formGroup]="loginForm" (ngSubmit)="login()">
-			<div convoy-input-field>
-				<label for="username" convoy-label>Username</label>
-				<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="super@default.com" />
-				<convoy-input-error *ngIf="loginForm.controls.username.touched && loginForm.controls.username.invalid">Please enter your username</convoy-input-error>
-			</div>
+  <img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
+  <section class="max-w-[445px] mx-auto my-0 p-24px w-full bg-white-100 shadow-default rounded-8px">
+    <form [formGroup]="loginForm" (ngSubmit)="login()">
+      <div convoy-input-field>
+        <label for="username" convoy-label>Username</label>
+        <input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="super@default.com" />
+        @if (loginForm.controls.username.touched && loginForm.controls.username.invalid) {
+          <convoy-input-error>Please enter your username</convoy-input-error>
+        }
+      </div>
 
-			<div convoy-input-field>
-				<label convoy-label for="password">Password</label>
-				<convoy-password-field>
-					<input [type]="showLoginPassword ? 'text' : 'password'" convoy-input autocomplete="username" formControlName="password" placeholder="super@default.com" id="password" />
-					<button class="bg-transparent w-18px h-18px absolute top-[55%] right-16px border-none translate-x-0 translate-y-[-50%]" type="button" (click)="showLoginPassword = !showLoginPassword">
-						<img class="w-full" [src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'" alt="showLoginPassword ? 'hide password icon' : 'view password icon'" />
-					</button>
-				</convoy-password-field>
-				<convoy-input-error *ngIf="loginForm.controls.password.touched && loginForm.controls.password.invalid">Please enter your password</convoy-input-error>
-			</div>
+      <div convoy-input-field>
+        <label convoy-label for="password">Password</label>
+        <convoy-password-field>
+          <input [type]="showLoginPassword ? 'text' : 'password'" convoy-input autocomplete="username" formControlName="password" placeholder="super@default.com" id="password" />
+          <button class="bg-transparent w-18px h-18px absolute top-[55%] right-16px border-none translate-x-0 translate-y-[-50%]" type="button" (click)="showLoginPassword = !showLoginPassword">
+            <img class="w-full" [src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'" alt="showLoginPassword ? 'hide password icon' : 'view password icon'" />
+          </button>
+        </convoy-password-field>
+        @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+          <convoy-input-error>Please enter your password</convoy-input-error>
+        }
+      </div>
 
-			<div class="flex items-center text-12 mb-20px -mt-18px">
-				Forgot password?
-				<button convoy-button fill="link" type="button" class="px-0 ml-6px" (click)="router.navigateByUrl('/forgot-password')" size="sm">Reset it here</button>
-			</div>
+      <div class="flex items-center text-12 mb-20px -mt-18px">
+        Forgot password?
+        <button convoy-button fill="link" type="button" class="px-0 ml-6px" (click)="router.navigateByUrl('/forgot-password')" size="sm">Reset it here</button>
+      </div>
 
-			<button convoy-button [disabled]="disableLoginBtn" size="lg" class="mb-12px">
-				<span class="text-14 text-white-100" *ngIf="!disableLoginBtn">Login</span>
-				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
-			</button>
+      <button convoy-button [disabled]="disableLoginBtn" size="lg" class="mb-12px">
+        @if (!disableLoginBtn) {
+          <span class="text-14 text-white-100">Login</span>
+        }
+        @if (disableLoginBtn) {
+          <img src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
+        }
+      </button>
 
-			<ng-container *ngIf="authConfigLoaded && billingEnabled && !showSlugInput">
-				<button convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="showSlugInput = true">Login with SSO</button>
-			</ng-container>
-			<ng-container *ngIf="authConfigLoaded && billingEnabled && showSlugInput">
-				<div convoy-input-field class="mt-12px">
-					<label for="workspace-slug" convoy-label>Workspace slug</label>
-					<input type="text" id="workspace-slug" convoy-input autocomplete="off" [(ngModel)]="workspaceSlug" (ngModelChange)="showSlugError = false" placeholder="e.g. my-team" [ngModelOptions]="{standalone: true}" />
-					<convoy-input-error *ngIf="showSlugError && !workspaceSlug?.trim()">Please enter your workspace slug</convoy-input-error>
-				</div>
-				<button convoy-button size="sm" type="button" fill="text" class="w-full mt-12px disabled:!opacity-100" (click)="loginWithSSO()" [disabled]="isSubmittingSSO">
-					<ng-container *ngIf="!isSubmittingSSO">Continue with SAML SSO</ng-container>
-					<ng-container *ngIf="isSubmittingSSO">Redirecting…</ng-container>
-				</button>
-			</ng-container>
-			<button *ngIf="authConfigLoaded && !billingEnabled && isSSOEnabled" convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="loginWithSSO()">Login with SSO</button>
+      @if (authConfigLoaded && billingEnabled && !showSlugInput) {
+        <button convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="showSlugInput = true">Login with SSO</button>
+      }
+      @if (authConfigLoaded && billingEnabled && showSlugInput) {
+        <div convoy-input-field class="mt-12px">
+          <label for="workspace-slug" convoy-label>Workspace slug</label>
+          <input type="text" id="workspace-slug" convoy-input autocomplete="off" [(ngModel)]="workspaceSlug" (ngModelChange)="showSlugError = false" placeholder="e.g. my-team" [ngModelOptions]="{standalone: true}" />
+          @if (showSlugError && !workspaceSlug.trim()) {
+            <convoy-input-error>Please enter your workspace slug</convoy-input-error>
+          }
+        </div>
+        <button convoy-button size="sm" type="button" fill="text" class="w-full mt-12px disabled:!opacity-100" (click)="loginWithSSO()" [disabled]="isSubmittingSSO">
+          @if (!isSubmittingSSO) {
+            Continue with SAML SSO
+          }
+          @if (isSubmittingSSO) {
+            Redirecting…
+          }
+        </button>
+      }
+      @if (authConfigLoaded && !billingEnabled && isSSOEnabled) {
+        <button convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="loginWithSSO()">Login with SSO</button>
+      }
 
-			<button *ngIf="authConfigLoaded && isGoogleOAuthEnabled" convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="loginWithGoogle()" [disabled]="isGoogleSigningIn">
-				<img *ngIf="!isGoogleSigningIn" src="/assets/img/svg/google.svg" alt="Google icon" class="w-16px h-16px inline mr-8px" />
-				<div *ngIf="isGoogleSigningIn" class="loading-dots inline mr-8px">
-					<span></span>
-					<span></span>
-					<span></span>
-				</div>
-				<span *ngIf="!isGoogleSigningIn">Sign in with Google</span>
-				<span *ngIf="isGoogleSigningIn">Signing in...</span>
-			</button>
-		</form>
+      @if (authConfigLoaded && isGoogleOAuthEnabled) {
+        <button convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="loginWithGoogle()" [disabled]="isGoogleSigningIn">
+          @if (!isGoogleSigningIn) {
+            <img src="/assets/img/svg/google.svg" alt="Google icon" class="w-16px h-16px inline mr-8px" />
+          }
+          @if (isGoogleSigningIn) {
+            <div class="loading-dots inline mr-8px">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          }
+          @if (!isGoogleSigningIn) {
+            <span>Sign in with Google</span>
+          }
+          @if (isGoogleSigningIn) {
+            <span>Signing in...</span>
+          }
+        </button>
+      }
+    </form>
 
-		<button *ngIf="authConfigLoaded && isSignupEnabled && licenseService.hasLicense('user_limit')" convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
-	</section>
+    @if (authConfigLoaded && isSignupEnabled && licenseService.hasLicense('user_limit')) {
+      <button convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
+    }
+  </section>
 </div>
 
-<convoy-loader [isTransparent]="false" *ngIf="isLoadingProject || isFetchingConfig"></convoy-loader>
+@if (isLoadingProject || isFetchingConfig) {
+  <convoy-loader [isTransparent]="false"></convoy-loader>
+}

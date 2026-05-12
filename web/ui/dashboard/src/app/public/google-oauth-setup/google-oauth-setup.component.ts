@@ -1,4 +1,4 @@
-import {CommonModule} from '@angular/common';
+
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
@@ -14,11 +14,10 @@ import {GoogleOAuthSetupService} from './google-oauth-setup.service';
 import {PrivateService} from 'src/app/private/private.service';
 
 @Component({
-	selector: 'app-google-oauth-setup',
-	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent],
-	templateUrl: './google-oauth-setup.component.html',
-	styleUrls: ['./google-oauth-setup.component.scss']
+    selector: 'app-google-oauth-setup',
+    imports: [ReactiveFormsModule, ButtonComponent, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent],
+    templateUrl: './google-oauth-setup.component.html',
+    styleUrls: ['./google-oauth-setup.component.scss']
 })
 export class GoogleOAuthSetupComponent implements OnInit {
 	loading = false;

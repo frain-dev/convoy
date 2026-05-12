@@ -6,11 +6,10 @@ interface PAGE_DATA extends CHARTDATA {
 	size: string;
 }
 @Component({
-	selector: 'convoy-chart',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent],
-	templateUrl: './chart.component.html',
-	styleUrls: ['./chart.component.scss']
+    selector: 'convoy-chart',
+    imports: [CommonModule, ButtonComponent],
+    templateUrl: './chart.component.html',
+    styleUrls: ['./chart.component.scss']
 })
 export class ChartComponent implements OnInit {
 	@Input('chartData') chartData!: CHARTDATA[];

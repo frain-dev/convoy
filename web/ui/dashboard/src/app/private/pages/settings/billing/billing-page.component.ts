@@ -18,9 +18,10 @@ import {BillingUsageService, UsageRow} from './billing-usage.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 @Component({
-  selector: 'app-billing-page',
-  templateUrl: './billing-page.component.html',
-  styleUrls: ['./billing-page.component.scss']
+    selector: 'app-billing-page',
+    templateUrl: './billing-page.component.html',
+    styleUrls: ['./billing-page.component.scss'],
+    standalone: false
 })
 export class BillingPageComponent implements OnInit {
   @ViewChild('paymentDetailsDialog') paymentDetailsDialog!: ElementRef<HTMLDialogElement>;
@@ -995,7 +996,7 @@ export class BillingPageComponent implements OnInit {
             this.isLoadingPaymentMethod = false;
           }
         },
-        error: (error) => {
+        error: () => {
           if (retryCount < maxRetries) {
             retryCount++;
             setTimeout(attemptLoad, retryDelay);
@@ -1094,7 +1095,7 @@ export class BillingPageComponent implements OnInit {
         this.setupIntentSecret = setupIntentResponse.data.intent_secret;
         this.isPaymentProviderLoading = false;
       },
-      error: (error) => {
+      error: (_error) => {
         this.generalService.showNotification({
           message: 'Failed to initialize payment form. Please try again.',
           style: 'error'
@@ -1329,7 +1330,7 @@ export class BillingPageComponent implements OnInit {
       this.isSavingBillingAddress = true;
 
       this.billingPaymentDetailsService.updateBillingAddress(this.billingAddressForm.value).subscribe({
-        next: (response) => {
+        next: () => {
           this.generalService.showNotification({
             message: 'Billing address updated successfully!',
             style: 'success'
@@ -1355,7 +1356,7 @@ export class BillingPageComponent implements OnInit {
   onUpdateVatInfo() {
     if (this.vatForm.valid) {
       this.billingPaymentDetailsService.updateVatInfo(this.vatForm.value).subscribe({
-        next: (response) => {
+        next: () => {
           this.generalService.showNotification({
             message: 'VAT information updated successfully!',
             style: 'success'
@@ -1533,7 +1534,7 @@ export class BillingPageComponent implements OnInit {
         'DEFAULT': /^[A-Z0-9]{5,20}$/ // Generic pattern for other countries
       };
 
-      for (const [country, pattern] of Object.entries(vatPatterns)) {
+      for (const [, pattern] of Object.entries(vatPatterns)) {
         if (pattern.test(vatNumber)) {
           return null; // Valid VAT number
         }
@@ -1575,7 +1576,7 @@ export class BillingPageComponent implements OnInit {
         'DEFAULT': /^[A-Z0-9\s\-]{3,10}$/ // Generic pattern for other countries
       };
 
-      for (const [country, pattern] of Object.entries(zipPatterns)) {
+      for (const [, pattern] of Object.entries(zipPatterns)) {
         if (pattern.test(zipCode)) {
           return null; // Valid zip code
         }

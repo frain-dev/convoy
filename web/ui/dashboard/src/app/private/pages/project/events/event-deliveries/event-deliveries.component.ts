@@ -9,9 +9,10 @@ import { PrivateService } from 'src/app/private/private.service';
 import { ProjectService } from '../../project.service';
 
 @Component({
-	selector: 'app-event-deliveries',
-	templateUrl: './event-deliveries.component.html',
-	styleUrls: ['./event-deliveries.component.scss']
+    selector: 'app-event-deliveries',
+    templateUrl: './event-deliveries.component.html',
+    styleUrls: ['./event-deliveries.component.scss'],
+    standalone: false
 })
 export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	@Output() pushEventDeliveries = new EventEmitter<any>();

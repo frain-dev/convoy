@@ -1,7 +1,8 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
-	name: 'sourceValue'
+    name: 'sourceValue',
+    standalone: false
 })
 export class SourceValuePipe implements PipeTransform {
 	sourceTypes = [

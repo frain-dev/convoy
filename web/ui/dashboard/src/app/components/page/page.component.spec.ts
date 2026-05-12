@@ -3,9 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { PageDirective } from './page.component';
 
 @Component({
-	standalone: true,
-	imports: [PageDirective],
-	template: `<div convoy-page size="md"></div>`
+    imports: [PageDirective],
+    template: `<div convoy-page size="md"></div>`
 })
 class PageHostComponent {}
 

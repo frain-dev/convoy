@@ -18,7 +18,6 @@ import {LicensesService} from "../../services/licenses/licenses.service";
 
 @Component({
     selector: 'convoy-event-deliveries',
-    standalone: true,
     imports: [CommonModule, EventDeliveriesModule, ButtonComponent, CardComponent, ChartComponent, DatePickerComponent, DropdownComponent, DropdownOptionDirective, ListItemComponent, SkeletonLoaderComponent],
     templateUrl: './event-deliveries.component.html',
     styleUrls: ['./event-deliveries.component.scss']

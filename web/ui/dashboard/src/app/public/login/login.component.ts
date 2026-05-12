@@ -1,4 +1,4 @@
-import {CommonModule} from '@angular/common';
+
 import {AfterViewInit, Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
@@ -21,11 +21,10 @@ import {ConfigService} from 'src/app/services/config/config.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 
 @Component({
-	selector: 'app-login',
-	standalone: true,
-	imports: [CommonModule, FormsModule, ReactiveFormsModule, ButtonComponent, InputFieldDirective, InputDirective, LabelComponent, InputErrorComponent, PasswordInputFieldComponent, LoaderModule],
-	templateUrl: './login.component.html',
-	styleUrls: ['./login.component.scss']
+    selector: 'app-login',
+    imports: [FormsModule, ReactiveFormsModule, ButtonComponent, InputFieldDirective, InputDirective, LabelComponent, InputErrorComponent, PasswordInputFieldComponent, LoaderModule],
+    templateUrl: './login.component.html',
+    styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements OnInit, AfterViewInit {
 	showLoginPassword = false;
@@ -188,7 +187,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
 	async loginWithSSO() {
 		localStorage.setItem('AUTH_TYPE', 'login');
-		const slug = this.billingEnabled ? this.workspaceSlug?.trim() : undefined;
+		const slug = this.billingEnabled ? this.workspaceSlug.trim() : undefined;
 
 		if (this.billingEnabled && !slug) {
 			this.showSlugError = true;

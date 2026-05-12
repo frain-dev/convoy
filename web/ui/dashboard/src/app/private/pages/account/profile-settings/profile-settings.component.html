@@ -1,24 +1,30 @@
 <div class="flex justify-between items-center mb-28px">
-	<h3 class="text-16 font-bold text-neutral-10">Basic Info</h3>
-	<button convoy-button size="sm" [disabled]="isSavingUserDetails" (click)="editBasicUserInfo()">{{ isSavingUserDetails ? 'Saving changes...' : 'Save Changes' }}</button>
+  <h3 class="text-16 font-bold text-neutral-10">Basic Info</h3>
+  <button convoy-button size="sm" [disabled]="isSavingUserDetails" (click)="editBasicUserInfo()">{{ isSavingUserDetails ? 'Saving changes...' : 'Save Changes' }}</button>
 </div>
 
 <form [formGroup]="editBasicInfoForm">
-	<div class="grid grid-cols-2 gap-4">
-		<convoy-input-field>
-			<label for="first_name" required="true" convoy-label>First name</label>
-			<input type="text" id="first_name" convoy-input autocomplete="first_name" formControlName="first_name" placeholder="First name" />
-			<convoy-input-error *ngIf="editBasicInfoForm.get('first_name')?.touched && editBasicInfoForm.get('first_name')?.invalid">Please enter your first name</convoy-input-error>
-		</convoy-input-field>
-		<convoy-input-field>
-			<label for="last_name" required="true" convoy-label>Last name</label>
-			<input type="text" id="last_name" convoy-input autocomplete="last_name" formControlName="last_name" placeholder="Last name" />
-			<convoy-input-error *ngIf="editBasicInfoForm.get('last_name')?.touched && editBasicInfoForm.get('last_name')?.invalid">Please enter your last name</convoy-input-error>
-		</convoy-input-field>
-	</div>
-	<convoy-input-field>
-		<label for="email" required="true" convoy-label>Email</label>
-		<input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="Last name" />
-		<convoy-input-error *ngIf="editBasicInfoForm.get('email')?.touched && editBasicInfoForm.get('email')?.invalid">Please enter a valid email</convoy-input-error>
-	</convoy-input-field>
+  <div class="grid grid-cols-2 gap-4">
+    <convoy-input-field>
+      <label for="first_name" required="true" convoy-label>First name</label>
+      <input type="text" id="first_name" convoy-input autocomplete="first_name" formControlName="first_name" placeholder="First name" />
+      @if (editBasicInfoForm.get('first_name')?.touched && editBasicInfoForm.get('first_name')?.invalid) {
+        <convoy-input-error>Please enter your first name</convoy-input-error>
+      }
+    </convoy-input-field>
+    <convoy-input-field>
+      <label for="last_name" required="true" convoy-label>Last name</label>
+      <input type="text" id="last_name" convoy-input autocomplete="last_name" formControlName="last_name" placeholder="Last name" />
+      @if (editBasicInfoForm.get('last_name')?.touched && editBasicInfoForm.get('last_name')?.invalid) {
+        <convoy-input-error>Please enter your last name</convoy-input-error>
+      }
+    </convoy-input-field>
+  </div>
+  <convoy-input-field>
+    <label for="email" required="true" convoy-label>Email</label>
+    <input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="Last name" />
+    @if (editBasicInfoForm.get('email')?.touched && editBasicInfoForm.get('email')?.invalid) {
+      <convoy-input-error>Please enter a valid email</convoy-input-error>
+    }
+  </convoy-input-field>
 </form>

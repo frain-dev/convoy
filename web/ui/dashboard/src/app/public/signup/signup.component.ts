@@ -1,4 +1,4 @@
-import {CommonModule} from '@angular/common';
+
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
@@ -16,11 +16,10 @@ import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {ConfigService} from 'src/app/services/config/config.service';
 
 @Component({
-	selector: 'convoy-signup',
-	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective, LoaderModule],
-	templateUrl: './signup.component.html',
-	styleUrls: ['./signup.component.scss']
+    selector: 'convoy-signup',
+    imports: [ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective, LoaderModule],
+    templateUrl: './signup.component.html',
+    styleUrls: ['./signup.component.scss']
 })
 export class SignupComponent implements OnInit {
 	showSignupPassword = false;
