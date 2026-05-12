@@ -35,4 +35,4 @@ jobs:
           node-version: '18'
 
       - name: Install and build
-        run: npm ci && npm run build
+        run: npm install && npm run build
