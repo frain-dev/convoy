@@ -65,10 +65,6 @@ export class GeneralService {
 						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 11);
 						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
 						break;
-					case 4:
-						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 12);
-						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
-						break;
 					case 5:
 						startDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate() - 13);
 						endDate = new Date(_date.getFullYear(), _date.getMonth(), _date.getDate());
@@ -130,7 +126,7 @@ export class GeneralService {
 	}
 
 	getCodeSnippetString(type: 'event_data' | 'res_body' | 'res_header' | 'req_header' | 'error' | 'log', data: any) {
-		let displayMessage = '';
+		let displayMessage: string;
 		switch (type) {
 			case 'event_data':
 				displayMessage = 'No event payload was sent';

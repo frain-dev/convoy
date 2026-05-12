@@ -1,12 +1,11 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { ButtonComponent } from '../button/button.component';
 
 @Component({
-	selector: 'convoy-empty-state, [convoy-empty-state]',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent],
-	templateUrl: './empty-state.component.html'
+    selector: 'convoy-empty-state, [convoy-empty-state]',
+    imports: [ButtonComponent],
+    templateUrl: './empty-state.component.html'
 })
 export class EmptyStateComponent implements OnInit {
 	@Input('imgSrc') imgSrc!: string;

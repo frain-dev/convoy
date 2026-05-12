@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, type OnInit, Output } from '@angular/core';
-import {CommonModule, NgOptimizedImage} from '@angular/common';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonComponent } from '../../components/button/button.component';
 import {
@@ -39,7 +39,6 @@ interface Field {
 @Component({
     selector: "convoy-event-catalog",
     templateUrl: "./event-catalog.component.html",
-    standalone: true,
     imports: [
         CommonModule,
         RouterModule,
@@ -52,7 +51,7 @@ interface Field {
         CardComponent,
         NgOptimizedImage,
     ],
-    styleUrls: ["./event-catalog.component.scss"],
+    styleUrls: ["./event-catalog.component.scss"]
 })
 export class EventCatalogComponent implements OnInit {
     @Input() singleEventMode: boolean = false;
@@ -175,7 +174,7 @@ export class EventCatalogComponent implements OnInit {
             console.log("Fetching event types...")
             const response = await this.privateService.getEventTypes()
             const data = response.data
-            for (const [index, value] of data.entries()) {
+            for (const [, value] of data.entries()) {
                 if (value.json_schema) {
                     try {
                         value.parsed_schema =

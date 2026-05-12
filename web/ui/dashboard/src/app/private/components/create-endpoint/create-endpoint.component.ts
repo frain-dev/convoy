@@ -56,8 +56,7 @@ function mtlsKeyValidator(): ValidatorFn {
 }
 
 @Component({
-	selector: 'convoy-create-endpoint',
-	standalone: true,
+    selector: 'convoy-create-endpoint',
     imports: [
         CommonModule,
         ReactiveFormsModule,
@@ -77,8 +76,8 @@ function mtlsKeyValidator(): ValidatorFn {
         TagComponent,
         SelectComponent
     ],
-	templateUrl: './create-endpoint.component.html',
-	styleUrls: ['./create-endpoint.component.scss']
+    templateUrl: './create-endpoint.component.html',
+    styleUrls: ['./create-endpoint.component.scss']
 })
 export class CreateEndpointComponent implements OnInit {
 	@Input('editMode') editMode = false;

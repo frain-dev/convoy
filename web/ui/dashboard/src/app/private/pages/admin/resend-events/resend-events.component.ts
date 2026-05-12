@@ -4,9 +4,10 @@ import { AdminService } from '../admin.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
-	selector: 'app-resend-events',
-	templateUrl: './resend-events.component.html',
-	styleUrls: ['./resend-events.component.scss']
+    selector: 'app-resend-events',
+    templateUrl: './resend-events.component.html',
+    styleUrls: ['./resend-events.component.scss'],
+    standalone: false
 })
 export class ResendEventsComponent implements OnInit, OnDestroy {
 	// Resend events form

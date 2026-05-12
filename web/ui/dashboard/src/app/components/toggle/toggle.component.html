@@ -1,11 +1,11 @@
 <label [for]="id || 'convoy-toggle'" class="inline-flex relative items-center cursor-pointer" [class]="class">
-	<ng-container *ngIf="!formControlName">
-		<input type="checkbox" [id]="id || 'convoy-toggle'" class="sr-only peer" [checked]="isChecked" (change)="onChange.emit($event)" />
-	</ng-container>
-	<ng-container *ngIf="formControlName">
-		<input type="checkbox" [id]="id || 'convoy-toggle'" class="sr-only peer" [formControl]="control" [checked]="isChecked" (change)="onChange.emit($event)" />
-	</ng-container>
-	<div
+  @if (!formControlName) {
+    <input type="checkbox" [id]="id || 'convoy-toggle'" class="sr-only peer" [checked]="isChecked" (change)="onChange.emit($event)" />
+  }
+  @if (formControlName) {
+    <input type="checkbox" [id]="id || 'convoy-toggle'" class="sr-only peer" [formControl]="control" [checked]="isChecked" (change)="onChange.emit($event)" />
+  }
+  <div
 		class="
 			w-[35px]
 			h-[21px]
@@ -24,7 +24,7 @@
 			after:transition-all
 			peer-checked:bg-primary-100
 		"
-	></div>
+  ></div>
 
-	<span class="ml-2 text-12">{{ label }}</span>
+  <span class="ml-2 text-12">{{ label }}</span>
 </label>

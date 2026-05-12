@@ -1,12 +1,11 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
-	selector: '[convoy-card]',
-	standalone: true,
-	imports: [CommonModule],
-	host: { class: 'rounded-8px', '[class]': 'classes' },
-	template: `
+    selector: '[convoy-card]',
+    imports: [],
+    host: { class: 'rounded-8px', '[class]': 'classes' },
+    template: `
 		<ng-content></ng-content>
 	`
 })

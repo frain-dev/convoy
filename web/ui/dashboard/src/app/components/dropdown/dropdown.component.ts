@@ -1,6 +1,5 @@
-import { CommonModule } from '@angular/common';
+
 import { ChangeDetectionStrategy, Component, Directive, ElementRef, EventEmitter, Host, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { ButtonComponent } from '../button/button.component';
 import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
 import { OverlayDirective } from '../overlay/overlay.directive';
 
@@ -29,10 +28,9 @@ export class DropdownOptionDirective {
 }
 
 @Component({
-	selector: 'convoy-dropdown, [convoy-dropdown]',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent, DropdownContainerComponent, OverlayDirective, DropdownOptionDirective],
-	templateUrl: './dropdown.component.html',
+    selector: 'convoy-dropdown, [convoy-dropdown]',
+    imports: [DropdownContainerComponent, OverlayDirective],
+    templateUrl: './dropdown.component.html',
     styleUrls: ['./dropdown.component.scss'],
     changeDetection: ChangeDetectionStrategy.Default
 })

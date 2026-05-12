@@ -6,9 +6,10 @@ import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { HttpService } from 'src/app/services/http/http.service';
 
 @Component({
-	selector: 'app-projects',
-	templateUrl: './projects.component.html',
-	styleUrls: ['./projects.component.scss']
+    selector: 'app-projects',
+    templateUrl: './projects.component.html',
+    styleUrls: ['./projects.component.scss'],
+    standalone: false
 })
 export class ProjectsComponent implements OnInit {
 	projects: PROJECT[] = [];

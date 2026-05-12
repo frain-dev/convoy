@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { RbacService } from '../services/rbac/rbac.service';
 
 @Injectable({
 	providedIn: 'root'
 })
-export class InstanceAdminGuard implements CanActivate {
+export class InstanceAdminGuard  {
 	constructor(
 		private rbacService: RbacService,
 		private router: Router

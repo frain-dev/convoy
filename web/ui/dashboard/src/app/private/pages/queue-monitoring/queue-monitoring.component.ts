@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import axios from 'axios';
 import { environment } from 'src/environments/environment';
@@ -11,11 +11,10 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 
 @Component({
-	selector: 'convoy-queue-monitoring',
-	standalone: true,
-	imports: [CommonModule, CardComponent, ButtonComponent, LoaderModule],
-	templateUrl: './queue-monitoring.component.html',
-	styleUrls: ['./queue-monitoring.component.scss']
+    selector: 'convoy-queue-monitoring',
+    imports: [CardComponent, ButtonComponent, LoaderModule],
+    templateUrl: './queue-monitoring.component.html',
+    styleUrls: ['./queue-monitoring.component.scss']
 })
 export class QueueMonitoringComponent implements OnInit {
 	private static readonly fullscreenStorageKey = 'CONVOY_QUEUE_MONITORING_FULLSCREEN';
@@ -57,7 +56,7 @@ export class QueueMonitoringComponent implements OnInit {
 		return this.licenses.hasLicense('AsynqMonitoring');
 	}
 
-	@HostListener('document:keydown.escape', ['$event'])
+	@HostListener('document:keydown.escape')
 	onEscape(): void {
 		if (this.iframeFullscreen) {
 			this.iframeFullscreen = false;

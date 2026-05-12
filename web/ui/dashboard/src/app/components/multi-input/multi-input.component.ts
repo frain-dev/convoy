@@ -1,14 +1,13 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TooltipComponent } from '../tooltip/tooltip.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
-	selector: 'convoy-multi-input',
-	standalone: true,
-	imports: [CommonModule, TooltipComponent],
-	templateUrl: './multi-input.component.html',
-	styleUrls: ['./multi-input.component.scss']
+    selector: 'convoy-multi-input',
+    imports: [TooltipComponent],
+    templateUrl: './multi-input.component.html',
+    styleUrls: ['./multi-input.component.scss']
 })
 export class MultiInputComponent implements OnInit {
 	@Output() inputValues = new EventEmitter<string[]>();

@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { Location } from '@angular/common';
 import { PORTAL_LINK } from 'src/app/models/endpoint.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -21,11 +21,10 @@ import { LicensesService } from '../../services/licenses/licenses.service';
 import {CreatePortalEndpointComponent} from "../create-portal-endpoint/create-portal-endpoint.component";
 
 @Component({
-	selector: 'convoy-subscriptions',
-	standalone: true,
-	imports: [CommonModule, CreateSubscriptionModule, DeleteModalComponent, PaginationComponent, CopyButtonComponent, FormsModule, CardComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, DialogDirective, TagComponent, CreatePortalEndpointComponent],
-	templateUrl: './subscriptions.component.html',
-	styleUrls: ['./subscriptions.component.scss']
+    selector: 'convoy-subscriptions',
+    imports: [CreateSubscriptionModule, DeleteModalComponent, PaginationComponent, CopyButtonComponent, FormsModule, CardComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, DialogDirective, TagComponent, CreatePortalEndpointComponent],
+    templateUrl: './subscriptions.component.html',
+    styleUrls: ['./subscriptions.component.scss']
 })
 export class SubscriptionsComponent implements OnInit {
 	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;

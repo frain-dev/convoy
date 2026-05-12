@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { SamlService } from './saml.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,11 +7,10 @@ import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
-	selector: 'convoy-saml',
-	standalone: true,
-	imports: [CommonModule, LoaderModule],
-	templateUrl: './saml.component.html',
-	styleUrls: ['./saml.component.scss']
+    selector: 'convoy-saml',
+    imports: [LoaderModule],
+    templateUrl: './saml.component.html',
+    styleUrls: ['./saml.component.scss']
 })
 export class SamlComponent implements OnInit {
 	token: string = this.route.snapshot.queryParams['token'] ?? this.route.snapshot.queryParams['sso_token'];

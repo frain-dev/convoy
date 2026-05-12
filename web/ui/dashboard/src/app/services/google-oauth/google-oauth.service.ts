@@ -72,7 +72,7 @@ export class GoogleOAuthService {
     }
   }
 
-  private handleCredentialResponse(response: GoogleCredential): void {
+  private handleCredentialResponse(_response: GoogleCredential): void {
     // Global callback handler - not used in our implementation
   }
 
@@ -118,7 +118,7 @@ export class GoogleOAuthService {
             }
           } else if (notification.g === 'dismissed') {
             if (notification.i === 'credential_returned') {
-
+              // Credential path handled by the callback above.
             } else {
               reject(new Error('Google Sign-In was cancelled by user'));
             }

@@ -3,9 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { InputDirective } from './input.component';
 
 @Component({
-	standalone: true,
-	imports: [InputDirective],
-	template: `<input convoy-input type="text" />`
+    imports: [InputDirective],
+    template: `<input convoy-input type="text" />`
 })
 class InputHostComponent {}
 

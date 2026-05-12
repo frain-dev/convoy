@@ -1,13 +1,12 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
-	selector: 'convoy-file-input',
-	standalone: true,
-	imports: [CommonModule],
-	templateUrl: './file-input.component.html',
-	styleUrls: ['./file-input.component.scss']
+    selector: 'convoy-file-input',
+    imports: [],
+    templateUrl: './file-input.component.html',
+    styleUrls: ['./file-input.component.scss']
 })
 export class FileInputComponent implements OnInit {
 	file: any;

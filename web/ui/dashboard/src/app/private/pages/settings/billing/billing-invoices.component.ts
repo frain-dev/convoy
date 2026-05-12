@@ -3,9 +3,10 @@ import {BillingInvoicesService, InvoiceRow} from './billing-invoices.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 
 @Component({
-  selector: 'app-billing-invoices',
-  templateUrl: './billing-invoices.component.html',
-  styleUrls: ['./billing-invoices.component.scss']
+    selector: 'app-billing-invoices',
+    templateUrl: './billing-invoices.component.html',
+    styleUrls: ['./billing-invoices.component.scss'],
+    standalone: false
 })
 export class BillingInvoicesComponent implements OnInit {
   isFetchingInvoices = false;

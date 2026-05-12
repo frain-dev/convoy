@@ -3,9 +3,10 @@ import {BillingOverview} from './billing-overview.service';
 import {CardIconService} from './card-icon.service';
 
 @Component({
-  selector: 'app-billing-overview',
-  templateUrl: './billing-overview.component.html',
-  styleUrls: ['./billing-overview.component.scss']
+    selector: 'app-billing-overview',
+    templateUrl: './billing-overview.component.html',
+    styleUrls: ['./billing-overview.component.scss'],
+    standalone: false
 })
 export class BillingOverviewComponent implements OnInit, OnChanges {
   @Output() openPaymentDetails = new EventEmitter<void>();
@@ -21,7 +22,7 @@ export class BillingOverviewComponent implements OnInit, OnChanges {
   ngOnInit() {
   }
 
-  ngOnChanges(changes: SimpleChanges) {
+  ngOnChanges(_changes: SimpleChanges) {
   }
 
   getCardIconSvg() {

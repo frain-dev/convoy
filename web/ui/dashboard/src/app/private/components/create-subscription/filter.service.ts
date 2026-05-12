@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
-import { FILTER, FILTER_CREATE_REQUEST, FILTER_TEST_REQUEST } from 'src/app/models/filter.model';
+import { FILTER_CREATE_REQUEST, FILTER_TEST_REQUEST } from 'src/app/models/filter.model';
 
 @Injectable({
 	providedIn: 'root'

@@ -20,11 +20,10 @@ import { NotificationComponent } from 'src/app/components/notification/notificat
 import { SourceURLComponent } from '../../components/create-source/source-url/source-url.component';
 
 @Component({
-	selector: 'convoy-setup-project',
-	standalone: true,
-	imports: [CommonModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective, NotificationComponent, SourceURLComponent],
-	templateUrl: './setup-project.component.html',
-	styleUrls: ['./setup-project.component.scss']
+    selector: 'convoy-setup-project',
+    imports: [CommonModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective, NotificationComponent, SourceURLComponent],
+    templateUrl: './setup-project.component.html',
+    styleUrls: ['./setup-project.component.scss']
 })
 export class SetupProjectComponent implements OnInit {
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;

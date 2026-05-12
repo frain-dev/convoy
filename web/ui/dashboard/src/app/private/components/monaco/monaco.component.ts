@@ -1,15 +1,14 @@
 import { AfterViewInit, Component, ElementRef, Input, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MonacoService } from './monaco.service';
 import { first } from 'rxjs/operators';
 declare var monaco: typeof import('monaco-editor');
 
 @Component({
-	selector: 'convoy-monaco',
-	standalone: true,
-	imports: [CommonModule],
-	templateUrl: './monaco.component.html',
-	styleUrls: ['./monaco.component.scss']
+    selector: 'convoy-monaco',
+    imports: [],
+    templateUrl: './monaco.component.html',
+    styleUrls: ['./monaco.component.scss']
 })
 export class MonacoComponent implements AfterViewInit {
 	public _editor: any;

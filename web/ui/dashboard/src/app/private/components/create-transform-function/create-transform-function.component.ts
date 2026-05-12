@@ -11,11 +11,10 @@ import { PrismModule } from '../prism/prism.module';
 import { CreateSourceService } from '../create-source/create-source.service';
 
 @Component({
-	selector: 'convoy-create-transform-function',
-	standalone: true,
-	imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, DialogHeaderComponent, PrismModule],
-	templateUrl: './create-transform-function.component.html',
-	styleUrls: ['./create-transform-function.component.scss']
+    selector: 'convoy-create-transform-function',
+    imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, DialogHeaderComponent, PrismModule],
+    templateUrl: './create-transform-function.component.html',
+    styleUrls: ['./create-transform-function.component.scss']
 })
 export class CreateTransformFunctionComponent implements OnInit {
 	@Output('close') close: EventEmitter<any> = new EventEmitter();

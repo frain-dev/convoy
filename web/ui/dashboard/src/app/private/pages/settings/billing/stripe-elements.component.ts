@@ -2,18 +2,20 @@ import {Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, V
 import {loadStripe, Stripe, StripeCardElement, StripeCardElementChangeEvent, StripeElements} from '@stripe/stripe-js';
 
 @Component({
-  selector: 'app-stripe-elements',
-  template: `
+    selector: 'app-stripe-elements',
+    template: `
     <div class="stripe-elements-container">
       <div id="card-element" class="stripe-card-element">
         <!-- Stripe Elements will create form elements here -->
       </div>
-      <div id="card-errors" class="stripe-errors" *ngIf="errorMessage">
-        {{ errorMessage }}
-      </div>
+      @if (errorMessage) {
+        <div id="card-errors" class="stripe-errors">
+          {{ errorMessage }}
+        </div>
+      }
     </div>
-  `,
-  styles: [`
+    `,
+    styles: [`
     .stripe-elements-container {
       margin: 16px 0;
     }
@@ -37,7 +39,8 @@ import {loadStripe, Stripe, StripeCardElement, StripeCardElementChangeEvent, Str
       font-size: 14px;
       margin-top: 8px;
     }
-  `]
+  `],
+    standalone: false
 })
 export class StripeElementsComponent implements OnInit, OnDestroy {
   @Input() publishableKey: string = '';

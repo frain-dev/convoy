@@ -4,9 +4,10 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { AccountService } from '../account.service';
 
 @Component({
-	selector: 'security-settings',
-	templateUrl: './security-settings.component.html',
-	styleUrls: ['./security-settings.component.scss']
+    selector: 'security-settings',
+    templateUrl: './security-settings.component.html',
+    styleUrls: ['./security-settings.component.scss'],
+    standalone: false
 })
 export class SecuritySettingsComponent implements OnInit {
 	isUpdatingPassword = false;

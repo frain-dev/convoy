@@ -9,9 +9,10 @@ import {CheckoutResolverData} from './billing/checkout.resolver';
 export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing' | 'early adopter features';
 
 @Component({
-	selector: 'convoy-settings',
-	templateUrl: './settings.component.html',
-	styleUrls: ['./settings.component.scss']
+    selector: 'convoy-settings',
+    templateUrl: './settings.component.html',
+    styleUrls: ['./settings.component.scss'],
+    standalone: false
 })
 export class SettingsComponent implements OnInit {
 	activePage: SETTINGS = 'organisation settings';

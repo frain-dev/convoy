@@ -7,7 +7,6 @@ import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CreatePortalLinkComponent } from 'src/app/private/components/create-portal-link/create-portal-link.component';
-import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { PortalLinksService } from './portal-links.service';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
@@ -17,8 +16,7 @@ import { FormsModule } from '@angular/forms';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
-import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
-import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
@@ -27,32 +25,28 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
-	selector: 'convoy-portal-links',
-	standalone: true,
-	imports: [
-		CommonModule,
-		RouterModule,
-		FormsModule,
-		ButtonComponent,
-		DropdownComponent,
-		DropdownOptionDirective,
-		CardComponent,
-		EmptyStateComponent,
-		CreatePortalLinkComponent,
-		ListItemComponent,
-		CopyButtonComponent,
-		DeleteModalComponent,
-		DialogHeaderComponent,
-		TooltipComponent,
-		PaginationComponent,
-		PermissionDirective,
-		LoaderModule,
-		DialogDirective,
-		EndpointFilterComponent,
-		TagComponent
-	],
-	templateUrl: './portal-links.component.html',
-	styleUrls: ['./portal-links.component.scss']
+    selector: 'convoy-portal-links',
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        ButtonComponent,
+        DropdownComponent,
+        DropdownOptionDirective,
+        CardComponent,
+        EmptyStateComponent,
+        CreatePortalLinkComponent,
+        CopyButtonComponent,
+        DeleteModalComponent,
+        PaginationComponent,
+        PermissionDirective,
+        LoaderModule,
+        DialogDirective,
+        EndpointFilterComponent,
+        TagComponent
+    ],
+    templateUrl: './portal-links.component.html',
+    styleUrls: ['./portal-links.component.scss']
 })
 export class PortalLinksComponent implements OnInit {
 	@ViewChild('portalLinkDialog', { static: true }) portalLinkDialog!: ElementRef<HTMLDialogElement>;
@@ -122,9 +116,9 @@ export class PortalLinksComponent implements OnInit {
 	}
 
 	searchLinks(searchDetails: { searchInput?: any }) {
-		const searchString: string = searchDetails?.searchInput?.target?.value || this.linkSearchString;
+		const _searchString: string = searchDetails?.searchInput?.target?.value || this.linkSearchString;
 		// not in use yet
-		// this.getPortalLinks({ search: searchString });
+		// this.getPortalLinks({ search: _searchString });
 	}
 
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {

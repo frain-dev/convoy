@@ -1,2 +1,6 @@
-<span class="text-14px" *ngIf="buttonText">{{ buttonText }}</span>
-<ng-content *ngIf="!buttonText"></ng-content>
+@if (buttonText) {
+  <span class="text-14px">{{ buttonText }}</span>
+}
+@if (!buttonText) {
+  <ng-content></ng-content>
+}

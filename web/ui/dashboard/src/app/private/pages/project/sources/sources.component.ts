@@ -9,9 +9,10 @@ import { SourcesService } from './sources.service';
 import { PROJECT } from 'src/app/models/project.model';
 
 @Component({
-	selector: 'app-sources',
-	templateUrl: './sources.component.html',
-	styleUrls: ['./sources.component.scss']
+    selector: 'app-sources',
+    templateUrl: './sources.component.html',
+    styleUrls: ['./sources.component.scss'],
+    standalone: false
 })
 export class SourcesComponent implements OnInit {
 	@ViewChild('incomingSourceDropdown') incomingSourceDropdown!: DropdownComponent;
@@ -81,7 +82,7 @@ export class SourcesComponent implements OnInit {
 		this.router.navigate([], { queryParams: {} });
 	}
 
-	paginate(event: PAGINATION) {
+	paginate(_event: PAGINATION) {
 		this.getSources();
 	}
 

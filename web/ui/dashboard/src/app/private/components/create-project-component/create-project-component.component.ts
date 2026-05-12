@@ -40,9 +40,10 @@ function jsonValidator(): ValidatorFn {
 }
 
 @Component({
-	selector: 'app-create-project-component',
-	templateUrl: './create-project-component.component.html',
-	styleUrls: ['./create-project-component.component.scss']
+    selector: 'app-create-project-component',
+    templateUrl: './create-project-component.component.html',
+    styleUrls: ['./create-project-component.component.scss'],
+    standalone: false
 })
 export class CreateProjectComponent implements OnInit {
 	@ViewChild('disableEndpointsDialog', { static: true }) disableEndpointsDialog!: ElementRef<HTMLDialogElement>;

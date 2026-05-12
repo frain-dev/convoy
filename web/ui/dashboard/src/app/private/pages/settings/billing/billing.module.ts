@@ -1,7 +1,7 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ReactiveFormsModule} from '@angular/forms';
-import {HttpClientModule} from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import {BillingPageComponent} from './billing-page.component';
 import {BillingOverviewComponent} from './billing-overview.component';
 import {BillingUsageComponent} from './billing-usage.component';
@@ -32,21 +32,17 @@ import {
 } from "../../../../components/input/input.component";
 import {DialogDirective, DialogHeaderComponent} from "../../../../components/dialog/dialog.directive";
 
-@NgModule({
-  declarations: [
-    BillingPageComponent,
-    BillingOverviewComponent,
-    BillingUsageComponent,
-    BillingInvoicesComponent,
-    StripeElementsComponent
-  ],
-    imports: [CommonModule, ReactiveFormsModule, HttpClientModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent],
-  exports: [
-    BillingPageComponent,
-    BillingOverviewComponent,
-    BillingUsageComponent,
-    BillingInvoicesComponent
-  ],
-  providers: [CountriesService]
-})
+@NgModule({ declarations: [
+        BillingPageComponent,
+        BillingOverviewComponent,
+        BillingUsageComponent,
+        BillingInvoicesComponent,
+        StripeElementsComponent
+    ],
+    exports: [
+        BillingPageComponent,
+        BillingOverviewComponent,
+        BillingUsageComponent,
+        BillingInvoicesComponent
+    ], imports: [CommonModule, ReactiveFormsModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent], providers: [CountriesService, provideHttpClient(withInterceptorsFromDi())] })
 export class BillingModule {}

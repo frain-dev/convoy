@@ -128,7 +128,7 @@ export class SettingsService {
 	}
 
 	checkFeatureFlagEnabled(requestDetails: { org_id: string; feature_key: string }): Promise<boolean> {
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve, _reject) => {
 			try {
 				const response = await this.getEarlyAdopterFeatures({ org_id: requestDetails.org_id });
 				const features = response.data || [];

@@ -30,6 +30,7 @@ const routes: Routes = [
 	declarations: [TeamsComponent],
 	imports: [
 		CommonModule,
+		RouterModule.forChild(routes),
 		FormsModule,
 		TableLoaderModule,
 		ReactiveFormsModule,

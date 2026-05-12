@@ -4,9 +4,10 @@ import {SettingsService} from '../settings.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 
 @Component({
-	selector: 'configurations',
-	templateUrl: './configurations.component.html',
-	styleUrls: ['./configurations.component.scss']
+    selector: 'configurations',
+    templateUrl: './configurations.component.html',
+    styleUrls: ['./configurations.component.scss'],
+    standalone: false
 })
 export class ConfigurationsComponent implements OnInit {
 	regions = [

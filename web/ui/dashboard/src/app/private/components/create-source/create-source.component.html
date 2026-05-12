@@ -1,494 +1,559 @@
 <form class="pb-24px" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
-	<div class="relative" [ngClass]="{ 'border border-neutral-2 shadow-xs p-24px rounded-8px': showAction == 'true' }">
-		<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
-			<h4 class="font-semibold mb-20px text-12 text-neutral-10">Pre-configured Sources</h4>
-			<ul class="flex flex-row w-full mb-20px gap-24px">
-				<li *ngFor="let source of preConfiguredSources" class="list-none last-of-type:mr-0">
-					<button
-						convoy-button
-						size="sm"
-						color="neutral"
-						fill="soft-outline"
-						type="button"
-						class="w-60px h-60px"
-						[ngClass]="{ '!border-solid !border !border-new.primary-400': sourceForm.value.verifier.type === source }"
-						(click)="sourceForm.get('verifier.type')?.patchValue(source); sourceForm.value.name ? false : sourceForm.get('name')?.patchValue(source + ' Source')"
-					>
-						<img [src]="'/assets/img/' + source + '.png'" [alt]="source + '-icon'" />
-					</button>
-				</li>
-			</ul>
-			<hr class="border-new.primary-25 border-t mb-24px" />
-		</ng-container>
+  <div class="relative" [ngClass]="{ 'border border-neutral-2 shadow-xs p-24px rounded-8px': showAction == 'true' }">
+    @if (privateService.getProjectDetails?.type === 'incoming') {
+      <h4 class="font-semibold mb-20px text-12 text-neutral-10">Pre-configured Sources</h4>
+      <ul class="flex flex-row w-full mb-20px gap-24px">
+        @for (source of preConfiguredSources; track source) {
+          <li class="list-none last-of-type:mr-0">
+            <button
+              convoy-button
+              size="sm"
+              color="neutral"
+              fill="soft-outline"
+              type="button"
+              class="w-60px h-60px"
+              [ngClass]="{ '!border-solid !border !border-new.primary-400': sourceForm.value.verifier.type === source }"
+              (click)="sourceForm.get('verifier.type')?.patchValue(source); sourceForm.value.name ? false : sourceForm.get('name')?.patchValue(source + ' Source')"
+              >
+              <img [src]="'/assets/img/' + source + '.png'" [alt]="source + '-icon'" />
+            </button>
+          </li>
+        }
+      </ul>
+      <hr class="border-new.primary-25 border-t mb-24px" />
+    }
 
-		<convoy-input-field>
-			<label for="source-name" required="true" convoy-label required="true">Source name</label>
-			<input type="text" id="source-name" convoy-input formControlName="name" placeholder="Enter source name" />
-			<convoy-input-error *ngIf="sourceForm.get('name')?.touched && sourceForm.get('name')?.invalid">Enter new source name</convoy-input-error>
-		</convoy-input-field>
+    <convoy-input-field>
+      <label for="source-name" required="true" convoy-label required="true">Source name</label>
+      <input type="text" id="source-name" convoy-input formControlName="name" placeholder="Enter source name" />
+      @if (sourceForm.get('name')?.touched && sourceForm.get('name')?.invalid) {
+        <convoy-input-error>Enter new source name</convoy-input-error>
+      }
+    </convoy-input-field>
 
-		<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
-			<div formGroupName="verifier" class="mb-40px">
-				<convoy-select
-					label="Source Verification"
-					name="source-verification"
-					formControlName="type"
-					[options]="sourceVerifications"
-					errorMessage="Select source verification"
-					[required]="true"
-					(selectedOption)="sourceForm.get('verifier.type')?.patchValue($event)"
-				></convoy-select>
+    @if (privateService.getProjectDetails?.type === 'incoming') {
+      <div formGroupName="verifier" class="mb-40px">
+        <convoy-select
+          label="Source Verification"
+          name="source-verification"
+          formControlName="type"
+          [options]="sourceVerifications"
+          errorMessage="Select source verification"
+          [required]="true"
+          (selectedOption)="sourceForm.get('verifier.type')?.patchValue($event)"
+        ></convoy-select>
+        @if (sourceForm.value.verifier.type === 'hmac' || isCustomSource(sourceForm.value.verifier.type)) {
+          <div formGroupName="hmac" class="mt-40px">
+            <h3 class="capitalize font-semibold mb-20px text-12 text-neutral-10">
+              @if (isCustomSource(sourceForm.value.verifier.type)) {
+                <span>{{ sourceForm.value.verifier.type }} Credentials</span>
+              }
+              @if (sourceForm.value.verifier.type === 'hmac') {
+                <span>Configure HMAC</span>
+              }
+            </h3>
+            <div class="grid gap-24px grid-cols-[repeat(auto-fit,minmax(340px,1fr))]">
+              @if (sourceForm.value.verifier.type === 'hmac') {
+                <convoy-select
+                  label="Encoding"
+                  name="encoding"
+                  formControlName="encoding"
+                  [options]="encodings"
+                  errorMessage="Select encoding type"
+                  [required]="true"
+                  className="mb-0"
+                  (selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"
+                ></convoy-select>
+              }
+              @if (sourceForm.value.verifier.type === 'hmac') {
+                <convoy-select
+                  label="Hash Algorithm"
+                  name="hash"
+                  formControlName="hash"
+                  [options]="hashAlgorithms"
+                  errorMessage="Select algorithm type"
+                  [required]="true"
+                  className="mb-0"
+                  (selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"
+                ></convoy-select>
+              }
+              @if (sourceForm.value.verifier.type === 'hmac') {
+                <convoy-input-field class="mb-0">
+                  <label for="header" required="true" convoy-label required="true">Header Value</label>
+                  <input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="Key goes here" />
+                  @if (sourceForm.get('hmac.header')?.touched && sourceForm.get('hmac.header')?.invalid) {
+                    <convoy-input-error>Enter header key</convoy-input-error>
+                  }
+                </convoy-input-field>
+              }
+              <convoy-input-field class="mb-0">
+                <label for="secret" required="true" convoy-label required="true">Webhook signing secret</label>
+                <input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="Secret goes here" />
+                @if (sourceForm.get('hmac.secret')?.touched && sourceForm.get('hmac.secret')?.invalid) {
+                  <convoy-input-error>Enter webhook signing secret</convoy-input-error>
+                }
+              </convoy-input-field>
+            </div>
+          </div>
+        }
+        @if (sourceForm.value.verifier.type === 'basic_auth') {
+          <div formGroupName="basic_auth" class="mt-40px">
+            <h3 class="font-semibold mb-20px text-12 text-neutral-10">Configure Basic Auth</h3>
+            <div class="grid grid-cols-2 gap-6">
+              <convoy-input-field class="mb-0">
+                <label for="username" required="true" convoy-label required="true">Username</label>
+                <input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Name goes here" />
+                @if (sourceForm.get('basic_auth.username')?.touched && sourceForm.get('basic_auth.username')?.invalid) {
+                  <convoy-input-error>Enter basic auth username</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field class="mb-0">
+                <label for="password" required="true" convoy-label required="true">Password</label>
+                <input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="*******" />
+                @if (sourceForm.get('basic_auth.password')?.touched && sourceForm.get('basic_auth.password')?.invalid) {
+                  <convoy-input-error>Enter basic auth password</convoy-input-error>
+                }
+              </convoy-input-field>
+            </div>
+          </div>
+        }
+        @if (sourceForm.value.verifier.type === 'api_key') {
+          <div formGroupName="api_key" class="mt-40px">
+            <h3 class="font-semibold mb-20px text-12 text-neutral-10">Configure API Key</h3>
+            <div class="grid grid-cols-2 gap-6">
+              <convoy-input-field class="mb-0">
+                <label for="header_name" required="true" convoy-label required="true">Header Name</label>
+                <input type="text" id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Header Name" />
+                @if (sourceForm.get('verifier.header_name')?.touched && sourceForm.get('verifier.header_name')?.invalid) {
+                  <convoy-input-error>Enter api key header</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field class="mb-0">
+                <label for="header_value" required="true" convoy-label required="true">Header Value</label>
+                <input type="text" id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Key goes here" />
+                @if (sourceForm.get('verifier.header_value')?.touched && sourceForm.get('verifier.header_value')?.invalid) {
+                  <convoy-input-error>Enter api key header value</convoy-input-error>
+                }
+              </convoy-input-field>
+            </div>
+          </div>
+        }
+      </div>
+    }
 
-				<div formGroupName="hmac" *ngIf="sourceForm.value.verifier.type === 'hmac' || isCustomSource(sourceForm.value.verifier.type)" class="mt-40px">
-					<h3 class="capitalize font-semibold mb-20px text-12 text-neutral-10">
-						<span *ngIf="isCustomSource(sourceForm.value.verifier.type)">{{ sourceForm.value.verifier.type }} Credentials</span>
-						<span *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</span>
-					</h3>
+    @if (privateService.getProjectDetails?.type === 'outgoing') {
+      <div formGroupName="pub_sub">
+        <convoy-select label="Source Type" name="type" formControlName="type" [options]="pubSubTypes" errorMessage="Select source type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('pub_sub.type')?.patchValue($event)"></convoy-select>
+        <convoy-input-field class="mt-24px">
+          <label for="workers" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue. For Kafka sources, the number of partitions for the topic should match the number of workers">Workers</label>
+          <input type="number" id="workers" convoy-input autocomplete="workers" formControlName="workers" placeholder="Workers" />
+          @if (sourceForm.get('pub_sub.workers')?.touched && sourceForm.get('pub_sub.workers')?.invalid) {
+            <convoy-input-error>Enter number of workers</convoy-input-error>
+          }
+        </convoy-input-field>
+        @if (sourceForm.value.pub_sub.type === 'google') {
+          <h2 class="font-semibold mb-20px">Configure Google Pub/Sub</h2>
+          <div formGroupName="google">
+            <div class="grid grid-cols-2 gap-6">
+              <convoy-input-field>
+                <label for="project_id" convoy-label required="true">Project ID</label>
+                <input type="text" id="project_id" convoy-input autocomplete="project_id" formControlName="project_id" placeholder="Project ID goes here" />
+                @if (sourceForm.get('pub_sub.google.project_id')?.touched && sourceForm.get('pub_sub.google.project_id')?.invalid) {
+                  <convoy-input-error>Enter your project ID</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field>
+                <label for="subscription_id" convoy-label required="true">Subscription ID</label>
+                <input type="text" id="subscription_id" convoy-input autocomplete="subscription_id" formControlName="subscription_id" placeholder="Subscription ID goes here" />
+                @if (sourceForm.get('pub_sub.google.subscription_id')?.touched && sourceForm.get('pub_sub.google.subscription_id')?.invalid) {
+                  <convoy-input-error>Enter your subscription ID</convoy-input-error>
+                }
+              </convoy-input-field>
+            </div>
+            <convoy-input-field>
+              <label for="service_account" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
+              <convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="deleteJsonFile()">
+                <p class="text-center text-12 text-neutral-11 max-w-[186px] mx-auto">
+                  <span class="text-primary-100 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
+                  or drag and drop JSON (max 5kb)
+                </p>
+              </convoy-file-input>
+              @if (sourceForm.get('pub_sub.google.service_account')?.touched && sourceForm.get('pub_sub.google.service_account')?.invalid) {
+                <convoy-input-error>Enter service account</convoy-input-error>
+              }
+            </convoy-input-field>
+          </div>
+        }
+        <!-- AMQP-->
+        @if (sourceForm.value.pub_sub.type === 'amqp') {
+          <ng-container formGroupName="amqp">
+            <h2 class="text-16 text-new.gray-600 font-semibold mb-20px">Configure AMQP / RabbitMQ</h2>
+            <div class="grid grid-cols-2 gap-x-6">
+              <convoy-input-field>
+                <label for="schema" convoy-label required="true">Schema</label>
+                <input type="text" id="schema" convoy-input autocomplete="schema" formControlName="schema" placeholder="amqp" />
+                @if (sourceForm.get('pub_sub.amqp.schema')?.touched && sourceForm.get('pub_sub.amqp.schema')?.invalid) {
+                  <convoy-input-error>Enter Schema</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field>
+                <label for="host" convoy-label required="true">Host</label>
+                <input type="text" id="host" convoy-input autocomplete="host" formControlName="host" placeholder="Host" />
+                @if (sourceForm.get('pub_sub.amqp.host')?.touched && sourceForm.get('pub_sub.amqp.host')?.invalid) {
+                  <convoy-input-error>Enter Host</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field>
+                <label for="port" convoy-label required="true">Port</label>
+                <input type="text" id="port" convoy-input autocomplete="port" formControlName="port" placeholder="5672" />
+                @if (sourceForm.get('pub_sub.amqp.port')?.touched && sourceForm.get('pub_sub.amqp.port')?.invalid) {
+                  <convoy-input-error>Enter Port</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field>
+                <label for="queue" convoy-label required="true">Queue</label>
+                <input type="text" id="queue" convoy-input autocomplete="queue" formControlName="queue" placeholder="Queue Name" />
+                @if (sourceForm.get('pub_sub.amqp.queue')?.touched && sourceForm.get('pub_sub.amqp.queue')?.invalid) {
+                  <convoy-input-error>Enter queue name</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field>
+                <label for="deadLetterExchange" convoy-label tooltip="In case of failure, the message will be published to the dlx, please note that this will not declare the dlx.">Dead Letter Exchange</label>
+                <input type="text" id="deadLetterExchange" convoy-input autocomplete="deadLetterExchange" formControlName="deadLetterExchange" placeholder="Dead Letter Exchange" />
+                @if (sourceForm.get('pub_sub.amqp.deadLetterExchange')?.touched && sourceForm.get('pub_sub.amqp.deadLetterExchange')?.invalid) {
+                  <convoy-input-error>Enter dead letter exhange name</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field>
+                <label for="vhost" convoy-label>Virtual Host</label>
+                <input type="text" id="vhost" convoy-input autocomplete="vhost" formControlName="vhost" placeholder="Virtual Host" />
+                @if (sourceForm.get('pub_sub.amqp.vhost')?.touched && sourceForm.get('pub_sub.amqp.vhost')?.invalid) {
+                  <convoy-input-error>Enter virtual host</convoy-input-error>
+                }
+              </convoy-input-field>
+            </div>
+            <div class="grid grid-cols-2 gap-6 mt-24px"></div>
+            <div [className]="'mt-24px'"></div>
+            <div class="border-l border-new.primary-25 pl-16px mt-24px">
+              <div class="flex justify-between items-center mb-24px">
+                <p class="text-14 text-gray-600 font-semibold">Authentication</p>
+                <convoy-toggle name="amqpAuth" [className]="'!mb-0'" (onChange)="addAmqpAuthentication = !addAmqpAuthentication"></convoy-toggle>
+              </div>
+              @if (addAmqpAuthentication) {
+                <ng-container formGroupName="auth">
+                  <div class="grid grid-cols-2 gap-6 mt-24px">
+                    <convoy-input-field [className]="'mb-0'">
+                      <label for="user" convoy-label>User</label>
+                      <input type="text" id="user" convoy-input autocomplete="user" formControlName="user" placeholder="User" />
+                      @if (sourceForm.get('pub_sub.amqp.auth.user')?.touched && sourceForm.get('pub_sub.amqp.auth.user')?.invalid) {
+                        <convoy-input-error>Enter User</convoy-input-error>
+                      }
+                    </convoy-input-field>
+                    <convoy-input-field [className]="'mb-0'">
+                      <label for="password" convoy-label>Password</label>
+                      <input type="password" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="Password" />
+                      @if (sourceForm.get('pub_sub.amqp.auth.password')?.touched && sourceForm.get('pub_sub.amqp.auth.password')?.invalid) {
+                        <convoy-input-error>Enter Password</convoy-input-error>
+                      }
+                    </convoy-input-field>
+                  </div>
+                </ng-container>
+              }
+            </div>
+            <div class="border-l border-new.primary-25 pl-16px mt-24px">
+              <div class="flex justify-between items-center mb-24px">
+                <p class="text-14 text-gray-600 font-semibold">Bind Exchange</p>
+                <convoy-toggle name="amqpBindExchange" [className]="'!mb-0'" (onChange)="addAmqpQueueBinding = !addAmqpQueueBinding"></convoy-toggle>
+              </div>
+              @if (addAmqpQueueBinding) {
+                <ng-container formGroupName="bindExchange">
+                  <div class="grid grid-cols-2 gap-6 mt-24px">
+                    <convoy-input-field [className]="'mb-0'">
+                      <label for="exchange" convoy-label>Exchange</label>
+                      <input type="text" id="exchange" convoy-input autocomplete="exchange" formControlName="exchange" placeholder="Exchange name" />
+                      @if (sourceForm.get('pub_sub.amqp.exchange.exchange')?.touched && sourceForm.get('pub_sub.amqp.exchange.exchange')?.invalid) {
+                        <convoy-input-error>Enter exchange name</convoy-input-error>
+                      }
+                    </convoy-input-field>
+                    <convoy-input-field [className]="'mb-0'">
+                      <label for="routingKey" convoy-label>Routing Key</label>
+                      <input type="routingKey" id="routingKey" convoy-input autocomplete="routingKey" formControlName="routingKey" placeholder="Routing Key" />
+                      @if (sourceForm.get('pub_sub.amqp.routingKey')?.touched && sourceForm.get('pub_sub.amqp.routingKey')?.invalid) {
+                        <convoy-input-error>Enter routing key</convoy-input-error>
+                      }
+                    </convoy-input-field>
+                  </div>
+                </ng-container>
+              }
+            </div>
+          </ng-container>
+        }
+        <!-- AMQP-->
+        @if (sourceForm.value.pub_sub.type === 'sqs') {
+          <h2 class="font-semibold mb-20px">Configure SQS</h2>
+          <div class="grid grid-cols-2 gap-6" formGroupName="sqs">
+            <convoy-input-field>
+              <label for="access_key_id" convoy-label required="true">AWS Access Key ID</label>
+              <input type="text" id="access_key_id" convoy-input autocomplete="access_key_id" formControlName="access_key_id" placeholder="Access Key ID" />
+              @if (sourceForm.get('pub_sub.sqs.access_key_id')?.touched && sourceForm.get('pub_sub.sqs.access_key_id')?.invalid) {
+                <convoy-input-error>Enter access key ID</convoy-input-error>
+              }
+            </convoy-input-field>
+            <convoy-input-field>
+              <label for="secret_key" convoy-label required="true">AWS Secret Access Key</label>
+              <input type="text" id="secret_key" convoy-input autocomplete="secret_key" formControlName="secret_key" placeholder="Secret Access Key" />
+              @if (sourceForm.get('pub_sub.sqs.secret_key')?.touched && sourceForm.get('pub_sub.sqs.secret_key')?.invalid) {
+                <convoy-input-error>Enter secret access key</convoy-input-error>
+              }
+            </convoy-input-field>
+            <convoy-input-field>
+              <convoy-select
+                label="AWS Region"
+                name="default_region"
+                formControlName="default_region"
+                [options]="AWSregions"
+                errorMessage="Please select a default AWS region"
+                [required]="true"
+                placeholder="Region"
+                (selectedOption)="setRegionValue($event)"
+              ></convoy-select>
+            </convoy-input-field>
+            <convoy-input-field>
+              <label for="queue_name" convoy-label required="true">Queue Name</label>
+              <input type="text" id="queue_name" convoy-input autocomplete="queue_name" formControlName="queue_name" placeholder="Queue name" />
+              @if (sourceForm.get('pub_sub.sqs.queue_name')?.touched && sourceForm.get('pub_sub.sqs.queue_name')?.invalid) {
+                <convoy-input-error>Enter queue name</convoy-input-error>
+              }
+            </convoy-input-field>
+          </div>
+        }
+        @if (sourceForm.value.pub_sub.type === 'kafka') {
+          <ng-container formGroupName="kafka">
+            <div class="flex item-centers gap-14px">
+              <h2 class="text-16 text-neutral-10 font-semibold mb-20px">Configure Kafka</h2>
+              <a convoy-button fill="text" target="_blank" href="https://docs.getconvoy.io/product-manual/sources#kafka" rel="noreferrer" class="h-22px !py-0">
+                <img src="/assets/img/doc-icon-primary.svg" alt="doc icon" class="h-16px w-16px" />
+                <span class="font-medium text-12 text-primary-100 ml-2 whitespace-nowrap">Docs</span>
+              </a>
+            </div>
+            <convoy-multi-input label="Broker Addresses" required="true" [prefilledKeys]="brokerAddresses" (inputValues)="addBrokers($event)"></convoy-multi-input>
+            @if (sourceForm.get('pub_sub.kafka.brokers')?.touched && sourceForm.get('pub_sub.kafka.brokers')?.invalid) {
+              <convoy-input-error>Please add at least one broker address</convoy-input-error>
+            }
+            <span class="text-neutral-10 font-normal italic text-10 mb-24px">Set the value of each input with a comma or space (,)</span>
+            <div class="grid grid-cols-2 gap-6 mt-24px">
+              <convoy-input-field [className]="'mb-0'">
+                <label for="topic_name" convoy-label required="true">Topic Name</label>
+                <input type="text" id="topic_name" convoy-input autocomplete="topic_name" formControlName="topic_name" placeholder="Topic name" />
+                @if (sourceForm.get('pub_sub.kafka.topic_name')?.touched && sourceForm.get('pub_sub.kafka.topic_name')?.invalid) {
+                  <convoy-input-error>Enter topic name</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field [className]="'mb-0'">
+                <label for="consumer_group_id" convoy-label>Consumer ID</label>
+                <input type="text" id="consumer_group_id" convoy-input autocomplete="consumer_group_id" formControlName="consumer_group_id" placeholder="Consumer Group Id" />
+                @if (sourceForm.get('pub_sub.kafka.consumer_group_id')?.touched && sourceForm.get('pub_sub.kafka.consumer_group_id')?.invalid) {
+                  <convoy-input-error>Enter consumer group ID</convoy-input-error>
+                }
+              </convoy-input-field>
+            </div>
+            <div class="border-l border-new.primary-25 pl-16px mt-24px">
+              <div class="flex justify-between items-center mb-24px">
+                <p class="text-14 text-gray-600 font-semibold">Authentication</p>
+                <convoy-toggle [className]="'!mb-0'" [isChecked]="addKafkaAuthentication" (onChange)="checkAuthConfig()"></convoy-toggle>
+              </div>
+              @if (addKafkaAuthentication) {
+                <ng-container formGroupName="auth">
+                  <label convoy-label>Authentication Type</label>
+                  <div class="grid grid-cols-2 gap-6">
+                    @for (authType of authTypes; track authType) {
+                      <convoy-radio formControlName="type" [label]="authType" [_name]="authType" [value]="authType" [_id]="authType" [checked]="sourceForm.value.pub_sub.kafka.auth.type === authType"></convoy-radio>
+                    }
+                  </div>
+                  @if (sourceForm.get('pub_sub.kafka.auth.type')?.touched && sourceForm.get('pub_sub.kafka.auth.type')?.invalid) {
+                    <convoy-input-error>Please select an authentication type</convoy-input-error>
+                  }
+                  <label convoy-label class="mt-24px">TLS</label>
+                  <div class="grid grid-cols-2 gap-6">
+                    <convoy-radio formControlName="tls" label="Enabled" _name="tls" [value]="true" _id="enable"></convoy-radio>
+                    <convoy-radio formControlName="tls" label="Disabled" _name="tls" [value]="false" _id="disable"></convoy-radio>
+                  </div>
+                  @if (sourceForm.get('pub_sub.kafka.auth.tls')?.touched && sourceForm.get('pub_sub.kafka.auth.tls')?.invalid) {
+                    <convoy-input-error>Disable/enable tls encryption</convoy-input-error>
+                  }
+                  <div class="grid grid-cols-2 gap-6 my-24px">
+                    <convoy-input-field class="mb-0">
+                      <label for="username" required="true" convoy-label required="true">Username</label>
+                      <input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Username" />
+                      @if (sourceForm.get('pub_sub.kafka.auth.username')?.touched && sourceForm.get('pub_sub.kafka.auth.username')?.invalid) {
+                        <convoy-input-error>Enter user</convoy-input-error>
+                      }
+                    </convoy-input-field>
+                    <convoy-input-field class="mb-0">
+                      <label for="password" required="true" convoy-label required="true">Password</label>
+                      <input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="********" />
+                      @if (sourceForm.get('pub_sub.kafka.auth.password')?.touched && sourceForm.get('pub_sub.kafka.auth.password')?.invalid) {
+                        <convoy-input-error>Enter password</convoy-input-error>
+                      }
+                    </convoy-input-field>
+                    @if (sourceForm.value.pub_sub.kafka.auth.type == 'scram') {
+                      <convoy-select
+                        label="Hash"
+                        name="hash"
+                        formControlName="hash"
+                        [options]="hashAlgorithms"
+                        errorMessage="Please select hash"
+                        [required]="true"
+                        className="mb-0"
+                        (selectedOption)="sourceForm.get('pub_sub.kafka.auth.hash')?.patchValue($event)"
+                      ></convoy-select>
+                    }
+                  </div>
+                </ng-container>
+              }
+            </div>
+          </ng-container>
+        }
+      </div>
+    }
 
-					<div class="grid gap-24px grid-cols-[repeat(auto-fit,minmax(340px,1fr))]">
-						<convoy-select
-							*ngIf="sourceForm.value.verifier.type === 'hmac'"
-							label="Encoding"
-							name="encoding"
-							formControlName="encoding"
-							[options]="encodings"
-							errorMessage="Select encoding type"
-							[required]="true"
-							className="mb-0"
-							(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"
-						></convoy-select>
+    <hr class="border-t border-neutral-4 my-40px" />
 
-						<convoy-select
-							*ngIf="sourceForm.value.verifier.type === 'hmac'"
-							label="Hash Algorithm"
-							name="hash"
-							formControlName="hash"
-							[options]="hashAlgorithms"
-							errorMessage="Select algorithm type"
-							[required]="true"
-							className="mb-0"
-							(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"
-						></convoy-select>
+    @if (showConfig('custom_response')) {
+      <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+        <div class="flex justify-between items-center mb-16px">
+          <h4 class="text-12 text-neutral-10 font-semibold">Custom response</h4>
+          <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
+            <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+              <use xlink:href="#delete-icon2"></use>
+            </svg>
+          </button>
+        </div>
+        <div formGroupName="custom_response">
+          <convoy-input-field>
+            <label for="content_type" required="true" convoy-label>Response Content Type</label>
+            <input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json, text/plain" />
+            @if (sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid) {
+              <convoy-input-error>Enter content type</convoy-input-error>
+            }
+          </convoy-input-field>
+          <convoy-input-field>
+            <label convoy-label>Response Content</label>
+            <textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
+            @if (sourceForm.get('custom_response.body')?.touched && sourceForm.get('custom_response.body')?.invalid) {
+              <convoy-input-error>Enter reponse content</convoy-input-error>
+            }
+          </convoy-input-field>
+        </div>
+      </div>
+    }
 
-						<convoy-input-field *ngIf="sourceForm.value.verifier.type === 'hmac'" class="mb-0">
-							<label for="header" required="true" convoy-label required="true">Header Value</label>
-							<input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="Key goes here" />
-							<convoy-input-error *ngIf="sourceForm.get('hmac.header')?.touched && sourceForm.get('hmac.header')?.invalid">Enter header key</convoy-input-error>
-						</convoy-input-field>
+    @if (showConfig('idempotency')) {
+      <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+        <div class="flex justify-between items-end mb-24px">
+          <p class="text-12 font-semibold text-neutral-10 flex items-center">Idempotency Config</p>
+          <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Sources|MANAGE" (click)="toggleConfigForm('idempotency')">
+            <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+              <use xlink:href="#delete-icon2"></use>
+            </svg>
+          </button>
+        </div>
+        <convoy-multi-input
+          label="Key locations"
+          tooltip="JSON location of idempotency key, add multiple locations for different locations"
+          [prefilledKeys]="sourceDetails && sourceDetails.idempotency_keys ? sourceDetails.idempotency_keys : []"
+          (inputValues)="sourceForm.get('idempotency_keys')?.patchValue($event)"
+        ></convoy-multi-input>
+        <span class="text-neutral-10 font-normal italic text-10 mb-24px">The order matters. Set the value of each input with a coma (,)</span>
+      </div>
+    }
 
-						<convoy-input-field class="mb-0">
-							<label for="secret" required="true" convoy-label required="true">Webhook signing secret</label>
-							<input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="Secret goes here" />
-							<convoy-input-error *ngIf="sourceForm.get('hmac.secret')?.touched && sourceForm.get('hmac.secret')?.invalid">Enter webhook signing secret</convoy-input-error>
-						</convoy-input-field>
-					</div>
-				</div>
+    @if (showConfig('tranform_config')) {
+      <div class="border-l-2 border-neutral-3 pl-16px mb-40px flex justify-between items-center">
+        <div>
+          <div class="flex items-center gap-8px">
+            <h4 class="text-neutral-10 font-medium text-12">Transform</h4>
+            @if (!licenseService.hasLicense('Transformations')) {
+              <div convoy-tag size="sm" color="primary">
+                <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                  <use xlink:href="#lock-icon"></use>
+                </svg>
+                Business
+              </div>
+            }
+          </div>
+          <p class="text-10 text-neutral-10 mt-4px">Transform request body of events with a javascript function.</p>
+        </div>
+        <div class="flex items-center">
+          <button convoy-button fill="outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()" [disabled]="!licenseService.hasLicense('Transformations')">Open Editor</button>
+          <div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
+          <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('tranform_config')">
+            <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+              <use xlink:href="#delete-icon2"></use>
+            </svg>
+          </button>
+        </div>
+      </div>
+    }
 
-				<div formGroupName="basic_auth" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" class="mt-40px">
-					<h3 class="font-semibold mb-20px text-12 text-neutral-10">Configure Basic Auth</h3>
+    <div class="flex flex-wrap items-center mt-20px gap-24px">
+      @for (config of configurations; track config) {
+        @if (!config.show) {
+          <convoy-config-button (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
+        }
+      }
+    </div>
 
-					<div class="grid grid-cols-2 gap-6">
-						<convoy-input-field class="mb-0">
-							<label for="username" required="true" convoy-label required="true">Username</label>
-							<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Name goes here" />
-							<convoy-input-error *ngIf="sourceForm.get('basic_auth.username')?.touched && sourceForm.get('basic_auth.username')?.invalid">Enter basic auth username</convoy-input-error>
-						</convoy-input-field>
+    <div class="empty:hidden">
+      <ng-content></ng-content>
+    </div>
 
-						<convoy-input-field class="mb-0">
-							<label for="password" required="true" convoy-label required="true">Password</label>
-							<input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="*******" />
-							<convoy-input-error *ngIf="sourceForm.get('basic_auth.password')?.touched && sourceForm.get('basic_auth.password')?.invalid">Enter basic auth password</convoy-input-error>
-						</convoy-input-field>
-					</div>
-				</div>
+    @if (isloading) {
+      <div convoy-form-loader [loading]="!sourceCreated"></div>
+    }
+  </div>
 
-				<div formGroupName="api_key" *ngIf="sourceForm.value.verifier.type === 'api_key'" class="mt-40px">
-					<h3 class="font-semibold mb-20px text-12 text-neutral-10">Configure API Key</h3>
-
-					<div class="grid grid-cols-2 gap-6">
-						<convoy-input-field class="mb-0">
-							<label for="header_name" required="true" convoy-label required="true">Header Name</label>
-							<input type="text" id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Header Name" />
-							<convoy-input-error *ngIf="sourceForm.get('verifier.header_name')?.touched && sourceForm.get('verifier.header_name')?.invalid">Enter api key header</convoy-input-error>
-						</convoy-input-field>
-
-						<convoy-input-field class="mb-0">
-							<label for="header_value" required="true" convoy-label required="true">Header Value</label>
-							<input type="text" id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Key goes here" />
-							<convoy-input-error *ngIf="sourceForm.get('verifier.header_value')?.touched && sourceForm.get('verifier.header_value')?.invalid">Enter api key header value</convoy-input-error>
-						</convoy-input-field>
-					</div>
-				</div>
-			</div>
-		</ng-container>
-
-		<div formGroupName="pub_sub" *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
-			<convoy-select label="Source Type" name="type" formControlName="type" [options]="pubSubTypes" errorMessage="Select source type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('pub_sub.type')?.patchValue($event)"></convoy-select>
-
-			<convoy-input-field class="mt-24px">
-				<label for="workers" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue. For Kafka sources, the number of partitions for the topic should match the number of workers">Workers</label>
-				<input type="number" id="workers" convoy-input autocomplete="workers" formControlName="workers" placeholder="Workers" />
-				<convoy-input-error *ngIf="sourceForm.get('pub_sub.workers')?.touched && sourceForm.get('pub_sub.workers')?.invalid">Enter number of workers</convoy-input-error>
-			</convoy-input-field>
-
-			<ng-container *ngIf="sourceForm.value.pub_sub.type === 'google'">
-				<h2 class="font-semibold mb-20px">Configure Google Pub/Sub</h2>
-
-				<div formGroupName="google">
-					<div class="grid grid-cols-2 gap-6">
-						<convoy-input-field>
-							<label for="project_id" convoy-label required="true">Project ID</label>
-							<input type="text" id="project_id" convoy-input autocomplete="project_id" formControlName="project_id" placeholder="Project ID goes here" />
-							<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.project_id')?.touched && sourceForm.get('pub_sub.google.project_id')?.invalid">Enter your project ID</convoy-input-error>
-						</convoy-input-field>
-						<convoy-input-field>
-							<label for="subscription_id" convoy-label required="true">Subscription ID</label>
-							<input type="text" id="subscription_id" convoy-input autocomplete="subscription_id" formControlName="subscription_id" placeholder="Subscription ID goes here" />
-							<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.subscription_id')?.touched && sourceForm.get('pub_sub.google.subscription_id')?.invalid">Enter your subscription ID</convoy-input-error>
-						</convoy-input-field>
-					</div>
-					<convoy-input-field>
-						<label for="service_account" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
-						<convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="deleteJsonFile()">
-							<p class="text-center text-12 text-neutral-11 max-w-[186px] mx-auto">
-								<span class="text-primary-100 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
-								or drag and drop JSON (max 5kb)
-							</p>
-						</convoy-file-input>
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.service_account')?.touched && sourceForm.get('pub_sub.google.service_account')?.invalid">Enter service account</convoy-input-error>
-					</convoy-input-field>
-				</div>
-			</ng-container>
-
-			<!-- AMQP-->
-			<ng-container formGroupName="amqp" *ngIf="sourceForm.value.pub_sub.type === 'amqp'">
-				<h2 class="text-16 text-new.gray-600 font-semibold mb-20px">Configure AMQP / RabbitMQ</h2>
-
-				<div class="grid grid-cols-2 gap-x-6">
-					<convoy-input-field>
-						<label for="schema" convoy-label required="true">Schema</label>
-						<input type="text" id="schema" convoy-input autocomplete="schema" formControlName="schema" placeholder="amqp" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.schema')?.touched && sourceForm.get('pub_sub.amqp.schema')?.invalid">Enter Schema</convoy-input-error>
-					</convoy-input-field>
-
-					<convoy-input-field>
-						<label for="host" convoy-label required="true">Host</label>
-						<input type="text" id="host" convoy-input autocomplete="host" formControlName="host" placeholder="Host" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.host')?.touched && sourceForm.get('pub_sub.amqp.host')?.invalid">Enter Host</convoy-input-error>
-					</convoy-input-field>
-					<convoy-input-field>
-						<label for="port" convoy-label required="true">Port</label>
-						<input type="text" id="port" convoy-input autocomplete="port" formControlName="port" placeholder="5672" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.port')?.touched && sourceForm.get('pub_sub.amqp.port')?.invalid">Enter Port</convoy-input-error>
-					</convoy-input-field>
-
-					<convoy-input-field>
-						<label for="queue" convoy-label required="true">Queue</label>
-						<input type="text" id="queue" convoy-input autocomplete="queue" formControlName="queue" placeholder="Queue Name" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.queue')?.touched && sourceForm.get('pub_sub.amqp.queue')?.invalid">Enter queue name</convoy-input-error>
-					</convoy-input-field>
-					<convoy-input-field>
-						<label for="deadLetterExchange" convoy-label tooltip="In case of failure, the message will be published to the dlx, please note that this will not declare the dlx.">Dead Letter Exchange</label>
-						<input type="text" id="deadLetterExchange" convoy-input autocomplete="deadLetterExchange" formControlName="deadLetterExchange" placeholder="Dead Letter Exchange" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.deadLetterExchange')?.touched && sourceForm.get('pub_sub.amqp.deadLetterExchange')?.invalid">Enter dead letter exhange name</convoy-input-error>
-					</convoy-input-field>
-					<convoy-input-field>
-						<label for="vhost" convoy-label>Virtual Host</label>
-						<input type="text" id="vhost" convoy-input autocomplete="vhost" formControlName="vhost" placeholder="Virtual Host" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.vhost')?.touched && sourceForm.get('pub_sub.amqp.vhost')?.invalid">Enter virtual host</convoy-input-error>
-					</convoy-input-field>
-				</div>
-
-				<div class="grid grid-cols-2 gap-6 mt-24px"></div>
-
-				<div [className]="'mt-24px'"></div>
-
-				<div class="border-l border-new.primary-25 pl-16px mt-24px">
-					<div class="flex justify-between items-center mb-24px">
-						<p class="text-14 text-gray-600 font-semibold">Authentication</p>
-						<convoy-toggle name="amqpAuth" [className]="'!mb-0'" (onChange)="addAmqpAuthentication = !addAmqpAuthentication"></convoy-toggle>
-					</div>
-
-					<ng-container formGroupName="auth" *ngIf="addAmqpAuthentication">
-						<div class="grid grid-cols-2 gap-6 mt-24px">
-							<convoy-input-field [className]="'mb-0'">
-								<label for="user" convoy-label>User</label>
-								<input type="text" id="user" convoy-input autocomplete="user" formControlName="user" placeholder="User" />
-								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.auth.user')?.touched && sourceForm.get('pub_sub.amqp.auth.user')?.invalid">Enter User</convoy-input-error>
-							</convoy-input-field>
-
-							<convoy-input-field [className]="'mb-0'">
-								<label for="password" convoy-label>Password</label>
-								<input type="password" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="Password" />
-								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.auth.password')?.touched && sourceForm.get('pub_sub.amqp.auth.password')?.invalid">Enter Password</convoy-input-error>
-							</convoy-input-field>
-						</div>
-					</ng-container>
-				</div>
-
-				<div class="border-l border-new.primary-25 pl-16px mt-24px">
-					<div class="flex justify-between items-center mb-24px">
-						<p class="text-14 text-gray-600 font-semibold">Bind Exchange</p>
-						<convoy-toggle name="amqpBindExchange" [className]="'!mb-0'" (onChange)="addAmqpQueueBinding = !addAmqpQueueBinding"></convoy-toggle>
-					</div>
-
-					<ng-container formGroupName="bindExchange" *ngIf="addAmqpQueueBinding">
-						<div class="grid grid-cols-2 gap-6 mt-24px">
-							<convoy-input-field [className]="'mb-0'">
-								<label for="exchange" convoy-label>Exchange</label>
-								<input type="text" id="exchange" convoy-input autocomplete="exchange" formControlName="exchange" placeholder="Exchange name" />
-								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.exchange.exchange')?.touched && sourceForm.get('pub_sub.amqp.exchange.exchange')?.invalid">Enter exchange name</convoy-input-error>
-							</convoy-input-field>
-
-							<convoy-input-field [className]="'mb-0'">
-								<label for="routingKey" convoy-label>Routing Key</label>
-								<input type="routingKey" id="routingKey" convoy-input autocomplete="routingKey" formControlName="routingKey" placeholder="Routing Key" />
-								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.routingKey')?.touched && sourceForm.get('pub_sub.amqp.routingKey')?.invalid">Enter routing key</convoy-input-error>
-							</convoy-input-field>
-						</div>
-					</ng-container>
-				</div>
-			</ng-container>
-			<!-- AMQP-->
-
-			<ng-container *ngIf="sourceForm.value.pub_sub.type === 'sqs'">
-				<h2 class="font-semibold mb-20px">Configure SQS</h2>
-
-				<div class="grid grid-cols-2 gap-6" formGroupName="sqs">
-					<convoy-input-field>
-						<label for="access_key_id" convoy-label required="true">AWS Access Key ID</label>
-						<input type="text" id="access_key_id" convoy-input autocomplete="access_key_id" formControlName="access_key_id" placeholder="Access Key ID" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.access_key_id')?.touched && sourceForm.get('pub_sub.sqs.access_key_id')?.invalid">Enter access key ID</convoy-input-error>
-					</convoy-input-field>
-					<convoy-input-field>
-						<label for="secret_key" convoy-label required="true">AWS Secret Access Key</label>
-						<input type="text" id="secret_key" convoy-input autocomplete="secret_key" formControlName="secret_key" placeholder="Secret Access Key" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.secret_key')?.touched && sourceForm.get('pub_sub.sqs.secret_key')?.invalid">Enter secret access key</convoy-input-error>
-					</convoy-input-field>
-					<convoy-input-field>
-						<convoy-select
-							label="AWS Region"
-							name="default_region"
-							formControlName="default_region"
-							[options]="AWSregions"
-							errorMessage="Please select a default AWS region"
-							[required]="true"
-							placeholder="Region"
-							(selectedOption)="setRegionValue($event)"
-						></convoy-select>
-					</convoy-input-field>
-					<convoy-input-field>
-						<label for="queue_name" convoy-label required="true">Queue Name</label>
-						<input type="text" id="queue_name" convoy-input autocomplete="queue_name" formControlName="queue_name" placeholder="Queue name" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.queue_name')?.touched && sourceForm.get('pub_sub.sqs.queue_name')?.invalid">Enter queue name</convoy-input-error>
-					</convoy-input-field>
-				</div>
-			</ng-container>
-
-			<ng-container formGroupName="kafka" *ngIf="sourceForm.value.pub_sub.type === 'kafka'">
-				<div class="flex item-centers gap-14px">
-					<h2 class="text-16 text-neutral-10 font-semibold mb-20px">Configure Kafka</h2>
-					<a convoy-button fill="text" target="_blank" href="https://docs.getconvoy.io/product-manual/sources#kafka" rel="noreferrer" class="h-22px !py-0">
-						<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" class="h-16px w-16px" />
-						<span class="font-medium text-12 text-primary-100 ml-2 whitespace-nowrap">Docs</span>
-					</a>
-				</div>
-
-				<convoy-multi-input label="Broker Addresses" required="true" [prefilledKeys]="brokerAddresses" (inputValues)="addBrokers($event)"></convoy-multi-input>
-				<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.brokers')?.touched && sourceForm.get('pub_sub.kafka.brokers')?.invalid">Please add at least one broker address</convoy-input-error>
-				<span class="text-neutral-10 font-normal italic text-10 mb-24px">Set the value of each input with a comma or space (,)</span>
-
-				<div class="grid grid-cols-2 gap-6 mt-24px">
-					<convoy-input-field [className]="'mb-0'">
-						<label for="topic_name" convoy-label required="true">Topic Name</label>
-						<input type="text" id="topic_name" convoy-input autocomplete="topic_name" formControlName="topic_name" placeholder="Topic name" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.topic_name')?.touched && sourceForm.get('pub_sub.kafka.topic_name')?.invalid">Enter topic name</convoy-input-error>
-					</convoy-input-field>
-
-					<convoy-input-field [className]="'mb-0'">
-						<label for="consumer_group_id" convoy-label>Consumer ID</label>
-						<input type="text" id="consumer_group_id" convoy-input autocomplete="consumer_group_id" formControlName="consumer_group_id" placeholder="Consumer Group Id" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.consumer_group_id')?.touched && sourceForm.get('pub_sub.kafka.consumer_group_id')?.invalid">Enter consumer group ID</convoy-input-error>
-					</convoy-input-field>
-				</div>
-
-				<div class="border-l border-new.primary-25 pl-16px mt-24px">
-					<div class="flex justify-between items-center mb-24px">
-						<p class="text-14 text-gray-600 font-semibold">Authentication</p>
-						<convoy-toggle [className]="'!mb-0'" [isChecked]="addKafkaAuthentication" (onChange)="checkAuthConfig()"></convoy-toggle>
-					</div>
-
-					<ng-container formGroupName="auth" *ngIf="addKafkaAuthentication">
-						<label convoy-label>Authentication Type</label>
-						<div class="grid grid-cols-2 gap-6">
-							<convoy-radio *ngFor="let authType of authTypes" formControlName="type" [label]="authType" [_name]="authType" [value]="authType" [_id]="authType" [checked]="sourceForm.value.pub_sub.kafka.auth.type === authType"></convoy-radio>
-						</div>
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.type')?.touched && sourceForm.get('pub_sub.kafka.auth.type')?.invalid">Please select an authentication type</convoy-input-error>
-
-						<label convoy-label class="mt-24px">TLS</label>
-						<div class="grid grid-cols-2 gap-6">
-							<convoy-radio formControlName="tls" label="Enabled" _name="tls" [value]="true" _id="enable"></convoy-radio>
-							<convoy-radio formControlName="tls" label="Disabled" _name="tls" [value]="false" _id="disable"></convoy-radio>
-						</div>
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.tls')?.touched && sourceForm.get('pub_sub.kafka.auth.tls')?.invalid">Disable/enable tls encryption</convoy-input-error>
-
-						<div class="grid grid-cols-2 gap-6 my-24px">
-							<convoy-input-field class="mb-0">
-								<label for="username" required="true" convoy-label required="true">Username</label>
-								<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Username" />
-								<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.username')?.touched && sourceForm.get('pub_sub.kafka.auth.username')?.invalid">Enter user</convoy-input-error>
-							</convoy-input-field>
-
-							<convoy-input-field class="mb-0">
-								<label for="password" required="true" convoy-label required="true">Password</label>
-								<input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="********" />
-								<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.password')?.touched && sourceForm.get('pub_sub.kafka.auth.password')?.invalid">Enter password</convoy-input-error>
-							</convoy-input-field>
-
-							<ng-container *ngIf="sourceForm.value.pub_sub.kafka.auth.type == 'scram'">
-								<convoy-select
-									label="Hash"
-									name="hash"
-									formControlName="hash"
-									[options]="hashAlgorithms"
-									errorMessage="Please select hash"
-									[required]="true"
-									className="mb-0"
-									(selectedOption)="sourceForm.get('pub_sub.kafka.auth.hash')?.patchValue($event)"
-								></convoy-select>
-							</ng-container>
-						</div>
-					</ng-container>
-				</div>
-			</ng-container>
-		</div>
-
-		<hr class="border-t border-neutral-4 my-40px" />
-
-		<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('custom_response')">
-			<div class="flex justify-between items-center mb-16px">
-				<h4 class="text-12 text-neutral-10 font-semibold">Custom response</h4>
-				<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
-					<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-						<use xlink:href="#delete-icon2"></use>
-					</svg>
-				</button>
-			</div>
-
-			<div formGroupName="custom_response">
-				<convoy-input-field>
-					<label for="content_type" required="true" convoy-label>Response Content Type</label>
-					<input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json, text/plain" />
-					<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
-				</convoy-input-field>
-
-				<convoy-input-field>
-					<label convoy-label>Response Content</label>
-					<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
-					<convoy-input-error *ngIf="sourceForm.get('custom_response.body')?.touched && sourceForm.get('custom_response.body')?.invalid">Enter reponse content</convoy-input-error>
-				</convoy-input-field>
-			</div>
-		</div>
-
-		<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('idempotency')">
-			<div class="flex justify-between items-end mb-24px">
-				<p class="text-12 font-semibold text-neutral-10 flex items-center">Idempotency Config</p>
-				<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Sources|MANAGE" (click)="toggleConfigForm('idempotency')">
-					<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-						<use xlink:href="#delete-icon2"></use>
-					</svg>
-				</button>
-			</div>
-
-			<convoy-multi-input
-				label="Key locations"
-				tooltip="JSON location of idempotency key, add multiple locations for different locations"
-				[prefilledKeys]="sourceDetails && sourceDetails.idempotency_keys ? sourceDetails.idempotency_keys : []"
-				(inputValues)="sourceForm.get('idempotency_keys')?.patchValue($event)"
-			></convoy-multi-input>
-			<span class="text-neutral-10 font-normal italic text-10 mb-24px">The order matters. Set the value of each input with a coma (,)</span>
-		</div>
-
-		<ng-container *ngIf="showConfig('tranform_config')">
-			<div class="border-l-2 border-neutral-3 pl-16px mb-40px flex justify-between items-center">
-				<div>
-					<div class="flex items-center gap-8px">
-						<h4 class="text-neutral-10 font-medium text-12">Transform</h4>
-						<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('Transformations')">
-							<svg width="10" height="10" class="fill-new.primary-400 scale-150">
-								<use xlink:href="#lock-icon"></use>
-							</svg>
-							Business
-						</div>
-					</div>
-					<p class="text-10 text-neutral-10 mt-4px">Transform request body of events with a javascript function.</p>
-				</div>
-				<div class="flex items-center">
-					<button convoy-button fill="outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()" [disabled]="!licenseService.hasLicense('Transformations')">Open Editor</button>
-
-					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
-
-					<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('tranform_config')">
-						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-							<use xlink:href="#delete-icon2"></use>
-						</svg>
-					</button>
-				</div>
-			</div>
-		</ng-container>
-
-		<div class="flex flex-wrap items-center mt-20px gap-24px">
-			<ng-container *ngFor="let config of configurations">
-				<convoy-config-button *ngIf="!config.show" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
-			</ng-container>
-		</div>
-
-		<div class="empty:hidden">
-			<ng-content></ng-content>
-		</div>
-
-		<div *ngIf="isloading" convoy-form-loader [loading]="!sourceCreated"></div>
-	</div>
-
-	<div class="flex justify-end mt-32px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button convoy-permission="Sources|MANAGE" [disabled]="isloading || sourceForm.disabled">
-			{{ action === 'update' ? 'Update Source' : 'Create Source' }}
-			<svg width="24" height="24" class="ml-8px fill-white-100">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-		</button>
-	</div>
+  <div class="flex justify-end mt-32px" [ngClass]="{ hidden: showAction === 'false' }">
+    <button convoy-button convoy-permission="Sources|MANAGE" [disabled]="isloading || sourceForm.disabled">
+      {{ action === 'update' ? 'Update Source' : 'Create Source' }}
+      <svg width="24" height="24" class="ml-8px fill-white-100">
+        <use xlink:href="#arrow-right-icon"></use>
+      </svg>
+    </button>
+  </div>
 </form>
 
 <convoy-notification></convoy-notification>
 
 <!-- disable endpoints confirmation prompt -->
 <dialog #disableAuthModal convoy-dialog position="center" size="sm">
-	<div class="flex flex-col p-30px">
-		<h3 class="text-14 font-bold text-black mb-8px">Confirm Action</h3>
-		<p class="text-12 font-medium text-neutral-11 mb-20px">You are about to disable authentication for this Kafka source, this would delete your current configurations.</p>
+  <div class="flex flex-col p-30px">
+    <h3 class="text-14 font-bold text-black mb-8px">Confirm Action</h3>
+    <p class="text-12 font-medium text-neutral-11 mb-20px">You are about to disable authentication for this Kafka source, this would delete your current configurations.</p>
 
-		<div class="flex gap-16px items-center">
-			<button convoy-button size="sm" (click)="addKafkaAuthentication = false; disableAuthModal.close()">Confirm</button>
-			<button convoy-button fill="text" size="sm" class="font-semibold" (click)="disableAuthModal.close(); addKafkaAuthentication = true">Close</button>
-		</div>
-	</div>
+    <div class="flex gap-16px items-center">
+      <button convoy-button size="sm" (click)="addKafkaAuthentication = false; disableAuthModal.close()">Confirm</button>
+      <button convoy-button fill="text" size="sm" class="font-semibold" (click)="disableAuthModal.close(); addKafkaAuthentication = true">Close</button>
+    </div>
+  </div>
 </dialog>
 
 <!-- source url modal  -->
 <dialog #sourceURLDialog convoy-dialog position="center">
-	<convoy-source-url [url]="sourceURL" (close)="sourceURLDialog.close(); onAction.emit({ action, data: sourceData })"></convoy-source-url>
+  <convoy-source-url [url]="sourceURL" (close)="sourceURLDialog.close(); onAction.emit({ action, data: sourceData })"></convoy-source-url>
 </dialog>
 
 <!-- source tranform form   -->
-<dialog open convoy-dialog position="full" *ngIf="showTransformDialog">
-	<div class="w-full h-full overflow-y-auto">
-		<convoy-create-transform-function
-			(close)="showTransformDialog = false"
-			(updatedTransformFunction)="getFunction($event)"
-			[transformFunction]="sourceForm.get('body_function')?.value"
-			[headerTransformFunction]="sourceForm.get('header_function')?.value"
-			transformType="source"
-		></convoy-create-transform-function>
-	</div>
-</dialog>
+@if (showTransformDialog) {
+  <dialog open convoy-dialog position="full">
+    <div class="w-full h-full overflow-y-auto">
+      <convoy-create-transform-function
+        (close)="showTransformDialog = false"
+        (updatedTransformFunction)="getFunction($event)"
+        [transformFunction]="sourceForm.get('body_function')?.value"
+        [headerTransformFunction]="sourceForm.get('header_function')?.value"
+        transformType="source"
+      ></convoy-create-transform-function>
+    </div>
+  </dialog>
+}

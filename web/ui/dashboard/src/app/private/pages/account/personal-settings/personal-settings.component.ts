@@ -7,9 +7,10 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { AccountService } from '../account.service';
 
 @Component({
-	selector: 'personal-settings',
-	templateUrl: './personal-settings.component.html',
-	styleUrls: ['./personal-settings.component.scss']
+    selector: 'personal-settings',
+    templateUrl: './personal-settings.component.html',
+    styleUrls: ['./personal-settings.component.scss'],
+    standalone: false
 })
 export class PersonalSettingsComponent implements OnInit {
 	@ViewChild('settingsDialog', { static: true }) settingsDialog!: ElementRef<HTMLDialogElement>;

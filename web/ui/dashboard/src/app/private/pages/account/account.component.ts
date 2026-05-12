@@ -4,9 +4,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 export type ACCOUNT_SETTINGS = 'profile' | 'security' | 'personal access tokens';
 
 @Component({
-	selector: 'app-account',
-	templateUrl: './account.component.html',
-	styleUrls: ['./account.component.scss']
+    selector: 'app-account',
+    templateUrl: './account.component.html',
+    styleUrls: ['./account.component.scss'],
+    standalone: false
 })
 export class AccountComponent implements OnInit {
 	activePage: ACCOUNT_SETTINGS = 'profile';

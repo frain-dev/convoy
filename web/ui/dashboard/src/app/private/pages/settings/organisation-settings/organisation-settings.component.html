@@ -1,79 +1,80 @@
 <div class="flex justify-between items-center mb-28px">
-	<div class="flex items-center gap-12px">
-		<h3 class="font-semibold">Organisation Info</h3>
-		<span *ngIf="licenseService.hasOrgLicense(currentOrg)" class="org-plan-badge">{{ licenseService.licensedOrgLabel }}</span>
-	</div>
-	<button convoy-button convoy-permission="Organisations|MANAGE" size="sm" [disabled]="isEditingOrganisation || editOrganisationForm.disabled" (click)="updateOrganisation()">Save Changes</button>
+  <div class="flex items-center gap-12px">
+    <h3 class="font-semibold">Organisation Info</h3>
+    @if (licenseService.hasOrgLicense(currentOrg)) {
+      <span class="org-plan-badge">{{ licenseService.licensedOrgLabel }}</span>
+    }
+  </div>
+  <button convoy-button convoy-permission="Organisations|MANAGE" size="sm" [disabled]="isEditingOrganisation || editOrganisationForm.disabled" (click)="updateOrganisation()">Save Changes</button>
 </div>
 
 <form [formGroup]="editOrganisationForm">
-	<convoy-input-field>
-		<label for="name" convoy-label required="true">Organisation name</label>
-		<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Organisation name"/>
-		<convoy-input-error *ngIf="editOrganisationForm.get('name')?.touched && editOrganisationForm.get('name')?.invalid">Please enter a name for your organisation</convoy-input-error>
-	</convoy-input-field>
+  <convoy-input-field>
+    <label for="name" convoy-label required="true">Organisation name</label>
+    <input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Organisation name"/>
+    @if (editOrganisationForm.get('name')?.touched && editOrganisationForm.get('name')?.invalid) {
+      <convoy-input-error>Please enter a name for your organisation</convoy-input-error>
+    }
+  </convoy-input-field>
 
-	<label convoy-label>Organisation Id</label>
-	<div class="flex items-center justify-between w-full h-50px bg-white-100 border border-new.primary-25 rounded-[6px] px-16px">
-		<span class="text-12 text-neutral-10 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ organisationId }}</span>
-		<convoy-copy-button [text]="organisationId" notificationText="Organisation ID has been copied to your clipboard"></convoy-copy-button>
-	</div>
+  <label convoy-label>Organisation Id</label>
+  <div class="flex items-center justify-between w-full h-50px bg-white-100 border border-new.primary-25 rounded-[6px] px-16px">
+    <span class="text-12 text-neutral-10 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ organisationId }}</span>
+    <convoy-copy-button [text]="organisationId" notificationText="Organisation ID has been copied to your clipboard"></convoy-copy-button>
+  </div>
 </form>
 
-<ng-container *ngIf="orgHasEnterpriseSSO === true">
-	<div convoy-card class="p-26px my-24px">
-		<h2 class="text-14 font-semibold mb-20px">Configure SSO</h2>
-		<p class="text-14 text-neutral-10 mb-20px">Set up or manage Single Sign-On for your organisation.</p>
-		<button convoy-button convoy-permission="Organisations|MANAGE" size="sm" [disabled]="configuringSSO" (click)="configureSSO()">
-			{{ configuringSSO ? 'Opening…' : 'Configure SSO' }}
-		</button>
-
-		<div class="mt-20px pt-20px border-t border-neutral-a3">
-			<p class="text-12 text-neutral-10 mb-8px">Workspace slug</p>
-			<div class="flex items-center gap-8px">
-				<ng-container *ngIf="currentWorkspaceSlug; else noSlug">
-					<code class="text-13 text-neutral-11 font-mono bg-neutral-2 px-8px py-4px rounded-4px">{{ currentWorkspaceSlug }}</code>
-					<convoy-copy-button [text]="currentWorkspaceSlug" notificationText="Slug copied"></convoy-copy-button>
-				</ng-container>
-				<ng-template #noSlug>
-					<span class="text-13 text-neutral-10">Not set</span>
-				</ng-template>
-				<button type="button" convoy-button convoy-permission="Organisations|MANAGE" fill="text" color="neutral" size="sm" class="!px-0 !min-w-0" (click)="startEditingSlug(); slugDialog.showModal()">
-					{{ currentWorkspaceSlug ? 'Edit' : 'Set slug' }}
-				</button>
-			</div>
-		</div>
-	</div>
-
-	<dialog #slugDialog convoy-dialog position="center">
-		<div class="p-40px">
-			<p class="text-neutral-11 text-14 max-w-[276px] pb-40px">Used for SSO and workspace-specific URLs.</p>
-
-			<convoy-input-field>
-				<label for="workspaceSlug" convoy-label required="true">What's your workspace slug?</label>
-				<input type="text" id="workspaceSlug" convoy-input autocomplete="off" [value]="workspaceSlugInput" (input)="workspaceSlugInput = $any($event.target).value" placeholder="e.g. my-team" (keydown.enter)="setWorkspaceSlug()" />
-				<convoy-input-error *ngIf="workspaceSlugError">{{ workspaceSlugError }}</convoy-input-error>
-			</convoy-input-field>
-
-			<div class="flex items-center gap-24px justify-end w-full">
-				<button convoy-button [disabled]="isSavingSlug" size="sm" type="button" (click)="closeSlugDialog()" fill="outline" color="error" class="self-stretch px-18px">Cancel</button>
-				<button convoy-button convoy-permission="Organisations|MANAGE" [disabled]="isSavingSlug" size="sm" class="self-stretch px-18px" (click)="setWorkspaceSlug()">{{ isSavingSlug ? 'Saving...' : 'Save' }}</button>
-			</div>
-		</div>
-	</dialog>
-</ng-container>
+@if (orgHasEnterpriseSSO === true) {
+  <div convoy-card class="p-26px my-24px">
+    <h2 class="text-14 font-semibold mb-20px">Configure SSO</h2>
+    <p class="text-14 text-neutral-10 mb-20px">Set up or manage Single Sign-On for your organisation.</p>
+    <button convoy-button convoy-permission="Organisations|MANAGE" size="sm" [disabled]="configuringSSO" (click)="configureSSO()">
+      {{ configuringSSO ? 'Opening…' : 'Configure SSO' }}
+    </button>
+    <div class="mt-20px pt-20px border-t border-neutral-a3">
+      <p class="text-12 text-neutral-10 mb-8px">Workspace slug</p>
+      <div class="flex items-center gap-8px">
+        @if (currentWorkspaceSlug) {
+          <code class="text-13 text-neutral-11 font-mono bg-neutral-2 px-8px py-4px rounded-4px">{{ currentWorkspaceSlug }}</code>
+          <convoy-copy-button [text]="currentWorkspaceSlug" notificationText="Slug copied"></convoy-copy-button>
+        } @else {
+          <span class="text-13 text-neutral-10">Not set</span>
+        }
+        <button type="button" convoy-button convoy-permission="Organisations|MANAGE" fill="text" color="neutral" size="sm" class="!px-0 !min-w-0" (click)="startEditingSlug(); slugDialog.showModal()">
+          {{ currentWorkspaceSlug ? 'Edit' : 'Set slug' }}
+        </button>
+      </div>
+    </div>
+  </div>
+  <dialog #slugDialog convoy-dialog position="center">
+    <div class="p-40px">
+      <p class="text-neutral-11 text-14 max-w-[276px] pb-40px">Used for SSO and workspace-specific URLs.</p>
+      <convoy-input-field>
+        <label for="workspaceSlug" convoy-label required="true">What's your workspace slug?</label>
+        <input type="text" id="workspaceSlug" convoy-input autocomplete="off" [value]="workspaceSlugInput" (input)="workspaceSlugInput = $any($event.target).value" placeholder="e.g. my-team" (keydown.enter)="setWorkspaceSlug()" />
+        @if (workspaceSlugError) {
+          <convoy-input-error>{{ workspaceSlugError }}</convoy-input-error>
+        }
+      </convoy-input-field>
+      <div class="flex items-center gap-24px justify-end w-full">
+        <button convoy-button [disabled]="isSavingSlug" size="sm" type="button" (click)="closeSlugDialog()" fill="outline" color="error" class="self-stretch px-18px">Cancel</button>
+        <button convoy-button convoy-permission="Organisations|MANAGE" [disabled]="isSavingSlug" size="sm" class="self-stretch px-18px" (click)="setWorkspaceSlug()">{{ isSavingSlug ? 'Saving...' : 'Save' }}</button>
+      </div>
+    </div>
+  </dialog>
+}
 
 <div convoy-card color="error" class="p-26px my-24px">
-	<h2 class="text-error-9 font-semibold mb-20px">Danger zone</h2>
-	<p class="text-14">Deleting your organisation means you will lose all workspaces created by you and all your other organisation information.</p>
-	<button convoy-button convoy-permission="Organisations|MANAGE" color="error" size="sm" class="mt-32px" [disabled]="editOrganisationForm.disabled" (click)="deleteDialog.showModal()">
-		<svg width="18" height="18" class="mr-2 fill-white-100">
-			<use xlink:href="#delete-icon"></use>
-		</svg>
-		Delete Organisation
-	</button>
+  <h2 class="text-error-9 font-semibold mb-20px">Danger zone</h2>
+  <p class="text-14">Deleting your organisation means you will lose all workspaces created by you and all your other organisation information.</p>
+  <button convoy-button convoy-permission="Organisations|MANAGE" color="error" size="sm" class="mt-32px" [disabled]="editOrganisationForm.disabled" (click)="deleteDialog.showModal()">
+    <svg width="18" height="18" class="mr-2 fill-white-100">
+      <use xlink:href="#delete-icon"></use>
+    </svg>
+    Delete Organisation
+  </button>
 </div>
 
 <dialog #deleteDialog convoy-dialog position="center" size="sm">
-	<app-delete-modal [isLoading]="isDeletingOrganisation" [deleteText]="'deactivate “' + organisationName + '”'" [deleteButtonText]="'Deactivate'" (closeModal)="deleteDialog.close()" (deleteData)="deleteOrganisation()"></app-delete-modal>
+  <app-delete-modal [isLoading]="isDeletingOrganisation" [deleteText]="'deactivate “' + organisationName + '”'" [deleteButtonText]="'Deactivate'" (closeModal)="deleteDialog.close()" (deleteData)="deleteOrganisation()"></app-delete-modal>
 </dialog>

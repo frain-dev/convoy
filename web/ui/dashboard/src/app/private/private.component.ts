@@ -6,16 +6,17 @@ import { PrivateService } from './private.service';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { differenceInSeconds } from 'date-fns';
-import { Observable, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { LicensesService } from '../services/licenses/licenses.service';
 import { RbacService } from '../services/rbac/rbac.service';
 import axios from 'axios';
 import { environment } from 'src/environments/environment';
 
 @Component({
-	selector: 'app-private',
-	templateUrl: './private.component.html',
-	styleUrls: ['./private.component.scss']
+    selector: 'app-private',
+    templateUrl: './private.component.html',
+    styleUrls: ['./private.component.scss'],
+    standalone: false
 })
 export class PrivateComponent implements OnInit {
 	@ViewChild('orgDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
