@@ -44,7 +44,7 @@
     "@angular/cli": "^21.2.10",
     "@angular/compiler-cli": "^21.2.12",
     "@babel/core": "^7.18.5",
-    "@compodoc/compodoc": "^1.1.19",
+    "@compodoc/compodoc": "^1.1.16",
     "@eslint/js": "^10.0.1",
     "@types/jasmine": "^4.0.0",
     "@types/node": "^12.11.1",
