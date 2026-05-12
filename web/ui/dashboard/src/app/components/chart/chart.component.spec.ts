@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ChartComponent } from './chart.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('ChartComponent', () => {
   let component: ChartComponent;
@@ -8,7 +9,7 @@ describe('ChartComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ ChartComponent ]
+      imports: [ RouterTestingModule, ChartComponent ]
     })
     .compileComponents();
 

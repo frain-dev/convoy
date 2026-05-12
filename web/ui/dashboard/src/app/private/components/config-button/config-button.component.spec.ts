@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ConfigButtonComponent } from './config-button.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('ConfigButtonComponent', () => {
 	let component: ConfigButtonComponent;
@@ -8,7 +9,7 @@ describe('ConfigButtonComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			declarations: [ConfigButtonComponent]
+			imports: [ RouterTestingModule, ConfigButtonComponent ]
 		}).compileComponents();
 	});
 

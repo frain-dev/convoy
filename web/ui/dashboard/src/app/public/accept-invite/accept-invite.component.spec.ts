@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AcceptInviteComponent } from './accept-invite.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('AcceptInviteComponent', () => {
   let component: AcceptInviteComponent;
@@ -8,7 +9,7 @@ describe('AcceptInviteComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ AcceptInviteComponent ]
+      imports: [ RouterTestingModule, AcceptInviteComponent ]
     })
     .compileComponents();
   });

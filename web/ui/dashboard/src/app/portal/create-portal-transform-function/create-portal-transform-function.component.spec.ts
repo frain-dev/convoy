@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CreatePortalTransformFunctionComponent } from './create-portal-transform-function.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('CreateTransformFunctionComponent', () => {
   let component: CreatePortalTransformFunctionComponent;
@@ -8,7 +9,7 @@ describe('CreateTransformFunctionComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ CreatePortalTransformFunctionComponent ]
+      imports: [ RouterTestingModule, CreatePortalTransformFunctionComponent]
     })
     .compileComponents();
 

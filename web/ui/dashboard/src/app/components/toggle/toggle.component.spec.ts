@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ToggleComponent } from './toggle.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('ToggleComponent', () => {
   let component: ToggleComponent;
@@ -8,7 +9,7 @@ describe('ToggleComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ ToggleComponent ]
+      imports: [ RouterTestingModule, ToggleComponent ]
     })
     .compileComponents();
 

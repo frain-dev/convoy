@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DropdownComponent } from './dropdown.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('DropdownComponent', () => {
   let component: DropdownComponent;
@@ -8,7 +9,7 @@ describe('DropdownComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ DropdownComponent ]
+      imports: [ RouterTestingModule, DropdownComponent ]
     })
     .compileComponents();
 

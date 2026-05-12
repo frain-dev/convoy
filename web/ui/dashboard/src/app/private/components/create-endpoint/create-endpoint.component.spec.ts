@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CreateEndpointComponent } from './create-endpoint.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('CreateEndpointComponent', () => {
   let component: CreateEndpointComponent;
@@ -8,7 +9,7 @@ describe('CreateEndpointComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ CreateEndpointComponent ]
+      imports: [ RouterTestingModule, CreateEndpointComponent]
     })
     .compileComponents();
 

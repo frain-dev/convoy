@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MonacoComponent } from './monaco.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('MonacoComponent', () => {
   let component: MonacoComponent;
@@ -8,7 +9,7 @@ describe('MonacoComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ MonacoComponent ]
+      imports: [ RouterTestingModule, MonacoComponent]
     })
     .compileComponents();
 

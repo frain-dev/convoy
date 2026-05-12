@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { EndpointSecretComponent } from './endpoint-secret.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('EndpointSecretComponent', () => {
   let component: EndpointSecretComponent;
@@ -8,7 +9,7 @@ describe('EndpointSecretComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ EndpointSecretComponent ]
+      imports: [ RouterTestingModule, EndpointSecretComponent]
     })
     .compileComponents();
 

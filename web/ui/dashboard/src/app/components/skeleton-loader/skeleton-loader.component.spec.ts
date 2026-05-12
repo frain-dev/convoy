@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SkeletonLoaderComponent } from './skeleton-loader.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('SkeletonLoaderComponent', () => {
   let component: SkeletonLoaderComponent;
@@ -8,7 +9,7 @@ describe('SkeletonLoaderComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ SkeletonLoaderComponent ]
+      imports: [ RouterTestingModule, SkeletonLoaderComponent]
     })
     .compileComponents();
 

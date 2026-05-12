@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PublicComponent } from './public.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('PublicComponent', () => {
   let component: PublicComponent;
@@ -8,7 +9,7 @@ describe('PublicComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ PublicComponent ]
+      imports: [ RouterTestingModule, PublicComponent ]
     })
     .compileComponents();
 

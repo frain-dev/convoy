@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CreateSourceComponent } from './create-source.component';
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe('CreateSourceComponent', () => {
   let component: CreateSourceComponent;
@@ -8,7 +9,7 @@ describe('CreateSourceComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CreateSourceComponent ]
+      imports: [ RouterTestingModule, CreateSourceComponent ]
     })
     .compileComponents();
   });
