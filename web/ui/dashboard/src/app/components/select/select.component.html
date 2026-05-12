@@ -23,7 +23,7 @@
           <span>{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
         }
         @if (multiple) {
-          @for (option of selectedOptions; track option) {
+          @for (option of selectedOptions; track $index) {
             <div class="border border-neutral-5 py-4px px-8px font-medium text-12 text-neutral-10 mr-1 mb-1 rounded-22px flex items-center">
               {{ option.name || option.title || option }}
               <button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0 ml-4px">
@@ -54,14 +54,14 @@
         }
         <li class="text-14 text-neutral-4">Select</li>
         @if (multiple) {
-          @for (option of options; track option) {
+          @for (option of options; track $index) {
             <li class="list-none py-10px border-b border-new.primary-25">
               <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
             </li>
           }
         }
         @if (!multiple) {
-          @for (option of options; track option) {
+          @for (option of options; track $index) {
             <li class="list-none py-10px border-b border-new.primary-25" convoy-dropdown-option [value]="option">
               <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option); $event.stopPropagation()" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
             </li>
