@@ -17,7 +17,7 @@
         <li class="px-4 py-14px">
           <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
         </li>
-        @for (i of [0, 1, 2]; track i) {
+        @for (i of [0, 1, 2]; track $index) {
           <li class="flex items-center gap-36px p-16px">
             <div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
             <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
@@ -25,7 +25,7 @@
           </li>
         }
       }
-      @for (eventType of displayedEventTypes; track eventType) {
+      @for (eventType of displayedEventTypes; track $index) {
         <li class="flex flex-col justify-between py-12px px-22px hover:bg-new.primary-25 transition-all duration-300 last-of-type:mb-0 relative border-b border-new.primary-25">
           <button convoy-button size="sm" fill="text" class="w-full flex items-center py-2 px-3 text-left" (click)="toggleEventTypeExpand(eventType)">
             <svg width="10" height="10" class="fill-new.primary-400 scale-150 mr-2">
@@ -66,7 +66,7 @@
 }
 
 <ng-template #fieldsList let-fields let-eventType="eventType" let-level="level">
-  @for (field of fields; track field) {
+  @for (field of fields; track $index) {
     <div class="border-b border-new.primary-25">
       <button (click)="toggleFieldExpand(field)"
         class="py-12px w-full hover:bg-new.primary-25 transition-all duration-200"

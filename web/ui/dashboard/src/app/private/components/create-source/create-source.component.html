@@ -3,7 +3,7 @@
     @if (privateService.getProjectDetails?.type === 'incoming') {
       <h4 class="font-semibold mb-20px text-12 text-neutral-10">Pre-configured Sources</h4>
       <ul class="flex flex-row w-full mb-20px gap-24px">
-        @for (source of preConfiguredSources; track source) {
+        @for (source of preConfiguredSources; track $index) {
           <li class="list-none last-of-type:mr-0">
             <button
               convoy-button
@@ -366,7 +366,7 @@
                 <ng-container formGroupName="auth">
                   <label convoy-label>Authentication Type</label>
                   <div class="grid grid-cols-2 gap-6">
-                    @for (authType of authTypes; track authType) {
+                    @for (authType of authTypes; track $index) {
                       <convoy-radio formControlName="type" [label]="authType" [_name]="authType" [value]="authType" [_id]="authType" [checked]="sourceForm.value.pub_sub.kafka.auth.type === authType"></convoy-radio>
                     }
                   </div>
@@ -497,7 +497,7 @@
     }
 
     <div class="flex flex-wrap items-center mt-20px gap-24px">
-      @for (config of configurations; track config) {
+      @for (config of configurations; track $index) {
         @if (!config.show) {
           <convoy-config-button (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
         }

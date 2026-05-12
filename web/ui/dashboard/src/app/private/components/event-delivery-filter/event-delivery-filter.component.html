@@ -68,7 +68,7 @@
       @if (eventDeliveryFilteredByStatus.length) {
         <div class="flex gap-x-2px">
           <div class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Status</div>
-          @for (status of eventDeliveryFilteredByStatus; track status) {
+          @for (status of eventDeliveryFilteredByStatus; track $index) {
             <div class="border border-new.primary-100 last-of-type:rounded-tr-8px last-of-type:rounded-br-8px px-10px py-6px text-neutral-11 text-12 flex gap-6px items-center">
               {{ status || 'None' }}
               <button convoy-button (click)="removeStatusFilter(status)" fill="text" type="button" class="py-0 px-0 ml-4px">
@@ -86,7 +86,7 @@
           <div dropdownTrigger class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Status</div>
           <ng-container dropdownOptions>
             <ul class="min-h-[100px] max-h-[200px] overflow-auto pb-10px">
-              @for (status of eventDeliveryStatuses; track status) {
+              @for (status of eventDeliveryStatuses; track $index) {
                 <li convoy-list-item (click)="selectStatusFilter(status)" class="text-14 px-20px">
                   <button convoy-button color="neutral" fill="text" class="capitalize font-normal text-left w-full !justify-start text-12">
                     {{ status || 'None' }}
@@ -121,7 +121,7 @@
           <div dropdownTrigger class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Sources</div>
           <div dropdownOptions>
             <ul class="min-h-[100px] max-h-[200px] overflow-auto">
-              @for (source of filterSources; track source) {
+              @for (source of filterSources; track $index) {
                 <li
                   convoy-dropdown-option
                   convoy-list-item
@@ -211,7 +211,7 @@
           <ng-container dropdownOptions>
             <ul class="min-h-[100px] max-h-[200px] overflow-auto">
               @if (!loadingEventTypes) {
-                @for (type of eventTypes; track type) {
+                @for (type of eventTypes; track $index) {
                   <li
                     convoy-dropdown-option
                     convoy-list-item
@@ -262,7 +262,7 @@
           </button>
 
           <ul dropdownOptions>
-            @for (filterOption of filterOptions; track filterOption) {
+            @for (filterOption of filterOptions; track $index) {
               <li convoy-dropdown-option convoy-list-item (click)="toggleFilter(filterOption.id, true)" class="text-14 px-20px">
                 <button convoy-button color="neutral" fill="text" class="capitalize font-normal text-left w-full !justify-start text-12">
                   {{ filterOption.name }}

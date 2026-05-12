@@ -39,7 +39,7 @@
         </svg>
         <span class="text-primary-100 font-medium text-12">Create new Source</span>
       </a>
-      @for (source of sources.content; track source; let i = $index) {
+      @for (source of sources.content; track $index; let i = $index) {
         <div convoy-card [id]="'source' + i" class="w-full max-w-[440px] min-w-[300px] py-20px h-fit">
           <!-- outgoing project sources -->
           @if (privateService.getProjectDetails?.type === 'outgoing') {

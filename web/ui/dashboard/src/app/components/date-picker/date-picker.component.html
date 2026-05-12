@@ -35,7 +35,7 @@
           </div>
 
           <div class="days flex flex-wrap text-center mt-10px">
-            @for (date of datesForLeftCalendar; track date) {
+            @for (date of datesForLeftCalendar; track $index) {
               <button type="button" class="text-12 max-w-40px h-40px text-neutral-10" [class]="getDayClassNames(date)" (click)="onselectDay(date.timestamp)">
                 {{ date.date }}
               </button>
@@ -75,7 +75,7 @@
         </div>
 
         <div class="days flex flex-wrap text-center mt-10px">
-          @for (date of datesForRightCalendar; track date; let i = $index) {
+          @for (date of datesForRightCalendar; track $index; let i = $index) {
             <button type="button" class="text-12 max-w-40px h-40px text-neutral-10 empty:hidden" [class]="getDayClassNamesRightCalendar(date)" (click)="onselectDay(date.timestamp)">
               {{ date.date }}
             </button>

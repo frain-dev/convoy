@@ -26,7 +26,7 @@
       </div>
       <div class="min-h-[370px]">
         <ul class="flex flex-row w-full border-y-[.5px] border-y-neutral-4">
-          @for (tab of tabs; track tab) {
+          @for (tab of tabs; track $index) {
             <li class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
               <button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
                 <span class="text-12 text-neutral-11 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>

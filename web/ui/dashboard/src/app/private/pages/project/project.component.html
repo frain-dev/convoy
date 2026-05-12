@@ -26,7 +26,7 @@
 
         <ng-container dropdownOptions class="relative">
           <ul class="p-10px max-h-[300px] overflow-y-auto overflow-x-hidden">
-            @for (project of projects; track project) {
+            @for (project of projects; track $index) {
               <li class="mb-12px last-of-type:mb-0 w-full">
                 <button
                   convoy-dropdown-option
@@ -97,7 +97,7 @@
       @if (projectDetails) {
         <ul class="flex items-center justify-between w-full relative">
           <div class="flex items-center gap-6px">
-            @for (nav of sideBarItems; track nav) {
+            @for (nav of sideBarItems; track $index) {
               <li class="transition-all duration-200 z-[1]">
                 <a [routerLink]="'.' + nav.route" routerLinkActive="!text-new.primary-400 on hover:bg-transparent" #route="routerLinkActive" class="nav-tab text-neutral-10 rounded-22px py-8px px-16px transition-all duration-200 font-medium hover:bg-neutral-a2">
                   <!-- <svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="isStrokeIcon(nav.icon) ? (route.isActive ? 'stroke-primary-100' : 'stroke-neutral-10') : route.isActive ? 'fill-primary-100' : 'fill-neutral-10'" [id]="nav.icon">
@@ -108,7 +108,7 @@
             </li>
           }
           <div class="h-16px w-[1px] bg-neutral-4"></div>
-          @for (nav of secondarySideBarItems; track nav) {
+          @for (nav of secondarySideBarItems; track $index) {
             <li class="transition-all duration-200 z-[1]">
               <a [routerLink]="'.' + nav.route" routerLinkActive="!text-new.primary-400 on hover:bg-transparent" #route="routerLinkActive" class="nav-tab text-neutral-10 rounded-22px py-8px px-16px transition-all duration-200 font-medium hover:bg-neutral-a2">
                 <!-- <svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="isStrokeIcon(nav.icon) ? (route.isActive ? 'stroke-primary-100' : 'stroke-neutral-10') : route.isActive ? 'fill-primary-100' : 'fill-neutral-10'" [id]="nav.icon">

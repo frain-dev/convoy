@@ -77,11 +77,11 @@
         <div [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'w-356px' : 'w-270px') + ' ml-16px'">Subscription {{ projectDetails?.type === 'incoming' ? '' : 'Name' }}</div>
         <div class="w-252px">Configs</div>
       </div>
-      @for (subscriptionGroup of displayedSubscriptions; track subscriptionGroup; let i = $index) {
+      @for (subscriptionGroup of displayedSubscriptions; track $index; let i = $index) {
         <li class="pb-16px">
           <div class="text-neutral-10 text-12 pl-16px">{{ subscriptionGroup.date }}</div>
         </li>
-        @for (subscription of subscriptionGroup?.content; track subscription; let j = $index) {
+        @for (subscription of subscriptionGroup?.content; track $index; let j = $index) {
           <li
             class="border-b border-b-new.primary-25 pb-16px flex justify-between hover:bg-new.primary-25 transition-all duration-300 py-12px"
             [class]="subscriptionGroup.content.length === j + 1 ? '!mb-16px' : ''"

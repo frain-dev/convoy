@@ -117,7 +117,7 @@
   }
 
   <div class="flex gap-24px items-center mb-24px">
-    @for (config of configurations; track config; let i = $index) {
+    @for (config of configurations; track $index; let i = $index) {
       @if (!config.show) {
         <convoy-config-button (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
       }

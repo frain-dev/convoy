@@ -29,7 +29,7 @@
         </button>
 
         <ul dropdownOptions>
-          @for (filterOption of filterOptions; track filterOption) {
+          @for (filterOption of filterOptions; track $index) {
             <li convoy-dropdown-option convoy-list-item class="text-14 px-20px" [active]="dashboardFrequency == filterOption ? 'true' : 'false'" [hasBorder]="true">
               <button convoy-button color="neutral" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData()" class="capitalize font-normal text-left w-full !justify-start text-12">
                 {{ filterOption }}

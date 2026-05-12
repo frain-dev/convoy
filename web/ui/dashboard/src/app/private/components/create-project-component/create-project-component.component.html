@@ -4,7 +4,7 @@
       <div class="min-w-[170px]">
         <h3 class="mb-24px text-12 text-neutral-12 font-semibold">Project Settings</h3>
         <ul class="flex gap-24px flex-col w-full border-l-2 border-l-neutral-4">
-          @for (tab of tabs; track tab) {
+          @for (tab of tabs; track $index) {
             <li class="!list-none last-of-type:mr-0 -ml-2px">
               <button class="pt-0px pl-16px flex items-center border-l border-l-transparent transition-all" [class]="activeTab.label === tab.label ? 'border-l-new.primary-400' : ''" type="button" (click)="switchTab(tab)">
                 <svg width="18" height="18" class="mr-10px transition-all scale-75" [class]="activeTab === tab ? tab.svg + '-new.primary-400' : tab.svg + '-neutral-11'">
@@ -202,7 +202,7 @@
           </div>
           @if (shouldShowBorder < configurations.length) {
             <div class="flex gap-24px items-center">
-              @for (config of configurations; track config; let i = $index) {
+              @for (config of configurations; track $index; let i = $index) {
                 @if (!config.show) {
                   @if (i < 3 || this.projectForm.controls['type'].value === 'outgoing') {
                     <convoy-config-button (onClick)="toggleConfigForm(config.uid)" convoy-permission="Project Settings|MANAGE">{{ config.name }}</convoy-config-button>
@@ -252,19 +252,19 @@
         <div convoy-card>
           <table convoy-table>
             <thead convoy-table-head>
-              @for (head of signatureTableHead; track head; let i = $index) {
+              @for (head of signatureTableHead; track $index; let i = $index) {
                 <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
               }
             </thead>
             <tbody>
-              @for (version of signatureVersions; track version; let i = $index) {
+              @for (version of signatureVersions; track $index; let i = $index) {
                 <tr convoy-table-row [forDate]="true">
                   <td convoy-table-cell [forDate]="true">{{ version.date }}</td>
                   <td convoy-table-cell [forDate]="true"></td>
                   <td convoy-table-cell [forDate]="true"></td>
                   <td convoy-table-cell [forDate]="true"></td>
                 </tr>
-                @for (signatureVersion of version.content; track signatureVersion; let index = $index) {
+                @for (signatureVersion of version.content; track $index; let index = $index) {
                   <tr convoy-table-row [id]="'app' + i">
                     <td convoy-table-cell class="pl-16px">
                       <div class="flex items-center">
@@ -465,12 +465,12 @@
           @if (validEventTypes().length > 0) {
             <table convoy-table>
               <thead convoy-table-head>
-                @for (head of eventTypeTableHead; track head; let i = $index) {
+                @for (head of eventTypeTableHead; track $index; let i = $index) {
                   <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
                 }
               </thead>
               <tbody>
-                @for (event of validEventTypes(); track event; let i = $index) {
+                @for (event of validEventTypes(); track $index; let i = $index) {
                   <tr convoy-table-row [id]="'event' + i">
                     <td convoy-table-cell class="pl-16px">
                       <div class="flex gap-4px">

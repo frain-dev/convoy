@@ -813,7 +813,7 @@
       }
 
       <div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
-        @for (config of configurations; track config; let i = $index) {
+        @for (config of configurations; track $index; let i = $index) {
           @if (!config.show) {
             @if ((i < 5 || privateService.getProjectDetails?.type === 'outgoing') && (config.uid !== 'mtls' || mtlsFeatureEnabled)) {
               <convoy-config-button convoy-permission="Endpoints|MANAGE" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>

@@ -40,14 +40,14 @@
       <div convoy-card>
         <table convoy-table>
           <thead convoy-table-head>
-            @for (head of eventDelTableHead; track head; let i = $index) {
+            @for (head of eventDelTableHead; track $index; let i = $index) {
               @if (projectService.activeProjectDetails?.type === 'outgoing' || i !== 1 || portalToken) {
                 <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
               }
             }
           </thead>
           <tbody>
-            @for (eventDeliveriesGroup of displayedEventDeliveries; track eventDeliveriesGroup; let i = $index) {
+            @for (eventDeliveriesGroup of displayedEventDeliveries; track $index; let i = $index) {
               <tr convoy-table-row [forDate]="true">
                 <td convoy-table-cell [forDate]="true">{{ eventDeliveriesGroup.date }}</td>
                 <td convoy-table-cell [forDate]="true"></td>
@@ -56,8 +56,8 @@
                 <td convoy-table-cell [forDate]="true"></td>
                 <td convoy-table-cell [forDate]="true"></td>
               </tr>
-              @for (eventDelivery of eventDeliveriesGroup.content; track eventDelivery; let deliveryIndex = $index) {
-                @for (event of eventDelivery.eventDeliveries; track event; let eventIndex = $index) {
+              @for (eventDelivery of eventDeliveriesGroup.content; track $index; let deliveryIndex = $index) {
+                @for (event of eventDelivery.eventDeliveries; track $index; let eventIndex = $index) {
                   <tr class="cursor-pointer" convoy-table-row [id]="'eventDel' + event.uid" [routerLink]="['./event-deliveries/' + event.uid]" [queryParams]="{ token: portalToken }">
                     <td convoy-table-cell class="pl-16px relative w-140px">
                       @if (event.metadata.num_trials > event.metadata.retry_limit) {

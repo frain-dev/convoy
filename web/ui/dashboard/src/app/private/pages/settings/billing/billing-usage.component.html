@@ -11,12 +11,12 @@
     <div convoy-card>
       <table convoy-table>
         <thead convoy-table-head>
-          @for (head of tableHead; track head; let i = $index) {
+          @for (head of tableHead; track $index; let i = $index) {
             <th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }">{{ head }}</th>
           }
         </thead>
         <tbody>
-          @for (row of usageRows; track row) {
+          @for (row of usageRows; track $index) {
             <tr convoy-table-row class="border border-primary-500">
               <td convoy-table-cell class="pl-20px">{{ row.name }}</td>
               <td convoy-table-cell>{{ row.received }}</td>

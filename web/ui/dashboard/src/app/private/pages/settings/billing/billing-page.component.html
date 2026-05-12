@@ -36,7 +36,7 @@
         @if (!isEditingPaymentMethod && !isLoadingPaymentMethod && paymentMethods.length > 0) {
           <div class="mb-16px">
             <div class="flex flex-col gap-12px">
-              @for (pm of paymentMethods; track pm) {
+              @for (pm of paymentMethods; track $index) {
                 <div data-payment-method-card class="border border-neutral-4 rounded-8px p-12px">
                   <div class="flex items-center justify-between">
                     <label class="flex items-center gap-12px cursor-pointer flex-1">
@@ -282,7 +282,7 @@
                       <label for="country" convoy-label required="true">Country</label>
                       <select id="country" convoy-input formControlName="country" [disabled]="isLoadingCountries">
                         <option value="">{{ isLoadingCountries ? 'Loading countries...' : (countries.length === 0 ? 'No countries available' : 'Select country') }}</option>
-                        @for (country of countries; track country) {
+                        @for (country of countries; track $index) {
                           <option [value]="country.code">{{ country.name }}</option>
                         }
                       </select>
@@ -300,7 +300,7 @@
                           : (isLoadingStates ? 'Loading states...' : (states.length === 0 ? 'No state list available' : 'Select state'))
                           }}
                         </option>
-                        @for (state of states; track state) {
+                        @for (state of states; track $index) {
                           <option [value]="state">{{ state }}</option>
                         }
                       </select>
@@ -320,7 +320,7 @@
                           : (isLoadingCities ? 'Loading cities...' : (cities.length === 0 ? 'No cities available' : 'Select city'))
                           }}
                         </option>
-                        @for (city of cities; track city) {
+                        @for (city of cities; track $index) {
                           <option [value]="city">{{ city }}</option>
                         }
                       </select>
@@ -435,7 +435,7 @@
                       <label for="country" convoy-label required="true">Select country</label>
                       <select id="country" convoy-input formControlName="country" [disabled]="isLoadingVatCountries">
                         <option value="">{{ isLoadingVatCountries ? 'Loading countries...' : (vatCountries.length === 0 ? 'No countries available' : 'Select country') }}</option>
-                        @for (country of vatCountries; track country) {
+                        @for (country of vatCountries; track $index) {
                           <option [value]="country.code">{{ country.name }}</option>
                         }
                       </select>
@@ -485,7 +485,7 @@
           <!-- Plan Cards -->
           @if (!isLoadingPlans) {
             <div class="flex gap-16px mb-40px">
-              @for (plan of plans; track plan) {
+              @for (plan of plans; track $index) {
                 <div
                   class="plan-card flex-1 cursor-pointer"
                   [class.plan-card-selected]="selectedPlan === plan.id"
@@ -502,7 +502,7 @@
                   </div>
                   @if (plan.features && plan.features.length > 0) {
                     <ul class="plan-card-features">
-                      @for (feature of plan.features.slice(0, 3); track feature) {
+                      @for (feature of plan.features.slice(0, 3); track $index) {
                         <li>
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M13.3332 4L5.99984 11.3333L2.6665 8" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -549,7 +549,7 @@
                 <!-- Table Header -->
                 <div class="comparison-table-header">
                   <div class="comparison-table-cell header-category"></div>
-                  @for (plan of plans; track plan) {
+                  @for (plan of plans; track $index) {
                     <div class="comparison-table-cell header-plan">{{ plan.name }}</div>
                   }
                 </div>
@@ -557,10 +557,10 @@
                 @if (getFeaturesByCategory('core').length > 0) {
                   <div class="comparison-section">
                     <div class="comparison-section-title">Core Capabilities</div>
-                    @for (feature of getFeaturesByCategory('core'); track feature) {
+                    @for (feature of getFeaturesByCategory('core'); track $index) {
                       <div class="comparison-table-row">
                         <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
-                        @for (plan of plans; track plan) {
+                        @for (plan of plans; track $index) {
                           <div class="comparison-table-cell feature-value">
                             <span class="status-badge"
                               [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
@@ -578,10 +578,10 @@
                 @if (getFeaturesByCategory('security').length > 0) {
                   <div class="comparison-section">
                     <div class="comparison-section-title">Security & Compliance</div>
-                    @for (feature of getFeaturesByCategory('security'); track feature) {
+                    @for (feature of getFeaturesByCategory('security'); track $index) {
                       <div class="comparison-table-row">
                         <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
-                        @for (plan of plans; track plan) {
+                        @for (plan of plans; track $index) {
                           <div class="comparison-table-cell feature-value">
                             <span class="status-badge"
                               [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
@@ -599,10 +599,10 @@
                 @if (getFeaturesByCategory('support').length > 0) {
                   <div class="comparison-section">
                     <div class="comparison-section-title">Support</div>
-                    @for (feature of getFeaturesByCategory('support'); track feature) {
+                    @for (feature of getFeaturesByCategory('support'); track $index) {
                       <div class="comparison-table-row">
                         <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
-                        @for (plan of plans; track plan) {
+                        @for (plan of plans; track $index) {
                           <div class="comparison-table-cell feature-value">
                             <span class="status-badge"
                               [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"

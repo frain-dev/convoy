@@ -57,12 +57,12 @@
     <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
       <table convoy-table>
         <thead convoy-table-head class="border-b border-b-new.primary-25">
-          @for (head of endpointsTableHead; track head; let i = $index) {
+          @for (head of endpointsTableHead; track $index; let i = $index) {
             <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
           }
         </thead>
         <tbody>
-          @for (endpointGroup of displayedEndpoints; track endpointGroup; let i = $index) {
+          @for (endpointGroup of displayedEndpoints; track $index; let i = $index) {
             <tr convoy-table-row [forDate]="true">
               <td convoy-table-cell [forDate]="true">{{ endpointGroup.date }}</td>
               <td convoy-table-cell [forDate]="true"></td>
@@ -71,7 +71,7 @@
               <td convoy-table-cell [forDate]="true"></td>
               <td convoy-table-cell [forDate]="true"></td>
             </tr>
-            @for (endpoint of endpointGroup.content; track endpoint; let index = $index) {
+            @for (endpoint of endpointGroup.content; track $index; let index = $index) {
               <tr convoy-table-row [id]="'endpoint' + i" class="border-b border-b-new.primary-25" (click)="selectedEndpoint = endpoint">
                 <td convoy-table-cell class="w-[300px]">
                   <div class="truncate max-w-[290px] pl-16px">{{ endpoint.name || endpoint.title }}</div>

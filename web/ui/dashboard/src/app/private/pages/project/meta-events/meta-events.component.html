@@ -16,18 +16,18 @@
         <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container">
           <table convoy-table>
             <thead convoy-table-head>
-              @for (head of metaEventsTableHead; track head; let i = $index) {
+              @for (head of metaEventsTableHead; track $index; let i = $index) {
                 <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
               }
             </thead>
             <tbody>
-              @for (eventGroup of displayedMetaEvents; track eventGroup; let i = $index) {
+              @for (eventGroup of displayedMetaEvents; track $index; let i = $index) {
                 <tr convoy-table-row [forDate]="true">
                   <td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
                   <td convoy-table-cell [forDate]="true"></td>
                   <td convoy-table-cell [forDate]="true"></td>
                 </tr>
-                @for (event of eventGroup.content; track event; let index = $index) {
+                @for (event of eventGroup.content; track $index; let index = $index) {
                   <tr convoy-table-row class="group" (click)="selectedMetaEvent = event" [active]="selectedMetaEvent?.uid === event.uid">
                     <td convoy-table-cell class="w-130px pl-16px pr-30px relative">
                       <convoy-tag [color]="event.status | statuscolor">{{ event.status }}</convoy-tag>

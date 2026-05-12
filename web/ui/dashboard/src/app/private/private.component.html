@@ -33,7 +33,7 @@
             <ul dropdownOptions>
               <li class="font-semibold text-12 text-neutral-11 px-16px pt-12px pb-8px border-b border-b-neutral-a3">Your organisations ({{ organisations?.length || 0 }})</li>
               <ul [hidden]="!organisations?.length">
-                @for (organisation of organisations; track organisation) {
+                @for (organisation of organisations; track $index) {
                   <li convoy-dropdown-option>
                     <button convoy-button fill="text" color="neutral" size="sm" class="justify-start px-16px py-12px w-full" (click)="selectOrganisation(organisation)">
                       <div class="flex justify-between items-center w-full">

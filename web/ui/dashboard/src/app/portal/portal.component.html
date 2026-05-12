@@ -3,7 +3,7 @@
     <nav class="flex items-center justify-between max-w-[1300px] m-auto px-24px py-16px">
       <ul class="flex items-center justify-between w-full relative">
         <div class="flex items-center gap-6px">
-          @for (nav of sideBarItems; track nav) {
+          @for (nav of sideBarItems; track $index) {
             <li class="transition-all duration-200 z-[1]">
               <a
                 [routerLink]="'.' + nav.route"

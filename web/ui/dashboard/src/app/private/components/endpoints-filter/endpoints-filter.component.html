@@ -11,7 +11,7 @@
 
     <ul class="min-h-[100px] max-h-[200px] overflow-auto pb-10px">
       @if (!loadingFilterEndpoints) {
-        @for (endpoint of endpoints$ | async; track endpoint) {
+        @for (endpoint of endpoints$ | async; track $index) {
           <li
             convoy-dropdown-option
             convoy-list-item

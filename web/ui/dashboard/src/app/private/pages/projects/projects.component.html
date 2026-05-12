@@ -27,7 +27,7 @@
           </div>
         }
       </div>
-      @for (project of projects; track project) {
+      @for (project of projects; track $index) {
         <button (click)="getProject(project.uid)" class="flex items-center rounded-8px bg-white-100 border border-neutral-a3 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)] text-left min-h-[88px]">
           <!-- <div class="px-6 py-4 flex items-center justify-between border-b border-b-neutral-a3"> -->
           <div class="px-6 py-4 flex items-center justify-between w-full">

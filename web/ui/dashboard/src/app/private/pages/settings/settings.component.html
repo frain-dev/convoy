@@ -11,7 +11,7 @@
       </div>
 
       <ul class="flex gap-24px flex-col w-full border-l-2 border-l-neutral-5">
-        @for (menu of settingsMenu; track menu) {
+        @for (menu of settingsMenu; track $index) {
           <li class="!list-none last-of-type:mr-0 -ml-2px flex items-center gap-12px">
             <button
               class="pt-0px pl-16px flex items-center border-l border-l-transparent transition-all"

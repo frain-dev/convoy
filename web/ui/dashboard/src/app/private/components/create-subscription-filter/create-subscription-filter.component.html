@@ -16,7 +16,7 @@
 <div class="max-w-[1312px] m-auto mt-40px" convoy-card>
   <div class="rounded-8px pt-20px">
     <ul class="flex flex-row justify-center w-full border-b-[.5px] border-neutral-4">
-      @for (tab of tabs; track tab) {
+      @for (tab of tabs; track $index) {
         <li class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
           <button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
             <span class="text-14 text-left capitalize text-neutral-11 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>

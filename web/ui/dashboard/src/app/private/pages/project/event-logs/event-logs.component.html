@@ -22,18 +22,18 @@
         <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container">
           <table convoy-table>
             <thead convoy-table-head>
-              @for (head of eventLogsTableHead; track head; let i = $index) {
+              @for (head of eventLogsTableHead; track $index; let i = $index) {
                 <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
               }
             </thead>
             <tbody>
-              @for (eventGroup of displayedEvents; track eventGroup; let i = $index) {
+              @for (eventGroup of displayedEvents; track $index; let i = $index) {
                 <tr convoy-table-row [forDate]="true">
                   <td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
                   <td convoy-table-cell [forDate]="true"></td>
                   <td convoy-table-cell [forDate]="true"></td>
                 </tr>
-                @for (event of eventGroup.content; track event; let index = $index) {
+                @for (event of eventGroup.content; track $index; let index = $index) {
                   <tr
                     convoy-table-row
                     class="group"

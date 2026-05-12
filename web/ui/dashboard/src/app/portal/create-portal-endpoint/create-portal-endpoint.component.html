@@ -33,7 +33,7 @@
     </p>
 
     <div class="flex flex-wrap items-center gap-8px">
-      @for (type of endpointTypes; track type) {
+      @for (type of endpointTypes; track $index) {
         <button
           convoy-button
           [fill]="selectedEndpointType === type.id ? 'outline' : 'soft-outline'"
@@ -156,7 +156,7 @@
               }
               @if (licenseService.hasLicense('AdvancedSubscriptions')) {
                 <div>
-                  @for (eventType of validEventTypes(); track eventType; let i = $index) {
+                  @for (eventType of validEventTypes(); track $index; let i = $index) {
                     <div
                       class="flex items-center justify-between my-12px rounded-6px">
                       <div class="flex items-center">
@@ -483,7 +483,7 @@
           </div>
         }
         <div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
-          @for (config of configurations; track config) {
+          @for (config of configurations; track $index) {
             @if (!config.show) {
               <convoy-config-button convoy-permission="Endpoints|MANAGE"
                 (onClick)="toggleConfigForm(config.uid)">{{ config.name }}

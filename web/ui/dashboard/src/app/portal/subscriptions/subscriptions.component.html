@@ -20,11 +20,11 @@
 
   <ul convoy-card class="mb-40px">
     @if (isLoadingSubscriptions && subscriptions && !subscriptions.content.length) {
-      @for (i of [0, 1]; track i) {
+      @for (i of [0, 1]; track $index) {
         <li class="px-4 py-14px">
           <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
         </li>
-        @for (i of [0, 1, 2]; track i) {
+        @for (i of [0, 1, 2]; track $index) {
           <li class="flex items-center gap-36px p-16px">
             <div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
             <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
@@ -35,11 +35,11 @@
         }
       }
     }
-    @for (subscriptionGroup of displayedSubscriptions; track subscriptionGroup; let i = $index) {
+    @for (subscriptionGroup of displayedSubscriptions; track $index; let i = $index) {
       <li class="py-10px px-22px">
         <div class="text-neutral-10 text-12">{{ subscriptionGroup.date }}</div>
       </li>
-      @for (subscription of subscriptionGroup.content; track subscription; let i = $index) {
+      @for (subscription of subscriptionGroup.content; track $index; let i = $index) {
         <li class="flex justify-between py-12px px-22px hover:bg-new.primary-25 transition-all duration-300 last-of-type:mb-0 relative border-b border-new.primary-25">
           <div class="flex text-14 text-neutral-10 gap-36px items-center min-h-[28px]">
             <div class="flex items-center min-w-200px gap-10px">

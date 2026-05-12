@@ -18,7 +18,7 @@
 <div class="max-w-[1192px] m-auto mt-40px mb-100px">
   @if (transformType === 'source') {
     <ul class="flex flex-row justify-center w-full">
-      @for (tab of eventTabs; track tab) {
+      @for (tab of eventTabs; track $index) {
         <li class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
           <button class="pb-16px pt-10px flex items-center" [class]="eventActiveTab === tab ? 'active' : ''" (click)="eventActiveTab = tab">
             <span class="text-14 text-left capitalize text-neutral-11 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
@@ -37,7 +37,7 @@
         </div>
         <div class="min-h-[370px]">
           <ul class="flex flex-row w-full border-y-[.5px] border-y-neutral-4">
-            @for (tab of tabs; track tab) {
+            @for (tab of tabs; track $index) {
               <li class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
                 <button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
                   <span class="text-12 text-neutral-11 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
@@ -123,7 +123,7 @@
         </div>
         <div class="min-h-[370px]">
           <ul class="flex flex-row w-full border-y-[.5px] border-y-neutral-4">
-            @for (tab of tabs; track tab) {
+            @for (tab of tabs; track $index) {
               <li class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
                 <button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
                   <span class="text-12 text-neutral-11 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>

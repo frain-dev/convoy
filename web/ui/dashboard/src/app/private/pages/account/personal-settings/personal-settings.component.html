@@ -1,6 +1,6 @@
 <!-- loader  -->
 @if (isFetchingKeys && !showCreateNewTokenForm) {
-  @for (index of loaderIndex; track index) {
+  @for (index of loaderIndex; track $index) {
     <div class="flex justify-between items-center py-12px">
       <div>
         <div class="flex items-center mb-8px">
@@ -29,7 +29,7 @@
 
 <!-- personal access token  -->
 @if (!isFetchingKeys && personalAccessKeys && !showCreateNewTokenForm) {
-  @for (key of personalAccessKeys.content; track key) {
+  @for (key of personalAccessKeys.content; track $index) {
     <div class="flex justify-between items-center py-12px border-b border-b-neutral-a3 last-of-type:border-none">
       <div>
         <div class="flex items-center">

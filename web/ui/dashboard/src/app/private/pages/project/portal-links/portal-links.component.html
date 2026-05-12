@@ -72,7 +72,7 @@
         </svg>
         <span class="text-new.primary-400 font-medium text-12">Create Portal Link</span>
       </a>
-      @for (link of portalLinks?.content; track link; let i = $index) {
+      @for (link of portalLinks?.content; track $index; let i = $index) {
         <div convoy-card hover="true" class="w-full max-w-[440px] min-w-[300px]" [id]="'portal-link' + i">
           <div class="px-24px py-20px border-b border-b-neutral-a3">
             <div class="flex justify-between items-center">

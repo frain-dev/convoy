@@ -145,7 +145,7 @@
 <!-- Batch Progress Display -->
 @if (batchProgressList.length > 0) {
   <div class="mb-24px">
-    @for (batch of batchProgressList; track batch) {
+    @for (batch of batchProgressList; track $index) {
       <div class="mb-16px">
         <div convoy-card class="p-24px">
           <div class="flex items-center justify-between mb-16px">
