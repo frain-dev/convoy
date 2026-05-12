@@ -52,7 +52,7 @@
 		"karma-chrome-launcher": "^3.1.0",
 		"karma-coverage": "^2.0.3",
 		"karma-jasmine": "5.1.0",
-		"karma-jasmine-html-reporter": "^1.7.0",
+		"karma-jasmine-html-reporter": "^2.0.0",
 		"postcss": "^8.4.14",
 		"purgecss": "^4.0.3",
 		"tailwindcss": "^3.1.4",
