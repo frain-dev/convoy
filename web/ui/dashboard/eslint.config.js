@@ -7,6 +7,8 @@ const angular = require('angular-eslint');
 /**
  * Pragmatic baseline for an existing Angular app: catch real foot-guns without
  * forcing a full inject() migration, stylistic churn, or strict `any` cleanup in one pass.
+ *
+ * Run: `npm run lint` (ng + builder) or `npm run eslint` / `npm run eslint:fix` (eslint CLI on `src/`).
  */
 module.exports = defineConfig([
 	{
