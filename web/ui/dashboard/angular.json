@@ -36,7 +36,8 @@
 							{
 								"glob": "**/*",
 								"input": "node_modules/monaco-editor",
-								"output": "assets/monaco-editor"
+								"output": "assets/monaco-editor",
+								"ignore": ["**/*.map"]
 							}
 						],
 						"styles": ["src/styles.scss"],
