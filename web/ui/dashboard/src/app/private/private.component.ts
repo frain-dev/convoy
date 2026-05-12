@@ -177,8 +177,11 @@ export class PrivateComponent implements OnInit {
 	}
 
 	async getUserDetails() {
+		const auth = this.authDetails();
+		if (!auth || typeof auth !== 'object' || !auth.uid) return;
+
 		try {
-			const response = await this.privateService.getUserDetails({ userId: this.authDetails()?.uid });
+			const response = await this.privateService.getUserDetails({ userId: auth.uid });
 			const userDetails = response.data;
 			this.isEmailVerified = userDetails?.email_verified;
 		} catch (error) {}
