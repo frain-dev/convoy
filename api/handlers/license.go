@@ -130,7 +130,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if !h.A.Cfg.IsCloud() && org.LicenseData != "" {
+		if org.LicenseData != "" {
 			payload, decErr := license.DecryptLicenseData(org.UID, org.LicenseData)
 			if decErr == nil && payload != nil && len(payload.Entitlements) > 0 {
 				v, encErr := license.FeatureListFromEntitlementsWithOrgProjectCount(payload.Entitlements, projectCount)

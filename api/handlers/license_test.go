@@ -155,6 +155,55 @@ func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 	require.Equal(t, float64(10), ul["limit"])
 }
 
+func TestGetLicenseFeatures_CloudFallsBackToCachedOrgLicenseData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "org-cloud-cached-license"
+	entitlements := map[string]interface{}{"portal_links": true}
+	payload := &license.LicenseDataPayload{Key: "cached-lk", Entitlements: entitlements}
+	encrypted, err := license.EncryptLicenseData(orgID, payload)
+	require.NoError(t, err)
+
+	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+	handler := &Handler{
+		A: &types.APIOptions{
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test", APIKey: "sk_test"}},
+			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.New("convoy", log.LevelInfo),
+			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
+			ProjectRepo:   mockProjectRepo,
+		},
+	}
+
+	mockOrgRepo.EXPECT().
+		FetchOrganisationByID(gomock.Any(), orgID).
+		Return(&datastore.Organisation{UID: orgID, LicenseData: encrypted}, nil)
+	mockOrgMemberRepo.EXPECT().
+		FetchOrganisationMemberByUserID(gomock.Any(), testLicenseFeaturesUserUID, orgID).
+		Return(&datastore.OrganisationMember{}, nil)
+	mockProjectRepo.EXPECT().
+		LoadProjects(gomock.Any(), gomock.Any()).
+		Return([]*datastore.Project{}, nil)
+
+	req := licenseFeaturesRequest(http.MethodGet, "/license/features?orgID="+orgID)
+	w := httptest.NewRecorder()
+
+	handler.GetLicenseFeatures(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp struct {
+		Data json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	var data map[string]interface{}
+	require.NoError(t, json.Unmarshal(resp.Data, &data))
+	require.True(t, data["PortalLinks"].(bool))
+}
+
 func TestGetLicenseFeatures_OrgLevel_OrganisationIDQuery(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

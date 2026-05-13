@@ -150,6 +150,26 @@ func TestBillingServiceErrorStatus_mapsNoLicenseTo422(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, billingServiceErrorStatus(billing.ErrNoLicense))
 }
 
+func TestBillingServiceErrorStatus_preservesOtherBillingHTTPStatusCodes(t *testing.T) {
+	t.Parallel()
+
+	cases := []int{
+		http.StatusUnprocessableEntity,
+		http.StatusTooManyRequests,
+		http.StatusServiceUnavailable,
+	}
+
+	for _, statusCode := range cases {
+		statusCode := statusCode
+		t.Run(http.StatusText(statusCode), func(t *testing.T) {
+			t.Parallel()
+
+			err := &billing.ServiceError{StatusCode: statusCode, Message: "billing service error"}
+			require.Equal(t, statusCode, billingServiceErrorStatus(err))
+		})
+	}
+}
+
 type countingCreateBillingClient struct {
 	*billing.MockBillingClient
 	createCalls int

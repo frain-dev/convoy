@@ -42,6 +42,12 @@ func billingServiceErrorStatus(err error) int {
 		case http.StatusBadRequest, http.StatusNotFound, http.StatusBadGateway:
 			return serviceErr.StatusCode
 		}
+		if serviceErr.StatusCode >= http.StatusBadRequest && serviceErr.StatusCode < http.StatusInternalServerError {
+			return serviceErr.StatusCode
+		}
+		if serviceErr.StatusCode >= http.StatusInternalServerError && serviceErr.StatusCode < 600 {
+			return serviceErr.StatusCode
+		}
 	}
 
 	if strings.Contains(strings.ToLower(err.Error()), "invalid license") {
