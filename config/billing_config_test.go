@@ -24,6 +24,14 @@ func TestBillingConfiguration_Validate(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
+
+	t.Run("rejects invalid URL", func(t *testing.T) {
+		t.Parallel()
+		b := config.BillingConfiguration{URL: "not a url"}
+		if err := b.Validate(); err == nil {
+			t.Fatal("expected error when URL invalid")
+		}
+	})
 }
 
 func TestConfiguration_Mode(t *testing.T) {

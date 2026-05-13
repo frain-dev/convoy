@@ -622,8 +622,13 @@ func (s *SSOServiceConfiguration) UnmarshalJSON(data []byte) error {
 }
 
 func (b *BillingConfiguration) Validate() error {
-	if strings.TrimSpace(b.URL) == "" {
+	rawURL := strings.TrimSpace(b.URL)
+	if rawURL == "" {
 		return fmt.Errorf("billing URL is required")
+	}
+	parsedURL, err := url.ParseRequestURI(rawURL)
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return fmt.Errorf("billing URL must be a valid absolute URL")
 	}
 	return nil
 }

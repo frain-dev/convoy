@@ -127,17 +127,14 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 	skipLimitCheck := false
 	if h.A.Billing != nil && h.A.Cfg.Mode() != config.BillingModeUnlicensed {
-		sub, err := h.A.Billing.GetSubscription(r.Context(), org.UID)
-		if err != nil || sub == nil || !sub.Status || sub.Data.ID == "" {
-			if h.A.Cfg.IsCloud() {
+		if h.A.Cfg.IsCloud() {
+			sub, err := h.A.Billing.GetSubscription(r.Context(), org.UID)
+			if err != nil || sub == nil || !sub.Status || sub.Data.ID == "" {
 				pms, pmErr := h.A.Billing.GetPaymentMethods(r.Context(), org.UID)
 				if pmErr != nil || pms == nil || !pms.Status || len(pms.Data) == 0 {
 					_ = render.Render(w, r, util.NewErrorResponse(errBillingRequired, http.StatusPaymentRequired))
 					return
 				}
-			} else {
-				_ = render.Render(w, r, util.NewErrorResponse(errBillingRequired, http.StatusPaymentRequired))
-				return
 			}
 		}
 		limitDeps := services.OrgProjectLimitDeps{
