@@ -89,6 +89,10 @@ func (s *billingStrategySpy) LicenseSummary(ctx context.Context, orgID string) b
 	return billing.LicenseSummary{Configured: true, MaskedKey: "lk_****_test", HasEntitlements: true}
 }
 
+func (s *billingStrategySpy) CreateOrganisation(ctx context.Context, data billing.BillingOrganisation) (*billing.Response[billing.BillingOrganisation], error) {
+	return nil, billing.ErrNoLicense
+}
+
 func (s *billingStrategySpy) OnboardSubscription(ctx context.Context, orgID string, req billing.OnboardSubscriptionRequest) (*billing.Response[billing.Checkout], error) {
 	return nil, billing.ErrNoLicense
 }

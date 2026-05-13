@@ -184,6 +184,10 @@ func (s *licensedStrategy) LicenseSummary(ctx context.Context, orgID string) Lic
 	return out
 }
 
+func (s *licensedStrategy) CreateOrganisation(ctx context.Context, data BillingOrganisation) (*Response[BillingOrganisation], error) {
+	return nil, ErrNoLicense
+}
+
 func (s *licensedStrategy) OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error) {
 	lk, err := s.licenseKeyFor(ctx, orgID)
 	if err != nil {

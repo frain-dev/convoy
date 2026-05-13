@@ -402,7 +402,7 @@ func (h *BillingHandler) CreateOrganisation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	resp, err := h.BillingClient.CreateOrganisation(r.Context(), orgData)
+	resp, err := h.A.Billing.CreateOrganisation(r.Context(), orgData)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), billingServiceErrorStatus(err)))
 		return

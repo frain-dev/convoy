@@ -104,6 +104,10 @@ func (s *cloudStrategy) LicenseSummary(ctx context.Context, orgID string) Licens
 	return LicenseSummary{}
 }
 
+func (s *cloudStrategy) CreateOrganisation(ctx context.Context, data BillingOrganisation) (*Response[BillingOrganisation], error) {
+	return s.client.CreateOrganisation(ctx, data)
+}
+
 func (s *cloudStrategy) OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error) {
 	return s.client.OnboardSubscription(ctx, orgID, req)
 }

@@ -33,6 +33,7 @@ type Strategy interface {
 	LicenseSummary(ctx context.Context, orgID string) LicenseSummary
 
 	// Writes
+	CreateOrganisation(ctx context.Context, data BillingOrganisation) (*Response[BillingOrganisation], error)
 	OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error)
 	UpgradeSubscription(ctx context.Context, orgID, subscriptionID string, req UpgradeSubscriptionRequest) (*Response[Checkout], error)
 	DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error)

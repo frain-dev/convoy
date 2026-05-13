@@ -396,7 +396,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 	billingClient := billing.NewClient(cfg.Billing)
 	consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, rd, lo), nil)
-	_ = billingClient
 
 	err = metrics.RegisterQueueMetrics(opts.Queue, opts.DB, circuitBreakerManager)
 	if err != nil {
