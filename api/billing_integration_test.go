@@ -333,8 +333,8 @@ func (s *BillingIntegrationTestSuite) Test_UpdateOrganisation() {
 
 func (s *BillingIntegrationTestSuite) Test_UpdateOrganisation_rejectsMismatchedExternalID() {
 	orgData := map[string]interface{}{
-		"name":         "Updated Org",
-		"external_id":  "other-org-id",
+		"name":          "Updated Org",
+		"external_id":   "other-org-id",
 		"billing_email": "a@example.com",
 	}
 

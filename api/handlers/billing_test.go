@@ -17,10 +17,10 @@ func TestGetBillingEnabled_ReportsModeAndAlwaysEnabled(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name      string
-		cfg       config.Configuration
-		wantMode  config.BillingMode
-		wantSelf  bool
+		name     string
+		cfg      config.Configuration
+		wantMode config.BillingMode
+		wantSelf bool
 	}{
 		{
 			name:     "cloud when API key set",
@@ -62,8 +62,8 @@ func TestGetBillingEnabled_ReportsModeAndAlwaysEnabled(t *testing.T) {
 
 			require.Equal(t, http.StatusOK, w.Code)
 			var resp struct {
-				Status  bool `json:"status"`
-				Data    struct {
+				Status bool `json:"status"`
+				Data   struct {
 					Enabled    bool               `json:"enabled"`
 					Mode       config.BillingMode `json:"mode"`
 					SelfHosted bool               `json:"self_hosted"`
