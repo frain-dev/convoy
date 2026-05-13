@@ -21,7 +21,10 @@ import (
 func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 	orgID := strings.TrimSpace(r.Header.Get("X-Organisation-Id"))
 	if util.IsStringEmpty(orgID) {
-		orgID = r.URL.Query().Get("orgID")
+		orgID = strings.TrimSpace(r.URL.Query().Get("orgID"))
+	}
+	if util.IsStringEmpty(orgID) {
+		orgID = strings.TrimSpace(r.URL.Query().Get("organisation_id"))
 	}
 
 	if h.A.BillingClient != nil && !util.IsStringEmpty(orgID) {

@@ -28,7 +28,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
 
 	licenseKey := configuration.LicenseKey
-	if h.A.BillingClient != nil && slug != "" {
+	if configuration.IsCloud() && h.A.BillingClient != nil && slug != "" {
 		orgRepo := organisations.New(h.A.Logger, h.A.DB)
 		orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
 		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
@@ -121,7 +121,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if h.A.BillingClient != nil {
+	if h.shouldRefreshLicenseDataAfterLogin() {
 		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
 			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
@@ -246,7 +246,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.A.BillingClient != nil {
+	if h.shouldRefreshLicenseDataAfterLogin() {
 		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
 			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
@@ -262,6 +262,14 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
+}
+
+func (h *Handler) shouldRefreshLicenseDataAfterLogin() bool {
+	if h.A.Cfg.IsCloud() {
+		return h.A.BillingClient != nil
+	}
+
+	return h.A.Cfg.IsSelfHosted() && strings.TrimSpace(h.A.Cfg.LicenseKey) != ""
 }
 
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {

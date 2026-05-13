@@ -101,7 +101,7 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 				return
 			}
 
-			if h.A.BillingClient != nil && h.isOrganisationDisabled(org) {
+			if h.A.Cfg.IsCloud() && h.A.BillingClient != nil && h.isOrganisationDisabled(org) {
 				_ = render.Render(w, r, util.NewErrorResponse("This action is disabled for this organization. Please contact support or subscribe to a plan.", http.StatusForbidden))
 				return
 			}
