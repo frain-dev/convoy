@@ -25,7 +25,15 @@ export const checkoutResolver: ResolveFn<CheckoutResolverData> = (route: Activat
   }
 
   localStorage.setItem(checkoutKey, 'true');
-  const orgId = privateService.getOrganisation?.uid || localStorage.getItem('CONVOY_ORG_ID') || '';
+  let orgId = privateService.getOrganisation?.uid || '';
+  if (!orgId) {
+    try {
+      const rawOrg = localStorage.getItem('CONVOY_ORG');
+      orgId = rawOrg ? JSON.parse(rawOrg)?.uid || '' : '';
+    } catch (_) {
+      orgId = '';
+    }
+  }
 
   return { needsPolling: true, checkoutProcessed: false, sessionId, orgId };
 };

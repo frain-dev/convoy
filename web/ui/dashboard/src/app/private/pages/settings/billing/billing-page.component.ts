@@ -95,6 +95,15 @@ export class BillingPageComponent implements OnInit {
   isLoadingBillingData = true;
   isLoadingUsage = false;
 
+  selfHostedBilling = false;
+  selfHostedBootstrapEmail = '';
+  selfHostedVerifyCode = '';
+  selfHostedBootstrapBusy = false;
+  selfHostedBootstrapMessage = '';
+  selfHostedLicenseMasked = '';
+  selfHostedLicenseReady = true;
+  selfHostedHasEntitlements = true;
+
   constructor(
     private fb: FormBuilder,
     private billingPaymentDetailsService: BillingPaymentDetailsService,
@@ -119,14 +128,23 @@ export class BillingPageComponent implements OnInit {
   private activeCityRequestToken = 0;
   private cityLoadingRequestToken: number | null = null;
 
-  ngOnInit() {
+  async ngOnInit() {
     this.validateOrganisation();
     this.loadCountries(); // Load immediately, independent of bootstrap
-    this.loadBillingConfiguration();
+    await this.loadBillingConfiguration();
 
-    // Start bootstrap in background - code that needs it will await the promise
-    this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
-    this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
+    if (this.shouldShowSelfHostedSetup()) {
+      this.markBillingDataIdle();
+      this.selfHostedBootstrapMessage = this.selfHostedLicenseMasked
+        ? 'This configured license is not recognized by billing. Verify your billing email or update the server license key.'
+        : 'Verify your billing email to issue a license for this organisation.';
+    } else if (this.selfHostedBilling && !this.selfHostedHasEntitlements) {
+      this.markBillingDataIdle();
+      this.selfHostedBootstrapMessage = 'License configured. Subscribe to activate billing.';
+    } else {
+      this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
+      this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
+    }
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);
@@ -152,6 +170,13 @@ export class BillingPageComponent implements OnInit {
       await this.loadBillingData();
     } catch (error) {
       console.error('Failed to bootstrap organisation:', error);
+      if (this.selfHostedBilling && this.isInvalidLicenseError(error)) {
+        this.selfHostedLicenseReady = false;
+        this.selfHostedHasEntitlements = false;
+        this.selfHostedBootstrapMessage = 'This organisation does not have a valid self-hosted billing license yet.';
+        this.markBillingDataIdle();
+        return;
+      }
       await this.loadBillingData();
     }
   }
@@ -334,12 +359,21 @@ export class BillingPageComponent implements OnInit {
     }
   }
 
-  private loadBillingConfiguration() {
-    this.billingPaymentDetailsService.getBillingConfig().subscribe({
+  private loadBillingConfiguration(): Promise<void> {
+    return new Promise(resolve => {
+      this.billingPaymentDetailsService.getBillingConfig(this.getOrganisationId()).subscribe({
       next: (config) => {
-        this.paymentProviderType = config.data.payment_provider.type;
-        this.paymentProviderPublishableKey = config.data.payment_provider.publishable_key;
-        this.loadInternalOrganisationId();
+        this.selfHostedBilling = !!config.data?.self_hosted;
+        const licenseSummary = config.data?.license;
+        this.selfHostedLicenseReady = !this.selfHostedBilling || !!licenseSummary?.configured;
+        this.selfHostedHasEntitlements = !this.selfHostedBilling || !!licenseSummary?.has_entitlements;
+        this.selfHostedLicenseMasked = licenseSummary?.masked_key || '';
+        this.paymentProviderType = config.data?.payment_provider?.type || '';
+        this.paymentProviderPublishableKey = config.data?.payment_provider?.publishable_key || '';
+        if (this.canShowBillingPanels) {
+          this.loadInternalOrganisationId();
+        }
+        resolve();
       },
       error: (error) => {
         console.error('Failed to load billing configuration:', error);
@@ -347,7 +381,9 @@ export class BillingPageComponent implements OnInit {
           message: 'Failed to load billing configuration. Please refresh the page.',
           style: 'error'
         });
+        resolve();
       }
+    });
     });
   }
 
@@ -360,7 +396,14 @@ export class BillingPageComponent implements OnInit {
       },
       error: (error) => {
         console.error('Failed to load internal organisation ID:', error);
-        const errorMessage = error?.error?.message || error?.message || 'Failed to load organisation data';
+        if (this.selfHostedBilling && this.isInvalidLicenseError(error)) {
+          this.selfHostedLicenseReady = false;
+          this.selfHostedHasEntitlements = false;
+          this.selfHostedBootstrapMessage = 'This organisation does not have a valid self-hosted billing license yet.';
+          this.markBillingDataIdle();
+          return;
+        }
+        const errorMessage = this.billingErrorMessage(error, 'Failed to load organisation data');
         this.generalService.showNotification({
           message: errorMessage,
           style: 'error'
@@ -369,6 +412,40 @@ export class BillingPageComponent implements OnInit {
         // Don't load existing data if the first call failed
       }
     });
+  }
+
+  get canShowBillingPanels(): boolean {
+    return !this.selfHostedBilling || this.selfHostedLicenseReady;
+  }
+
+  get showSelfHostedBillingCard(): boolean {
+    return this.selfHostedBilling && (!this.selfHostedLicenseReady || !this.selfHostedHasEntitlements);
+  }
+
+  private shouldShowSelfHostedSetup(): boolean {
+    return this.selfHostedBilling && !this.selfHostedLicenseReady;
+  }
+
+  private isInvalidLicenseError(error: any): boolean {
+    const message = this.billingErrorMessage(error, '').toLowerCase();
+    return message.includes('invalid license') || message.includes('no organisation license configured');
+  }
+
+  private billingErrorMessage(error: any, fallback: string): string {
+    if (typeof error === 'string') return error;
+    return error?.error?.message || error?.response?.data?.message || error?.message || fallback;
+  }
+
+  private markBillingDataIdle(): void {
+    this.billingOverview = null;
+    this.usageRows = [];
+    this.paymentMethods = [];
+    this.paymentMethodDetails = null;
+    this.internalOrganisationId = '';
+    this.isLoadingBillingData = false;
+    this.isLoadingUsage = false;
+    this.isLoadingBillingAddress = false;
+    this.isLoadingVat = false;
   }
 
   private loadCountries() {
@@ -671,9 +748,11 @@ export class BillingPageComponent implements OnInit {
   private loadPlans() {
     this.isLoadingPlans = true;
 
-    this.planService.getPlans().subscribe({
+    this.planService.getPlans(this.getOrganisationId()).subscribe({
       next: (response) => {
-        const defaultData = this.planService.getDefaultPlanComparison();
+        const defaultData = this.selfHostedBilling
+          ? this.planService.getDefaultSelfHostedPlanComparison()
+          : this.planService.getDefaultPlanComparison();
 
         if (!response.data || response.data.length === 0) {
           this.plans = defaultData.plans;
@@ -710,7 +789,9 @@ export class BillingPageComponent implements OnInit {
       },
       error: (error) => {
         console.warn('Failed to load plans from backend:', error);
-        const defaultData = this.planService.getDefaultPlanComparison();
+        const defaultData = this.selfHostedBilling
+          ? this.planService.getDefaultSelfHostedPlanComparison()
+          : this.planService.getDefaultPlanComparison();
         this.plans = defaultData.plans;
         this.overwatchPlans = [];
         this.isLoadingPlans = false;
@@ -770,7 +851,7 @@ export class BillingPageComponent implements OnInit {
     } catch (error: any) {
       console.error('Failed to cancel subscription:', error);
       this.generalService.showNotification({
-        message: error?.error?.message || 'Failed to cancel subscription. Please try again.',
+        message: this.billingErrorMessage(error, 'Failed to cancel subscription. Please try again.'),
         style: 'error'
       });
     } finally {
@@ -809,10 +890,18 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    if (isProOrEnterprise && !planExistsInOverwatch) {
+    if (isProOrEnterprise && !planExistsInOverwatch && !this.selfHostedBilling) {
       const subject = encodeURIComponent(`${selectedPlanData.name} Plan Request`);
       const body = encodeURIComponent(`Hello,\n\nI would like to subscribe to the ${selectedPlanData.name} plan.\n\nThank you.`);
       window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+      return;
+    }
+
+    if (this.selfHostedBilling && !planExistsInOverwatch) {
+      this.generalService.showNotification({
+        message: 'This self-hosted plan is not available from billing yet. Refresh plans or contact support.',
+        style: 'error'
+      });
       return;
     }
 
@@ -829,7 +918,8 @@ export class BillingPageComponent implements OnInit {
           method: 'put',
           body: {
             plan_id: planIdForApi,
-            host: host
+            host: host,
+            interval: selectedPlanData.interval
           }
         });
 
@@ -844,7 +934,8 @@ export class BillingPageComponent implements OnInit {
           method: 'post',
           body: {
             plan_id: planIdForApi,
-            host: host
+            host: host,
+            interval: selectedPlanData.interval
           }
         });
 
@@ -861,7 +952,7 @@ export class BillingPageComponent implements OnInit {
       this.isLoadingCheckout = false;
       console.error('Failed to create checkout session:', error);
       this.generalService.showNotification({
-        message: error?.error?.message || 'Failed to create checkout session. Please try again.',
+        message: this.billingErrorMessage(error, 'Failed to create checkout session. Please try again.'),
         style: 'error'
       });
     }
@@ -1240,6 +1331,76 @@ export class BillingPageComponent implements OnInit {
     this.apiError = errorMessage;
   }
 
+  async registerSelfHostedEmail(): Promise<void> {
+    const email = (this.selfHostedBootstrapEmail || '').trim();
+    if (!email) {
+      this.generalService.showNotification({ message: 'Enter your billing email', style: 'error' });
+      return;
+    }
+    this.selfHostedBootstrapBusy = true;
+    this.selfHostedBootstrapMessage = '';
+    try {
+      const organisation_name = this.getOrganisationNameFromStorage();
+      const body: { email: string; organisation_name?: string } = { email };
+      if (organisation_name) {
+        body.organisation_name = organisation_name;
+      }
+      await this.httpService.request({
+        url: '/billing/self_hosted/register_email',
+        method: 'post',
+        body
+      });
+      this.selfHostedBootstrapMessage =
+        'Check your email for an 8-character verification code.';
+      this.generalService.showNotification({ message: 'Verification email sent', style: 'success' });
+    } catch (e: any) {
+      this.generalService.showNotification({
+        message: this.billingErrorMessage(e, 'Could not start registration'),
+        style: 'error'
+      });
+    } finally {
+      this.selfHostedBootstrapBusy = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  async verifySelfHostedEmail(): Promise<void> {
+    const code = (this.selfHostedVerifyCode || '').trim().toUpperCase();
+    if (!code) {
+      this.generalService.showNotification({ message: 'Paste the verification code', style: 'error' });
+      return;
+    }
+    this.selfHostedBootstrapBusy = true;
+    try {
+      const res = await this.httpService.request({
+        url: '/billing/self_hosted/verify_email',
+        method: 'post',
+        body: { code }
+      });
+      const maskedLicense = res?.data?.masked_license_key as string | undefined;
+      const instructions =
+        res?.data?.instructions ||
+        'License issued and emailed. Set the license key as CONVOY_LICENSE_KEY, restart Convoy, then refresh this page.';
+      if (maskedLicense) {
+        this.selfHostedLicenseMasked = maskedLicense;
+      }
+      this.selfHostedVerifyCode = '';
+      this.selfHostedLicenseReady = false;
+      this.selfHostedHasEntitlements = false;
+      this.selfHostedBootstrapMessage = instructions;
+      this.markBillingDataIdle();
+      this.generalService.showNotification({ message: instructions, style: 'success' });
+    } catch (e: any) {
+      this.generalService.showNotification({
+        message: this.billingErrorMessage(e, 'Verification failed'),
+        style: 'error'
+      });
+    } finally {
+      this.selfHostedBootstrapBusy = false;
+      this.cdr.detectChanges();
+    }
+  }
+
   getOrganisationId(): string {
     try {
       const org = localStorage.getItem('CONVOY_ORG');
@@ -1251,6 +1412,20 @@ export class BillingPageComponent implements OnInit {
       return orgData.uid || '';
     } catch (error) {
       console.error('Error getting organisation ID:', error);
+      return '';
+    }
+  }
+
+  private getOrganisationNameFromStorage(): string {
+    try {
+      const raw = localStorage.getItem('CONVOY_ORG');
+      if (!raw) {
+        return '';
+      }
+      const orgData = JSON.parse(raw) as { name?: string };
+      return (orgData.name || '').trim();
+    } catch (error) {
+      console.error('Error getting organisation name:', error);
       return '';
     }
   }

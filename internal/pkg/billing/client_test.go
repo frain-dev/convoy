@@ -31,9 +31,8 @@ func setupTestClient(t *testing.T) (*HTTPClient, *httptest.Server) {
 func setupTestClientWithHandler(t *testing.T, handler http.Handler) (*HTTPClient, *httptest.Server) {
 	server := httptest.NewServer(handler)
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
+		URL:    server.URL,
+		APIKey: "test-key",
 	}
 	client := NewClient(cfg)
 	return client, server
@@ -55,9 +54,8 @@ func setupTestClientWithResponse[T any](t *testing.T, data T) (*HTTPClient, *htt
 
 func TestNewClient(t *testing.T) {
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     "http://localhost:8080",
-		APIKey:  "test-key",
+		URL:    "http://localhost:8080",
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -77,9 +75,8 @@ func TestClient_HealthCheck_Success(t *testing.T) {
 	}))
 
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
+		URL:    server.URL,
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -89,25 +86,10 @@ func TestClient_HealthCheck_Success(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestClient_HealthCheck_Disabled(t *testing.T) {
-	cfg := config.BillingConfiguration{
-		Enabled: false,
-		URL:     "http://localhost:8080",
-		APIKey:  "test-key",
-	}
-
-	client := NewClient(cfg)
-
-	err := client.HealthCheck(context.Background())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "billing is not enabled")
-}
-
 func TestClient_HealthCheck_NoURL(t *testing.T) {
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     "",
-		APIKey:  "test-key",
+		URL:    "",
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -123,9 +105,8 @@ func TestClient_HealthCheck_ServerError(t *testing.T) {
 	}))
 
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
+		URL:    server.URL,
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -146,19 +127,22 @@ func TestClient_GetUsage_Success(t *testing.T) {
 	assert.Equal(t, "Success", resp.Message)
 }
 
-func TestClient_GetUsage_Disabled(t *testing.T) {
-	cfg := config.BillingConfiguration{
-		Enabled: false,
-		URL:     "http://localhost:8080",
-		APIKey:  "test-key",
-	}
+func TestClient_GetUsage_NonJSONUpstreamReturnsBadGateway(t *testing.T) {
+	client, server := setupTestClientWithHandler(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`<html>No route matches [GET] "/api/v1/organisations/org-1/usage"</html>`))
+	}))
+	defer server.Close()
 
-	client := NewClient(cfg)
+	resp, err := client.GetUsage(context.Background(), "org-1")
 
-	resp, err := client.GetUsage(context.Background(), "test-org")
-	assert.Error(t, err)
-	assert.Nil(t, resp)
-	assert.Contains(t, err.Error(), "billing is not enabled")
+	require.Nil(t, resp)
+	var serviceErr *ServiceError
+	require.ErrorAs(t, err, &serviceErr)
+	assert.Equal(t, http.StatusBadGateway, serviceErr.StatusCode)
+	assert.Contains(t, serviceErr.Message, "billing returned non-JSON response")
+	assert.Contains(t, serviceErr.Message, "HTTP 404")
 }
 
 func TestClient_GetInvoices_Success(t *testing.T) {
@@ -191,6 +175,15 @@ func TestClient_GetSubscription_Success(t *testing.T) {
 	assert.Equal(t, "Success", resp.Message)
 }
 
+func TestClient_GetSubscription_AcceptsArrayResponse(t *testing.T) {
+	client, server := setupTestClientWithResponse(t, []BillingSubscription{{ID: "sub-1", Status: "active"}})
+	defer server.Close()
+
+	resp, err := client.GetSubscription(context.Background(), "test-org")
+	require.NoError(t, err)
+	assert.Equal(t, "sub-1", resp.Data.ID)
+}
+
 func TestClient_GetPlans_Success(t *testing.T) {
 	client, server := setupTestClientWithResponse(t, []Plan{})
 	defer server.Close()
@@ -214,9 +207,8 @@ func TestClient_GetTaxIDTypes_Success(t *testing.T) {
 	}))
 
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
+		URL:    server.URL,
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -308,6 +300,16 @@ func TestClient_GetSubscriptions_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, resp.Status)
 	assert.Equal(t, "Success", resp.Message)
+}
+
+func TestClient_GetSubscriptions_AcceptsSingleObjectResponse(t *testing.T) {
+	client, server := setupTestClientWithResponse(t, BillingSubscription{ID: "sub-1", Status: "active"})
+	defer server.Close()
+
+	resp, err := client.GetSubscriptions(context.Background(), "test-org")
+	require.NoError(t, err)
+	require.Len(t, resp.Data, 1)
+	assert.Equal(t, "sub-1", resp.Data[0].ID)
 }
 
 func TestClient_OnboardSubscription_Success(t *testing.T) {

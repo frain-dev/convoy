@@ -25,11 +25,10 @@ import (
 
 func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
-	billingEnabled := configuration.Billing.Enabled && h.A.BillingClient != nil
 	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
 
 	licenseKey := configuration.LicenseKey
-	if billingEnabled && slug != "" {
+	if h.A.BillingClient != nil && slug != "" {
 		orgRepo := organisations.New(h.A.Logger, h.A.DB)
 		orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
 		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
@@ -122,7 +121,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if configuration.Billing.Enabled {
+	if h.A.BillingClient != nil {
 		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
 			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
@@ -175,7 +174,7 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 		Timeout:         configuration.SSOService.Timeout,
 		RetryCount:      configuration.SSOService.RetryCount,
 	}
-	if configuration.Billing.Enabled && configuration.Billing.APIKey != "" {
+	if configuration.Billing.APIKey != "" {
 		sc.APIKey = configuration.Billing.APIKey
 		sc.LicenseKey = configuration.LicenseKey
 		sc.OrgID = r.Header.Get("X-Organisation-Id")
@@ -227,23 +226,27 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.A.Logger.Errorf("User login failed: %v", err)
 
-		var errMsg string
+		status := http.StatusForbidden
+		errMsg := "Login failed"
 
 		if se, ok := err.(*services.ServiceError); ok {
 			switch se.Code {
-			case services.ErrCodeLicenseExpired:
-				errMsg = se.ErrMsg
-			default:
+			case services.ErrCodeAuthInvalid:
 				errMsg = "Invalid credentials"
+			case services.ErrCodeLicenseExpired, services.ErrCodeLicenseAccessDenied:
+				errMsg = se.ErrMsg
+			case services.ErrCodeInternal:
+				errMsg = "Login temporarily unavailable"
+				status = http.StatusInternalServerError
 			}
 		}
 
-		_ = render.Render(w, r, util.NewErrorResponse(errMsg, http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse(errMsg, status))
 
 		return
 	}
 
-	if configuration.Billing.Enabled {
+	if h.A.BillingClient != nil {
 		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
 			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),

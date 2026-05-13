@@ -1,6 +1,6 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {ReactiveFormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import {BillingPageComponent} from './billing-page.component';
 import {BillingOverviewComponent} from './billing-overview.component';
@@ -44,5 +44,5 @@ import {DialogDirective, DialogHeaderComponent} from "../../../../components/dia
         BillingOverviewComponent,
         BillingUsageComponent,
         BillingInvoicesComponent
-    ], imports: [CommonModule, ReactiveFormsModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent], providers: [CountriesService, provideHttpClient(withInterceptorsFromDi())] })
+    ], imports: [CommonModule, FormsModule, ReactiveFormsModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent], providers: [CountriesService, provideHttpClient(withInterceptorsFromDi())] })
 export class BillingModule {}

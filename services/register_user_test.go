@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func provideRegisterUserService(ctrl *gomock.Controller, t *testing.T, baseUrl string, loginUser *models.RegisterUser) *RegisterUserService {
@@ -30,6 +31,7 @@ func provideRegisterUserService(ctrl *gomock.Controller, t *testing.T, baseUrl s
 		ConfigRepo:    mocks.NewMockConfigurationRepository(ctrl),
 		BaseURL:       baseUrl,
 		Data:          loginUser,
+		Logger:        log.New("convoy", log.LevelInfo),
 	}
 }
 

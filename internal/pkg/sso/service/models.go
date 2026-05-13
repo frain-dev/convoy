@@ -42,7 +42,6 @@ type UserProfile struct {
 	ProfileID              string `json:"profile_id"`
 }
 
-// AdminPortalRequest is the body sent to Overwatch POST /sso/admin-portal.
 type AdminPortalRequest struct {
 	ReturnURL  string `json:"return_url"`
 	SuccessURL string `json:"success_url"`
@@ -55,7 +54,6 @@ type AdminPortalData struct {
 	ExpiresIn int    `json:"expires_in"`
 }
 
-// AdminPortalResponse is the response from Overwatch POST /sso/admin-portal.
 type AdminPortalResponse struct {
 	Status  bool            `json:"status"`
 	Message string          `json:"message"`

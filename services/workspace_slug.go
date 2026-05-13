@@ -65,7 +65,6 @@ func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorksp
 	}
 
 	defaultKey := deps.Cfg.LicenseKey
-	billingEnabled := deps.Cfg.Billing.Enabled && deps.RefreshDeps.BillingClient != nil
 	licClient := licensesvc.NewClient(licensesvc.Config{
 		Host:         deps.Cfg.LicenseService.Host,
 		ValidatePath: deps.Cfg.LicenseService.ValidatePath,
@@ -73,7 +72,7 @@ func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorksp
 		RetryCount:   deps.Cfg.LicenseService.RetryCount,
 		Logger:       deps.Logger,
 	})
-	RefreshLicenseDataForOrg(ctx, *org, defaultKey, billingEnabled, deps.RefreshDeps, licClient)
+	RefreshLicenseDataForOrg(ctx, *org, defaultKey, deps.RefreshDeps, licClient)
 
 	org, err = deps.OrgRepo.FetchOrganisationByID(ctx, resp.Data.ExternalID)
 	if err != nil {

@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	// DefaultOverwatchHost is the hardcoded Overwatch URL
 	DefaultOverwatchHost = "https://overwatch.getconvoy.cloud"
 	// DefaultValidatePath is the default validation endpoint
 	DefaultValidatePath = "/licenses/validate"
@@ -182,7 +181,7 @@ func (c *Client) parseError(message string) error {
 // checkLicenseStatus validates the license status
 func (c *Client) checkLicenseStatus(status string) error {
 	switch status {
-	case "active":
+	case "active", "pending_payment":
 		return nil
 	case "suspended":
 		return ErrLicenseSuspended

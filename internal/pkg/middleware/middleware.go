@@ -274,7 +274,11 @@ func SetupCORS(logger log.Logger) func(http.Handler) http.Handler {
 			}
 
 			if env := cfg.Environment; string(env) == "development" {
-				w.Header().Set("Access-Control-Allow-Origin", cfg.Host)
+				allowOrigin := strings.TrimSpace(r.Header.Get("Origin"))
+				if allowOrigin == "" {
+					allowOrigin = cfg.Host
+				}
+				w.Header().Set("Access-Control-Allow-Origin", allowOrigin)
 				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 				w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Convoy-Version")
 			}
@@ -633,6 +637,11 @@ func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) contex
 
 func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
 	return ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
+}
+
+func TryGetAuthUserFromContext(ctx context.Context) (*auth.AuthenticatedUser, bool) {
+	authUser, ok := ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
+	return authUser, ok && authUser != nil
 }
 
 func RequireValidEnterpriseSSOLicense(l license.Licenser, logger log.Logger) func(http.Handler) http.Handler {

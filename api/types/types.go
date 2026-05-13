@@ -34,6 +34,7 @@ type APIOptions struct {
 	Licenser                   license.Licenser
 	Cfg                        config.Configuration
 	BillingClient              billing.Client
+	Billing                    billing.Strategy
 	TracerBackend              tracer.Backend
 	ConfigRepo                 datastore.ConfigurationRepository
 	OrgRepo                    datastore.OrganisationRepository

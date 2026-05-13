@@ -395,6 +395,113 @@ func (m *MockBillingClient) DownloadInvoice(ctx context.Context, orgID, invoiceI
 	return resp, nil
 }
 
+func (m *MockBillingClient) SelfHostedRegisterEmail(ctx context.Context, req SelfHostedRegisterEmailRequest) (*Response[SelfHostedRegisterEmailData], error) {
+	return &Response[SelfHostedRegisterEmailData]{
+		Status:  true,
+		Message: "ok",
+		Data:    SelfHostedRegisterEmailData{ExternalID: "sh_em_test"},
+	}, nil
+}
+
+func (m *MockBillingClient) SelfHostedVerifyEmail(ctx context.Context, code string) (*Response[SelfHostedVerifyEmailData], error) {
+	return &Response[SelfHostedVerifyEmailData]{
+		Status:  true,
+		Message: "ok",
+		Data: SelfHostedVerifyEmailData{
+			LicenseKey:   "test-license-key",
+			ExternalID:   "sh_em_test",
+			Instructions: "Set CONVOY_LICENSE_KEY",
+		},
+	}, nil
+}
+
+func (m *MockBillingClient) SelfHostedStartCheckout(ctx context.Context, licenseKey string, req SelfHostedStartCheckoutRequest) (*Response[Checkout], error) {
+	return &Response[Checkout]{
+		Status:  true,
+		Message: "ok",
+		Data:    Checkout{CheckoutURL: "https://checkout.example.com", CheckoutID: "chk_1"},
+	}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingGetSubscription(ctx context.Context, licenseKey string) (*Response[BillingSubscription], error) {
+	return &Response[BillingSubscription]{Status: true, Message: "ok", Data: BillingSubscription{}}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingDeleteSubscription(ctx context.Context, licenseKey string) (*Response[interface{}], error) {
+	return &Response[interface{}]{Status: true, Message: "Subscription cancelled successfully", Data: nil}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingGetPaymentMethods(ctx context.Context, licenseKey string) (*Response[[]PaymentMethod], error) {
+	return &Response[[]PaymentMethod]{Status: true, Message: "Payment methods retrieved successfully", Data: []PaymentMethod{}}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingGetSetupIntent(ctx context.Context, licenseKey string) (*Response[SetupIntent], error) {
+	return &Response[SetupIntent]{Status: true, Message: "Setup intent retrieved successfully", Data: SetupIntent{}}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingSetDefaultPaymentMethod(ctx context.Context, licenseKey, pmID string) (*Response[interface{}], error) {
+	return &Response[interface{}]{Status: true, Message: "Default payment method set successfully", Data: nil}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingDeletePaymentMethod(ctx context.Context, licenseKey, pmID string) (*Response[interface{}], error) {
+	return &Response[interface{}]{Status: true, Message: "Payment method deleted successfully", Data: nil}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingGetPlans(ctx context.Context, licenseKey string) (*Response[[]Plan], error) {
+	return m.GetPlans(ctx)
+}
+
+func (m *MockBillingClient) LicenseBillingGetInvoices(ctx context.Context, licenseKey string) (*Response[[]Invoice], error) {
+	return &Response[[]Invoice]{Status: true, Message: "ok", Data: []Invoice{}}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingGetInvoice(ctx context.Context, licenseKey, invoiceID string) (*Response[Invoice], error) {
+	return m.GetInvoice(ctx, "license", invoiceID)
+}
+
+func (m *MockBillingClient) LicenseBillingRecoverExternalID(ctx context.Context, licenseKey, newExternalID string) (*Response[LicenseRecoverExternalIDData], error) {
+	return &Response[LicenseRecoverExternalIDData]{
+		Status:  true,
+		Message: "ok",
+		Data:    LicenseRecoverExternalIDData{ExternalID: newExternalID},
+	}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingGetContext(ctx context.Context, licenseKey string) (*Response[LicenseBillingContextData], error) {
+	return &Response[LicenseBillingContextData]{
+		Status:  true,
+		Message: "ok",
+		Data: LicenseBillingContextData{
+			OrganisationID: "internal-org-id",
+			ExternalID:     "ext",
+		},
+	}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingGetOrganisation(ctx context.Context, licenseKey string) (*Response[BillingOrganisation], error) {
+	return &Response[BillingOrganisation]{Status: true, Message: "ok", Data: BillingOrganisation{}}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingUpdateOrganisation(ctx context.Context, licenseKey string, orgData BillingOrganisation) (*Response[BillingOrganisation], error) {
+	return &Response[BillingOrganisation]{Status: true, Message: "ok", Data: orgData}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingUpdateOrganisationAddress(ctx context.Context, licenseKey string, addressData UpdateOrganisationAddressRequest) (*Response[BillingOrganisation], error) {
+	return &Response[BillingOrganisation]{Status: true, Message: "ok", Data: BillingOrganisation{}}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingUpdateOrganisationTaxID(ctx context.Context, licenseKey string, taxData UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error) {
+	return &Response[BillingOrganisation]{Status: true, Message: "ok", Data: BillingOrganisation{}}, nil
+}
+
+func (m *MockBillingClient) LicenseBillingGetTaxIDTypes(ctx context.Context, licenseKey string) (*Response[[]TaxIDType], error) {
+	return m.GetTaxIDTypes(ctx)
+}
+
+func (m *MockBillingClient) LicenseBillingUpgradeSubscription(ctx context.Context, licenseKey string, req UpgradeSubscriptionRequest) (*Response[Checkout], error) {
+	return &Response[Checkout]{Status: true, Message: "ok", Data: Checkout{CheckoutURL: "https://checkout.example.com/upgrade", CheckoutID: "chk_up"}}, nil
+}
+
 type Error struct {
 	Message string
 }

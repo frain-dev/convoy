@@ -4,10 +4,11 @@ import {Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {Router} from '@angular/router';
 import {GeneralService} from '../services/general/general.service';
+import { AuthSessionService } from '../services/auth-session/auth-session.service';
 
 @Injectable()
 export class HttpIntercepter implements HttpInterceptor {
-	constructor(private router: Router, private generalService: GeneralService) {}
+	constructor(private router: Router, private generalService: GeneralService, private authSessionService: AuthSessionService) {}
 
 	intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
 		const modifiedRequest = this.addRootPathToApiCalls(request);
@@ -19,7 +20,8 @@ export class HttpIntercepter implements HttpInterceptor {
 			catchError((error: HttpErrorResponse) => {
 				if (error.status === 401) {
 					this.router.navigate(['/login'], { replaceUrl: true });
-					localStorage.removeItem('CONVOY_AUTH');
+					this.authSessionService.clearLocalSession();
+					return throwError(error);
 				}
 				let errorMessage: string;
 				error.error?.message ? (errorMessage = error.error?.message) : (errorMessage = 'An error occured, please try again');

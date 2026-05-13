@@ -323,8 +323,7 @@ func (k *HCPVaultKeyManager) Unset() {
 
 // isUnauthorizedError checks if the error is due to an expired or invalid token.
 func isUnauthorizedError(err error) bool {
-	var apiErr *APIError
-	if errors.As(err, &apiErr) && apiErr.Code == 16 {
+	if apiErr, ok := errors.AsType[*APIError](err); ok && apiErr.Code == 16 {
 		return true
 	}
 	return false
@@ -332,8 +331,7 @@ func isUnauthorizedError(err error) bool {
 
 // isMaxVersionError checks if the error is due to reaching the maximum version limit.
 func isMaxVersionError(err error) bool {
-	var apiErr *APIError
-	if errors.As(err, &apiErr) && (apiErr.Code == 8 || apiErr.Message == "maximum number of secret versions reached") {
+	if apiErr, ok := errors.AsType[*APIError](err); ok && (apiErr.Code == 8 || apiErr.Message == "maximum number of secret versions reached") {
 		return true
 	}
 	return false

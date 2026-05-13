@@ -1,15 +1,92 @@
-<app-billing-overview
-  [overview]="billingOverview"
-  [isLoading]="isLoadingBillingData"
-  [refreshTrigger]="refreshOverviewTrigger"
-  (openPaymentDetails)="openPaymentDetails()"
-  (openManagePlan)="openManagePlan()">
-</app-billing-overview>
-<app-billing-usage
-  [usageRows]="usageRows"
-  [isFetchingUsage]="isLoadingUsage">
-</app-billing-usage>
-<app-billing-invoices></app-billing-invoices>
+@if (showSelfHostedBillingCard) {
+  <div class="self-hosted-billing-card">
+    <div class="flex items-start justify-between gap-16px">
+      <div>
+        <p class="self-hosted-eyebrow">Self-hosted billing</p>
+        <h3 class="text-16 font-semibold text-neutral-12 mb-8px">Connect billing with your license</h3>
+        <p class="text-12 text-neutral-11 max-w-[560px]">
+          Verify your billing email to issue a license for this organisation. After verification, set the license key on the Convoy server and restart.
+        </p>
+      </div>
+      @if (selfHostedLicenseReady && selfHostedHasEntitlements) {
+        <span class="self-hosted-status self-hosted-status-ready">License configured</span>
+      } @else if (selfHostedLicenseReady && !selfHostedHasEntitlements) {
+        <span class="self-hosted-status">Subscription required</span>
+      } @else {
+        <span class="self-hosted-status">Setup required</span>
+      }
+    </div>
+
+    @if (selfHostedLicenseReady && !selfHostedHasEntitlements) {
+      <div class="self-hosted-subscribe-state">
+        <div>
+          <p class="text-12 text-neutral-10 mb-4px">Configured license</p>
+          <code>{{ selfHostedLicenseMasked }}</code>
+        </div>
+        <button type="button" convoy-button size="sm" (click)="openManagePlan()">Subscribe to activate billing</button>
+      </div>
+    }
+
+    @if (!selfHostedLicenseReady) {
+      <div class="self-hosted-form-grid">
+        <div class="self-hosted-form-section">
+          <span class="self-hosted-step">1</span>
+          <convoy-input-field>
+            <label convoy-label>Email</label>
+            <input convoy-input type="email" [(ngModel)]="selfHostedBootstrapEmail" name="shEmail" placeholder="you@company.com" />
+          </convoy-input-field>
+          <button type="button" convoy-button fill="outline" size="sm" [disabled]="selfHostedBootstrapBusy" (click)="registerSelfHostedEmail()">
+            Send verification email
+          </button>
+        </div>
+
+        <div class="self-hosted-form-section">
+          <span class="self-hosted-step">2</span>
+          <convoy-input-field>
+            <label convoy-label>Verification code</label>
+            <input convoy-input type="text" maxlength="8" [(ngModel)]="selfHostedVerifyCode" name="shCode" placeholder="Paste 8-character code" />
+          </convoy-input-field>
+          <button type="button" convoy-button fill="outline" size="sm" [disabled]="selfHostedBootstrapBusy" (click)="verifySelfHostedEmail()">
+            Verify and issue license
+          </button>
+        </div>
+      </div>
+
+      @if (selfHostedLicenseMasked) {
+        <div class="self-hosted-license-key">
+          <p class="text-12 text-neutral-10 mb-6px">Issued license</p>
+          <code>{{ selfHostedLicenseMasked }}</code>
+        </div>
+      }
+    }
+
+    @if (selfHostedBootstrapMessage) {
+      <p class="self-hosted-message">{{ selfHostedBootstrapMessage }}</p>
+    }
+  </div>
+}
+
+@if (canShowBillingPanels) {
+  <app-billing-overview
+    [overview]="billingOverview"
+    [isLoading]="isLoadingBillingData"
+    [refreshTrigger]="refreshOverviewTrigger"
+    (openPaymentDetails)="openPaymentDetails()"
+    (openManagePlan)="openManagePlan()">
+  </app-billing-overview>
+  <app-billing-usage
+    [usageRows]="usageRows"
+    [isFetchingUsage]="isLoadingUsage">
+  </app-billing-usage>
+  <app-billing-invoices></app-billing-invoices>
+} @else {
+  <div class="self-hosted-empty-state">
+    <h3 class="text-14 font-semibold text-neutral-12 mb-6px">Billing data is waiting for a valid license</h3>
+    <p class="text-12 text-neutral-10">
+      Subscription, usage, payment, and invoice data will appear here after this organisation has a valid billing license.
+    </p>
+  </div>
+}
 
 <dialog #paymentDetailsDialog convoy-dialog>
   <div convoy-dialog-header (closeDialog)="closePaymentDetails()">

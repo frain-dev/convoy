@@ -16,6 +16,25 @@ import (
 	"github.com/frain-dev/convoy/config"
 )
 
+func billingNonJSONError(resp *http.Response, raw []byte, err error) error {
+	status := 0
+	ct := ""
+	if resp != nil {
+		status = resp.StatusCode
+		ct = resp.Header.Get("Content-Type")
+	}
+	preview := strings.TrimSpace(string(raw))
+	if preview == "" {
+		preview = "(empty body)"
+	} else if len(preview) > 280 {
+		preview = preview[:280] + "..."
+	}
+	return &ServiceError{
+		StatusCode: http.StatusBadGateway,
+		Message:    fmt.Sprintf("billing returned non-JSON response (HTTP %d, Content-Type %q, body prefix: %q)", status, ct, preview),
+	}
+}
+
 type Client interface {
 	HealthCheck(ctx context.Context) error
 	GetUsage(ctx context.Context, orgID string) (*Response[Usage], error)
@@ -42,6 +61,28 @@ type Client interface {
 	DownloadInvoice(ctx context.Context, orgID, invoiceID string) (*http.Response, error)
 	SetDefaultPaymentMethod(ctx context.Context, orgID, pmID string) (*Response[interface{}], error)
 	DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response[interface{}], error)
+
+	SelfHostedRegisterEmail(ctx context.Context, req SelfHostedRegisterEmailRequest) (*Response[SelfHostedRegisterEmailData], error)
+	SelfHostedVerifyEmail(ctx context.Context, code string) (*Response[SelfHostedVerifyEmailData], error)
+	SelfHostedStartCheckout(ctx context.Context, licenseKey string, req SelfHostedStartCheckoutRequest) (*Response[Checkout], error)
+
+	LicenseBillingGetPlans(ctx context.Context, licenseKey string) (*Response[[]Plan], error)
+	LicenseBillingGetSubscription(ctx context.Context, licenseKey string) (*Response[BillingSubscription], error)
+	LicenseBillingDeleteSubscription(ctx context.Context, licenseKey string) (*Response[interface{}], error)
+	LicenseBillingGetPaymentMethods(ctx context.Context, licenseKey string) (*Response[[]PaymentMethod], error)
+	LicenseBillingGetSetupIntent(ctx context.Context, licenseKey string) (*Response[SetupIntent], error)
+	LicenseBillingSetDefaultPaymentMethod(ctx context.Context, licenseKey, pmID string) (*Response[interface{}], error)
+	LicenseBillingDeletePaymentMethod(ctx context.Context, licenseKey, pmID string) (*Response[interface{}], error)
+	LicenseBillingGetInvoices(ctx context.Context, licenseKey string) (*Response[[]Invoice], error)
+	LicenseBillingGetInvoice(ctx context.Context, licenseKey, invoiceID string) (*Response[Invoice], error)
+	LicenseBillingRecoverExternalID(ctx context.Context, licenseKey, newExternalID string) (*Response[LicenseRecoverExternalIDData], error)
+	LicenseBillingGetContext(ctx context.Context, licenseKey string) (*Response[LicenseBillingContextData], error)
+	LicenseBillingGetOrganisation(ctx context.Context, licenseKey string) (*Response[BillingOrganisation], error)
+	LicenseBillingUpdateOrganisation(ctx context.Context, licenseKey string, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
+	LicenseBillingUpdateOrganisationAddress(ctx context.Context, licenseKey string, addressData UpdateOrganisationAddressRequest) (*Response[BillingOrganisation], error)
+	LicenseBillingUpdateOrganisationTaxID(ctx context.Context, licenseKey string, taxData UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error)
+	LicenseBillingGetTaxIDTypes(ctx context.Context, licenseKey string) (*Response[[]TaxIDType], error)
+	LicenseBillingUpgradeSubscription(ctx context.Context, licenseKey string, req UpgradeSubscriptionRequest) (*Response[Checkout], error)
 }
 
 type HTTPClient struct {
@@ -55,6 +96,15 @@ type Response[T any] struct {
 	Data    T      `json:"data,omitempty"`
 }
 
+type ServiceError struct {
+	StatusCode int
+	Message    string
+}
+
+func (e *ServiceError) Error() string {
+	return fmt.Sprintf("billing service error: %s", e.Message)
+}
+
 func NewClient(cfg config.BillingConfiguration) *HTTPClient {
 	return &HTTPClient{
 		httpClient: &http.Client{
@@ -66,10 +116,6 @@ func NewClient(cfg config.BillingConfiguration) *HTTPClient {
 }
 
 func (c *HTTPClient) HealthCheck(ctx context.Context) error {
-	if !c.config.Enabled {
-		return fmt.Errorf("billing is not enabled")
-	}
-
 	if c.config.URL == "" {
 		return fmt.Errorf("billing service URL is not configured")
 	}
@@ -110,7 +156,18 @@ func (c *HTTPClient) GetPaymentMethods(ctx context.Context, orgID string) (*Resp
 }
 
 func (c *HTTPClient) GetSubscription(ctx context.Context, orgID string) (*Response[BillingSubscription], error) {
-	return makeRequest[BillingSubscription](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
+	resp, err := makeRequest[json.RawMessage](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	subscriptions, err := decodeSubscriptions(resp.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	subscription := selectCurrentSubscription(subscriptions)
+	return &Response[BillingSubscription]{Status: resp.Status, Message: resp.Message, Data: subscription}, nil
 }
 
 func (c *HTTPClient) GetPlans(ctx context.Context) (*Response[[]Plan], error) {
@@ -118,16 +175,12 @@ func (c *HTTPClient) GetPlans(ctx context.Context) (*Response[[]Plan], error) {
 }
 
 func (c *HTTPClient) GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType], error) {
-	if !c.config.Enabled {
-		return nil, fmt.Errorf("billing is not enabled")
-	}
-
-	url := fmt.Sprintf("%s/tax_id_types", c.config.URL)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
+	base := strings.TrimSuffix(strings.TrimSpace(c.config.URL), "/")
+	base = strings.TrimSuffix(base, "/api/v1")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/tax_id_types", base), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-
 	req.Header.Set("Content-Type", "application/json")
 	if c.config.APIKey != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
@@ -139,16 +192,38 @@ func (c *HTTPClient) GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType],
 	}
 	defer resp.Body.Close()
 
-	var taxIdTypes []TaxIDType
-	if err := json.NewDecoder(resp.Body).Decode(&taxIdTypes); err != nil {
-		return nil, fmt.Errorf("failed to read billing response: %w", err)
+	rawResp, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read billing response body: %w", err)
 	}
 
-	return &Response[[]TaxIDType]{
-		Status:  true,
-		Message: "Tax ID types retrieved successfully",
-		Data:    taxIdTypes,
-	}, nil
+	var envelope struct {
+		Status  bool            `json:"status"`
+		Message string          `json:"message"`
+		Data    json.RawMessage `json:"data,omitempty"`
+	}
+	if err := json.Unmarshal(rawResp, &envelope); err == nil && (envelope.Message != "" || envelope.Data != nil) {
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 || !envelope.Status {
+			return nil, &ServiceError{StatusCode: resp.StatusCode, Message: envelope.Message}
+		}
+		var taxIDTypes []TaxIDType
+		if len(envelope.Data) > 0 && string(envelope.Data) != "null" {
+			if err := json.Unmarshal(envelope.Data, &taxIDTypes); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal response data: %w", err)
+			}
+		}
+		return &Response[[]TaxIDType]{Status: true, Message: envelope.Message, Data: taxIDTypes}, nil
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, billingNonJSONError(resp, rawResp, fmt.Errorf("unexpected tax ID types response"))
+	}
+
+	var taxIDTypes []TaxIDType
+	if err := json.Unmarshal(rawResp, &taxIDTypes); err != nil {
+		return nil, billingNonJSONError(resp, rawResp, err)
+	}
+	return &Response[[]TaxIDType]{Status: true, Message: "Tax ID types retrieved successfully", Data: taxIDTypes}, nil
 }
 
 func (c *HTTPClient) CreateOrganisation(ctx context.Context, orgData BillingOrganisation) (*Response[BillingOrganisation], error) {
@@ -184,7 +259,53 @@ func (c *HTTPClient) UpdateOrganisationAddress(ctx context.Context, orgID string
 }
 
 func (c *HTTPClient) GetSubscriptions(ctx context.Context, orgID string) (*Response[[]BillingSubscription], error) {
-	return makeRequest[[]BillingSubscription](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
+	resp, err := makeRequest[json.RawMessage](ctx, c.httpClient, c.config, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	subscriptions, err := decodeSubscriptions(resp.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Response[[]BillingSubscription]{Status: resp.Status, Message: resp.Message, Data: subscriptions}, nil
+}
+
+func decodeSubscriptions(raw json.RawMessage) ([]BillingSubscription, error) {
+	data := bytes.TrimSpace(raw)
+	if len(data) == 0 || string(data) == "null" {
+		return nil, nil
+	}
+
+	if data[0] == '[' {
+		var subscriptions []BillingSubscription
+		if err := json.Unmarshal(data, &subscriptions); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response data: %w", err)
+		}
+		return subscriptions, nil
+	}
+
+	var subscription BillingSubscription
+	if err := json.Unmarshal(data, &subscription); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response data: %w", err)
+	}
+	if subscription.ID == "" {
+		return nil, nil
+	}
+	return []BillingSubscription{subscription}, nil
+}
+
+func selectCurrentSubscription(subscriptions []BillingSubscription) BillingSubscription {
+	for _, subscription := range subscriptions {
+		if HasActiveSubscription(subscription) {
+			return subscription
+		}
+	}
+	if len(subscriptions) > 0 {
+		return subscriptions[0]
+	}
+	return BillingSubscription{}
 }
 
 func (c *HTTPClient) OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error) {
@@ -225,10 +346,6 @@ func (c *HTTPClient) GetInvoice(ctx context.Context, orgID, invoiceID string) (*
 }
 
 func (c *HTTPClient) DownloadInvoice(ctx context.Context, orgID, invoiceID string) (*http.Response, error) {
-	if !c.config.Enabled {
-		return nil, fmt.Errorf("billing is not enabled")
-	}
-
 	invoiceResp, err := c.GetInvoice(ctx, orgID, invoiceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get invoice: %w", err)
@@ -244,7 +361,9 @@ func (c *HTTPClient) DownloadInvoice(ctx context.Context, orgID, invoiceID strin
 		return nil, fmt.Errorf("failed to create PDF download request: %w", err)
 	}
 
-	if c.config.APIKey != "" {
+	pdfURL, parsePDFErr := url.Parse(pdfLink)
+	billingURL, parseBillingErr := url.Parse(c.config.URL)
+	if c.config.APIKey != "" && parsePDFErr == nil && parseBillingErr == nil && strings.EqualFold(pdfURL.Host, billingURL.Host) {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
 	}
 
@@ -261,16 +380,12 @@ func (c *HTTPClient) DownloadInvoice(ctx context.Context, orgID, invoiceID strin
 	return resp, nil
 }
 
-func makeRequest[T any](ctx context.Context, httpClient *http.Client, config config.BillingConfiguration, method, path string, body interface{}) (*Response[T], error) {
-	if !config.Enabled {
-		return nil, fmt.Errorf("billing is not enabled")
-	}
-
+func makeRequest[T any](ctx context.Context, httpClient *http.Client, cfg config.BillingConfiguration, method, path string, body interface{}) (*Response[T], error) {
 	if !strings.HasPrefix(path, "/api/v1") && !strings.HasPrefix(path, "/billing") {
 		path = "/api/v1" + path
 	}
 
-	url := fmt.Sprintf("%s%s", config.URL, path)
+	url := fmt.Sprintf("%s%s", cfg.URL, path)
 
 	var req *http.Request
 	var err error
@@ -290,8 +405,8 @@ func makeRequest[T any](ctx context.Context, httpClient *http.Client, config con
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	if config.APIKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.APIKey))
+	if cfg.APIKey != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.APIKey))
 	}
 
 	resp, err := httpClient.Do(req)
@@ -311,15 +426,174 @@ func makeRequest[T any](ctx context.Context, httpClient *http.Client, config con
 		Data    json.RawMessage `json:"data,omitempty"`
 	}
 	if err := json.Unmarshal(rawResp, &baseResp); err != nil {
-		return nil, fmt.Errorf("failed to read billing response: %w", err)
+		return nil, billingNonJSONError(resp, rawResp, err)
 	}
 
 	if !baseResp.Status {
-		return nil, fmt.Errorf("billing service error: %s", baseResp.Message)
+		return nil, &ServiceError{StatusCode: resp.StatusCode, Message: baseResp.Message}
 	}
 
 	var data T
 	if len(baseResp.Data) > 0 {
+		if err := json.Unmarshal(baseResp.Data, &data); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response data: %w", err)
+		}
+	}
+
+	return &Response[T]{
+		Status:  baseResp.Status,
+		Message: baseResp.Message,
+		Data:    data,
+	}, nil
+}
+
+func (c *HTTPClient) SelfHostedRegisterEmail(ctx context.Context, req SelfHostedRegisterEmailRequest) (*Response[SelfHostedRegisterEmailData], error) {
+	body := map[string]string{"email": req.Email}
+	if org := strings.TrimSpace(req.OrganisationName); org != "" {
+		body["organisation_name"] = org
+	}
+	return makeRequest[SelfHostedRegisterEmailData](ctx, c.httpClient, c.config, "POST", "/public/self_hosted_billing/register_email", body)
+}
+
+func (c *HTTPClient) SelfHostedVerifyEmail(ctx context.Context, code string) (*Response[SelfHostedVerifyEmailData], error) {
+	body := map[string]string{"code": code}
+	return makeRequest[SelfHostedVerifyEmailData](ctx, c.httpClient, c.config, "POST", "/public/self_hosted_billing/verify_email", body)
+}
+
+func (c *HTTPClient) SelfHostedStartCheckout(ctx context.Context, licenseKey string, req SelfHostedStartCheckoutRequest) (*Response[Checkout], error) {
+	return makeLicenseRequest[Checkout](ctx, c.httpClient, c.config, "POST", "/public/self_hosted_billing/start_checkout", req, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingGetPlans(ctx context.Context, licenseKey string) (*Response[[]Plan], error) {
+	return makeLicenseRequest[[]Plan](ctx, c.httpClient, c.config, "GET", "/plans", nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingGetSubscription(ctx context.Context, licenseKey string) (*Response[BillingSubscription], error) {
+	return makeLicenseRequest[BillingSubscription](ctx, c.httpClient, c.config, "GET", "/license_billing/subscription", nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingDeleteSubscription(ctx context.Context, licenseKey string) (*Response[interface{}], error) {
+	return makeLicenseRequest[interface{}](ctx, c.httpClient, c.config, "DELETE", "/license_billing/subscription", nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingGetPaymentMethods(ctx context.Context, licenseKey string) (*Response[[]PaymentMethod], error) {
+	return makeLicenseRequest[[]PaymentMethod](ctx, c.httpClient, c.config, "GET", "/license_billing/payment_methods", nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingGetSetupIntent(ctx context.Context, licenseKey string) (*Response[SetupIntent], error) {
+	return makeLicenseRequest[SetupIntent](ctx, c.httpClient, c.config, "GET", "/license_billing/payment_methods/setup_intent", nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingSetDefaultPaymentMethod(ctx context.Context, licenseKey, pmID string) (*Response[interface{}], error) {
+	path := fmt.Sprintf("/license_billing/payment_methods/%s/default", url.PathEscape(pmID))
+	return makeLicenseRequest[interface{}](ctx, c.httpClient, c.config, "PATCH", path, nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingDeletePaymentMethod(ctx context.Context, licenseKey, pmID string) (*Response[interface{}], error) {
+	path := fmt.Sprintf("/license_billing/payment_methods/%s", url.PathEscape(pmID))
+	return makeLicenseRequest[interface{}](ctx, c.httpClient, c.config, "DELETE", path, nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingGetInvoices(ctx context.Context, licenseKey string) (*Response[[]Invoice], error) {
+	return makeLicenseRequest[[]Invoice](ctx, c.httpClient, c.config, "GET", "/license_billing/invoices", nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingGetInvoice(ctx context.Context, licenseKey, invoiceID string) (*Response[Invoice], error) {
+	path := fmt.Sprintf("/license_billing/invoices/%s", invoiceID)
+	return makeLicenseRequest[Invoice](ctx, c.httpClient, c.config, "GET", path, nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingRecoverExternalID(ctx context.Context, licenseKey, newExternalID string) (*Response[LicenseRecoverExternalIDData], error) {
+	body := map[string]string{"external_id": newExternalID}
+	return makeLicenseRequest[LicenseRecoverExternalIDData](ctx, c.httpClient, c.config, "POST", "/license_billing/recover_external_id", body, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingGetContext(ctx context.Context, licenseKey string) (*Response[LicenseBillingContextData], error) {
+	return makeLicenseRequest[LicenseBillingContextData](ctx, c.httpClient, c.config, "GET", "/license_billing/context", nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingGetOrganisation(ctx context.Context, licenseKey string) (*Response[BillingOrganisation], error) {
+	return makeLicenseRequest[BillingOrganisation](ctx, c.httpClient, c.config, "GET", "/license_billing/organisation", nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingUpdateOrganisation(ctx context.Context, licenseKey string, orgData BillingOrganisation) (*Response[BillingOrganisation], error) {
+	return makeLicenseRequest[BillingOrganisation](ctx, c.httpClient, c.config, "PUT", "/license_billing/organisation", orgData, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingUpdateOrganisationAddress(ctx context.Context, licenseKey string, addressData UpdateOrganisationAddressRequest) (*Response[BillingOrganisation], error) {
+	return makeLicenseRequest[BillingOrganisation](ctx, c.httpClient, c.config, "PUT", "/license_billing/billing_address", addressData, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingUpdateOrganisationTaxID(ctx context.Context, licenseKey string, taxData UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error) {
+	return makeLicenseRequest[BillingOrganisation](ctx, c.httpClient, c.config, "PUT", "/license_billing/tax_id", taxData, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingGetTaxIDTypes(ctx context.Context, licenseKey string) (*Response[[]TaxIDType], error) {
+	return makeLicenseRequest[[]TaxIDType](ctx, c.httpClient, c.config, "GET", "/license_billing/tax_id_types", nil, licenseKey)
+}
+
+func (c *HTTPClient) LicenseBillingUpgradeSubscription(ctx context.Context, licenseKey string, req UpgradeSubscriptionRequest) (*Response[Checkout], error) {
+	return makeLicenseRequest[Checkout](ctx, c.httpClient, c.config, "PUT", "/license_billing/subscription/upgrade", req, licenseKey)
+}
+
+func makeLicenseRequest[T any](ctx context.Context, httpClient *http.Client, cfg config.BillingConfiguration, method, path string, body interface{}, licenseKey string) (*Response[T], error) {
+	if !strings.HasPrefix(path, "/api/v1") && !strings.HasPrefix(path, "/billing") {
+		path = "/api/v1" + path
+	}
+
+	u := fmt.Sprintf("%s%s", cfg.URL, path)
+
+	var req *http.Request
+	var err error
+
+	if body != nil {
+		jsonBody, marshalErr := json.Marshal(body)
+		if marshalErr != nil {
+			return nil, fmt.Errorf("failed to marshal request body: %w", marshalErr)
+		}
+		req, err = http.NewRequestWithContext(ctx, method, u, bytes.NewReader(jsonBody))
+	} else {
+		req, err = http.NewRequestWithContext(ctx, method, u, http.NoBody)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if licenseKey != "" {
+		req.Header.Set("X-License-Key", licenseKey)
+	}
+	if cfg.APIKey != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.APIKey))
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request to billing service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	rawResp, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return nil, fmt.Errorf("failed to read billing response body: %w", readErr)
+	}
+
+	var baseResp struct {
+		Status  bool            `json:"status"`
+		Message string          `json:"message"`
+		Data    json.RawMessage `json:"data,omitempty"`
+	}
+	if err := json.Unmarshal(rawResp, &baseResp); err != nil {
+		return nil, billingNonJSONError(resp, rawResp, err)
+	}
+
+	if !baseResp.Status {
+		return nil, &ServiceError{StatusCode: resp.StatusCode, Message: baseResp.Message}
+	}
+
+	var data T
+	if len(baseResp.Data) > 0 && string(baseResp.Data) != "null" {
 		if err := json.Unmarshal(baseResp.Data, &data); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal response data: %w", err)
 		}

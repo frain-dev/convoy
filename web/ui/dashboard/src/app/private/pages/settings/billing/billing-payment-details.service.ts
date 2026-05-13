@@ -64,10 +64,11 @@ export interface VatInfoDetails {
 export class BillingPaymentDetailsService {
   constructor(private httpService: HttpService) {}
 
-  getBillingConfig(): Observable<any> {
+  getBillingConfig(orgId?: string): Observable<any> {
     return from(this.httpService.request({
       url: '/billing/config',
-      method: 'get'
+      method: 'get',
+      query: orgId ? { org_id: orgId } : undefined
     })).pipe(
       catchError((error) => {
         console.error('Failed to fetch billing configuration:', error);

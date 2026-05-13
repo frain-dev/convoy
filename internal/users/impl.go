@@ -110,6 +110,45 @@ func (s *Service) FindUserByEmail(ctx context.Context, email string) (*datastore
 	return rowToUserFromFindByEmail(row), nil
 }
 
+func (s *Service) FindFirstUser(ctx context.Context) (*datastore.User, error) {
+	row := repo.FindUserByEmailRow{}
+	err := s.db.QueryRow(ctx, `
+SELECT
+    id, first_name, last_name, email, password, email_verified,
+    reset_password_token, email_verification_token,
+    reset_password_expires_at, email_verification_expires_at,
+    auth_type, created_at, updated_at, deleted_at
+FROM convoy.users
+WHERE deleted_at IS NULL
+ORDER BY created_at ASC, id ASC
+LIMIT 1
+`).Scan(
+		&row.ID,
+		&row.FirstName,
+		&row.LastName,
+		&row.Email,
+		&row.Password,
+		&row.EmailVerified,
+		&row.ResetPasswordToken,
+		&row.EmailVerificationToken,
+		&row.ResetPasswordExpiresAt,
+		&row.EmailVerificationExpiresAt,
+		&row.AuthType,
+		&row.CreatedAt,
+		&row.UpdatedAt,
+		&row.DeletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, datastore.ErrUserNotFound
+		}
+		s.logger.Error("failed to find first user", "error", err)
+		return nil, err
+	}
+
+	return rowToUserFromFindByEmail(row), nil
+}
+
 func (s *Service) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
 	row, err := s.repo.FindUserByToken(ctx, common.StringToPgText(token))
 	if err != nil {

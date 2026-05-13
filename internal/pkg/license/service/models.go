@@ -21,7 +21,7 @@ type LicenseValidationResponse struct {
 // LicenseValidationData contains the license validation details
 type LicenseValidationData struct {
 	Valid        bool            `json:"valid"`
-	Status       string          `json:"status"`       // active, suspended, expired, revoked
+	Status       string          `json:"status"`
 	Entitlements json.RawMessage `json:"entitlements"` // Array format: [{"key": "...", "value": ...}]
 	ExpiresAt    *time.Time      `json:"expires_at,omitempty"`
 }

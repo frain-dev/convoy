@@ -11,6 +11,8 @@ import { LicensesService } from '../services/licenses/licenses.service';
 import { RbacService } from '../services/rbac/rbac.service';
 import axios from 'axios';
 import { environment } from 'src/environments/environment';
+import { AuthSessionService } from '../services/auth-session/auth-session.service';
+import { ConfigService } from '../services/config/config.service';
 
 @Component({
     selector: 'app-private',
@@ -33,6 +35,8 @@ export class PrivateComponent implements OnInit {
 	userOrganization?: ORGANIZATION_DATA;
 	convoyVersion: string = '';
 	isLoadingOrganisations = false;
+	isLoadingLicenses = true;
+	managedCloud = false;
 	addOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
@@ -53,7 +57,7 @@ export class PrivateComponent implements OnInit {
 	private jwtHelper: JwtHelperService = new JwtHelperService();
 	private shouldShowOrgSubscription: Subscription | undefined;
 
-	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService, private rbacService: RbacService) {}
+	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService, private rbacService: RbacService, private authSessionService: AuthSessionService, private configService: ConfigService) {}
 
 	async ngOnInit() {
 		this.shouldShowOrgModal();
@@ -70,8 +74,8 @@ export class PrivateComponent implements OnInit {
 		}
 
 		this.checkIfTokenIsExpired();
-		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
-		await this.licenseService.setLicenses();
+		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations(), this.loadDeploymentMode()]);
+		await this.loadLicenses();
 		await this.checkInstanceAdminAccess();
 	}
 
@@ -132,17 +136,7 @@ export class PrivateComponent implements OnInit {
 
 		this.privateService.clearCache();
 
-		localStorage.removeItem('CONVOY_AUTH');
-		localStorage.removeItem('CONVOY_AUTH_TOKENS');
-		localStorage.removeItem('CONVOY_LAST_USER_ID');
-		localStorage.removeItem('CONVOY_PORTAL_LINK_AUTH_TOKEN');
-		localStorage.removeItem('GOOGLE_OAUTH_ID_TOKEN');
-		localStorage.removeItem('GOOGLE_OAUTH_USER_INFO');
-		localStorage.removeItem('AUTH_TYPE');
-		if (userId) {
-			localStorage.removeItem(`CONVOY_LAST_USER_ROLE_${userId}`);
-		}
-		localStorage.removeItem('CONVOY_LAST_USER_ROLE');
+		this.authSessionService.clearLocalSession(userId);
 
 		this.router.navigateByUrl('/login');
 	}
@@ -153,7 +147,7 @@ export class PrivateComponent implements OnInit {
 	}
 
 	shouldMountAppRouter(): boolean {
-		return !this.isLoadingOrganisations && (Boolean(this.organisations?.length) || this.router.url.startsWith('/user-settings'));
+		return !this.isLoadingOrganisations && !this.isLoadingLicenses && (Boolean(this.organisations?.length) || this.router.url.startsWith('/user-settings'));
 	}
 
 	async getConfiguration() {
@@ -163,13 +157,36 @@ export class PrivateComponent implements OnInit {
 		} catch {}
 	}
 
+	async loadDeploymentMode() {
+		try {
+			const config = await this.configService.getConfig();
+			this.managedCloud = config.managed_cloud ?? false;
+		} catch {
+			this.managedCloud = false;
+		}
+	}
+
+	async loadLicenses() {
+		this.isLoadingLicenses = true;
+		try {
+			await this.licenseService.setLicenses(!this.managedCloud || !this.organisations?.length);
+		} finally {
+			this.isLoadingLicenses = false;
+		}
+	}
+
 	async getOrganizations(refresh: boolean = false) {
 		this.isLoadingOrganisations = true;
 		try {
 			const response = await this.privateService.getOrganizations({ refresh });
 			this.organisations = response.data.content;
 			this.isLoadingOrganisations = false;
-			if (this.organisations?.length) await this.checkForSelectedOrganisation();
+			if (this.organisations?.length) {
+				await this.checkForSelectedOrganisation();
+			} else {
+				this.userOrganization = undefined;
+				this.privateService.clearOrganisationSelection(this.authDetails()?.uid);
+			}
 			return;
 		} catch (error) {
 			this.isLoadingOrganisations = false;
@@ -200,7 +217,7 @@ export class PrivateComponent implements OnInit {
 			localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		}
 
-		await this.licenseService.setLicenses();
+		await this.loadLicenses();
 		await this.privateService.getProjects({ refresh: true });
 		await this.checkInstanceAdminAccess();
 		this.showOrgDropdown = false;

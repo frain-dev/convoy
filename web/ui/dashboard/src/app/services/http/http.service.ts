@@ -5,6 +5,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {GeneralService} from '../general/general.service';
 import {ProjectService} from 'src/app/private/pages/project/project.service';
 import {HTTP_RESPONSE} from 'src/app/models/global.model';
+import { AuthSessionService } from '../auth-session/auth-session.service';
 
 @Injectable({
 	providedIn: 'root'
@@ -15,7 +16,7 @@ export class HttpService {
 	token: string | undefined;
 	ownerId: string | undefined;
 
-	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute, private projectService: ProjectService) {
+	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute, private projectService: ProjectService, private authSessionService: AuthSessionService) {
 		this.route.queryParams.subscribe(it => {
 			if (it.token) this.token = it.token;
 			if (it.owner_id) this.ownerId = it.owner_id;
@@ -270,6 +271,7 @@ export class HttpService {
 		if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
 
 		// then logout
+		this.authSessionService.clearLocalSession();
 		this.router.navigate(['/login'], { replaceUrl: true });
 	}
 }

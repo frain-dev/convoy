@@ -116,11 +116,11 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load configuration", http.StatusBadRequest))
 		return
 	}
-	billingEnabled := cfg.Billing.Enabled && h.A.BillingClient != nil
+	managedCloud := h.A.Cfg.IsCloud()
 	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
 
 	ssoEnabled := h.A.Licenser.EnterpriseSSO()
-	if billingEnabled && slug != "" {
+	if managedCloud && slug != "" {
 		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
 			BillingClient: h.A.BillingClient,
 			OrgRepo:       h.A.OrgRepo,
@@ -140,7 +140,7 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authConfig := map[string]interface{}{
-		"billing_enabled":   billingEnabled,
+		"managed_cloud":     managedCloud,
 		"is_signup_enabled": cfg.Auth.IsSignupEnabled,
 		"google_oauth": map[string]interface{}{
 			"enabled":      cfg.Auth.GoogleOAuth.Enabled && h.A.Licenser.GoogleOAuth(),

@@ -37,10 +37,10 @@
         }
       </button>
 
-      @if (authConfigLoaded && billingEnabled && !showSlugInput) {
+      @if (authConfigLoaded && managedCloud && !showSlugInput) {
         <button convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="showSlugInput = true">Login with SSO</button>
       }
-      @if (authConfigLoaded && billingEnabled && showSlugInput) {
+      @if (authConfigLoaded && managedCloud && showSlugInput) {
         <div convoy-input-field class="mt-12px">
           <label for="workspace-slug" convoy-label>Workspace slug</label>
           <input type="text" id="workspace-slug" convoy-input autocomplete="off" [(ngModel)]="workspaceSlug" (ngModelChange)="showSlugError = false" placeholder="e.g. my-team" [ngModelOptions]="{standalone: true}" />
@@ -57,7 +57,7 @@
           }
         </button>
       }
-      @if (authConfigLoaded && !billingEnabled && isSSOEnabled) {
+      @if (authConfigLoaded && !managedCloud && isSSOEnabled) {
         <button convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="loginWithSSO()">Login with SSO</button>
       }
 

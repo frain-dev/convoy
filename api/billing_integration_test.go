@@ -2,10 +2,12 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
@@ -45,6 +48,24 @@ func (s *BillingIntegrationTestSuite) SetupSuite() {
 
 	mockClient := &billing.MockBillingClient{}
 	s.ConvoyApp.A.BillingClient = mockClient
+
+	// NewApplicationHandler already built A.Billing from testinfra config (typically unlicensed) and the real
+	// HTTP billing client. After we load JWT realm config (with billing API key) and swap in the mock client,
+	// rebuild the strategy so handlers use the mock in the correct billing mode.
+	orgRepo := organisations.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	resolveOwner := func(ctx context.Context, orgID string) (string, error) {
+		org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
+		if err != nil {
+			return "", err
+		}
+		owner, err := userRepo.FindUserByID(ctx, org.OwnerID)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(owner.Email), nil
+	}
+	s.ConvoyApp.A.Billing = billing.NewStrategy(cfg, mockClient, s.ConvoyApp.A.Logger, orgRepo, resolveOwner)
 
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
@@ -216,6 +237,7 @@ func (s *BillingIntegrationTestSuite) Test_CreateOrganisation() {
 
 	body, _ := json.Marshal(orgData)
 	req := createRequest(http.MethodPost, "/ui/billing/organisations", "", bytes.NewBuffer(body))
+	req.Header.Set("X-Organisation-Id", s.DefaultOrg.UID)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
@@ -307,6 +329,25 @@ func (s *BillingIntegrationTestSuite) Test_UpdateOrganisation() {
 
 	require.Equal(s.T(), "Organisation updated successfully", response["message"])
 	require.True(s.T(), response["status"].(bool))
+}
+
+func (s *BillingIntegrationTestSuite) Test_UpdateOrganisation_rejectsMismatchedExternalID() {
+	orgData := map[string]interface{}{
+		"name":         "Updated Org",
+		"external_id":  "other-org-id",
+		"billing_email": "a@example.com",
+	}
+
+	body, _ := json.Marshal(orgData)
+	url := fmt.Sprintf("/ui/billing/organisations/%s", s.DefaultOrg.UID)
+	req := createRequest(http.MethodPut, url, "", bytes.NewBuffer(body))
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
 }
 
 func (s *BillingIntegrationTestSuite) Test_OnboardSubscription() {

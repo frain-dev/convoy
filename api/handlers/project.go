@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
@@ -124,13 +125,17 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	billingEnabled := h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil
 	skipLimitCheck := false
-	if billingEnabled {
-		sub, err := h.A.BillingClient.GetSubscription(r.Context(), org.UID)
-		if err != nil || !sub.Status || sub.Data.ID == "" {
-			pms, pmErr := h.A.BillingClient.GetPaymentMethods(r.Context(), org.UID)
-			if pmErr != nil || !pms.Status || len(pms.Data) == 0 {
+	if h.A.Billing != nil && h.A.Cfg.Mode() != config.BillingModeUnlicensed {
+		sub, err := h.A.Billing.GetSubscription(r.Context(), org.UID)
+		if err != nil || sub == nil || !sub.Status || sub.Data.ID == "" {
+			if h.A.Cfg.IsCloud() {
+				pms, pmErr := h.A.Billing.GetPaymentMethods(r.Context(), org.UID)
+				if pmErr != nil || pms == nil || !pms.Status || len(pms.Data) == 0 {
+					_ = render.Render(w, r, util.NewErrorResponse(errBillingRequired, http.StatusPaymentRequired))
+					return
+				}
+			} else {
 				_ = render.Render(w, r, util.NewErrorResponse(errBillingRequired, http.StatusPaymentRequired))
 				return
 			}
@@ -143,6 +148,11 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		}
 		ok, err := services.CheckOrganisationProjectLimit(r.Context(), org, limitDeps)
 		if err != nil {
+			if h.A.Cfg.IsCloud() {
+				h.A.Logger.WarnContext(r.Context(), "organisation project limit check failed", "error", err, "org_id", org.UID)
+				_ = render.Render(w, r, util.NewErrorResponse(errBillingRequired, http.StatusPaymentRequired))
+				return
+			}
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}

@@ -394,11 +394,9 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	}
 	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
 
-	var billingClient billing.Client
-	if cfg.Billing.Enabled {
-		billingClient = billing.NewClient(cfg.Billing)
-		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, rd, lo), nil)
-	}
+	billingClient := billing.NewClient(cfg.Billing)
+	consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, rd, lo), nil)
+	_ = billingClient
 
 	err = metrics.RegisterQueueMetrics(opts.Queue, opts.DB, circuitBreakerManager)
 	if err != nil {

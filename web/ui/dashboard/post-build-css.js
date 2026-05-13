@@ -6,7 +6,10 @@ const path = require('path');
 const files = getFilesFromPath('./dist', '.css');
 let data = [];
 
-if (!files && files.length == 0) return console.log('cannot find style files to purge');
+if (!files || files.length == 0) {
+	console.log('cannot find style files to purge');
+	process.exit(0);
+}
 
 for (let f of files) {
 	// get original file size

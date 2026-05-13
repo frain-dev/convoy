@@ -86,7 +86,6 @@ func NewClient(cfg Config) *Client {
 	}
 }
 
-// setAuthHeaders sets Authorization (when apiKey is set) and X-License-Key (when licenseKeyForHeader is non-empty).
 func (c *Client) setAuthHeaders(req *http.Request, licenseKeyForHeader string) {
 	if c.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)

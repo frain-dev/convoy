@@ -75,15 +75,13 @@
             @if (!licenseService.hasLicense('project_limit') && getProjectLimitMessage()) {
               <p class="text-12 text-new.primary-400 font-medium">{{ getProjectLimitMessageForEmptyState() }}</p>
             }
-            @if (isDisabled && billingEnabled) {
+            @if (isDisabled && managedCloud) {
               <p class="text-12 text-neutral-11">This action is disabled for this organization. Subscribe to a plan to create projects.</p>
             }
-            @if (isDisabled && !billingEnabled) {
+            @if (isDisabled && !managedCloud) {
               <p class="text-12 text-neutral-11">This action is disabled for this organization. Please contact support.</p>
             }
-            @if (billingEnabled) {
-              <a routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="text-12 font-medium text-neutral-11 hover:text-primary-100 underline hover:no-underline">Go to Billing</a>
-            }
+            <a routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="text-12 font-medium text-neutral-11 hover:text-primary-100 underline hover:no-underline">Go to Billing</a>
           </div>
         }
       </div>

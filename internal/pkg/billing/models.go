@@ -13,6 +13,7 @@ type BillingOrganisation struct {
 	Slug           string `json:"slug,omitempty"`
 	ExternalID     string `json:"external_id,omitempty"`
 	BillingEmail   string `json:"billing_email,omitempty"`
+	BillingName    string `json:"billing_name,omitempty"`
 	Host           string `json:"host,omitempty"`
 	LicenseKey     string `json:"license_key,omitempty"`
 	TaxIDType      string `json:"tax_id_type,omitempty"`
@@ -46,21 +47,26 @@ type UpdateOrganisationTaxIDRequest struct {
 }
 
 type UpdateOrganisationAddressRequest struct {
-	BillingAddress string `json:"billing_address,omitempty"`
-	BillingCity    string `json:"billing_city,omitempty"`
-	BillingState   string `json:"billing_state,omitempty"`
-	BillingZip     string `json:"billing_zip,omitempty"`
-	BillingCountry string `json:"billing_country,omitempty"`
+	BillingName         string `json:"billing_name,omitempty"`
+	BillingAddress      string `json:"billing_address,omitempty"`
+	BillingAddressLine2 string `json:"billing_address_line2,omitempty"`
+	BillingCity         string `json:"billing_city,omitempty"`
+	BillingState        string `json:"billing_state,omitempty"`
+	BillingZip          string `json:"billing_zip,omitempty"`
+	BillingCountry      string `json:"billing_country,omitempty"`
 }
 
 type OnboardSubscriptionRequest struct {
-	PlanID string `json:"plan_id,omitempty"`
-	Host   string `json:"host,omitempty"`
+	PlanID       string `json:"plan_id,omitempty"`
+	Interval     string `json:"interval,omitempty"`
+	Host         string `json:"host,omitempty"`
+	BillingEmail string `json:"billing_email,omitempty"`
 }
 
 type UpgradeSubscriptionRequest struct {
-	PlanID string `json:"plan_id,omitempty"`
-	Host   string `json:"host,omitempty"`
+	PlanID   string `json:"plan_id,omitempty"`
+	Host     string `json:"host,omitempty"`
+	Interval string `json:"interval,omitempty"`
 }
 
 type Plan struct {
@@ -104,7 +110,46 @@ type SetupIntent struct {
 }
 
 type Checkout struct {
-	CheckoutURL string `json:"checkout_url,omitempty"`
+	CheckoutURL              string `json:"checkout_url,omitempty"`
+	CheckoutID               string `json:"checkout_id,omitempty"`
+	PostPurchaseInstructions string `json:"post_purchase_instructions,omitempty"`
+}
+
+type SelfHostedRegisterEmailData struct {
+	ExternalID string `json:"external_id"`
+}
+
+type SelfHostedRegisterEmailRequest struct {
+	Email            string `json:"email"`
+	OrganisationName string `json:"organisation_name,omitempty"`
+}
+
+type SelfHostedVerifyEmailData struct {
+	LicenseKey   string `json:"license_key"`
+	ExternalID   string `json:"external_id"`
+	Instructions string `json:"instructions"`
+}
+
+type SelfHostedStartCheckoutRequest struct {
+	PlanID       string `json:"plan_id"`
+	Interval     string `json:"interval,omitempty"`
+	Host         string `json:"host,omitempty"`
+	BillingEmail string `json:"billing_email,omitempty"`
+}
+
+type LicenseRecoverExternalIDData struct {
+	ExternalID string `json:"external_id"`
+}
+
+type LicenseBillingContextData struct {
+	OrganisationID  string `json:"organisation_id"`
+	ExternalID      string `json:"external_id"`
+	BillingEmail    string `json:"billing_email"`
+	LicenseStatus   string `json:"license_status"`
+	DeploymentType  string `json:"deployment_type"`
+	HasSubscription bool   `json:"has_subscription"`
+	SubscriptionID  string `json:"subscription_id"`
+	PlanID          string `json:"plan_id"`
 }
 
 type TaxIDType struct {

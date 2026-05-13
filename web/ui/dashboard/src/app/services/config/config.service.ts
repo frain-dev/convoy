@@ -14,7 +14,7 @@ export interface AppConfig {
     is_signup_enabled?: boolean;
     [key: string]: any;
   };
-  billing_enabled?: boolean;
+  managed_cloud?: boolean;
   [key: string]: any;
 }
 
@@ -27,8 +27,7 @@ export class ConfigService {
   constructor(private http: HttpService) {}
 
   /**
-   * Fetches auth configuration. When slug is provided (cloud billing), requests config for that workspace
-   * and returns sso.enabled for that org; does not use cache so each slug lookup is fresh.
+   * Fetches auth configuration. With slug, resolves workspace SSO for managed cloud.
    */
   async getConfig(slug?: string): Promise<AppConfig> {
     const useCache = !slug && this.config;
@@ -46,7 +45,7 @@ export class ConfigService {
 
       if (response.data) {
         const config = {
-          billing_enabled: response.data.billing_enabled,
+          managed_cloud: response.data.managed_cloud,
           auth: {
             google_oauth: {
               enabled: response.data.google_oauth?.enabled || false,

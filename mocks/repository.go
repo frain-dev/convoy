@@ -2577,6 +2577,21 @@ func (mr *MockUserRepositoryMockRecorder) CreateUser(arg0, arg1 any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockUserRepository)(nil).CreateUser), arg0, arg1)
 }
 
+// FindFirstUser mocks base method.
+func (m *MockUserRepository) FindFirstUser(ctx context.Context) (*datastore.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindFirstUser", ctx)
+	ret0, _ := ret[0].(*datastore.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindFirstUser indicates an expected call of FindFirstUser.
+func (mr *MockUserRepositoryMockRecorder) FindFirstUser(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFirstUser", reflect.TypeOf((*MockUserRepository)(nil).FindFirstUser), ctx)
+}
+
 // FindUserByEmail mocks base method.
 func (m *MockUserRepository) FindUserByEmail(arg0 context.Context, arg1 string) (*datastore.User, error) {
 	m.ctrl.T.Helper()

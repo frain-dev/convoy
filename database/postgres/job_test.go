@@ -13,6 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/projects"
 )
 
 func Test_CreateJob(t *testing.T) {
@@ -37,6 +38,7 @@ func TestJobRepo_FetchJobsByProjectId(t *testing.T) {
 
 	org := seedOrg(t, db)
 	jobRepo := NewJobRepo(db)
+	projectSvc := projects.New(integrationLogger, db)
 
 	p1 := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -54,11 +56,8 @@ func TestJobRepo_FetchJobsByProjectId(t *testing.T) {
 		Config:         &datastore.DefaultProjectConfig,
 	}
 
-	err := NewProjectRepo(db).CreateProject(context.Background(), p1)
-	require.NoError(t, err)
-
-	err = NewProjectRepo(db).CreateProject(context.Background(), p2)
-	require.NoError(t, err)
+	require.NoError(t, projectSvc.CreateProject(context.Background(), p1))
+	require.NoError(t, projectSvc.CreateProject(context.Background(), p2))
 
 	require.NoError(t, jobRepo.CreateJob(context.Background(), &datastore.Job{
 		UID:       ulid.Make().String(),
@@ -104,6 +103,7 @@ func TestJobRepo_FetchRunningJobsByProjectId(t *testing.T) {
 
 	org := seedOrg(t, db)
 	jobRepo := NewJobRepo(db)
+	projectSvc := projects.New(integrationLogger, db)
 
 	p1 := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -121,11 +121,8 @@ func TestJobRepo_FetchRunningJobsByProjectId(t *testing.T) {
 		Config:         &datastore.DefaultProjectConfig,
 	}
 
-	err := NewProjectRepo(db).CreateProject(context.Background(), p1)
-	require.NoError(t, err)
-
-	err = NewProjectRepo(db).CreateProject(context.Background(), p2)
-	require.NoError(t, err)
+	require.NoError(t, projectSvc.CreateProject(context.Background(), p1))
+	require.NoError(t, projectSvc.CreateProject(context.Background(), p2))
 
 	require.NoError(t, jobRepo.CreateJob(context.Background(), &datastore.Job{
 		UID:       ulid.Make().String(),

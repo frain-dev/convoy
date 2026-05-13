@@ -27,9 +27,9 @@ export interface Plan {
 export class PlanService {
   constructor(private httpService: HttpService) {}
 
-  getPlans(): Observable<{ data: Plan[] }> {
+  getPlans(orgId?: string): Observable<{ data: Plan[] }> {
     return from(this.httpService.request({
-      url: '/billing/plans',
+      url: orgId ? `/billing/plans?org_id=${encodeURIComponent(orgId)}` : '/billing/plans',
       method: 'get'
     }));
   }
@@ -91,6 +91,31 @@ export class PlanService {
           ]
         }
       ]
+    };
+  }
+
+  getDefaultSelfHostedPlanComparison(): { plans: Plan[] } {
+    const defaults = this.getDefaultPlanComparison();
+    return {
+      plans: defaults.plans.map(plan => {
+        if (plan.id === 'pro') {
+          return {
+            ...plan,
+            id: 'self_hosted_premium',
+            name: 'Self-Hosted Premium',
+            description: 'Premium self-hosted plan',
+            price: 2499
+          };
+        }
+
+        return {
+          ...plan,
+          id: 'self_hosted_enterprise',
+          name: 'Self-Hosted Enterprise',
+          description: 'Enterprise self-hosted plan',
+          price: 9999
+        };
+      })
     };
   }
 }

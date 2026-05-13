@@ -216,13 +216,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			LicenseService: service.LicenserConfig{
-				LicenseKey:     cfg.LicenseKey,
-				BillingEnabled: cfg.Billing.Enabled,
-				Client:         licenseClient,
-				OrgRepo:        organisations.New(lo, app.DB),
-				UserRepo:       users.New(log.New("convoy", log.LevelError), app.DB),
-				ProjectRepo:    projectRepo,
-				Logger:         lo,
+				LicenseKey:  cfg.LicenseKey,
+				IsCloud:     cfg.IsCloud(),
+				Client:      licenseClient,
+				OrgRepo:     organisations.New(lo, app.DB),
+				UserRepo:    users.New(log.New("convoy", log.LevelError), app.DB),
+				ProjectRepo: projectRepo,
+				Logger:      lo,
 			},
 		})
 		if err != nil {
@@ -798,38 +798,20 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
-	// Billing configuration
-	enableBilling, err := cmd.Flags().GetBool("enable-billing")
+	billingURL, err := cmd.Flags().GetString("billing-url")
 	if err != nil {
 		return nil, err
 	}
+	if !util.IsStringEmpty(billingURL) {
+		c.Billing.URL = billingURL
+	}
 
-	if enableBilling {
-		c.Billing.Enabled = true
-
-		billingURL, err := cmd.Flags().GetString("billing-url")
-		if err != nil {
-			return nil, err
-		}
-
-		billingAPIKey, err := cmd.Flags().GetString("billing-api-key")
-		if err != nil {
-			return nil, err
-		}
-
-		// Only set values if they are provided (not empty)
-		if !util.IsStringEmpty(billingURL) {
-			c.Billing.URL = billingURL
-		}
-
-		if !util.IsStringEmpty(billingAPIKey) {
-			c.Billing.APIKey = billingAPIKey
-		}
-
-		// Validate billing configuration
-		if err := c.Billing.Validate(); err != nil {
-			return nil, fmt.Errorf("billing configuration error: %w", err)
-		}
+	billingAPIKey, err := cmd.Flags().GetString("billing-api-key")
+	if err != nil {
+		return nil, err
+	}
+	if !util.IsStringEmpty(billingAPIKey) {
+		c.Billing.APIKey = billingAPIKey
 	}
 
 	return c, nil

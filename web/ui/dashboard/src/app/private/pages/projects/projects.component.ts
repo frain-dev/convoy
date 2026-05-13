@@ -3,7 +3,7 @@ import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { HttpService } from 'src/app/services/http/http.service';
+import { ConfigService } from 'src/app/services/config/config.service';
 
 @Component({
     selector: 'app-projects',
@@ -17,32 +17,27 @@ export class ProjectsComponent implements OnInit {
 	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
 	showOrganisationModal = false;
 	isLoadingProject: boolean = false;
-	/** True when instance uses billing (instance license path); false for community/OSS. Matches backend Billing.Enabled. */
-	billingEnabled = false;
+	managedCloud = false;
 
 	constructor(
 		private privateService: PrivateService,
 		private router: Router,
 		public licenseService: LicensesService,
-		private httpService: HttpService
+		private configService: ConfigService
 	) {
 		this.privateService.projects$.subscribe(projects => (this.projects = projects.data));
 	}
 
 	async ngOnInit() {
-		await Promise.all([this.getProjects(), this.checkBillingEnabled()]);
+		await Promise.all([this.getProjects(), this.loadManagedCloudFlag()]);
 	}
 
-	private async checkBillingEnabled() {
+	private async loadManagedCloudFlag() {
 		try {
-			const response = await this.httpService.request({
-				url: '/billing/enabled',
-				method: 'get',
-				hideNotification: true
-			});
-			this.billingEnabled = response.data?.enabled === true;
+			const config = await this.configService.getConfig();
+			this.managedCloud = config.managed_cloud ?? false;
 		} catch {
-			this.billingEnabled = false;
+			this.managedCloud = false;
 		}
 	}
 
@@ -104,9 +99,7 @@ export class ProjectsComponent implements OnInit {
 	getProjectLimitMessageForEmptyState(): string {
 		if (!this.licenseService.hasLicense('project_limit')) {
 			if (!this.licenseService.isLimitAvailable('project_limit')) {
-				return this.billingEnabled
-					? 'Upgrade to Business plan to create more projects'
-					: 'Project limit reached';
+				return 'Upgrade your plan to create more projects';
 			}
 			if (this.licenseService.isLimitAvailable('project_limit') && this.licenseService.isLimitReached('project_limit')) {
 				const limitInfo = this.licenseService.getLimitInfo('project_limit');

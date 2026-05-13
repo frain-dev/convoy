@@ -52,6 +52,14 @@ func (u *LoginUserService) isPrimaryInstanceAdmin(ctx context.Context, userID st
 			if userCount == 1 {
 				return true, nil
 			}
+
+			isFirstOrphanUser, err := u.isFirstOrphanUser(ctx, userID)
+			if err != nil {
+				return false, err
+			}
+			if isFirstOrphanUser {
+				return true, nil
+			}
 		}
 
 		return isFirstOrgAdmin, nil
@@ -64,6 +72,28 @@ func (u *LoginUserService) isPrimaryInstanceAdmin(ctx context.Context, userID st
 	}
 
 	return isFirst, nil
+}
+
+func (u *LoginUserService) isFirstOrphanUser(ctx context.Context, userID string) (bool, error) {
+	orgs, _, err := u.OrgMemberRepo.LoadUserOrganisationsPaged(ctx, userID, datastore.Pageable{
+		PerPage: 1,
+	})
+	if err != nil {
+		return false, err
+	}
+	if len(orgs) > 0 {
+		return false, nil
+	}
+
+	firstUser, err := u.UserRepo.FindFirstUser(ctx)
+	if err != nil {
+		if errors.Is(err, datastore.ErrUserNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return firstUser.UID == userID, nil
 }
 
 func (u *LoginUserService) isFirstOrgAdminInAnyOrg(ctx context.Context, userID string) (bool, error) {
@@ -121,36 +151,37 @@ func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token
 	user, err := u.UserRepo.FindUserByEmail(ctx, u.Data.Username)
 	if err != nil {
 		if errors.Is(err, datastore.ErrUserNotFound) {
-			return nil, nil, &ServiceError{ErrMsg: "invalid username or password", Err: err}
+			return nil, nil, &ServiceError{Code: ErrCodeAuthInvalid, ErrMsg: "invalid username or password", Err: err}
 		}
 
-		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+		return nil, nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: err.Error(), Err: err}
 	}
 
 	p := datastore.Password{Plaintext: u.Data.Password, Hash: []byte(user.Password)}
 	match, err := p.Matches()
 	if err != nil {
-		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+		return nil, nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: err.Error(), Err: err}
 	}
 	if !match {
-		return nil, nil, &ServiceError{ErrMsg: "invalid username or password"}
+		return nil, nil, &ServiceError{Code: ErrCodeAuthInvalid, ErrMsg: "invalid username or password"}
 	}
 
-	// Check if user can access based on license status and get instance admin count
 	canAccess, err := u.isPrimaryInstanceAdmin(ctx, user.UID)
 	if err != nil {
-		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+		return nil, nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: err.Error(), Err: err}
 	}
 
 	if !canAccess {
 		return nil, nil, &ServiceError{
-			Code:   ErrCodeLicenseExpired,
-			ErrMsg: "License expired. Only the first organization administrator can access the system"}
+			Code: ErrCodeLicenseAccessDenied,
+			ErrMsg: "This instance does not allow your account to sign in under the current license. " +
+				"Sign in as an instance administrator, enable multi-user licensing, or contact your administrator.",
+		}
 	}
 
 	token, err := u.JWT.GenerateToken(user)
 	if err != nil {
-		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+		return nil, nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: err.Error(), Err: err}
 	}
 
 	return user, &token, nil

@@ -2,6 +2,9 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
@@ -22,10 +25,7 @@ type RefreshLicenseDataDeps struct {
 	Cfg           config.Configuration
 }
 
-// RefreshLicenseDataForUser loads the user's organisations and asynchronously refreshes
-// license_data (key + entitlements) for each org. Use in a goroutine after login; it uses
-// context.Background() and does not block the request.
-// Key resolution: existing org license_data (decrypted) else billing GetOrganisationLicense else default (instance) license.
+// RefreshLicenseDataForUser refreshes license_data per org after login (non-blocking).
 func RefreshLicenseDataForUser(userID string, deps RefreshLicenseDataDeps) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -50,7 +50,6 @@ func RefreshLicenseDataForUser(userID string, deps RefreshLicenseDataDeps) {
 	}
 
 	defaultKey := deps.Cfg.LicenseKey
-	billingEnabled := deps.Cfg.Billing.Enabled && deps.BillingClient != nil
 	licClient := licensesvc.NewClient(licensesvc.Config{
 		Host:         deps.Cfg.LicenseService.Host,
 		ValidatePath: deps.Cfg.LicenseService.ValidatePath,
@@ -60,25 +59,17 @@ func RefreshLicenseDataForUser(userID string, deps RefreshLicenseDataDeps) {
 	})
 
 	for _, org := range orgs {
-		RefreshLicenseDataForOrg(ctx, org, defaultKey, billingEnabled, deps, licClient)
+		RefreshLicenseDataForOrg(ctx, org, defaultKey, deps, licClient)
 	}
 }
 
-// RefreshLicenseDataForOrg resolves key for the org (from billing when enabled, else default), validates, encrypts, and updates org license_data.
-// Caller must pass a non-nil licClient.
-func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, defaultKey string, billingEnabled bool, deps RefreshLicenseDataDeps, licClient *licensesvc.Client) {
+// RefreshLicenseDataForOrg validates a resolved key and persists encrypted license_data.
+func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, defaultKey string, deps RefreshLicenseDataDeps, licClient *licensesvc.Client) {
 	if deps.OrgRepo == nil {
 		return
 	}
-	key := resolveKey(ctx, org, defaultKey, billingEnabled, deps.BillingClient)
+	key := resolveKey(ctx, org, defaultKey, deps.Cfg, deps.BillingClient)
 	if key == "" {
-		if billingEnabled {
-			if err := deps.OrgRepo.UpdateOrganisationLicenseData(ctx, org.UID, ""); err != nil {
-				if deps.Logger != nil {
-					deps.Logger.Warn("refresh license data: clear license_data failed", "error", err, "org_id", org.UID)
-				}
-			}
-		}
 		return
 	}
 	data, err := licClient.ValidateLicense(ctx, key)
@@ -111,18 +102,26 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 	}
 }
 
-// resolveKey returns the org's license key: from billing when enabled, else default. Always resolves from billing when enabled so refresh repopulates license_data.
-func resolveKey(ctx context.Context, org datastore.Organisation, defaultKey string, billingEnabled bool, billingClient billing.Client) string {
-	if billingEnabled && billingClient != nil {
+func resolveKey(ctx context.Context, org datastore.Organisation, defaultKey string, cfg config.Configuration, billingClient billing.Client) string {
+	if billingClient != nil && cfg.IsCloud() {
 		resp, err := billingClient.GetOrganisationLicense(ctx, org.UID)
-		if err == nil && resp != nil && resp.Data.Organisation != nil && resp.Data.Organisation.LicenseKey != "" {
-			return resp.Data.Organisation.LicenseKey
+		if err == nil && resp != nil && resp.Data.Organisation != nil && strings.TrimSpace(resp.Data.Organisation.LicenseKey) != "" {
+			return strings.TrimSpace(resp.Data.Organisation.LicenseKey)
+		}
+		return ""
+	}
+
+	if cfg.IsSelfHosted() && !util.IsStringEmpty(defaultKey) {
+		return defaultKey
+	}
+
+	if org.LicenseData != "" {
+		payload, err := license.DecryptLicenseData(org.UID, org.LicenseData)
+		if err == nil && strings.TrimSpace(payload.Key) != "" {
+			return strings.TrimSpace(payload.Key)
 		}
 	}
 
-	if billingEnabled {
-		return ""
-	}
 	if !util.IsStringEmpty(defaultKey) {
 		return defaultKey
 	}
@@ -137,16 +136,30 @@ type OrgProjectLimitDeps struct {
 	Logger        log.Logger
 }
 
-// CheckOrganisationProjectLimit returns whether the org is allowed to create another project
-// based on its license (org license_data or billing GetOrganisationLicense when billing enabled).
-// Call only when billing is enabled.
 func CheckOrganisationProjectLimit(ctx context.Context, org *datastore.Organisation, deps OrgProjectLimitDeps) (bool, error) {
-	defaultKey := deps.Cfg.LicenseKey
-	billingEnabled := deps.Cfg.Billing.Enabled && deps.BillingClient != nil
-	key := resolveKey(ctx, *org, defaultKey, billingEnabled, deps.BillingClient)
-	if key == "" {
-		return false, nil
+	if deps.Cfg.IsCloud() {
+		if deps.BillingClient == nil {
+			return false, errors.New("billing client required for organisation project limit on managed cloud")
+		}
+		resp, err := deps.BillingClient.GetOrganisationLicense(ctx, org.UID)
+		if err != nil {
+			return false, fmt.Errorf("get organisation licence: %w", err)
+		}
+		if resp == nil || resp.Data.Organisation == nil || strings.TrimSpace(resp.Data.Organisation.LicenseKey) == "" {
+			return false, errors.New("organisation licence is not provisioned in billing yet")
+		}
+		return organisationProjectLimitFromLicenseKey(ctx, org, strings.TrimSpace(resp.Data.Organisation.LicenseKey), deps)
 	}
+	defaultKey := deps.Cfg.LicenseKey
+	key := resolveKey(ctx, *org, defaultKey, deps.Cfg, deps.BillingClient)
+	if key == "" {
+		// No resolvable license key: do not treat as "at project cap" (avoids false 402 on self-hosted).
+		return true, nil
+	}
+	return organisationProjectLimitFromLicenseKey(ctx, org, key, deps)
+}
+
+func organisationProjectLimitFromLicenseKey(ctx context.Context, org *datastore.Organisation, key string, deps OrgProjectLimitDeps) (bool, error) {
 	licClient := licensesvc.NewClient(licensesvc.Config{
 		Host:         deps.Cfg.LicenseService.Host,
 		ValidatePath: deps.Cfg.LicenseService.ValidatePath,

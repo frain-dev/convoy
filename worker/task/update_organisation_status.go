@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -21,6 +22,42 @@ import (
 
 const orgStatusUpdatePerPage = 50
 
+func applySubscriptionDerivedDisabledState(
+	ctx context.Context,
+	orgRepo datastore.OrganisationRepository,
+	orgs []datastore.Organisation,
+	hasActiveSubscription bool,
+	logger log.Logger,
+) (updatedCount, errorCount int) {
+	for i := range orgs {
+		org := orgs[i]
+		if hasActiveSubscription {
+			if org.DisabledAt.Valid {
+				org.DisabledAt = null.Time{}
+				if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
+					logger.Errorf("Failed to clear organisation %s disabled_at: %v", org.UID, err)
+					errorCount++
+					continue
+				}
+				updatedCount++
+				logger.Infof("Cleared organisation %s disabled_at - subscription active", org.UID)
+			}
+		} else {
+			if !org.DisabledAt.Valid {
+				org.DisabledAt = null.NewTime(time.Now(), true)
+				if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
+					logger.Errorf("Failed to set organisation %s disabled_at: %v", org.UID, err)
+					errorCount++
+					continue
+				}
+				updatedCount++
+				logger.Infof("Set organisation %s disabled_at - subscription not active", org.UID)
+			}
+		}
+	}
+	return updatedCount, errorCount
+}
+
 func UpdateOrganisationStatus(db database.Database, billingClient billing.Client, rd *rdb.Redis, logger log.Logger) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
@@ -34,11 +71,6 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 		cfg, err := config.Get()
 		if err != nil {
 			return fmt.Errorf("failed to get config: %w", err)
-		}
-
-		if !cfg.Billing.Enabled {
-			logger.Info("Billing is not enabled, skipping organisation status update")
-			return nil
 		}
 
 		const mutexName = "convoy:update_organisation_status:mutex"
@@ -73,38 +105,33 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 		updatedCount := 0
 		errorCount := 0
 
-		for _, org := range orgs {
-			resp, err := billingClient.GetSubscription(ctx, org.UID)
-			if err != nil {
-				logger.Errorf("Failed to fetch subscription for organisation %s: %v", org.UID, err)
-				errorCount++
-				continue
+		if cfg.IsSelfHosted() {
+			lk := strings.TrimSpace(cfg.LicenseKey)
+			if lk == "" {
+				logger.Warn("Organisation status update: CONVOY_LICENSE_KEY is not set; skipping disabled_at updates for self-hosted")
+				return nil
 			}
-
+			resp, err := billingClient.LicenseBillingGetSubscription(ctx, lk)
+			if err != nil {
+				return fmt.Errorf("license-scoped subscription fetch: %w", err)
+			}
 			hasActiveSubscription := billing.HasActiveSubscription(resp.Data)
+			u, e := applySubscriptionDerivedDisabledState(ctx, orgRepo, orgs, hasActiveSubscription, logger)
+			updatedCount += u
+			errorCount += e
+		} else {
+			for _, org := range orgs {
+				resp, err := billingClient.GetSubscription(ctx, org.UID)
+				if err != nil {
+					logger.Errorf("Failed to fetch subscription for organisation %s: %v", org.UID, err)
+					errorCount++
+					continue
+				}
 
-			if hasActiveSubscription {
-				if org.DisabledAt.Valid {
-					org.DisabledAt = null.Time{}
-					if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
-						logger.Errorf("Failed to clear organisation %s disabled_at: %v", org.UID, err)
-						errorCount++
-						continue
-					}
-					updatedCount++
-					logger.Infof("Cleared organisation %s disabled_at - subscription active", org.UID)
-				}
-			} else {
-				if !org.DisabledAt.Valid {
-					org.DisabledAt = null.NewTime(time.Now(), true)
-					if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
-						logger.Errorf("Failed to set organisation %s disabled_at: %v", org.UID, err)
-						errorCount++
-						continue
-					}
-					updatedCount++
-					logger.Infof("Set organisation %s disabled_at - subscription not active", org.UID)
-				}
+				hasActiveSubscription := billing.HasActiveSubscription(resp.Data)
+				u, e := applySubscriptionDerivedDisabledState(ctx, orgRepo, []datastore.Organisation{org}, hasActiveSubscription, logger)
+				updatedCount += u
+				errorCount += e
 			}
 		}
 

@@ -16,7 +16,6 @@ export type SETTINGS = 'organisation settings' | 'configuration settings' | 'per
 })
 export class SettingsComponent implements OnInit {
 	activePage: SETTINGS = 'organisation settings';
-	billingEnabled = false;
 	canAccessBilling = false;
 	canAccessEarlyAdopterFeatures = false;
 	isVerifyingSubscription = false;
@@ -36,7 +35,7 @@ export class SettingsComponent implements OnInit {
 
 	async ngOnInit() {
 		await this.checkBillingAccess();
-		this.checkBillingStatus();
+		this.updateSettingsMenu();
 
 		const checkoutData: CheckoutResolverData = this.route.snapshot.data['checkout'];
 		if (checkoutData?.checkoutProcessed) {
@@ -50,6 +49,12 @@ export class SettingsComponent implements OnInit {
 	}
 	
 	private async pollSubscriptionStatus(orgId: string) {
+		if (!orgId) {
+			this.generalService.showNotification({ message: 'Unable to verify subscription. Please refresh and check billing page.', style: 'warning' });
+			this.cleanupCheckoutParams();
+			return;
+		}
+
 		this.isVerifyingSubscription = true;
 		const maxAttempts = 30;
 		const pollInterval = 2000;
@@ -85,27 +90,9 @@ export class SettingsComponent implements OnInit {
 		});
 	}
 
-	private async checkBillingStatus() {
-		try {
-			const response = await this.httpService.request({
-				url: '/billing/enabled',
-				method: 'get',
-				hideNotification: true
-			});
-			// Billing is now controlled by backend configuration, not entitlements
-			this.billingEnabled = response.data?.enabled || false;
-			this.updateSettingsMenu();
-		} catch (error) {
-			console.warn('Failed to check billing status:', error);
-			this.billingEnabled = false;
-			this.updateSettingsMenu();
-		}
-	}
-
 	private async checkBillingAccess() {
 		try {
-			const userRole = await this.rbacService.getUserRole();
-			this.canAccessBilling = userRole === 'BILLING_ADMIN' || userRole === 'ORGANISATION_ADMIN';
+			this.canAccessBilling = await this.rbacService.userCanAccess('Billing|MANAGE');
 			this.canAccessEarlyAdopterFeatures = true;
 		} catch (error) {
 			console.warn('Failed to check billing access:', error);
@@ -120,16 +107,16 @@ export class SettingsComponent implements OnInit {
 			{ name: 'team', icon: 'team', svg: 'stroke' }
 		];
 
-		if (this.billingEnabled && this.canAccessBilling) {
+		if (this.canAccessBilling) {
 			this.settingsMenu.push({ name: 'usage and billing', icon: 'status', svg: 'stroke' });
+		}
+
+		if (this.activePage === 'usage and billing' && !this.canAccessBilling) {
+			this.toggleActivePage('organisation settings');
 		}
 
 		if (this.canAccessEarlyAdopterFeatures) {
 			this.settingsMenu.push({ name: 'early adopter features', icon: 'settings', svg: 'fill' });
-		}
-
-		if (this.activePage === 'usage and billing' && (!this.billingEnabled || !this.canAccessBilling)) {
-			this.toggleActivePage('organisation settings');
 		}
 
 		if (this.activePage === 'early adopter features' && !this.canAccessEarlyAdopterFeatures) {

@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -194,6 +195,47 @@ func (h *Handler) retrieveOrganisation(r *http.Request) (*datastore.Organisation
 	return org, nil
 }
 
+// retrieveOrganisationForActiveWorkspace uses X-Organisation-Id or org/project context (not query org_id); caller must be a member.
+func (h *Handler) retrieveOrganisationForActiveWorkspace(r *http.Request) (*datastore.Organisation, error) {
+	var (
+		org *datastore.Organisation
+		err error
+	)
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+
+	orgID := strings.TrimSpace(r.Header.Get("X-Organisation-Id"))
+	if orgID != "" {
+		org, err = orgRepo.FetchOrganisationByID(r.Context(), orgID)
+	} else if cachedOrg := r.Context().Value(convoy.OrganisationCtx); cachedOrg != nil {
+		org = cachedOrg.(*datastore.Organisation)
+	} else if cachedProject := r.Context().Value(convoy.ProjectCtx); cachedProject != nil {
+		project := cachedProject.(*datastore.Project)
+		org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
+	} else if projectID := chi.URLParam(r, "projectID"); projectID != "" {
+		projectRepo := projects.New(h.A.Logger, h.A.DB)
+		var project *datastore.Project
+		project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+		if err == nil {
+			org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
+		}
+	}
+	if err != nil || org == nil {
+		if err == nil {
+			return nil, errors.New("no active organisation in request")
+		}
+		return nil, err
+	}
+	user, err := h.retrieveUser(r)
+	if err != nil {
+		return nil, err
+	}
+	orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
+	if _, err := orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID); err != nil {
+		return nil, err
+	}
+	return org, nil
+}
+
 func (h *Handler) retrieveMembership(r *http.Request) (*datastore.OrganisationMember, error) {
 	org, err := h.retrieveOrganisation(r)
 	if err != nil {
@@ -210,7 +252,11 @@ func (h *Handler) retrieveMembership(r *http.Request) (*datastore.OrganisationMe
 }
 
 func (h *Handler) retrieveUser(r *http.Request) (*datastore.User, error) {
-	authUser := middleware.GetAuthUserFromContext(r.Context())
+	authUser, ok := middleware.TryGetAuthUserFromContext(r.Context())
+	if !ok {
+		return &datastore.User{}, errors.New("user not found")
+	}
+
 	user, ok := authUser.User.(*datastore.User)
 	if !ok {
 		return &datastore.User{}, errors.New("user not found")

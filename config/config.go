@@ -22,6 +22,7 @@ const (
 	DefaultSearchTokenizationInterval = 1
 	DefaultCacheTTL                   = time.Minute * 10
 	DefaultAPIVersion                 = "2025-11-24"
+	DefaultBillingURL                 = "https://overwatch.getconvoy.cloud"
 )
 
 var cfgSingleton atomic.Value
@@ -131,9 +132,8 @@ var DefaultConfiguration = Configuration{
 	ApiRateLimit:        1000,
 	WorkerExecutionMode: DefaultExecutionMode,
 	Billing: BillingConfiguration{
-		Enabled: false,
-		URL:     "",
-		APIKey:  "",
+		URL:    DefaultBillingURL,
+		APIKey: "",
 	},
 	SSOService: SSOServiceConfiguration{
 		Host:            "https://overwatch.getconvoy.cloud",
@@ -563,7 +563,6 @@ type BillingPlanConfig struct {
 }
 
 type BillingConfiguration struct {
-	Enabled          bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
 	URL              string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
 	APIKey           string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
 	OrganisationHost string                       `json:"organisation_host" envconfig:"CONVOY_BILLING_ORGANISATION_HOST"`
@@ -622,20 +621,10 @@ func (s *SSOServiceConfiguration) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Validate checks if the billing configuration is valid when enabled
 func (b *BillingConfiguration) Validate() error {
-	if !b.Enabled {
-		return nil // No validation needed if disabled
+	if strings.TrimSpace(b.URL) == "" {
+		return fmt.Errorf("billing URL is required")
 	}
-
-	if b.URL == "" {
-		return fmt.Errorf("billing URL is required when billing is enabled")
-	}
-
-	if b.APIKey == "" {
-		return fmt.Errorf("billing API key is required when billing is enabled")
-	}
-
 	return nil
 }
 
@@ -705,6 +694,12 @@ func overrideFields(ov, nv reflect.Value) {
 }
 
 type ConfigFunc func(c *Configuration) error
+
+func applyBillingDefaults(c *Configuration) {
+	if strings.TrimSpace(c.Billing.URL) == "" {
+		c.Billing.URL = DefaultBillingURL
+	}
+}
 
 func applyServiceDefaults(c *Configuration) {
 	def := DefaultConfiguration.SSOService
@@ -805,6 +800,8 @@ func ensureMaxResponseSize(c *Configuration) {
 func validate(c *Configuration) error {
 	ensureMaxResponseSize(c)
 
+	applyBillingDefaults(c)
+
 	if err := ensureQueueConfig(c.Redis); err != nil {
 		return err
 	}
@@ -817,7 +814,6 @@ func validate(c *Configuration) error {
 		return err
 	}
 
-	// Validate billing configuration
 	if err := c.Billing.Validate(); err != nil {
 		return err
 	}

@@ -1,79 +1,129 @@
-.billing-details-display {
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  margin-bottom: 0;
+.self-hosted-billing-card {
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #d7e1ec;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.self-hosted-eyebrow {
+  margin: 0 0 6px;
+  color: #2780f1;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.self-hosted-status {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid #f2c94c;
+  border-radius: 999px;
+  background: #fff8e1;
+  color: #8a5a00;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.self-hosted-status-ready {
+  border-color: #95d5b2;
+  background: #e9f9ef;
+  color: #00672e;
+}
+
+.self-hosted-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.self-hosted-form-section {
+  position: relative;
+  padding: 16px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.self-hosted-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #0a3866;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.self-hosted-message {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #edf2f7;
+  color: #344153;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.self-hosted-license-key {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px dashed #91b1d1;
+  border-radius: 8px;
+  background: #f8fafc;
+
+  code {
+    display: block;
+    max-width: 100%;
+    overflow: auto;
+    color: #0a3866;
+    font-size: 12px;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+}
+
+.self-hosted-subscribe-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #ffffff;
+
+  code {
+    color: #0a3866;
+    font-size: 13px;
+    line-height: 18px;
+  }
+}
+
+.self-hosted-empty-state {
+  padding: 18px 20px;
+  border: 1px dashed #d7e1ec;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .billing-section-title {
   color: var(--Zinc-600, #52525B);
   font-size: 14px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 20px;
-  align-self: stretch;
   margin-bottom: 0;
-}
-
-.billing-details-display {
-  padding: 0 0 0 0;
-  margin-bottom: 32px;
-}
-
-.billing-details-display:not(:last-child) {
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 32px;
-}
-
-.billing-details-display .text-14,
-.billing-details-display .text-12 {
-  margin: 0;
-  padding: 0;
-}
-
-.billing-details-display .text-14.font-medium {
-  color: #030712;
-  font-size: 18px;
-  font-weight: 400;
-  line-height: 28px;
-  margin-bottom: 8px;
-}
-
-.billing-details-display .text-14.font-medium:first-child {
-  color: #374151;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 16px;
-  margin-bottom: 8px;
-}
-
-.billing-details-display .text-12.text-neutral-11 {
-  color: #6b7280;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 16px;
-  margin-bottom: 4px;
-}
-
-.billing-details-display .text-12.text-neutral-11:last-child {
-  margin-bottom: 0;
-}
-
-button.text-primary-600 {
-  transition: color 0.2s ease;
-  
-  &:hover {
-    color: #2563eb;
-  }
-  
-  svg {
-    transition: transform 0.2s ease;
-  }
-  
-  &:hover svg {
-    transform: scale(1.1);
-  }
 }
 
 .flex.gap-12px.justify-end {
@@ -113,7 +163,6 @@ button.text-primary-600 {
   }
 }
 
-// Manage Plan Modal Styles
 .manage-plan-content {
   width: 100%;
   padding: 32px;
@@ -156,8 +205,6 @@ button.text-primary-600 {
 }
 
 .plan-card-title {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
@@ -183,8 +230,6 @@ button.text-primary-600 {
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    font-family: 'Open Sauce Sans';
-    font-style: normal;
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
@@ -206,8 +251,6 @@ button.text-primary-600 {
 }
 
 .compare-plans-title {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
   font-weight: 500;
   font-size: 20px;
   line-height: 28px;
@@ -225,13 +268,10 @@ button.text-primary-600 {
   display: grid;
   grid-template-columns: 384px 1fr 1fr;
   background: #F3F4F6;
-  border-bottom: 1px solid #E7E7E7;
 }
 
 .comparison-table-cell {
   padding: 8px 12px;
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
   
   &.header-category {
     background: #F3F4F6;
@@ -273,8 +313,6 @@ button.text-primary-600 {
 }
 
 .comparison-section-title {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
   font-weight: 700;
   font-size: 14px;
   line-height: 20px;
@@ -304,8 +342,6 @@ button.text-primary-600 {
   justify-content: center;
   padding: 2px 4px;
   border-radius: 4px;
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
   font-weight: 500;
   font-size: 12px;
   line-height: 16px;

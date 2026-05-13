@@ -8,6 +8,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -20,12 +21,23 @@ func provideLoginUserService(ctrl *gomock.Controller, t *testing.T, loginUser *m
 
 	c := mocks.NewMockCache(ctrl)
 	return &LoginUserService{
-		UserRepo: mocks.NewMockUserRepository(ctrl),
-		Cache:    c,
-		JWT:      jwt.NewJwt(&config.Auth.Jwt, c),
-		Data:     loginUser,
-		Licenser: mocks.NewMockLicenser(ctrl),
+		UserRepo:      mocks.NewMockUserRepository(ctrl),
+		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+		Cache:         c,
+		JWT:           jwt.NewJwt(&config.Auth.Jwt, c),
+		Data:          loginUser,
+		Licenser:      mocks.NewMockLicenser(ctrl),
 	}
+}
+
+func hashTestPassword(t *testing.T, plaintext string) string {
+	t.Helper()
+
+	p := &datastore.Password{Plaintext: plaintext}
+	err := p.GenerateHash()
+	require.NoError(t, err)
+
+	return string(p.Hash)
 }
 
 func TestLoginUserService_Run(t *testing.T) {
@@ -76,6 +88,108 @@ func TestLoginUserService_Run(t *testing.T) {
 				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantConfig: true,
+		},
+
+		{
+			name: "should_login_first_orphan_user_in_single_user_mode",
+			args: args{
+				ctx:  ctx,
+				user: &models.LoginUser{Username: "edited-first-user@test.com", Password: "default"},
+			},
+			wantUser: &datastore.User{
+				UID:       "first-user",
+				FirstName: "first",
+				LastName:  "user",
+				Email:     "edited-first-user@test.com",
+			},
+			dbFn: func(u *LoginUserService) {
+				us, _ := u.UserRepo.(*mocks.MockUserRepository)
+				orgMembers, _ := u.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+
+				firstUser := &datastore.User{
+					UID:       "first-user",
+					FirstName: "first",
+					LastName:  "user",
+					Email:     "edited-first-user@test.com",
+					Password:  hashTestPassword(t, "default"),
+				}
+
+				us.EXPECT().FindUserByEmail(gomock.Any(), firstUser.Email).Times(1).Return(firstUser, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(false, nil)
+				orgMembers.EXPECT().CountInstanceAdminUsers(gomock.Any()).Times(1).Return(int64(0), nil)
+				orgMembers.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), firstUser.UID, gomock.Any()).Times(2).Return([]datastore.Organisation{}, datastore.PaginationData{}, nil)
+				us.EXPECT().CountUsers(gomock.Any()).Times(1).Return(int64(2), nil)
+				us.EXPECT().FindFirstUser(gomock.Any()).Times(1).Return(firstUser, nil)
+			},
+			wantConfig: true,
+		},
+
+		{
+			name: "should_not_login_orphan_user_when_not_first_user_in_single_user_mode",
+			args: args{
+				ctx:  ctx,
+				user: &models.LoginUser{Username: "orphan@test.com", Password: "default"},
+			},
+			dbFn: func(u *LoginUserService) {
+				us, _ := u.UserRepo.(*mocks.MockUserRepository)
+				orgMembers, _ := u.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+
+				orphanUser := &datastore.User{
+					UID:       "orphan-user",
+					FirstName: "orphan",
+					LastName:  "user",
+					Email:     "orphan@test.com",
+					Password:  hashTestPassword(t, "default"),
+				}
+				firstUser := &datastore.User{
+					UID:   "first-user",
+					Email: "first@test.com",
+				}
+
+				us.EXPECT().FindUserByEmail(gomock.Any(), orphanUser.Email).Times(1).Return(orphanUser, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(false, nil)
+				orgMembers.EXPECT().CountInstanceAdminUsers(gomock.Any()).Times(1).Return(int64(0), nil)
+				orgMembers.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), orphanUser.UID, gomock.Any()).Times(2).Return([]datastore.Organisation{}, datastore.PaginationData{}, nil)
+				us.EXPECT().CountUsers(gomock.Any()).Times(1).Return(int64(2), nil)
+				us.EXPECT().FindFirstUser(gomock.Any()).Times(1).Return(firstUser, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: "This instance does not allow your account to sign in under the current license. Sign in as an instance administrator, enable multi-user licensing, or contact your administrator.",
+		},
+
+		{
+			name: "should_not_login_first_user_when_user_has_memberships",
+			args: args{
+				ctx:  ctx,
+				user: &models.LoginUser{Username: "first@test.com", Password: "default"},
+			},
+			dbFn: func(u *LoginUserService) {
+				us, _ := u.UserRepo.(*mocks.MockUserRepository)
+				orgMembers, _ := u.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+
+				firstUser := &datastore.User{
+					UID:       "first-user",
+					FirstName: "first",
+					LastName:  "user",
+					Email:     "first@test.com",
+					Password:  hashTestPassword(t, "default"),
+				}
+
+				us.EXPECT().FindUserByEmail(gomock.Any(), firstUser.Email).Times(1).Return(firstUser, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(false, nil)
+				orgMembers.EXPECT().CountInstanceAdminUsers(gomock.Any()).Times(1).Return(int64(0), nil)
+				orgMembers.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), firstUser.UID, gomock.Any()).Times(2).Return([]datastore.Organisation{{UID: "org-1"}}, datastore.PaginationData{}, nil)
+				orgMembers.EXPECT().FetchOrganisationMemberByUserID(gomock.Any(), firstUser.UID, "org-1").Times(1).Return(&datastore.OrganisationMember{
+					UserID: firstUser.UID,
+					Role:   auth.Role{Type: auth.RoleProjectViewer},
+				}, nil)
+				us.EXPECT().CountUsers(gomock.Any()).Times(1).Return(int64(2), nil)
+			},
+			wantErr:    true,
+			wantErrMsg: "This instance does not allow your account to sign in under the current license. Sign in as an instance administrator, enable multi-user licensing, or contact your administrator.",
 		},
 
 		{

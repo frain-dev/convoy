@@ -63,6 +63,18 @@ export class PrivateService {
 		localStorage.setItem('CONVOY_PROJECT', JSON.stringify(project));
 	}
 
+	clearOrganisationSelection(userId?: string): void {
+		this.organisationDetails = undefined;
+		this.projectDetails = undefined as any;
+		this.projects = undefined as any;
+
+		localStorage.removeItem('CONVOY_ORG');
+		localStorage.removeItem('CONVOY_PROJECT');
+		if (userId) {
+			this.clearUserData(userId);
+		}
+	}
+
 	// Clear per-user data when switching users
 	clearUserData(userId: string): void {
 		localStorage.removeItem(`CONVOY_ORG_${userId}`);

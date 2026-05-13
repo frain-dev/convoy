@@ -28,8 +28,7 @@ type CreateOrganisationService struct {
 	User          *datastore.User
 	Licenser      license.Licenser
 	RoleType      auth.RoleType
-	// Logger is required for RunBillingOrganisationSync when billing is enabled.
-	Logger log.Logger
+	Logger        log.Logger
 }
 
 var ErrOrgLimit = errors.New("your instance has reached it's organisation limit, upgrade to create new organisations")
@@ -87,7 +86,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	if cfg.Billing.OrganisationHost != "" {
 		hostForBilling = cfg.Billing.OrganisationHost
 	}
-	if cfg.Billing.Enabled && hostForBilling != "" {
+	if hostForBilling != "" {
 		orgCopy := *org
 		cfgCopy := cfg
 		go RunBillingOrganisationSync(

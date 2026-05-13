@@ -10,18 +10,43 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/mocks"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func TestCheckOrganisationProjectLimit_NoKey_ReturnsFalseNil(t *testing.T) {
+func TestResolveKeyPrefersInstanceLicenseForLicenseScopedBilling(t *testing.T) {
+	org := datastore.Organisation{UID: "org-1"}
+	enc, err := license.EncryptLicenseData(org.UID, &license.LicenseDataPayload{Key: "stored-license"})
+	require.NoError(t, err)
+	org.LicenseData = enc
+
+	cfg := config.Configuration{LicenseKey: "instance-license"}
+
+	key := resolveKey(context.Background(), org, "instance-license", cfg, nil)
+
+	require.Equal(t, "instance-license", key)
+}
+
+func TestResolveKeyFallsBackToStoredLicenseWhenInstanceLicenseIsEmpty(t *testing.T) {
+	org := datastore.Organisation{UID: "org-1"}
+	enc, err := license.EncryptLicenseData(org.UID, &license.LicenseDataPayload{Key: "stored-license"})
+	require.NoError(t, err)
+	org.LicenseData = enc
+
+	cfg := config.Configuration{}
+
+	key := resolveKey(context.Background(), org, "", cfg, nil)
+
+	require.Equal(t, "stored-license", key)
+}
+
+func TestCheckOrganisationProjectLimit_NoKey_ReturnsTrueNil(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	// Billing enabled, mock returns no org license key → resolveKey returns "" → (false, nil).
 	mockBilling := &billing.MockBillingClient{}
-	// GetOrganisationLicenseKey left empty so Data.Key is ""
 
 	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
 	// LoadProjects must not be called when key is ""
@@ -32,7 +57,7 @@ func TestCheckOrganisationProjectLimit_NoKey_ReturnsFalseNil(t *testing.T) {
 		BillingClient: mockBilling,
 		ProjectRepo:   mockProjectRepo,
 		Cfg: config.Configuration{
-			Billing:    config.BillingConfiguration{Enabled: true},
+			Billing:    config.BillingConfiguration{URL: "http://billing.test"},
 			LicenseKey: "",
 		},
 		Logger: log.New("convoy", log.LevelInfo),
@@ -40,5 +65,5 @@ func TestCheckOrganisationProjectLimit_NoKey_ReturnsFalseNil(t *testing.T) {
 
 	allowed, err := CheckOrganisationProjectLimit(ctx, org, deps)
 	require.NoError(t, err)
-	require.False(t, allowed)
+	require.True(t, allowed)
 }

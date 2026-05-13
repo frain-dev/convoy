@@ -3,8 +3,10 @@ package services
 import "errors"
 
 const (
-	ErrCodeAuthInvalid    = "auth.invalid"
-	ErrCodeLicenseExpired = "license.expired"
+	ErrCodeAuthInvalid         = "auth.invalid"
+	ErrCodeLicenseExpired      = "license.expired"
+	ErrCodeLicenseAccessDenied = "license.access_denied"
+	ErrCodeInternal            = "internal"
 )
 
 const (

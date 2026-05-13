@@ -46,22 +46,21 @@ type Licenser struct {
 	logger log.Logger
 }
 
-// Config holds configuration for the license service licenser
 type LicenserConfig struct {
-	LicenseKey     string
-	BillingEnabled bool
-	Client         *Client
-	OrgRepo        datastore.OrganisationRepository
-	UserRepo       datastore.UserRepository
-	ProjectRepo    datastore.ProjectRepository
-	CacheTTL       time.Duration
-	Logger         log.Logger
+	LicenseKey  string
+	IsCloud     bool
+	Client      *Client
+	OrgRepo     datastore.OrganisationRepository
+	UserRepo    datastore.UserRepository
+	ProjectRepo datastore.ProjectRepository
+	CacheTTL    time.Duration
+	Logger      log.Logger
 }
 
 // NewLicenser creates a new license service licenser
 func NewLicenser(cfg LicenserConfig) (*Licenser, error) {
 	if util.IsStringEmpty(cfg.LicenseKey) {
-		if cfg.BillingEnabled {
+		if cfg.IsCloud {
 			return newBillingOnlyLicenser(cfg)
 		}
 		return newCommunityLicenser(cfg)

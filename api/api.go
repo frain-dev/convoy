@@ -29,6 +29,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/users"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 )
@@ -181,16 +182,34 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 	appHandler.cfg = cfg
 
-	// Initialize billing service if enabled
-	if cfg.Billing.Enabled {
+	{
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		billingClient := billing.NewClient(cfg.Billing)
 		if err := billingClient.HealthCheck(ctx); err != nil {
-			return nil, fmt.Errorf("billing service health check failed: %w", err)
+			a.Logger.Warnf("billing service health check failed (mode=%s, url=%s): %v", cfg.Mode(), cfg.Billing.URL, err)
 		}
 		a.BillingClient = billingClient
+
+		orgRepo := organisations.New(a.Logger, a.DB)
+		userRepo := users.New(a.Logger, a.DB)
+		resolveOwner := func(ctx context.Context, orgID string) (string, error) {
+			org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
+			if err != nil {
+				return "", err
+			}
+			owner, err := userRepo.FindUserByID(ctx, org.OwnerID)
+			if err != nil {
+				return "", err
+			}
+			return strings.TrimSpace(owner.Email), nil
+		}
+		strategyCfg := cfg
+		if strings.TrimSpace(strategyCfg.Billing.OrganisationHost) != "" {
+			strategyCfg.Host = strings.TrimSpace(strategyCfg.Billing.OrganisationHost)
+		}
+		a.Billing = billing.NewStrategy(strategyCfg, billingClient, a.Logger, orgRepo, resolveOwner)
 	}
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
@@ -679,48 +698,51 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		}
 		uiRouter.Route("/billing", func(billingRouter chi.Router) {
 			billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
+			// Authenticated dashboard only (Usage & billing). Not on guestRoutes; self-hosted purchase runs while logged in.
+			billingRouter.Post("/self_hosted/register_email", billingHandler.SelfHostedRegisterEmail)
+			billingRouter.Post("/self_hosted/verify_email", billingHandler.SelfHostedVerifyEmail)
 
-			if a.cfg.Billing.Enabled {
-				billingRouter.Get("/config", billingHandler.GetBillingConfig)
-				billingRouter.Get("/plans", billingHandler.GetPlans)
-				billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
+			billingRouter.Get("/config", billingHandler.GetBillingConfig)
+			billingRouter.Get("/plans", billingHandler.GetPlans)
+			billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
 
-				billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
-					orgBillingRouter.Get("/", billingHandler.GetOrganisation)
-					orgBillingRouter.Put("/", billingHandler.UpdateOrganisation)
-					orgBillingRouter.Get("/usage", billingHandler.GetUsage)
-					orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
-					orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
-					orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
-					orgBillingRouter.Get("/internal_id", billingHandler.GetInternalOrganisationID)
-					orgBillingRouter.Put("/tax_id", billingHandler.UpdateOrganisationTaxID)
-					orgBillingRouter.Put("/address", billingHandler.UpdateOrganisationAddress)
-				})
+			billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
+				orgBillingRouter.Get("/", billingHandler.GetOrganisation)
+				orgBillingRouter.Put("/", billingHandler.UpdateOrganisation)
+				orgBillingRouter.Get("/usage", billingHandler.GetUsage)
+				orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
+				orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
+				orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
+				orgBillingRouter.Get("/internal_id", billingHandler.GetInternalOrganisationID)
+				orgBillingRouter.Put("/tax_id", billingHandler.UpdateOrganisationTaxID)
+				orgBillingRouter.Put("/address", billingHandler.UpdateOrganisationAddress)
+			})
 
+			if a.cfg.IsCloud() {
 				billingRouter.Route("/organisations", func(billingOrgRouter chi.Router) {
 					billingOrgRouter.Post("/", billingHandler.CreateOrganisation)
 				})
-
-				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
-					billingSubRouter.Get("/", billingHandler.GetSubscriptions)
-					billingSubRouter.Post("/onboard", billingHandler.OnboardSubscription)
-					billingSubRouter.Put("/{subscriptionID}/upgrade", billingHandler.UpgradeSubscription)
-					billingSubRouter.Delete("/{subscriptionID}", billingHandler.DeleteSubscription)
-				})
-
-				billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
-					billingPmRouter.Get("/", billingHandler.GetPaymentMethods)
-					billingPmRouter.Get("/setup_intent", billingHandler.GetSetupIntent)
-					billingPmRouter.Put("/{pmID}/default", billingHandler.SetDefaultPaymentMethod)
-					billingPmRouter.Delete("/{pmID}", billingHandler.DeletePaymentMethod)
-				})
-
-				billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
-					billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
-					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
-					billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
-				})
 			}
+
+			billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
+				billingSubRouter.Get("/", billingHandler.GetSubscriptions)
+				billingSubRouter.Post("/onboard", billingHandler.OnboardSubscription)
+				billingSubRouter.Put("/{subscriptionID}/upgrade", billingHandler.UpgradeSubscription)
+				billingSubRouter.Delete("/{subscriptionID}", billingHandler.DeleteSubscription)
+			})
+
+			billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
+				billingPmRouter.Get("/", billingHandler.GetPaymentMethods)
+				billingPmRouter.Get("/setup_intent", billingHandler.GetSetupIntent)
+				billingPmRouter.Put("/{pmID}/default", billingHandler.SetDefaultPaymentMethod)
+				billingPmRouter.Delete("/{pmID}", billingHandler.DeletePaymentMethod)
+			})
+
+			billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
+				billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
+				billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
+				billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
+			})
 		})
 	})
 
@@ -1091,6 +1113,10 @@ var guestRoutes = []string{
 }
 
 func shouldAuthRoute(r *http.Request) bool {
+	if strings.HasSuffix(r.URL.Path, "/ui/license/features") {
+		return licenseFeaturesRequiresAuth(r)
+	}
+
 	for _, route := range guestRoutes {
 		if strings.HasSuffix(r.URL.Path, route) {
 			return false
@@ -1098,6 +1124,12 @@ func shouldAuthRoute(r *http.Request) bool {
 	}
 
 	return true
+}
+
+func licenseFeaturesRequiresAuth(r *http.Request) bool {
+	return strings.TrimSpace(r.Header.Get("X-Organisation-Id")) != "" ||
+		strings.TrimSpace(r.URL.Query().Get("orgID")) != "" ||
+		strings.TrimSpace(r.URL.Query().Get("organisation_id")) != ""
 }
 
 func shouldApplyCORS(r *http.Request) bool {

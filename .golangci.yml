@@ -221,6 +221,8 @@ linters:
         - XSS
 
   exclusions:
+    paths:
+      - web/ui/dashboard/node_modules
     rules:
       - path: internal/workers
         linters:
@@ -311,6 +313,7 @@ formatters:
 
   exclusions:
     paths:
+      - web/ui/dashboard/node_modules
       - ".*_test.go"
 issues:
   # Treat all warnings as errors (Tiger Style principle)

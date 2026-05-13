@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/render"
 
@@ -18,12 +19,12 @@ import (
 )
 
 func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
-	orgID := r.URL.Query().Get("orgID")
+	orgID := strings.TrimSpace(r.Header.Get("X-Organisation-Id"))
 	if util.IsStringEmpty(orgID) {
-		orgID = r.Header.Get("X-Organisation-Id")
+		orgID = r.URL.Query().Get("orgID")
 	}
 
-	if h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil && !util.IsStringEmpty(orgID) {
+	if h.A.BillingClient != nil && !util.IsStringEmpty(orgID) {
 		var org *datastore.Organisation
 		var err error
 		if h.A.OrgRepo != nil {
@@ -38,6 +39,21 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
 			return
 		}
+
+		user, err := h.retrieveUser(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+			return
+		}
+		orgMemberRepo := h.A.OrgMemberRepo
+		if orgMemberRepo == nil {
+			orgMemberRepo = organisation_members.New(h.A.Logger, h.A.DB)
+		}
+		if _, err := orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID); err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("Forbidden", http.StatusForbidden))
+			return
+		}
+
 		h.A.Logger.Debug("get license features: fetched org", "org_id", orgID, "has_license_data", len(org.LicenseData) > 0, "license_data_len", len(org.LicenseData))
 
 		var billingRequiredReason string
@@ -66,12 +82,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		if orgRepo == nil {
 			orgRepo = organisations.New(h.A.Logger, h.A.DB)
 		}
-		orgMemberRepo := h.A.OrgMemberRepo
-		if orgMemberRepo == nil {
-			orgMemberRepo = organisation_members.New(h.A.Logger, h.A.DB)
-		}
 		defaultKey := h.A.Cfg.LicenseKey
-		billingEnabled := h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil
 		deps := services.RefreshLicenseDataDeps{
 			OrgMemberRepo: orgMemberRepo,
 			OrgRepo:       orgRepo,
@@ -80,43 +91,43 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			Cfg:           h.A.Cfg,
 		}
 
-		// When billing is enabled, try billing first for fresh license data.
-		if resp, err := h.A.BillingClient.GetOrganisationLicense(r.Context(), org.UID); err == nil && resp != nil && resp.Data.Organisation != nil && resp.Data.Organisation.LicenseKey != "" {
-			licenseKey := resp.Data.Organisation.LicenseKey
-			data, err := licClient.ValidateLicense(r.Context(), licenseKey)
-			if err == nil {
-				entitlements, err := data.GetEntitlementsMap()
-				if err == nil && len(entitlements) > 0 {
-					v, encErr := license.FeatureListFromEntitlementsWithOrgProjectCount(entitlements, projectCount)
-					if encErr == nil {
-						go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, billingEnabled, deps, licClient)
-						_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
-						return
+		if h.A.Cfg.IsCloud() {
+			if resp, err := h.A.BillingClient.GetOrganisationLicense(r.Context(), org.UID); err == nil && resp != nil && resp.Data.Organisation != nil && resp.Data.Organisation.LicenseKey != "" {
+				licenseKey := resp.Data.Organisation.LicenseKey
+				data, err := licClient.ValidateLicense(r.Context(), licenseKey)
+				if err == nil {
+					entitlements, err := data.GetEntitlementsMap()
+					if err == nil && len(entitlements) > 0 {
+						v, encErr := license.FeatureListFromEntitlementsWithOrgProjectCount(entitlements, projectCount)
+						if encErr == nil {
+							go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, deps, licClient)
+							_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
+							return
+						}
+						billingRequiredReason = fmt.Sprintf("FeatureListFromEntitlements (billing key) failed: %v", encErr)
+						h.A.Logger.Debug(fmt.Sprintf("get license features: %s", billingRequiredReason), "org_id", org.UID)
+					} else if err != nil {
+						billingRequiredReason = fmt.Sprintf("GetEntitlementsMap failed: %v", err)
+						h.A.Logger.Debug(fmt.Sprintf("get license features: %s", billingRequiredReason), "org_id", org.UID)
 					}
-					billingRequiredReason = fmt.Sprintf("FeatureListFromEntitlements (billing key) failed: %v", encErr)
-					h.A.Logger.Debug(fmt.Sprintf("get license features: %s", billingRequiredReason), "org_id", org.UID)
-				} else if err != nil {
-					billingRequiredReason = fmt.Sprintf("GetEntitlementsMap failed: %v", err)
+				} else {
+					billingRequiredReason = fmt.Sprintf("ValidateLicense (billing key) failed: %v", err)
 					h.A.Logger.Debug(fmt.Sprintf("get license features: %s", billingRequiredReason), "org_id", org.UID)
 				}
 			} else {
-				billingRequiredReason = fmt.Sprintf("ValidateLicense (billing key) failed: %v", err)
-				h.A.Logger.Debug(fmt.Sprintf("get license features: %s", billingRequiredReason), "org_id", org.UID)
-			}
-		} else {
-			if err != nil {
-				if billingRequiredReason == "" {
-					billingRequiredReason = fmt.Sprintf("GetOrganisationLicense failed: %v", err)
+				if err != nil {
+					if billingRequiredReason == "" {
+						billingRequiredReason = fmt.Sprintf("GetOrganisationLicense failed: %v", err)
+					}
+					h.A.Logger.Debug(fmt.Sprintf("get license features: %s", billingRequiredReason), "org_id", org.UID)
+				} else {
+					billingRequiredReason = "no billing license key"
+					h.A.Logger.Debug(fmt.Sprintf("get license features: %s", billingRequiredReason), "org_id", org.UID)
 				}
-				h.A.Logger.Debug(fmt.Sprintf("get license features: %s", billingRequiredReason), "org_id", org.UID)
-			} else {
-				billingRequiredReason = "no billing license key"
-				h.A.Logger.Debug(fmt.Sprintf("get license features: %s", billingRequiredReason), "org_id", org.UID)
 			}
 		}
 
-		// Fall back to stored org license_data if billing didn't return features.
-		if org.LicenseData != "" {
+		if !h.A.Cfg.IsCloud() && org.LicenseData != "" {
 			payload, decErr := license.DecryptLicenseData(org.UID, org.LicenseData)
 			if decErr == nil && payload != nil && len(payload.Entitlements) > 0 {
 				v, encErr := license.FeatureListFromEntitlementsWithOrgProjectCount(payload.Entitlements, projectCount)
@@ -130,9 +141,8 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		if billingRequiredReason == "" {
 			billingRequiredReason = "no license data"
 		}
-		// Always trigger refresh when returning billing-required so license_data can be repopulated (e.g. after subscription activated).
 		h.A.Logger.Info("get license features: returning billing-required, triggering license refresh", "org_id", org.UID)
-		go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, billingEnabled, deps, licClient)
+		go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, deps, licClient)
 		v, _ := license.BillingRequiredFeatureListJSON()
 		msg := "Retrieved license features successfully"
 		if billingRequiredReason != "" {

@@ -41,7 +41,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 	isSSOEnabled = false;
 	googleClientId = '';
 	organisations?: ORGANIZATION_DATA[];
-	billingEnabled = false;
+	managedCloud = false;
 	showSlugInput = false;
 	workspaceSlug = '';
 	isSubmittingSSO = false;
@@ -68,14 +68,14 @@ export class LoginComponent implements OnInit, AfterViewInit {
 	async ngAfterViewInit() {
 		try {
 			const config = await this.configService.getConfig();
-			this.billingEnabled = config.billing_enabled ?? false;
+			this.managedCloud = config.managed_cloud ?? false;
 			this.isGoogleOAuthEnabled = config.auth?.google_oauth?.enabled || false;
 			this.isSSOEnabled = config.auth?.sso?.enabled || false;
 			this.googleClientId = config.auth?.google_oauth?.client_id || '';
 			this.isSignupEnabled = config.auth?.is_signup_enabled || false;
 		} catch (error) {
 			console.error('Failed to get config:', error);
-			this.billingEnabled = false;
+			this.managedCloud = false;
 			this.isGoogleOAuthEnabled = false;
 			this.isSSOEnabled = false;
 			this.googleClientId = '';
@@ -187,9 +187,9 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
 	async loginWithSSO() {
 		localStorage.setItem('AUTH_TYPE', 'login');
-		const slug = this.billingEnabled ? this.workspaceSlug.trim() : undefined;
+		const slug = this.managedCloud ? this.workspaceSlug.trim() : undefined;
 
-		if (this.billingEnabled && !slug) {
+		if (this.managedCloud && !slug) {
 			this.showSlugError = true;
 			setTimeout(() => document.getElementById('workspace-slug')?.focus(), 0);
 			return;
