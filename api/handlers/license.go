@@ -27,7 +27,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		orgID = strings.TrimSpace(r.URL.Query().Get("organisation_id"))
 	}
 
-	if h.A.BillingClient != nil && !util.IsStringEmpty(orgID) {
+	if h.shouldUseOrgScopedLicenseFeatures(orgID) {
 		var org *datastore.Organisation
 		var err error
 		if h.A.OrgRepo != nil {
@@ -163,4 +163,15 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
+}
+
+func (h *Handler) shouldUseOrgScopedLicenseFeatures(orgID string) bool {
+	if util.IsStringEmpty(orgID) {
+		return false
+	}
+	if h.A.Cfg.IsCloud() {
+		return h.A.BillingClient != nil
+	}
+
+	return !util.IsStringEmpty(h.A.Cfg.LicenseKey)
 }

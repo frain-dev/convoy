@@ -128,7 +128,8 @@ func emptyResponse[T any](message string) *Response[T] {
 }
 
 func monthBoundsUTC(now time.Time) (time.Time, time.Time) {
-	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	now = now.UTC()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
 	return startOfMonth, endOfMonth
 }

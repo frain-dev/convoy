@@ -63,6 +63,39 @@ func TestGetLicenseFeatures_InstanceLevel(t *testing.T) {
 	require.Equal(t, instanceFeatures, resp.Data)
 }
 
+func TestGetLicenseFeatures_UnlicensedSelfHostedWithOrgIDUsesInstanceFeatures(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	instanceFeatures := json.RawMessage(`{"PortalLinks":true}`)
+
+	handler := &Handler{
+		A: &types.APIOptions{
+			Cfg:           config.Configuration{},
+			BillingClient: &billing.MockBillingClient{},
+			Licenser:      mockLicenser,
+			Logger:        log.New("convoy", log.LevelInfo),
+		},
+	}
+
+	mockLicenser.EXPECT().
+		FeatureListJSON(gomock.Any()).
+		Return(instanceFeatures, nil)
+
+	req := licenseFeaturesRequest(http.MethodGet, "/license/features?orgID=org-unlicensed")
+	w := httptest.NewRecorder()
+
+	handler.GetLicenseFeatures(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp struct {
+		Data json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Equal(t, instanceFeatures, resp.Data)
+}
+
 func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -82,7 +115,7 @@ func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}},
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}, LicenseKey: "lk_test"},
 			BillingClient: &billing.MockBillingClient{},
 			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
@@ -137,7 +170,7 @@ func TestGetLicenseFeatures_OrgLevel_OrganisationIDQuery(t *testing.T) {
 	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}},
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}, LicenseKey: "lk_test"},
 			BillingClient: &billing.MockBillingClient{},
 			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
@@ -179,7 +212,7 @@ func TestGetLicenseFeatures_OrgLevel_UnauthenticatedReturnsUnauthorized(t *testi
 	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}},
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}, LicenseKey: "lk_test"},
 			BillingClient: &billing.MockBillingClient{},
 			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
@@ -214,7 +247,7 @@ func TestGetLicenseFeatures_OrgLevel_Header(t *testing.T) {
 	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}},
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}, LicenseKey: "lk_test"},
 			BillingClient: &billing.MockBillingClient{},
 			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
@@ -262,7 +295,7 @@ func TestGetLicenseFeatures_OrgLevel_BillingRequiredWhenNoLicenseData(t *testing
 
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}},
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}, LicenseKey: "lk_test"},
 			BillingClient: &billing.MockBillingClient{},
 			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
@@ -318,7 +351,7 @@ func TestGetLicenseFeatures_prefersHeaderOrganisationOverQueryOrgID(t *testing.T
 	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}},
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}, LicenseKey: "lk_test"},
 			BillingClient: &billing.MockBillingClient{},
 			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,

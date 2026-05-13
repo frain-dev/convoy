@@ -1107,7 +1107,6 @@ var guestRoutes = []string{
 	"/users/verify_email",
 	"/organisations/process_invite",
 	"/ui/configuration/auth",
-	"/ui/license/features",
 	"/ui/auth/google/token",
 	"/ui/auth/google/setup",
 }
