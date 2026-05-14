@@ -181,7 +181,6 @@ func TestSelfHostedVerifyEmail_TrimsCodeBeforeBillingCall(t *testing.T) {
 				},
 			},
 		},
-		BillingClient: client,
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/ui/self-hosted-billing/verify-email", strings.NewReader(`{"code":" ABC123 "}`))
@@ -281,7 +280,6 @@ func TestSelfHostedBilling_MapsServiceErrorStatus(t *testing.T) {
 						},
 					},
 				},
-				BillingClient: client,
 			}
 
 			w := tc.call(h)

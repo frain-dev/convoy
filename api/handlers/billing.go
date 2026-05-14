@@ -25,7 +25,6 @@ import (
 
 type BillingHandler struct {
 	*Handler
-	BillingClient billing.Client
 }
 
 func billingServiceErrorStatus(err error) int {

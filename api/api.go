@@ -182,37 +182,35 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		return nil, err
 	}
 
+	if strings.TrimSpace(cfg.Billing.OrganisationHost) != "" {
+		cfg.Host = strings.TrimSpace(cfg.Billing.OrganisationHost)
+	}
 	appHandler.cfg = cfg
 
-	func() {
+	billingClient := billing.NewClient(cfg.Billing)
+	if cfg.IsCloud() || strings.TrimSpace(cfg.LicenseKey) != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-
-		billingClient := billing.NewClient(cfg.Billing)
 		if err := billingClient.HealthCheck(ctx); err != nil {
 			a.Logger.Warnf("billing service health check failed (mode=%s, url=%s): %v", cfg.Mode(), sanitizeURLForLog(cfg.Billing.URL), err)
 		}
-		a.BillingClient = billingClient
+	}
+	a.BillingClient = billingClient
 
-		orgRepo := organisations.New(a.Logger, a.DB)
-		userRepo := users.New(a.Logger, a.DB)
-		resolveOwner := func(ctx context.Context, orgID string) (string, error) {
-			org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
-			if err != nil {
-				return "", err
-			}
-			owner, err := userRepo.FindUserByID(ctx, org.OwnerID)
-			if err != nil {
-				return "", err
-			}
-			return strings.TrimSpace(owner.Email), nil
+	orgRepo := organisations.New(a.Logger, a.DB)
+	userRepo := users.New(a.Logger, a.DB)
+	resolveOwner := func(ctx context.Context, orgID string) (string, error) {
+		org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
+		if err != nil {
+			return "", err
 		}
-		strategyCfg := cfg
-		if strings.TrimSpace(strategyCfg.Billing.OrganisationHost) != "" {
-			strategyCfg.Host = strings.TrimSpace(strategyCfg.Billing.OrganisationHost)
+		owner, err := userRepo.FindUserByID(ctx, org.OwnerID)
+		if err != nil {
+			return "", err
 		}
-		a.Billing = billing.NewStrategy(strategyCfg, billingClient, a.Logger, orgRepo, resolveOwner)
-	}()
+		return strings.TrimSpace(owner.Email), nil
+	}
+	a.Billing = billing.NewStrategy(cfg, billingClient, a.Logger, orgRepo, resolveOwner)
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(convoy.AuthUserCtx),
@@ -720,8 +718,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		})
 
 		billingHandler := &handlers.BillingHandler{
-			Handler:       handler,
-			BillingClient: a.A.BillingClient,
+			Handler: handler,
 		}
 		supportsOrgScopedBilling := a.cfg.IsCloud() || !util.IsStringEmpty(a.cfg.LicenseKey)
 		uiRouter.Route("/billing", func(billingRouter chi.Router) {

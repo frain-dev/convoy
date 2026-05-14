@@ -241,7 +241,6 @@ func TestBillingCreateOrganisation_requiresActiveWorkspaceBillingAccess(t *testi
 				OrgMemberRepo: mockOrgMemberRepo,
 			},
 		},
-		BillingClient: counting,
 	}
 
 	body := `{"name":"Malicious Billing Org","external_id":"ext-mal","billing_email":"a@example.com"}`
@@ -297,7 +296,6 @@ func TestSelfHostedRegisterEmail_requiresBillingManageAccess(t *testing.T) {
 				OrgMemberRepo: mockOrgMemberRepo,
 			},
 		},
-		BillingClient: counting,
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/ui/billing/self_hosted/register_email", strings.NewReader(`{"email":"owner@example.com"}`))
@@ -332,7 +330,6 @@ func TestSelfHostedRegisterEmail_rejectsWhenAuthzUnavailable(t *testing.T) {
 				OrgRepo: mockOrgRepo,
 			},
 		},
-		BillingClient: counting,
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/ui/billing/self_hosted/register_email", strings.NewReader(`{"email":"owner@example.com"}`))
@@ -385,7 +382,6 @@ func TestBillingCreateOrganisation_rejectsExternalIDNotMatchingHeader(t *testing
 				OrgMemberRepo: mockOrgMemberRepo,
 			},
 		},
-		BillingClient: counting,
 	}
 
 	body := `{"name":"Legit Org","external_id":"other-org","billing_email":"a@example.com"}`
