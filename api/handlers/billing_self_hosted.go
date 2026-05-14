@@ -69,8 +69,9 @@ func (h *BillingHandler) SelfHostedVerifyEmail(w http.ResponseWriter, r *http.Re
 		_ = render.Render(w, r, util.NewErrorResponse("code is required", http.StatusBadRequest))
 		return
 	}
+	code := strings.TrimSpace(body.Code)
 
-	resp, err := h.BillingClient.SelfHostedVerifyEmail(r.Context(), body.Code)
+	resp, err := h.BillingClient.SelfHostedVerifyEmail(r.Context(), code)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadGateway))
 		return

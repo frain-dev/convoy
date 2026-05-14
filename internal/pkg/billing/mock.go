@@ -13,7 +13,8 @@ type MockBillingClient struct {
 	// CreateOrganisationLicenseKey, when set, is returned as Data.LicenseKey from CreateOrganisation (for tests).
 	CreateOrganisationLicenseKey string
 	// GetOrganisationLicenseKey, when set, is returned as Data.Key from GetOrganisationLicense (for tests).
-	GetOrganisationLicenseKey string
+	GetOrganisationLicenseKey     string
+	LastSelfHostedVerifyEmailCode string
 }
 
 func (m *MockBillingClient) ensureOrganisation(orgID string) {
@@ -404,6 +405,7 @@ func (m *MockBillingClient) SelfHostedRegisterEmail(ctx context.Context, req Sel
 }
 
 func (m *MockBillingClient) SelfHostedVerifyEmail(ctx context.Context, code string) (*Response[SelfHostedVerifyEmailData], error) {
+	m.LastSelfHostedVerifyEmailCode = code
 	return &Response[SelfHostedVerifyEmailData]{
 		Status:  true,
 		Message: "ok",

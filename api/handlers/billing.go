@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/render"
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisation_members"
@@ -180,13 +181,18 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 				return
 			}
 			response["license"] = h.A.Billing.LicenseSummary(r.Context(), orgID)
+		} else if strings.TrimSpace(r.Header.Get("X-Organisation-Id")) == "" &&
+			r.Context().Value(convoy.OrganisationCtx) == nil &&
+			r.Context().Value(convoy.ProjectCtx) == nil &&
+			chi.URLParam(r, "projectID") == "" {
+			response["license"] = billing.LicenseSummary{}
 		} else {
 			org, err := h.retrieveOrganisationForActiveWorkspace(r)
 			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse("active organisation is required", http.StatusBadRequest))
-				return
+				response["license"] = billing.LicenseSummary{}
+			} else {
+				response["license"] = h.A.Billing.LicenseSummary(r.Context(), org.UID)
 			}
-			response["license"] = h.A.Billing.LicenseSummary(r.Context(), org.UID)
 		}
 	}
 

@@ -138,10 +138,12 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		limitDeps := services.OrgProjectLimitDeps{
-			BillingClient: h.A.BillingClient,
-			ProjectRepo:   projects.New(h.A.Logger, h.A.DB),
-			Cfg:           h.A.Cfg,
-			Logger:        h.A.Logger,
+			ProjectRepo: projects.New(h.A.Logger, h.A.DB),
+			Cfg:         h.A.Cfg,
+			Logger:      h.A.Logger,
+		}
+		if h.A.Cfg.IsCloud() {
+			limitDeps.BillingClient = h.A.BillingClient
 		}
 		ok, err := services.CheckOrganisationProjectLimit(r.Context(), org, limitDeps)
 		if err != nil {
