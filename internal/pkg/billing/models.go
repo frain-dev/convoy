@@ -72,6 +72,7 @@ type UpgradeSubscriptionRequest struct {
 type Plan struct {
 	ID             string              `json:"id,omitempty"`
 	Name           string              `json:"name,omitempty"`
+	Description    string              `json:"description,omitempty"`
 	ProductType    string              `json:"product_type,omitempty"`
 	Interval       string              `json:"interval,omitempty"`
 	Intervals      []string            `json:"intervals,omitempty"`

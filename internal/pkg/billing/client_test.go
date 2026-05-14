@@ -232,6 +232,7 @@ func TestClient_GetPlans_ParsesFeaturesFromOverwatch(t *testing.T) {
 		{
 			ID:          "plan-1",
 			Name:        "Cloud Pro",
+			Description: "Perfect for growing businesses",
 			ProductType: "cloud",
 			Interval:    "monthly",
 			Features: []PlanFeature{
@@ -246,6 +247,7 @@ func TestClient_GetPlans_ParsesFeaturesFromOverwatch(t *testing.T) {
 	resp, err := client.GetPlans(context.Background())
 	require.NoError(t, err)
 	require.Len(t, resp.Data, 1)
+	assert.Equal(t, "Perfect for growing businesses", resp.Data[0].Description)
 	require.Len(t, resp.Data[0].Features, 2)
 	assert.Equal(t, "Portal Links", resp.Data[0].Features[0].Name)
 	assert.Equal(t, "core", resp.Data[0].Features[0].Category)
