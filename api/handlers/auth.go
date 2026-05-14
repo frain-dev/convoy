@@ -175,9 +175,14 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 		RetryCount:      configuration.SSOService.RetryCount,
 	}
 	if configuration.Billing.APIKey != "" {
+		org, err := h.retrieveOrganisationForActiveWorkspace(r)
+		if err != nil || org == nil {
+			_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+			return
+		}
 		sc.APIKey = configuration.Billing.APIKey
 		sc.LicenseKey = configuration.LicenseKey
-		sc.OrgID = r.Header.Get("X-Organisation-Id")
+		sc.OrgID = org.UID
 	}
 	ssoClient := service.NewClient(sc)
 

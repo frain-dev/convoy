@@ -2,6 +2,7 @@ import {
   areOverwatchPlansAvailable,
   BILLING_PLANS_UNAVAILABLE_MESSAGE,
   mapOverwatchPlansForCheckout,
+  scopePlansForBillingMode,
   shouldFetchPlans
 } from './billing-plans.util';
 import { Plan } from './plan.service';
@@ -42,5 +43,29 @@ describe('billing plans helpers', () => {
     expect(areOverwatchPlansAvailable([])).toBeFalse();
     expect(areOverwatchPlansAvailable([basePlan])).toBeTrue();
     expect(BILLING_PLANS_UNAVAILABLE_MESSAGE).toBe('Billing plans unavailable. Retry.');
+  });
+
+  it('scopes plans by product_type when present', () => {
+    const cloudPlan: Plan = { ...basePlan, id: 'cloud_pro', product_type: 'cloud' };
+    const selfHostedPlan: Plan = { ...basePlan, id: 'self_pro', product_type: 'self_hosted' };
+
+    expect(scopePlansForBillingMode([cloudPlan, selfHostedPlan], false)).toEqual([cloudPlan]);
+    expect(scopePlansForBillingMode([cloudPlan, selfHostedPlan], true)).toEqual([selfHostedPlan]);
+  });
+
+  it('normalizes product_type values for mode scoping', () => {
+    const cloudPlan: Plan = { ...basePlan, id: 'cloud_business', product_type: ' CLOUD ' };
+    const selfHostedPlan: Plan = { ...basePlan, id: 'self_enterprise', product_type: 'self-hosted' };
+
+    expect(scopePlansForBillingMode([cloudPlan, selfHostedPlan], false)).toEqual([cloudPlan]);
+    expect(scopePlansForBillingMode([cloudPlan, selfHostedPlan], true)).toEqual([selfHostedPlan]);
+  });
+
+  it('excludes plans without product_type in both modes', () => {
+    const cloudPlan: Plan = { ...basePlan, id: 'pro', name: 'Pro' };
+    const selfHostedPlan: Plan = { ...basePlan, id: 'self_hosted_premium', name: 'Self-Hosted Premium' };
+
+    expect(scopePlansForBillingMode([cloudPlan, selfHostedPlan], false)).toEqual([]);
+    expect(scopePlansForBillingMode([cloudPlan, selfHostedPlan], true)).toEqual([]);
   });
 });

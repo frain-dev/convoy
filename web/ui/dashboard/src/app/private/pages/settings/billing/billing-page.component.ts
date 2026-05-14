@@ -22,6 +22,7 @@ import {
   areOverwatchPlansAvailable,
   BILLING_PLANS_UNAVAILABLE_MESSAGE,
   mapOverwatchPlansForCheckout,
+  scopePlansForBillingMode,
   shouldFetchPlans
 } from './billing-plans.util';
 @Component({
@@ -49,6 +50,7 @@ export class BillingPageComponent implements OnInit {
   overwatchPlans: Plan[] = [];
   plansUnavailableMessage = '';
   hasLoadedPlans = false;
+  hasAttemptedPlansLoad = false;
 
   // Existing data
   paymentMethodDetails: PaymentMethodDetails | null = null;
@@ -760,9 +762,11 @@ export class BillingPageComponent implements OnInit {
 
   private loadPlans(forceReload = false) {
     if (!shouldFetchPlans(this.hasLoadedPlans, this.isLoadingPlans, forceReload)) {
+      this.hasAttemptedPlansLoad = true;
       return;
     }
 
+    this.hasAttemptedPlansLoad = true;
     this.isLoadingPlans = true;
     this.plansUnavailableMessage = '';
 
@@ -776,12 +780,18 @@ export class BillingPageComponent implements OnInit {
           this.hasLoadedPlans = false;
           this.plansUnavailableMessage = BILLING_PLANS_UNAVAILABLE_MESSAGE;
         } else {
-          this.overwatchPlans = mapOverwatchPlansForCheckout(plansFromApi);
-          this.plans = this.overwatchPlans;
-          this.hasLoadedPlans = true;
+          const mappedPlans = mapOverwatchPlansForCheckout(plansFromApi);
+          const scopedPlans = scopePlansForBillingMode(mappedPlans, this.selfHostedBilling);
+          this.overwatchPlans = scopedPlans;
+          this.plans = scopedPlans;
+          this.hasLoadedPlans = scopedPlans.length > 0;
 
           if (this.selectedPlan && !this.plans.some(plan => plan.id === this.selectedPlan)) {
             this.selectedPlan = null;
+          }
+
+          if (!this.hasLoadedPlans) {
+            this.plansUnavailableMessage = BILLING_PLANS_UNAVAILABLE_MESSAGE;
           }
         }
         this.isLoadingPlans = false;
@@ -859,7 +869,7 @@ export class BillingPageComponent implements OnInit {
   }
 
   async onUpgradePlan() {
-    if (!this.areCheckoutPlansAvailable()) {
+    if (!this.hasPlanReadyState || !this.areCheckoutPlansAvailable()) {
       this.generalService.showNotification({
         message: this.plansUnavailableMessage || BILLING_PLANS_UNAVAILABLE_MESSAGE,
         style: 'error'
@@ -867,7 +877,7 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    if (!this.selectedPlan) {
+    if (!this.canCheckoutSelectedPlan()) {
       this.generalService.showNotification({
         message: 'Please select a plan first',
         style: 'error'
@@ -996,6 +1006,10 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
+    if (!this.plans.some(plan => plan.id === planId)) {
+      return;
+    }
+
     this.selectedPlan = planId;
   }
 
@@ -1011,6 +1025,28 @@ export class BillingPageComponent implements OnInit {
     } else {
       this.selectPlan(planId);
     }
+  }
+
+  get hasPlanLoadingState(): boolean {
+    return this.isLoadingPlans;
+  }
+
+  get hasPlanReadyState(): boolean {
+    return !this.isLoadingPlans && this.plans.length > 0 && this.areCheckoutPlansAvailable();
+  }
+
+  get hasPlanUnavailableState(): boolean {
+    return this.hasAttemptedPlansLoad && !this.isLoadingPlans && !this.hasPlanReadyState;
+  }
+
+  hasCompareData(): boolean {
+    if (!this.hasPlanReadyState) {
+      return false;
+    }
+
+    return ['core', 'security', 'support'].some(category =>
+      this.getFeaturesByCategory(category as 'core' | 'security' | 'support').length > 0
+    );
   }
 
   getFeaturesByCategory(category: 'core' | 'security' | 'support'): any[] {
@@ -1671,6 +1707,14 @@ export class BillingPageComponent implements OnInit {
 
   areCheckoutPlansAvailable(): boolean {
     return areOverwatchPlansAvailable(this.overwatchPlans);
+  }
+
+  canCheckoutSelectedPlan(): boolean {
+    return this.hasPlanReadyState && this.areCheckoutPlansAvailable() && this.isSelectedPlanValid();
+  }
+
+  private isSelectedPlanValid(): boolean {
+    return !!this.selectedPlan && this.plans.some(plan => plan.id === this.selectedPlan);
   }
 
   hasVatInfo(): boolean {

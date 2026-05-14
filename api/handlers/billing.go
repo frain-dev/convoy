@@ -320,60 +320,7 @@ func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	configPlans := make([]billing.Plan, 0, len(h.A.Cfg.Billing.Plans))
-	for _, p := range h.A.Cfg.Billing.Plans {
-		configPlans = append(configPlans, billing.Plan{ID: p.ID, Name: p.Name, ProductType: p.ProductType})
-	}
-
-	mergedPlans := h.mergePlansWithFeatures(resp.Data, configPlans)
-
-	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", mergedPlans, http.StatusOK))
-}
-
-func (h *BillingHandler) mergePlansWithFeatures(plans, configPlans []billing.Plan) []interface{} {
-	configPlansMap := make(map[string]map[string]interface{})
-	for _, plan := range configPlans {
-		if plan.Name == "" {
-			continue
-		}
-		planJSON, err := json.Marshal(plan)
-		if err != nil {
-			continue
-		}
-		var planMap map[string]interface{}
-		if err := json.Unmarshal(planJSON, &planMap); err != nil {
-			continue
-		}
-		configPlansMap[strings.ToLower(plan.Name)] = planMap
-	}
-
-	mergedPlans := make([]interface{}, 0, len(plans))
-	for _, plan := range plans {
-		planJSON, err := json.Marshal(plan)
-		if err != nil {
-			continue
-		}
-		var planMap map[string]interface{}
-		if err := json.Unmarshal(planJSON, &planMap); err != nil {
-			continue
-		}
-
-		configPlanMap, found := configPlansMap[strings.ToLower(plan.Name)]
-		if found {
-			mergedPlan := make(map[string]interface{})
-			for k, v := range configPlanMap {
-				mergedPlan[k] = v
-			}
-			for k, v := range planMap {
-				mergedPlan[k] = v
-			}
-			mergedPlans = append(mergedPlans, mergedPlan)
-		} else {
-			mergedPlans = append(mergedPlans, planMap)
-		}
-	}
-
-	return mergedPlans
+	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", resp.Data, http.StatusOK))
 }
 
 func (h *BillingHandler) GetTaxIDTypes(w http.ResponseWriter, r *http.Request) {

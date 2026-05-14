@@ -557,14 +557,24 @@
 
         <div class="manage-plan-content">
           <h3 class="text-20 font-medium mb-24px">Manage your plan</h3>
-          @if (areCheckoutPlansAvailable()) {
-            <p class="text-14 text-neutral-11 mb-16px">Click a plan card or the Select button to choose a plan, then click Upgrade to continue.</p>
-          } @else {
-            <p class="text-14 text-neutral-11 mb-16px">Billing plans unavailable. Retry.</p>
-          }
-
-          <!-- Plan Cards -->
-          @if (!isLoadingPlans) {
+          @if (hasPlanLoadingState) {
+            <div class="flex gap-16px mb-40px">
+              <div class="plan-card flex-1">
+                <convoy-skeleton-loader className="w-full h-48"></convoy-skeleton-loader>
+              </div>
+              <div class="plan-card flex-1">
+                <convoy-skeleton-loader className="w-full h-48"></convoy-skeleton-loader>
+              </div>
+            </div>
+          } @else if (hasPlanUnavailableState) {
+            <div class="mb-24px rounded-8px border border-neutral-4 bg-neutral-1 p-16px">
+              <p class="text-13 text-neutral-11 mb-12px">{{ plansUnavailableMessage || 'Billing plans unavailable. Retry.' }}</p>
+              <button type="button" convoy-button fill="outline" size="sm" (click)="retryPlansLoad()">
+                Retry
+              </button>
+            </div>
+          } @else if (hasPlanReadyState) {
+            <p class="text-14 text-neutral-11 mb-16px">Select a plan card to continue.</p>
             <div class="flex gap-16px mb-40px">
               @for (plan of plans; track $index) {
                 <div
@@ -598,7 +608,7 @@
                     convoy-button
                     [fill]="selectedPlan === plan.id ? 'solid' : 'outline'"
                     [color]="selectedPlan === plan.id ? 'primary' : 'neutral'"
-                    [disabled]="!areCheckoutPlansAvailable() || isCurrentPlan(plan.id) || (selectedPlan === plan.id && isLoadingCheckout)"
+                    [disabled]="!hasPlanReadyState || !areCheckoutPlansAvailable() || isCurrentPlan(plan.id) || (selectedPlan === plan.id && (isLoadingCheckout || !canCheckoutSelectedPlan()))"
                     class="plan-card-button"
                     (click)="onPlanCardButtonClick(plan.id); $event.stopPropagation()">
                     {{ getButtonText(plan.id) }}
@@ -606,33 +616,9 @@
                 </div>
               }
             </div>
-          }
 
-          @if (!isLoadingPlans && !areCheckoutPlansAvailable()) {
-            <div class="mb-24px rounded-8px border border-neutral-4 bg-neutral-1 p-16px">
-              <p class="text-13 text-neutral-11 mb-12px">{{ plansUnavailableMessage || 'Billing plans unavailable. Retry.' }}</p>
-              <button type="button" convoy-button fill="outline" size="sm" (click)="retryPlansLoad()">
-                Retry
-              </button>
-            </div>
-          }
-
-          <!-- Loading State -->
-          @if (isLoadingPlans) {
-            <div class="flex gap-16px mb-40px">
-              <div class="plan-card flex-1">
-                <convoy-skeleton-loader className="w-full h-48"></convoy-skeleton-loader>
-              </div>
-              <div class="plan-card flex-1">
-                <convoy-skeleton-loader className="w-full h-48"></convoy-skeleton-loader>
-              </div>
-            </div>
-          }
-
-
-          <!-- Compare Plans Section -->
-          @if (!isLoadingPlans && areCheckoutPlansAvailable()) {
-            <div class="compare-plans-section">
+            @if (hasCompareData()) {
+              <div class="compare-plans-section">
               <h4 class="compare-plans-title">Compare plans</h4>
               <!-- Comparison Table -->
               <div class="comparison-table">
@@ -707,23 +693,26 @@
                   </div>
                 }
               </div>
-              <!-- Cancel Subscription Section - Visible for testing -->
-              @if (currentSubscription && currentSubscription.id) {
-                <div class="mt-40px pt-40px border-t border-neutral-4">
-                  <h4 class="text-16 font-medium mb-16px text-red-600">Danger Zone</h4>
-                  <p class="text-14 text-neutral-7 mb-16px">Cancel your subscription. This action cannot be undone.</p>
-                  <button
-                    convoy-button
-                    fill="outline"
-                    color="error"
-                    [disabled]="isCancellingSubscription"
-                    (click)="onCancelPlan()">
-                    {{ getCancelButtonText() }}
-                  </button>
-                </div>
-              }
-            </div>
+              </div>
+            }
+
+            <!-- Cancel Subscription Section - Visible for testing -->
+            @if (currentSubscription && currentSubscription.id) {
+              <div class="mt-40px pt-40px border-t border-neutral-4">
+                <h4 class="text-16 font-medium mb-16px text-red-600">Danger Zone</h4>
+                <p class="text-14 text-neutral-7 mb-16px">Cancel your subscription. This action cannot be undone.</p>
+                <button
+                  convoy-button
+                  fill="outline"
+                  color="error"
+                  [disabled]="isCancellingSubscription"
+                  (click)="onCancelPlan()">
+                  {{ getCancelButtonText() }}
+                </button>
+              </div>
+            }
           }
+
         </div>
       </dialog>
 
