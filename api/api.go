@@ -182,15 +182,15 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 	appHandler.cfg = cfg
 
-	{
+	func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
 		billingClient := billing.NewClient(cfg.Billing)
 		if err := billingClient.HealthCheck(ctx); err != nil {
 			a.Logger.Warnf("billing service health check failed (mode=%s, url=%s): %v", cfg.Mode(), cfg.Billing.URL, err)
 		}
 		a.BillingClient = billingClient
-		cancel()
 
 		orgRepo := organisations.New(a.Logger, a.DB)
 		userRepo := users.New(a.Logger, a.DB)
@@ -210,7 +210,7 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 			strategyCfg.Host = strings.TrimSpace(strategyCfg.Billing.OrganisationHost)
 		}
 		a.Billing = billing.NewStrategy(strategyCfg, billingClient, a.Logger, orgRepo, resolveOwner)
-	}
+	}()
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(convoy.AuthUserCtx),
