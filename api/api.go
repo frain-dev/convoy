@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -40,6 +41,7 @@ var reactFS embed.FS
 const (
 	VersionHeader = "X-Convoy-Version"
 	serverName    = "apiserver"
+	invalidURLLog = "<invalid-url>"
 )
 
 type ApplicationHandler struct {
@@ -188,7 +190,7 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 		billingClient := billing.NewClient(cfg.Billing)
 		if err := billingClient.HealthCheck(ctx); err != nil {
-			a.Logger.Warnf("billing service health check failed (mode=%s, url=%s): %v", cfg.Mode(), cfg.Billing.URL, err)
+			a.Logger.Warnf("billing service health check failed (mode=%s, url=%s): %v", cfg.Mode(), sanitizeURLForLog(cfg.Billing.URL), err)
 		}
 		a.BillingClient = billingClient
 
@@ -246,6 +248,29 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 	appHandler.versioning = rm
 
 	return appHandler, nil
+}
+
+func sanitizeURLForLog(rawURL string) string {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return rawURL
+	}
+
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return invalidURLLog
+	}
+
+	parsedURL.User = nil
+	parsedURL.RawQuery = ""
+	parsedURL.Fragment = ""
+
+	safeURL := parsedURL.String()
+	if safeURL == "" {
+		return invalidURLLog
+	}
+
+	return safeURL
 }
 
 func (a *ApplicationHandler) buildRouter() *chi.Mux {
