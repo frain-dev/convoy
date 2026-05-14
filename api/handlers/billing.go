@@ -60,7 +60,7 @@ func billingServiceErrorStatus(err error) int {
 
 func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Request, orgID string) bool {
 	org, err := h.retrieveOrganisation(r)
-	if err != nil {
+	if err != nil || org == nil {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation not found", http.StatusNotFound))
 		return false
 	}

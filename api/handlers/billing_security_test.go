@@ -390,3 +390,21 @@ func TestBillingConfigUsesValidatedOrgIDQueryForLicenseSummary(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, []string{"org-scope"}, spy.LicenseSummaryCalls)
 }
+
+func TestCheckBillingAccess_returnsNotFoundWhenOrganisationMissingWithoutError(t *testing.T) {
+	t.Parallel()
+
+	h := &BillingHandler{
+		Handler: &Handler{
+			A: &types.APIOptions{},
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ui/billing/organisations/org-123/usage", nil)
+	w := httptest.NewRecorder()
+
+	allowed := h.checkBillingAccess(w, req, "org-123")
+
+	require.False(t, allowed)
+	require.Equal(t, http.StatusNotFound, w.Code)
+}
