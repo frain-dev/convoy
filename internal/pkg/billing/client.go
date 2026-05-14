@@ -381,6 +381,10 @@ func (c *HTTPClient) DownloadInvoice(ctx context.Context, orgID, invoiceID strin
 }
 
 func makeRequest[T any](ctx context.Context, httpClient *http.Client, cfg config.BillingConfiguration, method, path string, body interface{}) (*Response[T], error) {
+	return makeBillingRequest[T](ctx, httpClient, cfg, method, path, body, "")
+}
+
+func makeBillingRequest[T any](ctx context.Context, httpClient *http.Client, cfg config.BillingConfiguration, method, path string, body interface{}, licenseKey string) (*Response[T], error) {
 	if !strings.HasPrefix(path, "/api/v1") && !strings.HasPrefix(path, "/billing") {
 		path = "/api/v1" + path
 	}
@@ -405,6 +409,9 @@ func makeRequest[T any](ctx context.Context, httpClient *http.Client, cfg config
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	if licenseKey != "" {
+		req.Header.Set("X-License-Key", licenseKey)
+	}
 	if cfg.APIKey != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.APIKey))
 	}
@@ -434,7 +441,7 @@ func makeRequest[T any](ctx context.Context, httpClient *http.Client, cfg config
 	}
 
 	var data T
-	if len(baseResp.Data) > 0 {
+	if len(baseResp.Data) > 0 && string(baseResp.Data) != "null" {
 		if err := json.Unmarshal(baseResp.Data, &data); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal response data: %w", err)
 		}
@@ -537,71 +544,5 @@ func (c *HTTPClient) LicenseBillingUpgradeSubscription(ctx context.Context, lice
 }
 
 func makeLicenseRequest[T any](ctx context.Context, httpClient *http.Client, cfg config.BillingConfiguration, method, path string, body interface{}, licenseKey string) (*Response[T], error) {
-	if !strings.HasPrefix(path, "/api/v1") && !strings.HasPrefix(path, "/billing") {
-		path = "/api/v1" + path
-	}
-
-	u := fmt.Sprintf("%s%s", cfg.URL, path)
-
-	var req *http.Request
-	var err error
-
-	if body != nil {
-		jsonBody, marshalErr := json.Marshal(body)
-		if marshalErr != nil {
-			return nil, fmt.Errorf("failed to marshal request body: %w", marshalErr)
-		}
-		req, err = http.NewRequestWithContext(ctx, method, u, bytes.NewReader(jsonBody))
-	} else {
-		req, err = http.NewRequestWithContext(ctx, method, u, http.NoBody)
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	if licenseKey != "" {
-		req.Header.Set("X-License-Key", licenseKey)
-	}
-	if cfg.APIKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.APIKey))
-	}
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make request to billing service: %w", err)
-	}
-	defer resp.Body.Close()
-
-	rawResp, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		return nil, fmt.Errorf("failed to read billing response body: %w", readErr)
-	}
-
-	var baseResp struct {
-		Status  bool            `json:"status"`
-		Message string          `json:"message"`
-		Data    json.RawMessage `json:"data,omitempty"`
-	}
-	if err := json.Unmarshal(rawResp, &baseResp); err != nil {
-		return nil, billingNonJSONError(resp, rawResp, err)
-	}
-
-	if !baseResp.Status {
-		return nil, &ServiceError{StatusCode: resp.StatusCode, Message: baseResp.Message}
-	}
-
-	var data T
-	if len(baseResp.Data) > 0 && string(baseResp.Data) != "null" {
-		if err := json.Unmarshal(baseResp.Data, &data); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal response data: %w", err)
-		}
-	}
-
-	return &Response[T]{
-		Status:  baseResp.Status,
-		Message: baseResp.Message,
-		Data:    data,
-	}, nil
+	return makeBillingRequest[T](ctx, httpClient, cfg, method, path, body, licenseKey)
 }

@@ -145,6 +145,39 @@ func TestClient_GetUsage_NonJSONUpstreamReturnsBadGateway(t *testing.T) {
 	assert.Contains(t, serviceErr.Message, "HTTP 404")
 }
 
+func TestClient_GetUsage_AcceptsNullData(t *testing.T) {
+	client, server := setupTestClientWithHandler(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":true,"message":"ok","data":null}`))
+	}))
+	defer server.Close()
+
+	resp, err := client.GetUsage(context.Background(), "org-1")
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.True(t, resp.Status)
+	assert.Equal(t, "ok", resp.Message)
+}
+
+func TestClient_LicenseBillingGetSubscription_UsesLicenseHeaderAndAcceptsNullData(t *testing.T) {
+	client, server := setupTestClientWithHandler(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "lk_test", r.Header.Get("X-License-Key"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":true,"message":"ok","data":null}`))
+	}))
+	defer server.Close()
+
+	resp, err := client.LicenseBillingGetSubscription(context.Background(), "lk_test")
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.True(t, resp.Status)
+	assert.Equal(t, "ok", resp.Message)
+}
+
 func TestClient_GetInvoices_Success(t *testing.T) {
 	client, server := setupTestClientWithResponse(t, []Invoice{})
 	defer server.Close()
