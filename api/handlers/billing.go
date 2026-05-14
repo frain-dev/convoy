@@ -38,10 +38,6 @@ func billingServiceErrorStatus(err error) int {
 		case http.StatusUnauthorized:
 			// Map billing 401 to 422 so the dashboard does not treat it as Convoy session auth failure / logout.
 			return http.StatusUnprocessableEntity
-		case http.StatusForbidden:
-			return serviceErr.StatusCode
-		case http.StatusBadRequest, http.StatusNotFound, http.StatusBadGateway:
-			return serviceErr.StatusCode
 		}
 		if serviceErr.StatusCode >= http.StatusBadRequest && serviceErr.StatusCode < http.StatusInternalServerError {
 			return serviceErr.StatusCode
