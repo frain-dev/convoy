@@ -19,9 +19,11 @@ import {HttpService} from 'src/app/services/http/http.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {buildCheckoutPayload} from './plan-cadence.util';
 import {
+  BillingPlansUnavailableReason,
   areOverwatchPlansAvailable,
   BILLING_PLANS_UNAVAILABLE_MESSAGE,
   mapOverwatchPlansForCheckout,
+  resolveBillingPlansUnavailableMessage,
   scopePlansForBillingMode,
   shouldFetchPlans
 } from './billing-plans.util';
@@ -51,6 +53,7 @@ export class BillingPageComponent implements OnInit {
   plansUnavailableMessage = '';
   hasLoadedPlans = false;
   hasAttemptedPlansLoad = false;
+  plansUnavailableReason: BillingPlansUnavailableReason = 'none';
 
   // Existing data
   paymentMethodDetails: PaymentMethodDetails | null = null;
@@ -769,6 +772,7 @@ export class BillingPageComponent implements OnInit {
     this.hasAttemptedPlansLoad = true;
     this.isLoadingPlans = true;
     this.plansUnavailableMessage = '';
+    this.plansUnavailableReason = 'none';
 
     this.planService.getPlans(this.getOrganisationId()).subscribe({
       next: (response) => {
@@ -778,7 +782,8 @@ export class BillingPageComponent implements OnInit {
           this.overwatchPlans = [];
           this.selectedPlan = null;
           this.hasLoadedPlans = false;
-          this.plansUnavailableMessage = BILLING_PLANS_UNAVAILABLE_MESSAGE;
+          this.plansUnavailableReason = 'empty_catalog';
+          this.plansUnavailableMessage = resolveBillingPlansUnavailableMessage(this.plansUnavailableReason, this.selfHostedBilling);
         } else {
           const mappedPlans = mapOverwatchPlansForCheckout(plansFromApi);
           const scopedPlans = scopePlansForBillingMode(mappedPlans, this.selfHostedBilling);
@@ -791,7 +796,8 @@ export class BillingPageComponent implements OnInit {
           }
 
           if (!this.hasLoadedPlans) {
-            this.plansUnavailableMessage = BILLING_PLANS_UNAVAILABLE_MESSAGE;
+            this.plansUnavailableReason = 'mode_filtered';
+            this.plansUnavailableMessage = resolveBillingPlansUnavailableMessage(this.plansUnavailableReason, this.selfHostedBilling);
           }
         }
         this.isLoadingPlans = false;
@@ -802,10 +808,20 @@ export class BillingPageComponent implements OnInit {
         this.overwatchPlans = [];
         this.selectedPlan = null;
         this.hasLoadedPlans = false;
-        this.plansUnavailableMessage = BILLING_PLANS_UNAVAILABLE_MESSAGE;
+        this.plansUnavailableReason = 'fetch_error';
+        this.plansUnavailableMessage = resolveBillingPlansUnavailableMessage(this.plansUnavailableReason, this.selfHostedBilling);
         this.isLoadingPlans = false;
       }
     });
+  }
+
+  get showCloudManagedPlansState(): boolean {
+    return this.plansUnavailableReason === 'mode_filtered' && !this.selfHostedBilling;
+  }
+
+  openCloudWorkspaceBilling(): void {
+    // Route user to Convoy Cloud billing settings explicitly instead of a blank retry loop.
+    window.open('https://app.getconvoy.io/settings?activePage=usage%20and%20billing', '_blank', 'noopener,noreferrer');
   }
 
   closeManagePlan() {

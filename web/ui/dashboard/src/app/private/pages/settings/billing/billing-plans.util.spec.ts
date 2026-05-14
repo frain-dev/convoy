@@ -1,7 +1,10 @@
 import {
   areOverwatchPlansAvailable,
   BILLING_PLANS_UNAVAILABLE_MESSAGE,
+  CLOUD_MANAGED_PLANS_MESSAGE,
+  SELF_HOSTED_MANAGED_PLANS_MESSAGE,
   mapOverwatchPlansForCheckout,
+  resolveBillingPlansUnavailableMessage,
   scopePlansForBillingMode,
   shouldFetchPlans
 } from './billing-plans.util';
@@ -43,6 +46,14 @@ describe('billing plans helpers', () => {
     expect(areOverwatchPlansAvailable([])).toBeFalse();
     expect(areOverwatchPlansAvailable([basePlan])).toBeTrue();
     expect(BILLING_PLANS_UNAVAILABLE_MESSAGE).toBe('Billing plans unavailable. Retry.');
+  });
+
+  it('returns mode-aware unavailable messages', () => {
+    expect(resolveBillingPlansUnavailableMessage('mode_filtered', false)).toBe(CLOUD_MANAGED_PLANS_MESSAGE);
+    expect(resolveBillingPlansUnavailableMessage('mode_filtered', true)).toBe(SELF_HOSTED_MANAGED_PLANS_MESSAGE);
+    expect(resolveBillingPlansUnavailableMessage('fetch_error', false)).toBe(BILLING_PLANS_UNAVAILABLE_MESSAGE);
+    expect(resolveBillingPlansUnavailableMessage('empty_catalog', true)).toBe(BILLING_PLANS_UNAVAILABLE_MESSAGE);
+    expect(resolveBillingPlansUnavailableMessage('none', false)).toBe('');
   });
 
   it('scopes plans by product_type when present', () => {

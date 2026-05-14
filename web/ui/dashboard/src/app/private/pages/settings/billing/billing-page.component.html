@@ -569,9 +569,20 @@
           } @else if (hasPlanUnavailableState) {
             <div class="mb-24px rounded-8px border border-neutral-4 bg-neutral-1 p-16px">
               <p class="text-13 text-neutral-11 mb-12px">{{ plansUnavailableMessage || 'Billing plans unavailable. Retry.' }}</p>
-              <button type="button" convoy-button fill="outline" size="sm" (click)="retryPlansLoad()">
-                Retry
-              </button>
+              @if (showCloudManagedPlansState) {
+                <div class="flex gap-8px flex-wrap">
+                  <button type="button" convoy-button fill="outline" size="sm" (click)="openCloudWorkspaceBilling()">
+                    Manage Cloud Plan
+                  </button>
+                  <button type="button" convoy-button variant="secondary" size="sm" (click)="retryPlansLoad()">
+                    Refresh
+                  </button>
+                </div>
+              } @else {
+                <button type="button" convoy-button fill="outline" size="sm" (click)="retryPlansLoad()">
+                  Retry
+                </button>
+              }
             </div>
           } @else if (hasPlanReadyState) {
             <p class="text-14 text-neutral-11 mb-16px">Select a plan card to continue.</p>
