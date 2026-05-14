@@ -143,6 +143,7 @@ func TestClient_GetUsage_NonJSONUpstreamReturnsBadGateway(t *testing.T) {
 	assert.Equal(t, http.StatusBadGateway, serviceErr.StatusCode)
 	assert.Contains(t, serviceErr.Message, "billing returned non-JSON response")
 	assert.Contains(t, serviceErr.Message, "HTTP 404")
+	assert.NotContains(t, serviceErr.Message, "No route matches")
 }
 
 func TestClient_GetUsage_AcceptsNullData(t *testing.T) {

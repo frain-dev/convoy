@@ -16,22 +16,16 @@ import (
 	"github.com/frain-dev/convoy/config"
 )
 
-func billingNonJSONError(resp *http.Response, raw []byte, err error) error {
+func billingNonJSONError(resp *http.Response, _ []byte, _ error) error {
 	status := 0
 	ct := ""
 	if resp != nil {
 		status = resp.StatusCode
 		ct = resp.Header.Get("Content-Type")
 	}
-	preview := strings.TrimSpace(string(raw))
-	if preview == "" {
-		preview = "(empty body)"
-	} else if len(preview) > 280 {
-		preview = preview[:280] + "..."
-	}
 	return &ServiceError{
 		StatusCode: http.StatusBadGateway,
-		Message:    fmt.Sprintf("billing returned non-JSON response (HTTP %d, Content-Type %q, body prefix: %q)", status, ct, preview),
+		Message:    fmt.Sprintf("billing returned non-JSON response (HTTP %d, Content-Type %q)", status, ct),
 	}
 }
 
