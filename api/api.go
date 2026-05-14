@@ -458,7 +458,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
-		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(handler.A.Logger), shouldAuthRoute))
+		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(handler.A.Logger), func(r *http.Request) bool {
+			return shouldAuthRoute(r, a.cfg)
+		}))
 
 		uiRouter.Get("/license/features", handler.GetLicenseFeatures)
 
@@ -696,6 +698,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			Handler:       handler,
 			BillingClient: a.A.BillingClient,
 		}
+		supportsOrgScopedBilling := a.cfg.IsCloud() || !util.IsStringEmpty(a.cfg.LicenseKey)
 		uiRouter.Route("/billing", func(billingRouter chi.Router) {
 			billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
 			// Authenticated dashboard only (Usage & billing). Not on guestRoutes; self-hosted purchase runs while logged in.
@@ -706,43 +709,45 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			billingRouter.Get("/plans", billingHandler.GetPlans)
 			billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
 
-			billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
-				orgBillingRouter.Get("/", billingHandler.GetOrganisation)
-				orgBillingRouter.Put("/", billingHandler.UpdateOrganisation)
-				orgBillingRouter.Get("/usage", billingHandler.GetUsage)
-				orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
-				orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
-				orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
-				orgBillingRouter.Get("/internal_id", billingHandler.GetInternalOrganisationID)
-				orgBillingRouter.Put("/tax_id", billingHandler.UpdateOrganisationTaxID)
-				orgBillingRouter.Put("/address", billingHandler.UpdateOrganisationAddress)
-			})
+			if supportsOrgScopedBilling {
+				billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
+					orgBillingRouter.Get("/", billingHandler.GetOrganisation)
+					orgBillingRouter.Put("/", billingHandler.UpdateOrganisation)
+					orgBillingRouter.Get("/usage", billingHandler.GetUsage)
+					orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
+					orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
+					orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
+					orgBillingRouter.Get("/internal_id", billingHandler.GetInternalOrganisationID)
+					orgBillingRouter.Put("/tax_id", billingHandler.UpdateOrganisationTaxID)
+					orgBillingRouter.Put("/address", billingHandler.UpdateOrganisationAddress)
+				})
 
-			if a.cfg.IsCloud() {
-				billingRouter.Route("/organisations", func(billingOrgRouter chi.Router) {
-					billingOrgRouter.Post("/", billingHandler.CreateOrganisation)
+				if a.cfg.IsCloud() {
+					billingRouter.Route("/organisations", func(billingOrgRouter chi.Router) {
+						billingOrgRouter.Post("/", billingHandler.CreateOrganisation)
+					})
+				}
+
+				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
+					billingSubRouter.Get("/", billingHandler.GetSubscriptions)
+					billingSubRouter.Post("/onboard", billingHandler.OnboardSubscription)
+					billingSubRouter.Put("/{subscriptionID}/upgrade", billingHandler.UpgradeSubscription)
+					billingSubRouter.Delete("/{subscriptionID}", billingHandler.DeleteSubscription)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
+					billingPmRouter.Get("/", billingHandler.GetPaymentMethods)
+					billingPmRouter.Get("/setup_intent", billingHandler.GetSetupIntent)
+					billingPmRouter.Put("/{pmID}/default", billingHandler.SetDefaultPaymentMethod)
+					billingPmRouter.Delete("/{pmID}", billingHandler.DeletePaymentMethod)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
+					billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
+					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
+					billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
 				})
 			}
-
-			billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
-				billingSubRouter.Get("/", billingHandler.GetSubscriptions)
-				billingSubRouter.Post("/onboard", billingHandler.OnboardSubscription)
-				billingSubRouter.Put("/{subscriptionID}/upgrade", billingHandler.UpgradeSubscription)
-				billingSubRouter.Delete("/{subscriptionID}", billingHandler.DeleteSubscription)
-			})
-
-			billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
-				billingPmRouter.Get("/", billingHandler.GetPaymentMethods)
-				billingPmRouter.Get("/setup_intent", billingHandler.GetSetupIntent)
-				billingPmRouter.Put("/{pmID}/default", billingHandler.SetDefaultPaymentMethod)
-				billingPmRouter.Delete("/{pmID}", billingHandler.DeletePaymentMethod)
-			})
-
-			billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
-				billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
-				billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
-				billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
-			})
 		})
 	})
 
@@ -952,7 +957,9 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
-		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(handler.A.Logger), shouldAuthRoute))
+		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(handler.A.Logger), func(r *http.Request) bool {
+			return shouldAuthRoute(r, a.cfg)
+		}))
 
 		// TODO(subomi): added these back for the tests to pass.
 		// What should we do in the future?
@@ -1111,9 +1118,9 @@ var guestRoutes = []string{
 	"/ui/auth/google/setup",
 }
 
-func shouldAuthRoute(r *http.Request) bool {
+func shouldAuthRoute(r *http.Request, cfg config.Configuration) bool {
 	if strings.HasSuffix(r.URL.Path, "/ui/license/features") {
-		return licenseFeaturesRequiresAuth(r)
+		return licenseFeaturesRequiresAuth(r, cfg)
 	}
 
 	for _, route := range guestRoutes {
@@ -1125,7 +1132,11 @@ func shouldAuthRoute(r *http.Request) bool {
 	return true
 }
 
-func licenseFeaturesRequiresAuth(r *http.Request) bool {
+func licenseFeaturesRequiresAuth(r *http.Request, cfg config.Configuration) bool {
+	if !cfg.IsCloud() && util.IsStringEmpty(cfg.LicenseKey) {
+		return false
+	}
+
 	return strings.TrimSpace(r.Header.Get("X-Organisation-Id")) != "" ||
 		strings.TrimSpace(r.URL.Query().Get("orgID")) != "" ||
 		strings.TrimSpace(r.URL.Query().Get("organisation_id")) != ""
