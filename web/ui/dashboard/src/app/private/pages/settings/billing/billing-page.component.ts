@@ -17,6 +17,7 @@ import {BillingOverviewService, BillingOverview} from './billing-overview.servic
 import {BillingUsageService, UsageRow} from './billing-usage.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {buildCheckoutPayload, resolveCheckoutCadence} from './plan-cadence.util';
 @Component({
     selector: 'app-billing-page',
     templateUrl: './billing-page.component.html',
@@ -769,17 +770,22 @@ export class BillingPageComponent implements OnInit {
             const overwatchPlan = overwatchPlansMap.get(defaultPlan.name.toLowerCase());
 
             if (overwatchPlan) {
+              const planWithResolvedCadence = {
+                ...overwatchPlan,
+                interval: resolveCheckoutCadence(overwatchPlan)
+              };
+
               if (!overwatchPlan.features || overwatchPlan.features.length === 0) {
                 return {
-                  ...overwatchPlan,
+                  ...planWithResolvedCadence,
                   features: defaultPlan.features,
-                  description: overwatchPlan.description || defaultPlan.description,
-                  price: overwatchPlan.price || defaultPlan.price,
-                  currency: overwatchPlan.currency || defaultPlan.currency,
-                  interval: overwatchPlan.interval || defaultPlan.interval
+                  description: planWithResolvedCadence.description || defaultPlan.description,
+                  price: planWithResolvedCadence.price || defaultPlan.price,
+                  currency: planWithResolvedCadence.currency || defaultPlan.currency,
+                  interval: planWithResolvedCadence.interval || defaultPlan.interval
                 };
               }
-              return overwatchPlan;
+              return planWithResolvedCadence;
             }
 
             return defaultPlan;
@@ -909,6 +915,7 @@ export class BillingPageComponent implements OnInit {
     try {
       const orgId = this.getOrganisationId();
       const host = window.location.origin;
+      const payload = buildCheckoutPayload(planIdForApi, host, selectedPlanData);
 
       let checkoutUrl: string;
 
@@ -916,11 +923,7 @@ export class BillingPageComponent implements OnInit {
         const response = await this.httpService.request({
           url: `/billing/organisations/${orgId}/subscriptions/${this.currentSubscription.id}/upgrade`,
           method: 'put',
-          body: {
-            plan_id: planIdForApi,
-            host: host,
-            interval: selectedPlanData.interval
-          }
+          body: payload
         });
 
         if (response.data && response.data.checkout_url) {
@@ -932,11 +935,7 @@ export class BillingPageComponent implements OnInit {
         const response = await this.httpService.request({
           url: `/billing/organisations/${orgId}/subscriptions/onboard`,
           method: 'post',
-          body: {
-            plan_id: planIdForApi,
-            host: host,
-            interval: selectedPlanData.interval
-          }
+          body: payload
         });
 
         if (response.data && response.data.checkout_url) {

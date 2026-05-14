@@ -70,9 +70,19 @@ type UpgradeSubscriptionRequest struct {
 }
 
 type Plan struct {
-	ID          string `json:"id,omitempty"`
-	Name        string `json:"name,omitempty"`
-	ProductType string `json:"product_type,omitempty"`
+	ID             string              `json:"id,omitempty"`
+	Name           string              `json:"name,omitempty"`
+	ProductType    string              `json:"product_type,omitempty"`
+	Interval       string              `json:"interval,omitempty"`
+	Intervals      []string            `json:"intervals,omitempty"`
+	PricingOptions []PlanPricingOption `json:"pricing_options,omitempty"`
+}
+
+type PlanPricingOption struct {
+	Interval    string `json:"interval,omitempty"`
+	AmountCents int64  `json:"amount_cents,omitempty"`
+	Currency    string `json:"currency,omitempty"`
+	TrialDays   int64  `json:"trial_days,omitempty"`
 }
 
 type BillingSubscription struct {

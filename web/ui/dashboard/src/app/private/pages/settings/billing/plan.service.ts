@@ -9,6 +9,13 @@ export interface PlanFeature {
   value: string;
 }
 
+export interface PlanPricingOption {
+  interval: string;
+  amount_cents?: number;
+  currency?: string;
+  trial_days?: number;
+}
+
 export interface Plan {
   id: string;
   name: string;
@@ -16,6 +23,8 @@ export interface Plan {
   price: number;
   currency: string;
   interval: string;
+  intervals?: string[];
+  pricing_options?: PlanPricingOption[];
   features: PlanFeature[];
   isPopular?: boolean;
   isCurrent?: boolean;
