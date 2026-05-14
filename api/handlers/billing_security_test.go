@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -311,6 +312,41 @@ func TestSelfHostedRegisterEmail_requiresBillingManageAccess(t *testing.T) {
 	require.Zero(t, counting.registerCalls)
 }
 
+func TestSelfHostedRegisterEmail_rejectsWhenAuthzUnavailable(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockOrgRepo.EXPECT().
+		FetchOrganisationByID(gomock.Any(), "org-scope").
+		Return(&datastore.Organisation{UID: "org-scope"}, nil)
+
+	counting := &countingSelfHostedBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	h := &BillingHandler{
+		Handler: &Handler{
+			A: &types.APIOptions{
+				Cfg:     config.Configuration{LicenseKey: "lk_test"},
+				Logger:  log.New("convoy", log.LevelError),
+				OrgRepo: mockOrgRepo,
+			},
+		},
+		BillingClient: counting,
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/ui/billing/self_hosted/register_email", strings.NewReader(`{"email":"owner@example.com"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Organisation-Id", "org-scope")
+	req = authRequestWithUser(req, "user-1")
+
+	w := httptest.NewRecorder()
+	h.SelfHostedRegisterEmail(w, req)
+
+	require.Equal(t, http.StatusForbidden, w.Code)
+	require.Zero(t, counting.registerCalls)
+}
+
 func TestBillingCreateOrganisation_rejectsExternalIDNotMatchingHeader(t *testing.T) {
 	t.Parallel()
 
@@ -462,6 +498,51 @@ func TestBillingConfigUsesValidatedOrgIDQueryForLicenseSummary(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, []string{"org-scope"}, spy.LicenseSummaryCalls)
+}
+
+func TestBillingConfigReturnsEmptyLicenseWhenStrategyUnavailable(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+	mockOrgMemberRepo.EXPECT().
+		FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "org-scope").
+		Return(&datastore.OrganisationMember{}, nil)
+
+	h := &BillingHandler{
+		Handler: &Handler{
+			A: &types.APIOptions{
+				Cfg:           config.Configuration{LicenseKey: "lk-instance"},
+				Logger:        log.New("convoy", log.LevelError),
+				OrgMemberRepo: mockOrgMemberRepo,
+			},
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ui/billing/config?org_id=org-scope", nil)
+	req = authRequestWithUser(req, "user-1")
+
+	w := httptest.NewRecorder()
+	h.GetBillingConfig(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp struct {
+		Status bool `json:"status"`
+		Data   struct {
+			License struct {
+				Configured      bool `json:"configured"`
+				HasEntitlements bool `json:"has_entitlements"`
+				MaskedKey       string `json:"masked_key"`
+			} `json:"license"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.True(t, resp.Status)
+	require.False(t, resp.Data.License.Configured)
+	require.False(t, resp.Data.License.HasEntitlements)
+	require.Empty(t, resp.Data.License.MaskedKey)
 }
 
 func TestCheckBillingAccess_returnsNotFoundWhenOrganisationMissingWithoutError(t *testing.T) {

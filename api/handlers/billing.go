@@ -64,6 +64,10 @@ func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Reque
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID mismatch", http.StatusForbidden))
 		return false
 	}
+	if h.A.Authz == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing authorizer is unavailable", http.StatusForbidden))
+		return false
+	}
 
 	if err := h.A.Authz.Authorize(r.Context(), string(policies.PermissionBillingManage), org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing access requires billing admin or organisation admin role", http.StatusForbidden))
@@ -99,6 +103,10 @@ func (h *BillingHandler) checkBillingCreateAccess(w http.ResponseWriter, r *http
 
 	if org.UID != orgID {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID mismatch", http.StatusForbidden))
+		return false
+	}
+	if h.A.Authz == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing authorizer is unavailable", http.StatusForbidden))
 		return false
 	}
 
@@ -177,7 +185,11 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 			if !h.allowBillingCatalogOrgIDQuery(w, r, orgID) {
 				return
 			}
-			response["license"] = h.A.Billing.LicenseSummary(r.Context(), orgID)
+			if h.A.Billing != nil {
+				response["license"] = h.A.Billing.LicenseSummary(r.Context(), orgID)
+			} else {
+				response["license"] = billing.LicenseSummary{}
+			}
 		} else if strings.TrimSpace(r.Header.Get("X-Organisation-Id")) == "" &&
 			r.Context().Value(convoy.OrganisationCtx) == nil &&
 			r.Context().Value(convoy.ProjectCtx) == nil &&
@@ -188,7 +200,11 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 			if err != nil {
 				response["license"] = billing.LicenseSummary{}
 			} else {
-				response["license"] = h.A.Billing.LicenseSummary(r.Context(), org.UID)
+				if h.A.Billing != nil {
+					response["license"] = h.A.Billing.LicenseSummary(r.Context(), org.UID)
+				} else {
+					response["license"] = billing.LicenseSummary{}
+				}
 			}
 		}
 	}
@@ -203,6 +219,10 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+	if h.A.Billing == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("billing service unavailable", http.StatusServiceUnavailable))
 		return
 	}
 

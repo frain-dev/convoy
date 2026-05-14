@@ -2,16 +2,23 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	authz "github.com/Subomi/go-authz"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
@@ -131,12 +138,43 @@ func TestGetBillingConfig_SelfHostedOrglessReturnsConfig(t *testing.T) {
 func TestSelfHostedVerifyEmail_TrimsCodeBeforeBillingCall(t *testing.T) {
 	t.Parallel()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+
+	mockOrgRepo.EXPECT().
+		FetchOrganisationByID(gomock.Any(), "org-scope").
+		Return(&datastore.Organisation{UID: "org-scope"}, nil).
+		AnyTimes()
+	mockOrgMemberRepo.EXPECT().
+		FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "org-scope").
+		Return(&datastore.OrganisationMember{Role: auth.Role{Type: auth.RoleBillingAdmin}}, nil).
+		AnyTimes()
+	mockOrgMemberRepo.EXPECT().
+		FetchInstanceAdminByUserID(gomock.Any(), "user-1").
+		Return(nil, sql.ErrNoRows).
+		AnyTimes()
+
+	bp := &policies.BillingPolicy{
+		BasePolicy:             authz.NewBasePolicy(),
+		OrganisationMemberRepo: mockOrgMemberRepo,
+	}
+	bp.SetRule(string(policies.PermissionManage), authz.RuleFunc(bp.Manage))
+	az, err := authz.NewAuthz(&authz.AuthzOpts{})
+	require.NoError(t, err)
+	require.NoError(t, az.RegisterPolicy(bp))
+
 	client := &billing.MockBillingClient{}
 	h := &BillingHandler{
 		Handler: &Handler{
 			A: &types.APIOptions{
 				Cfg:    config.Configuration{LicenseKey: "lk_test"},
 				Logger: log.New("convoy", log.LevelError),
+				Authz:  az,
+				OrgRepo:       mockOrgRepo,
+				OrgMemberRepo: mockOrgMemberRepo,
 				Billing: &selfHostedForwardingStrategy{
 					billingStrategySpy: &billingStrategySpy{},
 					client:             client,
@@ -147,6 +185,8 @@ func TestSelfHostedVerifyEmail_TrimsCodeBeforeBillingCall(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/ui/self-hosted-billing/verify-email", strings.NewReader(`{"code":" ABC123 "}`))
+	req.Header.Set("X-Organisation-Id", "org-scope")
+	req = authRequestWithUser(req, "user-1")
 	w := httptest.NewRecorder()
 	h.SelfHostedVerifyEmail(w, req)
 
@@ -167,6 +207,8 @@ func TestSelfHostedBilling_MapsServiceErrorStatus(t *testing.T) {
 			statusCode: http.StatusTooManyRequests,
 			call: func(h *BillingHandler) *httptest.ResponseRecorder {
 				req := httptest.NewRequest(http.MethodPost, "/ui/self-hosted-billing/register-email", strings.NewReader(`{"email":"owner@example.com"}`))
+				req.Header.Set("X-Organisation-Id", "org-scope")
+				req = authRequestWithUser(req, "user-1")
 				w := httptest.NewRecorder()
 				h.SelfHostedRegisterEmail(w, req)
 				return w
@@ -177,6 +219,8 @@ func TestSelfHostedBilling_MapsServiceErrorStatus(t *testing.T) {
 			statusCode: http.StatusUnprocessableEntity,
 			call: func(h *BillingHandler) *httptest.ResponseRecorder {
 				req := httptest.NewRequest(http.MethodPost, "/ui/self-hosted-billing/verify-email", strings.NewReader(`{"code":"ABC123"}`))
+				req.Header.Set("X-Organisation-Id", "org-scope")
+				req = authRequestWithUser(req, "user-1")
 				w := httptest.NewRecorder()
 				h.SelfHostedVerifyEmail(w, req)
 				return w
@@ -188,6 +232,33 @@ func TestSelfHostedBilling_MapsServiceErrorStatus(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+			mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+			mockOrgRepo.EXPECT().
+				FetchOrganisationByID(gomock.Any(), "org-scope").
+				Return(&datastore.Organisation{UID: "org-scope"}, nil).
+				AnyTimes()
+			mockOrgMemberRepo.EXPECT().
+				FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "org-scope").
+				Return(&datastore.OrganisationMember{Role: auth.Role{Type: auth.RoleBillingAdmin}}, nil).
+				AnyTimes()
+			mockOrgMemberRepo.EXPECT().
+				FetchInstanceAdminByUserID(gomock.Any(), "user-1").
+				Return(nil, sql.ErrNoRows).
+				AnyTimes()
+
+			bp := &policies.BillingPolicy{
+				BasePolicy:             authz.NewBasePolicy(),
+				OrganisationMemberRepo: mockOrgMemberRepo,
+			}
+			bp.SetRule(string(policies.PermissionManage), authz.RuleFunc(bp.Manage))
+			az, err := authz.NewAuthz(&authz.AuthzOpts{})
+			require.NoError(t, err)
+			require.NoError(t, az.RegisterPolicy(bp))
 
 			client := &selfHostedErrorBillingClient{
 				MockBillingClient: &billing.MockBillingClient{},
@@ -201,6 +272,9 @@ func TestSelfHostedBilling_MapsServiceErrorStatus(t *testing.T) {
 					A: &types.APIOptions{
 						Cfg:    config.Configuration{LicenseKey: "lk_test"},
 						Logger: log.New("convoy", log.LevelError),
+						Authz:  az,
+						OrgRepo: mockOrgRepo,
+						OrgMemberRepo: mockOrgMemberRepo,
 						Billing: &selfHostedForwardingStrategy{
 							billingStrategySpy: &billingStrategySpy{},
 							client:             client,

@@ -21,7 +21,7 @@ func (h *BillingHandler) SelfHostedRegisterEmail(w http.ResponseWriter, r *http.
 		_ = render.Render(w, r, util.NewErrorResponse("Self-hosted billing bootstrap is not available on managed cloud", http.StatusForbidden))
 		return
 	}
-	if h.A.Authz != nil && !h.checkBillingCreateAccess(w, r) {
+	if !h.checkBillingCreateAccess(w, r) {
 		return
 	}
 
@@ -60,7 +60,7 @@ func (h *BillingHandler) SelfHostedVerifyEmail(w http.ResponseWriter, r *http.Re
 		_ = render.Render(w, r, util.NewErrorResponse("Self-hosted billing bootstrap is not available on managed cloud", http.StatusForbidden))
 		return
 	}
-	if h.A.Authz != nil && !h.checkBillingCreateAccess(w, r) {
+	if !h.checkBillingCreateAccess(w, r) {
 		return
 	}
 
