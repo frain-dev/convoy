@@ -16,6 +16,19 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
+type selfHostedForwardingStrategy struct {
+	*billingStrategySpy
+	client billing.Client
+}
+
+func (s *selfHostedForwardingStrategy) SelfHostedRegisterEmail(ctx context.Context, req billing.SelfHostedRegisterEmailRequest) (*billing.Response[billing.SelfHostedRegisterEmailData], error) {
+	return s.client.SelfHostedRegisterEmail(ctx, req)
+}
+
+func (s *selfHostedForwardingStrategy) SelfHostedVerifyEmail(ctx context.Context, code string) (*billing.Response[billing.SelfHostedVerifyEmailData], error) {
+	return s.client.SelfHostedVerifyEmail(ctx, code)
+}
+
 func TestGetBillingEnabled_ReportsModeAndAlwaysEnabled(t *testing.T) {
 	t.Parallel()
 
@@ -101,8 +114,9 @@ func TestGetBillingConfig_SelfHostedOrglessReturnsConfig(t *testing.T) {
 	var resp struct {
 		Status bool `json:"status"`
 		Data   struct {
-			SelfHosted bool `json:"self_hosted"`
-			License    struct {
+			SelfHosted      bool           `json:"self_hosted"`
+			PaymentProvider map[string]any `json:"payment_provider"`
+			License         struct {
 				Configured bool `json:"configured"`
 			} `json:"license"`
 		} `json:"data"`
@@ -110,6 +124,7 @@ func TestGetBillingConfig_SelfHostedOrglessReturnsConfig(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	require.True(t, resp.Status)
 	require.True(t, resp.Data.SelfHosted)
+	require.Nil(t, resp.Data.PaymentProvider)
 	require.False(t, resp.Data.License.Configured)
 }
 
@@ -122,6 +137,10 @@ func TestSelfHostedVerifyEmail_TrimsCodeBeforeBillingCall(t *testing.T) {
 			A: &types.APIOptions{
 				Cfg:    config.Configuration{LicenseKey: "lk_test"},
 				Logger: log.New("convoy", log.LevelError),
+				Billing: &selfHostedForwardingStrategy{
+					billingStrategySpy: &billingStrategySpy{},
+					client:             client,
+				},
 			},
 		},
 		BillingClient: client,
@@ -182,6 +201,10 @@ func TestSelfHostedBilling_MapsServiceErrorStatus(t *testing.T) {
 					A: &types.APIOptions{
 						Cfg:    config.Configuration{LicenseKey: "lk_test"},
 						Logger: log.New("convoy", log.LevelError),
+						Billing: &selfHostedForwardingStrategy{
+							billingStrategySpy: &billingStrategySpy{},
+							client:             client,
+						},
 					},
 				},
 				BillingClient: client,

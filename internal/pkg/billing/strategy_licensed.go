@@ -184,6 +184,14 @@ func (s *licensedStrategy) LicenseSummary(ctx context.Context, orgID string) Lic
 	return out
 }
 
+func (s *licensedStrategy) SelfHostedRegisterEmail(ctx context.Context, req SelfHostedRegisterEmailRequest) (*Response[SelfHostedRegisterEmailData], error) {
+	return s.client.SelfHostedRegisterEmail(ctx, req)
+}
+
+func (s *licensedStrategy) SelfHostedVerifyEmail(ctx context.Context, code string) (*Response[SelfHostedVerifyEmailData], error) {
+	return s.client.SelfHostedVerifyEmail(ctx, code)
+}
+
 func (s *licensedStrategy) CreateOrganisation(ctx context.Context, data BillingOrganisation) (*Response[BillingOrganisation], error) {
 	return nil, ErrNoLicense
 }

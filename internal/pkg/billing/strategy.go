@@ -33,6 +33,8 @@ type Strategy interface {
 	LicenseSummary(ctx context.Context, orgID string) LicenseSummary
 
 	// Writes
+	SelfHostedRegisterEmail(ctx context.Context, req SelfHostedRegisterEmailRequest) (*Response[SelfHostedRegisterEmailData], error)
+	SelfHostedVerifyEmail(ctx context.Context, code string) (*Response[SelfHostedVerifyEmailData], error)
 	CreateOrganisation(ctx context.Context, data BillingOrganisation) (*Response[BillingOrganisation], error)
 	OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error)
 	UpgradeSubscription(ctx context.Context, orgID, subscriptionID string, req UpgradeSubscriptionRequest) (*Response[Checkout], error)

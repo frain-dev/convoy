@@ -89,6 +89,14 @@ func (s *billingStrategySpy) LicenseSummary(ctx context.Context, orgID string) b
 	return billing.LicenseSummary{Configured: true, MaskedKey: "lk_****_test", HasEntitlements: true}
 }
 
+func (s *billingStrategySpy) SelfHostedRegisterEmail(ctx context.Context, req billing.SelfHostedRegisterEmailRequest) (*billing.Response[billing.SelfHostedRegisterEmailData], error) {
+	return &billing.Response[billing.SelfHostedRegisterEmailData]{Status: true, Message: "ok", Data: billing.SelfHostedRegisterEmailData{}}, nil
+}
+
+func (s *billingStrategySpy) SelfHostedVerifyEmail(ctx context.Context, code string) (*billing.Response[billing.SelfHostedVerifyEmailData], error) {
+	return &billing.Response[billing.SelfHostedVerifyEmailData]{Status: true, Message: "ok", Data: billing.SelfHostedVerifyEmailData{}}, nil
+}
+
 func (s *billingStrategySpy) CreateOrganisation(ctx context.Context, data billing.BillingOrganisation) (*billing.Response[billing.BillingOrganisation], error) {
 	return nil, billing.ErrNoLicense
 }
@@ -175,6 +183,16 @@ type countingCreateBillingClient struct {
 	createCalls int
 }
 
+type countingSelfHostedBillingClient struct {
+	*billing.MockBillingClient
+	registerCalls int
+}
+
+func (c *countingSelfHostedBillingClient) SelfHostedRegisterEmail(ctx context.Context, req billing.SelfHostedRegisterEmailRequest) (*billing.Response[billing.SelfHostedRegisterEmailData], error) {
+	c.registerCalls++
+	return c.MockBillingClient.SelfHostedRegisterEmail(ctx, req)
+}
+
 func (c *countingCreateBillingClient) CreateOrganisation(ctx context.Context, orgData billing.BillingOrganisation) (*billing.Response[billing.BillingOrganisation], error) {
 	c.createCalls++
 	return c.MockBillingClient.CreateOrganisation(ctx, orgData)
@@ -236,6 +254,61 @@ func TestBillingCreateOrganisation_requiresActiveWorkspaceBillingAccess(t *testi
 
 	require.Equal(t, http.StatusForbidden, w.Code)
 	require.Zero(t, counting.createCalls)
+}
+
+func TestSelfHostedRegisterEmail_requiresBillingManageAccess(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+
+	mockOrgRepo.EXPECT().
+		FetchOrganisationByID(gomock.Any(), "org-scope").
+		Return(&datastore.Organisation{UID: "org-scope"}, nil)
+	mockOrgMemberRepo.EXPECT().
+		FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "org-scope").
+		Return(&datastore.OrganisationMember{Role: auth.Role{Type: auth.RoleProjectAdmin}}, nil)
+	mockOrgMemberRepo.EXPECT().
+		FetchInstanceAdminByUserID(gomock.Any(), "user-1").
+		Return(nil, sql.ErrNoRows).
+		AnyTimes()
+
+	bp := &policies.BillingPolicy{
+		BasePolicy:             authz.NewBasePolicy(),
+		OrganisationMemberRepo: mockOrgMemberRepo,
+	}
+	bp.SetRule(string(policies.PermissionManage), authz.RuleFunc(bp.Manage))
+	az, err := authz.NewAuthz(&authz.AuthzOpts{})
+	require.NoError(t, err)
+	require.NoError(t, az.RegisterPolicy(bp))
+
+	counting := &countingSelfHostedBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	h := &BillingHandler{
+		Handler: &Handler{
+			A: &types.APIOptions{
+				Cfg:           config.Configuration{LicenseKey: "lk_test"},
+				Logger:        log.New("convoy", log.LevelError),
+				Authz:         az,
+				OrgRepo:       mockOrgRepo,
+				OrgMemberRepo: mockOrgMemberRepo,
+			},
+		},
+		BillingClient: counting,
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/ui/billing/self_hosted/register_email", strings.NewReader(`{"email":"owner@example.com"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Organisation-Id", "org-scope")
+	req = authRequestWithUser(req, "user-1")
+
+	w := httptest.NewRecorder()
+	h.SelfHostedRegisterEmail(w, req)
+
+	require.Equal(t, http.StatusForbidden, w.Code)
+	require.Zero(t, counting.registerCalls)
 }
 
 func TestBillingCreateOrganisation_rejectsExternalIDNotMatchingHeader(t *testing.T) {

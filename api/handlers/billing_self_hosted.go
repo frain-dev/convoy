@@ -21,6 +21,9 @@ func (h *BillingHandler) SelfHostedRegisterEmail(w http.ResponseWriter, r *http.
 		_ = render.Render(w, r, util.NewErrorResponse("Self-hosted billing bootstrap is not available on managed cloud", http.StatusForbidden))
 		return
 	}
+	if h.A.Authz != nil && !h.checkBillingCreateAccess(w, r) {
+		return
+	}
 
 	var body struct {
 		Email            string `json:"email"`
@@ -36,7 +39,7 @@ func (h *BillingHandler) SelfHostedRegisterEmail(w http.ResponseWriter, r *http.
 		return
 	}
 
-	resp, err := h.BillingClient.SelfHostedRegisterEmail(r.Context(), billing.SelfHostedRegisterEmailRequest{
+	resp, err := h.A.Billing.SelfHostedRegisterEmail(r.Context(), billing.SelfHostedRegisterEmailRequest{
 		Email:            email,
 		OrganisationName: strings.TrimSpace(body.OrganisationName),
 	})
@@ -57,6 +60,9 @@ func (h *BillingHandler) SelfHostedVerifyEmail(w http.ResponseWriter, r *http.Re
 		_ = render.Render(w, r, util.NewErrorResponse("Self-hosted billing bootstrap is not available on managed cloud", http.StatusForbidden))
 		return
 	}
+	if h.A.Authz != nil && !h.checkBillingCreateAccess(w, r) {
+		return
+	}
 
 	var body struct {
 		Code string `json:"code"`
@@ -71,7 +77,7 @@ func (h *BillingHandler) SelfHostedVerifyEmail(w http.ResponseWriter, r *http.Re
 	}
 	code := strings.TrimSpace(body.Code)
 
-	resp, err := h.BillingClient.SelfHostedVerifyEmail(r.Context(), code)
+	resp, err := h.A.Billing.SelfHostedVerifyEmail(r.Context(), code)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), billingServiceErrorStatus(err)))
 		return

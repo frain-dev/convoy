@@ -164,10 +164,12 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 		"enabled":     true,
 		"mode":        h.A.Cfg.Mode(),
 		"self_hosted": h.A.Cfg.IsSelfHosted(),
-		"payment_provider": map[string]interface{}{
+	}
+	if h.A.Cfg.IsCloud() {
+		response["payment_provider"] = map[string]interface{}{
 			"type":            h.A.Cfg.Billing.PaymentProvider.Type,
 			"publishable_key": h.A.Cfg.Billing.PaymentProvider.PublishableKey,
-		},
+		}
 	}
 	if h.A.Cfg.IsSelfHosted() {
 		orgID := strings.TrimSpace(r.URL.Query().Get("org_id"))

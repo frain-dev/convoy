@@ -82,6 +82,14 @@ func (s *unlicensedStrategy) LicenseSummary(ctx context.Context, orgID string) L
 	return LicenseSummary{}
 }
 
+func (s *unlicensedStrategy) SelfHostedRegisterEmail(ctx context.Context, req SelfHostedRegisterEmailRequest) (*Response[SelfHostedRegisterEmailData], error) {
+	return s.client.SelfHostedRegisterEmail(ctx, req)
+}
+
+func (s *unlicensedStrategy) SelfHostedVerifyEmail(ctx context.Context, code string) (*Response[SelfHostedVerifyEmailData], error) {
+	return s.client.SelfHostedVerifyEmail(ctx, code)
+}
+
 func (s *unlicensedStrategy) OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error) {
 	return nil, ErrNoLicense
 }
