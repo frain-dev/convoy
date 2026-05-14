@@ -228,8 +228,7 @@ func TestBillingCreateOrganisation_requiresActiveWorkspaceBillingAccess(t *testi
 	require.NoError(t, err)
 	require.NoError(t, az.RegisterPolicy(bp))
 
-	mockInner := &billing.MockBillingClient{}
-	counting := &countingCreateBillingClient{MockBillingClient: mockInner}
+	counting := &countingCreateBillingClient{}
 
 	h := &BillingHandler{
 		Handler: &Handler{
@@ -285,7 +284,7 @@ func TestSelfHostedRegisterEmail_requiresBillingManageAccess(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, az.RegisterPolicy(bp))
 
-	counting := &countingSelfHostedBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	counting := &countingSelfHostedBillingClient{}
 	h := &BillingHandler{
 		Handler: &Handler{
 			A: &types.APIOptions{
@@ -321,7 +320,7 @@ func TestSelfHostedRegisterEmail_rejectsWhenAuthzUnavailable(t *testing.T) {
 		FetchOrganisationByID(gomock.Any(), "org-scope").
 		Return(&datastore.Organisation{UID: "org-scope"}, nil)
 
-	counting := &countingSelfHostedBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	counting := &countingSelfHostedBillingClient{}
 	h := &BillingHandler{
 		Handler: &Handler{
 			A: &types.APIOptions{
@@ -369,8 +368,7 @@ func TestBillingCreateOrganisation_rejectsExternalIDNotMatchingHeader(t *testing
 	require.NoError(t, err)
 	require.NoError(t, az.RegisterPolicy(bp))
 
-	mockInner := &billing.MockBillingClient{}
-	counting := &countingCreateBillingClient{MockBillingClient: mockInner}
+	counting := &countingCreateBillingClient{}
 
 	h := &BillingHandler{
 		Handler: &Handler{
