@@ -17,7 +17,13 @@ import {BillingOverviewService, BillingOverview} from './billing-overview.servic
 import {BillingUsageService, UsageRow} from './billing-usage.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
-import {buildCheckoutPayload, resolveCheckoutCadence} from './plan-cadence.util';
+import {buildCheckoutPayload} from './plan-cadence.util';
+import {
+  areOverwatchPlansAvailable,
+  BILLING_PLANS_UNAVAILABLE_MESSAGE,
+  mapOverwatchPlansForCheckout,
+  shouldFetchPlans
+} from './billing-plans.util';
 @Component({
     selector: 'app-billing-page',
     templateUrl: './billing-page.component.html',
@@ -41,6 +47,8 @@ export class BillingPageComponent implements OnInit {
   isLoadingPlans = false;
   currentSubscription: any = null;
   overwatchPlans: Plan[] = [];
+  plansUnavailableMessage = '';
+  hasLoadedPlans = false;
 
   // Existing data
   paymentMethodDetails: PaymentMethodDetails | null = null;
@@ -746,60 +754,45 @@ export class BillingPageComponent implements OnInit {
     this.managePlanDialog.nativeElement.showModal();
   }
 
-  private loadPlans() {
+  retryPlansLoad() {
+    this.loadPlans(true);
+  }
+
+  private loadPlans(forceReload = false) {
+    if (!shouldFetchPlans(this.hasLoadedPlans, this.isLoadingPlans, forceReload)) {
+      return;
+    }
+
     this.isLoadingPlans = true;
+    this.plansUnavailableMessage = '';
 
     this.planService.getPlans(this.getOrganisationId()).subscribe({
       next: (response) => {
-        const defaultData = this.selfHostedBilling
-          ? this.planService.getDefaultSelfHostedPlanComparison()
-          : this.planService.getDefaultPlanComparison();
-
-        if (!response.data || response.data.length === 0) {
-          this.plans = defaultData.plans;
+        const plansFromApi = Array.isArray(response.data) ? response.data : [];
+        if (plansFromApi.length === 0) {
+          this.plans = [];
           this.overwatchPlans = [];
+          this.selectedPlan = null;
+          this.hasLoadedPlans = false;
+          this.plansUnavailableMessage = BILLING_PLANS_UNAVAILABLE_MESSAGE;
         } else {
-          this.overwatchPlans = response.data;
+          this.overwatchPlans = mapOverwatchPlansForCheckout(plansFromApi);
+          this.plans = this.overwatchPlans;
+          this.hasLoadedPlans = true;
 
-          const overwatchPlansMap = new Map<string, Plan>();
-          response.data.forEach((plan: Plan) => {
-            overwatchPlansMap.set(plan.name.toLowerCase(), plan);
-          });
-
-          this.plans = defaultData.plans.map((defaultPlan: Plan) => {
-            const overwatchPlan = overwatchPlansMap.get(defaultPlan.name.toLowerCase());
-
-            if (overwatchPlan) {
-              const planWithResolvedCadence = {
-                ...overwatchPlan,
-                interval: resolveCheckoutCadence(overwatchPlan)
-              };
-
-              if (!overwatchPlan.features || overwatchPlan.features.length === 0) {
-                return {
-                  ...planWithResolvedCadence,
-                  features: defaultPlan.features,
-                  description: planWithResolvedCadence.description || defaultPlan.description,
-                  price: planWithResolvedCadence.price || defaultPlan.price,
-                  currency: planWithResolvedCadence.currency || defaultPlan.currency,
-                  interval: planWithResolvedCadence.interval || defaultPlan.interval
-                };
-              }
-              return planWithResolvedCadence;
-            }
-
-            return defaultPlan;
-          });
+          if (this.selectedPlan && !this.plans.some(plan => plan.id === this.selectedPlan)) {
+            this.selectedPlan = null;
+          }
         }
         this.isLoadingPlans = false;
       },
       error: (error) => {
         console.warn('Failed to load plans from backend:', error);
-        const defaultData = this.selfHostedBilling
-          ? this.planService.getDefaultSelfHostedPlanComparison()
-          : this.planService.getDefaultPlanComparison();
-        this.plans = defaultData.plans;
+        this.plans = [];
         this.overwatchPlans = [];
+        this.selectedPlan = null;
+        this.hasLoadedPlans = false;
+        this.plansUnavailableMessage = BILLING_PLANS_UNAVAILABLE_MESSAGE;
         this.isLoadingPlans = false;
       }
     });
@@ -866,6 +859,14 @@ export class BillingPageComponent implements OnInit {
   }
 
   async onUpgradePlan() {
+    if (!this.areCheckoutPlansAvailable()) {
+      this.generalService.showNotification({
+        message: this.plansUnavailableMessage || BILLING_PLANS_UNAVAILABLE_MESSAGE,
+        style: 'error'
+      });
+      return;
+    }
+
     if (!this.selectedPlan) {
       this.generalService.showNotification({
         message: 'Please select a plan first',
@@ -970,6 +971,10 @@ export class BillingPageComponent implements OnInit {
   }
 
   getButtonText(planId: string): string {
+    if (!this.areCheckoutPlansAvailable()) {
+      return 'Unavailable';
+    }
+
     if (this.isLoadingCheckout && this.selectedPlan === planId) {
       return 'Loading...';
     }
@@ -987,11 +992,19 @@ export class BillingPageComponent implements OnInit {
   }
 
   selectPlan(planId: string) {
+    if (!this.areCheckoutPlansAvailable()) {
+      return;
+    }
+
     this.selectedPlan = planId;
   }
 
   /** Handle plan card button: Select selects the plan; Upgrade/Subscribe triggers checkout. */
   onPlanCardButtonClick(planId: string): void {
+    if (!this.areCheckoutPlansAvailable()) {
+      return;
+    }
+
     if (this.isCurrentPlan(planId)) return;
     if (this.selectedPlan === planId) {
       this.onUpgradePlan();
@@ -1654,6 +1667,10 @@ export class BillingPageComponent implements OnInit {
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  areCheckoutPlansAvailable(): boolean {
+    return areOverwatchPlansAvailable(this.overwatchPlans);
   }
 
   hasVatInfo(): boolean {

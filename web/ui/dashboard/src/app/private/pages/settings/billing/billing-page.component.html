@@ -557,7 +557,11 @@
 
         <div class="manage-plan-content">
           <h3 class="text-20 font-medium mb-24px">Manage your plan</h3>
-          <p class="text-14 text-neutral-11 mb-16px">Click a plan card or the Select button to choose a plan, then click Upgrade to continue.</p>
+          @if (areCheckoutPlansAvailable()) {
+            <p class="text-14 text-neutral-11 mb-16px">Click a plan card or the Select button to choose a plan, then click Upgrade to continue.</p>
+          } @else {
+            <p class="text-14 text-neutral-11 mb-16px">Billing plans unavailable. Retry.</p>
+          }
 
           <!-- Plan Cards -->
           @if (!isLoadingPlans) {
@@ -594,13 +598,22 @@
                     convoy-button
                     [fill]="selectedPlan === plan.id ? 'solid' : 'outline'"
                     [color]="selectedPlan === plan.id ? 'primary' : 'neutral'"
-                    [disabled]="isCurrentPlan(plan.id) || (selectedPlan === plan.id && isLoadingCheckout)"
+                    [disabled]="!areCheckoutPlansAvailable() || isCurrentPlan(plan.id) || (selectedPlan === plan.id && isLoadingCheckout)"
                     class="plan-card-button"
                     (click)="onPlanCardButtonClick(plan.id); $event.stopPropagation()">
                     {{ getButtonText(plan.id) }}
                   </button>
                 </div>
               }
+            </div>
+          }
+
+          @if (!isLoadingPlans && !areCheckoutPlansAvailable()) {
+            <div class="mb-24px rounded-8px border border-neutral-4 bg-neutral-1 p-16px">
+              <p class="text-13 text-neutral-11 mb-12px">{{ plansUnavailableMessage || 'Billing plans unavailable. Retry.' }}</p>
+              <button type="button" convoy-button fill="outline" size="sm" (click)="retryPlansLoad()">
+                Retry
+              </button>
             </div>
           }
 
@@ -618,7 +631,7 @@
 
 
           <!-- Compare Plans Section -->
-          @if (!isLoadingPlans) {
+          @if (!isLoadingPlans && areCheckoutPlansAvailable()) {
             <div class="compare-plans-section">
               <h4 class="compare-plans-title">Compare plans</h4>
               <!-- Comparison Table -->
