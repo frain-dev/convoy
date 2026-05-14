@@ -34,8 +34,7 @@ func billingServiceErrorStatus(err error) int {
 	}
 
 	if serviceErr, ok := errors.AsType[*billing.ServiceError](err); ok {
-		switch serviceErr.StatusCode {
-		case http.StatusUnauthorized:
+		if serviceErr.StatusCode == http.StatusUnauthorized {
 			// Map billing 401 to 422 so the dashboard does not treat it as Convoy session auth failure / logout.
 			return http.StatusUnprocessableEntity
 		}
