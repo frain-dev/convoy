@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -132,4 +133,76 @@ func TestSelfHostedVerifyEmail_TrimsCodeBeforeBillingCall(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "ABC123", client.LastSelfHostedVerifyEmailCode)
+}
+
+func TestSelfHostedBilling_MapsServiceErrorStatus(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		statusCode int
+		call       func(*BillingHandler) *httptest.ResponseRecorder
+	}{
+		{
+			name:       "register email",
+			statusCode: http.StatusTooManyRequests,
+			call: func(h *BillingHandler) *httptest.ResponseRecorder {
+				req := httptest.NewRequest(http.MethodPost, "/ui/self-hosted-billing/register-email", strings.NewReader(`{"email":"owner@example.com"}`))
+				w := httptest.NewRecorder()
+				h.SelfHostedRegisterEmail(w, req)
+				return w
+			},
+		},
+		{
+			name:       "verify email",
+			statusCode: http.StatusUnprocessableEntity,
+			call: func(h *BillingHandler) *httptest.ResponseRecorder {
+				req := httptest.NewRequest(http.MethodPost, "/ui/self-hosted-billing/verify-email", strings.NewReader(`{"code":"ABC123"}`))
+				w := httptest.NewRecorder()
+				h.SelfHostedVerifyEmail(w, req)
+				return w
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			client := &selfHostedErrorBillingClient{
+				MockBillingClient: &billing.MockBillingClient{},
+				err: &billing.ServiceError{
+					StatusCode: tc.statusCode,
+					Message:    "upstream rejected request",
+				},
+			}
+			h := &BillingHandler{
+				Handler: &Handler{
+					A: &types.APIOptions{
+						Cfg:    config.Configuration{LicenseKey: "lk_test"},
+						Logger: log.New("convoy", log.LevelError),
+					},
+				},
+				BillingClient: client,
+			}
+
+			w := tc.call(h)
+
+			require.Equal(t, tc.statusCode, w.Code)
+		})
+	}
+}
+
+type selfHostedErrorBillingClient struct {
+	*billing.MockBillingClient
+	err error
+}
+
+func (c *selfHostedErrorBillingClient) SelfHostedRegisterEmail(ctx context.Context, req billing.SelfHostedRegisterEmailRequest) (*billing.Response[billing.SelfHostedRegisterEmailData], error) {
+	return nil, c.err
+}
+
+func (c *selfHostedErrorBillingClient) SelfHostedVerifyEmail(ctx context.Context, code string) (*billing.Response[billing.SelfHostedVerifyEmailData], error) {
+	return nil, c.err
 }

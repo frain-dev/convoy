@@ -41,7 +41,7 @@ func (h *BillingHandler) SelfHostedRegisterEmail(w http.ResponseWriter, r *http.
 		OrganisationName: strings.TrimSpace(body.OrganisationName),
 	})
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadGateway))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), billingServiceErrorStatus(err)))
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *BillingHandler) SelfHostedVerifyEmail(w http.ResponseWriter, r *http.Re
 
 	resp, err := h.BillingClient.SelfHostedVerifyEmail(r.Context(), code)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadGateway))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), billingServiceErrorStatus(err)))
 		return
 	}
 
