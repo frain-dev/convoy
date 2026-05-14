@@ -174,7 +174,7 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 		Timeout:         configuration.SSOService.Timeout,
 		RetryCount:      configuration.SSOService.RetryCount,
 	}
-	if configuration.Billing.APIKey != "" {
+	if configuration.IsCloud() {
 		org, err := h.retrieveOrganisationForActiveWorkspace(r)
 		if err != nil || org == nil {
 			_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))

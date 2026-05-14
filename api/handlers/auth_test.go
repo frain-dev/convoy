@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func TestHandler_GoogleOAuthToken(t *testing.T) {
@@ -215,4 +216,33 @@ func TestHandler_GoogleOAuthSetup(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetSSOAdminPortal_WhitespaceAPIKeyDoesNotEnforceCloudOrgLookup(t *testing.T) {
+	handler := &Handler{
+		A: &types.APIOptions{
+			Cfg: config.Configuration{
+				Host:       "https://dashboard.example.com",
+				LicenseKey: "lk_test",
+				Billing: config.BillingConfiguration{
+					APIKey: "   ",
+				},
+				SSOService: config.SSOServiceConfiguration{
+					Host: "https://sso.example.com",
+				},
+			},
+			Logger: log.New("convoy", log.LevelError),
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/auth/sso/admin-portal", bytes.NewBufferString(`{"return_url":"https://app.example.com"}`))
+	w := httptest.NewRecorder()
+
+	handler.GetSSOAdminPortal(w, req)
+
+	require.Equal(t, http.StatusForbidden, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	require.Equal(t, "Failed to get SSO admin portal URL", response["message"])
 }
