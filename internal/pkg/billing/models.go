@@ -76,6 +76,7 @@ type Plan struct {
 	Interval       string              `json:"interval,omitempty"`
 	Intervals      []string            `json:"intervals,omitempty"`
 	PricingOptions []PlanPricingOption `json:"pricing_options,omitempty"`
+	Features       []PlanFeature       `json:"features,omitempty"`
 }
 
 type PlanPricingOption struct {
@@ -83,6 +84,13 @@ type PlanPricingOption struct {
 	AmountCents int64  `json:"amount_cents,omitempty"`
 	Currency    string `json:"currency,omitempty"`
 	TrialDays   int64  `json:"trial_days,omitempty"`
+}
+
+type PlanFeature struct {
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Category    string `json:"category,omitempty"`
+	Value       string `json:"value,omitempty"`
 }
 
 type BillingSubscription struct {

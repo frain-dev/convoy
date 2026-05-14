@@ -227,6 +227,30 @@ func TestClient_GetPlans_Success(t *testing.T) {
 	assert.Equal(t, "Success", resp.Message)
 }
 
+func TestClient_GetPlans_ParsesFeaturesFromOverwatch(t *testing.T) {
+	plans := []Plan{
+		{
+			ID:          "plan-1",
+			Name:        "Cloud Pro",
+			ProductType: "cloud",
+			Interval:    "monthly",
+			Features: []PlanFeature{
+				{Name: "Portal Links", Category: "core", Value: "Supported"},
+				{Name: "SAML", Category: "security", Value: "Unsupported"},
+			},
+		},
+	}
+	client, server := setupTestClientWithResponse(t, plans)
+	defer server.Close()
+
+	resp, err := client.GetPlans(context.Background())
+	require.NoError(t, err)
+	require.Len(t, resp.Data, 1)
+	require.Len(t, resp.Data[0].Features, 2)
+	assert.Equal(t, "Portal Links", resp.Data[0].Features[0].Name)
+	assert.Equal(t, "core", resp.Data[0].Features[0].Category)
+}
+
 func TestClient_GetTaxIDTypes_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "GET", r.Method)
