@@ -241,6 +241,43 @@
   }
 }
 
+.plan-card-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  justify-content: center;
+  margin: 0;
+  text-align: center;
+}
+
+.plan-card-price-prefix,
+.plan-card-price-cadence {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.plan-card-price-amount {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 36px;
+  letter-spacing: -0.02em;
+}
+
+.plan-card-price-helper {
+  margin: 0;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.plan-card-price-note {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
 .plan-card-button {
   width: 100%;
   justify-content: center;

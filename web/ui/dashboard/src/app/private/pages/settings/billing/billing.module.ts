@@ -31,6 +31,7 @@ import {
     LabelComponent
 } from "../../../../components/input/input.component";
 import {DialogDirective, DialogHeaderComponent} from "../../../../components/dialog/dialog.directive";
+import {TooltipComponent} from "../../../../components/tooltip/tooltip.component";
 
 @NgModule({ declarations: [
         BillingPageComponent,
@@ -44,5 +45,5 @@ import {DialogDirective, DialogHeaderComponent} from "../../../../components/dia
         BillingOverviewComponent,
         BillingUsageComponent,
         BillingInvoicesComponent
-    ], imports: [CommonModule, FormsModule, ReactiveFormsModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent], providers: [CountriesService, provideHttpClient(withInterceptorsFromDi())] })
+    ], imports: [CommonModule, FormsModule, ReactiveFormsModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent, TooltipComponent], providers: [CountriesService, provideHttpClient(withInterceptorsFromDi())] })
 export class BillingModule {}

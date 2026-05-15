@@ -1013,6 +1013,114 @@ export class BillingPageComponent implements OnInit {
     return 'Select';
   }
 
+  getPlanPricingDisplay(plan: Plan): { from: string; amount: string; cadence: string; helperText: string | null } {
+    const pricing = this.resolvePlanPricing(plan);
+    if (!pricing) {
+      return {
+        from: '',
+        amount: 'Custom pricing',
+        cadence: '',
+        helperText: 'Final amount shown at checkout'
+      };
+    }
+
+    const normalizedCadence = this.getHighestTierCadence();
+    if (normalizedCadence === 'month' && pricing.interval === 'year') {
+      return {
+        from: 'from',
+        amount: this.formatCurrencyAmount(pricing.amount / 12, pricing.currency),
+        cadence: '/ month',
+        helperText: 'Billed annually'
+      };
+    }
+
+    if (normalizedCadence === 'year' && pricing.interval === 'month') {
+      return {
+        from: 'from',
+        amount: this.formatCurrencyAmount(pricing.amount * 12, pricing.currency),
+        cadence: '/ year',
+        helperText: 'Billed monthly'
+      };
+    }
+
+    return {
+      from: 'from',
+      amount: this.formatCurrencyAmount(pricing.amount, pricing.currency),
+      cadence: `/ ${pricing.interval}`,
+      helperText: null
+    };
+  }
+
+  private getHighestTierCadence(): 'month' | 'year' | null {
+    const pricedPlans = this.plans
+      .map(plan => this.resolvePlanPricing(plan))
+      .filter((pricing): pricing is { amount: number; currency: string; interval: string } => pricing !== null)
+      .filter(pricing => pricing.interval === 'month' || pricing.interval === 'year');
+
+    if (pricedPlans.length === 0) {
+      return null;
+    }
+
+    const highestTier = pricedPlans.reduce((highest, current) =>
+      this.toMonthlyAmount(current) > this.toMonthlyAmount(highest) ? current : highest
+    );
+
+    return highestTier.interval === 'month' ? 'month' : 'year';
+  }
+
+  private toMonthlyAmount(pricing: { amount: number; interval: string }): number {
+    if (pricing.interval === 'year') {
+      return pricing.amount / 12;
+    }
+
+    return pricing.amount;
+  }
+
+  private resolvePlanPricing(plan: Plan): { amount: number; currency: string; interval: string } | null {
+    const pricingOptions = Array.isArray(plan.pricing_options)
+      ? plan.pricing_options.filter(option => typeof option?.amount_cents === 'number' && (option.amount_cents as number) > 0)
+      : [];
+
+    if (pricingOptions.length > 0) {
+      const minOption = pricingOptions.reduce((min, option) =>
+        (option.amount_cents as number) < (min.amount_cents as number) ? option : min
+      );
+      return {
+        amount: (minOption.amount_cents as number) / 100,
+        currency: (minOption.currency || plan.currency || 'USD').toUpperCase(),
+        interval: this.formatPricingInterval(minOption.interval || plan.interval)
+      };
+    }
+
+    if (typeof plan.price === 'number' && plan.price > 0) {
+      return {
+        amount: plan.price,
+        currency: (plan.currency || 'USD').toUpperCase(),
+        interval: this.formatPricingInterval(plan.interval)
+      };
+    }
+
+    return null;
+  }
+
+  private formatPricingInterval(interval?: string): string {
+    const value = (interval || '').trim().toLowerCase();
+    if (!value) return 'month';
+
+    if (value === 'monthly' || value === 'month') return 'month';
+    if (value === 'annual' || value === 'year' || value === 'yearly') return 'year';
+
+    return value;
+  }
+
+  private formatCurrencyAmount(amount: number, currency: string): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: amount % 1 === 0 ? 0 : 2
+    }).format(amount);
+  }
+
   getCancelButtonText(): string {
     return this.isCancellingSubscription ? 'Cancelling...' : 'Cancel Subscription';
   }

@@ -602,6 +602,20 @@
                       </svg>
                     }
                   </div>
+                  <div class="mb-12px">
+                    @let pricing = getPlanPricingDisplay(plan);
+                    <p class="plan-card-price mb-4px">
+                      <span class="plan-card-price-amount">{{ pricing.amount }}</span>
+                      @if (pricing.cadence) {
+                        <span class="plan-card-price-cadence">{{ pricing.cadence }}</span>
+                      }
+                      @if (pricing.helperText) {
+                        <convoy-tooltip [withIcon]="false" position="top" size="sm" [tooltipContent]="pricing.helperText">
+                          <span tooltipToggle class="plan-card-price-note">*</span>
+                        </convoy-tooltip>
+                      }
+                    </p>
+                  </div>
                   @if (plan.features && plan.features.length > 0) {
                     <ul class="plan-card-features">
                       @for (feature of plan.features.slice(0, 3); track $index) {
