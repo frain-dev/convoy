@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
@@ -19,8 +20,37 @@ type licensedStrategy struct {
 
 func (s *licensedStrategy) Mode() config.BillingMode { return config.BillingModeLicensed }
 
-func (s *licensedStrategy) licenseKeyFor(_ context.Context, _ string) (string, error) {
-	return selfHostedLicenseBillingKey(s.instanceLicenseKey)
+func (s *licensedStrategy) licenseKeyFor(ctx context.Context, orgID string) (string, error) {
+	lk, err := selfHostedLicenseBillingKey(s.instanceLicenseKey)
+	if err != nil {
+		return "", err
+	}
+
+	orgID = strings.TrimSpace(orgID)
+	if orgID == "" {
+		return lk, nil
+	}
+	if s.client == nil {
+		return "", &ServiceError{StatusCode: http.StatusServiceUnavailable, Message: "billing service unavailable"}
+	}
+
+	contextResp, err := s.client.LicenseBillingGetContext(ctx, lk)
+	if err != nil {
+		return "", err
+	}
+
+	boundOrgID := strings.TrimSpace(contextResp.Data.ExternalID)
+	if boundOrgID == "" {
+		boundOrgID = strings.TrimSpace(contextResp.Data.OrganisationID)
+	}
+	if boundOrgID == "" {
+		return "", &ServiceError{StatusCode: http.StatusForbidden, Message: "license billing context does not include an organisation id"}
+	}
+	if boundOrgID != orgID {
+		return "", &ServiceError{StatusCode: http.StatusForbidden, Message: "license key is not authorised for this organisation"}
+	}
+
+	return lk, nil
 }
 
 func (s *licensedStrategy) GetUsage(ctx context.Context, orgID string) (*Response[Usage], error) {

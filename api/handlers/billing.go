@@ -351,11 +351,6 @@ func (h *BillingHandler) GetTaxIDTypes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BillingHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
-	if !h.A.Cfg.IsCloud() {
-		_ = render.Render(w, r, util.NewErrorResponse("billing organisation creation is only available on managed cloud", http.StatusBadRequest))
-		return
-	}
-
 	var orgData billing.BillingOrganisation
 	if err := json.NewDecoder(r.Body).Decode(&orgData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
