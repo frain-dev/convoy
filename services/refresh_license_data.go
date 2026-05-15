@@ -73,14 +73,14 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 
 	if !deps.Cfg.IsCloud() && deps.OrgBilling != nil {
 		subResp, subErr := deps.OrgBilling.GetSubscription(ctx, org.UID)
-		if subErr == nil && subResp != nil && subResp.Status && !billing.HasActiveSubscription(subResp.Data) {
+		if subErr == nil && subResp != nil && subResp.Status && !billing.OrgLicenseEntitledBySubscription(subResp.Data) {
 			if org.LicenseData != "" {
 				if err := deps.OrgRepo.UpdateOrganisationLicenseData(ctx, org.UID, ""); err != nil && deps.Logger != nil {
-					deps.Logger.Warn("refresh license data: clear license_data failed (inactive subscription)", "error", err, "org_id", org.UID)
+					deps.Logger.Warn("refresh license data: clear license_data failed (subscription not entitled)", "error", err, "org_id", org.UID)
 				}
 			}
 			if deps.Logger != nil {
-				deps.Logger.Debug("refresh license data: skip while subscription inactive", "org_id", org.UID)
+				deps.Logger.Debug("refresh license data: skip while subscription inactive or missing plan", "org_id", org.UID)
 			}
 			return
 		}

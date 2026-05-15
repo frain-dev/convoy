@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {from, Observable, of} from 'rxjs';
+import {from, Observable, of, Subject} from 'rxjs';
 import {catchError, map, mergeMap} from 'rxjs/operators';
 import {HttpService} from 'src/app/services/http/http.service';
 
@@ -62,7 +62,29 @@ export interface VatInfoDetails {
 
 @Injectable({ providedIn: 'root' })
 export class BillingPaymentDetailsService {
+  private readonly checkoutSubscriptionVerified = new Subject<void>();
+  readonly onCheckoutSubscriptionVerified = this.checkoutSubscriptionVerified.asObservable();
+
   constructor(private httpService: HttpService) {}
+
+  notifyCheckoutSubscriptionVerified(): void {
+    this.checkoutSubscriptionVerified.next();
+  }
+
+  private readonly invoiceListCatchup = new Subject<void>();
+  readonly onInvoiceListCatchup = this.invoiceListCatchup.asObservable();
+
+  private invoiceCatchupTimer: ReturnType<typeof setTimeout> | null = null;
+
+  scheduleInvoiceListCatchupAfterWebhookDelay(): void {
+    if (this.invoiceCatchupTimer != null) {
+      clearTimeout(this.invoiceCatchupTimer);
+    }
+    this.invoiceCatchupTimer = setTimeout(() => {
+      this.invoiceCatchupTimer = null;
+      this.invoiceListCatchup.next();
+    }, 6000);
+  }
 
   getBillingConfig(orgId?: string): Observable<any> {
     return from(this.httpService.request({

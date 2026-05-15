@@ -55,7 +55,7 @@
           </div>
         }
       </div>
-      @if (overview?.plan?.name && overview?.plan?.name !== 'No plan') {
+      @if ((overview?.plan?.name && overview?.plan?.name !== 'No plan') || overview?.payment) {
         <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">
           {{ isLoading ? 'Loading...' : (overview?.payment ? 'Manage' : 'Add payment method') }}
         </a>

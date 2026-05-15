@@ -1,10 +1,11 @@
-import {Component, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {CheckoutResolverData} from './billing/checkout.resolver';
+import {BillingPaymentDetailsService} from './billing/billing-payment-details.service';
 
 export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing' | 'early adopter features';
 
@@ -19,6 +20,8 @@ export class SettingsComponent implements OnInit {
 	canAccessBilling = false;
 	canAccessEarlyAdopterFeatures = false;
 	isVerifyingSubscription = false;
+	/** False until /license/features has been fetched for this visit; avoids stale localStorage locking Team on refresh. */
+	teamAccessResolved = false;
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
 		{ name: 'team', icon: 'team', svg: 'stroke' }
@@ -30,12 +33,15 @@ export class SettingsComponent implements OnInit {
 		public licenseService: LicensesService,
 		private httpService: HttpService,
 		private rbacService: RbacService,
-		private generalService: GeneralService
+		private generalService: GeneralService,
+		private billingPaymentDetailsService: BillingPaymentDetailsService,
+		private cdr: ChangeDetectorRef
 	) {}
 
 	async ngOnInit() {
 		await this.checkBillingAccess();
 		this.updateSettingsMenu();
+		void this.refreshTeamAccessFromApi();
 
 		const checkoutData: CheckoutResolverData = this.route.snapshot.data['checkout'];
 		if (checkoutData?.checkoutProcessed) {
@@ -70,6 +76,11 @@ export class SettingsComponent implements OnInit {
 				if (response.data?.status === 'active') {
 					this.generalService.showNotification({ message: 'Subscription activated successfully!', style: 'success' });
 					this.isVerifyingSubscription = false;
+					this.cdr.detectChanges();
+					await this.licenseService.setLicenses();
+					this.teamAccessResolved = true;
+					this.billingPaymentDetailsService.notifyCheckoutSubscriptionVerified();
+					this.cdr.detectChanges();
 					this.cleanupCheckoutParams();
 					return;
 				}
@@ -161,5 +172,14 @@ export class SettingsComponent implements OnInit {
 			}
 		}
 		return '';
+	}
+
+	private async refreshTeamAccessFromApi(): Promise<void> {
+		try {
+			await this.licenseService.setLicenses();
+		} finally {
+			this.teamAccessResolved = true;
+			this.cdr.detectChanges();
+		}
 	}
 }

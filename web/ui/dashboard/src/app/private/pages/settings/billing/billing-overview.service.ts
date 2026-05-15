@@ -30,7 +30,7 @@ export class BillingOverviewService {
     );
   }
 
-  setBootstrapPromise(promise: Promise<void>): void {
+  setBootstrapPromise(promise: Promise<void> | null): void {
     this.bootstrapPromise = promise;
   }
 

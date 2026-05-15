@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, ElementRef, HostListener, OnInit, ViewChild} from '@angular/core';
+import {ChangeDetectorRef, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {StripeElementsComponent} from './stripe-elements.component';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
@@ -18,6 +18,7 @@ import {BillingUsageService, UsageRow} from './billing-usage.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {buildCheckoutPayload} from './plan-cadence.util';
+import {Subscription} from 'rxjs';
 import {
   BillingPlansUnavailableReason,
   areOverwatchPlansAvailable,
@@ -33,7 +34,7 @@ import {
     styleUrls: ['./billing-page.component.scss'],
     standalone: false
 })
-export class BillingPageComponent implements OnInit {
+export class BillingPageComponent implements OnInit, OnDestroy {
   @ViewChild('paymentDetailsDialog') paymentDetailsDialog!: ElementRef<HTMLDialogElement>;
   @ViewChild('managePlanDialog') managePlanDialog!: ElementRef<HTMLDialogElement>;
   @ViewChild('cancelConfirmDialog') cancelConfirmDialog!: ElementRef<HTMLDialogElement>;
@@ -137,6 +138,8 @@ export class BillingPageComponent implements OnInit {
   }
 
   private bootstrapSubscriptionPromise: Promise<void> | null = null;
+  private checkoutVerifiedSub?: Subscription;
+  private skipNextBootstrapSubscriptionProbe = false;
   private locationRequestToken = 0;
   private activeCountryRequestToken = 0;
   private activeCityRequestToken = 0;
@@ -146,19 +149,14 @@ export class BillingPageComponent implements OnInit {
     this.validateOrganisation();
     this.loadCountries(); // Load immediately, independent of bootstrap
     await this.loadBillingConfiguration();
-
-    if (this.shouldShowSelfHostedSetup()) {
-      this.markBillingDataIdle();
-      this.selfHostedBootstrapMessage = this.selfHostedLicenseMasked
-        ? 'This configured license is not recognized by billing. Verify your billing email or update the server license key.'
-        : 'Verify your billing email to issue a license for this organisation.';
-    } else if (this.selfHostedBilling && !this.selfHostedHasEntitlements) {
-      this.markBillingDataIdle();
-      this.selfHostedBootstrapMessage = 'License configured. Subscribe to activate billing.';
-    } else {
-      this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
-      this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
+    this.applySelfHostedBootstrapPathFromConfig();
+    if (this.selfHostedBilling && !this.selfHostedHasEntitlements && this.canShowBillingPanels) {
+      await this.loadBillingData();
     }
+
+    this.checkoutVerifiedSub = this.billingPaymentDetailsService.onCheckoutSubscriptionVerified.subscribe(() => {
+      void this.reloadBillingAfterCheckoutPoll();
+    });
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);
@@ -173,7 +171,55 @@ export class BillingPageComponent implements OnInit {
 
   }
 
+  ngOnDestroy(): void {
+    this.checkoutVerifiedSub?.unsubscribe();
+  }
+
+  private async reloadBillingAfterCheckoutPoll(): Promise<void> {
+    if (this.bootstrapSubscriptionPromise) {
+      await this.bootstrapSubscriptionPromise.catch(() => {});
+    }
+    await this.loadBillingConfiguration();
+    this.skipNextBootstrapSubscriptionProbe = true;
+    this.applySelfHostedBootstrapPathFromConfig();
+    if (this.bootstrapSubscriptionPromise) {
+      await this.bootstrapSubscriptionPromise.catch(() => {});
+    }
+    if (this.selfHostedBilling && !this.selfHostedHasEntitlements && this.canShowBillingPanels) {
+      await this.loadBillingData();
+    }
+    this.cdr.detectChanges();
+    this.billingPaymentDetailsService.scheduleInvoiceListCatchupAfterWebhookDelay();
+  }
+
+  private applySelfHostedBootstrapPathFromConfig(): void {
+    if (this.shouldShowSelfHostedSetup()) {
+      this.bootstrapSubscriptionPromise = null;
+      this.overviewService.setBootstrapPromise(null);
+      this.markBillingDataIdle();
+      this.selfHostedBootstrapMessage = this.selfHostedLicenseMasked
+        ? 'This configured license is not recognized by billing. Verify your billing email or update the server license key.'
+        : 'Verify your billing email to issue a license for this organisation.';
+      return;
+    }
+    if (this.selfHostedBilling && !this.selfHostedHasEntitlements) {
+      this.bootstrapSubscriptionPromise = null;
+      this.overviewService.setBootstrapPromise(null);
+      this.markBillingDataIdle();
+      this.selfHostedBootstrapMessage = '';
+      return;
+    }
+    this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
+    this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
+  }
+
   private async bootstrapOrganisation() {
+    if (this.skipNextBootstrapSubscriptionProbe) {
+      this.skipNextBootstrapSubscriptionProbe = false;
+      await this.loadBillingData();
+      return;
+    }
+
     try {
       const orgId = this.getOrganisationId();
       await this.httpService.request({
@@ -872,7 +918,14 @@ export class BillingPageComponent implements OnInit {
         style: 'success'
       });
 
+      await this.loadBillingConfiguration();
+      this.bootstrapSubscriptionPromise = null;
+      this.overviewService.setBootstrapPromise(null);
+      this.applySelfHostedBootstrapPathFromConfig();
       await this.loadBillingData();
+      this.refreshOverviewTrigger++;
+      void this.licensesService.setLicenses();
+      this.cdr.detectChanges();
     } catch (error: any) {
       console.error('Failed to cancel subscription:', error);
       this.generalService.showNotification({
@@ -1450,12 +1503,10 @@ export class BillingPageComponent implements OnInit {
     this.setupIntentSecret = '';
     this.refreshOverviewTrigger++;
 
-    // Wait for webhook to process before loading payment method details
-    // Stripe sends a webhook to billing service which processes asynchronously
     setTimeout(() => {
       this.loadPaymentMethodDetailsWithRetry();
       this.loadPaymentMethods();
-    }, 1500); // Initial delay to allow webhook processing
+    }, 1500);
   }
 
   setDefaultPaymentMethod(pmId: string) {

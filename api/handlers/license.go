@@ -135,12 +135,16 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		skipCachedLicenseData := false
 		if !h.A.Cfg.IsCloud() && h.A.Billing != nil {
 			if subResp, subErr := h.A.Billing.GetSubscription(r.Context(), org.UID); subErr == nil && subResp != nil && subResp.Status {
-				if !billing.HasActiveSubscription(subResp.Data) {
+				if !billing.OrgLicenseEntitledBySubscription(subResp.Data) {
 					if billingRequiredReason == "" {
-						billingRequiredReason = "no active subscription"
+						if billing.HasActiveSubscription(subResp.Data) {
+							billingRequiredReason = "active subscription without plan"
+						} else {
+							billingRequiredReason = "no active subscription"
+						}
 					}
 					skipCachedLicenseData = true
-					h.A.Logger.Debug("get license features: self-hosted subscription inactive; skipping cached license data", "org_id", org.UID)
+					h.A.Logger.Debug("get license features: self-hosted subscription not entitled via billing; skipping cached license data", "org_id", org.UID)
 				}
 			}
 		}
@@ -165,7 +169,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 					h.A.Logger.Warn("get license features: clear license_data failed", "error", err, "org_id", org.UID)
 				}
 			}
-			h.A.Logger.Info("get license features: returning billing-required (inactive subscription); license_data cleared", "org_id", org.UID)
+			h.A.Logger.Info("get license features: returning billing-required (subscription not entitled); license_data cleared", "org_id", org.UID)
 		} else {
 			h.A.Logger.Info("get license features: returning billing-required, triggering license refresh", "org_id", org.UID)
 			go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, deps, licClient)

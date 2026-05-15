@@ -1,6 +1,8 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {BillingInvoicesService, InvoiceRow} from './billing-invoices.service';
+import {BillingPaymentDetailsService} from './billing-payment-details.service';
 import {GeneralService} from 'src/app/services/general/general.service';
+import {Subscription} from 'rxjs';
 
 @Component({
     selector: 'app-billing-invoices',
@@ -8,18 +10,28 @@ import {GeneralService} from 'src/app/services/general/general.service';
     styleUrls: ['./billing-invoices.component.scss'],
     standalone: false
 })
-export class BillingInvoicesComponent implements OnInit {
+export class BillingInvoicesComponent implements OnInit, OnDestroy {
   isFetchingInvoices = false;
   invoiceRows: InvoiceRow[] = [];
   tableHead = ['Issued on', 'Amount', 'Status', 'Due date', ''];
 
+  private catchupSub?: Subscription;
+
   constructor(
     private invoicesService: BillingInvoicesService,
+    private billingPaymentDetailsService: BillingPaymentDetailsService,
     private generalService: GeneralService
   ) {}
 
   ngOnInit() {
     this.fetchInvoices();
+    this.catchupSub = this.billingPaymentDetailsService.onInvoiceListCatchup.subscribe(() => {
+      this.fetchInvoices();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.catchupSub?.unsubscribe();
   }
 
   fetchInvoices() {
