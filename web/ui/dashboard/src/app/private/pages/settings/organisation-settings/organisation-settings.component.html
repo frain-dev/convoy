@@ -31,37 +31,41 @@
     <button convoy-button convoy-permission="Organisations|MANAGE" size="sm" [disabled]="configuringSSO" (click)="configureSSO()">
       {{ configuringSSO ? 'Opening…' : 'Configure SSO' }}
     </button>
-    <div class="mt-20px pt-20px border-t border-neutral-a3">
-      <p class="text-12 text-neutral-10 mb-8px">Workspace slug</p>
-      <div class="flex items-center gap-8px">
-        @if (currentWorkspaceSlug) {
-          <code class="text-13 text-neutral-11 font-mono bg-neutral-2 px-8px py-4px rounded-4px">{{ currentWorkspaceSlug }}</code>
-          <convoy-copy-button [text]="currentWorkspaceSlug" notificationText="Slug copied"></convoy-copy-button>
-        } @else {
-          <span class="text-13 text-neutral-10">Not set</span>
-        }
-        <button type="button" convoy-button convoy-permission="Organisations|MANAGE" fill="text" color="neutral" size="sm" class="!px-0 !min-w-0" (click)="startEditingSlug(); slugDialog.showModal()">
-          {{ currentWorkspaceSlug ? 'Edit' : 'Set slug' }}
-        </button>
+    @if (managedCloud) {
+      <div class="mt-20px pt-20px border-t border-neutral-a3">
+        <p class="text-12 text-neutral-10 mb-8px">Workspace slug</p>
+        <div class="flex items-center gap-8px">
+          @if (currentWorkspaceSlug) {
+            <code class="text-13 text-neutral-11 font-mono bg-neutral-2 px-8px py-4px rounded-4px">{{ currentWorkspaceSlug }}</code>
+            <convoy-copy-button [text]="currentWorkspaceSlug" notificationText="Slug copied"></convoy-copy-button>
+          } @else {
+            <span class="text-13 text-neutral-10">Not set</span>
+          }
+          <button type="button" convoy-button convoy-permission="Organisations|MANAGE" fill="text" color="neutral" size="sm" class="!px-0 !min-w-0" (click)="openSlugDialog()">
+            {{ currentWorkspaceSlug ? 'Edit' : 'Set slug' }}
+          </button>
+        </div>
       </div>
-    </div>
+    }
   </div>
-  <dialog #slugDialog convoy-dialog position="center">
-    <div class="p-40px">
-      <p class="text-neutral-11 text-14 max-w-[276px] pb-40px">Used for SSO and workspace-specific URLs.</p>
-      <convoy-input-field>
-        <label for="workspaceSlug" convoy-label required="true">What's your workspace slug?</label>
-        <input type="text" id="workspaceSlug" convoy-input autocomplete="off" [value]="workspaceSlugInput" (input)="workspaceSlugInput = $any($event.target).value" placeholder="e.g. my-team" (keydown.enter)="setWorkspaceSlug()" />
-        @if (workspaceSlugError) {
-          <convoy-input-error>{{ workspaceSlugError }}</convoy-input-error>
-        }
-      </convoy-input-field>
-      <div class="flex items-center gap-24px justify-end w-full">
-        <button convoy-button [disabled]="isSavingSlug" size="sm" type="button" (click)="closeSlugDialog()" fill="outline" color="error" class="self-stretch px-18px">Cancel</button>
-        <button convoy-button convoy-permission="Organisations|MANAGE" [disabled]="isSavingSlug" size="sm" class="self-stretch px-18px" (click)="setWorkspaceSlug()">{{ isSavingSlug ? 'Saving...' : 'Save' }}</button>
+  @if (managedCloud) {
+    <dialog #slugDialog convoy-dialog position="center">
+      <div class="p-40px">
+        <p class="text-neutral-11 text-14 max-w-[276px] pb-40px">Used for SSO and workspace-specific URLs.</p>
+        <convoy-input-field>
+          <label for="workspaceSlug" convoy-label required="true">What's your workspace slug?</label>
+          <input type="text" id="workspaceSlug" convoy-input autocomplete="off" [value]="workspaceSlugInput" (input)="workspaceSlugInput = $any($event.target).value" placeholder="e.g. my-team" (keydown.enter)="setWorkspaceSlug()" />
+          @if (workspaceSlugError) {
+            <convoy-input-error>{{ workspaceSlugError }}</convoy-input-error>
+          }
+        </convoy-input-field>
+        <div class="flex items-center gap-24px justify-end w-full">
+          <button convoy-button [disabled]="isSavingSlug" size="sm" type="button" (click)="closeSlugDialog()" fill="outline" color="error" class="self-stretch px-18px">Cancel</button>
+          <button convoy-button convoy-permission="Organisations|MANAGE" [disabled]="isSavingSlug" size="sm" class="self-stretch px-18px" (click)="setWorkspaceSlug()">{{ isSavingSlug ? 'Saving...' : 'Save' }}</button>
+        </div>
       </div>
-    </div>
-  </dialog>
+    </dialog>
+  }
 }
 
 <div convoy-card color="error" class="p-26px my-24px">

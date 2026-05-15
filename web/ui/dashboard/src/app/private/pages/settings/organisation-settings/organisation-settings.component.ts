@@ -6,6 +6,7 @@ import {Router} from '@angular/router';
 import {PrivateService} from 'src/app/private/private.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {ConfigService} from 'src/app/services/config/config.service';
 
 @Component({
     selector: 'organisation-settings',
@@ -23,6 +24,7 @@ export class OrganisationSettingsComponent implements OnInit {
 	isEditingOrganisation = false;
 	isDeletingOrganisation = false;
 	configuringSSO = false;
+	managedCloud = false;
 	/** True when this org's license has enterprise_sso; false or null when not or unknown. */
 	orgHasEnterpriseSSO: boolean | null = null;
 	editOrganisationForm: FormGroup = this.formBuilder.group({
@@ -37,12 +39,23 @@ export class OrganisationSettingsComponent implements OnInit {
 		private generalService: GeneralService,
 		private router: Router,
 		private privateService: PrivateService,
-		public licenseService: LicensesService
+		public licenseService: LicensesService,
+		private configService: ConfigService
 	) {}
 
 	async ngOnInit() {
 		this.getOrganisationDetails();
+		await this.loadManagedCloudFlag();
 		if (!(await this.rbacService.userCanAccess('Organisations|MANAGE'))) this.editOrganisationForm.disable();
+	}
+
+	private async loadManagedCloudFlag() {
+		try {
+			const config = await this.configService.getConfig();
+			this.managedCloud = config.managed_cloud ?? false;
+		} catch {
+			this.managedCloud = false;
+		}
 	}
 
 	async updateOrganisation() {
@@ -116,6 +129,11 @@ export class OrganisationSettingsComponent implements OnInit {
 	startEditingSlug(): void {
 		this.workspaceSlugInput = this.currentWorkspaceSlug ?? '';
 		this.workspaceSlugError = '';
+	}
+
+	openSlugDialog(): void {
+		this.startEditingSlug();
+		this.slugDialog.nativeElement.showModal();
 	}
 
 	cancelEditingSlug(): void {
