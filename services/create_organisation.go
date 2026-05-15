@@ -82,23 +82,32 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 		co.Logger.ErrorContext(ctx, "failed to create super_user member for organisation owner", "error", err)
 	}
 
-	hostForBilling := cfg.Host
-	if cfg.Billing.OrganisationHost != "" {
-		hostForBilling = cfg.Billing.OrganisationHost
-	}
-	if hostForBilling != "" {
-		orgCopy := *org
-		cfgCopy := cfg
-		go RunBillingOrganisationSync(
-			context.Background(),
-			billing.NewClient(cfgCopy.Billing),
-			orgCopy,
-			cfgCopy,
-			co.User.Email,
-			hostForBilling,
-			co.OrgRepo,
-			co.Logger,
-		)
+	// Billing org-sync registers the new organisation with the cloud billing service so a
+	// per-org license key can be issued. We strictly gate on cfg.IsCloud() here because
+	// hostForBilling falls back to cfg.Host, which is set on every deployment, including
+	// licensed and unlicensed self-hosted instances. Without the cloud guard, signing up a
+	// fresh org on a self-hosted instance would silently transmit the org name and owner
+	// email to whatever billing endpoint the binary was compiled against, breaking the
+	// self-hosted privacy contract.
+	if cfg.IsCloud() {
+		hostForBilling := cfg.Host
+		if cfg.Billing.OrganisationHost != "" {
+			hostForBilling = cfg.Billing.OrganisationHost
+		}
+		if hostForBilling != "" {
+			orgCopy := *org
+			cfgCopy := cfg
+			go RunBillingOrganisationSync(
+				context.Background(),
+				billing.NewClient(cfgCopy.Billing),
+				orgCopy,
+				cfgCopy,
+				co.User.Email,
+				hostForBilling,
+				co.OrgRepo,
+				co.Logger,
+			)
+		}
 	}
 
 	return org, nil
