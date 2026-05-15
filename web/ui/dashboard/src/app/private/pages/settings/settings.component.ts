@@ -20,8 +20,6 @@ export class SettingsComponent implements OnInit {
 	canAccessBilling = false;
 	canAccessEarlyAdopterFeatures = false;
 	isVerifyingSubscription = false;
-	/** False until /license/features has been fetched for this visit; avoids stale localStorage locking Team on refresh. */
-	teamAccessResolved = false;
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
 		{ name: 'team', icon: 'team', svg: 'stroke' }
@@ -78,7 +76,6 @@ export class SettingsComponent implements OnInit {
 					this.isVerifyingSubscription = false;
 					this.cdr.detectChanges();
 					await this.licenseService.setLicenses();
-					this.teamAccessResolved = true;
 					this.billingPaymentDetailsService.notifyCheckoutSubscriptionVerified();
 					this.cdr.detectChanges();
 					this.cleanupCheckoutParams();
@@ -178,7 +175,6 @@ export class SettingsComponent implements OnInit {
 		try {
 			await this.licenseService.setLicenses();
 		} finally {
-			this.teamAccessResolved = true;
 			this.cdr.detectChanges();
 		}
 	}

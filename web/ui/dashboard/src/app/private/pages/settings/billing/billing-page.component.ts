@@ -336,9 +336,8 @@ export class BillingPageComponent implements OnInit, OnDestroy {
   }
 
   private async loadOrganisationData() {
-    if (this.bootstrapSubscriptionPromise) {
-      await this.bootstrapSubscriptionPromise;
-    }
+    // loadBillingData (only caller) runs inside bootstrapOrganisation while
+    // bootstrapSubscriptionPromise is pending; awaiting it here deadlocks.
 
     this.isLoadingBillingAddress = true;
     this.isLoadingVat = true;
