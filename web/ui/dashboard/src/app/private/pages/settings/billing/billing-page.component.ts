@@ -18,6 +18,7 @@ import {BillingUsageService, UsageRow} from './billing-usage.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {buildCheckoutPayload} from './plan-cadence.util';
+import {subscriptionPlanKey, writeCheckoutPlanBaseline} from './checkout-plan-baseline.util';
 import {Subscription} from 'rxjs';
 import {
   BillingPlansUnavailableReason,
@@ -304,6 +305,7 @@ export class BillingPageComponent implements OnInit, OnDestroy {
       this.isLoadingBillingData = false;
       this.loadUsageSeparately();
       await this.loadOrganisationData();
+      this.cdr.detectChanges();
     } catch (error) {
       console.error('Failed to load billing data:', error);
       this.isLoadingBillingData = false;
@@ -1024,6 +1026,8 @@ export class BillingPageComponent implements OnInit, OnDestroy {
         }
       }
 
+      writeCheckoutPlanBaseline(orgId, subscriptionPlanKey(this.currentSubscription));
+
       // Open in same window since callback will redirect back
       window.location.href = checkoutUrl;
     } catch (error: any) {
@@ -1060,9 +1064,46 @@ export class BillingPageComponent implements OnInit, OnDestroy {
       return 'Current Plan';
     }
     if (this.selectedPlan === planId) {
-      return this.currentSubscription ? 'Upgrade' : 'Subscribe';
+      if (!this.hasActiveSubscription(this.currentSubscription)) {
+        return 'Subscribe';
+      }
+      return this.planSwitchButtonLabel(planId);
     }
     return 'Select';
+  }
+
+  /** CTA when changing an existing subscription (selected card). */
+  private planSwitchButtonLabel(planId: string): string {
+    const target = this.plans.find(p => p.id === planId);
+    if (!target) {
+      return 'Switch plan';
+    }
+
+    const currentCatalog = this.plans.find(p => this.isCurrentPlan(p.id)) ?? null;
+    const targetPricing = this.resolvePlanPricing(target);
+
+    let currentPricing = currentCatalog ? this.resolvePlanPricing(currentCatalog) : null;
+    if (!currentPricing && this.currentSubscription?.plan) {
+      currentPricing = this.resolvePlanPricing(this.currentSubscription.plan as Plan);
+    }
+
+    if (targetPricing && currentPricing) {
+      const diff = this.toMonthlyAmount(targetPricing) - this.toMonthlyAmount(currentPricing);
+      const eps = 0.005;
+      if (diff > eps) return 'Upgrade';
+      if (diff < -eps) return 'Downgrade';
+      return 'Switch plan';
+    }
+
+    if (currentCatalog) {
+      const ti = this.plans.indexOf(target);
+      const ci = this.plans.indexOf(currentCatalog);
+      if (ti >= 0 && ci >= 0 && ti !== ci) {
+        return ti > ci ? 'Upgrade' : 'Downgrade';
+      }
+    }
+
+    return 'Switch plan';
   }
 
   getPlanPricingDisplay(plan: Plan): { from: string; amount: string; cadence: string; helperText: string | null } {

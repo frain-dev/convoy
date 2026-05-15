@@ -5,6 +5,12 @@ import {HttpService} from 'src/app/services/http/http.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {CheckoutResolverData} from './billing/checkout.resolver';
+import {
+  clearCheckoutPlanBaseline,
+  clearCheckoutProcessedNoSession,
+  readCheckoutPlanBaseline,
+  subscriptionPlanKey
+} from './billing/checkout-plan-baseline.util';
 import {BillingPaymentDetailsService} from './billing/billing-payment-details.service';
 
 export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing' | 'early adopter features';
@@ -51,7 +57,7 @@ export class SettingsComponent implements OnInit {
 		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'organisation settings';
 		this.setActivePageWithLicenseCheck(requestedPage);
 	}
-	
+
 	private async pollSubscriptionStatus(orgId: string) {
 		if (!orgId) {
 			this.generalService.showNotification({ message: 'Unable to verify subscription. Please refresh and check billing page.', style: 'warning' });
@@ -62,6 +68,8 @@ export class SettingsComponent implements OnInit {
 		this.isVerifyingSubscription = true;
 		const maxAttempts = 30;
 		const pollInterval = 2000;
+		const { found: hasPreCheckoutBaseline, planKey: preCheckoutPlanKey } = readCheckoutPlanBaseline(orgId);
+		let baselinePlanKey: string | undefined = hasPreCheckoutBaseline ? preCheckoutPlanKey : undefined;
 
 		for (let i = 0; i < maxAttempts; i++) {
 			await new Promise(r => setTimeout(r, pollInterval));
@@ -71,7 +79,27 @@ export class SettingsComponent implements OnInit {
 					method: 'get',
 					hideNotification: true
 				});
-				if (response.data?.status === 'active') {
+				const sub = response?.data;
+				if (!sub) {
+					continue;
+				}
+				const planKey = subscriptionPlanKey(sub);
+				if (baselinePlanKey === undefined) {
+					baselinePlanKey = planKey;
+				}
+
+				if (sub.status !== 'active') {
+					continue;
+				}
+
+				const billingPlanChanged = planKey !== baselinePlanKey;
+				const done =
+					hasPreCheckoutBaseline
+						? billingPlanChanged
+						: i > 0 && billingPlanChanged;
+
+				if (done) {
+					clearCheckoutPlanBaseline();
 					this.generalService.showNotification({ message: 'Subscription activated successfully!', style: 'success' });
 					this.isVerifyingSubscription = false;
 					this.cdr.detectChanges();
@@ -84,18 +112,29 @@ export class SettingsComponent implements OnInit {
 			} catch (_) {}
 		}
 
+		clearCheckoutPlanBaseline();
 		this.generalService.showNotification({ message: 'Unable to verify subscription. Please check billing page.', style: 'warning' });
 		this.isVerifyingSubscription = false;
 		this.cleanupCheckoutParams();
 	}
 
 	private cleanupCheckoutParams() {
+		clearCheckoutProcessedNoSession(this.getOrgUidForCheckoutCleanup());
 		const activePage = this.route.snapshot.queryParams?.['activePage'] || 'usage and billing';
 		this.router.navigate([], {
 			relativeTo: this.route,
 			queryParams: { activePage },
 			replaceUrl: true
 		});
+	}
+
+	private getOrgUidForCheckoutCleanup(): string {
+		try {
+			const rawOrg = localStorage.getItem('CONVOY_ORG');
+			return rawOrg ? JSON.parse(rawOrg)?.uid || '' : '';
+		} catch {
+			return '';
+		}
 	}
 
 	private async checkBillingAccess() {
