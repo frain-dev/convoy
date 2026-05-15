@@ -381,6 +381,13 @@ func (h *BillingHandler) CreateOrganisation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Always pin Host to the server-configured cfg.Host so a caller cannot bind a billing
+	// organisation to an arbitrary host (which downstream license issuance trusts when
+	// generating self-serve URLs and license metadata). The previous helper
+	// ensureOrganisationInBilling enforced the same invariant; preserve it here so the
+	// new public CreateOrganisation surface is no looser than the implicit one.
+	orgData.Host = h.A.Cfg.Host
+
 	resp, err := h.A.Billing.CreateOrganisation(r.Context(), orgData)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), billingServiceErrorStatus(err)))
