@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
@@ -21,6 +22,11 @@ type cloudStrategy struct {
 	orgRepo      datastore.OrganisationRepository
 	host         string
 	resolveOwner OwnerEmailResolver
+
+	// Tracks orgs with an in-flight billing-email backfill goroutine. We dedupe so a
+	// burst of dashboard requests for one org cannot fan out into N concurrent
+	// background fetches against the billing service.
+	emailBackfillInflight sync.Map
 }
 
 func (s *cloudStrategy) Mode() config.BillingMode { return config.BillingModeCloud }
@@ -53,7 +59,7 @@ func (s *cloudStrategy) GetSubscription(ctx context.Context, orgID string) (*Res
 	if err != nil {
 		return nil, err
 	}
-	go s.updateBillingEmailIfEmpty(orgID)
+	s.scheduleBillingEmailBackfill(orgID)
 	return resp, nil
 }
 
@@ -88,7 +94,7 @@ func (s *cloudStrategy) GetOrganisation(ctx context.Context, orgID string) (*Res
 	if err != nil {
 		return nil, err
 	}
-	go s.updateBillingEmailIfEmpty(orgID)
+	s.scheduleBillingEmailBackfill(orgID)
 	return resp, nil
 }
 
@@ -193,6 +199,22 @@ func (s *cloudStrategy) ownerEmail(ctx context.Context, orgID string) (string, e
 		return "", nil
 	}
 	return s.resolveOwner(ctx, orgID)
+}
+
+// scheduleBillingEmailBackfill kicks off a single background backfill per org. Concurrent
+// dashboard hits will see the existing in-flight marker and become no-ops, which prevents
+// goroutine fan-out and back-to-back GetOrganisation/UpdateOrganisation calls against billing.
+func (s *cloudStrategy) scheduleBillingEmailBackfill(orgID string) {
+	if orgID == "" {
+		return
+	}
+	if _, loaded := s.emailBackfillInflight.LoadOrStore(orgID, struct{}{}); loaded {
+		return
+	}
+	go func() {
+		defer s.emailBackfillInflight.Delete(orgID)
+		s.updateBillingEmailIfEmpty(orgID)
+	}()
 }
 
 func (s *cloudStrategy) updateBillingEmailIfEmpty(orgID string) {

@@ -18,8 +18,8 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/mocks"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -170,9 +170,9 @@ func TestSelfHostedVerifyEmail_TrimsCodeBeforeBillingCall(t *testing.T) {
 	h := &BillingHandler{
 		Handler: &Handler{
 			A: &types.APIOptions{
-				Cfg:    config.Configuration{LicenseKey: "lk_test"},
-				Logger: log.New("convoy", log.LevelError),
-				Authz:  az,
+				Cfg:           config.Configuration{LicenseKey: "lk_test"},
+				Logger:        log.New("convoy", log.LevelError),
+				Authz:         az,
 				OrgRepo:       mockOrgRepo,
 				OrgMemberRepo: mockOrgMemberRepo,
 				Billing: &selfHostedForwardingStrategy{
@@ -269,10 +269,10 @@ func TestSelfHostedBilling_MapsServiceErrorStatus(t *testing.T) {
 			h := &BillingHandler{
 				Handler: &Handler{
 					A: &types.APIOptions{
-						Cfg:    config.Configuration{LicenseKey: "lk_test"},
-						Logger: log.New("convoy", log.LevelError),
-						Authz:  az,
-						OrgRepo: mockOrgRepo,
+						Cfg:           config.Configuration{LicenseKey: "lk_test"},
+						Logger:        log.New("convoy", log.LevelError),
+						Authz:         az,
+						OrgRepo:       mockOrgRepo,
 						OrgMemberRepo: mockOrgMemberRepo,
 						Billing: &selfHostedForwardingStrategy{
 							billingStrategySpy: &billingStrategySpy{},

@@ -102,6 +102,15 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 	}
 }
 
+// resolveKey picks the license key used to refresh per-org entitlements after login.
+//
+// Cloud: ask the billing service for the org's provisioned key. There is no
+// instance-wide fallback in cloud, so an empty/missing record returns "".
+//
+// Self-hosted (licensed instance): the operator-configured CONVOY_LICENSE_KEY is the
+// authoritative key for the whole instance. Per-org encrypted LicenseData is only used
+// when the operator did not provide an instance key (e.g. multi-tenant self-hosted that
+// pulled per-org keys via SelfHostedRegisterEmail).
 func resolveKey(ctx context.Context, org datastore.Organisation, defaultKey string, cfg config.Configuration, billingClient billing.Client) string {
 	if billingClient != nil && cfg.IsCloud() {
 		resp, err := billingClient.GetOrganisationLicense(ctx, org.UID)

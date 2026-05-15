@@ -61,7 +61,15 @@ func (s *unlicensedStrategy) GetTaxIDTypes(ctx context.Context, orgID string) (*
 func (s *unlicensedStrategy) GetOrganisation(ctx context.Context, orgID string) (*Response[BillingOrganisation], error) {
 	name := ""
 	if s.orgRepo != nil {
-		if org, err := s.orgRepo.FetchOrganisationByID(ctx, orgID); err == nil && org != nil {
+		org, err := s.orgRepo.FetchOrganisationByID(ctx, orgID)
+		switch {
+		case err != nil:
+			// We do not propagate this because the unlicensed flow synthesises a degraded
+			// response, but operators still need a breadcrumb when the org lookup fails.
+			if s.logger != nil {
+				s.logger.Warnf("unlicensed GetOrganisation: failed to fetch organisation %s: %v", orgID, err)
+			}
+		case org != nil:
 			name = org.Name
 		}
 	}

@@ -197,6 +197,10 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 		} else {
 			org, err := h.retrieveOrganisationForActiveWorkspace(r)
 			if err != nil {
+				// Empty summary keeps the dashboard usable, but operators need a breadcrumb so we
+				// notice misconfigured org context (missing membership, deleted org) instead of
+				// silently returning an empty license payload.
+				h.A.Logger.Warnf("GetBillingConfig: unable to resolve organisation for active workspace: %v", err)
 				response["license"] = billing.LicenseSummary{}
 			} else {
 				if h.A.Billing != nil {

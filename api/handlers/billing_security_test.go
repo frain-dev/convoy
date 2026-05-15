@@ -526,8 +526,8 @@ func TestBillingConfigReturnsEmptyLicenseWhenStrategyUnavailable(t *testing.T) {
 		Status bool `json:"status"`
 		Data   struct {
 			License struct {
-				Configured      bool `json:"configured"`
-				HasEntitlements bool `json:"has_entitlements"`
+				Configured      bool   `json:"configured"`
+				HasEntitlements bool   `json:"has_entitlements"`
 				MaskedKey       string `json:"masked_key"`
 			} `json:"license"`
 		} `json:"data"`

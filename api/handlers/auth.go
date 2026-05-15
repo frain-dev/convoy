@@ -243,6 +243,14 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 			case services.ErrCodeInternal:
 				errMsg = "Login temporarily unavailable"
 				status = http.StatusInternalServerError
+			default:
+				// Surface the service-level message for any future ErrCode the login flow
+				// adds (e.g. rate-limited, MFA-required) instead of silently flattening it
+				// to the generic "Login failed". Bubble up a 500 so we notice the gap.
+				if msg := strings.TrimSpace(se.ErrMsg); msg != "" {
+					errMsg = msg
+				}
+				status = http.StatusInternalServerError
 			}
 		}
 

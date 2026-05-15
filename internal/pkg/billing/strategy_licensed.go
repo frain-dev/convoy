@@ -120,13 +120,15 @@ func (s *licensedStrategy) GetPlans(ctx context.Context, orgID string) (*Respons
 }
 
 func (s *licensedStrategy) GetTaxIDTypes(ctx context.Context, orgID string) (*Response[[]TaxIDType], error) {
-	lk := s.instanceLicenseKey
-	if lk == "" && orgID != "" {
-		k, err := s.licenseKeyFor(ctx, orgID)
-		if err != nil {
-			return nil, err
+	// Resolve the license key the same way as every other org-scoped method so the
+	// instance key never bleeds into per-org calls. Org-less callers (instance UI,
+	// pre-license setup) still fall through to the unlicensed catalog.
+	lk, err := s.licenseKeyFor(ctx, orgID)
+	if err != nil {
+		if orgID == "" {
+			return s.client.GetTaxIDTypes(ctx)
 		}
-		lk = k
+		return nil, err
 	}
 	if lk == "" {
 		return s.client.GetTaxIDTypes(ctx)

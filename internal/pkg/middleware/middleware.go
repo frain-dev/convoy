@@ -273,6 +273,10 @@ func SetupCORS(logger log.Logger) func(http.Handler) http.Handler {
 				return
 			}
 
+			// We only reflect the request Origin when the server is explicitly running in
+			// `development` so localhost ports / CRA dev servers can talk to the API. In any
+			// other environment the existing edge/proxy CORS rules apply, and we never let an
+			// unverified Origin become Access-Control-Allow-Origin in staging or production.
 			if env := cfg.Environment; string(env) == "development" {
 				allowOrigin := strings.TrimSpace(r.Header.Get("Origin"))
 				if allowOrigin == "" {
