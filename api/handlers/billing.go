@@ -676,6 +676,11 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 }
 
 func (h *BillingHandler) updateOrganisationStatus(ctx context.Context, orgID string, subscriptionData interface{}) {
+	// disabled_at is currently a cloud-only organisation control.
+	if !h.A.Cfg.IsCloud() {
+		return
+	}
+
 	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
 	if err != nil {

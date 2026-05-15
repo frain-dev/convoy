@@ -394,7 +394,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	}
 	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
 
-	if cfg.IsCloud() || strings.TrimSpace(cfg.LicenseKey) != "" {
+	if cfg.IsCloud() {
 		billingClient := billing.NewClient(cfg.Billing)
 		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, rd, lo), nil)
 	}

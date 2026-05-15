@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -105,34 +104,23 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 		updatedCount := 0
 		errorCount := 0
 
-		if cfg.IsSelfHosted() {
-			lk := strings.TrimSpace(cfg.LicenseKey)
-			if lk == "" {
-				logger.Warn("Organisation status update: CONVOY_LICENSE_KEY is not set; skipping disabled_at updates for self-hosted")
-				return nil
-			}
-			resp, err := billingClient.LicenseBillingGetSubscription(ctx, lk)
+		if !cfg.IsCloud() {
+			logger.Info("Organisation status update: skipping disabled_at updates outside cloud mode")
+			return nil
+		}
+
+		for _, org := range orgs {
+			resp, err := billingClient.GetSubscription(ctx, org.UID)
 			if err != nil {
-				return fmt.Errorf("license-scoped subscription fetch: %w", err)
+				logger.Errorf("Failed to fetch subscription for organisation %s: %v", org.UID, err)
+				errorCount++
+				continue
 			}
+
 			hasActiveSubscription := billing.HasActiveSubscription(resp.Data)
-			u, e := applySubscriptionDerivedDisabledState(ctx, orgRepo, orgs, hasActiveSubscription, logger)
+			u, e := applySubscriptionDerivedDisabledState(ctx, orgRepo, []datastore.Organisation{org}, hasActiveSubscription, logger)
 			updatedCount += u
 			errorCount += e
-		} else {
-			for _, org := range orgs {
-				resp, err := billingClient.GetSubscription(ctx, org.UID)
-				if err != nil {
-					logger.Errorf("Failed to fetch subscription for organisation %s: %v", org.UID, err)
-					errorCount++
-					continue
-				}
-
-				hasActiveSubscription := billing.HasActiveSubscription(resp.Data)
-				u, e := applySubscriptionDerivedDisabledState(ctx, orgRepo, []datastore.Organisation{org}, hasActiveSubscription, logger)
-				updatedCount += u
-				errorCount += e
-			}
 		}
 
 		logger.Infof("Organisation status update completed: %d updated, %d errors", updatedCount, errorCount)

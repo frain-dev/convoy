@@ -233,6 +233,31 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 }
 
+func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationStatus_SkipsWhenLicensedSelfHosted() {
+	cfg, err := config.Get()
+	require.NoError(u.T(), err)
+	cfg.Billing.APIKey = ""
+	cfg.LicenseKey = "lk_test"
+	config.Override(&cfg)
+
+	rd, err := rdb.NewClientFromConfig(
+		cfg.Redis.BuildDsn(),
+		cfg.Redis.TLSSkipVerify,
+		cfg.Redis.TLSCACertFile,
+		cfg.Redis.TLSCertFile,
+		cfg.Redis.TLSKeyFile,
+	)
+	require.NoError(u.T(), err)
+
+	logger := log.New("convoy", log.LevelError)
+	testClient := newTestBillingClient()
+	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
+
+	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
+	err = fn(context.Background(), task)
+	require.NoError(u.T(), err)
+}
+
 func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationStatus_HandlesBillingClientError() {
 	org1, err := testdb.SeedDefaultOrganisation(u.ConvoyApp.database, u.DefaultUser)
 	require.NoError(u.T(), err)

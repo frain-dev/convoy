@@ -556,3 +556,20 @@ func TestCheckBillingAccess_returnsNotFoundWhenOrganisationMissingWithoutError(t
 	require.False(t, allowed)
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
+
+func TestUpdateOrganisationStatus_skipsForSelfHostedMode(t *testing.T) {
+	t.Parallel()
+
+	h := &BillingHandler{
+		Handler: &Handler{
+			A: &types.APIOptions{
+				Cfg:    config.Configuration{LicenseKey: "lk_test"},
+				Logger: log.New("convoy", log.LevelError),
+			},
+		},
+	}
+
+	require.NotPanics(t, func() {
+		h.updateOrganisationStatus(context.Background(), "org-self-hosted", billing.BillingSubscription{})
+	})
+}
