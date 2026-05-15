@@ -1723,15 +1723,18 @@ export class BillingPageComponent implements OnInit, OnDestroy {
       const instructions =
         res?.data?.instructions ||
         'License issued and emailed. Set the license key as CONVOY_LICENSE_KEY, restart Convoy, then refresh this page.';
+      const postVerifyNextSteps =
+        `${instructions} We also sent the license key to your billing email, so check your inbox (and spam). ` +
+        'If needed, you can run verification again.';
       if (maskedLicense) {
         this.selfHostedLicenseMasked = maskedLicense;
       }
       this.selfHostedVerifyCode = '';
       this.selfHostedLicenseReady = false;
       this.selfHostedHasEntitlements = false;
-      this.selfHostedBootstrapMessage = instructions;
+      this.selfHostedBootstrapMessage = postVerifyNextSteps;
       this.markBillingDataIdle();
-      this.generalService.showNotification({ message: instructions, style: 'success' });
+      this.generalService.showNotification({ message: postVerifyNextSteps, style: 'success' });
     } catch (e: any) {
       this.generalService.showNotification({
         message: this.billingErrorMessage(e, 'Verification failed'),
