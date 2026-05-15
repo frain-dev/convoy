@@ -1073,26 +1073,98 @@ export class BillingPageComponent implements OnInit {
     );
 
     const uniqueFeatures = allFeatures.filter((feature, index, self) =>
-      index === self.findIndex(f => f.name === feature.name)
+      index === self.findIndex(f => (f.key || f.name) === (feature.key || feature.name))
     );
 
     return uniqueFeatures;
   }
 
-  getFeatureValue(planId: string, featureName: string): string {
-    const plan = this.plans.find(p => p.id === planId);
-    if (!plan) return 'Unsupported';
-
-    const feature = plan.features.find(f => f.name === featureName);
-    return feature ? feature.value : 'Unsupported';
+  getFeatureValue(planId: string, feature: { key?: string; name: string }): string {
+    const cell = this.getFeatureCell(planId, feature);
+    return cell.value;
   }
 
-  getFeatureValueType(planId: string, featureName: string): 'supported' | 'unsupported' | 'plain' {
-    const value = this.getFeatureValue(planId, featureName);
+  getFeatureBaselineValue(planId: string, feature: { key?: string; name: string }): string {
+    const cell = this.getFeatureCell(planId, feature);
+    return cell.baselineValue || '';
+  }
+
+  isFeatureOverridden(planId: string, feature: { key?: string; name: string }): boolean {
+    return this.getFeatureCell(planId, feature).isOverridden;
+  }
+
+  getFeatureValueType(planId: string, feature: { key?: string; name: string }): 'supported' | 'unsupported' | 'plain' {
+    const value = this.getFeatureValue(planId, feature);
 
     if (value === 'Supported') return 'supported';
     if (value === 'Unsupported') return 'unsupported';
     return 'plain';
+  }
+
+  private getFeatureCell(
+    planId: string,
+    feature: { key?: string; name: string }
+  ): { value: string; baselineValue: string; isOverridden: boolean } {
+    const plan = this.plans.find(p => p.id === planId);
+    if (!plan) {
+      return { value: 'Unsupported', baselineValue: 'Unsupported', isOverridden: false };
+    }
+
+    const baselineFeature = plan.features.find(f => {
+      if (feature.key && f.key) {
+        return f.key === feature.key;
+      }
+
+      return f.name === feature.name;
+    });
+
+    const baselineValue = baselineFeature ? baselineFeature.value : 'Unsupported';
+    const currentPlanColumn = this.isCurrentSubscriptionPlan(plan.id, plan.name);
+    if (!currentPlanColumn || !feature.key) {
+      return { value: baselineValue, baselineValue, isOverridden: false };
+    }
+
+    const entitlement = this.getComputedEntitlement(feature.key);
+    if (!entitlement) {
+      return { value: baselineValue, baselineValue, isOverridden: false };
+    }
+
+    const effectiveValue = this.normalizeEntitlementValue(entitlement.value);
+    const isOverridden = effectiveValue !== baselineValue;
+    return {
+      value: effectiveValue,
+      baselineValue,
+      isOverridden
+    };
+  }
+
+  private getComputedEntitlement(featureKey: string): { value: unknown } | null {
+    const entitlements = Array.isArray(this.currentSubscription?.computed_entitlements)
+      ? this.currentSubscription.computed_entitlements
+      : [];
+
+    const match = entitlements.find((entitlement: any) => entitlement?.key === featureKey);
+    return match || null;
+  }
+
+  private normalizeEntitlementValue(value: unknown): string {
+    if (typeof value === 'boolean') {
+      return value ? 'Supported' : 'Unsupported';
+    }
+
+    if (typeof value === 'number') {
+      if (value === -1) {
+        return 'Unlimited';
+      }
+
+      return value.toLocaleString('en-US');
+    }
+
+    if (value === null || typeof value === 'undefined') {
+      return 'Unsupported';
+    }
+
+    return String(value);
   }
 
   private loadExistingData() {

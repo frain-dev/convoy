@@ -650,11 +650,16 @@
                         @for (plan of plans; track $index) {
                           <div class="comparison-table-cell feature-value">
                             <span class="status-badge"
-                              [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
-                              [class.status-unsupported]="getFeatureValueType(plan.id, feature.name) === 'unsupported'"
-                              [class.status-plain]="getFeatureValueType(plan.id, feature.name) === 'plain'">
-                              {{ getFeatureValue(plan.id, feature.name) }}
+                              [class.status-supported]="getFeatureValueType(plan.id, feature) === 'supported'"
+                              [class.status-unsupported]="getFeatureValueType(plan.id, feature) === 'unsupported'"
+                              [class.status-plain]="getFeatureValueType(plan.id, feature) === 'plain'">
+                              {{ getFeatureValue(plan.id, feature) }}
                             </span>
+                            @if (isFeatureOverridden(plan.id, feature)) {
+                              <span class="block text-11px text-neutral-10 mt-4px">
+                                Default: {{ getFeatureBaselineValue(plan.id, feature) }}
+                              </span>
+                            }
                           </div>
                         }
                       </div>
@@ -671,11 +676,16 @@
                         @for (plan of plans; track $index) {
                           <div class="comparison-table-cell feature-value">
                             <span class="status-badge"
-                              [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
-                              [class.status-unsupported]="getFeatureValueType(plan.id, feature.name) === 'unsupported'"
-                              [class.status-plain]="getFeatureValueType(plan.id, feature.name) === 'plain'">
-                              {{ getFeatureValue(plan.id, feature.name) }}
+                              [class.status-supported]="getFeatureValueType(plan.id, feature) === 'supported'"
+                              [class.status-unsupported]="getFeatureValueType(plan.id, feature) === 'unsupported'"
+                              [class.status-plain]="getFeatureValueType(plan.id, feature) === 'plain'">
+                              {{ getFeatureValue(plan.id, feature) }}
                             </span>
+                            @if (isFeatureOverridden(plan.id, feature)) {
+                              <span class="block text-11px text-neutral-10 mt-4px">
+                                Default: {{ getFeatureBaselineValue(plan.id, feature) }}
+                              </span>
+                            }
                           </div>
                         }
                       </div>
@@ -692,11 +702,16 @@
                         @for (plan of plans; track $index) {
                           <div class="comparison-table-cell feature-value">
                             <span class="status-badge"
-                              [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
-                              [class.status-unsupported]="getFeatureValueType(plan.id, feature.name) === 'unsupported'"
-                              [class.status-plain]="getFeatureValueType(plan.id, feature.name) === 'plain'">
-                              {{ getFeatureValue(plan.id, feature.name) }}
+                              [class.status-supported]="getFeatureValueType(plan.id, feature) === 'supported'"
+                              [class.status-unsupported]="getFeatureValueType(plan.id, feature) === 'unsupported'"
+                              [class.status-plain]="getFeatureValueType(plan.id, feature) === 'plain'">
+                              {{ getFeatureValue(plan.id, feature) }}
                             </span>
+                            @if (isFeatureOverridden(plan.id, feature)) {
+                              <span class="block text-11px text-neutral-10 mt-4px">
+                                Default: {{ getFeatureBaselineValue(plan.id, feature) }}
+                              </span>
+                            }
                           </div>
                         }
                       </div>

@@ -3,6 +3,7 @@ import {from, Observable} from 'rxjs';
 import {HttpService} from 'src/app/services/http/http.service';
 
 export interface PlanFeature {
+  key?: string;
   name: string;
   description?: string;
   category: 'core' | 'security' | 'support';
