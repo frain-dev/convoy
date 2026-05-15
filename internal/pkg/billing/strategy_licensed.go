@@ -19,6 +19,9 @@ type licensedStrategy struct {
 
 func (s *licensedStrategy) Mode() config.BillingMode { return config.BillingModeLicensed }
 
+// licenseKeyFor intentionally ignores orgID in licensed self-hosted mode.
+// In this mode billing identity is instance-scoped (CONVOY_LICENSE_KEY), while orgID is used
+// by API handlers only for workspace authorization and auditing context.
 func (s *licensedStrategy) licenseKeyFor(_ context.Context, _ string) (string, error) {
 	return selfHostedLicenseBillingKey(s.instanceLicenseKey)
 }

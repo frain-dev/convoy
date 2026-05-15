@@ -12,6 +12,7 @@ import (
 
 func TestShouldAuthRoute_LicenseFeatures(t *testing.T) {
 	t.Parallel()
+	cloudCfg := config.Configuration{Billing: config.BillingConfiguration{APIKey: "sk_test"}}
 
 	publicReq := httptest.NewRequest(http.MethodGet, "/ui/license/features", nil)
 	require.False(t, shouldAuthRoute(publicReq, config.Configuration{}))
@@ -19,12 +20,14 @@ func TestShouldAuthRoute_LicenseFeatures(t *testing.T) {
 	orgReq := httptest.NewRequest(http.MethodGet, "/ui/license/features?orgID=org-123", nil)
 	require.False(t, shouldAuthRoute(orgReq, config.Configuration{}))
 	require.True(t, shouldAuthRoute(orgReq, config.Configuration{LicenseKey: "lk_test"}))
-	require.True(t, shouldAuthRoute(orgReq, config.Configuration{Billing: config.BillingConfiguration{APIKey: "sk_test"}}))
+	// API key implies cloud mode; org-scoped license features must stay authenticated in cloud.
+	require.True(t, shouldAuthRoute(orgReq, cloudCfg))
 
 	headerReq := httptest.NewRequest(http.MethodGet, "/ui/license/features", nil)
 	headerReq.Header.Set("X-Organisation-Id", "org-123")
 	require.False(t, shouldAuthRoute(headerReq, config.Configuration{}))
 	require.True(t, shouldAuthRoute(headerReq, config.Configuration{LicenseKey: "lk_test"}))
+	require.True(t, shouldAuthRoute(headerReq, cloudCfg))
 }
 
 func TestSanitizeURLForLog(t *testing.T) {

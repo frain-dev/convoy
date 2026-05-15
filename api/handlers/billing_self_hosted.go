@@ -11,6 +11,26 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
+func maskEmailForLog(email string) string {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return ""
+	}
+
+	parts := strings.SplitN(email, "@", 2)
+	if len(parts) != 2 || parts[1] == "" {
+		return "***"
+	}
+
+	localPart := parts[0]
+	domain := parts[1]
+	if localPart == "" {
+		return "***@" + domain
+	}
+
+	return localPart[:1] + "***@" + domain
+}
+
 // SelfHostedRegisterEmail kicks off the buy flow for a self-hosted instance:
 // the dashboard collects an email, Overwatch sends a verification code, and the
 // next call (SelfHostedVerifyEmail) returns a license key for the user to set
@@ -48,7 +68,7 @@ func (h *BillingHandler) SelfHostedRegisterEmail(w http.ResponseWriter, r *http.
 			r.Context(),
 			"self-hosted register_email failed",
 			"org_id", strings.TrimSpace(r.Header.Get("X-Organisation-Id")),
-			"email", email,
+			"email", maskEmailForLog(email),
 			"error", err,
 		)
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), billingServiceErrorStatus(err)))
