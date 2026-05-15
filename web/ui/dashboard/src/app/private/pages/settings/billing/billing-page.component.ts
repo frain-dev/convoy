@@ -1189,6 +1189,13 @@ export class BillingPageComponent implements OnInit, OnDestroy {
     this.selectedPlan = planId;
   }
 
+  clearPlanSelection(): void {
+    if (this.isLoadingCheckout) {
+      return;
+    }
+    this.selectedPlan = null;
+  }
+
   /** Handle plan card button: Select selects the plan; Upgrade/Subscribe triggers checkout. */
   onPlanCardButtonClick(planId: string): void {
     if (!this.areCheckoutPlansAvailable()) {

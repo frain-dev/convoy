@@ -555,7 +555,7 @@
           <h2 class="font-semibold text-14">Plan</h2>
         </div>
 
-        <div class="manage-plan-content">
+        <div class="manage-plan-content" (click)="clearPlanSelection()">
           <h3 class="text-20 font-medium mb-24px">Manage your plan</h3>
           @if (hasPlanLoadingState) {
             <div class="flex gap-16px mb-40px">
@@ -586,7 +586,7 @@
             </div>
           } @else if (hasPlanReadyState) {
             <p class="text-14 text-neutral-11 mb-16px">Select a plan card to continue.</p>
-            <div class="flex gap-16px mb-40px">
+            <div class="flex gap-16px mb-40px" (click)="$event.stopPropagation()">
               @for (plan of plans; track $index) {
                 <div
                   class="plan-card flex-1 cursor-pointer"
@@ -595,10 +595,15 @@
                   >
                   <div class="plan-card-header">
                     <h4 class="plan-card-title">{{ plan.name }}</h4>
-                    @if (selectedPlan === plan.id) {
-                      <svg class="plan-card-check" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="10" cy="10" r="10" fill="#2780F1"/>
-                        <path d="M14 7L8.5 12.5L6 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    @if (isCurrentPlan(plan.id) || selectedPlan === plan.id) {
+                      <svg class="plan-card-check" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        @if (selectedPlan === plan.id) {
+                          <circle cx="10" cy="10" r="10" fill="#2780F1"/>
+                          <path d="M14 7L8.5 12.5L6 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        } @else {
+                          <circle cx="10" cy="10" r="9" fill="none" stroke="#2780F1" stroke-width="2"/>
+                          <path d="M14 7L8.5 12.5L6 10" stroke="#2780F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        }
                       </svg>
                     }
                   </div>
