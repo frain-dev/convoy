@@ -24,6 +24,7 @@ import (
 type CreateOrganisationService struct {
 	OrgRepo       datastore.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
+	UserRepo      datastore.UserRepository
 	NewOrg        *datastore.OrganisationRequest
 	User          *datastore.User
 	Licenser      license.Licenser
@@ -40,7 +41,13 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	}
 
 	if !ok {
-		return nil, &ServiceError{ErrMsg: ErrOrgLimit.Error(), Err: ErrOrgLimit}
+		skip, err := co.orglessPrimaryBypass(ctx)
+		if err != nil {
+			return nil, &ServiceError{ErrMsg: err.Error()}
+		}
+		if !skip {
+			return nil, &ServiceError{ErrMsg: ErrOrgLimit.Error(), Err: ErrOrgLimit}
+		}
 	}
 
 	err = util.Validate(co.NewOrg)
@@ -111,6 +118,20 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	}
 
 	return org, nil
+}
+
+func (co *CreateOrganisationService) orglessPrimaryBypass(ctx context.Context) (bool, error) {
+	if co.UserRepo == nil {
+		return false, nil
+	}
+	orgs, _, err := co.OrgMemberRepo.LoadUserOrganisationsPaged(ctx, co.User.UID, datastore.Pageable{PerPage: 1})
+	if err != nil {
+		return false, err
+	}
+	if len(orgs) > 0 {
+		return false, nil
+	}
+	return PrimaryInstanceAccess(ctx, co.User.UID, co.UserRepo, co.OrgMemberRepo, co.Licenser)
 }
 
 // RunBillingOrganisationSync creates the organisation in billing, resolves the license key,

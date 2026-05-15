@@ -246,6 +246,7 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 	co := CreateOrganisationService{
 		OrgRepo:       u.OrgRepo,
 		OrgMemberRepo: u.OrgMemberRepo,
+		UserRepo:      u.UserRepo,
 		Licenser:      u.Licenser,
 		Logger:        u.Logger,
 		NewOrg:        &datastore.OrganisationRequest{Name: t.Data.Payload.OrganizationExternalID},

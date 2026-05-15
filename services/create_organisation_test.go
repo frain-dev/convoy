@@ -29,6 +29,7 @@ func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *datastore
 	return &CreateOrganisationService{
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+		UserRepo:      mocks.NewMockUserRepository(ctrl),
 		Licenser:      mocks.NewMockLicenser(ctrl),
 		Logger:        log.New("convoy", log.LevelInfo),
 		NewOrg:        newOrg,
@@ -129,6 +130,29 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			wantErrMsg: "failed to create organisation",
 		},
 		{
+			name: "should_bypass_org_limit_for_orgless_primary_user",
+			args: args{
+				ctx:    ctx,
+				newOrg: &datastore.OrganisationRequest{Name: "new_org"},
+				user:   &datastore.User{UID: "1234"},
+			},
+			want: &datastore.Organisation{Name: "new_org", OwnerID: "1234"},
+			dbFn: func(os *CreateOrganisationService) {
+				licenser, _ := os.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(false, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(2).Return(true, nil)
+
+				om, _ := os.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				om.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).
+					Return([]datastore.Organisation{}, datastore.PaginationData{}, nil)
+
+				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)
+				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
 			name: "should_fail_to_create_organisation_for_license_check",
 			args: args{
 				ctx:    ctx,
@@ -138,6 +162,9 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckOrgLimit(gomock.Any()).Times(1).Return(false, nil)
+				om, _ := os.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				om.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).
+					Return([]datastore.Organisation{{UID: "x"}}, datastore.PaginationData{}, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: ErrOrgLimit.Error(),

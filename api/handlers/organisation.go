@@ -25,6 +25,7 @@ import (
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
@@ -98,6 +99,7 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	co := services.CreateOrganisationService{
 		OrgRepo:       orgRepo,
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+		UserRepo:      users.New(h.A.Logger, h.A.DB),
 		NewOrg:        &newOrg,
 		User:          user,
 		Licenser:      h.A.Licenser,

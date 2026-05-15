@@ -167,6 +167,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 	co := CreateOrganisationService{
 		OrgRepo:       g.OrgRepo,
 		OrgMemberRepo: g.OrgMemberRepo,
+		UserRepo:      g.UserRepo,
 		Licenser:      g.Licenser,
 		Logger:        g.Logger,
 		NewOrg:        &datastore.OrganisationRequest{Name: businessName},

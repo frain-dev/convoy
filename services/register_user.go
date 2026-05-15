@@ -88,6 +88,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 	co := CreateOrganisationService{
 		OrgRepo:       u.OrgRepo,
 		OrgMemberRepo: u.OrgMemberRepo,
+		UserRepo:      u.UserRepo,
 		Licenser:      u.Licenser,
 		NewOrg:        &datastore.OrganisationRequest{Name: u.Data.OrganisationName},
 		User:          user,
