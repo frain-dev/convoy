@@ -274,7 +274,7 @@ func (h *Handler) shouldRefreshLicenseDataAfterLogin() bool {
 		return h.A.BillingClient != nil
 	}
 
-	return h.A.Cfg.IsSelfHosted() && strings.TrimSpace(h.A.Cfg.LicenseKey) != ""
+	return strings.TrimSpace(h.A.Cfg.LicenseKey) != ""
 }
 
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
