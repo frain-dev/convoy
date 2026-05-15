@@ -165,8 +165,12 @@ func (h *Handler) retrieveOrganisation(r *http.Request) (*datastore.Organisation
 		orgID = r.URL.Query().Get("orgID")
 	}
 	if !util.IsStringEmpty(orgID) {
-		orgRepo := organisations.New(h.A.Logger, h.A.DB)
-		org, err = orgRepo.FetchOrganisationByID(r.Context(), orgID)
+		if h.A.OrgRepo != nil {
+			org, err = h.A.OrgRepo.FetchOrganisationByID(r.Context(), orgID)
+		} else {
+			orgRepo := organisations.New(h.A.Logger, h.A.DB)
+			org, err = orgRepo.FetchOrganisationByID(r.Context(), orgID)
+		}
 		if err == nil && org != nil {
 			return org, nil
 		}

@@ -40,6 +40,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 				OrgMemberRepo: orgMemberRepo,
 				OrgRepo:       orgRepo,
 				BillingClient: h.A.BillingClient,
+				OrgBilling:    h.A.Billing,
 				Logger:        h.A.Logger,
 				Cfg:           configuration,
 			},
@@ -126,6 +127,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 			BillingClient: h.A.BillingClient,
+			OrgBilling:    h.A.Billing,
 			Logger:        h.A.Logger,
 			Cfg:           h.A.Cfg,
 		})
@@ -264,6 +266,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 			BillingClient: h.A.BillingClient,
+			OrgBilling:    h.A.Billing,
 			Logger:        h.A.Logger,
 			Cfg:           h.A.Cfg,
 		})

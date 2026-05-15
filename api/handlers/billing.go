@@ -587,6 +587,14 @@ func (h *BillingHandler) DeleteSubscription(w http.ResponseWriter, r *http.Reque
 
 	h.updateOrganisationStatus(r.Context(), orgID, resp.Data)
 
+	orgRepo := h.A.OrgRepo
+	if orgRepo == nil {
+		orgRepo = organisations.New(h.A.Logger, h.A.DB)
+	}
+	if err := orgRepo.UpdateOrganisationLicenseData(r.Context(), orgID, ""); err != nil {
+		h.A.Logger.Errorf("Failed to clear organisation %s license_data on subscription cancel: %v", orgID, err)
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("Subscription cancelled successfully", resp.Data, http.StatusOK))
 }
 
@@ -682,7 +690,10 @@ func (h *BillingHandler) updateOrganisationStatus(ctx context.Context, orgID str
 		return
 	}
 
-	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	orgRepo := h.A.OrgRepo
+	if orgRepo == nil {
+		orgRepo = organisations.New(h.A.Logger, h.A.DB)
+	}
 	org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
 	if err != nil {
 		h.A.Logger.Errorf("Failed to fetch organisation %s for disabled status update: %v", orgID, err)

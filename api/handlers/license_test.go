@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -153,6 +154,209 @@ func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 	ul, ok := data["user_limit"].(map[string]interface{})
 	require.True(t, ok)
 	require.Equal(t, float64(10), ul["limit"])
+}
+
+// selfHostedSubGateStrategy is a licensed-mode billing strategy stub for tests that
+// need a controlled GetSubscription result without pulling in the full billing stack.
+type selfHostedSubGateStrategy struct {
+	*billingStrategySpy
+	sub    *billing.Response[billing.BillingSubscription]
+	subErr error
+}
+
+func (s *selfHostedSubGateStrategy) Mode() config.BillingMode {
+	return config.BillingModeLicensed
+}
+
+func (s *selfHostedSubGateStrategy) GetSubscription(ctx context.Context, orgID string) (*billing.Response[billing.BillingSubscription], error) {
+	if s.subErr != nil {
+		return nil, s.subErr
+	}
+	if s.sub != nil {
+		return s.sub, nil
+	}
+	return s.billingStrategySpy.GetSubscription(ctx, orgID)
+}
+
+func TestGetLicenseFeatures_SelfHostedInactiveSubscriptionSkipsCachedLicenseData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "org-inactive-sub"
+	entitlements := map[string]interface{}{
+		"user_limit": int64(99),
+	}
+	payload := &license.LicenseDataPayload{Key: "lk", Entitlements: entitlements}
+	encrypted, err := license.EncryptLicenseData(orgID, payload)
+	require.NoError(t, err)
+
+	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+	strategy := &selfHostedSubGateStrategy{
+		billingStrategySpy: &billingStrategySpy{},
+		sub: &billing.Response[billing.BillingSubscription]{
+			Status: true,
+			Data:   billing.BillingSubscription{Status: "canceled"},
+		},
+	}
+	handler := &Handler{
+		A: &types.APIOptions{
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}, LicenseKey: "lk_test"},
+			Billing:       strategy,
+			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.New("convoy", log.LevelInfo),
+			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
+			ProjectRepo:   mockProjectRepo,
+		},
+	}
+
+	mockOrgRepo.EXPECT().
+		FetchOrganisationByID(gomock.Any(), orgID).
+		Return(&datastore.Organisation{UID: orgID, LicenseData: encrypted}, nil)
+	mockOrgRepo.EXPECT().
+		UpdateOrganisationLicenseData(gomock.Any(), orgID, "").
+		Return(nil)
+	mockOrgMemberRepo.EXPECT().
+		FetchOrganisationMemberByUserID(gomock.Any(), testLicenseFeaturesUserUID, orgID).
+		Return(&datastore.OrganisationMember{}, nil)
+	mockProjectRepo.EXPECT().
+		LoadProjects(gomock.Any(), gomock.Any()).
+		Return([]*datastore.Project{}, nil)
+
+	req := licenseFeaturesRequest(http.MethodGet, "/license/features?orgID="+orgID)
+	w := httptest.NewRecorder()
+
+	handler.GetLicenseFeatures(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp struct {
+		Data json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	var data map[string]interface{}
+	require.NoError(t, json.Unmarshal(resp.Data, &data))
+	ul, ok := data["user_limit"].(map[string]interface{})
+	require.True(t, ok)
+	require.False(t, ul["allowed"].(bool))
+	require.Equal(t, float64(0), ul["limit"])
+	pl, ok := data["project_limit"].(map[string]interface{})
+	require.True(t, ok)
+	require.False(t, pl["allowed"].(bool))
+}
+
+func TestGetLicenseFeatures_SelfHostedGetSubscriptionErrorStillUsesCachedLicenseData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "org-sub-failure"
+	entitlements := map[string]interface{}{"user_limit": int64(5)}
+	payload := &license.LicenseDataPayload{Key: "lk", Entitlements: entitlements}
+	encrypted, err := license.EncryptLicenseData(orgID, payload)
+	require.NoError(t, err)
+
+	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+	strategy := &selfHostedSubGateStrategy{
+		billingStrategySpy: &billingStrategySpy{},
+		subErr:             errors.New("billing unavailable"),
+	}
+	handler := &Handler{
+		A: &types.APIOptions{
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}, LicenseKey: "lk_test"},
+			Billing:       strategy,
+			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.New("convoy", log.LevelInfo),
+			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
+			ProjectRepo:   mockProjectRepo,
+		},
+	}
+
+	mockOrgRepo.EXPECT().
+		FetchOrganisationByID(gomock.Any(), orgID).
+		Return(&datastore.Organisation{UID: orgID, LicenseData: encrypted}, nil)
+	mockOrgMemberRepo.EXPECT().
+		FetchOrganisationMemberByUserID(gomock.Any(), testLicenseFeaturesUserUID, orgID).
+		Return(&datastore.OrganisationMember{}, nil)
+	mockProjectRepo.EXPECT().
+		LoadProjects(gomock.Any(), gomock.Any()).
+		Return([]*datastore.Project{}, nil)
+
+	req := licenseFeaturesRequest(http.MethodGet, "/license/features?orgID="+orgID)
+	w := httptest.NewRecorder()
+
+	handler.GetLicenseFeatures(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp struct {
+		Data json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	var data map[string]interface{}
+	require.NoError(t, json.Unmarshal(resp.Data, &data))
+	ul, ok := data["user_limit"].(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, float64(5), ul["limit"])
+}
+
+func TestGetLicenseFeatures_SelfHostedActiveSubscriptionUsesCachedLicenseData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "org-active-sub"
+	entitlements := map[string]interface{}{"portal_links": true}
+	payload := &license.LicenseDataPayload{Key: "lk", Entitlements: entitlements}
+	encrypted, err := license.EncryptLicenseData(orgID, payload)
+	require.NoError(t, err)
+
+	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockProjectRepo := mocks.NewMockProjectRepository(ctrl)
+	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+	strategy := &selfHostedSubGateStrategy{
+		billingStrategySpy: &billingStrategySpy{},
+		sub: &billing.Response[billing.BillingSubscription]{
+			Status: true,
+			Data:   billing.BillingSubscription{Status: "active"},
+		},
+	}
+	handler := &Handler{
+		A: &types.APIOptions{
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{URL: "http://billing.test"}, LicenseKey: "lk_test"},
+			Billing:       strategy,
+			BillingClient: &billing.MockBillingClient{},
+			Logger:        log.New("convoy", log.LevelInfo),
+			OrgRepo:       mockOrgRepo,
+			OrgMemberRepo: mockOrgMemberRepo,
+			ProjectRepo:   mockProjectRepo,
+		},
+	}
+
+	mockOrgRepo.EXPECT().
+		FetchOrganisationByID(gomock.Any(), orgID).
+		Return(&datastore.Organisation{UID: orgID, LicenseData: encrypted}, nil)
+	mockOrgMemberRepo.EXPECT().
+		FetchOrganisationMemberByUserID(gomock.Any(), testLicenseFeaturesUserUID, orgID).
+		Return(&datastore.OrganisationMember{}, nil)
+	mockProjectRepo.EXPECT().
+		LoadProjects(gomock.Any(), gomock.Any()).
+		Return([]*datastore.Project{}, nil)
+
+	req := licenseFeaturesRequest(http.MethodGet, "/license/features?orgID="+orgID)
+	w := httptest.NewRecorder()
+
+	handler.GetLicenseFeatures(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp struct {
+		Data json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	var data map[string]interface{}
+	require.NoError(t, json.Unmarshal(resp.Data, &data))
+	require.True(t, data["PortalLinks"].(bool))
 }
 
 func TestGetLicenseFeatures_CloudFallsBackToCachedOrgLicenseData(t *testing.T) {

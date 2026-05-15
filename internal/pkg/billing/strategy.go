@@ -10,7 +10,6 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -44,6 +43,11 @@ type Strategy interface {
 	UpdateOrganisation(ctx context.Context, orgID string, data BillingOrganisation) (*Response[BillingOrganisation], error)
 	UpdateOrganisationTaxID(ctx context.Context, orgID string, data UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error)
 	UpdateOrganisationAddress(ctx context.Context, orgID string, data UpdateOrganisationAddressRequest) (*Response[BillingOrganisation], error)
+}
+
+// SubscriptionStatusReader is the Strategy surface used for org-level subscription gating.
+type SubscriptionStatusReader interface {
+	GetSubscription(ctx context.Context, orgID string) (*Response[BillingSubscription], error)
 }
 
 type LicenseSummary struct {
@@ -100,39 +104,15 @@ func MaskLicenseKey(key string) string {
 	return string(runes)
 }
 
-func resolveOrgLicenseKey(ctx context.Context, orgRepo datastore.OrganisationRepository, instanceKey, orgID string) (string, error) {
-	trimmedOrgID := strings.TrimSpace(orgID)
-	if trimmedOrgID == "" {
-		if k := strings.TrimSpace(instanceKey); k != "" {
-			return k, nil
-		}
-
+// selfHostedLicenseBillingKey is the Overwatch license-billing credential for self-hosted
+// strategies (licensed / unlicensed). It is only CONVOY_LICENSE_KEY; organisation license_data
+// is not consulted for these HTTP calls.
+func selfHostedLicenseBillingKey(instanceKey string) (string, error) {
+	k := strings.TrimSpace(instanceKey)
+	if k == "" {
 		return "", ErrNoLicense
 	}
-
-	if orgRepo == nil {
-		return "", ErrNoLicense
-	}
-
-	org, err := orgRepo.FetchOrganisationByID(ctx, trimmedOrgID)
-	if err != nil {
-		return "", err
-	}
-	if org == nil || org.LicenseData == "" {
-		return "", ErrNoLicense
-	}
-
-	payload, err := license.DecryptLicenseData(org.UID, org.LicenseData)
-	if err != nil {
-		return "", err
-	}
-
-	orgLicenseKey := strings.TrimSpace(payload.Key)
-	if orgLicenseKey == "" {
-		return "", ErrNoLicense
-	}
-
-	return orgLicenseKey, nil
+	return k, nil
 }
 
 func emptyResponse[T any](message string) *Response[T] {

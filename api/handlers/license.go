@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	licensesvc "github.com/frain-dev/convoy/internal/pkg/license/service"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -90,6 +91,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			OrgMemberRepo: orgMemberRepo,
 			OrgRepo:       orgRepo,
 			BillingClient: h.A.BillingClient,
+			OrgBilling:    h.A.Billing,
 			Logger:        h.A.Logger,
 			Cfg:           h.A.Cfg,
 		}
@@ -130,7 +132,20 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if org.LicenseData != "" {
+		skipCachedLicenseData := false
+		if !h.A.Cfg.IsCloud() && h.A.Billing != nil {
+			if subResp, subErr := h.A.Billing.GetSubscription(r.Context(), org.UID); subErr == nil && subResp != nil && subResp.Status {
+				if !billing.HasActiveSubscription(subResp.Data) {
+					if billingRequiredReason == "" {
+						billingRequiredReason = "no active subscription"
+					}
+					skipCachedLicenseData = true
+					h.A.Logger.Debug("get license features: self-hosted subscription inactive; skipping cached license data", "org_id", org.UID)
+				}
+			}
+		}
+
+		if !skipCachedLicenseData && org.LicenseData != "" {
 			payload, decErr := license.DecryptLicenseData(org.UID, org.LicenseData)
 			if decErr == nil && payload != nil && len(payload.Entitlements) > 0 {
 				v, encErr := license.FeatureListFromEntitlementsWithOrgProjectCount(payload.Entitlements, projectCount)
@@ -144,8 +159,17 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		if billingRequiredReason == "" {
 			billingRequiredReason = "no license data"
 		}
-		h.A.Logger.Info("get license features: returning billing-required, triggering license refresh", "org_id", org.UID)
-		go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, deps, licClient)
+		if skipCachedLicenseData {
+			if org.LicenseData != "" {
+				if err := orgRepo.UpdateOrganisationLicenseData(r.Context(), org.UID, ""); err != nil {
+					h.A.Logger.Warn("get license features: clear license_data failed", "error", err, "org_id", org.UID)
+				}
+			}
+			h.A.Logger.Info("get license features: returning billing-required (inactive subscription); license_data cleared", "org_id", org.UID)
+		} else {
+			h.A.Logger.Info("get license features: returning billing-required, triggering license refresh", "org_id", org.UID)
+			go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, deps, licClient)
+		}
 		v, _ := license.BillingRequiredFeatureListJSON()
 		msg := "Retrieved license features successfully"
 		if billingRequiredReason != "" {

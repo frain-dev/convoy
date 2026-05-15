@@ -130,6 +130,7 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 				OrgMemberRepo: h.A.OrgMemberRepo,
 				OrgRepo:       h.A.OrgRepo,
 				BillingClient: h.A.BillingClient,
+				OrgBilling:    h.A.Billing,
 				Logger:        h.A.Logger,
 				Cfg:           cfg,
 			},

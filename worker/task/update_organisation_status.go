@@ -51,6 +51,11 @@ func applySubscriptionDerivedDisabledState(
 				}
 				updatedCount++
 				logger.Infof("Set organisation %s disabled_at - subscription not active", org.UID)
+				if org.LicenseData != "" {
+					if err := orgRepo.UpdateOrganisationLicenseData(ctx, org.UID, ""); err != nil {
+						logger.Errorf("Failed to clear organisation %s license_data: %v", org.UID, err)
+					}
+				}
 			}
 		}
 	}

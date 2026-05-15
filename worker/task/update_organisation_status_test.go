@@ -9,6 +9,7 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
@@ -18,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/mocks"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -174,6 +176,9 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 
 	orgRepo := organisations.New(log.New("convoy", log.LevelInfo), u.ConvoyApp.database)
 
+	err = orgRepo.UpdateOrganisationLicenseData(context.Background(), org.UID, "stale-license-data-placeholder")
+	require.NoError(u.T(), err)
+
 	testClient := newTestBillingClient()
 	testClient.subscriptions[u.DefaultOrg.UID] = billing.BillingSubscription{
 		Status: "active",
@@ -206,6 +211,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	updatedOrg, err := orgRepo.FetchOrganisationByID(context.Background(), org.UID)
 	require.NoError(u.T(), err)
 	require.True(u.T(), updatedOrg.DisabledAt.Valid, "org should be disabled")
+	require.Empty(u.T(), updatedOrg.LicenseData, "license_data cleared when subscription becomes inactive")
 }
 
 func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationStatus_SkipsWhenUnlicensed() {
@@ -303,4 +309,33 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 
 func TestUpdateOrganisationStatusIntegrationSuiteTest(t *testing.T) {
 	suite.Run(t, new(UpdateOrganisationStatusIntegrationTestSuite))
+}
+
+func TestApplySubscriptionDerivedDisabledState_clearsLicenseDataWhenDisabling(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	repo := mocks.NewMockOrganisationRepository(ctrl)
+	org := datastore.Organisation{UID: "org-clear-lic", LicenseData: "encrypted-blob"}
+	repo.EXPECT().UpdateOrganisation(gomock.Any(), gomock.Any()).Return(nil)
+	repo.EXPECT().UpdateOrganisationLicenseData(gomock.Any(), org.UID, "").Return(nil)
+
+	u, e := applySubscriptionDerivedDisabledState(context.Background(), repo, []datastore.Organisation{org}, false, log.New("convoy", log.LevelError))
+	require.Equal(t, 1, u)
+	require.Equal(t, 0, e)
+}
+
+func TestApplySubscriptionDerivedDisabledState_doesNotClearLicenseWhenAlreadyDisabled(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	repo := mocks.NewMockOrganisationRepository(ctrl)
+	org := datastore.Organisation{UID: "org-already-off", LicenseData: "blob", DisabledAt: null.NewTime(time.Now(), true)}
+	u, e := applySubscriptionDerivedDisabledState(context.Background(), repo, []datastore.Organisation{org}, false, log.New("convoy", log.LevelError))
+	require.Equal(t, 0, u)
+	require.Equal(t, 0, e)
 }

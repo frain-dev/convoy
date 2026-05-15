@@ -19,8 +19,8 @@ type licensedStrategy struct {
 
 func (s *licensedStrategy) Mode() config.BillingMode { return config.BillingModeLicensed }
 
-func (s *licensedStrategy) licenseKeyFor(ctx context.Context, orgID string) (string, error) {
-	return resolveOrgLicenseKey(ctx, s.orgRepo, s.instanceLicenseKey, orgID)
+func (s *licensedStrategy) licenseKeyFor(_ context.Context, _ string) (string, error) {
+	return selfHostedLicenseBillingKey(s.instanceLicenseKey)
 }
 
 func (s *licensedStrategy) GetUsage(ctx context.Context, orgID string) (*Response[Usage], error) {
@@ -120,9 +120,7 @@ func (s *licensedStrategy) GetPlans(ctx context.Context, orgID string) (*Respons
 }
 
 func (s *licensedStrategy) GetTaxIDTypes(ctx context.Context, orgID string) (*Response[[]TaxIDType], error) {
-	// Resolve the license key the same way as every other org-scoped method so the
-	// instance key never bleeds into per-org calls. Org-less callers (instance UI,
-	// pre-license setup) still fall through to the unlicensed catalog.
+	// Same resolver as other org-scoped license-billing calls (instance key when set, else stored org key).
 	lk, err := s.licenseKeyFor(ctx, orgID)
 	if err != nil {
 		if orgID == "" {

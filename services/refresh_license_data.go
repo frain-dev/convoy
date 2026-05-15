@@ -21,8 +21,10 @@ type RefreshLicenseDataDeps struct {
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	OrgRepo       datastore.OrganisationRepository
 	BillingClient billing.Client
-	Logger        log.Logger
-	Cfg           config.Configuration
+	// OrgBilling optional self-hosted org billing; when subscription is definitively inactive, refresh clears license_data and skips validation (instance key must not repopulate org entitlements).
+	OrgBilling billing.SubscriptionStatusReader
+	Logger     log.Logger
+	Cfg        config.Configuration
 }
 
 // RefreshLicenseDataForUser refreshes license_data per org after login (non-blocking).
@@ -68,6 +70,22 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 	if deps.OrgRepo == nil {
 		return
 	}
+
+	if !deps.Cfg.IsCloud() && deps.OrgBilling != nil {
+		subResp, subErr := deps.OrgBilling.GetSubscription(ctx, org.UID)
+		if subErr == nil && subResp != nil && subResp.Status && !billing.HasActiveSubscription(subResp.Data) {
+			if org.LicenseData != "" {
+				if err := deps.OrgRepo.UpdateOrganisationLicenseData(ctx, org.UID, ""); err != nil && deps.Logger != nil {
+					deps.Logger.Warn("refresh license data: clear license_data failed (inactive subscription)", "error", err, "org_id", org.UID)
+				}
+			}
+			if deps.Logger != nil {
+				deps.Logger.Debug("refresh license data: skip while subscription inactive", "org_id", org.UID)
+			}
+			return
+		}
+	}
+
 	key := resolveKey(ctx, org, defaultKey, deps.Cfg, deps.BillingClient)
 	if key == "" {
 		return

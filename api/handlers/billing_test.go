@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	authz "github.com/Subomi/go-authz"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -300,4 +301,113 @@ func (c *selfHostedErrorBillingClient) SelfHostedRegisterEmail(ctx context.Conte
 
 func (c *selfHostedErrorBillingClient) SelfHostedVerifyEmail(ctx context.Context, code string) (*billing.Response[billing.SelfHostedVerifyEmailData], error) {
 	return nil, c.err
+}
+
+// successDeleteBillingStrategy wraps billingStrategySpy so DeleteSubscription succeeds, for handler tests.
+type successDeleteBillingStrategy struct {
+	*billingStrategySpy
+}
+
+func (s *successDeleteBillingStrategy) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*billing.Response[interface{}], error) {
+	_ = ctx
+	_ = orgID
+	_ = subscriptionID
+	return &billing.Response[interface{}]{Status: true, Data: billing.BillingSubscription{Status: "inactive"}}, nil
+}
+
+func newDeleteSubscriptionTestRequest(orgID, subscriptionID, userUID string) *http.Request {
+	req := httptest.NewRequest(http.MethodDelete, "/", nil)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("orgID", orgID)
+	rctx.URLParams.Add("subscriptionID", subscriptionID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	req.Header.Set("X-Organisation-Id", orgID)
+	return authRequestWithUser(req, userUID)
+}
+
+func TestDeleteSubscription_ClearsOrganisationLicenseData(t *testing.T) {
+	t.Parallel()
+
+	userUID := "user-bill-1"
+	orgID := "org-bill-1"
+
+	cases := []struct {
+		name string
+		cfg  config.Configuration
+	}{
+		{
+			name: "cloud",
+			cfg:  config.Configuration{Billing: config.BillingConfiguration{APIKey: "sk_test"}},
+		},
+		{
+			name: "licensed_self_hosted",
+			cfg:  config.Configuration{LicenseKey: "lk_test"},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+			mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+
+			mockOrgRepo.EXPECT().
+				FetchOrganisationByID(gomock.Any(), orgID).
+				Return(&datastore.Organisation{UID: orgID}, nil).
+				AnyTimes()
+
+			mockOrgMemberRepo.EXPECT().
+				FetchOrganisationMemberByUserID(gomock.Any(), userUID, orgID).
+				Return(&datastore.OrganisationMember{Role: auth.Role{Type: auth.RoleBillingAdmin}}, nil).
+				AnyTimes()
+			mockOrgMemberRepo.EXPECT().
+				FetchInstanceAdminByUserID(gomock.Any(), userUID).
+				Return(nil, sql.ErrNoRows).
+				AnyTimes()
+
+			mockOrgRepo.EXPECT().
+				UpdateOrganisationLicenseData(gomock.Any(), orgID, "").
+				Return(nil).
+				Times(1)
+
+			if tc.cfg.IsCloud() {
+				mockOrgRepo.EXPECT().
+					UpdateOrganisation(gomock.Any(), gomock.Any()).
+					Return(nil).
+					Times(1)
+			}
+
+			bp := &policies.BillingPolicy{
+				BasePolicy:             authz.NewBasePolicy(),
+				OrganisationMemberRepo: mockOrgMemberRepo,
+			}
+			bp.SetRule(string(policies.PermissionManage), authz.RuleFunc(bp.Manage))
+			az, err := authz.NewAuthz(&authz.AuthzOpts{})
+			require.NoError(t, err)
+			require.NoError(t, az.RegisterPolicy(bp))
+
+			h := &BillingHandler{
+				Handler: &Handler{
+					A: &types.APIOptions{
+						Cfg:           tc.cfg,
+						Logger:        log.New("convoy", log.LevelError),
+						Authz:         az,
+						OrgRepo:       mockOrgRepo,
+						OrgMemberRepo: mockOrgMemberRepo,
+						Billing:       &successDeleteBillingStrategy{billingStrategySpy: &billingStrategySpy{}},
+					},
+				},
+			}
+
+			w := httptest.NewRecorder()
+			h.DeleteSubscription(w, newDeleteSubscriptionTestRequest(orgID, "sub-1", userUID))
+
+			require.Equal(t, http.StatusOK, w.Code)
+		})
+	}
 }

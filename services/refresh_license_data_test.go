@@ -67,3 +67,32 @@ func TestCheckOrganisationProjectLimit_NoKey_ReturnsTrueNil(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, allowed)
 }
+
+type inactiveSubReader struct{}
+
+func (inactiveSubReader) GetSubscription(ctx context.Context, orgID string) (*billing.Response[billing.BillingSubscription], error) {
+	return &billing.Response[billing.BillingSubscription]{
+		Status: true,
+		Data:   billing.BillingSubscription{Status: "canceled"},
+	}, nil
+}
+
+func TestRefreshLicenseDataForOrg_SelfHostedInactiveSubscriptionClearsStoredLicenseData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	org := datastore.Organisation{UID: "org-inactive", LicenseData: "non-empty-ciphertext"}
+	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	mockOrgRepo.EXPECT().
+		UpdateOrganisationLicenseData(gomock.Any(), org.UID, "").
+		Return(nil)
+
+	deps := RefreshLicenseDataDeps{
+		OrgRepo:    mockOrgRepo,
+		Cfg:        config.Configuration{LicenseKey: "instance-key"},
+		OrgBilling: inactiveSubReader{},
+		Logger:     log.New("convoy", log.LevelInfo),
+	}
+
+	RefreshLicenseDataForOrg(context.Background(), org, "instance-key", deps, nil)
+}
