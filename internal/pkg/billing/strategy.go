@@ -101,27 +101,38 @@ func MaskLicenseKey(key string) string {
 }
 
 func resolveOrgLicenseKey(ctx context.Context, orgRepo datastore.OrganisationRepository, instanceKey, orgID string) (string, error) {
-	if k := strings.TrimSpace(instanceKey); k != "" {
-		return k, nil
+	trimmedOrgID := strings.TrimSpace(orgID)
+	if trimmedOrgID == "" {
+		if k := strings.TrimSpace(instanceKey); k != "" {
+			return k, nil
+		}
+
+		return "", ErrNoLicense
 	}
+
 	if orgRepo == nil {
 		return "", ErrNoLicense
 	}
-	org, err := orgRepo.FetchOrganisationByID(ctx, orgID)
+
+	org, err := orgRepo.FetchOrganisationByID(ctx, trimmedOrgID)
 	if err != nil {
 		return "", err
 	}
-	if org.LicenseData == "" {
+	if org == nil || org.LicenseData == "" {
 		return "", ErrNoLicense
 	}
+
 	payload, err := license.DecryptLicenseData(org.UID, org.LicenseData)
 	if err != nil {
 		return "", err
 	}
-	if strings.TrimSpace(payload.Key) == "" {
+
+	orgLicenseKey := strings.TrimSpace(payload.Key)
+	if orgLicenseKey == "" {
 		return "", ErrNoLicense
 	}
-	return strings.TrimSpace(payload.Key), nil
+
+	return orgLicenseKey, nil
 }
 
 func emptyResponse[T any](message string) *Response[T] {
