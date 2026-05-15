@@ -184,6 +184,11 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 	if strings.TrimSpace(cfg.Billing.OrganisationHost) != "" {
 		cfg.Host = strings.TrimSpace(cfg.Billing.OrganisationHost)
+		// Propagate the override to the shared types.APIOptions config that handlers consult via
+		// h.A.Cfg. The local cfg variable below feeds appHandler.cfg, but BillingHandler reads
+		// h.A.Cfg.Host when pinning the billing organisation host on cloud creates, so without
+		// this assignment that pin would silently fall back to the unoverridden cfg.Host.
+		a.Cfg.Host = cfg.Host
 	}
 	appHandler.cfg = cfg
 

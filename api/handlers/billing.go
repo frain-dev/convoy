@@ -58,22 +58,7 @@ func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Reque
 		_ = render.Render(w, r, util.NewErrorResponse("organisation not found", http.StatusNotFound))
 		return false
 	}
-
-	if org.UID != orgID {
-		_ = render.Render(w, r, util.NewErrorResponse("organisation ID mismatch", http.StatusForbidden))
-		return false
-	}
-	if h.A.Authz == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing authorizer is unavailable", http.StatusForbidden))
-		return false
-	}
-
-	if err := h.A.Authz.Authorize(r.Context(), string(policies.PermissionBillingManage), org); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing access requires billing admin or organisation admin role", http.StatusForbidden))
-		return false
-	}
-
-	return true
+	return h.authorizeBillingManage(w, r, org, orgID)
 }
 
 // checkBillingCreateAccess enforces billing manage on the active workspace organisation (X-Organisation-Id)
@@ -99,8 +84,14 @@ func (h *BillingHandler) checkBillingCreateAccess(w http.ResponseWriter, r *http
 		_ = render.Render(w, r, util.NewErrorResponse("organisation not found", http.StatusNotFound))
 		return false
 	}
+	return h.authorizeBillingManage(w, r, org, orgID)
+}
 
-	if org.UID != orgID {
+// authorizeBillingManage enforces the billing-manage permission against an already-resolved org.
+// It centralises the UID-mismatch, missing-authorizer, and policy-check responses so the two
+// callers (context-resolved and header-resolved) cannot drift out of sync.
+func (h *BillingHandler) authorizeBillingManage(w http.ResponseWriter, r *http.Request, org *datastore.Organisation, expectedOrgID string) bool {
+	if org.UID != expectedOrgID {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID mismatch", http.StatusForbidden))
 		return false
 	}
@@ -108,7 +99,6 @@ func (h *BillingHandler) checkBillingCreateAccess(w http.ResponseWriter, r *http
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing authorizer is unavailable", http.StatusForbidden))
 		return false
 	}
-
 	if err := h.A.Authz.Authorize(r.Context(), string(policies.PermissionBillingManage), org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing access requires billing admin or organisation admin role", http.StatusForbidden))
 		return false
