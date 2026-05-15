@@ -44,7 +44,7 @@
           <span class="self-hosted-step">2</span>
           <convoy-input-field>
             <label convoy-label>Verification code</label>
-            <input convoy-input type="text" maxlength="8" [(ngModel)]="selfHostedVerifyCode" name="shCode" placeholder="Paste 8-character code" />
+            <input convoy-input type="text" maxlength="8" autocomplete="off" [(ngModel)]="selfHostedVerifyCode" name="shCode" placeholder="Paste 8-character code" />
           </convoy-input-field>
           <button type="button" convoy-button fill="outline" size="sm" [disabled]="selfHostedBootstrapBusy" (click)="verifySelfHostedEmail()">
             Verify and issue license

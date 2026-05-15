@@ -284,7 +284,7 @@ func SetupCORS(logger log.Logger) func(http.Handler) http.Handler {
 				}
 				w.Header().Set("Access-Control-Allow-Origin", allowOrigin)
 				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-				w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Convoy-Version")
+				w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Convoy-Version, X-Organisation-Id")
 			}
 
 			if r.Method == "OPTIONS" {

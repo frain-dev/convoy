@@ -182,10 +182,17 @@ export class HttpService {
 					requestDetails.isPortal = false;
 				}
 
-				const requestHeader = {
+				const requestHeader: Record<string, string> = {
 					Authorization: `Bearer ${authToken}`,
 					'X-Convoy-Version': '2024-04-01'
 				};
+
+				if (requestDetails.url.startsWith('/billing/self_hosted/')) {
+					const orgUid = this.getOrganisation()?.uid;
+					if (orgUid) {
+						requestHeader['X-Organisation-Id'] = orgUid;
+					}
+				}
 
 				if (requestDetails.url === '/projects/undefined') {
 					return;
