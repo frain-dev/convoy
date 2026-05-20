@@ -142,6 +142,49 @@ func TestLoadAPIKeysPaged_EmptyResults(t *testing.T) {
 	require.False(t, pagination.HasPreviousPage)
 }
 
+func TestLoadAPIKeysPaged_PersonalSecurityQueryReturnsRows(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	user, _, project := seedTestData(t, db)
+	service := createAPIKeyService(t, db)
+
+	keysToCreate := []string{"dashboard-token", "cli-token"}
+	for _, name := range keysToCreate {
+		apiKey := &datastore.APIKey{
+			UID:    ulid.Make().String(),
+			Name:   name,
+			Type:   datastore.PersonalKey,
+			MaskID: ulid.Make().String(),
+			Role: auth.Role{
+				Type:    auth.RoleProjectAdmin,
+				Project: project.UID,
+			},
+			Hash:   ulid.Make().String(),
+			Salt:   ulid.Make().String(),
+			UserID: user.UID,
+		}
+		err := service.CreateAPIKey(ctx, apiKey)
+		require.NoError(t, err)
+	}
+
+	// Mirrors /ui/users/:id/security?keyType=personal_key&page=1 flow.
+	filter := &datastore.Filter{
+		UserID:  user.UID,
+		KeyType: datastore.PersonalKey,
+	}
+	pageable := datastore.Pageable{
+		PerPage:   10,
+		Direction: datastore.Next,
+	}
+	pageable.SetCursors()
+
+	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
+	require.NoError(t, err)
+	require.Len(t, keys, len(keysToCreate))
+	for _, key := range keys {
+		require.NotEmpty(t, key.Name)
+	}
+}
+
 func TestLoadAPIKeysPaged_SinglePage(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	user, _, project := seedTestData(t, db)
