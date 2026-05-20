@@ -186,7 +186,6 @@ WITH filtered_api_keys AS (
                 ELSE true
             END
         )
-    GROUP BY id
     -- Sort order: DESC for forward (next), ASC for backward (prev)
     -- This ensures we get the right direction for cursor-based pagination
     ORDER BY
