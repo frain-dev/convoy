@@ -1,0 +1,899 @@
+{
+  "source": "github.com/frain-dev/convoy/config.DefaultConfiguration",
+  "entries": [
+    {
+      "json_path": "server.http.agent_port",
+      "env_var": "AGENT_PORT",
+      "go_type": "uint32",
+      "default": "5008"
+    },
+    {
+      "json_path": "analytics.enabled",
+      "env_var": "CONVOY_ANALYTICS_ENABLED",
+      "go_type": "bool",
+      "default": "true"
+    },
+    {
+      "json_path": "auth.file.api_key",
+      "env_var": "CONVOY_API_KEY_CONFIG",
+      "go_type": "config.APIKeyAuthConfig",
+      "default": "null"
+    },
+    {
+      "json_path": "api_rate_limit",
+      "env_var": "CONVOY_API_RATE_LIMIT",
+      "go_type": "int",
+      "default": "1000"
+    },
+    {
+      "json_path": "api_version",
+      "env_var": "CONVOY_API_VERSION",
+      "go_type": "string",
+      "default": "2025-11-24"
+    },
+    {
+      "json_path": "auth.file.basic",
+      "env_var": "CONVOY_BASIC_AUTH_CONFIG",
+      "go_type": "config.BasicAuthConfig",
+      "default": "null"
+    },
+    {
+      "json_path": "billing.api_key",
+      "env_var": "CONVOY_BILLING_API_KEY",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "billing.enabled",
+      "env_var": "CONVOY_BILLING_ENABLED",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "billing.organisation_host",
+      "env_var": "CONVOY_BILLING_ORGANISATION_HOST",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "billing.url",
+      "env_var": "CONVOY_BILLING_URL",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "circuit_breaker.consecutive_failure_threshold",
+      "env_var": "CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD",
+      "go_type": "uint64",
+      "default": "10"
+    },
+    {
+      "json_path": "circuit_breaker.error_timeout",
+      "env_var": "CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT",
+      "go_type": "uint64",
+      "default": "30"
+    },
+    {
+      "json_path": "circuit_breaker.failure_threshold",
+      "env_var": "CONVOY_CIRCUIT_BREAKER_FAILURE_THRESHOLD",
+      "go_type": "uint64",
+      "default": "70"
+    },
+    {
+      "json_path": "circuit_breaker.minimum_request_count",
+      "env_var": "CONVOY_CIRCUIT_BREAKER_MINIMUM_REQUEST_COUNT",
+      "go_type": "uint64",
+      "default": "10"
+    },
+    {
+      "json_path": "circuit_breaker.observability_window",
+      "env_var": "CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW",
+      "go_type": "uint64",
+      "default": "5"
+    },
+    {
+      "json_path": "circuit_breaker.sample_rate",
+      "env_var": "CONVOY_CIRCUIT_BREAKER_SAMPLE_RATE",
+      "go_type": "uint64",
+      "default": "30"
+    },
+    {
+      "json_path": "circuit_breaker.skip_sleep",
+      "env_var": "CONVOY_CIRCUIT_BREAKER_SKIP_SLEEP",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "circuit_breaker.success_threshold",
+      "env_var": "CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD",
+      "go_type": "uint64",
+      "default": "5"
+    },
+    {
+      "json_path": "consumer_pool_size",
+      "env_var": "CONVOY_CONSUMER_POOL_SIZE",
+      "go_type": "int",
+      "default": "100"
+    },
+    {
+      "json_path": "custom_domain_suffix",
+      "env_var": "CONVOY_CUSTOM_DOMAIN_SUFFIX",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "tracer.datadog.agent_url",
+      "env_var": "CONVOY_DATADOG_AGENT_URL",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "database.conn_max_lifetime",
+      "env_var": "CONVOY_DB_CONN_MAX_LIFETIME",
+      "go_type": "int",
+      "default": "3600"
+    },
+    {
+      "json_path": "database.database",
+      "env_var": "CONVOY_DB_DATABASE",
+      "go_type": "string",
+      "default": "convoy"
+    },
+    {
+      "json_path": "database.dsn",
+      "env_var": "CONVOY_DB_DSN",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "database.host",
+      "env_var": "CONVOY_DB_HOST",
+      "go_type": "string",
+      "default": "localhost"
+    },
+    {
+      "json_path": "database.max_idle_conn",
+      "env_var": "CONVOY_DB_MAX_IDLE_CONN",
+      "go_type": "int",
+      "default": "0"
+    },
+    {
+      "json_path": "database.max_open_conn",
+      "env_var": "CONVOY_DB_MAX_OPEN_CONN",
+      "go_type": "int",
+      "default": "0"
+    },
+    {
+      "json_path": "database.options",
+      "env_var": "CONVOY_DB_OPTIONS",
+      "go_type": "string",
+      "default": "sslmode=disable&connect_timeout=30"
+    },
+    {
+      "json_path": "database.password",
+      "env_var": "CONVOY_DB_PASSWORD",
+      "go_type": "string",
+      "default": "postgres"
+    },
+    {
+      "json_path": "database.port",
+      "env_var": "CONVOY_DB_PORT",
+      "go_type": "int",
+      "default": "5432"
+    },
+    {
+      "json_path": "database.read_replicas",
+      "env_var": "CONVOY_DB_READ_REPLICAS",
+      "go_type": "config.ReadReplicaConfiguration",
+      "default": "null"
+    },
+    {
+      "json_path": "database.scheme",
+      "env_var": "CONVOY_DB_SCHEME",
+      "go_type": "string",
+      "default": "postgres"
+    },
+    {
+      "json_path": "database.type",
+      "env_var": "CONVOY_DB_TYPE",
+      "go_type": "config.DatabaseProvider",
+      "default": "postgres"
+    },
+    {
+      "json_path": "database.username",
+      "env_var": "CONVOY_DB_USERNAME",
+      "go_type": "string",
+      "default": "postgres"
+    },
+    {
+      "json_path": "dispatcher.allow_list",
+      "env_var": "CONVOY_DISPATCHER_ALLOW_LIST",
+      "go_type": "[]string",
+      "default": "[\"0.0.0.0/0\",\"::/0\"]"
+    },
+    {
+      "json_path": "dispatcher.block_list",
+      "env_var": "CONVOY_DISPATCHER_BLOCK_LIST",
+      "go_type": "[]string",
+      "default": "[\"127.0.0.0/8\",\"::1/128\"]"
+    },
+    {
+      "json_path": "dispatcher.ca_cert_path",
+      "env_var": "CONVOY_DISPATCHER_CACERT_PATH",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "dispatcher.ca_cert_string",
+      "env_var": "CONVOY_DISPATCHER_CACERT_STRING",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "dispatcher.insecure_skip_verify",
+      "env_var": "CONVOY_DISPATCHER_INSECURE_SKIP_VERIFY",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "dispatcher.ping_methods",
+      "env_var": "CONVOY_DISPATCHER_PING_METHODS",
+      "go_type": "[]string",
+      "default": "[\"HEAD\",\"GET\",\"POST\"]"
+    },
+    {
+      "json_path": "dispatcher.skip_ping_validation",
+      "env_var": "CONVOY_DISPATCHER_SKIP_PING_VALIDATION",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "enable_feature_flag",
+      "env_var": "CONVOY_ENABLE_FEATURE_FLAG",
+      "go_type": "[]string",
+      "default": "null"
+    },
+    {
+      "json_path": "enable_profiling",
+      "env_var": "CONVOY_ENABLE_PROFILING",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "pyroscope.enabled",
+      "env_var": "CONVOY_ENABLE_PYROSCOPE_PROFILING",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "env",
+      "env_var": "CONVOY_ENV",
+      "go_type": "string",
+      "default": "oss"
+    },
+    {
+      "json_path": "auth.google_oauth.client_id",
+      "env_var": "CONVOY_GOOGLE_OAUTH_CLIENT_ID",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "auth.google_oauth.enabled",
+      "env_var": "CONVOY_GOOGLE_OAUTH_ENABLED",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "auth.google_oauth.redirect_url",
+      "env_var": "CONVOY_GOOGLE_OAUTH_REDIRECT_URL",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "hcp_vault.app_name",
+      "env_var": "CONVOY_HCP_APP_NAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "hcp_vault.client_id",
+      "env_var": "CONVOY_HCP_CLIENT_ID",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "hcp_vault.client_secret",
+      "env_var": "CONVOY_HCP_CLIENT_SECRET",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "hcp_vault.org_id",
+      "env_var": "CONVOY_HCP_ORG_ID",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "hcp_vault.project_id",
+      "env_var": "CONVOY_HCP_PROJECT_ID",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "hcp_vault.secret_name",
+      "env_var": "CONVOY_HCP_SECRET_NAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "host",
+      "env_var": "CONVOY_HOST",
+      "go_type": "string",
+      "default": "localhost:5005"
+    },
+    {
+      "json_path": "instance_ingest_rate",
+      "env_var": "CONVOY_INSTANCE_INGEST_RATE",
+      "go_type": "int",
+      "default": "1000"
+    },
+    {
+      "json_path": "auth.jwt.expiry",
+      "env_var": "CONVOY_JWT_EXPIRY",
+      "go_type": "int",
+      "default": "0"
+    },
+    {
+      "json_path": "auth.jwt.enabled",
+      "env_var": "CONVOY_JWT_REALM_ENABLED",
+      "go_type": "bool",
+      "default": "true"
+    },
+    {
+      "json_path": "auth.jwt.refresh_expiry",
+      "env_var": "CONVOY_JWT_REFRESH_EXPIRY",
+      "go_type": "int",
+      "default": "0"
+    },
+    {
+      "json_path": "auth.jwt.refresh_secret",
+      "env_var": "CONVOY_JWT_REFRESH_SECRET",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "auth.jwt.secret",
+      "env_var": "CONVOY_JWT_SECRET",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "license_key",
+      "env_var": "CONVOY_LICENSE_KEY",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "license_service",
+      "env_var": "CONVOY_LICENSE_SERVICE",
+      "go_type": "config.LicenseServiceConfiguration",
+      "default": "{\"host\":\"\",\"validate_path\":\"\",\"timeout\":0,\"retry_count\":0}"
+    },
+    {
+      "json_path": "license_service.host",
+      "env_var": "CONVOY_LICENSE_SERVICE_HOST",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "license_service.retry_count",
+      "env_var": "CONVOY_LICENSE_SERVICE_RETRY_COUNT",
+      "go_type": "int",
+      "default": "0"
+    },
+    {
+      "json_path": "license_service.timeout",
+      "env_var": "CONVOY_LICENSE_SERVICE_TIMEOUT",
+      "go_type": "time.Duration",
+      "default": "0s"
+    },
+    {
+      "json_path": "license_service.validate_path",
+      "env_var": "CONVOY_LICENSE_SERVICE_VALIDATE_ENDPOINT",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "logger.level",
+      "env_var": "CONVOY_LOGGER_LEVEL",
+      "go_type": "string",
+      "default": "error"
+    },
+    {
+      "json_path": "max_response_size",
+      "env_var": "CONVOY_MAX_RESPONSE_SIZE",
+      "go_type": "uint64",
+      "default": "50"
+    },
+    {
+      "json_path": "max_retry_seconds",
+      "env_var": "CONVOY_MAX_RETRY_SECONDS",
+      "go_type": "uint64",
+      "default": "0"
+    },
+    {
+      "json_path": "metrics",
+      "env_var": "CONVOY_METRICS",
+      "go_type": "config.MetricsConfiguration",
+      "default": "{\"enabled\":false,\"metrics_backend\":\"prometheus\",\"prometheus_metrics\":{\"sample_time\":5,\"query_timeout\":30,\"materialized_view_refresh_interval\":2}}"
+    },
+    {
+      "json_path": "metrics.metrics_backend",
+      "env_var": "CONVOY_METRICS_BACKEND",
+      "go_type": "config.MetricsBackend",
+      "default": "prometheus"
+    },
+    {
+      "json_path": "metrics.enabled",
+      "env_var": "CONVOY_METRICS_ENABLED",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "metrics.prometheus_metrics.materialized_view_refresh_interval",
+      "env_var": "CONVOY_METRICS_MATERIALIZED_VIEW_REFRESH_INTERVAL",
+      "go_type": "uint64",
+      "default": "2"
+    },
+    {
+      "json_path": "metrics.prometheus_metrics.query_timeout",
+      "env_var": "CONVOY_METRICS_QUERY_TIMEOUT",
+      "go_type": "uint64",
+      "default": "30"
+    },
+    {
+      "json_path": "metrics.prometheus_metrics.sample_time",
+      "env_var": "CONVOY_METRICS_SAMPLE_TIME",
+      "go_type": "uint64",
+      "default": "5"
+    },
+    {
+      "json_path": "auth.native.enabled",
+      "env_var": "CONVOY_NATIVE_REALM_ENABLED",
+      "go_type": "bool",
+      "default": "true"
+    },
+    {
+      "json_path": "tracer.otel.otel_auth.header_name",
+      "env_var": "CONVOY_OTEL_AUTH_HEADER_NAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "tracer.otel.otel_auth.header_value",
+      "env_var": "CONVOY_OTEL_AUTH_HEADER_VALUE",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "tracer.otel.collector_url",
+      "env_var": "CONVOY_OTEL_COLLECTOR_URL",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "tracer.otel.insecure_skip_verify",
+      "env_var": "CONVOY_OTEL_INSECURE_SKIP_VERIFY",
+      "go_type": "bool",
+      "default": "true"
+    },
+    {
+      "json_path": "tracer.otel.sample_rate",
+      "env_var": "CONVOY_OTEL_SAMPLE_RATE",
+      "go_type": "float64",
+      "default": "1"
+    },
+    {
+      "json_path": "billing.payment_provider.publishable_key",
+      "env_var": "CONVOY_PAYMENT_PROVIDER_PUBLISHABLE_KEY",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "billing.payment_provider.type",
+      "env_var": "CONVOY_PAYMENT_PROVIDER_TYPE",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "auth.portal.enabled",
+      "env_var": "CONVOY_PORTAL_REALM_ENABLED",
+      "go_type": "bool",
+      "default": "true"
+    },
+    {
+      "json_path": "prometheus.dsn",
+      "env_var": "CONVOY_PROM_DSN",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "pyroscope.password",
+      "env_var": "CONVOY_PYROSCOPE_PASSWORD",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "pyroscope.profile_id",
+      "env_var": "CONVOY_PYROSCOPE_PROFILE_ID",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "pyroscope.url",
+      "env_var": "CONVOY_PYROSCOPE_URL",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "pyroscope.username",
+      "env_var": "CONVOY_PYROSCOPE_USERNAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.addresses",
+      "env_var": "CONVOY_REDIS_CLUSTER_ADDRESSES",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.database",
+      "env_var": "CONVOY_REDIS_DATABASE",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.host",
+      "env_var": "CONVOY_REDIS_HOST",
+      "go_type": "string",
+      "default": "localhost"
+    },
+    {
+      "json_path": "redis.password",
+      "env_var": "CONVOY_REDIS_PASSWORD",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.port",
+      "env_var": "CONVOY_REDIS_PORT",
+      "go_type": "int",
+      "default": "6379"
+    },
+    {
+      "json_path": "redis.scheme",
+      "env_var": "CONVOY_REDIS_SCHEME",
+      "go_type": "string",
+      "default": "redis"
+    },
+    {
+      "json_path": "redis.master_name",
+      "env_var": "CONVOY_REDIS_SENTINEL_MASTER_NAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.sentinel_password",
+      "env_var": "CONVOY_REDIS_SENTINEL_PASSWORD",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.sentinel_username",
+      "env_var": "CONVOY_REDIS_SENTINEL_USERNAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.tls_ca_cert_file",
+      "env_var": "CONVOY_REDIS_TLS_CA_CERT_FILE",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.tls_cert_file",
+      "env_var": "CONVOY_REDIS_TLS_CERT_FILE",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.tls_key_file",
+      "env_var": "CONVOY_REDIS_TLS_KEY_FILE",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "redis.tls_skip_verify",
+      "env_var": "CONVOY_REDIS_TLS_SKIP_VERIFY",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "redis.username",
+      "env_var": "CONVOY_REDIS_USERNAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "retention_policy.policy",
+      "env_var": "CONVOY_RETENTION_POLICY",
+      "go_type": "string",
+      "default": "720h"
+    },
+    {
+      "json_path": "retention_policy.enabled",
+      "env_var": "CONVOY_RETENTION_POLICY_ENABLED",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "root_path",
+      "env_var": "CONVOY_ROOT_PATH",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "tracer.sentry.debug",
+      "env_var": "CONVOY_SENTRY_DEBUG",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "tracer.sentry.dsn",
+      "env_var": "CONVOY_SENTRY_DSN",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "tracer.sentry.environment",
+      "env_var": "CONVOY_SENTRY_ENVIRONMENT",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "tracer.sentry.sample_rate",
+      "env_var": "CONVOY_SENTRY_SAMPLE_RATE",
+      "go_type": "float64",
+      "default": "0"
+    },
+    {
+      "json_path": "auth.is_signup_enabled",
+      "env_var": "CONVOY_SIGNUP_ENABLED",
+      "go_type": "bool",
+      "default": "true"
+    },
+    {
+      "json_path": "smtp.from",
+      "env_var": "CONVOY_SMTP_FROM",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "smtp.password",
+      "env_var": "CONVOY_SMTP_PASSWORD",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "smtp.port",
+      "env_var": "CONVOY_SMTP_PORT",
+      "go_type": "uint32",
+      "default": "0"
+    },
+    {
+      "json_path": "smtp.provider",
+      "env_var": "CONVOY_SMTP_PROVIDER",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "smtp.reply-to",
+      "env_var": "CONVOY_SMTP_REPLY_TO",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "smtp.ssl",
+      "env_var": "CONVOY_SMTP_SSL",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "smtp.url",
+      "env_var": "CONVOY_SMTP_URL",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "smtp.username",
+      "env_var": "CONVOY_SMTP_USERNAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "server.http.ssl_cert_file",
+      "env_var": "CONVOY_SSL_CERT_FILE",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "server.http.ssl_key_file",
+      "env_var": "CONVOY_SSL_KEY_FILE",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "auth.sso.enabled",
+      "env_var": "CONVOY_SSO_ENABLED",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "auth.sso.redirect_url",
+      "env_var": "CONVOY_SSO_REDIRECT_URL",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "sso_service",
+      "env_var": "CONVOY_SSO_SERVICE",
+      "go_type": "config.SSOServiceConfiguration",
+      "default": "{\"host\":\"https://overwatch.getconvoy.cloud\",\"redirect_path\":\"/sso/redirect\",\"token_path\":\"/sso/token\",\"admin_portal_path\":\"/sso/admin-portal\",\"timeout\":\"\",\"retry_count\":3}"
+    },
+    {
+      "json_path": "sso_service.admin_portal_path",
+      "env_var": "CONVOY_SSO_SERVICE_ADMIN_PORTAL_PATH",
+      "go_type": "string",
+      "default": "/sso/admin-portal"
+    },
+    {
+      "json_path": "sso_service.host",
+      "env_var": "CONVOY_SSO_SERVICE_HOST",
+      "go_type": "string",
+      "default": "https://overwatch.getconvoy.cloud"
+    },
+    {
+      "json_path": "sso_service.redirect_path",
+      "env_var": "CONVOY_SSO_SERVICE_REDIRECT_PATH",
+      "go_type": "string",
+      "default": "/sso/redirect"
+    },
+    {
+      "json_path": "sso_service.retry_count",
+      "env_var": "CONVOY_SSO_SERVICE_RETRY_COUNT",
+      "go_type": "int",
+      "default": "3"
+    },
+    {
+      "json_path": "sso_service.timeout",
+      "env_var": "CONVOY_SSO_SERVICE_TIMEOUT",
+      "go_type": "time.Duration",
+      "default": "10s"
+    },
+    {
+      "json_path": "sso_service.token_path",
+      "env_var": "CONVOY_SSO_SERVICE_TOKEN_PATH",
+      "go_type": "string",
+      "default": "/sso/token"
+    },
+    {
+      "json_path": "storage_policy.s3.access_key",
+      "env_var": "CONVOY_STORAGE_AWS_ACCESS_KEY",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.s3.bucket",
+      "env_var": "CONVOY_STORAGE_AWS_BUCKET",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.s3.endpoint",
+      "env_var": "CONVOY_STORAGE_AWS_ENDPOINT",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.s3.prefix",
+      "env_var": "CONVOY_STORAGE_AWS_PREFIX",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.s3.region",
+      "env_var": "CONVOY_STORAGE_AWS_REGION",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.s3.secret_key",
+      "env_var": "CONVOY_STORAGE_AWS_SECRET_KEY",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.s3.session_token",
+      "env_var": "CONVOY_STORAGE_AWS_SESSION_TOKEN",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.type",
+      "env_var": "CONVOY_STORAGE_POLICY_TYPE",
+      "go_type": "string",
+      "default": "on-prem"
+    },
+    {
+      "json_path": "storage_policy.on_prem.path",
+      "env_var": "CONVOY_STORAGE_PREM_PATH",
+      "go_type": "string",
+      "default": "/var/convoy/export"
+    },
+    {
+      "json_path": "tracer.type",
+      "env_var": "CONVOY_TRACER_PROVIDER",
+      "go_type": "config.TracerProvider",
+      "default": ""
+    },
+    {
+      "json_path": "worker_execution_mode",
+      "env_var": "CONVOY_WORKER_EXECUTION_MODE",
+      "go_type": "config.ExecutionMode",
+      "default": "default"
+    },
+    {
+      "json_path": "server.http.domain_port",
+      "env_var": "DOMAIN_PORT",
+      "go_type": "uint32",
+      "default": "0"
+    },
+    {
+      "json_path": "server.http.proxy",
+      "env_var": "HTTP_PROXY",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "server.http.ingest_port",
+      "env_var": "INGEST_PORT",
+      "go_type": "uint32",
+      "default": "5009"
+    },
+    {
+      "json_path": "server.http.port",
+      "env_var": "PORT",
+      "go_type": "uint32",
+      "default": "5005"
+    },
+    {
+      "json_path": "server.http.socket_port",
+      "env_var": "SOCKET_PORT",
+      "go_type": "uint32",
+      "default": "0"
+    },
+    {
+      "json_path": "server.http.ssl",
+      "env_var": "SSL",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "server.http.worker_port",
+      "env_var": "WORKER_PORT",
+      "go_type": "uint32",
+      "default": "5006"
+    }
+  ]
+}

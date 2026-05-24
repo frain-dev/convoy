@@ -1,5 +1,10 @@
 {
+  "api_version": "2025-11-24",
   "auth": {
+    "file": {
+      "basic": [],
+      "api_key": []
+    },
     "native": {
       "enabled": true
     },
@@ -10,106 +15,201 @@
       "refresh_secret": "<insert-jwt-refresh-secret>",
       "refresh_expiry": 86400
     },
+    "portal": {
+      "enabled": true
+    },
+    "google_oauth": {
+      "enabled": false,
+      "client_id": "",
+      "redirect_url": ""
+    },
+    "sso": {
+      "enabled": false,
+      "redirect_url": ""
+    },
     "is_signup_enabled": true
   },
   "database": {
     "type": "postgres",
     "scheme": "postgres",
-    "host": "<insert-db-host>",
-    "username": "<insert-db-username>",
-    "password": "<insert-db-password>",
-    "database": "<insert-db-name>",
-    "options": "sslmode=disable",
+    "host": "localhost",
+    "username": "postgres",
+    "password": "postgres",
+    "database": "convoy",
+    "options": "sslmode=disable&connect_timeout=30",
     "port": 5432,
-    "max_open_conn": 100,
-    "max_idle_conn": 10,
-    "conn_max_lifetime": 3600
+    "dsn": "",
+    "max_open_conn": 0,
+    "max_idle_conn": 0,
+    "conn_max_lifetime": 3600,
+    "read_replicas": []
   },
   "redis": {
     "scheme": "redis",
-    "host": "<insert-redis-host>",
-    "username": "<insert-redis-username>",
-    "password": "<insert-redis-password>",
-    "database": "0",
+    "host": "localhost",
+    "username": "",
+    "password": "",
+    "database": "",
     "port": 6379,
-    "addresses": "<insert-redis-addresses>"
+    "addresses": "",
+    "master_name": "",
+    "sentinel_username": "",
+    "sentinel_password": "",
+    "tls_skip_verify": false,
+    "tls_cert_file": "",
+    "tls_key_file": "",
+    "tls_ca_cert_file": ""
   },
   "prometheus": {
-    "dsn": "<insert-prometheus-dsn>"
+    "dsn": ""
   },
   "server": {
     "http": {
-      "ssl": true,
-      "ssl_cert_file": "<insert-ssl-cert-file>",
-      "ssl_key_file": "<insert-ssl-key-file>",
+      "ssl": false,
+      "ssl_cert_file": "",
+      "ssl_key_file": "",
       "port": 5005,
-      "ingest_port": 5006,
-      "worker_port": 5007,
-      "socket_port": 5008,
-      "domain_port": 5009,
-      "proxy": "<insert-proxy-url>"
+      "worker_port": 5006,
+      "agent_port": 5008,
+      "ingest_port": 5009,
+      "socket_port": 0,
+      "domain_port": 0,
+      "proxy": ""
     }
   },
-  "max_response_size": 102400,
+  "max_response_size": 50,
   "smtp": {
-    "ssl": true,
-    "provider": "<insert-smtp-provider>",
-    "url": "<insert-smtp-url>",
+    "ssl": false,
+    "provider": "",
+    "url": "",
     "port": 587,
-    "username": "<insert-smtp-username>",
-    "password": "<insert-smtp-password>",
-    "from": "<insert-smtp-from>",
-    "reply-to": "<insert-smtp-reply-to>"
+    "username": "",
+    "password": "",
+    "from": "",
+    "reply-to": ""
   },
-  "env": "production",
+  "env": "oss",
   "logger": {
-    "level": "info"
+    "level": "error"
   },
   "tracer": {
-    "type": "new_relic",
-    "new_relic": {
-      "app_name": "<insert-new-relic-app-name>",
-      "license_key": "<insert-new-relic-license-key>",
-      "config_enabled": true,
-      "distributed_tracer_enabled": true
+    "type": "",
+    "otel": {
+      "otel_auth": {
+        "header_name": "",
+        "header_value": ""
+      },
+      "sample_rate": 1.0,
+      "collector_url": "",
+      "insecure_skip_verify": true
+    },
+    "sentry": {
+      "dsn": "",
+      "sample_rate": 0,
+      "debug": false,
+      "environment": ""
+    },
+    "datadog": {
+      "agent_url": ""
     }
   },
-  "host": "<insert-host>",
+  "host": "localhost:5005",
   "root_path": "",
-  "custom_domain_suffix": "<insert-custom-domain-suffix>",
-  "feature_flag": "experimental",
+  "custom_domain_suffix": "",
+  "enable_feature_flag": [],
+  "pyroscope": {
+    "enabled": false,
+    "url": "",
+    "username": "",
+    "password": "",
+    "profile_id": ""
+  },
+  "retention_policy": {
+    "policy": "720h",
+    "enabled": false
+  },
+  "circuit_breaker": {
+    "sample_rate": 30,
+    "error_timeout": 30,
+    "failure_threshold": 70,
+    "success_threshold": 5,
+    "minimum_request_count": 10,
+    "observability_window": 5,
+    "consecutive_failure_threshold": 10,
+    "skip_sleep": false
+  },
   "analytics": {
     "enabled": true
   },
   "storage_policy": {
-    "type": "s3 | on_prem",
+    "type": "on-prem",
     "s3": {
-      "prefix": "<insert-s3-prefix>",
-      "bucket": "<insert-s3-bucket>",
-      "access_key": "<insert-s3-access-key>",
-      "secret_key": "<insert-s3-secret-key>",
-      "region": "<insert-s3-region>",
-      "session_token": "<insert-s3-session-token>",
-      "endpoint": "<insert-s3-endpoint>"
+      "prefix": "",
+      "bucket": "",
+      "access_key": "",
+      "secret_key": "",
+      "region": "",
+      "session_token": "",
+      "endpoint": ""
     },
     "on_prem": {
-      "path": "<insert-on-prem-path>"
+      "path": ""
     }
   },
-  "consumer_pool_size": 200,
+  "consumer_pool_size": 100,
+  "enable_profiling": false,
   "metrics": {
-        "metrics_backend": "prometheus",
-        "prometheus_metrics": {
-            "sample_time": 5,
-            "query_timeout": 30,
-            "materialized_view_refresh_interval": 2
-        }
+    "enabled": false,
+    "metrics_backend": "prometheus",
+    "prometheus_metrics": {
+      "sample_time": 5,
+      "query_timeout": 30,
+      "materialized_view_refresh_interval": 2
+    }
+  },
+  "instance_ingest_rate": 1000,
+  "api_rate_limit": 1000,
+  "worker_execution_mode": "default",
+  "license_key": "",
+  "license_service": {
+    "host": "",
+    "validate_path": "",
+    "timeout": 0,
+    "retry_count": 0
   },
   "sso_service": {
     "host": "https://overwatch.getconvoy.cloud",
     "redirect_path": "/sso/redirect",
     "token_path": "/sso/token",
+    "admin_portal_path": "/sso/admin-portal",
     "timeout": "10s",
     "retry_count": 3
+  },
+  "dispatcher": {
+    "insecure_skip_verify": false,
+    "allow_list": ["0.0.0.0/0", "::/0"],
+    "block_list": ["127.0.0.0/8", "::1/128"],
+    "ca_cert_path": "",
+    "ca_cert_string": "",
+    "ping_methods": ["HEAD", "GET", "POST"],
+    "skip_ping_validation": false
+  },
+  "hcp_vault": {
+    "client_id": "",
+    "client_secret": "",
+    "org_id": "",
+    "project_id": "",
+    "app_name": "",
+    "secret_name": ""
+  },
+  "billing": {
+    "enabled": false,
+    "url": "",
+    "api_key": "",
+    "organisation_host": "",
+    "payment_provider": {
+      "type": "",
+      "publishable_key": ""
+    }
   }
 }
