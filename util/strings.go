@@ -1,10 +1,8 @@
 package util
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"strings"
-	"sync"
-	"time"
 )
 
 // IsStringEmpty checks if the given string s is empty or not
@@ -13,31 +11,31 @@ func IsStringEmpty(s string) bool { return len(strings.TrimSpace(s)) == 0 }
 var letterBytes = []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-")
 
 const (
-	letterIdxBits = 6                    // 6 bits to represent a letter index
-	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
-	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
-)
-
-var (
-	src   = rand.NewSource(time.Now().UnixNano())
-	srcMu sync.Mutex
+	letterIdxMask = byte(63)
 )
 
 func GenerateRandomString(n int) (string, error) {
-	b := make([]byte, n)
-	srcMu.Lock()
-	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
+	if n <= 0 {
+		return "", nil
 	}
-	srcMu.Unlock()
+
+	b := make([]byte, n)
+	randomBytes := make([]byte, n)
+	for i := 0; i < n; {
+		if _, err := rand.Read(randomBytes); err != nil {
+			return "", err
+		}
+		for _, rb := range randomBytes {
+			if idx := int(rb & letterIdxMask); idx < len(letterBytes) {
+				b[i] = letterBytes[idx]
+				i++
+				if i == n {
+					break
+				}
+			}
+		}
+	}
+
 	return string(b), nil
 }
 

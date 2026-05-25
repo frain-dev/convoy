@@ -341,6 +341,11 @@ func fillSourceURL(s *datastore.Source, baseUrl, customDomain string) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources/test_function [post]
 func (h *Handler) TestSourceFunction(w http.ResponseWriter, r *http.Request) {
+	if !h.A.Licenser.Transformations() {
+		_ = render.Render(w, r, util.NewErrorResponse("your instance does not have access to transformations, upgrade to access this feature", http.StatusBadRequest))
+		return
+	}
+
 	var test models.FunctionRequest
 	err := util.ReadJSON(r, &test)
 	if err != nil {

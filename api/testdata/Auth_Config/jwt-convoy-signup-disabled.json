@@ -9,7 +9,9 @@
     "auth": {
         "is_signup_enabled": false,
         "jwt": {
-            "enabled": true
+            "enabled": true,
+            "secret": "test-access-secret",
+            "refresh_secret": "test-refresh-secret"
         }
     },
     "server": {

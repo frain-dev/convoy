@@ -86,6 +86,17 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 	}
 }
 
+func TestEnsureJwtConfigRequiresSecrets(t *testing.T) {
+	err := ensureJwtConfig(&JwtRealmOptions{Enabled: true})
+	require.EqualError(t, err, "jwt secret is required when jwt realm is enabled")
+
+	err = ensureJwtConfig(&JwtRealmOptions{Enabled: true, Secret: "access"})
+	require.EqualError(t, err, "jwt refresh secret is required when jwt realm is enabled")
+
+	err = ensureJwtConfig(&JwtRealmOptions{Enabled: true, Secret: "access", RefreshSecret: "refresh"})
+	require.NoError(t, err)
+}
+
 func TestLoadConfig(t *testing.T) {
 	type args struct {
 		path string
@@ -154,7 +165,9 @@ func TestLoadConfig(t *testing.T) {
 						Enabled: true,
 					},
 					Jwt: JwtRealmOptions{
-						Enabled: true,
+						Enabled:       true,
+						Secret:        "test-access-secret",
+						RefreshSecret: "test-refresh-secret",
 					},
 					Portal: PortalRealmOptions{
 						Enabled: true,
@@ -254,7 +267,9 @@ func TestLoadConfig(t *testing.T) {
 						Enabled: true,
 					},
 					Jwt: JwtRealmOptions{
-						Enabled: true,
+						Enabled:       true,
+						Secret:        "test-access-secret",
+						RefreshSecret: "test-refresh-secret",
 					},
 					Portal: PortalRealmOptions{
 						Enabled: true,
@@ -353,7 +368,9 @@ func TestLoadConfig(t *testing.T) {
 						Enabled: true,
 					},
 					Jwt: JwtRealmOptions{
-						Enabled: true,
+						Enabled:       true,
+						Secret:        "test-access-secret",
+						RefreshSecret: "test-refresh-secret",
 					},
 					Portal: PortalRealmOptions{
 						Enabled: true,
@@ -447,7 +464,11 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestConfigDefaults(t *testing.T) {
-	err := LoadConfig("./testdata/Config/empty-config")
+	err := LoadConfig("./testdata/Config/empty-config", func(c *Configuration) error {
+		c.Auth.Jwt.Secret = "test-access-secret"
+		c.Auth.Jwt.RefreshSecret = "test-refresh-secret"
+		return nil
+	})
 	require.NoError(t, err)
 
 	cfg, err := Get()
@@ -455,6 +476,8 @@ func TestConfigDefaults(t *testing.T) {
 
 	expectedCFG := DefaultConfiguration
 	expectedCFG.MaxResponseSize = MaxResponseSize
+	expectedCFG.Auth.Jwt.Secret = "test-access-secret"
+	expectedCFG.Auth.Jwt.RefreshSecret = "test-refresh-secret"
 	require.Equal(t, expectedCFG, cfg)
 }
 

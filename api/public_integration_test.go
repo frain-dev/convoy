@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
@@ -24,6 +25,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/endpoints"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -31,6 +34,9 @@ import (
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/users"
 	log "github.com/frain-dev/convoy/pkg/logger"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	convoyqueue "github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/worker/task"
 )
 
 type PublicEndpointIntegrationTestSuite struct {
@@ -654,6 +660,47 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Aut
 	require.Equal(s.T(), "testapikey", endpoint.Authentication.ApiKey.HeaderValue)
 }
 
+func (s *PublicEndpointIntegrationTestSuite) Test_TestOAuth2Connection_BlocksInternalTokenURL() {
+	hits := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.WriteHeader(http.StatusTeapot)
+		_, _ = w.Write([]byte("metadata secret"))
+	}))
+	defer server.Close()
+
+	originalLicenser := s.ConvoyApp.A.Licenser
+	originalFFlag := s.ConvoyApp.A.FFlag
+	s.ConvoyApp.A.Licenser = ipRulesEnabledLicenser{Licenser: originalLicenser}
+	s.ConvoyApp.A.FFlag = fflag.NewFFlag([]string{string(fflag.IpRules)})
+	defer func() {
+		s.ConvoyApp.A.Licenser = originalLicenser
+		s.ConvoyApp.A.FFlag = originalFFlag
+	}()
+
+	body := serialize(`{
+		"oauth2": {
+			"url": "%s",
+			"client_id": "client-id",
+			"client_secret": "client-secret",
+			"authentication_type": "shared_secret"
+		}
+	}`, server.URL)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/oauth2/test", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
+	require.Equal(s.T(), 0, hits)
+
+	var resp models.TestOAuth2Response
+	parseResponse(s.T(), w.Result(), &resp)
+	require.False(s.T(), resp.Success)
+	require.NotContains(s.T(), resp.Error, "metadata secret")
+}
+
 func (s *PublicEndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	endpointID := ulid.Make().String()
 	f := faker.New()
@@ -761,6 +808,40 @@ type PublicEventIntegrationTestSuite struct {
 	APIKey         string
 }
 
+type recordingQueuer struct {
+	jobs []*convoyqueue.Job
+	opts convoyqueue.QueueOptions
+}
+
+func (q *recordingQueuer) Write(_ context.Context, _ convoy.TaskName, _ convoy.QueueName, job *convoyqueue.Job) error {
+	q.jobs = append(q.jobs, job)
+	return nil
+}
+
+func (q *recordingQueuer) WriteWithoutTimeout(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *convoyqueue.Job) error {
+	return q.Write(ctx, taskName, queueName, job)
+}
+
+func (q *recordingQueuer) Options() convoyqueue.QueueOptions {
+	return q.opts
+}
+
+type transformationsDisabledLicenser struct {
+	license.Licenser
+}
+
+func (l transformationsDisabledLicenser) Transformations() bool {
+	return false
+}
+
+type ipRulesEnabledLicenser struct {
+	license.Licenser
+}
+
+func (l ipRulesEnabledLicenser) IpRules() bool {
+	return true
+}
+
 func (s *PublicEventIntegrationTestSuite) SetupSuite() {
 	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
@@ -823,6 +904,36 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	//
 	// require.NotEmpty(s.T(), event.UID)
 	// require.Equal(s.T(), event.Endpoinints[0], endpointID)
+}
+
+func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_UsesAPIKeyProjectWhenURLProjectDiffers() {
+	otherProject, err := testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultProject.OrganisationID)
+	require.NoError(s.T(), err)
+
+	endpointID := ulid.Make().String()
+	_, err = testdb.SeedEndpoint(s.ConvoyApp.A.DB, otherProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	originalQueue := s.ConvoyApp.A.Queue
+	recorder := &recordingQueuer{opts: originalQueue.Options()}
+	s.ConvoyApp.A.Queue = recorder
+	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
+
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
+	url := fmt.Sprintf("/api/v1/projects/%s/events", otherProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusCreated, w.Code)
+	require.Len(s.T(), recorder.jobs, 1)
+
+	var queuedEvent task.CreateEvent
+	err = msgpack.DecodeMsgPack(recorder.jobs[0].Payload, &queuedEvent)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), s.DefaultProject.UID, queuedEvent.Params.ProjectID)
+	require.NotEqual(s.T(), otherProject.UID, queuedEvent.Params.ProjectID)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
@@ -2507,6 +2618,24 @@ func (s *PublicSourceIntegrationTestSuite) Test_CreateSource() {
 	require.Equal(s.T(), datastore.VerifierType("hmac"), source.Verifier.Type)
 	require.Equal(s.T(), "[accepted]", source.CustomResponse.Body)
 	require.Equal(s.T(), "text/plain", source.CustomResponse.ContentType)
+}
+
+func (s *PublicSourceIntegrationTestSuite) Test_TestSourceFunction_RequiresTransformationsLicense() {
+	originalLicenser := s.ConvoyApp.A.Licenser
+	s.ConvoyApp.A.Licenser = transformationsDisabledLicenser{Licenser: originalLicenser}
+	defer func() { s.ConvoyApp.A.Licenser = originalLicenser }()
+
+	body := serialize(`{
+		"function": "function transform(payload) { return payload; }",
+		"payload": {"name": "test"}
+	}`)
+	url := fmt.Sprintf("/api/v1/projects/%s/sources/test_function", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
 }
 
 func (s *PublicSourceIntegrationTestSuite) Test_CreateSource_RedirectToProjects() {

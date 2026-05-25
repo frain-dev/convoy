@@ -18,6 +18,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
+	convoynet "github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -710,8 +711,12 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// Initialize OAuth2 token service
-	oauth2Service := services.NewOAuth2TokenService(h.A.Cache, h.A.Logger)
+	oauth2Service, err := h.newOAuth2TokenTestService()
+	if err != nil {
+		h.A.Logger.Errorf("Failed to configure OAuth2 test client: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Failed to configure OAuth2 test client", http.StatusInternalServerError))
+		return
+	}
 
 	// Get authorization header (includes token type)
 	authHeader, err := oauth2Service.GetAuthorizationHeader(r.Context(), testEndpoint)
@@ -771,6 +776,27 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 	_ = h.A.Cache.Delete(r.Context(), cacheKey)
 
 	_ = render.Render(w, r, util.NewServerResponse("OAuth2 connection test successful", resp, http.StatusOK))
+}
+
+func (h *Handler) newOAuth2TokenTestService() (*services.OAuth2TokenService, error) {
+	dispatcher, err := convoynet.NewDispatcher(
+		h.A.Licenser,
+		h.A.FFlag,
+		convoynet.LoggerOption(h.A.Logger),
+		convoynet.ProxyOption(h.A.Cfg.Server.HTTP.HttpProxy, h.A.Cfg.Server.HTTP.NoProxy),
+		convoynet.AllowListOption(h.A.Cfg.Dispatcher.AllowList),
+		convoynet.BlockListOption(h.A.Cfg.Dispatcher.BlockList),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return services.NewOAuth2TokenService(
+		h.A.Cache,
+		h.A.Logger,
+		services.WithOAuth2HTTPClient(dispatcher.HTTPClient()),
+		services.WithOAuth2Context(dispatcher.ContextWithRules),
+	), nil
 }
 
 func (h *Handler) retrieveEndpoint(ctx context.Context, endpointID, projectID string) (*datastore.Endpoint, error) {

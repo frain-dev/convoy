@@ -15,5 +15,12 @@
     },
     "server": {
         "http": {}
+    },
+    "auth": {
+        "jwt": {
+            "enabled": true,
+            "secret": "test-access-secret",
+            "refresh_secret": "test-refresh-secret"
+        }
     }
 }

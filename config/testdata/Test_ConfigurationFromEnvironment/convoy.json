@@ -22,6 +22,11 @@
         "require_auth": true,
         "native": {
             "enabled": true
+        },
+        "jwt": {
+            "enabled": true,
+            "secret": "test-access-secret",
+            "refresh_secret": "test-refresh-secret"
         }
     }
 }

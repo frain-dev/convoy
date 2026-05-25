@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 )
 
 var (
@@ -32,10 +31,8 @@ type VerifiedToken struct {
 }
 
 const (
-	JwtDefaultSecret        string = "convoy-jwt"
-	JwtDefaultRefreshSecret string = "convoy-refresh-jwt"
-	JwtDefaultExpiry        int    = 1800  // seconds
-	JwtDefaultRefreshExpiry int    = 86400 // seconds
+	JwtDefaultExpiry        int = 1800  // seconds
+	JwtDefaultRefreshExpiry int = 86400 // seconds
 )
 
 type Jwt struct {
@@ -53,14 +50,6 @@ func NewJwt(opts *config.JwtRealmOptions, cache cache.Cache) *Jwt {
 		RefreshSecret: opts.RefreshSecret,
 		RefreshExpiry: opts.RefreshExpiry,
 		cache:         cache,
-	}
-
-	if util.IsStringEmpty(j.Secret) {
-		j.Secret = JwtDefaultSecret
-	}
-
-	if util.IsStringEmpty(j.RefreshSecret) {
-		j.RefreshSecret = JwtDefaultRefreshSecret
 	}
 
 	if j.Expiry == 0 {

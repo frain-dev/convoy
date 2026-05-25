@@ -48,6 +48,9 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv("CONVOY_JWT_SECRET", "test-access-secret")
+	_ = os.Setenv("CONVOY_JWT_REFRESH_SECRET", "test-refresh-secret")
+
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)

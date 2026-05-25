@@ -62,7 +62,7 @@ func (t *Transformer) TransformUsingUnderscoreJs(function string, payload interf
 }
 
 func (t *Transformer) RunStringUnsafe(function string, payload interface{}) (interface{}, []string, error) {
-	new(require.Registry).Enable(t.rt)
+	enableRuntime(t.rt)
 
 	printer := NewBufferPrinter()
 	require.RegisterCoreModule(console.ModuleName,
@@ -92,7 +92,7 @@ func (t *Transformer) RunStringUnsafe(function string, payload interface{}) (int
 // Transform mutates the payload by the passed function
 // The output of Transform should be idempotent
 func (t *Transformer) Transform(function string, payload interface{}) (interface{}, []string, error) {
-	new(require.Registry).Enable(t.rt)
+	enableRuntime(t.rt)
 
 	printer := NewBufferPrinter()
 	require.RegisterCoreModule(console.ModuleName,
@@ -132,4 +132,12 @@ func (t *Transformer) Transform(function string, payload interface{}) (interface
 	l := len(printer.Format())
 
 	return value, printer.Format()[:l-1], err
+}
+
+func enableRuntime(rt *goja.Runtime) {
+	require.NewRegistryWithLoader(noopSourceLoader).Enable(rt)
+}
+
+func noopSourceLoader(string) ([]byte, error) {
+	return nil, require.ModuleFileDoesNotExistError
 }

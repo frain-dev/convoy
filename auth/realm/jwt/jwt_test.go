@@ -13,8 +13,20 @@ import (
 func provideJwt(t *testing.T) *Jwt {
 	newCache := mcache.NewMemoryCache()
 
-	jwt := NewJwt(&config.JwtRealmOptions{}, newCache)
+	jwt := NewJwt(&config.JwtRealmOptions{
+		Secret:        "test-access-secret",
+		RefreshSecret: "test-refresh-secret",
+	}, newCache)
 	return jwt
+}
+
+func TestNewJwt_DoesNotUseDefaultSecrets(t *testing.T) {
+	newCache := mcache.NewMemoryCache()
+
+	jwt := NewJwt(&config.JwtRealmOptions{}, newCache)
+
+	require.Empty(t, jwt.Secret)
+	require.Empty(t, jwt.RefreshSecret)
 }
 
 func TestJwt_GenerateToken(t *testing.T) {

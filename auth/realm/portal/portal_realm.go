@@ -38,17 +38,7 @@ func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	if len(cred.Token) > 0 { // this is the legacy static token type
 		pLink, err := p.portalLinkService.GetPortalLinkByToken(ctx, cred.Token)
 		if err != nil {
-			// cred.Token should be the owner id at this point
-			pLinks, innerErr := p.portalLinkService.FindPortalLinksByOwnerID(ctx, cred.Token)
-			if innerErr != nil {
-				return nil, innerErr
-			}
-
-			if len(pLinks) == 0 {
-				return nil, err
-			}
-
-			pLink = &pLinks[0]
+			return nil, err
 		}
 
 		if pLink.AuthType == datastore.PortalAuthTypeStaticToken {

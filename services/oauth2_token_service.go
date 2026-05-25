@@ -51,13 +51,30 @@ type CachedToken struct {
 }
 
 type OAuth2TokenService struct {
-	Cache      cache.Cache
-	Logger     log.Logger
-	HTTPClient *http.Client
+	Cache          cache.Cache
+	Logger         log.Logger
+	HTTPClient     *http.Client
+	prepareContext func(context.Context) context.Context
 }
 
-func NewOAuth2TokenService(cache cache.Cache, logger log.Logger) *OAuth2TokenService {
-	return &OAuth2TokenService{
+type OAuth2TokenServiceOption func(*OAuth2TokenService)
+
+func WithOAuth2HTTPClient(client *http.Client) OAuth2TokenServiceOption {
+	return func(s *OAuth2TokenService) {
+		if client != nil {
+			s.HTTPClient = client
+		}
+	}
+}
+
+func WithOAuth2Context(fn func(context.Context) context.Context) OAuth2TokenServiceOption {
+	return func(s *OAuth2TokenService) {
+		s.prepareContext = fn
+	}
+}
+
+func NewOAuth2TokenService(cache cache.Cache, logger log.Logger, opts ...OAuth2TokenServiceOption) *OAuth2TokenService {
+	s := &OAuth2TokenService{
 		Cache:  cache,
 		Logger: logger,
 		HTTPClient: &http.Client{
@@ -65,6 +82,12 @@ func NewOAuth2TokenService(cache cache.Cache, logger log.Logger) *OAuth2TokenSer
 			Transport: otelhttp.NewTransport(http.DefaultTransport),
 		},
 	}
+
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	return s
 }
 
 // GetAccessToken retrieves a valid access token for the endpoint.
@@ -163,6 +186,10 @@ func (s *OAuth2TokenService) exchangeToken(ctx context.Context, oauth2 *datastor
 	}
 
 	// Make the token exchange request
+	if s.prepareContext != nil {
+		ctx = s.prepareContext(ctx)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, "POST", oauth2.URL, strings.NewReader(reqBody.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -178,11 +205,7 @@ func (s *OAuth2TokenService) exchangeToken(ctx context.Context, oauth2 *datastor
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("token exchange failed with status %d: failed to read error response body: %w", resp.StatusCode, err)
-		}
-		return nil, fmt.Errorf("token exchange failed with status %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("token exchange failed with status %d", resp.StatusCode)
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)

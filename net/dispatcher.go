@@ -282,6 +282,17 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	return d, nil
 }
 
+func (d *Dispatcher) HTTPClient() *http.Client {
+	return d.client
+}
+
+func (d *Dispatcher) ContextWithRules(ctx context.Context) context.Context {
+	if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
+		return netjail.ContextWithRules(ctx, d.rules)
+	}
+	return ctx
+}
+
 // ProxyOption configures an HTTP proxy with NO_PROXY support.
 // It fails-open if the string isn't a valid HTTP URL. When a proxy is set,
 // NO_PROXY/no_proxy from config or environment is respected via Go's
