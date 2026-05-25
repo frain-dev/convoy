@@ -504,6 +504,43 @@ func (s *PortalEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_
 	require.Equal(s.T(), expectedMessage, response["message"].(string))
 }
 
+func (s *PortalEventIntegrationTestSuite) Test_PortalEventWrites_RequireEnabledProject() {
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "test", true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
+	require.NoError(s.T(), err)
+
+	originalLicenser := s.ConvoyApp.A.Licenser
+	s.ConvoyApp.A.Licenser = projectDisabledLicenser{Licenser: originalLicenser, disabledProjectID: s.DefaultProject.UID}
+	defer func() { s.ConvoyApp.A.Licenser = originalLicenser }()
+
+	tests := []struct {
+		name   string
+		method string
+		path   string
+	}{
+		{name: "create event", method: http.MethodPost, path: "/portal-api/events?token=%s"},
+		{name: "batch replay events", method: http.MethodPost, path: "/portal-api/events/batchreplay?token=%s"},
+		{name: "replay event", method: http.MethodPut, path: "/portal-api/events/" + ulid.Make().String() + "/replay?token=%s"},
+		{name: "force resend event deliveries", method: http.MethodPost, path: "/portal-api/eventdeliveries/forceresend?token=%s"},
+		{name: "batch retry event deliveries", method: http.MethodPost, path: "/portal-api/eventdeliveries/batchretry?token=%s"},
+		{name: "resend event delivery", method: http.MethodPut, path: "/portal-api/eventdeliveries/" + ulid.Make().String() + "/resend?token=%s"},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			req := createRequest(tt.method, fmt.Sprintf(tt.path, portalLink.Token), portalLink.Token, serialize(`{}`))
+			w := httptest.NewRecorder()
+
+			s.Router.ServeHTTP(w, req)
+
+			require.Equal(s.T(), http.StatusBadRequest, w.Code)
+			require.Contains(s.T(), w.Body.String(), "this project has been disabled")
+		})
+	}
+}
+
 func (s *PortalEventIntegrationTestSuite) Test_TestSubscriptionFunction_RequiresEnabledProject() {
 	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "test", true, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)

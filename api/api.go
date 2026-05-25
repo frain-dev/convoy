@@ -752,14 +752,14 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		// TODO(subomi): left this here temporarily till the data plane is stable.
 		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Post("/", handler.CreateEndpointEvent)
+			eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateEndpointEvent)
 			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-			eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+			eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchreplay", handler.BatchReplayEvents)
 			eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Get("/", handler.GetEndpointEvent)
-				eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+				eventSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/replay", handler.ReplayEndpointEvent)
 			})
 		})
 
@@ -772,13 +772,13 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 			eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
-			eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
-			eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+			eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/forceresend", handler.ForceResendEventDeliveries)
+			eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
-				eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+				eventDeliverySubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/resend", handler.ResendEventDelivery)
 
 				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 					deliveryRouter.Get("/", handler.GetDeliveryAttempts)
