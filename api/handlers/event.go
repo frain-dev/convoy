@@ -59,6 +59,14 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	projectID := project.UID
 
+	if !util.IsStringEmpty(newMessage.EndpointID) {
+		_, err = h.retrieveEndpoint(r.Context(), newMessage.EndpointID, projectID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+	}
+
 	id := ulid.Make().String()
 	jobId := queue.JobId{ProjectID: projectID, ResourceID: id}.SingleJobId()
 	e := task.CreateEvent{

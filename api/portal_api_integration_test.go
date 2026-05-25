@@ -504,6 +504,30 @@ func (s *PortalEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_
 	require.Equal(s.T(), expectedMessage, response["message"].(string))
 }
 
+func (s *PortalEventIntegrationTestSuite) Test_TestSubscriptionFunction_RequiresEnabledProject() {
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "test", true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
+	require.NoError(s.T(), err)
+
+	originalLicenser := s.ConvoyApp.A.Licenser
+	s.ConvoyApp.A.Licenser = projectDisabledLicenser{Licenser: originalLicenser, disabledProjectID: s.DefaultProject.UID}
+	defer func() { s.ConvoyApp.A.Licenser = originalLicenser }()
+
+	body := serialize(`{
+		"function": "function transform(payload) { return payload; }",
+		"payload": {"name": "test"}
+	}`)
+	url := fmt.Sprintf("/portal-api/subscriptions/test_function?token=%s", portalLink.Token)
+	req := createRequest(http.MethodPost, url, portalLink.Token, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+}
+
 func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
 	eventID := ulid.Make().String()
 	sourceID := ulid.Make().String()

@@ -919,6 +919,32 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_UsesAPIKeyPro
 	otherProject, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "url-project-"+ulid.Make().String(), s.DefaultProject.OrganisationID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
 	require.NoError(s.T(), err)
 
+	originalQueue := s.ConvoyApp.A.Queue
+	recorder := &recordingQueuer{opts: originalQueue.Options()}
+	s.ConvoyApp.A.Queue = recorder
+	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
+
+	body := serialize(`{"event_type":"*", "data":{"level":"test"}}`)
+	url := fmt.Sprintf("/api/v1/projects/%s/events", otherProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusCreated, w.Code)
+	require.Len(s.T(), recorder.jobs, 1)
+
+	var queuedEvent task.CreateEvent
+	err = msgpack.DecodeMsgPack(recorder.jobs[0].Payload, &queuedEvent)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), s.DefaultProject.UID, queuedEvent.Params.ProjectID)
+	require.NotEqual(s.T(), otherProject.UID, queuedEvent.Params.ProjectID)
+}
+
+func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_RejectsEndpointFromURLProject() {
+	otherProject, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "url-project-"+ulid.Make().String(), s.DefaultProject.OrganisationID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
+	require.NoError(s.T(), err)
+
 	endpointID := ulid.Make().String()
 	_, err = testdb.SeedEndpoint(s.ConvoyApp.A.DB, otherProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
@@ -935,14 +961,8 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_UsesAPIKeyPro
 
 	s.Router.ServeHTTP(w, req)
 
-	require.Equal(s.T(), http.StatusCreated, w.Code)
-	require.Len(s.T(), recorder.jobs, 1)
-
-	var queuedEvent task.CreateEvent
-	err = msgpack.DecodeMsgPack(recorder.jobs[0].Payload, &queuedEvent)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), s.DefaultProject.UID, queuedEvent.Params.ProjectID)
-	require.NotEqual(s.T(), otherProject.UID, queuedEvent.Params.ProjectID)
+	require.Equal(s.T(), http.StatusNotFound, w.Code)
+	require.Empty(s.T(), recorder.jobs)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_RejectsDisabledAPIKeyProjectWhenURLProjectDiffers() {

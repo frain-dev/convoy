@@ -794,7 +794,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 			subscriptionRouter.Post("/", handler.CreateSubscription)
 			subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
-			subscriptionRouter.Post("/test_function", handler.TestSubscriptionFunction)
+			subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/test_function", handler.TestSubscriptionFunction)
 			subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
 			subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
 			subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)

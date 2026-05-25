@@ -24,9 +24,7 @@
             "enabled": true
         },
         "jwt": {
-            "enabled": true,
-            "secret": "{jwt_secret}",
-            "refresh_secret": "{jwt_refresh_secret}"
+            "enabled": true
         },
         "portal": {
             "enabled": true
