@@ -916,7 +916,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_UsesAPIKeyProjectWhenURLProjectDiffers() {
-	otherProject, err := testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultProject.OrganisationID)
+	otherProject, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "url-project-"+ulid.Make().String(), s.DefaultProject.OrganisationID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
 	require.NoError(s.T(), err)
 
 	endpointID := ulid.Make().String()
@@ -946,7 +946,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_UsesAPIKeyPro
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_RejectsDisabledAPIKeyProjectWhenURLProjectDiffers() {
-	otherProject, err := testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultProject.OrganisationID)
+	otherProject, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "url-project-"+ulid.Make().String(), s.DefaultProject.OrganisationID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
 	require.NoError(s.T(), err)
 
 	endpointID := ulid.Make().String()
