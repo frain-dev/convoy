@@ -961,7 +961,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_RejectsEndpoi
 
 	s.Router.ServeHTTP(w, req)
 
-	require.Equal(s.T(), http.StatusNotFound, w.Code)
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
 	require.Empty(s.T(), recorder.jobs)
 }
 
@@ -988,6 +988,30 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_RejectsDisabl
 	w := httptest.NewRecorder()
 
 	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+	require.Empty(s.T(), recorder.jobs)
+}
+
+func (s *PublicEventIntegrationTestSuite) Test_DataPlaneCreateEndpointEvent_RejectsDisabledAPIKeyProject() {
+	otherProject, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "url-project-"+ulid.Make().String(), s.DefaultProject.OrganisationID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
+	require.NoError(s.T(), err)
+
+	originalLicenser := s.ConvoyApp.A.Licenser
+	s.ConvoyApp.A.Licenser = projectDisabledLicenser{Licenser: originalLicenser, disabledProjectID: s.DefaultProject.UID}
+	defer func() { s.ConvoyApp.A.Licenser = originalLicenser }()
+
+	originalQueue := s.ConvoyApp.A.Queue
+	recorder := &recordingQueuer{opts: originalQueue.Options()}
+	s.ConvoyApp.A.Queue = recorder
+	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
+
+	body := serialize(`{"event_type":"*", "data":{"level":"test"}}`)
+	url := fmt.Sprintf("/api/v1/projects/%s/events", otherProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	s.ConvoyApp.BuildDataPlaneRoutes().ServeHTTP(w, req)
 
 	require.Equal(s.T(), http.StatusBadRequest, w.Code)
 	require.Empty(s.T(), recorder.jobs)
