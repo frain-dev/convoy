@@ -87,6 +87,9 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 }
 
 func TestEnsureJwtConfigRequiresSecrets(t *testing.T) {
+	t.Setenv("CONVOY_JWT_SECRET", "")
+	t.Setenv("CONVOY_JWT_REFRESH_SECRET", "")
+
 	err := ensureJwtConfig(&JwtRealmOptions{Enabled: true})
 	require.EqualError(t, err, "jwt secret is required when jwt realm is enabled")
 
