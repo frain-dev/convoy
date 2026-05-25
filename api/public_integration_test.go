@@ -1017,6 +1017,34 @@ func (s *PublicEventIntegrationTestSuite) Test_DataPlaneCreateEndpointEvent_Reje
 	require.Empty(s.T(), recorder.jobs)
 }
 
+func (s *PublicEventIntegrationTestSuite) Test_DataPlaneBatchReplayEvent_RequiresEnabledProject() {
+	originalLicenser := s.ConvoyApp.A.Licenser
+	s.ConvoyApp.A.Licenser = projectDisabledLicenser{Licenser: originalLicenser, disabledProjectID: s.DefaultProject.UID}
+	defer func() { s.ConvoyApp.A.Licenser = originalLicenser }()
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events/batchreplay", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	s.ConvoyApp.BuildDataPlaneRoutes().ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+}
+
+func (s *PublicEventIntegrationTestSuite) Test_DataPlaneReplayEndpointEvent_RequiresEnabledProject() {
+	originalLicenser := s.ConvoyApp.A.Licenser
+	s.ConvoyApp.A.Licenser = projectDisabledLicenser{Licenser: originalLicenser, disabledProjectID: s.DefaultProject.UID}
+	defer func() { s.ConvoyApp.A.Licenser = originalLicenser }()
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events/%s/replay", s.DefaultProject.UID, ulid.Make().String())
+	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	s.ConvoyApp.BuildDataPlaneRoutes().ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+}
+
 func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusCreated

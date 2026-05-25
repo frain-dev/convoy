@@ -908,22 +908,22 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 						})
 
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-						eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+						eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchreplay", handler.BatchReplayEvents)
 
 						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 							eventSubRouter.Get("/", handler.GetEndpointEvent)
-							eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+							eventSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/replay", handler.ReplayEndpointEvent)
 						})
 					})
 
 					projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 						eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
-						eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
-						eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+						eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/forceresend", handler.ForceResendEventDeliveries)
+						eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 
 						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 							eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
-							eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+							eventDeliverySubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/resend", handler.ResendEventDelivery)
 
 							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 								deliveryRouter.Get("/", handler.GetDeliveryAttempts)
