@@ -23,6 +23,11 @@
         "is_signup_enabled": true,
         "native": {
             "enabled": true
+        },
+        "jwt": {
+            "enabled": true,
+            "secret": "local-access-secret",
+            "refresh_secret": "local-refresh-secret"
         }
     }
 }

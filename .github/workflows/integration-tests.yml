@@ -20,6 +20,9 @@ jobs:
                 redis-version: ["6.2.6"]
 
         runs-on: ubuntu-latest
+        env:
+            CONVOY_JWT_SECRET: test-access-secret
+            CONVOY_JWT_REFRESH_SECRET: test-refresh-secret
         services:
             postgres:
                 image: postgres:${{ matrix.postgres-version }}
