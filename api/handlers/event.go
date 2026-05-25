@@ -52,7 +52,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := h.retrieveProject(r)
+	project, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

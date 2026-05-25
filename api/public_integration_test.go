@@ -842,6 +842,15 @@ func (l ipRulesEnabledLicenser) IpRules() bool {
 	return true
 }
 
+type projectDisabledLicenser struct {
+	license.Licenser
+	disabledProjectID string
+}
+
+func (l projectDisabledLicenser) ProjectEnabled(projectID string) bool {
+	return projectID != l.disabledProjectID
+}
+
 func (s *PublicEventIntegrationTestSuite) SetupSuite() {
 	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
@@ -934,6 +943,34 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_UsesAPIKeyPro
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), s.DefaultProject.UID, queuedEvent.Params.ProjectID)
 	require.NotEqual(s.T(), otherProject.UID, queuedEvent.Params.ProjectID)
+}
+
+func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_RejectsDisabledAPIKeyProjectWhenURLProjectDiffers() {
+	otherProject, err := testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultProject.OrganisationID)
+	require.NoError(s.T(), err)
+
+	endpointID := ulid.Make().String()
+	_, err = testdb.SeedEndpoint(s.ConvoyApp.A.DB, otherProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	originalLicenser := s.ConvoyApp.A.Licenser
+	s.ConvoyApp.A.Licenser = projectDisabledLicenser{Licenser: originalLicenser, disabledProjectID: s.DefaultProject.UID}
+	defer func() { s.ConvoyApp.A.Licenser = originalLicenser }()
+
+	originalQueue := s.ConvoyApp.A.Queue
+	recorder := &recordingQueuer{opts: originalQueue.Options()}
+	s.ConvoyApp.A.Queue = recorder
+	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
+
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
+	url := fmt.Sprintf("/api/v1/projects/%s/events", otherProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+	require.Empty(s.T(), recorder.jobs)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
@@ -2904,6 +2941,24 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	require.Equal(s.T(), dbSub.Name, subscription.Name)
 	require.Equal(s.T(), len(dbSub.FilterConfig.EventTypes), len(subscription.FilterConfig.EventTypes))
 	require.Equal(s.T(), dbSub.RateLimitConfig.Count, subscription.RateLimitConfig.Count)
+}
+
+func (s *PublicSubscriptionIntegrationTestSuite) Test_TestSubscriptionFunction_RequiresEnabledProject() {
+	originalLicenser := s.ConvoyApp.A.Licenser
+	s.ConvoyApp.A.Licenser = projectDisabledLicenser{Licenser: originalLicenser, disabledProjectID: s.DefaultProject.UID}
+	defer func() { s.ConvoyApp.A.Licenser = originalLicenser }()
+
+	body := serialize(`{
+		"function": "function transform(payload) { return payload; }",
+		"payload": {"name": "test"}
+	}`)
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/test_function", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProject() {

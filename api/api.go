@@ -382,7 +382,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 						subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSubscription)
 						subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
-						subscriptionRouter.Post("/test_function", handler.TestSubscriptionFunction)
+						subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/test_function", handler.TestSubscriptionFunction)
 						subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
 						subscriptionRouter.With(handler.RequireEnabledProject()).Delete("/{subscriptionID}", handler.DeleteSubscription)
 						subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
@@ -608,7 +608,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 							subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSubscription)
 							subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
-							subscriptionRouter.Post("/test_function", handler.TestSubscriptionFunction)
+							subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/test_function", handler.TestSubscriptionFunction)
 							subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
 							subscriptionRouter.With(handler.RequireEnabledProject()).Delete("/{subscriptionID}", handler.DeleteSubscription)
 							subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
