@@ -1,6 +1,7 @@
 package util
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,6 +21,22 @@ func TestIsStringEmpty(t *testing.T) {
 	for _, v := range tt {
 		require.Equal(t, v.empty, IsStringEmpty(v.s))
 	}
+}
+
+func TestGenerateRandomString(t *testing.T) {
+	got, err := GenerateRandomString(64)
+	require.NoError(t, err)
+	require.Len(t, got, 64)
+
+	for _, ch := range got {
+		require.True(t, strings.ContainsRune(string(letterBytes), ch))
+	}
+}
+
+func TestGenerateRandomStringZeroLength(t *testing.T) {
+	got, err := GenerateRandomString(0)
+	require.NoError(t, err)
+	require.Empty(t, got)
 }
 
 func BenchmarkGenerateRandomString100(b *testing.B) {

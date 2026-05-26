@@ -177,11 +177,22 @@ func InstrumentPath(l license.Licenser) func(http.Handler) http.Handler {
 			m := httpsnoop.CaptureMetrics(next, w, r)
 			mm := metrics.GetDPInstance(l)
 
-			val := chi.URLParam(r, "projectID")
+			val := projectIDForInstrumentation(r)
 			mm.RecordIngestLatency(val, m.Duration.Seconds())
 			mm.IncrementIngestTotal("http", val)
 		})
 	}
+}
+
+func projectIDForInstrumentation(r *http.Request) string {
+	if cachedProject := r.Context().Value(convoy.ProjectCtx); cachedProject != nil {
+		project, ok := cachedProject.(*datastore.Project)
+		if ok && project != nil {
+			return project.UID
+		}
+	}
+
+	return chi.URLParam(r, "projectID")
 }
 
 func InstrumentRequests(serverName string, r chi.Router, tp oteltrace.TracerProvider) func(next http.Handler) http.Handler {

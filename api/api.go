@@ -382,7 +382,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 						subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSubscription)
 						subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
-						subscriptionRouter.Post("/test_function", handler.TestSubscriptionFunction)
+						subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/test_function", handler.TestSubscriptionFunction)
 						subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
 						subscriptionRouter.With(handler.RequireEnabledProject()).Delete("/{subscriptionID}", handler.DeleteSubscription)
 						subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
@@ -408,7 +408,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSource)
 						sourceRouter.Get("/{sourceID}", handler.GetSource)
 						sourceRouter.With(middleware.Pagination).Get("/", handler.LoadSourcesPaged)
-						sourceRouter.Post("/test_function", handler.TestSourceFunction)
+						sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/test_function", handler.TestSourceFunction)
 						sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/{sourceID}", handler.UpdateSource)
 						sourceRouter.With(handler.RequireEnabledProject()).Delete("/{sourceID}", handler.DeleteSource)
 					})
@@ -608,7 +608,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 							subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSubscription)
 							subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
-							subscriptionRouter.Post("/test_function", handler.TestSubscriptionFunction)
+							subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/test_function", handler.TestSubscriptionFunction)
 							subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
 							subscriptionRouter.With(handler.RequireEnabledProject()).Delete("/{subscriptionID}", handler.DeleteSubscription)
 							subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
@@ -633,7 +633,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 							sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateSource)
 							sourceRouter.Get("/{sourceID}", handler.GetSource)
 							sourceRouter.With(middleware.Pagination).Get("/", handler.LoadSourcesPaged)
-							sourceRouter.Post("/test_function", handler.TestSourceFunction)
+							sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/test_function", handler.TestSourceFunction)
 							sourceRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/{sourceID}", handler.UpdateSource)
 							sourceRouter.With(handler.RequireEnabledProject()).Delete("/{sourceID}", handler.DeleteSource)
 						})
@@ -752,14 +752,14 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		// TODO(subomi): left this here temporarily till the data plane is stable.
 		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Post("/", handler.CreateEndpointEvent)
+			eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateEndpointEvent)
 			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-			eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+			eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchreplay", handler.BatchReplayEvents)
 			eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
 			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 				eventSubRouter.Get("/", handler.GetEndpointEvent)
-				eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+				eventSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/replay", handler.ReplayEndpointEvent)
 			})
 		})
 
@@ -772,13 +772,13 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 			eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
-			eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
-			eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+			eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/forceresend", handler.ForceResendEventDeliveries)
+			eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
-				eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+				eventDeliverySubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/resend", handler.ResendEventDelivery)
 
 				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 					deliveryRouter.Get("/", handler.GetDeliveryAttempts)
@@ -794,7 +794,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 			subscriptionRouter.Post("/", handler.CreateSubscription)
 			subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
-			subscriptionRouter.Post("/test_function", handler.TestSubscriptionFunction)
+			subscriptionRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/test_function", handler.TestSubscriptionFunction)
 			subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
 			subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
 			subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
@@ -893,28 +893,37 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-						eventRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
-						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/", handler.CreateEndpointEvent)
-						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/fanout", handler.CreateEndpointFanoutEvent)
-						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/broadcast", handler.CreateBroadcastEvent)
-						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/dynamic", handler.CreateDynamicEvent)
+						eventRouter.Group(func(r chi.Router) {
+							r.Use(
+								handler.RequireEnabledProject(),
+								handler.RequireEnabledOrganisation(),
+								middleware.InstrumentPath(a.A.Licenser),
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate),
+							)
+
+							r.Post("/", handler.CreateEndpointEvent)
+							r.Post("/fanout", handler.CreateEndpointFanoutEvent)
+							r.Post("/broadcast", handler.CreateBroadcastEvent)
+							r.Post("/dynamic", handler.CreateDynamicEvent)
+						})
+
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-						eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+						eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchreplay", handler.BatchReplayEvents)
 
 						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
 							eventSubRouter.Get("/", handler.GetEndpointEvent)
-							eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+							eventSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/replay", handler.ReplayEndpointEvent)
 						})
 					})
 
 					projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 						eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
-						eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
-						eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+						eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/forceresend", handler.ForceResendEventDeliveries)
+						eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 
 						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 							eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
-							eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+							eventDeliverySubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/resend", handler.ResendEventDelivery)
 
 							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 								deliveryRouter.Get("/", handler.GetDeliveryAttempts)

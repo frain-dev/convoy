@@ -154,7 +154,11 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 				tt.dbFn(os)
 			}
 
-			err := config.LoadConfig("")
+			err := config.LoadConfig("", func(c *config.Configuration) error {
+				c.Auth.Jwt.Secret = "test-access-secret"
+				c.Auth.Jwt.RefreshSecret = "test-refresh-secret"
+				return nil
+			})
 			require.NoError(t, err)
 
 			org, err := os.Run(tt.args.ctx)

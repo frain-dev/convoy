@@ -1,6 +1,8 @@
 package transform
 
 import (
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -70,6 +72,23 @@ func TestTransformMissingFunction(t *testing.T) {
 	transformer := NewTransformer()
 	_, _, err := transformer.Transform(function, p)
 	require.ErrorIs(t, ErrFunctionNotFound, err)
+}
+
+func TestTransformDoesNotLoadFilesWithRequire(t *testing.T) {
+	file, err := os.CreateTemp(t.TempDir(), "secret-*.json")
+	require.NoError(t, err)
+	_, err = file.WriteString(`{"token":"secret"}`)
+	require.NoError(t, err)
+	require.NoError(t, file.Close())
+
+	function := fmt.Sprintf(`function transform(payload) {
+		return require(%q);
+	}`, file.Name())
+
+	transformer := NewTransformer()
+	_, _, err = transformer.Transform(function, Payload{})
+	require.Error(t, err)
+	require.NotContains(t, err.Error(), "secret")
 }
 
 func TestTransformFunctionNotFound(t *testing.T) {

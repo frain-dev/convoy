@@ -10,7 +10,9 @@
     "base_url": "https://app.convoy.io",
     "auth": {
         "jwt": {
-            "enabled": true
+            "enabled": true,
+            "secret": "test-access-secret",
+            "refresh_secret": "test-refresh-secret"
         },
         "file": {
             "basic": [

@@ -1,10 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestHeaderFields(t *testing.T) {
@@ -148,6 +153,29 @@ func TestHeaderFields(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestProjectIDForInstrumentationUsesContextProject(t *testing.T) {
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/projects/url-project/events", nil)
+	assert.NoError(t, err)
+
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("projectID", "url-project")
+	ctx := context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx)
+	ctx = context.WithValue(ctx, convoy.ProjectCtx, &datastore.Project{UID: "auth-project"})
+
+	assert.Equal(t, "auth-project", projectIDForInstrumentation(req.WithContext(ctx)))
+}
+
+func TestProjectIDForInstrumentationFallsBackToURLProject(t *testing.T) {
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/projects/url-project/events", nil)
+	assert.NoError(t, err)
+
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("projectID", "url-project")
+	ctx := context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx)
+
+	assert.Equal(t, "url-project", projectIDForInstrumentation(req.WithContext(ctx)))
 }
 
 func TestSensitiveHeaderValuesNeverLogged(t *testing.T) {

@@ -52,20 +52,17 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var projectID string
-	authUser := middleware.GetAuthUserFromContext(r.Context())
-	if h.IsReqWithPortalLinkToken(authUser) {
-		project, err := h.retrieveProject(r)
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-			return
-		}
+	project, err := h.getProjectFromContext(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	projectID := project.UID
 
-		projectID = project.UID
-	} else {
-		projectID = chi.URLParam(r, "projectID")
-		if util.IsStringEmpty(projectID) {
-			_ = render.Render(w, r, util.NewErrorResponse("project id not present in request", http.StatusBadRequest))
+	if !util.IsStringEmpty(newMessage.EndpointID) {
+		_, err = h.retrieveEndpoint(r.Context(), newMessage.EndpointID, projectID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
 	}

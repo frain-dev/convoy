@@ -21,7 +21,8 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	userRepo := mocks.NewMockUserRepository(ctrl)
 	newCache := mcache.NewMemoryCache()
-	jr := NewJwtRealm(userRepo, &config.JwtRealmOptions{}, newCache)
+	jwtOpts := &config.JwtRealmOptions{Secret: "test-access-secret", RefreshSecret: "test-refresh-secret"}
+	jr := NewJwtRealm(userRepo, jwtOpts, newCache)
 
 	user := &datastore.User{UID: "123456"}
 	token, err := jr.jwt.GenerateToken(user)
@@ -128,7 +129,7 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 
 			userRepo := mocks.NewMockUserRepository(ctrl)
 			newCache := mcache.NewMemoryCache()
-			jr := NewJwtRealm(userRepo, &config.JwtRealmOptions{}, newCache)
+			jr := NewJwtRealm(userRepo, jwtOpts, newCache)
 
 			if tc.dbFn != nil {
 				tc.dbFn(userRepo)

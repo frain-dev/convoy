@@ -817,6 +817,10 @@ func validate(c *Configuration) error {
 		return err
 	}
 
+	if err := ensureJwtConfig(&c.Auth.Jwt); err != nil {
+		return err
+	}
+
 	// Validate billing configuration
 	if err := c.Billing.Validate(); err != nil {
 		return err
@@ -832,6 +836,25 @@ func validate(c *Configuration) error {
 		}
 	}
 
+	return nil
+}
+
+func ensureJwtConfig(jwt *JwtRealmOptions) error {
+	if !jwt.Enabled {
+		return nil
+	}
+	if IsStringEmpty(jwt.Secret) {
+		jwt.Secret = os.Getenv("CONVOY_JWT_SECRET")
+	}
+	if IsStringEmpty(jwt.RefreshSecret) {
+		jwt.RefreshSecret = os.Getenv("CONVOY_JWT_REFRESH_SECRET")
+	}
+	if IsStringEmpty(jwt.Secret) {
+		return errors.New("jwt secret is required when jwt realm is enabled")
+	}
+	if IsStringEmpty(jwt.RefreshSecret) {
+		return errors.New("jwt refresh secret is required when jwt realm is enabled")
+	}
 	return nil
 }
 

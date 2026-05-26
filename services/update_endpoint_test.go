@@ -563,7 +563,12 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				as.EarlyAdopterFeatureFetcher = mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSDisabled()
 			}
 
-			err := config.LoadConfig("")
+			err := config.LoadConfig("", func(c *config.Configuration) error {
+				c.Auth.Jwt.Secret = "test-access-secret"
+				c.Auth.Jwt.RefreshSecret = "test-refresh-secret"
+				c.Dispatcher.SkipPingValidation = true
+				return nil
+			})
 			require.NoError(t, err)
 
 			// Arrange Expectations
