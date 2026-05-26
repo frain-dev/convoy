@@ -14,6 +14,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/stealthrocket/netjail"
@@ -509,12 +510,12 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 	req.Header.Add("Content-Type", converter.ContentType())
 	req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Add("User-Agent", defaultUserAgent())
-	if len(idempotencyKey) > 0 {
-		req.Header.Set("X-Convoy-Idempotency-Key", idempotencyKey)
-	}
 
 	header := httpheader.HTTPHeader(req.Header)
 	header.MergeHeaders(headers)
+	if len(idempotencyKey) > 0 && !hasHeader(header, "X-Convoy-Idempotency-Key") {
+		header["X-Convoy-Idempotency-Key"] = []string{idempotencyKey}
+	}
 
 	req.Header = http.Header(header)
 
@@ -528,6 +529,16 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 	}
 
 	return r, err
+}
+
+func hasHeader(header httpheader.HTTPHeader, key string) bool {
+	for k := range header {
+		if strings.EqualFold(k, key) {
+			return true
+		}
+	}
+
+	return false
 }
 
 type Response struct {

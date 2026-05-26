@@ -895,6 +895,99 @@ func TestDispatcherSendRequest(t *testing.T) {
 	require.Equal(t, "custom-value", resp.RequestHeader.Get("X-Custom-Header"))
 }
 
+func TestDispatcherIdempotencyKeyHeaderCanBeOverriddenByCustomHeaders(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "customer-idempotency-key", r.Header.Get("X-Convoy-Idempotency-Key"))
+		require.NotEqual(t, "event-idempotency-key", r.Header.Get("X-Convoy-Idempotency-Key"))
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status": "success"}`))
+	}))
+	defer server.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(4).Return(true)
+
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
+		ProxyOption("nil"),
+		AllowListOption([]string{"0.0.0.0/0"}),
+		BlockListOption([]string{"10.0.0.0/8"}),
+	)
+	require.NoError(t, err)
+
+	headers := httpheader.HTTPHeader{
+		"X-Convoy-Idempotency-Key": []string{"customer-idempotency-key"},
+	}
+
+	resp, err := dispatcher.SendWebhook(
+		context.Background(),
+		server.URL,
+		json.RawMessage(`{"key": "value"}`),
+		"X-Signature",
+		"test-hmac",
+		1024,
+		headers,
+		"event-idempotency-key",
+		5*time.Second,
+		constants.ContentTypeJSON,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "customer-idempotency-key", resp.RequestHeader.Get("X-Convoy-Idempotency-Key"))
+}
+
+func TestDispatcherDoesNotSetIdempotencyKeyHeaderWhenEmpty(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Empty(t, r.Header.Get("X-Convoy-Idempotency-Key"))
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status": "success"}`))
+	}))
+	defer server.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(4).Return(true)
+
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
+		ProxyOption("nil"),
+		AllowListOption([]string{"0.0.0.0/0"}),
+		BlockListOption([]string{"10.0.0.0/8"}),
+	)
+	require.NoError(t, err)
+
+	resp, err := dispatcher.SendWebhook(
+		context.Background(),
+		server.URL,
+		json.RawMessage(`{"key": "value"}`),
+		"X-Signature",
+		"test-hmac",
+		1024,
+		nil,
+		"",
+		5*time.Second,
+		constants.ContentTypeJSON,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Empty(t, resp.RequestHeader.Get("X-Convoy-Idempotency-Key"))
+}
+
 // TestDispatcherWithTimeout tests the timeout functionality
 func TestDispatcherWithTimeout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
