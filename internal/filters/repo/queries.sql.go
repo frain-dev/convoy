@@ -15,20 +15,28 @@ const createFilter = `-- name: CreateFilter :exec
 
 INSERT INTO convoy.filters (
     id, subscription_id, event_type,
-    headers, body, raw_headers, raw_body,
+    enabled_at,
+    headers, body, query, path,
+    raw_headers, raw_body, raw_query, raw_path,
     created_at, updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
+        $9, $10, $11, $12, $13, $14)
 `
 
 type CreateFilterParams struct {
 	ID             pgtype.Text
 	SubscriptionID pgtype.Text
 	EventType      pgtype.Text
+	EnabledAt      pgtype.Timestamptz
 	Headers        []byte
 	Body           []byte
+	Query          []byte
+	Path           []byte
 	RawHeaders     []byte
 	RawBody        []byte
+	RawQuery       []byte
+	RawPath        []byte
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
 }
@@ -40,10 +48,15 @@ func (q *Queries) CreateFilter(ctx context.Context, arg CreateFilterParams) erro
 		arg.ID,
 		arg.SubscriptionID,
 		arg.EventType,
+		arg.EnabledAt,
 		arg.Headers,
 		arg.Body,
+		arg.Query,
+		arg.Path,
 		arg.RawHeaders,
 		arg.RawBody,
+		arg.RawQuery,
+		arg.RawPath,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
@@ -66,7 +79,9 @@ func (q *Queries) DeleteFilter(ctx context.Context, id pgtype.Text) (int64, erro
 const findFilterByID = `-- name: FindFilterByID :one
 SELECT
     id, subscription_id, event_type,
-    headers, body, raw_headers, raw_body,
+    enabled_at,
+    headers, body, query, path,
+    raw_headers, raw_body, raw_query, raw_path,
     created_at, updated_at
 FROM convoy.filters
 WHERE id = $1
@@ -76,10 +91,15 @@ type FindFilterByIDRow struct {
 	ID             string
 	SubscriptionID string
 	EventType      string
+	EnabledAt      pgtype.Timestamptz
 	Headers        []byte
 	Body           []byte
+	Query          []byte
+	Path           []byte
 	RawHeaders     []byte
 	RawBody        []byte
+	RawQuery       []byte
+	RawPath        []byte
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
 }
@@ -91,10 +111,15 @@ func (q *Queries) FindFilterByID(ctx context.Context, id pgtype.Text) (FindFilte
 		&i.ID,
 		&i.SubscriptionID,
 		&i.EventType,
+		&i.EnabledAt,
 		&i.Headers,
 		&i.Body,
+		&i.Query,
+		&i.Path,
 		&i.RawHeaders,
 		&i.RawBody,
+		&i.RawQuery,
+		&i.RawPath,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -104,7 +129,9 @@ func (q *Queries) FindFilterByID(ctx context.Context, id pgtype.Text) (FindFilte
 const findFilterBySubscriptionAndEventType = `-- name: FindFilterBySubscriptionAndEventType :one
 SELECT
     id, subscription_id, event_type,
-    headers, body, raw_headers, raw_body,
+    enabled_at,
+    headers, body, query, path,
+    raw_headers, raw_body, raw_query, raw_path,
     created_at, updated_at
 FROM convoy.filters
 WHERE subscription_id = $1 AND event_type = $2
@@ -119,10 +146,15 @@ type FindFilterBySubscriptionAndEventTypeRow struct {
 	ID             string
 	SubscriptionID string
 	EventType      string
+	EnabledAt      pgtype.Timestamptz
 	Headers        []byte
 	Body           []byte
+	Query          []byte
+	Path           []byte
 	RawHeaders     []byte
 	RawBody        []byte
+	RawQuery       []byte
+	RawPath        []byte
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
 }
@@ -134,10 +166,15 @@ func (q *Queries) FindFilterBySubscriptionAndEventType(ctx context.Context, arg 
 		&i.ID,
 		&i.SubscriptionID,
 		&i.EventType,
+		&i.EnabledAt,
 		&i.Headers,
 		&i.Body,
+		&i.Query,
+		&i.Path,
 		&i.RawHeaders,
 		&i.RawBody,
+		&i.RawQuery,
+		&i.RawPath,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -147,7 +184,9 @@ func (q *Queries) FindFilterBySubscriptionAndEventType(ctx context.Context, arg 
 const findFiltersBySubscriptionID = `-- name: FindFiltersBySubscriptionID :many
 SELECT
     id, subscription_id, event_type,
-    headers, body, raw_headers, raw_body,
+    enabled_at,
+    headers, body, query, path,
+    raw_headers, raw_body, raw_query, raw_path,
     created_at, updated_at
 FROM convoy.filters
 WHERE subscription_id = $1
@@ -158,10 +197,15 @@ type FindFiltersBySubscriptionIDRow struct {
 	ID             string
 	SubscriptionID string
 	EventType      string
+	EnabledAt      pgtype.Timestamptz
 	Headers        []byte
 	Body           []byte
+	Query          []byte
+	Path           []byte
 	RawHeaders     []byte
 	RawBody        []byte
+	RawQuery       []byte
+	RawPath        []byte
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
 }
@@ -179,10 +223,15 @@ func (q *Queries) FindFiltersBySubscriptionID(ctx context.Context, subscriptionI
 			&i.ID,
 			&i.SubscriptionID,
 			&i.EventType,
+			&i.EnabledAt,
 			&i.Headers,
 			&i.Body,
+			&i.Query,
+			&i.Path,
 			&i.RawHeaders,
 			&i.RawBody,
+			&i.RawQuery,
+			&i.RawPath,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -199,20 +248,30 @@ func (q *Queries) FindFiltersBySubscriptionID(ctx context.Context, subscriptionI
 const updateFilter = `-- name: UpdateFilter :execrows
 UPDATE convoy.filters
 SET
-    headers = $1,
-    body = $2,
-    raw_headers = $3,
-    raw_body = $4,
-    event_type = $5,
-    updated_at = $6
-WHERE id = $7
+    enabled_at = $1,
+    headers = $2,
+    body = $3,
+    query = $4,
+    path = $5,
+    raw_headers = $6,
+    raw_body = $7,
+    raw_query = $8,
+    raw_path = $9,
+    event_type = $10,
+    updated_at = $11
+WHERE id = $12
 `
 
 type UpdateFilterParams struct {
+	EnabledAt  pgtype.Timestamptz
 	Headers    []byte
 	Body       []byte
+	Query      []byte
+	Path       []byte
 	RawHeaders []byte
 	RawBody    []byte
+	RawQuery   []byte
+	RawPath    []byte
 	EventType  pgtype.Text
 	UpdatedAt  pgtype.Timestamptz
 	ID         pgtype.Text
@@ -220,10 +279,15 @@ type UpdateFilterParams struct {
 
 func (q *Queries) UpdateFilter(ctx context.Context, arg UpdateFilterParams) (int64, error) {
 	result, err := q.db.Exec(ctx, updateFilter,
+		arg.EnabledAt,
 		arg.Headers,
 		arg.Body,
+		arg.Query,
+		arg.Path,
 		arg.RawHeaders,
 		arg.RawBody,
+		arg.RawQuery,
+		arg.RawPath,
 		arg.EventType,
 		arg.UpdatedAt,
 		arg.ID,

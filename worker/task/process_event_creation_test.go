@@ -19,6 +19,8 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/compare"
+	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -375,7 +377,10 @@ func TestProcessEventCreated(t *testing.T) {
 func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 	tests := []struct {
 		name       string
+		eventType  string
 		payload    map[string]interface{}
+		query      string
+		path       string
 		dbFn       func(args *testArgs)
 		inputSubs  []datastore.Subscription
 		wantSubs   []datastore.Subscription
@@ -390,9 +395,6 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				},
 			},
 			dbFn: func(args *testArgs) {
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-
 				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{"person.age": 10}}, nil)
@@ -476,10 +478,6 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				},
 			},
 			dbFn: func(args *testArgs) {
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
-
 				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{"person.age": 10}}, nil)
@@ -518,10 +516,6 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				},
 			},
 			dbFn: func(args *testArgs) {
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
-
 				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{"person.age": map[string]interface{}{"$eq": 10}}}, nil)
@@ -566,18 +560,14 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				},
 			},
 			dbFn: func(args *testArgs) {
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-
 				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
+				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{"person.age": 10}}, nil)
+
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{"person.age": map[string]interface{}{
 						"$neq": 10,
 					}}}, nil)
-
-				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
-					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{"person.age": 10}}, nil)
 
 				licenser, _ := args.licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedSubscriptions().Times(1).Return(true)
@@ -616,22 +606,18 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				},
 			},
 			dbFn: func(args *testArgs) {
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
-
 				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{
 						"person.age": map[string]interface{}{
-							"$gt": 10,
+							"$gte": 10,
 						},
 					}}, nil)
 
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{
 						"person.age": map[string]interface{}{
-							"$gte": 10,
+							"$gt": 10,
 						},
 					}}, nil)
 
@@ -678,9 +664,6 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				},
 			},
 			dbFn: func(args *testArgs) {
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
-
 				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{
@@ -742,29 +725,25 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				},
 			},
 			dbFn: func(args *testArgs) {
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(false, nil)
-
 				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{
 						"person.age": map[string]interface{}{
-							"$in": []int{10, 1},
+							"$gt": 10,
 						},
 					}}, nil)
 
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{
 						"person.age": map[string]interface{}{
-							"$in": []int{10, 1},
+							"$in": []interface{}{float64(10), float64(1)},
 						},
 					}}, nil)
 
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{
 						"person.age": map[string]interface{}{
-							"$in": []int{10, 1},
+							"$gt": 10,
 						},
 					}}, nil)
 
@@ -811,7 +790,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			wantSubs: []datastore.Subscription{
 				{
-					UID: "123",
+					UID: "1234",
 				},
 			},
 		},
@@ -823,22 +802,18 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				},
 			},
 			dbFn: func(args *testArgs) {
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
-				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-
 				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{
 						"event.action": map[string]interface{}{
-							"$nin": []string{"update", "delete"},
+							"$nin": []interface{}{"update", "delete"},
 						},
 					}}, nil)
 
 				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return(&datastore.EventTypeFilter{Body: map[string]interface{}{
 						"event.action": map[string]interface{}{
-							"$nin": []string{"read", "delete"},
+							"$nin": []interface{}{"read", "delete"},
 						},
 					}}, nil)
 
@@ -875,6 +850,125 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "Query Filter",
+			query: "event_type=push&ref=main",
+			payload: map[string]interface{}{
+				"person": map[string]interface{}{"age": 10},
+			},
+			dbFn: func(args *testArgs) {
+				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
+				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.EventTypeFilter{Query: datastore.M{"event_type": "push"}}, nil)
+				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.EventTypeFilter{Query: datastore.M{"event_type": "merge_request"}}, nil)
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedSubscriptions().Times(1).Return(true)
+			},
+			inputSubs: []datastore.Subscription{{UID: "123"}, {UID: "1234"}},
+			wantSubs:  []datastore.Subscription{{UID: "123"}},
+		},
+		{
+			name: "Path Filter",
+			path: "/ingest/source-id",
+			payload: map[string]interface{}{
+				"person": map[string]interface{}{"age": 10},
+			},
+			dbFn: func(args *testArgs) {
+				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
+				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.EventTypeFilter{Path: datastore.M{"path": "/ingest/source-id"}}, nil)
+				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
+					Return(&datastore.EventTypeFilter{Path: datastore.M{"path": "/ingest/other"}}, nil)
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedSubscriptions().Times(1).Return(true)
+			},
+			inputSubs: []datastore.Subscription{{UID: "123"}, {UID: "1234"}},
+			wantSubs:  []datastore.Subscription{{UID: "123"}},
+		},
+		{
+			name:      "Wildcard filter matches when no exact event filter exists",
+			eventType: "invoice.created",
+			payload: map[string]interface{}{
+				"kind": "allowed",
+			},
+			dbFn: func(args *testArgs) {
+				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
+				gomock.InOrder(
+					fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "invoice.created").
+						Return(nil, datastore.ErrFilterNotFound),
+					fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "*").
+						Return(&datastore.EventTypeFilter{Body: datastore.M{"kind": "allowed"}}, nil),
+				)
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedSubscriptions().Times(1).Return(true)
+			},
+			inputSubs: []datastore.Subscription{{UID: "123"}},
+			wantSubs:  []datastore.Subscription{{UID: "123"}},
+		},
+		{
+			name:      "Subscription matches when no filter exists",
+			eventType: "invoice.created",
+			payload: map[string]interface{}{
+				"kind": "allowed",
+			},
+			dbFn: func(args *testArgs) {
+				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
+				gomock.InOrder(
+					fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "invoice.created").
+						Return(nil, datastore.ErrFilterNotFound),
+					fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "*").
+						Return(nil, datastore.ErrFilterNotFound),
+				)
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedSubscriptions().Times(1).Return(true)
+			},
+			inputSubs: []datastore.Subscription{{UID: "123"}},
+			wantSubs:  []datastore.Subscription{{UID: "123"}},
+		},
+		{
+			name:      "Disabled exact event filter falls back to wildcard filter",
+			eventType: "invoice.created",
+			payload: map[string]interface{}{
+				"kind": "allowed",
+			},
+			dbFn: func(args *testArgs) {
+				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
+				gomock.InOrder(
+					fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "invoice.created").
+						Return(&datastore.EventTypeFilter{Body: datastore.M{"kind": "blocked"}, EnabledAtSet: true}, nil),
+					fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "*").
+						Return(&datastore.EventTypeFilter{Body: datastore.M{"kind": "allowed"}}, nil),
+				)
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedSubscriptions().Times(1).Return(true)
+			},
+			inputSubs: []datastore.Subscription{{UID: "123"}},
+			wantSubs:  []datastore.Subscription{{UID: "123"}},
+		},
+		{
+			name:      "Query filter wildcard selectors fail closed",
+			eventType: "invoice.created",
+			payload: map[string]interface{}{
+				"kind": "allowed",
+			},
+			query: "items999999999=value",
+			dbFn: func(args *testArgs) {
+				fe, _ := args.filterRepo.(*mocks.MockFilterRepository)
+				fe.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "invoice.created").
+					Return(&datastore.EventTypeFilter{Query: datastore.M{"items.$.id": "value"}}, nil)
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedSubscriptions().Times(1).Return(true)
+			},
+			inputSubs: []datastore.Subscription{{UID: "123"}},
+			wantSubs:  []datastore.Subscription{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -883,6 +977,13 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			defer ctrl.Finish()
 
 			args := provideArgs(ctrl)
+			subRepo, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+			subRepo.EXPECT().
+				CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				AnyTimes().
+				DoAndReturn(func(_ context.Context, payload, filter flatten.M, _ bool) (bool, error) {
+					return compare.Compare(payload, filter)
+				})
 
 			if tt.dbFn != nil {
 				tt.dbFn(args)
@@ -891,7 +992,14 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			payload, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, args.filterRepo, args.licenser, tt.inputSubs, false, logger.New("test", logger.LevelInfo))
+			event := &datastore.Event{
+				Data:           payload,
+				EventType:      datastore.EventType(tt.eventType),
+				URLQueryParams: tt.query,
+				URLPath:        tt.path,
+			}
+
+			subs, err := matchSubscriptionsUsingFilter(context.Background(), event, args.subRepo, args.filterRepo, args.licenser, tt.inputSubs, false, logger.New("test", logger.LevelInfo))
 			if tt.wantErr {
 				require.NotNil(t, err)
 				return
@@ -904,4 +1012,61 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCompareFilterScopeFlattensPayloadBeforeComparison(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
+	payload := datastore.M{
+		"meta": map[string]interface{}{"version": "1"},
+	}
+	filter := datastore.M{"meta.version": "1"}
+
+	subRepo.EXPECT().
+		CompareFlattenedPayload(gomock.Any(), datastore.M{"meta.version": "1"}, filter, true).
+		Return(true, nil)
+
+	matched, err := compareFilterScope(context.Background(), subRepo, payload, filter)
+
+	require.NoError(t, err)
+	require.True(t, matched)
+}
+
+func TestMatchSubscriptions_DisabledFiltersAreIgnored(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	args := provideArgs(ctrl)
+	filterRepo, _ := args.filterRepo.(*mocks.MockFilterRepository)
+
+	gomock.InOrder(
+		filterRepo.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "invoice.created").
+			Return(&datastore.EventTypeFilter{EventType: "invoice.created", EnabledAtSet: true}, nil),
+		filterRepo.EXPECT().FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "*").
+			Return(&datastore.EventTypeFilter{EventType: "*"}, nil),
+	)
+
+	subs, err := matchSubscriptions(context.Background(), "invoice.created", []datastore.Subscription{{UID: "123"}}, filterRepo)
+
+	require.NoError(t, err)
+	require.Equal(t, []datastore.Subscription{{UID: "123"}}, subs)
+}
+
+func TestMatchSubscriptions_DisabledWildcardFilterIsIgnored(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	args := provideArgs(ctrl)
+	filterRepo, _ := args.filterRepo.(*mocks.MockFilterRepository)
+
+	filterRepo.EXPECT().
+		FindFilterBySubscriptionAndEventType(gomock.Any(), "123", "*").
+		Return(&datastore.EventTypeFilter{EventType: "*", EnabledAtSet: true}, nil)
+
+	subs, err := matchSubscriptions(context.Background(), "*", []datastore.Subscription{{UID: "123"}}, filterRepo)
+
+	require.NoError(t, err)
+	require.Empty(t, subs)
 }

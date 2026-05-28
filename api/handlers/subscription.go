@@ -440,7 +440,21 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	isValid := isBodyValid && isHeaderValid
+	isQueryValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Query, test.Schema.Query, false)
+	if err != nil {
+		h.A.Logger.ErrorContext(r.Context(), "failed to validate subscription filter", "error", err)
+		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))
+		return
+	}
+
+	isPathValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Path, test.Schema.Path, false)
+	if err != nil {
+		h.A.Logger.ErrorContext(r.Context(), "failed to validate subscription filter", "error", err)
+		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))
+		return
+	}
+
+	isValid := isBodyValid && isHeaderValid && isQueryValid && isPathValid
 
 	_ = render.Render(w, r, util.NewServerResponse("Filter validated successfully", isValid, http.StatusOK))
 }

@@ -23,18 +23,18 @@ WHERE s.deleted_at IS NULL
 `
 
 type CountEndpointSubscriptionsParams struct {
-	ProjectID             pgtype.Text
+	ProjectID             string
 	EndpointID            pgtype.Text
-	ExcludeSubscriptionID pgtype.Text
+	ExcludeSubscriptionID string
 }
 
 // ============================================================================
 // UTILITY Operations
 // ============================================================================
 // Count subscriptions for a specific endpoint (excluding a specific subscription)
-func (q *Queries) CountEndpointSubscriptions(ctx context.Context, arg CountEndpointSubscriptionsParams) (pgtype.Int8, error) {
+func (q *Queries) CountEndpointSubscriptions(ctx context.Context, arg CountEndpointSubscriptionsParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countEndpointSubscriptions, arg.ProjectID, arg.EndpointID, arg.ExcludeSubscriptionID)
-	var count pgtype.Int8
+	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
@@ -62,16 +62,16 @@ WHERE s.deleted_at IS NULL
 `
 
 type CountPrevSubscriptionsParams struct {
-	ProjectID         pgtype.Text
-	Cursor            pgtype.Text
-	HasEndpointFilter pgtype.Bool
+	ProjectID         string
+	Cursor            string
+	HasEndpointFilter bool
 	EndpointIds       []string
-	HasNameFilter     pgtype.Bool
-	NameFilter        pgtype.Text
+	HasNameFilter     bool
+	NameFilter        string
 }
 
 // Unified count query for pagination prev row count
-func (q *Queries) CountPrevSubscriptions(ctx context.Context, arg CountPrevSubscriptionsParams) (pgtype.Int8, error) {
+func (q *Queries) CountPrevSubscriptions(ctx context.Context, arg CountPrevSubscriptionsParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countPrevSubscriptions,
 		arg.ProjectID,
 		arg.Cursor,
@@ -80,7 +80,7 @@ func (q *Queries) CountPrevSubscriptions(ctx context.Context, arg CountPrevSubsc
 		arg.HasNameFilter,
 		arg.NameFilter,
 	)
-	var count pgtype.Int8
+	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
@@ -93,9 +93,9 @@ WHERE s.deleted_at IS NULL
 `
 
 // Count all subscriptions across multiple projects
-func (q *Queries) CountProjectSubscriptions(ctx context.Context, projectIds []string) (pgtype.Int8, error) {
+func (q *Queries) CountProjectSubscriptions(ctx context.Context, projectIds []string) (int64, error) {
 	row := q.db.QueryRow(ctx, countProjectSubscriptions, projectIds)
-	var count pgtype.Int8
+	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
@@ -118,9 +118,13 @@ INSERT INTO convoy.subscriptions (
     filter_config_event_types,
     filter_config_filter_headers,
     filter_config_filter_body,
+    filter_config_filter_query,
+    filter_config_filter_path,
     filter_config_filter_is_flattened,
     filter_config_filter_raw_headers,
     filter_config_filter_raw_body,
+    filter_config_filter_raw_query,
+    filter_config_filter_raw_path,
     rate_limit_config_count,
     rate_limit_config_duration,
     function,
@@ -147,35 +151,43 @@ VALUES (
     $18,
     $19,
     $20,
+    $21,
+    $22,
+    $23,
+    $24,
     CASE
-        WHEN $21 = '' OR $21 IS NULL THEN 'at_least_once'::convoy.delivery_mode
-        ELSE $21::convoy.delivery_mode
+        WHEN $25 = '' OR $25 IS NULL THEN 'at_least_once'::convoy.delivery_mode
+        ELSE $25::convoy.delivery_mode
     END
 )
 `
 
 type CreateSubscriptionParams struct {
-	ID                            pgtype.Text
-	Name                          pgtype.Text
-	Type                          pgtype.Text
-	ProjectID                     pgtype.Text
+	ID                            string
+	Name                          string
+	Type                          string
+	ProjectID                     string
 	EndpointID                    pgtype.Text
 	SourceID                      pgtype.Text
-	AlertConfigCount              pgtype.Int4
-	AlertConfigThreshold          pgtype.Text
-	RetryConfigType               pgtype.Text
-	RetryConfigDuration           pgtype.Int4
-	RetryConfigRetryCount         pgtype.Int4
+	AlertConfigCount              int32
+	AlertConfigThreshold          string
+	RetryConfigType               string
+	RetryConfigDuration           int32
+	RetryConfigRetryCount         int32
 	FilterConfigEventTypes        []string
 	FilterConfigFilterHeaders     []byte
 	FilterConfigFilterBody        []byte
+	FilterConfigFilterQuery       []byte
+	FilterConfigFilterPath        []byte
 	FilterConfigFilterIsFlattened pgtype.Bool
 	FilterConfigFilterRawHeaders  []byte
 	FilterConfigFilterRawBody     []byte
-	RateLimitConfigCount          pgtype.Int4
-	RateLimitConfigDuration       pgtype.Int4
+	FilterConfigFilterRawQuery    []byte
+	FilterConfigFilterRawPath     []byte
+	RateLimitConfigCount          int32
+	RateLimitConfigDuration       int32
 	Function                      pgtype.Text
-	DeliveryMode                  pgtype.Text
+	DeliveryMode                  interface{}
 }
 
 // Subscriptions Queries
@@ -198,9 +210,13 @@ func (q *Queries) CreateSubscription(ctx context.Context, arg CreateSubscription
 		arg.FilterConfigEventTypes,
 		arg.FilterConfigFilterHeaders,
 		arg.FilterConfigFilterBody,
+		arg.FilterConfigFilterQuery,
+		arg.FilterConfigFilterPath,
 		arg.FilterConfigFilterIsFlattened,
 		arg.FilterConfigFilterRawHeaders,
 		arg.FilterConfigFilterRawBody,
+		arg.FilterConfigFilterRawQuery,
+		arg.FilterConfigFilterRawPath,
 		arg.RateLimitConfigCount,
 		arg.RateLimitConfigDuration,
 		arg.Function,
@@ -217,8 +233,8 @@ WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL
 `
 
 type DeleteSubscriptionParams struct {
-	ID        pgtype.Text
-	ProjectID pgtype.Text
+	ID        string
+	ProjectID string
 }
 
 // ============================================================================
@@ -239,7 +255,7 @@ WHERE id IN (
 )
 `
 
-func (q *Queries) DeleteSubscriptionEventTypes(ctx context.Context, subscriptionID pgtype.Text) error {
+func (q *Queries) DeleteSubscriptionEventTypes(ctx context.Context, subscriptionID string) error {
 	_, err := q.db.Exec(ctx, deleteSubscriptionEventTypes, subscriptionID)
 	return err
 }
@@ -264,9 +280,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_raw_headers,
     s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.rate_limit_config_count,
     s.rate_limit_config_duration,
     COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -308,8 +328,8 @@ type FetchCLISubscriptionsRow struct {
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
 	DeliveryMode                    string
-	EndpointID                      pgtype.Text
-	SourceID                        pgtype.Text
+	EndpointID                      string
+	SourceID                        string
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
 	RetryConfigType                 string
@@ -318,37 +338,41 @@ type FetchCLISubscriptionsRow struct {
 	FilterConfigEventTypes          []string
 	FilterConfigFilterRawHeaders    []byte
 	FilterConfigFilterRawBody       []byte
+	FilterConfigFilterRawQuery      []byte
+	FilterConfigFilterRawPath       []byte
 	FilterConfigFilterIsFlattened   pgtype.Bool
 	FilterConfigFilterHeaders       []byte
 	FilterConfigFilterBody          []byte
+	FilterConfigFilterQuery         []byte
+	FilterConfigFilterPath          []byte
 	RateLimitConfigCount            int32
 	RateLimitConfigDuration         int32
-	EndpointMetadataID              pgtype.Text
-	EndpointMetadataName            pgtype.Text
-	EndpointMetadataProjectID       pgtype.Text
-	EndpointMetadataSupportEmail    pgtype.Text
-	EndpointMetadataUrl             pgtype.Text
-	EndpointMetadataStatus          pgtype.Text
-	EndpointMetadataOwnerID         pgtype.Text
+	EndpointMetadataID              string
+	EndpointMetadataName            string
+	EndpointMetadataProjectID       string
+	EndpointMetadataSupportEmail    string
+	EndpointMetadataUrl             string
+	EndpointMetadataStatus          string
+	EndpointMetadataOwnerID         string
 	EndpointMetadataSecrets         []byte
-	SourceMetadataID                pgtype.Text
-	SourceMetadataName              pgtype.Text
-	SourceMetadataType              pgtype.Text
-	SourceMetadataMaskID            pgtype.Text
-	SourceMetadataProjectID         pgtype.Text
-	SourceMetadataIsDisabled        pgtype.Bool
-	SourceVerifierType              pgtype.Text
-	SourceVerifierBasicUsername     pgtype.Text
-	SourceVerifierBasicPassword     pgtype.Text
-	SourceVerifierApiKeyHeaderName  pgtype.Text
-	SourceVerifierApiKeyHeaderValue pgtype.Text
-	SourceVerifierHmacHash          pgtype.Text
-	SourceVerifierHmacHeader        pgtype.Text
-	SourceVerifierHmacSecret        pgtype.Text
-	SourceVerifierHmacEncoding      pgtype.Text
+	SourceMetadataID                string
+	SourceMetadataName              string
+	SourceMetadataType              string
+	SourceMetadataMaskID            string
+	SourceMetadataProjectID         string
+	SourceMetadataIsDisabled        bool
+	SourceVerifierType              string
+	SourceVerifierBasicUsername     string
+	SourceVerifierBasicPassword     string
+	SourceVerifierApiKeyHeaderName  string
+	SourceVerifierApiKeyHeaderValue string
+	SourceVerifierHmacHash          string
+	SourceVerifierHmacHeader        string
+	SourceVerifierHmacSecret        string
+	SourceVerifierHmacEncoding      string
 }
 
-func (q *Queries) FetchCLISubscriptions(ctx context.Context, projectID pgtype.Text) ([]FetchCLISubscriptionsRow, error) {
+func (q *Queries) FetchCLISubscriptions(ctx context.Context, projectID string) ([]FetchCLISubscriptionsRow, error) {
 	rows, err := q.db.Query(ctx, fetchCLISubscriptions, projectID)
 	if err != nil {
 		return nil, err
@@ -376,9 +400,13 @@ func (q *Queries) FetchCLISubscriptions(ctx context.Context, projectID pgtype.Te
 			&i.FilterConfigEventTypes,
 			&i.FilterConfigFilterRawHeaders,
 			&i.FilterConfigFilterRawBody,
+			&i.FilterConfigFilterRawQuery,
+			&i.FilterConfigFilterRawPath,
 			&i.FilterConfigFilterIsFlattened,
 			&i.FilterConfigFilterHeaders,
 			&i.FilterConfigFilterBody,
+			&i.FilterConfigFilterQuery,
+			&i.FilterConfigFilterPath,
 			&i.RateLimitConfigCount,
 			&i.RateLimitConfigDuration,
 			&i.EndpointMetadataID,
@@ -432,7 +460,7 @@ LIMIT $3
 type FetchDeletedSubscriptionsParams struct {
 	SubscriptionIds []string
 	ProjectIds      []string
-	LimitVal        pgtype.Int8
+	LimitVal        int32
 }
 
 type FetchDeletedSubscriptionsRow struct {
@@ -480,9 +508,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_raw_headers,
-    s.filter_config_filter_raw_body
+    s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path
 FROM convoy.subscriptions s
 WHERE s.created_at > $1
     AND ($2::boolean = false OR s.id <> ALL($3::text[]))
@@ -494,10 +526,10 @@ LIMIT $5
 
 type FetchNewSubscriptionsParams struct {
 	LastSyncTime         pgtype.Timestamptz
-	HasKnownIds          pgtype.Bool
+	HasKnownIds          bool
 	KnownSubscriptionIds []string
 	ProjectIds           []string
-	LimitVal             pgtype.Int8
+	LimitVal             int32
 }
 
 type FetchNewSubscriptionsRow struct {
@@ -511,9 +543,13 @@ type FetchNewSubscriptionsRow struct {
 	FilterConfigEventTypes        []string
 	FilterConfigFilterHeaders     []byte
 	FilterConfigFilterBody        []byte
+	FilterConfigFilterQuery       []byte
+	FilterConfigFilterPath        []byte
 	FilterConfigFilterIsFlattened pgtype.Bool
 	FilterConfigFilterRawHeaders  []byte
 	FilterConfigFilterRawBody     []byte
+	FilterConfigFilterRawQuery    []byte
+	FilterConfigFilterRawPath     []byte
 }
 
 // Fetch new subscriptions created after last sync time
@@ -543,9 +579,13 @@ func (q *Queries) FetchNewSubscriptions(ctx context.Context, arg FetchNewSubscri
 			&i.FilterConfigEventTypes,
 			&i.FilterConfigFilterHeaders,
 			&i.FilterConfigFilterBody,
+			&i.FilterConfigFilterQuery,
+			&i.FilterConfigFilterPath,
 			&i.FilterConfigFilterIsFlattened,
 			&i.FilterConfigFilterRawHeaders,
 			&i.FilterConfigFilterRawBody,
+			&i.FilterConfigFilterRawQuery,
+			&i.FilterConfigFilterRawPath,
 		); err != nil {
 			return nil, err
 		}
@@ -578,9 +618,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_raw_headers,
     s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.rate_limit_config_count,
     s.rate_limit_config_duration,
     COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -614,8 +658,8 @@ WHERE s.id = $1 AND s.project_id = $2 AND s.deleted_at IS NULL
 `
 
 type FetchSubscriptionByIDParams struct {
-	ID        pgtype.Text
-	ProjectID pgtype.Text
+	ID        string
+	ProjectID string
 }
 
 type FetchSubscriptionByIDRow struct {
@@ -627,8 +671,8 @@ type FetchSubscriptionByIDRow struct {
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
 	DeliveryMode                    string
-	EndpointID                      pgtype.Text
-	SourceID                        pgtype.Text
+	EndpointID                      string
+	SourceID                        string
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
 	RetryConfigType                 string
@@ -637,34 +681,38 @@ type FetchSubscriptionByIDRow struct {
 	FilterConfigEventTypes          []string
 	FilterConfigFilterRawHeaders    []byte
 	FilterConfigFilterRawBody       []byte
+	FilterConfigFilterRawQuery      []byte
+	FilterConfigFilterRawPath       []byte
 	FilterConfigFilterIsFlattened   pgtype.Bool
 	FilterConfigFilterHeaders       []byte
 	FilterConfigFilterBody          []byte
+	FilterConfigFilterQuery         []byte
+	FilterConfigFilterPath          []byte
 	RateLimitConfigCount            int32
 	RateLimitConfigDuration         int32
-	EndpointMetadataID              pgtype.Text
-	EndpointMetadataName            pgtype.Text
-	EndpointMetadataProjectID       pgtype.Text
-	EndpointMetadataSupportEmail    pgtype.Text
-	EndpointMetadataUrl             pgtype.Text
-	EndpointMetadataStatus          pgtype.Text
-	EndpointMetadataOwnerID         pgtype.Text
+	EndpointMetadataID              string
+	EndpointMetadataName            string
+	EndpointMetadataProjectID       string
+	EndpointMetadataSupportEmail    string
+	EndpointMetadataUrl             string
+	EndpointMetadataStatus          string
+	EndpointMetadataOwnerID         string
 	EndpointMetadataSecrets         []byte
-	SourceMetadataID                pgtype.Text
-	SourceMetadataName              pgtype.Text
-	SourceMetadataType              pgtype.Text
-	SourceMetadataMaskID            pgtype.Text
-	SourceMetadataProjectID         pgtype.Text
-	SourceMetadataIsDisabled        pgtype.Bool
-	SourceVerifierType              pgtype.Text
-	SourceVerifierBasicUsername     pgtype.Text
-	SourceVerifierBasicPassword     pgtype.Text
-	SourceVerifierApiKeyHeaderName  pgtype.Text
-	SourceVerifierApiKeyHeaderValue pgtype.Text
-	SourceVerifierHmacHash          pgtype.Text
-	SourceVerifierHmacHeader        pgtype.Text
-	SourceVerifierHmacSecret        pgtype.Text
-	SourceVerifierHmacEncoding      pgtype.Text
+	SourceMetadataID                string
+	SourceMetadataName              string
+	SourceMetadataType              string
+	SourceMetadataMaskID            string
+	SourceMetadataProjectID         string
+	SourceMetadataIsDisabled        bool
+	SourceVerifierType              string
+	SourceVerifierBasicUsername     string
+	SourceVerifierBasicPassword     string
+	SourceVerifierApiKeyHeaderName  string
+	SourceVerifierApiKeyHeaderValue string
+	SourceVerifierHmacHash          string
+	SourceVerifierHmacHeader        string
+	SourceVerifierHmacSecret        string
+	SourceVerifierHmacEncoding      string
 }
 
 // ============================================================================
@@ -692,9 +740,13 @@ func (q *Queries) FetchSubscriptionByID(ctx context.Context, arg FetchSubscripti
 		&i.FilterConfigEventTypes,
 		&i.FilterConfigFilterRawHeaders,
 		&i.FilterConfigFilterRawBody,
+		&i.FilterConfigFilterRawQuery,
+		&i.FilterConfigFilterRawPath,
 		&i.FilterConfigFilterIsFlattened,
 		&i.FilterConfigFilterHeaders,
 		&i.FilterConfigFilterBody,
+		&i.FilterConfigFilterQuery,
+		&i.FilterConfigFilterPath,
 		&i.RateLimitConfigCount,
 		&i.RateLimitConfigDuration,
 		&i.EndpointMetadataID,
@@ -744,9 +796,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_raw_headers,
     s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.rate_limit_config_count,
     s.rate_limit_config_duration,
     COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -780,7 +836,7 @@ WHERE s.project_id = $1 AND s.endpoint_id = $2 AND s.deleted_at IS NULL
 `
 
 type FetchSubscriptionsByEndpointIDParams struct {
-	ProjectID  pgtype.Text
+	ProjectID  string
 	EndpointID pgtype.Text
 }
 
@@ -793,8 +849,8 @@ type FetchSubscriptionsByEndpointIDRow struct {
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
 	DeliveryMode                    string
-	EndpointID                      pgtype.Text
-	SourceID                        pgtype.Text
+	EndpointID                      string
+	SourceID                        string
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
 	RetryConfigType                 string
@@ -803,34 +859,38 @@ type FetchSubscriptionsByEndpointIDRow struct {
 	FilterConfigEventTypes          []string
 	FilterConfigFilterRawHeaders    []byte
 	FilterConfigFilterRawBody       []byte
+	FilterConfigFilterRawQuery      []byte
+	FilterConfigFilterRawPath       []byte
 	FilterConfigFilterIsFlattened   pgtype.Bool
 	FilterConfigFilterHeaders       []byte
 	FilterConfigFilterBody          []byte
+	FilterConfigFilterQuery         []byte
+	FilterConfigFilterPath          []byte
 	RateLimitConfigCount            int32
 	RateLimitConfigDuration         int32
-	EndpointMetadataID              pgtype.Text
-	EndpointMetadataName            pgtype.Text
-	EndpointMetadataProjectID       pgtype.Text
-	EndpointMetadataSupportEmail    pgtype.Text
-	EndpointMetadataUrl             pgtype.Text
-	EndpointMetadataStatus          pgtype.Text
-	EndpointMetadataOwnerID         pgtype.Text
+	EndpointMetadataID              string
+	EndpointMetadataName            string
+	EndpointMetadataProjectID       string
+	EndpointMetadataSupportEmail    string
+	EndpointMetadataUrl             string
+	EndpointMetadataStatus          string
+	EndpointMetadataOwnerID         string
 	EndpointMetadataSecrets         []byte
-	SourceMetadataID                pgtype.Text
-	SourceMetadataName              pgtype.Text
-	SourceMetadataType              pgtype.Text
-	SourceMetadataMaskID            pgtype.Text
-	SourceMetadataProjectID         pgtype.Text
-	SourceMetadataIsDisabled        pgtype.Bool
-	SourceVerifierType              pgtype.Text
-	SourceVerifierBasicUsername     pgtype.Text
-	SourceVerifierBasicPassword     pgtype.Text
-	SourceVerifierApiKeyHeaderName  pgtype.Text
-	SourceVerifierApiKeyHeaderValue pgtype.Text
-	SourceVerifierHmacHash          pgtype.Text
-	SourceVerifierHmacHeader        pgtype.Text
-	SourceVerifierHmacSecret        pgtype.Text
-	SourceVerifierHmacEncoding      pgtype.Text
+	SourceMetadataID                string
+	SourceMetadataName              string
+	SourceMetadataType              string
+	SourceMetadataMaskID            string
+	SourceMetadataProjectID         string
+	SourceMetadataIsDisabled        bool
+	SourceVerifierType              string
+	SourceVerifierBasicUsername     string
+	SourceVerifierBasicPassword     string
+	SourceVerifierApiKeyHeaderName  string
+	SourceVerifierApiKeyHeaderValue string
+	SourceVerifierHmacHash          string
+	SourceVerifierHmacHeader        string
+	SourceVerifierHmacSecret        string
+	SourceVerifierHmacEncoding      string
 }
 
 func (q *Queries) FetchSubscriptionsByEndpointID(ctx context.Context, arg FetchSubscriptionsByEndpointIDParams) ([]FetchSubscriptionsByEndpointIDRow, error) {
@@ -861,9 +921,13 @@ func (q *Queries) FetchSubscriptionsByEndpointID(ctx context.Context, arg FetchS
 			&i.FilterConfigEventTypes,
 			&i.FilterConfigFilterRawHeaders,
 			&i.FilterConfigFilterRawBody,
+			&i.FilterConfigFilterRawQuery,
+			&i.FilterConfigFilterRawPath,
 			&i.FilterConfigFilterIsFlattened,
 			&i.FilterConfigFilterHeaders,
 			&i.FilterConfigFilterBody,
+			&i.FilterConfigFilterQuery,
+			&i.FilterConfigFilterPath,
 			&i.RateLimitConfigCount,
 			&i.RateLimitConfigDuration,
 			&i.EndpointMetadataID,
@@ -920,9 +984,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_raw_headers,
     s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.rate_limit_config_count,
     s.rate_limit_config_duration,
     COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -956,7 +1024,7 @@ WHERE s.project_id = $1 AND s.source_id = $2 AND s.deleted_at IS NULL
 `
 
 type FetchSubscriptionsBySourceIDParams struct {
-	ProjectID pgtype.Text
+	ProjectID string
 	SourceID  pgtype.Text
 }
 
@@ -969,8 +1037,8 @@ type FetchSubscriptionsBySourceIDRow struct {
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
 	DeliveryMode                    string
-	EndpointID                      pgtype.Text
-	SourceID                        pgtype.Text
+	EndpointID                      string
+	SourceID                        string
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
 	RetryConfigType                 string
@@ -979,34 +1047,38 @@ type FetchSubscriptionsBySourceIDRow struct {
 	FilterConfigEventTypes          []string
 	FilterConfigFilterRawHeaders    []byte
 	FilterConfigFilterRawBody       []byte
+	FilterConfigFilterRawQuery      []byte
+	FilterConfigFilterRawPath       []byte
 	FilterConfigFilterIsFlattened   pgtype.Bool
 	FilterConfigFilterHeaders       []byte
 	FilterConfigFilterBody          []byte
+	FilterConfigFilterQuery         []byte
+	FilterConfigFilterPath          []byte
 	RateLimitConfigCount            int32
 	RateLimitConfigDuration         int32
-	EndpointMetadataID              pgtype.Text
-	EndpointMetadataName            pgtype.Text
-	EndpointMetadataProjectID       pgtype.Text
-	EndpointMetadataSupportEmail    pgtype.Text
-	EndpointMetadataUrl             pgtype.Text
-	EndpointMetadataStatus          pgtype.Text
-	EndpointMetadataOwnerID         pgtype.Text
+	EndpointMetadataID              string
+	EndpointMetadataName            string
+	EndpointMetadataProjectID       string
+	EndpointMetadataSupportEmail    string
+	EndpointMetadataUrl             string
+	EndpointMetadataStatus          string
+	EndpointMetadataOwnerID         string
 	EndpointMetadataSecrets         []byte
-	SourceMetadataID                pgtype.Text
-	SourceMetadataName              pgtype.Text
-	SourceMetadataType              pgtype.Text
-	SourceMetadataMaskID            pgtype.Text
-	SourceMetadataProjectID         pgtype.Text
-	SourceMetadataIsDisabled        pgtype.Bool
-	SourceVerifierType              pgtype.Text
-	SourceVerifierBasicUsername     pgtype.Text
-	SourceVerifierBasicPassword     pgtype.Text
-	SourceVerifierApiKeyHeaderName  pgtype.Text
-	SourceVerifierApiKeyHeaderValue pgtype.Text
-	SourceVerifierHmacHash          pgtype.Text
-	SourceVerifierHmacHeader        pgtype.Text
-	SourceVerifierHmacSecret        pgtype.Text
-	SourceVerifierHmacEncoding      pgtype.Text
+	SourceMetadataID                string
+	SourceMetadataName              string
+	SourceMetadataType              string
+	SourceMetadataMaskID            string
+	SourceMetadataProjectID         string
+	SourceMetadataIsDisabled        bool
+	SourceVerifierType              string
+	SourceVerifierBasicUsername     string
+	SourceVerifierBasicPassword     string
+	SourceVerifierApiKeyHeaderName  string
+	SourceVerifierApiKeyHeaderValue string
+	SourceVerifierHmacHash          string
+	SourceVerifierHmacHeader        string
+	SourceVerifierHmacSecret        string
+	SourceVerifierHmacEncoding      string
 }
 
 func (q *Queries) FetchSubscriptionsBySourceID(ctx context.Context, arg FetchSubscriptionsBySourceIDParams) ([]FetchSubscriptionsBySourceIDRow, error) {
@@ -1037,9 +1109,13 @@ func (q *Queries) FetchSubscriptionsBySourceID(ctx context.Context, arg FetchSub
 			&i.FilterConfigEventTypes,
 			&i.FilterConfigFilterRawHeaders,
 			&i.FilterConfigFilterRawBody,
+			&i.FilterConfigFilterRawQuery,
+			&i.FilterConfigFilterRawPath,
 			&i.FilterConfigFilterIsFlattened,
 			&i.FilterConfigFilterHeaders,
 			&i.FilterConfigFilterBody,
+			&i.FilterConfigFilterQuery,
+			&i.FilterConfigFilterPath,
 			&i.RateLimitConfigCount,
 			&i.RateLimitConfigDuration,
 			&i.EndpointMetadataID,
@@ -1087,9 +1163,11 @@ SELECT
     filter_config_event_types,
     filter_config_filter_headers,
     filter_config_filter_body,
+    filter_config_filter_query,
+    filter_config_filter_path,
     filter_config_filter_is_flattened
 FROM convoy.subscriptions
-WHERE (ARRAY[$1] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)
+WHERE ($1::text = ANY(filter_config_event_types) OR '*' = ANY(filter_config_event_types))
     AND id > $2
     AND project_id = $3
     AND deleted_at IS NULL
@@ -1098,10 +1176,10 @@ LIMIT $4
 `
 
 type FetchSubscriptionsForBroadcastParams struct {
-	EventType pgtype.Text
-	Cursor    pgtype.Text
-	ProjectID pgtype.Text
-	LimitVal  pgtype.Int8
+	EventType string
+	Cursor    string
+	ProjectID string
+	LimitVal  int32
 }
 
 type FetchSubscriptionsForBroadcastRow struct {
@@ -1113,6 +1191,8 @@ type FetchSubscriptionsForBroadcastRow struct {
 	FilterConfigEventTypes        []string
 	FilterConfigFilterHeaders     []byte
 	FilterConfigFilterBody        []byte
+	FilterConfigFilterQuery       []byte
+	FilterConfigFilterPath        []byte
 	FilterConfigFilterIsFlattened pgtype.Bool
 }
 
@@ -1143,6 +1223,8 @@ func (q *Queries) FetchSubscriptionsForBroadcast(ctx context.Context, arg FetchS
 			&i.FilterConfigEventTypes,
 			&i.FilterConfigFilterHeaders,
 			&i.FilterConfigFilterBody,
+			&i.FilterConfigFilterQuery,
+			&i.FilterConfigFilterPath,
 			&i.FilterConfigFilterIsFlattened,
 		); err != nil {
 			return nil, err
@@ -1177,9 +1259,13 @@ WITH filtered_subscriptions AS (
         s.filter_config_event_types,
         s.filter_config_filter_raw_headers,
         s.filter_config_filter_raw_body,
+        s.filter_config_filter_raw_query,
+        s.filter_config_filter_raw_path,
         s.filter_config_filter_is_flattened,
         s.filter_config_filter_headers,
         s.filter_config_filter_body,
+        s.filter_config_filter_query,
+        s.filter_config_filter_path,
         s.rate_limit_config_count,
         s.rate_limit_config_duration,
         COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -1249,8 +1335,10 @@ SELECT
     endpoint_id, source_id, alert_config_count, alert_config_threshold,
     retry_config_type, retry_config_duration, retry_config_retry_count,
     filter_config_event_types, filter_config_filter_raw_headers,
-    filter_config_filter_raw_body, filter_config_filter_is_flattened,
+    filter_config_filter_raw_body, filter_config_filter_raw_query,
+    filter_config_filter_raw_path, filter_config_filter_is_flattened,
     filter_config_filter_headers, filter_config_filter_body,
+    filter_config_filter_query, filter_config_filter_path,
     rate_limit_config_count, rate_limit_config_duration,
     endpoint_metadata_id, endpoint_metadata_name, endpoint_metadata_project_id,
     endpoint_metadata_support_email, endpoint_metadata_url, endpoint_metadata_status,
@@ -1272,14 +1360,14 @@ ORDER BY
 `
 
 type FetchSubscriptionsPaginatedParams struct {
-	Direction         pgtype.Text
-	ProjectID         pgtype.Text
-	Cursor            pgtype.Text
-	HasEndpointFilter pgtype.Bool
+	Direction         string
+	ProjectID         string
+	Cursor            string
+	HasEndpointFilter bool
 	EndpointIds       []string
-	HasNameFilter     pgtype.Bool
-	NameFilter        pgtype.Text
-	LimitVal          pgtype.Int8
+	HasNameFilter     bool
+	NameFilter        string
+	LimitVal          int32
 }
 
 type FetchSubscriptionsPaginatedRow struct {
@@ -1290,9 +1378,9 @@ type FetchSubscriptionsPaginatedRow struct {
 	CreatedAt                       pgtype.Timestamptz
 	UpdatedAt                       pgtype.Timestamptz
 	Function                        pgtype.Text
-	DeliveryMode                    string
-	EndpointID                      pgtype.Text
-	SourceID                        pgtype.Text
+	DeliveryMode                    NullConvoyDeliveryMode
+	EndpointID                      string
+	SourceID                        string
 	AlertConfigCount                int32
 	AlertConfigThreshold            string
 	RetryConfigType                 string
@@ -1301,34 +1389,38 @@ type FetchSubscriptionsPaginatedRow struct {
 	FilterConfigEventTypes          []string
 	FilterConfigFilterRawHeaders    []byte
 	FilterConfigFilterRawBody       []byte
+	FilterConfigFilterRawQuery      []byte
+	FilterConfigFilterRawPath       []byte
 	FilterConfigFilterIsFlattened   pgtype.Bool
 	FilterConfigFilterHeaders       []byte
 	FilterConfigFilterBody          []byte
+	FilterConfigFilterQuery         []byte
+	FilterConfigFilterPath          []byte
 	RateLimitConfigCount            int32
 	RateLimitConfigDuration         int32
-	EndpointMetadataID              pgtype.Text
-	EndpointMetadataName            pgtype.Text
-	EndpointMetadataProjectID       pgtype.Text
-	EndpointMetadataSupportEmail    pgtype.Text
-	EndpointMetadataUrl             pgtype.Text
-	EndpointMetadataStatus          pgtype.Text
-	EndpointMetadataOwnerID         pgtype.Text
+	EndpointMetadataID              string
+	EndpointMetadataName            string
+	EndpointMetadataProjectID       string
+	EndpointMetadataSupportEmail    string
+	EndpointMetadataUrl             string
+	EndpointMetadataStatus          string
+	EndpointMetadataOwnerID         string
 	EndpointMetadataSecrets         []byte
-	SourceMetadataID                pgtype.Text
-	SourceMetadataName              pgtype.Text
-	SourceMetadataType              pgtype.Text
-	SourceMetadataMaskID            pgtype.Text
-	SourceMetadataProjectID         pgtype.Text
-	SourceMetadataIsDisabled        pgtype.Bool
-	SourceVerifierType              pgtype.Text
-	SourceVerifierBasicUsername     pgtype.Text
-	SourceVerifierBasicPassword     pgtype.Text
-	SourceVerifierApiKeyHeaderName  pgtype.Text
-	SourceVerifierApiKeyHeaderValue pgtype.Text
-	SourceVerifierHmacHash          pgtype.Text
-	SourceVerifierHmacHeader        pgtype.Text
-	SourceVerifierHmacSecret        pgtype.Text
-	SourceVerifierHmacEncoding      pgtype.Text
+	SourceMetadataID                string
+	SourceMetadataName              string
+	SourceMetadataType              string
+	SourceMetadataMaskID            string
+	SourceMetadataProjectID         string
+	SourceMetadataIsDisabled        bool
+	SourceVerifierType              string
+	SourceVerifierBasicUsername     string
+	SourceVerifierBasicPassword     string
+	SourceVerifierApiKeyHeaderName  string
+	SourceVerifierApiKeyHeaderValue string
+	SourceVerifierHmacHash          string
+	SourceVerifierHmacHeader        string
+	SourceVerifierHmacSecret        string
+	SourceVerifierHmacEncoding      string
 }
 
 // ============================================================================
@@ -1375,9 +1467,13 @@ func (q *Queries) FetchSubscriptionsPaginated(ctx context.Context, arg FetchSubs
 			&i.FilterConfigEventTypes,
 			&i.FilterConfigFilterRawHeaders,
 			&i.FilterConfigFilterRawBody,
+			&i.FilterConfigFilterRawQuery,
+			&i.FilterConfigFilterRawPath,
 			&i.FilterConfigFilterIsFlattened,
 			&i.FilterConfigFilterHeaders,
 			&i.FilterConfigFilterBody,
+			&i.FilterConfigFilterQuery,
+			&i.FilterConfigFilterPath,
 			&i.RateLimitConfigCount,
 			&i.RateLimitConfigDuration,
 			&i.EndpointMetadataID,
@@ -1421,23 +1517,31 @@ INSERT INTO convoy.filters (
     event_type,
     headers,
     body,
+    query,
+    path,
     raw_headers,
-    raw_body
+    raw_body,
+    raw_query,
+    raw_path
 )
 SELECT
     convoy.generate_ulid()::VARCHAR,
-    id,
+    s.id,
     unnest(filter_config_event_types),
     filter_config_filter_headers,
     filter_config_filter_body,
+    filter_config_filter_query,
+    filter_config_filter_path,
     filter_config_filter_raw_headers,
-    filter_config_filter_raw_body
-FROM convoy.subscriptions
-WHERE id = $1 AND deleted_at IS NULL
+    filter_config_filter_raw_body,
+    filter_config_filter_raw_query,
+    filter_config_filter_raw_path
+FROM convoy.subscriptions s
+WHERE s.id = $1 AND s.deleted_at IS NULL
 ON CONFLICT DO NOTHING
 `
 
-func (q *Queries) InsertSubscriptionEventTypeFilters(ctx context.Context, subscriptionID pgtype.Text) error {
+func (q *Queries) InsertSubscriptionEventTypeFilters(ctx context.Context, subscriptionID string) error {
 	_, err := q.db.Exec(ctx, insertSubscriptionEventTypeFilters, subscriptionID)
 	return err
 }
@@ -1454,6 +1558,8 @@ SELECT
     filter_config_event_types,
     filter_config_filter_headers,
     filter_config_filter_body,
+    filter_config_filter_query,
+    filter_config_filter_path,
     filter_config_filter_is_flattened
 FROM convoy.subscriptions
 WHERE id > $1
@@ -1464,9 +1570,9 @@ LIMIT $3
 `
 
 type LoadAllSubscriptionsConfigurationParams struct {
-	Cursor     pgtype.Text
+	Cursor     string
 	ProjectIds []string
-	LimitVal   pgtype.Int8
+	LimitVal   int32
 }
 
 type LoadAllSubscriptionsConfigurationRow struct {
@@ -1480,6 +1586,8 @@ type LoadAllSubscriptionsConfigurationRow struct {
 	FilterConfigEventTypes        []string
 	FilterConfigFilterHeaders     []byte
 	FilterConfigFilterBody        []byte
+	FilterConfigFilterQuery       []byte
+	FilterConfigFilterPath        []byte
 	FilterConfigFilterIsFlattened pgtype.Bool
 }
 
@@ -1504,6 +1612,8 @@ func (q *Queries) LoadAllSubscriptionsConfiguration(ctx context.Context, arg Loa
 			&i.FilterConfigEventTypes,
 			&i.FilterConfigFilterHeaders,
 			&i.FilterConfigFilterBody,
+			&i.FilterConfigFilterQuery,
+			&i.FilterConfigFilterPath,
 			&i.FilterConfigFilterIsFlattened,
 		); err != nil {
 			return nil, err
@@ -1531,41 +1641,49 @@ SET
     filter_config_event_types = $9,
     filter_config_filter_headers = $10,
     filter_config_filter_body = $11,
-    filter_config_filter_is_flattened = $12,
-    filter_config_filter_raw_headers = $13,
-    filter_config_filter_raw_body = $14,
-    rate_limit_config_count = $15,
-    rate_limit_config_duration = $16,
-    function = $17,
+    filter_config_filter_query = $12,
+    filter_config_filter_path = $13,
+    filter_config_filter_is_flattened = $14,
+    filter_config_filter_raw_headers = $15,
+    filter_config_filter_raw_body = $16,
+    filter_config_filter_raw_query = $17,
+    filter_config_filter_raw_path = $18,
+    rate_limit_config_count = $19,
+    rate_limit_config_duration = $20,
+    function = $21,
     delivery_mode = CASE
-        WHEN $18 = '' OR $18 IS NULL THEN 'at_least_once'::convoy.delivery_mode
-        ELSE $18::convoy.delivery_mode
+        WHEN $22 = '' OR $22 IS NULL THEN 'at_least_once'::convoy.delivery_mode
+        ELSE $22::convoy.delivery_mode
     END,
     updated_at = NOW()
-WHERE id = $19 AND project_id = $20 AND deleted_at IS NULL
+WHERE id = $23 AND project_id = $24 AND deleted_at IS NULL
 `
 
 type UpdateSubscriptionParams struct {
-	Name                          pgtype.Text
+	Name                          string
 	EndpointID                    pgtype.Text
 	SourceID                      pgtype.Text
-	AlertConfigCount              pgtype.Int4
-	AlertConfigThreshold          pgtype.Text
-	RetryConfigType               pgtype.Text
-	RetryConfigDuration           pgtype.Int4
-	RetryConfigRetryCount         pgtype.Int4
+	AlertConfigCount              int32
+	AlertConfigThreshold          string
+	RetryConfigType               string
+	RetryConfigDuration           int32
+	RetryConfigRetryCount         int32
 	FilterConfigEventTypes        []string
 	FilterConfigFilterHeaders     []byte
 	FilterConfigFilterBody        []byte
+	FilterConfigFilterQuery       []byte
+	FilterConfigFilterPath        []byte
 	FilterConfigFilterIsFlattened pgtype.Bool
 	FilterConfigFilterRawHeaders  []byte
 	FilterConfigFilterRawBody     []byte
-	RateLimitConfigCount          pgtype.Int4
-	RateLimitConfigDuration       pgtype.Int4
+	FilterConfigFilterRawQuery    []byte
+	FilterConfigFilterRawPath     []byte
+	RateLimitConfigCount          int32
+	RateLimitConfigDuration       int32
 	Function                      pgtype.Text
-	DeliveryMode                  pgtype.Text
-	ID                            pgtype.Text
-	ProjectID                     pgtype.Text
+	DeliveryMode                  interface{}
+	ID                            string
+	ProjectID                     string
 }
 
 // ============================================================================
@@ -1584,9 +1702,13 @@ func (q *Queries) UpdateSubscription(ctx context.Context, arg UpdateSubscription
 		arg.FilterConfigEventTypes,
 		arg.FilterConfigFilterHeaders,
 		arg.FilterConfigFilterBody,
+		arg.FilterConfigFilterQuery,
+		arg.FilterConfigFilterPath,
 		arg.FilterConfigFilterIsFlattened,
 		arg.FilterConfigFilterRawHeaders,
 		arg.FilterConfigFilterRawBody,
+		arg.FilterConfigFilterRawQuery,
+		arg.FilterConfigFilterRawPath,
 		arg.RateLimitConfigCount,
 		arg.RateLimitConfigDuration,
 		arg.Function,
@@ -1603,9 +1725,9 @@ ON CONFLICT DO NOTHING
 `
 
 type UpsertSubscriptionEventTypesParams struct {
-	ID          pgtype.Text
-	Name        pgtype.Text
-	ProjectID   pgtype.Text
+	ID          string
+	Name        string
+	ProjectID   string
 	Description pgtype.Text
 	Category    pgtype.Text
 }

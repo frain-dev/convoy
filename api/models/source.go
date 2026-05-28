@@ -38,6 +38,10 @@ type CreateSource struct {
 	// identify the event in an incoming webhooks project.
 	IdempotencyKeys []string `json:"idempotency_keys"`
 
+	// EventTypeLocation is used to specify where Convoy should read the event type
+	// from an incoming webhook request.
+	EventTypeLocation string `json:"event_type_location"`
+
 	// Function is a javascript function used to mutate the payload
 	// immediately after ingesting an event
 	BodyFunction *string `json:"body_function"`
@@ -66,6 +70,14 @@ func (cs *CreateSource) Validate() error {
 		return err
 	}
 
+	if err := validateEventTypeLocation(cs.EventTypeLocation); err != nil {
+		return err
+	}
+
+	if err := validateEventTypeLocationVerifierCompatibility(cs.Provider, cs.Verifier.Type, cs.EventTypeLocation); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -80,6 +92,26 @@ func validateSourceVerifier(cfg VerifierConfig) error {
 
 	if cfg.Type == datastore.BasicAuthVerifier && cfg.BasicAuth == nil {
 		return errors.New("invalid verifier config for basic auth")
+	}
+
+	return nil
+}
+
+func validateEventTypeLocationVerifierCompatibility(provider datastore.SourceProvider, verifierType datastore.VerifierType, location string) error {
+	if !datastore.EventTypeLocationUsesRequestMetadata(location) {
+		return nil
+	}
+
+	if datastore.SourceProviderUsesPayloadSignature(provider) {
+		return errors.New("event type location cannot use request headers or query parameters with payload signature verification")
+	}
+
+	return validateEventTypeLocationVerifierTypeCompatibility(verifierType, location)
+}
+
+func validateEventTypeLocationVerifierTypeCompatibility(verifierType datastore.VerifierType, location string) error {
+	if datastore.EventTypeLocationUsesRequestMetadata(location) && datastore.VerifierTypeUsesPayloadSignature(verifierType) {
+		return errors.New("event type location cannot use request headers or query parameters with payload signature verification")
 	}
 
 	return nil
@@ -106,6 +138,43 @@ func validateIdempotencyKeyFormat(input []string) error {
 	}
 
 	return nil
+}
+
+func validateEventTypeLocation(input string) error {
+	if input == "" {
+		return nil
+	}
+
+	parts := strings.SplitN(input, ".", 3)
+	if len(parts) != 3 {
+		return fmt.Errorf("not enough parts set for event type location with value: %s", input)
+	}
+
+	for _, part := range parts {
+		if part != strings.TrimSpace(part) {
+			return fmt.Errorf("unsupported input format for event type location with value: %s", input)
+		}
+	}
+
+	if parts[0] != "request" && parts[0] != "req" {
+		return fmt.Errorf("unsupported input format for event type location with value: %s", input)
+	}
+
+	if parts[2] == "" {
+		return fmt.Errorf("empty selector set for event type location with value: %s", input)
+	}
+
+	switch strings.ToLower(parts[1]) {
+	case "body":
+		return nil
+	case "header", "query", "queryparam":
+		if strings.Contains(parts[2], ".") {
+			return fmt.Errorf("nested selector unsupported for event type location with value: %s", input)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported input format for event type location with value: %s", input)
+	}
 }
 
 func validateSourceForProvider(newSource *CreateSource) error {
@@ -160,6 +229,10 @@ type UpdateSource struct {
 	// identify the event in an incoming webhooks project.
 	IdempotencyKeys []string `json:"idempotency_keys"`
 
+	// EventTypeLocation is used to specify where Convoy should read the event type
+	// from an incoming webhook request.
+	EventTypeLocation *string `json:"event_type_location"`
+
 	// Function is a javascript function used to mutate the payload
 	// immediately after ingesting an event
 	BodyFunction *string `json:"body_function"`
@@ -182,7 +255,17 @@ func (us *UpdateSource) Validate() error {
 		return err
 	}
 
-	return util.Validate(us)
+	if us.EventTypeLocation != nil {
+		if err := validateEventTypeLocation(*us.EventTypeLocation); err != nil {
+			return err
+		}
+
+		if err := validateEventTypeLocationVerifierTypeCompatibility(us.Verifier.Type, *us.EventTypeLocation); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 type QueryListSource struct {

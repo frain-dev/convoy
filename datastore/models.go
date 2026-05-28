@@ -216,6 +216,19 @@ func (s SourceProvider) IsValid() bool {
 	return false
 }
 
+func SourceProviderUsesPayloadSignature(provider SourceProvider) bool {
+	switch provider {
+	case GithubSourceProvider, ShopifySourceProvider, TwitterSourceProvider:
+		return true
+	default:
+		return false
+	}
+}
+
+func VerifierTypeUsesPayloadSignature(verifierType VerifierType) bool {
+	return verifierType == HMacVerifier
+}
+
 func (s SourceType) IsValid() bool {
 	switch s {
 	case HTTPSource, RestApiSource, PubSubSource, DBChangeStream:
@@ -817,6 +830,7 @@ type Event struct {
 	EndpointMetadata EndpointMetadata      `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 	URLQueryParams   string                `json:"url_query_params" db:"url_query_params"`
+	URLPath          string                `json:"url_path" db:"url_path"`
 	IdempotencyKey   string                `json:"idempotency_key" db:"idempotency_key"`
 	IsDuplicateEvent bool                  `json:"is_duplicate_event" db:"is_duplicate_event"`
 
@@ -1209,27 +1223,54 @@ type CustomResponse struct {
 }
 
 type Source struct {
-	UID             string          `json:"uid" db:"id"`
-	ProjectID       string          `json:"project_id" db:"project_id"`
-	MaskID          string          `json:"mask_id" db:"mask_id"`
-	Name            string          `json:"name" db:"name"`
-	URL             string          `json:"url" db:"-"`
-	Type            SourceType      `json:"type" db:"type"`
-	Provider        SourceProvider  `json:"provider" db:"provider"`
-	IsDisabled      bool            `json:"is_disabled" db:"is_disabled"`
-	VerifierID      string          `json:"-" db:"source_verifier_id"`
-	Verifier        *VerifierConfig `json:"verifier" db:"verifier"`
-	CustomResponse  CustomResponse  `json:"custom_response" db:"custom_response"`
-	ProviderConfig  *ProviderConfig `json:"provider_config" db:"provider_config"`
-	ForwardHeaders  pq.StringArray  `json:"forward_headers" db:"forward_headers"`
-	PubSub          *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
-	IdempotencyKeys pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
-	BodyFunction    *string         `json:"body_function" db:"body_function"`
-	HeaderFunction  *string         `json:"header_function" db:"header_function"`
+	UID               string          `json:"uid" db:"id"`
+	ProjectID         string          `json:"project_id" db:"project_id"`
+	MaskID            string          `json:"mask_id" db:"mask_id"`
+	Name              string          `json:"name" db:"name"`
+	URL               string          `json:"url" db:"-"`
+	Type              SourceType      `json:"type" db:"type"`
+	Provider          SourceProvider  `json:"provider" db:"provider"`
+	IsDisabled        bool            `json:"is_disabled" db:"is_disabled"`
+	VerifierID        string          `json:"-" db:"source_verifier_id"`
+	Verifier          *VerifierConfig `json:"verifier" db:"verifier"`
+	CustomResponse    CustomResponse  `json:"custom_response" db:"custom_response"`
+	ProviderConfig    *ProviderConfig `json:"provider_config" db:"provider_config"`
+	ForwardHeaders    pq.StringArray  `json:"forward_headers" db:"forward_headers"`
+	PubSub            *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
+	IdempotencyKeys   pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
+	EventTypeLocation string          `json:"event_type_location" db:"event_type_location"`
+	BodyFunction      *string         `json:"body_function" db:"body_function"`
+	HeaderFunction    *string         `json:"header_function" db:"header_function"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func EventTypeLocationUsesRequestMetadata(location string) bool {
+	parts := strings.SplitN(location, ".", 3)
+	if len(parts) != 3 {
+		return false
+	}
+
+	switch strings.ToLower(parts[1]) {
+	case "header", "query", "queryparam":
+		return true
+	default:
+		return false
+	}
+}
+
+func SourceUsesPayloadSignature(source *Source) bool {
+	if source == nil {
+		return false
+	}
+
+	if SourceProviderUsesPayloadSignature(source.Provider) {
+		return true
+	}
+
+	return source.Verifier != nil && VerifierTypeUsesPayloadSignature(source.Verifier.Type)
 }
 
 type PubSubConfig struct {
@@ -1347,18 +1388,51 @@ type FilterConfiguration struct {
 
 // EventTypeFilter represents a filter configuration for a specific event type within a subscription
 type EventTypeFilter struct {
-	UID            string    `json:"uid" db:"id"`
-	SubscriptionID string    `json:"subscription_id" db:"subscription_id"`
-	EventType      string    `json:"event_type" db:"event_type"`
-	Headers        M         `json:"headers" db:"headers"`
-	Body           M         `json:"body" db:"body"`
-	RawHeaders     M         `json:"raw_headers" db:"raw_headers"`
-	RawBody        M         `json:"raw_body" db:"raw_body"`
-	CreatedAt      time.Time `json:"-" db:"created_at" swaggertype:"string"`
-	UpdatedAt      time.Time `json:"-" db:"updated_at" swaggertype:"string"`
+	UID            string     `json:"uid" db:"id"`
+	SubscriptionID string     `json:"subscription_id" db:"subscription_id"`
+	EventType      string     `json:"event_type" db:"event_type"`
+	EnabledAt      *time.Time `json:"enabled_at" db:"enabled_at" swaggertype:"string"`
+	EnabledAtSet   bool       `json:"-" db:"-"`
+	Headers        M          `json:"headers" db:"headers"`
+	Body           M          `json:"body" db:"body"`
+	Query          M          `json:"query" db:"query"`
+	Path           M          `json:"path" db:"path"`
+	RawHeaders     M          `json:"raw_headers" db:"raw_headers"`
+	RawBody        M          `json:"raw_body" db:"raw_body"`
+	RawQuery       M          `json:"raw_query" db:"raw_query"`
+	RawPath        M          `json:"raw_path" db:"raw_path"`
+	CreatedAt      time.Time  `json:"-" db:"created_at" swaggertype:"string"`
+	UpdatedAt      time.Time  `json:"-" db:"updated_at" swaggertype:"string"`
+}
+
+func (f *EventTypeFilter) IsEnabled() bool {
+	return f != nil && (f.EnabledAt != nil || !f.EnabledAtSet)
 }
 
 type M map[string]interface{}
+
+func HasArrayWildcardSelector(filter M) bool {
+	for key, value := range filter {
+		for _, part := range strings.Split(key, ".") {
+			if part == "$" {
+				return true
+			}
+		}
+
+		switch child := value.(type) {
+		case M:
+			if HasArrayWildcardSelector(child) {
+				return true
+			}
+		case map[string]interface{}:
+			if HasArrayWildcardSelector(M(child)) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
 
 // Flatten is only intended for use for filter body & headers
 // It will modify the calling M map, so use carefully.
@@ -1410,9 +1484,20 @@ type FilterSchema struct {
 	IsFlattened bool `json:"is_flattened" db:"is_flattened"`
 	Headers     M    `json:"headers" db:"headers"`
 	Body        M    `json:"body" db:"body"`
+	Query       M    `json:"query" db:"query"`
+	Path        M    `json:"path" db:"path"`
 
 	RawHeaders M `json:"-" db:"raw_headers"`
 	RawBody    M `json:"-" db:"raw_body"`
+	RawQuery   M `json:"-" db:"raw_query"`
+	RawPath    M `json:"-" db:"raw_path"`
+}
+
+type FilterTestRequest struct {
+	Body    interface{} `json:"body"`
+	Headers M           `json:"headers"`
+	Query   M           `json:"query"`
+	Path    M           `json:"path"`
 }
 
 type ProviderConfig struct {

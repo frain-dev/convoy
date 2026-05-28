@@ -36,15 +36,16 @@ func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error
 	}
 
 	source := &datastore.Source{
-		UID:             ulid.Make().String(),
-		ProjectID:       s.Project.UID,
-		MaskID:          uniuri.NewLen(16),
-		Name:            s.NewSource.Name,
-		Type:            s.NewSource.Type,
-		Provider:        s.NewSource.Provider,
-		Verifier:        s.NewSource.Verifier.Transform(),
-		PubSub:          s.NewSource.PubSub.Transform(),
-		IdempotencyKeys: s.NewSource.IdempotencyKeys,
+		UID:               ulid.Make().String(),
+		ProjectID:         s.Project.UID,
+		MaskID:            uniuri.NewLen(16),
+		Name:              s.NewSource.Name,
+		Type:              s.NewSource.Type,
+		Provider:          s.NewSource.Provider,
+		Verifier:          s.NewSource.Verifier.Transform(),
+		PubSub:            s.NewSource.PubSub.Transform(),
+		IdempotencyKeys:   s.NewSource.IdempotencyKeys,
+		EventTypeLocation: s.NewSource.EventTypeLocation,
 		CustomResponse: datastore.CustomResponse{
 			Body:        s.NewSource.CustomResponse.Body,
 			ContentType: s.NewSource.CustomResponse.ContentType,
@@ -62,6 +63,10 @@ func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error
 
 	if source.Provider == datastore.TwitterSourceProvider {
 		source.ProviderConfig = &datastore.ProviderConfig{Twitter: &datastore.TwitterProviderConfig{}}
+	}
+
+	if datastore.SourceUsesPayloadSignature(source) && datastore.EventTypeLocationUsesRequestMetadata(source.EventTypeLocation) {
+		return nil, &ServiceError{ErrMsg: "event type location cannot use request headers or query parameters with payload signature verification"}
 	}
 
 	err = s.SourceRepo.CreateSource(ctx, source)

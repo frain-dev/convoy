@@ -10,9 +10,9 @@
       }
 
       @if (projectType === 'incoming') {
-        <h3 class="font-semibold text-neutral-12 mt-20px text-14">Create your first source</h3>
+        <h3 class="font-semibold text-neutral-12 mt-20px text-14">{{ sources.length > 0 ? 'Choose a source' : 'Create your first source' }}</h3>
         <p class="text-12 text-neutral-10 mt-6px max-w-[634px]">
-          A source on Convoy represents the providers and services you want to receive events from. On creating a source, you’ll get a unique URL to listen to event into Convoy which can then be routed to any endpoint of choice
+          A source represents the provider or service you want to receive events from. Reuse an existing source to keep its unique ingest URL, or create a new source when you need a separate URL for a new provider.
         </p>
       }
 
@@ -30,14 +30,52 @@
           <hr class="border-new.primary-25 mb-24px" />
         }
 
-        @if (projectType === 'incoming' || connectPubSub) {
+        @if (projectType === 'incoming' && sources.length > 0) {
+          <div class="mb-24px">
+            <div class="flex items-center justify-between mb-12px">
+              <p class="text-12 text-neutral-10">Use existing source</p>
+              <convoy-toggle name="useExistingSource" (onChange)="useExistingSource = !useExistingSource" [isChecked]="useExistingSource"></convoy-toggle>
+            </div>
+            @if (useExistingSource) {
+              <div [formGroup]="reuseForm">
+                <convoy-select label="Source" name="source_id" formControlName="source_id" [options]="sources" (selectedOption)="onSelectExistingSource($event)"></convoy-select>
+                @if (sources.length > 1 && !selectedSourceId) {
+                  <p class="text-12 text-neutral-8 mt-8px">Select the source this subscription should receive events from.</p>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        @if ((projectType === 'incoming' && !useExistingSource) || connectPubSub) {
           <convoy-create-source (onAction)="$event?.action === 'close' ? false : onCreateSource($event.data)"></convoy-create-source>
         }
       </div>
 
-      <h3 class="font-semibold mt-20px order-5 text-14">Create your first endpoint</h3>
-      <p class="text-12 text-neutral-10 mt-6px max-w-[634px] order-6">HTTP Endpoint is the destination of events from your sources. Create an endpoint to receive events from your configured sources.</p>
-      <convoy-create-endpoint class="mb-20px order-7" (onAction)="$event.action === 'close' ? false : onCreateEndpoint($event.data)"></convoy-create-endpoint>
+      <h3 class="font-semibold mt-20px order-5 text-14">{{ endpoints.length > 0 ? 'Choose an endpoint' : 'Create your first endpoint' }}</h3>
+      <p class="text-12 text-neutral-10 mt-6px max-w-[634px] order-6">HTTP Endpoint is the destination of events from your sources. Reuse an existing endpoint when possible, or create a new endpoint for a new destination.</p>
+      <div class="order-7 mb-20px">
+        @if (endpoints.length > 0) {
+          <div convoy-card class="p-24px mb-20px">
+            <div class="flex items-center justify-between mb-12px">
+              <p class="text-12 text-neutral-10">Use existing endpoint</p>
+              <convoy-toggle name="useExistingEndpoint" (onChange)="useExistingEndpoint = !useExistingEndpoint" [isChecked]="useExistingEndpoint"></convoy-toggle>
+            </div>
+            @if (useExistingEndpoint) {
+              <div [formGroup]="reuseForm">
+                <convoy-select label="Endpoint" name="endpoint_id" formControlName="endpoint_id" [options]="endpointOptions" (selectedOption)="onSelectExistingEndpoint($event)"></convoy-select>
+                @if (endpoints.length > 1 && !selectedEndpointId) {
+                  <p class="text-12 text-neutral-8 mt-8px">Select the endpoint that should receive matching events.</p>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        @if (!useExistingEndpoint) {
+          <convoy-create-endpoint (onAction)="$event.action === 'close' ? false : onCreateEndpoint($event.data)"></convoy-create-endpoint>
+        }
+      </div>
 
       <div convoy-card class="p-24px order-8 my-20px">
         <div class="flex items-center justify-between mb-16px" [ngClass]="{ 'mb-16px': !automaticSubscription }">
@@ -45,17 +83,22 @@
           <convoy-toggle name="automaticSubscription" (onChange)="automaticSubscription = !automaticSubscription" [isChecked]="automaticSubscription"></convoy-toggle>
         </div>
 
-        <convoy-create-subscription [ngClass]="{ 'h-0 hidden invisible': automaticSubscription }" (onAction)="projectType === 'incoming' ? sourceURLDialog.showModal() : onProjectOnboardingComplete()"></convoy-create-subscription>
+        <convoy-create-subscription [setupMode]="true" [ngClass]="{ 'h-0 hidden invisible': automaticSubscription }" (onAction)="projectType === 'incoming' ? sourceURLDialog.showModal() : onProjectOnboardingComplete()"></convoy-create-subscription>
       </div>
 
-      <div class="flex justify-end order-11">
-        <button convoy-button fill="outline" type="button" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (click)="cancel()">Cancel</button>
-        <button convoy-button [disabled]="!canSave" (click)="saveProjectConfig()">
-          Save and Proceed
-          <svg width="24" height="24" class="ml-8px fill-white-100">
-            <use xlink:href="#arrow-right-icon"></use>
-          </svg>
-        </button>
+      <div class="order-11">
+        @if (setupSaveHint) {
+          <p class="text-12 text-neutral-8 mb-8px text-right">{{ setupSaveHint }}</p>
+        }
+        <div class="flex justify-end">
+          <button convoy-button fill="outline" type="button" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (click)="cancel()">Cancel</button>
+          <button convoy-button [disabled]="!canSave" (click)="saveProjectConfig()">
+            Save and Proceed
+            <svg width="24" height="24" class="ml-8px fill-white-100">
+              <use xlink:href="#arrow-right-icon"></use>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>

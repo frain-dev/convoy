@@ -104,13 +104,8 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		subscription.FilterConfig.EventTypes = []string{"*"}
 	}
 
-	if len(subscription.FilterConfig.Filter.Body) == 0 && len(subscription.FilterConfig.Filter.Headers) == 0 {
-		subscription.FilterConfig.Filter = datastore.FilterSchema{
-			Headers:    datastore.M{},
-			Body:       datastore.M{},
-			RawHeaders: datastore.M{},
-			RawBody:    datastore.M{},
-		}
+	if !filterSchemaHasConditions(subscription.FilterConfig.Filter) {
+		subscription.FilterConfig.Filter = emptyFilterSchema()
 	} else {
 		// validate that the filter is a json string
 		_, err = json.Marshal(subscription.FilterConfig.Filter)
@@ -155,4 +150,21 @@ func (s *CreateSubscriptionService) findEndpoint(ctx context.Context, appID, end
 	}
 
 	return endpoint, nil
+}
+
+func filterSchemaHasConditions(filter datastore.FilterSchema) bool {
+	return len(filter.Body) > 0 || len(filter.Headers) > 0 || len(filter.Query) > 0 || len(filter.Path) > 0
+}
+
+func emptyFilterSchema() datastore.FilterSchema {
+	return datastore.FilterSchema{
+		Headers:    datastore.M{},
+		Body:       datastore.M{},
+		Query:      datastore.M{},
+		Path:       datastore.M{},
+		RawHeaders: datastore.M{},
+		RawBody:    datastore.M{},
+		RawQuery:   datastore.M{},
+		RawPath:    datastore.M{},
+	}
 }

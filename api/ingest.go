@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -212,18 +213,34 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		payload = []byte("{}")
 	}
 
+	eventType := maskID
+	if !util.IsStringEmpty(source.EventTypeLocation) {
+		if sourceUsesPayloadSignature(source) && eventTypeLocationUsesRequestMetadata(source.EventTypeLocation) {
+			_ = render.Render(w, r, util.NewErrorResponse("event type location cannot use request headers or query parameters with payload signature verification", http.StatusBadRequest))
+			return
+		}
+
+		eventType, err = extractEventTypeFromLocation(r, payload, source.EventTypeLocation)
+		if err != nil {
+			a.A.Logger.Error("Failed to extract event type", "error", err)
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
 	// 3.2 On success
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
 	event := &datastore.Event{
 		UID:              ulid.Make().String(),
-		EventType:        datastore.EventType(maskID),
+		EventType:        datastore.EventType(eventType),
 		SourceID:         source.UID,
 		ProjectID:        source.ProjectID,
 		Raw:              "", // Skip Raw duplication - Data field is canonical (reduces payload size)
 		Data:             payload,
 		IsDuplicateEvent: isDuplicate,
 		URLQueryParams:   r.URL.RawQuery,
+		URLPath:          r.URL.Path,
 		IdempotencyKey:   checksum,
 		Headers:          httpheader.HTTPHeader(r.Header),
 		AcknowledgedAt:   null.TimeFrom(time.Now()),
@@ -318,6 +335,87 @@ func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]
 		// To avoid introducing a breaking change, we are keeping the old behaviour of assuming
 		// the content type is JSON if the content type is not specified/unsupported.
 		return io.ReadAll(io.LimitReader(r.Body, int64(maxIngestSize)))
+	}
+}
+
+func extractEventTypeFromLocation(r *http.Request, payload []byte, location string) (string, error) {
+	parts := strings.SplitN(location, ".", 3)
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid event type location: %s", location)
+	}
+
+	if parts[0] != "request" && parts[0] != "req" {
+		return "", fmt.Errorf("unsupported event type location: %s", location)
+	}
+
+	var value string
+	switch strings.ToLower(parts[1]) {
+	case "header":
+		if strings.Contains(parts[2], ".") {
+			return "", fmt.Errorf("nested selector unsupported for event type location: %s", location)
+		}
+		value = r.Header.Get(parts[2])
+	case "query", "queryparam":
+		if strings.Contains(parts[2], ".") {
+			return "", fmt.Errorf("nested selector unsupported for event type location: %s", location)
+		}
+		value = r.URL.Query().Get(parts[2])
+	case "body":
+		bodyValue, err := valueFromJSONPath(payload, parts[2])
+		if err != nil {
+			return "", err
+		}
+		value = bodyValue
+	default:
+		return "", fmt.Errorf("unsupported event type location: %s", location)
+	}
+
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", fmt.Errorf("event type not found in request at %s", location)
+	}
+
+	return value, nil
+}
+
+func eventTypeLocationUsesRequestMetadata(location string) bool {
+	return datastore.EventTypeLocationUsesRequestMetadata(location)
+}
+
+func sourceUsesPayloadSignature(source *datastore.Source) bool {
+	return datastore.SourceUsesPayloadSignature(source)
+}
+
+func valueFromJSONPath(payload []byte, path string) (string, error) {
+	var body interface{}
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.UseNumber()
+	if err := decoder.Decode(&body); err != nil {
+		return "", fmt.Errorf("failed to read event type from request body: %w", err)
+	}
+
+	current := body
+	for _, key := range strings.Split(path, ".") {
+		object, ok := current.(map[string]interface{})
+		if !ok {
+			return "", fmt.Errorf("event type not found in request body at %s", path)
+		}
+
+		current, ok = object[key]
+		if !ok {
+			return "", fmt.Errorf("event type not found in request body at %s", path)
+		}
+	}
+
+	switch v := current.(type) {
+	case string:
+		return v, nil
+	case json.Number:
+		return v.String(), nil
+	case bool:
+		return fmt.Sprint(v), nil
+	default:
+		return "", fmt.Errorf("event type at request.body.%s must be a scalar value", path)
 	}
 }
 

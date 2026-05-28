@@ -7,10 +7,10 @@
 
 -- name: CreateEvent :exec
 INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id,
-                           headers, raw, data, url_query_params, idempotency_key,
+                           headers, raw, data, url_query_params, url_path, idempotency_key,
                            is_duplicate_event, acknowledged_at, metadata, status)
 VALUES (@id, @event_type, @endpoints, @project_id, @source_id,
-        @headers, @raw, @data, @url_query_params, @idempotency_key,
+        @headers, @raw, @data, @url_query_params, @url_path, @idempotency_key,
         @is_duplicate_event, @acknowledged_at, @metadata, @status);
 
 -- name: CreateEventEndpoint :batchexec
@@ -42,6 +42,7 @@ SELECT ev.id,
        COALESCE(ev.source_id, '')        AS source_id,
        COALESCE(ev.idempotency_key, '')  AS idempotency_key,
        COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
        ev.created_at,
        ev.updated_at,
        ev.acknowledged_at,
@@ -70,6 +71,7 @@ SELECT ev.id,
        COALESCE(ev.source_id, '')        AS source_id,
        COALESCE(ev.idempotency_key, '')  AS idempotency_key,
        COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
        ev.headers,
        ev.raw,
        ev.data,
@@ -105,6 +107,7 @@ SELECT ev.id,
        COALESCE(ev.source_id, '')        AS source_id,
        COALESCE(ev.idempotency_key, '')  AS idempotency_key,
        COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
        ev.created_at,
        ev.updated_at,
        ev.acknowledged_at,
@@ -161,6 +164,7 @@ WITH filtered_events AS (
            ev.created_at,
            COALESCE(ev.idempotency_key, '')  AS idempotency_key,
            COALESCE(ev.url_query_params, '') AS url_query_params,
+           COALESCE(ev.url_path, '')         AS url_path,
            ev.updated_at,
            ev.deleted_at,
            ev.acknowledged_at,
@@ -217,7 +221,7 @@ WITH filtered_events AS (
 )
 -- Outer sort: always the user-requested sort order (re-reverses backward fetches)
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
-       headers, raw, data, created_at, idempotency_key, url_query_params,
+       headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
        updated_at, deleted_at, acknowledged_at, metadata, status,
        "source_metadata.id", "source_metadata.name"
 FROM filtered_events
@@ -242,6 +246,7 @@ WITH events AS (SELECT ev.id,
                        ev.created_at,
                        COALESCE(ev.idempotency_key, '')  AS idempotency_key,
                        COALESCE(ev.url_query_params, '') AS url_query_params,
+                       COALESCE(ev.url_path, '')         AS url_path,
                        ev.updated_at,
                        ev.deleted_at,
                        ev.acknowledged_at,
@@ -295,7 +300,7 @@ WITH events AS (SELECT ev.id,
 )
 -- Outer sort: always the user-requested sort order (re-reverses backward fetches)
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
-       headers, raw, data, created_at, idempotency_key, url_query_params,
+       headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
        updated_at, deleted_at, acknowledged_at, metadata, status,
        "source_metadata.id", "source_metadata.name"
 FROM events

@@ -32,6 +32,8 @@
                   <td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
                   <td convoy-table-cell [forDate]="true"></td>
                   <td convoy-table-cell [forDate]="true"></td>
+                  <td convoy-table-cell [forDate]="true"></td>
+                  <td convoy-table-cell [forDate]="true"></td>
                 </tr>
                 @for (event of eventGroup.content; track $index; let index = $index) {
                   <tr
@@ -53,6 +55,9 @@
                           {{ event.source_metadata.name || 'Rest API' }}
                         </span>
                       </div>
+                    </td>
+                    <td convoy-table-cell>
+                      <div convoy-tag size="sm" [color]="hasMatchedSubscription(event) ? 'success' : 'neutral'">{{ getRouteStatus(event) }}</div>
                     </td>
                     <td convoy-table-cell class="">{{ event.created_at | date : 'mediumTime' }}</td>
                     <td convoy-table-cell class="flex justify-end items-center rounded-r-8px">
@@ -171,7 +176,7 @@
         <!-- event deliveries empty state  -->
         @if (!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents.length) {
           <div class="border-b border-new.primary-25 mb-24px p-24px font-normal pl-0 w-full text-12 text-neutral-10">
-            No event delivery attempt for this event yet.
+            {{ hasMatchedSubscription(eventsDetailsItem) ? 'No event delivery attempt for this event yet.' : 'No matching subscription. This event was accepted but did not match any subscription event type or filter.' }}
           </div>
         }
         <!-- event delieveries -->

@@ -419,6 +419,23 @@
 
     <hr class="border-t border-neutral-4 my-40px" />
 
+    @if (showConfig('event_type_location')) {
+      <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+        <div class="flex justify-between items-end mb-24px">
+          <p class="text-12 font-semibold text-neutral-10 flex items-center">Event Type Location</p>
+          <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Sources|MANAGE" (click)="sourceForm.get('event_type_location')?.patchValue(''); toggleConfigForm('event_type_location')">
+            <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+              <use xlink:href="#delete-icon2"></use>
+            </svg>
+          </button>
+        </div>
+        <convoy-input-field>
+          <label for="event-type-location" convoy-label tooltip="Where Convoy should read the event type from the inbound request. For Stripe-style payloads, use request.body.type. Other examples: request.header.X-Gitlab-Event, request.query.event_type">Location</label>
+          <input type="text" id="event-type-location" convoy-input formControlName="event_type_location" placeholder="request.body.type" />
+        </convoy-input-field>
+      </div>
+    }
+
     @if (showConfig('custom_response')) {
       <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
         <div class="flex justify-between items-center mb-16px">

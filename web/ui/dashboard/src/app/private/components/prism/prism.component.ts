@@ -50,4 +50,5 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 			headers: this.showPayload ? headers : headers.slice(0, 6)
 		};
 	}
+
 }

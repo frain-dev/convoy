@@ -84,6 +84,7 @@ INSERT INTO convoy.sources (
     custom_response_body,
     custom_response_content_type,
     idempotency_keys,
+    event_type_location,
     body_function,
     header_function
 )
@@ -102,7 +103,8 @@ VALUES (
     $12,
     $13,
     $14,
-    $15
+    $15,
+    $16
 )
 `
 
@@ -120,6 +122,7 @@ type CreateSourceParams struct {
 	CustomResponseBody        pgtype.Text
 	CustomResponseContentType pgtype.Text
 	IdempotencyKeys           []string
+	EventTypeLocation         pgtype.Text
 	BodyFunction              pgtype.Text
 	HeaderFunction            pgtype.Text
 }
@@ -139,6 +142,7 @@ func (q *Queries) CreateSource(ctx context.Context, arg CreateSourceParams) erro
 		arg.CustomResponseBody,
 		arg.CustomResponseContentType,
 		arg.IdempotencyKeys,
+		arg.EventTypeLocation,
 		arg.BodyFunction,
 		arg.HeaderFunction,
 	)
@@ -355,6 +359,7 @@ SELECT
     s.is_disabled,
     s.forward_headers,
     s.idempotency_keys,
+    s.event_type_location,
     s.project_id,
     s.body_function,
     s.header_function,
@@ -387,6 +392,7 @@ type FetchSourceByIDRow struct {
 	IsDisabled                bool
 	ForwardHeaders            []string
 	IdempotencyKeys           []string
+	EventTypeLocation         string
 	ProjectID                 string
 	BodyFunction              pgtype.Text
 	HeaderFunction            pgtype.Text
@@ -422,6 +428,7 @@ func (q *Queries) FetchSourceByID(ctx context.Context, id pgtype.Text) (FetchSou
 		&i.IsDisabled,
 		&i.ForwardHeaders,
 		&i.IdempotencyKeys,
+		&i.EventTypeLocation,
 		&i.ProjectID,
 		&i.BodyFunction,
 		&i.HeaderFunction,
@@ -454,6 +461,7 @@ SELECT
     s.is_disabled,
     s.forward_headers,
     s.idempotency_keys,
+    s.event_type_location,
     s.project_id,
     s.body_function,
     s.header_function,
@@ -486,6 +494,7 @@ type FetchSourceByMaskIDRow struct {
 	IsDisabled                bool
 	ForwardHeaders            []string
 	IdempotencyKeys           []string
+	EventTypeLocation         string
 	ProjectID                 string
 	BodyFunction              pgtype.Text
 	HeaderFunction            pgtype.Text
@@ -518,6 +527,7 @@ func (q *Queries) FetchSourceByMaskID(ctx context.Context, maskID pgtype.Text) (
 		&i.IsDisabled,
 		&i.ForwardHeaders,
 		&i.IdempotencyKeys,
+		&i.EventTypeLocation,
 		&i.ProjectID,
 		&i.BodyFunction,
 		&i.HeaderFunction,
@@ -550,6 +560,7 @@ SELECT
     s.is_disabled,
     s.forward_headers,
     s.idempotency_keys,
+    s.event_type_location,
     s.project_id,
     s.body_function,
     s.header_function,
@@ -587,6 +598,7 @@ type FetchSourceByNameRow struct {
 	IsDisabled                bool
 	ForwardHeaders            []string
 	IdempotencyKeys           []string
+	EventTypeLocation         string
 	ProjectID                 string
 	BodyFunction              pgtype.Text
 	HeaderFunction            pgtype.Text
@@ -619,6 +631,7 @@ func (q *Queries) FetchSourceByName(ctx context.Context, arg FetchSourceByNamePa
 		&i.IsDisabled,
 		&i.ForwardHeaders,
 		&i.IdempotencyKeys,
+		&i.EventTypeLocation,
 		&i.ProjectID,
 		&i.BodyFunction,
 		&i.HeaderFunction,
@@ -653,6 +666,7 @@ WITH filtered_sources AS (
         s.is_disabled,
         s.forward_headers,
         s.idempotency_keys,
+        s.event_type_location,
         s.project_id,
         s.body_function,
         s.header_function,
@@ -716,7 +730,7 @@ WITH filtered_sources AS (
 )
 SELECT
     id, name, type, pub_sub, mask_id, provider, is_disabled, forward_headers,
-    idempotency_keys, project_id, body_function, header_function,
+    idempotency_keys, event_type_location, project_id, body_function, header_function,
     source_verifier_id, custom_response_body, custom_response_content_type,
     verifier_type, verifier_basic_username, verifier_basic_password,
     verifier_api_key_header_name, verifier_api_key_header_value,
@@ -755,6 +769,7 @@ type FetchSourcesPaginatedRow struct {
 	IsDisabled                bool
 	ForwardHeaders            []string
 	IdempotencyKeys           []string
+	EventTypeLocation         string
 	ProjectID                 string
 	BodyFunction              pgtype.Text
 	HeaderFunction            pgtype.Text
@@ -812,6 +827,7 @@ func (q *Queries) FetchSourcesPaginated(ctx context.Context, arg FetchSourcesPag
 			&i.IsDisabled,
 			&i.ForwardHeaders,
 			&i.IdempotencyKeys,
+			&i.EventTypeLocation,
 			&i.ProjectID,
 			&i.BodyFunction,
 			&i.HeaderFunction,
@@ -854,10 +870,11 @@ SET
     custom_response_body = $9,
     custom_response_content_type = $10,
     idempotency_keys = $11,
-    body_function = $12,
-    header_function = $13,
+    event_type_location = $12,
+    body_function = $13,
+    header_function = $14,
     updated_at = NOW()
-WHERE id = $14 AND deleted_at IS NULL
+WHERE id = $15 AND deleted_at IS NULL
 `
 
 type UpdateSourceParams struct {
@@ -872,6 +889,7 @@ type UpdateSourceParams struct {
 	CustomResponseBody        pgtype.Text
 	CustomResponseContentType pgtype.Text
 	IdempotencyKeys           []string
+	EventTypeLocation         pgtype.Text
 	BodyFunction              pgtype.Text
 	HeaderFunction            pgtype.Text
 	ID                        pgtype.Text
@@ -890,6 +908,7 @@ func (q *Queries) UpdateSource(ctx context.Context, arg UpdateSourceParams) (pgc
 		arg.CustomResponseBody,
 		arg.CustomResponseContentType,
 		arg.IdempotencyKeys,
+		arg.EventTypeLocation,
 		arg.BodyFunction,
 		arg.HeaderFunction,
 		arg.ID,

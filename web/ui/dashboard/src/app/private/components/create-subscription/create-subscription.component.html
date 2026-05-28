@@ -3,7 +3,7 @@
     <convoy-loader></convoy-loader>
   }
 
-  @if (isPortal === 'false' && showAction === 'true') {
+  @if (isPortal === 'false' && showAction === 'true' && !setupMode) {
     @if (projectType === 'incoming' && !token) {
       <h3 class="font-semibold text-14">Source</h3>
       <p class="text-12 text-neutral-10 mt-6px">Incoming event source this subscription is connected to.</p>
@@ -33,7 +33,7 @@
     }
   }
 
-  @if ((!endpointId && !isUpdateAction) || isPortal === 'false') {
+  @if (((!endpointId && !isUpdateAction) || isPortal === 'false') && !setupMode) {
     <h3 class="font-semibold text-14 mt-40px">Endpoint</h3>
     <p class="text-12 text-neutral-10 mt-6px">Endpoint this subscription routes events into.</p>
     @if (!showCreateEndpointForm) {
@@ -83,7 +83,7 @@
     }
 
     @if (showConfig('events')) {
-      @if (projectType === 'outgoing' || token) {
+      @if (projectType === 'outgoing' || projectType === 'incoming' || token) {
         <div class="border-l-2 border-neutral-3 pl-16px mb-40px">
           <div class="flex justify-between items-end mb-8px">
             <p class="text-12 font-medium text-neutral-9 flex items-center" >
@@ -100,6 +100,7 @@
               </button>
             }
           </div>
+          <p class="text-12 text-neutral-8 mb-12px">Selected event types are delivered by default. Add a filter only when this endpoint should receive a narrower set of matching events.</p>
           <div class="mt-16px">
             @if (!licenseService.hasLicense('AdvancedSubscriptions')) {
               <div convoy-tag size="sm" color="primary">
@@ -111,7 +112,7 @@
             }
             @if (licenseService.hasLicense('AdvancedSubscriptions')) {
               <div>
-                @for (eventType of validEventTypes(); track $index) {
+                @for (eventType of subscriptionEventTypes(); track $index) {
                   <div class="flex items-center justify-between mb-12px border border-neutral-4 p-12px rounded-6px">
                     <div class="flex items-center">
                       <div class="relative mr-12px">
@@ -134,8 +135,11 @@
                           />
                       </div>
                       <label [for]="'event_type_' + eventType.name + '_box'" class="text-12 cursor-pointer">
-                        {{ eventType.name }}
+                        {{ eventTypeDisplayName(eventType.name) }}
                       </label>
+                      @if (hasFilterForEventType(eventType.name)) {
+                        <span class="ml-10px px-8px py-2px rounded-4px bg-primary-25 text-primary-100 text-10 font-medium">{{ getFilterIndicator(eventType.name) }}</span>
+                      }
                     </div>
                     <div class="flex items-center">
                       <button convoy-button
@@ -146,12 +150,12 @@
                         class="mr-8px"
                         (click)="openFilterDialog(eventType.name)"
                         [disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('AdvancedSubscriptions')" >
-                        Edit Filter
+                        {{ hasFilterForEventType(eventType.name) ? 'Edit Filter' : 'Add Filter' }}
                       </button>
                     </div>
                   </div>
                 }
-                @if (eventTypes.length === 0) {
+                @if (subscriptionEventTypes().length === 0) {
                   <p class="text-12 text-neutral-7 italic">No event types available</p>
                 }
               </div>

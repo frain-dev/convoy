@@ -38,6 +38,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	@Input('subscriptionId') subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
 	@Input('endpointId') endpointId: string = this.route.snapshot.queryParams.endpointId;
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
+	@Input('setupMode') setupMode = false;
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
@@ -52,7 +53,9 @@ export class CreateSubscriptionComponent implements OnInit {
 			event_types: [null],
 			filter: this.formBuilder.group({
 				headers: [null],
-				body: [null]
+				body: [null],
+				query: [null],
+				path: [null]
 			})
 		}),
 		eventTypes: this.formBuilder.group({})
@@ -131,11 +134,10 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.isPortal !== 'true' && this.showAction === 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
 
 		if (this.action === 'update' || this.isUpdateAction) await this.getSubscriptionDetails();
-		else {
-			// Initialize selectedEventTypes with valid event types if empty
-			if (this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
-				this.selectedEventTypes = [this.eventTypes[0].name];
-			}
+		else if (!this.setupMode && this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
+			const defaultEventType = this.eventTypes.find(type => type.name === '*')?.name || this.eventTypes[0].name;
+			this.selectedEventTypes = [defaultEventType];
+			this.toggleConfigForm('events', true);
 		}
 
 		// Initialize eventTypes form group if we have selectedEventTypes
@@ -150,41 +152,6 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
 		}
 
-		// For new subscriptions with outgoing project type, initialize with at least one event type
-		if (this.action === 'create' && this.projectType === 'outgoing' && this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
-			this.selectedEventTypes = [this.eventTypes[0].name];
-			const eventTypesControls: Record<string, any> = {
-				'0': this.formBuilder.control(this.eventTypes[0].name)
-			};
-			this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
-			this.toggleConfigForm('events', true);
-		}
-
-		// For new subscriptions with outgoing project type, initialize with at least one event type
-		if (this.action === 'create' && this.projectType === 'outgoing' && this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
-			// Default to the '*' (wildcard) event type for new subscriptions if available
-			const wildcardExists = this.eventTypes.some(type => type.name === '*');
-
-			if (wildcardExists) {
-				console.log('Initializing new subscription with wildcard (*) event type');
-				this.selectedEventTypes = ['*'];
-				const eventTypesControls: Record<string, any> = {
-					'0': this.formBuilder.control('*')
-				};
-				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
-			} else {
-				// Fall back to first event type if wildcard doesn't exist
-				console.log(`Initializing new subscription with first available event type: ${this.eventTypes[0].name}`);
-				this.selectedEventTypes = [this.eventTypes[0].name];
-				const eventTypesControls: Record<string, any> = {
-					'0': this.formBuilder.control(this.eventTypes[0].name)
-				};
-				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
-			}
-
-			this.toggleConfigForm('events', true);
-		}
-
 		// If we have selected event types, make sure to show the event types section
 		if (this.selectedEventTypes.length > 0) {
 			this.toggleConfigForm('events', true);
@@ -196,6 +163,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
+			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 			this.configurations.push({ uid: 'tranform_config', name: 'Transform', show: false });
 		} else {
 			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
@@ -363,8 +331,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getEventTypes() {
-		if (this.privateService.getProjectDetails?.type === 'incoming') return;
-
 		try {
 			const response = await this.privateService.getEventTypes();
 			this.eventTypes = response.data.filter((type: EVENT_TYPE) => !type.deprecated_at);
@@ -418,17 +384,14 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		if (this.subscriptionForm.invalid) return;
 
-		if (this.projectType === 'outgoing' && this.showConfig('events') && Object.keys(this.eventTypesFormGroup.controls).length === 0) return;
-
-		this.toggleFormsLoaders(true);
-
-		// STEP 1: Handle event type selection and ensure mutual exclusivity with wildcard (*)
-
-		// If no event types are selected, use the wildcard
 		if (this.selectedEventTypes.length === 0) {
 			console.log('No event types selected, using wildcard (*)');
 			this.selectedEventTypes = ['*'];
 		}
+
+		this.toggleFormsLoaders(true);
+
+		// STEP 1: Handle event type selection and ensure mutual exclusivity with wildcard (*)
 
 		// Enforce mutual exclusivity between wildcard (*) and specific event types
 		const hasWildcard = this.selectedEventTypes.includes('*');
@@ -437,21 +400,14 @@ export class CreateSubscriptionComponent implements OnInit {
 			// If wildcard is selected, ignore other event types
 			this.selectedEventTypes = ['*'];
 
-			// Also update the filtersMap to include only the wildcard
-			const wildcardFilter = this.filtersMap.get('*');
-			this.filtersMap.clear();
-			if (wildcardFilter) {
-				this.filtersMap.set('*', wildcardFilter);
-			} else {
-				this.filtersMap.set('*', {
-					uid: '', // Will be assigned by backend
-					subscription_id: this.subscriptionId,
-					event_type: '*',
-					headers: {},
-					body: {},
-					is_new: true
+			this.filtersMap.forEach((filter, eventType) => {
+				this.filtersMap.set(eventType, {
+					...filter,
+					enabled_at: eventType === '*' ? filter.enabled_at || this._enabledAtNow() : null,
+					is_modified: true
 				});
-			}
+			});
+			this.filtersMap.set('*', this._enabledFilterForEventType('*'));
 
 			// Sync with filters array
 			this._syncFiltersArrayWithMap();
@@ -488,7 +444,9 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (filterGroup) {
 			filterGroup.patchValue({
 				headers: {},
-				body: {}
+				body: {},
+				query: {},
+				path: {}
 			});
 		}
 
@@ -544,80 +502,6 @@ export class CreateSubscriptionComponent implements OnInit {
 				this.subscriptionId = response.data.uid;
 			}
 
-			// Save filters after subscription is created/updated
-			if (this.filters.length > 0) {
-				try {
-					// Get the existing filters once to avoid multiple API calls
-					const existingFiltersResponse = await this.filterService.getFilters(this.subscriptionId);
-					const existingFiltersContent = existingFiltersResponse.data || [];
-
-					// Create a map of existing filters by event type for easy lookup
-					const existingFiltersByEventType: { [key: string]: any } = {};
-					existingFiltersContent.forEach((filter: any) => {
-						existingFiltersByEventType[filter.event_type] = filter;
-					});
-
-					// Process filters to update - filters with UIDs
-					const filtersToUpdate = this.filters
-						.filter(filter => {
-							// Check if filter has a UID or if there's an existing filter with the same event type
-							return !!filter.uid || existingFiltersByEventType[filter.event_type];
-						})
-						.map(filter => {
-							// If filter has no UID but there's a matching event type, use that existing filter's UID
-							const matchingFilter = filter.uid ? existingFiltersContent.find((f: any) => f.uid === filter.uid) : existingFiltersByEventType[filter.event_type];
-
-							// Only include event_type if it's actually changed
-							const updatePayload: any = {
-								uid: filter.uid || (matchingFilter ? matchingFilter.uid : ''),
-								headers: filter.headers || {},
-								body: filter.body || {}
-							};
-
-							// Only include event_type if it's different from the existing one
-							if (matchingFilter && filter.event_type !== matchingFilter.event_type) {
-								updatePayload.event_type = filter.event_type;
-							}
-
-							return updatePayload;
-						});
-
-					// Extract filters to create (those without UIDs and no matching event type)
-					const filtersToCreate = this.filters
-						.filter(filter => {
-							// Only create if no UID and no existing filter with same event type
-							return !filter.uid && !existingFiltersByEventType[filter.event_type];
-						})
-						.map(filter => ({
-							subscription_id: this.subscriptionId,
-							event_type: filter.event_type,
-							headers: filter.headers || {},
-							body: filter.body || {},
-							raw_headers: filter.raw_headers || {},
-							raw_body: filter.raw_body || {}
-						}));
-
-					console.log('Filters to create:', filtersToCreate);
-					console.log('Filters to update:', filtersToUpdate);
-
-					// Create new filters in bulk if needed
-					if (filtersToCreate.length > 0) {
-						await this.filterService.createFilters(this.subscriptionId, filtersToCreate);
-					}
-
-					// Update existing filters in bulk if needed
-					if (filtersToUpdate.length > 0) {
-						try {
-							await this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate);
-						} catch (error) {
-							console.error('Error calling bulkUpdateFilters:', error);
-						}
-					}
-				} catch (error) {
-					console.error('Error saving filters:', error);
-				}
-			}
-
 			// Save filters after subscription is created/updated (using Map implementation)
 			try {
 				// Get the existing filters once to avoid multiple API calls
@@ -644,7 +528,10 @@ export class CreateSubscriptionComponent implements OnInit {
 						const updatePayload: any = {
 							uid: existingFilter.uid,
 							headers: filter.headers || {},
-							body: filter.body || {}
+							body: filter.body || {},
+							query: filter.query || {},
+							path: filter.path || {},
+							enabled_at: filter.enabled_at ?? null
 						};
 
 						// Only include event_type if it's different from the existing one
@@ -660,8 +547,13 @@ export class CreateSubscriptionComponent implements OnInit {
 							event_type: eventType,
 							headers: filter.headers || {},
 							body: filter.body || {},
+							query: filter.query || {},
+							path: filter.path || {},
+							enabled_at: filter.enabled_at ?? null,
 							raw_headers: filter.raw_headers || {},
-							raw_body: filter.raw_body || {}
+							raw_body: filter.raw_body || {},
+							raw_query: filter.raw_query || {},
+							raw_path: filter.raw_path || {}
 						});
 					}
 				});
@@ -721,8 +613,11 @@ export class CreateSubscriptionComponent implements OnInit {
 			uid: '', // Will be assigned by backend
 			subscription_id: this.subscriptionId,
 			event_type: this.selectedEventType,
+			enabled_at: this.isEventTypeSelected(this.selectedEventType) ? this._enabledAtNow() : null,
 			raw_headers: {},
 			raw_body: {},
+			raw_query: {},
+			raw_path: {},
 			created_at: new Date().toISOString(),
 			updated_at: new Date().toISOString(),
 			is_new: true
@@ -731,8 +626,15 @@ export class CreateSubscriptionComponent implements OnInit {
 		// Update the filter with the new schema data
 		const updatedFilter = {
 			...existingFilter,
+			enabled_at: this.isEventTypeSelected(this.selectedEventType) ? existingFilter.enabled_at || this._enabledAtNow() : null,
 			headers: schema.headerSchema || {},
 			body: schema.bodySchema || {},
+			query: schema.querySchema || {},
+			path: schema.pathSchema || {},
+			raw_headers: schema.headerSchema || {},
+			raw_body: schema.bodySchema || {},
+			raw_query: schema.querySchema || {},
+			raw_path: schema.pathSchema || {},
 			// Mark as modified to help with syncing to the backend
 			is_modified: true
 		};
@@ -747,6 +649,30 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		// Close the filter dialog
 		this.showFilterDialog = false;
+	}
+
+	hasFilterForEventType(eventType: string): boolean {
+		const filter = this.filtersMap.get(eventType);
+		if (!filter) return false;
+
+		const hasBodyFilter = !!filter.body && Object.keys(filter.body).length > 0;
+		const hasHeaderFilter = !!filter.headers && Object.keys(filter.headers).length > 0;
+		const hasQueryFilter = !!filter.query && Object.keys(filter.query).length > 0;
+		const hasPathFilter = !!filter.path && Object.keys(filter.path).length > 0;
+		return hasBodyFilter || hasHeaderFilter || hasQueryFilter || hasPathFilter;
+	}
+
+	getFilterIndicator(eventType: string): string {
+		const filter = this.filtersMap.get(eventType);
+		if (!filter) return '';
+
+		const scopes = [];
+		if (filter.body && Object.keys(filter.body).length > 0) scopes.push('Body');
+		if (filter.headers && Object.keys(filter.headers).length > 0) scopes.push('Headers');
+		if (filter.query && Object.keys(filter.query).length > 0) scopes.push('Query');
+		if (filter.path && Object.keys(filter.path).length > 0) scopes.push('Path');
+
+		return scopes.length ? `${scopes.join(' + ')} filter` : '';
 	}
 
 	getFunction(subscriptionFunction: any) {
@@ -771,7 +697,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.filtersMap.clear();
 			response.data.forEach((filter: FILTER) => {
 				// Use event_type as the key for the map
-				this.filtersMap.set(filter.event_type, { ...filter });
+				this.filtersMap.set(filter.event_type, { ...filter, enabled_at: filter.enabled_at ?? null });
 			});
 			return response;
 		} catch (error) {
@@ -794,8 +720,11 @@ export class CreateSubscriptionComponent implements OnInit {
 				uid: '', // Will be assigned by backend
 				subscription_id: this.subscriptionId,
 				event_type: eventType,
+				enabled_at: this.isEventTypeSelected(eventType) ? this._enabledAtNow() : null,
 				headers: {},
 				body: {},
+				query: {},
+				path: {},
 				is_new: true
 			});
 
@@ -803,6 +732,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			this._syncFiltersArrayWithMap();
 		}
 
+		this.selectedIndex = this.filters.findIndex(item => item.event_type === eventType);
 		this.showFilterDialog = true;
 	}
 
@@ -817,8 +747,14 @@ export class CreateSubscriptionComponent implements OnInit {
 		// Remove from selectedEventTypes array
 		this.selectedEventTypes.splice(index, 1);
 
-		// Remove from the filtersMap
-		this.filtersMap.delete(eventType);
+		const filter = this.filtersMap.get(eventType);
+		if (filter) {
+			this.filtersMap.set(eventType, {
+				...filter,
+				enabled_at: null,
+				is_modified: true
+			});
+		}
 
 		// If we just removed the last event type, and it wasn't a wildcard removal
 		// as part of selecting another event type, add the wildcard as default
@@ -862,6 +798,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			const updatedFilter = {
 				...oldFilter,
 				event_type: newEventType,
+				enabled_at: oldFilter.enabled_at || this._enabledAtNow(),
 				// Mark as new if it doesn't have a UID
 				is_new: !oldFilter.uid,
 				// Mark as modified to help with syncing to the backend
@@ -879,8 +816,11 @@ export class CreateSubscriptionComponent implements OnInit {
 				uid: '', // Will be assigned by backend
 				subscription_id: this.subscriptionId,
 				event_type: newEventType,
+				enabled_at: this._enabledAtNow(),
 				headers: {},
 				body: {},
+				query: {},
+				path: {},
 				is_new: true
 			});
 
@@ -966,15 +906,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			// Add the newly selected event type
 			this.selectedEventTypes.push(eventTypeName);
 
-			// Add a filter for this event type to the map
-			this.filtersMap.set(eventTypeName, {
-				uid: '', // Will be assigned by backend
-				subscription_id: this.subscriptionId,
-				event_type: eventTypeName,
-				headers: {},
-				is_new: true,
-				body: {}
-			});
+			this.filtersMap.set(eventTypeName, this._enabledFilterForEventType(eventTypeName));
 
 			// Sync with filters array for compatibility
 			this._syncFiltersArrayWithMap();
@@ -990,10 +922,54 @@ export class CreateSubscriptionComponent implements OnInit {
 		return this.eventTypes.filter(type => type.name !== '*')
 	}
 
+	subscriptionEventTypes(): EVENT_TYPE[] {
+		const eventTypes = this.validEventTypes();
+		if (this.projectType !== 'incoming' && !this.selectedEventTypes.includes('*') && !this.filtersMap.has('*')) {
+			return eventTypes;
+		}
+
+		const hasWildcard = eventTypes.some(type => type.name === '*');
+		if (hasWildcard) return eventTypes;
+
+		return [
+			{
+				uid: '*',
+				name: '*',
+				description: 'All inbound events',
+				category: 'System'
+			},
+			...eventTypes
+		];
+	}
+
+	eventTypeDisplayName(eventTypeName: string): string {
+		return eventTypeName === '*' ? 'All events (*)' : eventTypeName;
+	}
+
 	// Helper method to sync filters array with filtersMap
 	private _syncFiltersArrayWithMap(): void {
 		// Convert the map values to an array and assign to filters
 		this.filters = Array.from(this.filtersMap.values());
+	}
+
+	private _enabledFilterForEventType(eventType: string): FILTER {
+		const existingFilter = this.filtersMap.get(eventType);
+		return {
+			uid: '', // Will be assigned by backend
+			subscription_id: this.subscriptionId,
+			event_type: eventType,
+			headers: {},
+			body: {},
+			query: {},
+			path: {},
+			is_new: true,
+			...existingFilter,
+			enabled_at: existingFilter?.enabled_at || this._enabledAtNow()
+		};
+	}
+
+	private _enabledAtNow(): string {
+		return new Date().toISOString();
 	}
 
 	protected readonly Number = Number;

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/common"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -26,6 +28,8 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
+
+var errSubscriptionFilterComparisonFailed = errors.New("subscription filter comparison failed")
 
 // OAuth2TokenService is an interface for getting OAuth2 authorization headers.
 type OAuth2TokenService interface {
@@ -494,12 +498,6 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subscriptions = matchedSubs
 		}
-
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, subscriptions, false, logger)
-		if err != nil {
-			logger.Error("error find a matching subscription for this source", "error", err)
-			return subscriptions, &EndpointError{Err: fmt.Errorf("error find a matching subscription for this source: %v", err), delay: defaultDelay}
-		}
 	}
 
 	return subscriptions, nil
@@ -534,6 +532,8 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	}
 
 	headers := e.GetRawHeaders()
+	queryParams := queryParamsToMap(e.URLQueryParams)
+	path := datastore.M{"path": e.URLPath}
 
 	for i := range subscriptions {
 		sub := &subscriptions[i]
@@ -551,7 +551,15 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		}
 
 		// If no specific filter found, try to find a catch-all filter
-		if filter == nil {
+		hadExactFilter := filter != nil
+		if !filter.IsEnabled() {
+			if string(e.EventType) == "*" {
+				if !hadExactFilter {
+					matched = append(matched, *sub)
+				}
+				continue
+			}
+
 			filter, innerErr = filterRepo.FindFilterBySubscriptionAndEventType(ctx, sub.UID, "*")
 			if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() && soft {
 				logger.ErrorContext(ctx, "failed to find catch-all filter", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
@@ -559,11 +567,20 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 			} else if innerErr != nil && !errors.Is(innerErr, datastore.ErrFilterNotFound) {
 				logger.ErrorContext(ctx, "catch-all filter not found", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID)
 				return nil, innerErr
+			} else if errors.Is(innerErr, datastore.ErrFilterNotFound) {
+				if !hadExactFilter {
+					matched = append(matched, *sub)
+				}
+				continue
 			}
 		}
 
-		// If no filter found at all, or filter has no conditions, match the subscription
-		if filter == nil || (len(filter.Body) == 0 && len(filter.Headers) == 0) {
+		if !filter.IsEnabled() {
+			continue
+		}
+
+		// If filter has no conditions, match the subscription
+		if len(filter.Body) == 0 && len(filter.Headers) == 0 && len(filter.Query) == 0 && len(filter.Path) == 0 {
 			matched = append(matched, *sub)
 			logger.DebugContext(ctx, "subscription event type matched passed", "event.id", e.UID, "subscription.id", sub.UID)
 			continue
@@ -578,7 +595,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 			return nil, innerErr
 		}
 
-		isHeaderMatched, innerErr := subRepo.CompareFlattenedPayload(ctx, headers, filter.Headers, true)
+		isHeaderMatched, innerErr := compareFilterScope(ctx, subRepo, headers, filter.Headers)
 		if innerErr != nil && soft {
 			logger.ErrorContext(ctx, "subscription failed to match header", "error", innerErr, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
 			continue
@@ -587,7 +604,25 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 			return nil, innerErr
 		}
 
-		isMatched := isHeaderMatched && isBodyMatched
+		isQueryMatched, innerErr := compareFilterScope(ctx, subRepo, queryParams, filter.Query)
+		if innerErr != nil && soft {
+			logger.ErrorContext(ctx, "subscription failed to match query", "error", errSubscriptionFilterComparisonFailed, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
+			continue
+		} else if innerErr != nil {
+			logger.ErrorContext(ctx, "subscription failed to match query", "error", errSubscriptionFilterComparisonFailed, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
+			return nil, errSubscriptionFilterComparisonFailed
+		}
+
+		isPathMatched, innerErr := compareFilterScope(ctx, subRepo, path, filter.Path)
+		if innerErr != nil && soft {
+			logger.ErrorContext(ctx, "subscription failed to match path", "error", errSubscriptionFilterComparisonFailed, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
+			continue
+		} else if innerErr != nil {
+			logger.ErrorContext(ctx, "subscription failed to match path", "error", errSubscriptionFilterComparisonFailed, "event.id", e.UID, "subscription.id", sub.UID, "soft", soft)
+			return nil, errSubscriptionFilterComparisonFailed
+		}
+
+		isMatched := isHeaderMatched && isBodyMatched && isQueryMatched && isPathMatched
 
 		if isMatched {
 			matched = append(matched, *sub)
@@ -597,6 +632,45 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	}
 
 	return matched, nil
+}
+
+func compareFilterScope(ctx context.Context, subRepo datastore.SubscriptionRepository, payload, filter datastore.M) (bool, error) {
+	if len(filter) == 0 {
+		return true, nil
+	}
+
+	if datastore.HasArrayWildcardSelector(filter) {
+		return false, nil
+	}
+
+	if len(payload) == 0 {
+		return false, nil
+	}
+
+	flatPayload, err := common.FlattenM(payload)
+	if err != nil {
+		return false, err
+	}
+
+	return subRepo.CompareFlattenedPayload(ctx, flatPayload, filter, true)
+}
+
+func queryParamsToMap(rawQuery string) datastore.M {
+	values, err := url.ParseQuery(rawQuery)
+	if err != nil || len(values) == 0 {
+		return datastore.M{}
+	}
+
+	params := datastore.M{}
+	for key, value := range values {
+		if len(value) == 1 {
+			params[key] = value[0]
+			continue
+		}
+		params[key] = value
+	}
+
+	return params
 }
 
 func matchSubscriptions(ctx context.Context, eventType string, subscriptions []datastore.Subscription, filterRepo datastore.FilterRepository) ([]datastore.Subscription, error) {
@@ -609,8 +683,12 @@ func matchSubscriptions(ctx context.Context, eventType string, subscriptions []d
 		}
 
 		// If a specific filter exists, add the subscription
-		if filter != nil {
+		if filter.IsEnabled() {
 			matched = append(matched, sub)
+			continue
+		}
+
+		if eventType == "*" {
 			continue
 		}
 
@@ -621,7 +699,7 @@ func matchSubscriptions(ctx context.Context, eventType string, subscriptions []d
 		}
 
 		// If a catch-all filter exists, add the subscription
-		if filter != nil {
+		if filter.IsEnabled() {
 			matched = append(matched, sub)
 		}
 	}

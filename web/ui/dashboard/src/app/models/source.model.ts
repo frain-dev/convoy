@@ -4,6 +4,7 @@ export interface SOURCE {
 	group_id: string;
 	is_disabled: boolean;
 	idempotency_keys: string[];
+	event_type_location: string;
 	mask_id: string;
 	name: string;
 	type: string;

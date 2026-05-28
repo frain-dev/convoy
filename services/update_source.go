@@ -52,6 +52,10 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 		s.Source.IdempotencyKeys = s.SourceUpdate.IdempotencyKeys
 	}
 
+	if s.SourceUpdate.EventTypeLocation != nil {
+		s.Source.EventTypeLocation = *s.SourceUpdate.EventTypeLocation
+	}
+
 	if s.SourceUpdate.PubSub != nil {
 		s.Source.PubSub = s.SourceUpdate.PubSub.Transform()
 	}
@@ -70,6 +74,10 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 
 	if s.SourceUpdate.HeaderFunction != nil {
 		s.Source.HeaderFunction = s.SourceUpdate.HeaderFunction
+	}
+
+	if datastore.SourceUsesPayloadSignature(s.Source) && datastore.EventTypeLocationUsesRequestMetadata(s.Source.EventTypeLocation) {
+		return nil, &ServiceError{ErrMsg: "event type location cannot use request headers or query parameters with payload signature verification"}
 	}
 
 	err := s.SourceRepo.UpdateSource(ctx, s.Project.UID, s.Source)

@@ -1855,9 +1855,29 @@ definitions:
   models.TestFilterRequest:
     properties:
       payload:
-        description: Sample payload to test against the filter (required)
-    required:
-      - payload
+        description: Sample payload to test against body filter rules. Optional when request scopes are supplied.
+      request:
+        allOf:
+          - $ref: '#/definitions/models.TestFilterRequestScopes'
+        description: Request scopes to test against the filter.
+    type: object
+  models.TestFilterRequestScopes:
+    properties:
+      body: {}
+      header:
+        additionalProperties: true
+        description: Headers accepts either "headers" or "header" for compatibility with the subscription filter tester.
+        type: object
+      headers:
+        additionalProperties: true
+        description: Headers accepts either "headers" or "header" for compatibility with the subscription filter tester.
+        type: object
+      path:
+        additionalProperties: true
+        type: object
+      query:
+        additionalProperties: true
+        type: object
     type: object
   models.TestFilterResponse:
     properties:

@@ -45,6 +45,7 @@ INSERT INTO convoy.sources (
     custom_response_body,
     custom_response_content_type,
     idempotency_keys,
+    event_type_location,
     body_function,
     header_function
 )
@@ -62,6 +63,7 @@ VALUES (
     @custom_response_body,
     @custom_response_content_type,
     @idempotency_keys,
+    @event_type_location,
     @body_function,
     @header_function
 );
@@ -99,6 +101,7 @@ SET
     custom_response_body = @custom_response_body,
     custom_response_content_type = @custom_response_content_type,
     idempotency_keys = @idempotency_keys,
+    event_type_location = @event_type_location,
     body_function = @body_function,
     header_function = @header_function,
     updated_at = NOW()
@@ -119,6 +122,7 @@ SELECT
     s.is_disabled,
     s.forward_headers,
     s.idempotency_keys,
+    s.event_type_location,
     s.project_id,
     s.body_function,
     s.header_function,
@@ -151,6 +155,7 @@ SELECT
     s.is_disabled,
     s.forward_headers,
     s.idempotency_keys,
+    s.event_type_location,
     s.project_id,
     s.body_function,
     s.header_function,
@@ -183,6 +188,7 @@ SELECT
     s.is_disabled,
     s.forward_headers,
     s.idempotency_keys,
+    s.event_type_location,
     s.project_id,
     s.body_function,
     s.header_function,
@@ -224,6 +230,7 @@ WITH filtered_sources AS (
         s.is_disabled,
         s.forward_headers,
         s.idempotency_keys,
+        s.event_type_location,
         s.project_id,
         s.body_function,
         s.header_function,
@@ -288,7 +295,7 @@ WITH filtered_sources AS (
 -- Final select: reverse order for backward pagination to get DESC order
 SELECT
     id, name, type, pub_sub, mask_id, provider, is_disabled, forward_headers,
-    idempotency_keys, project_id, body_function, header_function,
+    idempotency_keys, event_type_location, project_id, body_function, header_function,
     source_verifier_id, custom_response_body, custom_response_content_type,
     verifier_type, verifier_basic_username, verifier_basic_password,
     verifier_api_key_header_name, verifier_api_key_header_value,

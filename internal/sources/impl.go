@@ -160,7 +160,7 @@ func buildVerifierConfig(verifierType, basicUser, basicPass, apiKeyHeader, apiKe
 // rowToSource converts query row to datastore.Source
 func rowToSource(row interface{}) (*datastore.Source, error) {
 	var (
-		id, name, sourceType, maskID, provider, projectID                      string
+		id, name, sourceType, maskID, provider, projectID, eventTypeLocation   string
 		bodyFunction, headerFunction                                           pgtype.Text
 		sourceVerifierID                                                       pgtype.Text
 		customResponseBody, customResponseContentType                          pgtype.Text
@@ -182,6 +182,7 @@ func rowToSource(row interface{}) (*datastore.Source, error) {
 		customResponseBody, customResponseContentType = r.CustomResponseBody, r.CustomResponseContentType
 		isDisabled = r.IsDisabled
 		forwardHeaders, idempotencyKeys = r.ForwardHeaders, r.IdempotencyKeys
+		eventTypeLocation = r.EventTypeLocation
 		pubSub = r.PubSub
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		verifierType = r.VerifierType
@@ -198,6 +199,7 @@ func rowToSource(row interface{}) (*datastore.Source, error) {
 		customResponseBody, customResponseContentType = r.CustomResponseBody, r.CustomResponseContentType
 		isDisabled = r.IsDisabled
 		forwardHeaders, idempotencyKeys = r.ForwardHeaders, r.IdempotencyKeys
+		eventTypeLocation = r.EventTypeLocation
 		pubSub = r.PubSub
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		verifierType = r.VerifierType
@@ -214,6 +216,7 @@ func rowToSource(row interface{}) (*datastore.Source, error) {
 		customResponseBody, customResponseContentType = r.CustomResponseBody, r.CustomResponseContentType
 		isDisabled = r.IsDisabled
 		forwardHeaders, idempotencyKeys = r.ForwardHeaders, r.IdempotencyKeys
+		eventTypeLocation = r.EventTypeLocation
 		pubSub = r.PubSub
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		verifierType = r.VerifierType
@@ -230,6 +233,7 @@ func rowToSource(row interface{}) (*datastore.Source, error) {
 		customResponseBody, customResponseContentType = r.CustomResponseBody, r.CustomResponseContentType
 		isDisabled = r.IsDisabled
 		forwardHeaders, idempotencyKeys = r.ForwardHeaders, r.IdempotencyKeys
+		eventTypeLocation = r.EventTypeLocation
 		pubSub = r.PubSub
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 		verifierType = r.VerifierType
@@ -243,15 +247,16 @@ func rowToSource(row interface{}) (*datastore.Source, error) {
 	}
 
 	source := &datastore.Source{
-		UID:            id,
-		Name:           name,
-		Type:           datastore.SourceType(sourceType),
-		MaskID:         maskID,
-		Provider:       datastore.SourceProvider(provider),
-		IsDisabled:     isDisabled,
-		ForwardHeaders: forwardHeaders,
-		ProjectID:      projectID,
-		PubSub:         pgJSONToPubSub(pubSub),
+		UID:               id,
+		Name:              name,
+		Type:              datastore.SourceType(sourceType),
+		MaskID:            maskID,
+		Provider:          datastore.SourceProvider(provider),
+		IsDisabled:        isDisabled,
+		ForwardHeaders:    forwardHeaders,
+		ProjectID:         projectID,
+		PubSub:            pgJSONToPubSub(pubSub),
+		EventTypeLocation: eventTypeLocation,
 		CustomResponse: datastore.CustomResponse{
 			Body:        customResponseBody.String,
 			ContentType: customResponseContentType.String,
@@ -334,6 +339,7 @@ func (s *Service) CreateSource(ctx context.Context, source *datastore.Source) er
 		CustomResponseBody:        common.StringToPgTextNullable(source.CustomResponse.Body),
 		CustomResponseContentType: common.StringToPgTextNullable(source.CustomResponse.ContentType),
 		IdempotencyKeys:           stringsToPgArray(source.IdempotencyKeys),
+		EventTypeLocation:         common.StringToPgText(source.EventTypeLocation),
 		BodyFunction:              common.StringPtrToPgTextNullable(source.BodyFunction),
 		HeaderFunction:            common.StringPtrToPgTextNullable(source.HeaderFunction),
 	})
@@ -379,6 +385,7 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 		CustomResponseBody:        common.StringToPgTextNullable(source.CustomResponse.Body),
 		CustomResponseContentType: common.StringToPgTextNullable(source.CustomResponse.ContentType),
 		IdempotencyKeys:           stringsToPgArray(source.IdempotencyKeys),
+		EventTypeLocation:         common.StringToPgText(source.EventTypeLocation),
 		BodyFunction:              common.StringPtrToPgTextNullable(source.BodyFunction),
 		HeaderFunction:            common.StringPtrToPgTextNullable(source.HeaderFunction),
 	})

@@ -44,26 +44,29 @@ func New(logger log.Logger, db database.Database) *Service {
 // rowToEventTypeFilter converts SQLc-generated row types to datastore.EventTypeFilter
 func rowToEventTypeFilter(row interface{}) (*datastore.EventTypeFilter, error) {
 	var (
-		id, subscriptionID, eventType      string
-		headers, body, rawHeaders, rawBody []byte
-		createdAt, updatedAt               pgtype.Timestamptz
+		id, subscriptionID, eventType                                      string
+		headers, body, query, path, rawHeaders, rawBody, rawQuery, rawPath []byte
+		enabledAt, createdAt, updatedAt                                    pgtype.Timestamptz
 	)
 
 	switch r := row.(type) {
 	case repo.FindFilterByIDRow:
 		id, subscriptionID, eventType = r.ID, r.SubscriptionID, r.EventType
-		headers, body = r.Headers, r.Body
-		rawHeaders, rawBody = r.RawHeaders, r.RawBody
+		enabledAt = r.EnabledAt
+		headers, body, query, path = r.Headers, r.Body, r.Query, r.Path
+		rawHeaders, rawBody, rawQuery, rawPath = r.RawHeaders, r.RawBody, r.RawQuery, r.RawPath
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 	case repo.FindFiltersBySubscriptionIDRow:
 		id, subscriptionID, eventType = r.ID, r.SubscriptionID, r.EventType
-		headers, body = r.Headers, r.Body
-		rawHeaders, rawBody = r.RawHeaders, r.RawBody
+		enabledAt = r.EnabledAt
+		headers, body, query, path = r.Headers, r.Body, r.Query, r.Path
+		rawHeaders, rawBody, rawQuery, rawPath = r.RawHeaders, r.RawBody, r.RawQuery, r.RawPath
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 	case repo.FindFilterBySubscriptionAndEventTypeRow:
 		id, subscriptionID, eventType = r.ID, r.SubscriptionID, r.EventType
-		headers, body = r.Headers, r.Body
-		rawHeaders, rawBody = r.RawHeaders, r.RawBody
+		enabledAt = r.EnabledAt
+		headers, body, query, path = r.Headers, r.Body, r.Query, r.Path
+		rawHeaders, rawBody, rawQuery, rawPath = r.RawHeaders, r.RawBody, r.RawQuery, r.RawPath
 		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
 	default:
 		return nil, fmt.Errorf("unsupported row type: %T", row)
@@ -79,6 +82,16 @@ func rowToEventTypeFilter(row interface{}) (*datastore.EventTypeFilter, error) {
 		return nil, fmt.Errorf("failed to unmarshal body: %w", err)
 	}
 
+	queryMap, err := common.JSONBToM(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal query: %w", err)
+	}
+
+	pathMap, err := common.JSONBToM(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal path: %w", err)
+	}
+
 	rawHeadersMap, err := common.JSONBToM(rawHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal raw_headers: %w", err)
@@ -89,17 +102,151 @@ func rowToEventTypeFilter(row interface{}) (*datastore.EventTypeFilter, error) {
 		return nil, fmt.Errorf("failed to unmarshal raw_body: %w", err)
 	}
 
+	rawQueryMap, err := common.JSONBToM(rawQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal raw_query: %w", err)
+	}
+
+	rawPathMap, err := common.JSONBToM(rawPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal raw_path: %w", err)
+	}
+
+	var enabledAtTime *time.Time
+	if enabledAt.Valid {
+		enabledAtTime = &enabledAt.Time
+	}
+
 	return &datastore.EventTypeFilter{
 		UID:            id,
 		SubscriptionID: subscriptionID,
 		EventType:      eventType,
+		EnabledAt:      enabledAtTime,
+		EnabledAtSet:   true,
 		Headers:        headersMap,
 		Body:           bodyMap,
+		Query:          queryMap,
+		Path:           pathMap,
 		RawHeaders:     rawHeadersMap,
 		RawBody:        rawBodyMap,
+		RawQuery:       rawQueryMap,
+		RawPath:        rawPathMap,
 		CreatedAt:      createdAt.Time,
 		UpdatedAt:      updatedAt.Time,
 	}, nil
+}
+
+type preparedFilterMaps struct {
+	headers, body, query, path             []byte
+	rawHeaders, rawBody, rawQuery, rawPath []byte
+}
+
+func prepareFilterMaps(filter *datastore.EventTypeFilter) (*preparedFilterMaps, error) {
+	flatBody, err := common.FlattenM(filter.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to flatten body filter: %w", err)
+	}
+
+	flatHeaders, err := common.FlattenM(filter.Headers)
+	if err != nil {
+		return nil, fmt.Errorf("failed to flatten header filter: %w", err)
+	}
+
+	flatQuery, err := common.FlattenM(filter.Query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to flatten query filter: %w", err)
+	}
+
+	flatPath, err := common.FlattenM(filter.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to flatten path filter: %w", err)
+	}
+
+	if err := validateNonBodyFilterScope("header", flatHeaders); err != nil {
+		return nil, err
+	}
+	if err := validateNonBodyFilterScope("query", flatQuery); err != nil {
+		return nil, err
+	}
+	if err := validateNonBodyFilterScope("path", flatPath); err != nil {
+		return nil, err
+	}
+
+	headersJSON, err := common.MToJSONB(flatHeaders)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal headers: %w", err)
+	}
+
+	bodyJSON, err := common.MToJSONB(flatBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal body: %w", err)
+	}
+
+	queryJSON, err := common.MToJSONB(flatQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query: %w", err)
+	}
+
+	pathJSON, err := common.MToJSONB(flatPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal path: %w", err)
+	}
+
+	rawHeadersJSON, err := common.MToJSONB(filter.RawHeaders)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal raw_headers: %w", err)
+	}
+
+	rawBodyJSON, err := common.MToJSONB(filter.RawBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal raw_body: %w", err)
+	}
+
+	rawQueryJSON, err := common.MToJSONB(filter.RawQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal raw_query: %w", err)
+	}
+
+	rawPathJSON, err := common.MToJSONB(filter.RawPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal raw_path: %w", err)
+	}
+
+	filter.Headers = flatHeaders
+	filter.Body = flatBody
+	filter.Query = flatQuery
+	filter.Path = flatPath
+
+	return &preparedFilterMaps{
+		headers: headersJSON, body: bodyJSON, query: queryJSON, path: pathJSON,
+		rawHeaders: rawHeadersJSON, rawBody: rawBodyJSON, rawQuery: rawQueryJSON, rawPath: rawPathJSON,
+	}, nil
+}
+
+func validateNonBodyFilterScope(scope string, filter datastore.M) error {
+	if datastore.HasArrayWildcardSelector(filter) {
+		return fmt.Errorf("array wildcard selectors are unsupported for %s filters", scope)
+	}
+
+	return nil
+}
+
+func setDefaultEnabledAt(filter *datastore.EventTypeFilter) {
+	if filter.EnabledAt != nil || filter.EnabledAtSet {
+		return
+	}
+
+	now := time.Now()
+	filter.EnabledAt = &now
+	filter.EnabledAtSet = true
+}
+
+func timeToPgTimestamptz(t *time.Time) pgtype.Timestamptz {
+	if t == nil {
+		return pgtype.Timestamptz{}
+	}
+
+	return pgtype.Timestamptz{Time: *t, Valid: true}
 }
 
 // ============================================================================
@@ -124,54 +271,28 @@ func (s *Service) CreateFilter(ctx context.Context, filter *datastore.EventTypeF
 	if filter.UpdatedAt.IsZero() {
 		filter.UpdatedAt = time.Now()
 	}
+	setDefaultEnabledAt(filter)
 
-	// Flatten body and headers for matching
-	flatBody, err := common.FlattenM(filter.Body)
+	maps, err := prepareFilterMaps(filter)
 	if err != nil {
-		s.logger.Error("failed to flatten body filter", "error", err)
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten body filter: %w", err))
+		s.logger.Error("failed to prepare filter", "error", err)
+		return util.NewServiceError(http.StatusBadRequest, err)
 	}
-
-	flatHeaders, err := common.FlattenM(filter.Headers)
-	if err != nil {
-		s.logger.Error("failed to flatten header filter", "error", err)
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten header filter: %w", err))
-	}
-
-	// Convert to JSONB
-	headersJSON, err := common.MToJSONB(flatHeaders)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal headers: %w", err))
-	}
-
-	bodyJSON, err := common.MToJSONB(flatBody)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal body: %w", err))
-	}
-
-	rawHeadersJSON, err := common.MToJSONB(filter.RawHeaders)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal raw_headers: %w", err))
-	}
-
-	rawBodyJSON, err := common.MToJSONB(filter.RawBody)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal raw_body: %w", err))
-	}
-
-	// Update the filter with flattened values
-	filter.Headers = flatHeaders
-	filter.Body = flatBody
 
 	// Create filter
 	err = s.repo.CreateFilter(ctx, repo.CreateFilterParams{
 		ID:             common.StringToPgText(filter.UID),
 		SubscriptionID: common.StringToPgText(filter.SubscriptionID),
 		EventType:      common.StringToPgText(filter.EventType),
-		Headers:        headersJSON,
-		Body:           bodyJSON,
-		RawHeaders:     rawHeadersJSON,
-		RawBody:        rawBodyJSON,
+		EnabledAt:      timeToPgTimestamptz(filter.EnabledAt),
+		Headers:        maps.headers,
+		Body:           maps.body,
+		Query:          maps.query,
+		Path:           maps.path,
+		RawHeaders:     maps.rawHeaders,
+		RawBody:        maps.rawBody,
+		RawQuery:       maps.rawQuery,
+		RawPath:        maps.rawPath,
 		CreatedAt:      pgtype.Timestamptz{Time: filter.CreatedAt, Valid: true},
 		UpdatedAt:      pgtype.Timestamptz{Time: filter.UpdatedAt, Valid: true},
 	})
@@ -216,54 +337,28 @@ func (s *Service) CreateFilters(ctx context.Context, filters []datastore.EventTy
 		if filter.UpdatedAt.IsZero() {
 			filter.UpdatedAt = time.Now()
 		}
+		setDefaultEnabledAt(filter)
 
-		// Flatten body and headers for matching
-		flatBody, err := common.FlattenM(filter.Body)
+		maps, err := prepareFilterMaps(filter)
 		if err != nil {
-			s.logger.Error("failed to flatten body filter", "error", err)
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten body filter: %w", err))
+			s.logger.Error("failed to prepare filter", "error", err)
+			return util.NewServiceError(http.StatusBadRequest, err)
 		}
-
-		flatHeaders, err := common.FlattenM(filter.Headers)
-		if err != nil {
-			s.logger.Error("failed to flatten header filter", "error", err)
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten header filter: %w", err))
-		}
-
-		// Convert to JSONB
-		headersJSON, err := common.MToJSONB(flatHeaders)
-		if err != nil {
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal headers: %w", err))
-		}
-
-		bodyJSON, err := common.MToJSONB(flatBody)
-		if err != nil {
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal body: %w", err))
-		}
-
-		rawHeadersJSON, err := common.MToJSONB(filter.RawHeaders)
-		if err != nil {
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal raw_headers: %w", err))
-		}
-
-		rawBodyJSON, err := common.MToJSONB(filter.RawBody)
-		if err != nil {
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal raw_body: %w", err))
-		}
-
-		// Update the filter with flattened values
-		filter.Headers = flatHeaders
-		filter.Body = flatBody
 
 		// Create filter
 		err = qtx.CreateFilter(ctx, repo.CreateFilterParams{
 			ID:             common.StringToPgText(filter.UID),
 			SubscriptionID: common.StringToPgText(filter.SubscriptionID),
 			EventType:      common.StringToPgText(filter.EventType),
-			Headers:        headersJSON,
-			Body:           bodyJSON,
-			RawHeaders:     rawHeadersJSON,
-			RawBody:        rawBodyJSON,
+			EnabledAt:      timeToPgTimestamptz(filter.EnabledAt),
+			Headers:        maps.headers,
+			Body:           maps.body,
+			Query:          maps.query,
+			Path:           maps.path,
+			RawHeaders:     maps.rawHeaders,
+			RawBody:        maps.rawBody,
+			RawQuery:       maps.rawQuery,
+			RawPath:        maps.rawPath,
 			CreatedAt:      pgtype.Timestamptz{Time: filter.CreatedAt, Valid: true},
 			UpdatedAt:      pgtype.Timestamptz{Time: filter.UpdatedAt, Valid: true},
 		})
@@ -289,51 +384,24 @@ func (s *Service) UpdateFilter(ctx context.Context, filter *datastore.EventTypeF
 		return util.NewServiceError(http.StatusBadRequest, errors.New("filter cannot be nil"))
 	}
 
-	// Flatten body and headers for matching
-	flatBody, err := common.FlattenM(filter.Body)
+	maps, err := prepareFilterMaps(filter)
 	if err != nil {
-		s.logger.Error("failed to flatten body filter", "error", err)
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten body filter: %w", err))
+		s.logger.Error("failed to prepare filter", "error", err)
+		return util.NewServiceError(http.StatusBadRequest, err)
 	}
-
-	flatHeaders, err := common.FlattenM(filter.Headers)
-	if err != nil {
-		s.logger.Error("failed to flatten header filter", "error", err)
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten header filter: %w", err))
-	}
-
-	// Convert to JSONB
-	headersJSON, err := common.MToJSONB(flatHeaders)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal headers: %w", err))
-	}
-
-	bodyJSON, err := common.MToJSONB(flatBody)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal body: %w", err))
-	}
-
-	rawHeadersJSON, err := common.MToJSONB(filter.RawHeaders)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal raw_headers: %w", err))
-	}
-
-	rawBodyJSON, err := common.MToJSONB(filter.RawBody)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal raw_body: %w", err))
-	}
-
-	// Update the filter with flattened values
-	filter.Headers = flatHeaders
-	filter.Body = flatBody
 
 	// Update filter
 	rowsAffected, err := s.repo.UpdateFilter(ctx, repo.UpdateFilterParams{
 		ID:         common.StringToPgText(filter.UID),
-		Headers:    headersJSON,
-		Body:       bodyJSON,
-		RawHeaders: rawHeadersJSON,
-		RawBody:    rawBodyJSON,
+		EnabledAt:  timeToPgTimestamptz(filter.EnabledAt),
+		Headers:    maps.headers,
+		Body:       maps.body,
+		Query:      maps.query,
+		Path:       maps.path,
+		RawHeaders: maps.rawHeaders,
+		RawBody:    maps.rawBody,
+		RawQuery:   maps.rawQuery,
+		RawPath:    maps.rawPath,
 		EventType:  common.StringToPgText(filter.EventType),
 		UpdatedAt:  pgtype.Timestamptz{Time: time.Now(), Valid: true},
 	})
@@ -370,52 +438,26 @@ func (s *Service) UpdateFilters(ctx context.Context, filters []datastore.EventTy
 	for i := range filters {
 		filter := &filters[i]
 
-		// Flatten body and headers for matching
-		flatBody, err := common.FlattenM(filter.Body)
+		maps, err := prepareFilterMaps(filter)
 		if err != nil {
-			s.logger.Error("failed to flatten body filter", "error", err)
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten body filter: %w", err))
+			s.logger.Error("failed to prepare filter", "error", err)
+			return util.NewServiceError(http.StatusBadRequest, err)
 		}
 
-		flatHeaders, err := common.FlattenM(filter.Headers)
-		if err != nil {
-			s.logger.Error("failed to flatten header filter", "error", err)
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to flatten header filter: %w", err))
-		}
-
-		// Convert to JSONB
-		headersJSON, err := common.MToJSONB(flatHeaders)
-		if err != nil {
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal headers: %w", err))
-		}
-
-		bodyJSON, err := common.MToJSONB(flatBody)
-		if err != nil {
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal body: %w", err))
-		}
-
-		rawHeadersJSON, err := common.MToJSONB(filter.RawHeaders)
-		if err != nil {
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal raw_headers: %w", err))
-		}
-
-		rawBodyJSON, err := common.MToJSONB(filter.RawBody)
-		if err != nil {
-			return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("failed to marshal raw_body: %w", err))
-		}
-
-		// Update the filter with flattened values
-		filter.Headers = flatHeaders
-		filter.Body = flatBody
 		filter.UpdatedAt = time.Now()
 
 		// Update filter
 		rowsAffected, err := qtx.UpdateFilter(ctx, repo.UpdateFilterParams{
 			ID:         common.StringToPgText(filter.UID),
-			Headers:    headersJSON,
-			Body:       bodyJSON,
-			RawHeaders: rawHeadersJSON,
-			RawBody:    rawBodyJSON,
+			EnabledAt:  timeToPgTimestamptz(filter.EnabledAt),
+			Headers:    maps.headers,
+			Body:       maps.body,
+			Query:      maps.query,
+			Path:       maps.path,
+			RawHeaders: maps.rawHeaders,
+			RawBody:    maps.rawBody,
+			RawQuery:   maps.rawQuery,
+			RawPath:    maps.rawPath,
 			EventType:  common.StringToPgText(filter.EventType),
 			UpdatedAt:  pgtype.Timestamptz{Time: filter.UpdatedAt, Valid: true},
 		})
@@ -518,37 +560,134 @@ func (s *Service) FindFilterBySubscriptionAndEventType(ctx context.Context, subs
 	return filter, nil
 }
 
-// TestFilter tests if a payload matches a filter
+// TestFilter tests if a request matches a filter
 func (s *Service) TestFilter(ctx context.Context, subscriptionID, eventType string, payload any) (bool, error) {
-	// Try to find the filter for the specific event type
-	filter, err := s.FindFilterBySubscriptionAndEventType(ctx, subscriptionID, eventType)
+	filter, hasInactiveFilter, err := s.findFilterForEventType(ctx, subscriptionID, eventType)
 	if err != nil {
-		if errors.Is(err, datastore.ErrFilterNotFound) {
-			// If no filter exists for this event type, check for a catch-all filter
-			filter, err = s.FindFilterBySubscriptionAndEventType(ctx, subscriptionID, "*")
-			if err != nil {
-				if errors.Is(err, datastore.ErrFilterNotFound) {
-					// No filtering, so it matches
-					return true, nil
-				}
-				return false, err
-			}
-		} else {
-			return false, err
-		}
+		return false, err
 	}
-
-	// Empty filter means it matches everything
-	if len(filter.Body) == 0 {
+	if filter == nil {
+		if hasInactiveFilter {
+			return false, nil
+		}
+		// No filtering, so it matches.
 		return true, nil
 	}
 
-	// Flatten the payload for comparison
+	// Empty filter means it matches everything
+	if len(filter.Body) == 0 && len(filter.Headers) == 0 && len(filter.Query) == 0 && len(filter.Path) == 0 {
+		return true, nil
+	}
+
+	req := normalizeFilterTestRequest(payload)
+	return matchStoredFilter(req, filter)
+}
+
+func (s *Service) findFilterForEventType(ctx context.Context, subscriptionID, eventType string) (*datastore.EventTypeFilter, bool, error) {
+	exactFilter, exactFilterExists, err := s.findFilter(ctx, subscriptionID, eventType)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if exactFilterExists && exactFilter.IsEnabled() {
+		return exactFilter, false, nil
+	}
+
+	if eventType == "*" {
+		return nil, exactFilterExists, nil
+	}
+
+	wildcardFilter, wildcardFilterExists, err := s.findFilter(ctx, subscriptionID, "*")
+	if err != nil {
+		return nil, false, err
+	}
+
+	if wildcardFilterExists && wildcardFilter.IsEnabled() {
+		return wildcardFilter, false, nil
+	}
+
+	return nil, exactFilterExists || wildcardFilterExists, nil
+}
+
+func (s *Service) findFilter(ctx context.Context, subscriptionID, eventType string) (*datastore.EventTypeFilter, bool, error) {
+	filter, err := s.FindFilterBySubscriptionAndEventType(ctx, subscriptionID, eventType)
+	if err != nil {
+		if errors.Is(err, datastore.ErrFilterNotFound) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+
+	return filter, true, nil
+}
+
+func normalizeFilterTestRequest(payload any) datastore.FilterTestRequest {
+	switch v := payload.(type) {
+	case datastore.FilterTestRequest:
+		return v
+	case *datastore.FilterTestRequest:
+		if v == nil {
+			return datastore.FilterTestRequest{}
+		}
+		return *v
+	default:
+		return datastore.FilterTestRequest{Body: payload}
+	}
+}
+
+func matchStoredFilter(req datastore.FilterTestRequest, filter *datastore.EventTypeFilter) (bool, error) {
+	isBodyMatched, err := compareStoredFilterBody(req.Body, filter.Body)
+	if err != nil || !isBodyMatched {
+		return isBodyMatched, err
+	}
+
+	isHeaderMatched, err := compareStoredFilterScope(req.Headers, filter.Headers)
+	if err != nil || !isHeaderMatched {
+		return isHeaderMatched, err
+	}
+
+	isQueryMatched, err := compareStoredFilterScope(req.Query, filter.Query)
+	if err != nil || !isQueryMatched {
+		return isQueryMatched, err
+	}
+
+	return compareStoredFilterScope(req.Path, filter.Path)
+}
+
+func compareStoredFilterBody(payload any, filter datastore.M) (bool, error) {
+	if len(filter) == 0 {
+		return true, nil
+	}
+
+	if payload == nil {
+		return false, nil
+	}
+
 	p, err := flatten.Flatten(payload)
 	if err != nil {
 		return false, err
 	}
 
-	// Compare flattened payload against filter body
-	return compare.Compare(p, filter.Body)
+	return compare.Compare(p, filter)
+}
+
+func compareStoredFilterScope(payload, filter datastore.M) (bool, error) {
+	if len(filter) == 0 {
+		return true, nil
+	}
+
+	if datastore.HasArrayWildcardSelector(filter) {
+		return false, nil
+	}
+
+	if len(payload) == 0 {
+		return false, nil
+	}
+
+	flatPayload, err := common.FlattenM(payload)
+	if err != nil {
+		return false, err
+	}
+
+	return compare.Compare(flatPayload, filter)
 }
