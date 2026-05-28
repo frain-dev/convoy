@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -161,4 +162,54 @@ func TestUpdateSubscriptionService_Run(t *testing.T) {
 			require.Equal(t, subscription.Type, tc.wantSubscription.Type)
 		})
 	}
+}
+
+func TestUpdateSubscriptionService_PreservesQueryAndPathFilterConfig(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	update := &models.UpdateSubscription{
+		FilterConfig: &models.FilterConfiguration{
+			EventTypes: []string{"*"},
+			Filter: models.FS{
+				Query: datastore.M{"event_type": "push"},
+				Path:  datastore.M{"path": "/ingest/source-id"},
+			},
+		},
+	}
+
+	ss := provideUpdateSubscriptionService(ctrl, "12345", "sub-uid-1", update)
+
+	ss.SubRepo.(*mocks.MockSubscriptionRepository).EXPECT().
+		FindSubscriptionByID(gomock.Any(), "12345", "sub-uid-1").
+		Return(&datastore.Subscription{
+			UID: "sub-uid-1",
+			FilterConfig: &datastore.FilterConfiguration{
+				EventTypes: []string{"*"},
+				Filter:     datastore.FilterSchema{},
+			},
+		}, nil)
+
+	ss.ProjectRepo.(*mocks.MockProjectRepository).EXPECT().
+		FetchProjectByID(gomock.Any(), "12345").
+		Return(&datastore.Project{UID: "12345", Type: datastore.OutgoingProject}, nil)
+
+	ss.Licenser.(*mocks.MockLicenser).EXPECT().AdvancedSubscriptions().Times(1).Return(true)
+
+	ss.SubRepo.(*mocks.MockSubscriptionRepository).EXPECT().
+		UpdateSubscription(gomock.Any(), "12345", gomock.Cond(func(x any) bool {
+			sub := x.(*datastore.Subscription)
+			return reflect.DeepEqual(sub.FilterConfig.Filter.Query, datastore.M{"event_type": "push"}) &&
+				reflect.DeepEqual(sub.FilterConfig.Filter.Path, datastore.M{"path": "/ingest/source-id"}) &&
+				reflect.DeepEqual(sub.FilterConfig.Filter.RawQuery, datastore.M{"event_type": "push"}) &&
+				reflect.DeepEqual(sub.FilterConfig.Filter.RawPath, datastore.M{"path": "/ingest/source-id"})
+		})).
+		Return(nil)
+
+	subscription, err := ss.Run(ctx)
+
+	require.NoError(t, err)
+	require.Equal(t, datastore.M{"event_type": "push"}, subscription.FilterConfig.Filter.Query)
+	require.Equal(t, datastore.M{"path": "/ingest/source-id"}, subscription.FilterConfig.Filter.Path)
 }

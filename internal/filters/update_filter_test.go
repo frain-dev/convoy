@@ -110,6 +110,7 @@ func TestUpdateFilters_BulkUpdate(t *testing.T) {
 	}
 	err := service.CreateFilters(ctx, filters)
 	require.NoError(t, err)
+	originalEnabledAt := filters[0].EnabledAt
 
 	// Update filters
 	for i := range filters {
@@ -129,5 +130,10 @@ func TestUpdateFilters_BulkUpdate(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, updated.Headers)
 		require.NotNil(t, updated.Body)
+		require.NotNil(t, updated.EnabledAt)
 	}
+
+	updated, err := service.FindFilterByID(ctx, filters[0].UID)
+	require.NoError(t, err)
+	require.WithinDuration(t, *originalEnabledAt, *updated.EnabledAt, 0)
 }

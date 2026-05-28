@@ -99,10 +99,16 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 		UID:            ulid.Make().String(),
 		SubscriptionID: subscriptionID,
 		EventType:      newFilter.EventType,
+		EnabledAt:      enabledAtOrDefault(newFilter.EnabledAt),
+		EnabledAtSet:   true,
 		Headers:        newFilter.Headers,
 		Body:           newFilter.Body,
-		RawHeaders:     newFilter.Headers,
-		RawBody:        newFilter.Body,
+		Query:          newFilter.Query,
+		Path:           newFilter.Path,
+		RawHeaders:     models.CloneFilterMap(newFilter.Headers),
+		RawBody:        models.CloneFilterMap(newFilter.Body),
+		RawQuery:       models.CloneFilterMap(newFilter.Query),
+		RawPath:        models.CloneFilterMap(newFilter.Path),
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -228,8 +234,16 @@ func (h *Handler) GetFilters(w http.ResponseWriter, r *http.Request) {
 			UID:            filter.UID,
 			SubscriptionID: filter.SubscriptionID,
 			EventType:      filter.EventType,
+			EnabledAt:      filter.EnabledAt,
+			EnabledAtSet:   true,
 			Headers:        filter.Headers,
 			Body:           filter.Body,
+			Query:          filter.Query,
+			Path:           filter.Path,
+			RawHeaders:     filter.RawHeaders,
+			RawBody:        filter.RawBody,
+			RawQuery:       filter.RawQuery,
+			RawPath:        filter.RawPath,
 			CreatedAt:      filter.CreatedAt,
 			UpdatedAt:      filter.UpdatedAt,
 		})
@@ -296,18 +310,6 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check if the event-type exists in the project
-	exists, err := eventTypeRepo.CheckEventTypeExists(r.Context(), updateFilter.EventType, project.UID)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
-		return
-	}
-
-	if !exists {
-		_ = render.Render(w, r, util.NewErrorResponse("event type does not exist", http.StatusNotFound))
-		return
-	}
-
 	// Get the filter
 	filter, err := filterRepo.FindFilterByID(r.Context(), filterID)
 	if err != nil {
@@ -327,6 +329,17 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 
 	// If event-type is being changed, check if a filter with the new event type already exists
 	if updateFilter.EventType != "" && updateFilter.EventType != filter.EventType {
+		exists, innerErr := eventTypeRepo.CheckEventTypeExists(r.Context(), updateFilter.EventType, project.UID)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(innerErr.Error(), http.StatusNotFound))
+			return
+		}
+
+		if !exists {
+			_ = render.Render(w, r, util.NewErrorResponse("event type does not exist", http.StatusNotFound))
+			return
+		}
+
 		existingFilter, innerErr := filterRepo.FindFilterBySubscriptionAndEventType(r.Context(), subscriptionID, updateFilter.EventType)
 		if innerErr != nil && !errors.Is(innerErr, datastore.ErrFilterNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("failed to check for existing filter", http.StatusBadRequest))
@@ -344,12 +357,27 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 	// Update the filter
 	if updateFilter.Headers != nil {
 		filter.Headers = updateFilter.Headers
-		filter.RawHeaders = updateFilter.Headers
+		filter.RawHeaders = models.CloneFilterMap(updateFilter.Headers)
 	}
 
 	if updateFilter.Body != nil {
 		filter.Body = updateFilter.Body
-		filter.RawBody = updateFilter.Body
+		filter.RawBody = models.CloneFilterMap(updateFilter.Body)
+	}
+
+	if updateFilter.Query != nil {
+		filter.Query = updateFilter.Query
+		filter.RawQuery = models.CloneFilterMap(updateFilter.Query)
+	}
+
+	if updateFilter.Path != nil {
+		filter.Path = updateFilter.Path
+		filter.RawPath = models.CloneFilterMap(updateFilter.Path)
+	}
+
+	if updateFilter.EnabledAt.Set {
+		filter.EnabledAt = updateFilter.EnabledAt.Time
+		filter.EnabledAtSet = true
 	}
 
 	err = filterRepo.UpdateFilter(r.Context(), filter)
@@ -475,7 +503,7 @@ func (h *Handler) TestFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the filter
-	isMatch, err := filterRepo.TestFilter(r.Context(), subscriptionID, eventType, testPayload.Payload)
+	isMatch, err := filterRepo.TestFilter(r.Context(), subscriptionID, eventType, testPayload.Transform())
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to test filter", http.StatusBadRequest))
 		return
@@ -582,15 +610,24 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build filters to create
+	now := time.Now()
 	for _, filter := range newFilters {
 		filtersToCreate = append(filtersToCreate, datastore.EventTypeFilter{
 			UID:            ulid.Make().String(),
 			SubscriptionID: subscriptionID,
 			EventType:      filter.EventType,
+			EnabledAt:      enabledAtOrDefault(filter.EnabledAt),
+			EnabledAtSet:   true,
 			Headers:        filter.Headers,
 			Body:           filter.Body,
-			RawHeaders:     filter.Headers,
-			RawBody:        filter.Body,
+			Query:          filter.Query,
+			Path:           filter.Path,
+			RawHeaders:     models.CloneFilterMap(filter.Headers),
+			RawBody:        models.CloneFilterMap(filter.Body),
+			RawQuery:       models.CloneFilterMap(filter.Query),
+			RawPath:        models.CloneFilterMap(filter.Path),
+			CreatedAt:      now,
+			UpdatedAt:      now,
 		})
 	}
 
@@ -603,8 +640,8 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare response
 	responseFilters := make([]models.FilterResponse, 0, len(filtersToCreate))
-	for _, filter := range filtersToCreate {
-		responseFilters = append(responseFilters, models.FilterResponse{EventTypeFilter: &filter})
+	for i := range filtersToCreate {
+		responseFilters = append(responseFilters, models.FilterResponse{EventTypeFilter: &filtersToCreate[i]})
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Filters created successfully", responseFilters, http.StatusCreated))
@@ -740,12 +777,27 @@ func (h *Handler) BulkUpdateFilters(w http.ResponseWriter, r *http.Request) {
 
 		if filterUpdate.Headers != nil {
 			existingFilter.Headers = filterUpdate.Headers
-			existingFilter.RawHeaders = filterUpdate.Headers
+			existingFilter.RawHeaders = models.CloneFilterMap(filterUpdate.Headers)
 		}
 
 		if filterUpdate.Body != nil {
 			existingFilter.Body = filterUpdate.Body
-			existingFilter.RawBody = filterUpdate.Body
+			existingFilter.RawBody = models.CloneFilterMap(filterUpdate.Body)
+		}
+
+		if filterUpdate.Query != nil {
+			existingFilter.Query = filterUpdate.Query
+			existingFilter.RawQuery = models.CloneFilterMap(filterUpdate.Query)
+		}
+
+		if filterUpdate.Path != nil {
+			existingFilter.Path = filterUpdate.Path
+			existingFilter.RawPath = models.CloneFilterMap(filterUpdate.Path)
+		}
+
+		if filterUpdate.EnabledAt.Set {
+			existingFilter.EnabledAt = filterUpdate.EnabledAt.Time
+			existingFilter.EnabledAtSet = true
 		}
 
 		existingFilter.UpdatedAt = time.Now()
@@ -761,9 +813,18 @@ func (h *Handler) BulkUpdateFilters(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare response
 	responseFilters := make([]models.FilterResponse, 0, len(updatedFilters))
-	for _, filter := range updatedFilters {
-		responseFilters = append(responseFilters, models.FilterResponse{EventTypeFilter: &filter})
+	for i := range updatedFilters {
+		responseFilters = append(responseFilters, models.FilterResponse{EventTypeFilter: &updatedFilters[i]})
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Filters updated successfully", responseFilters, http.StatusOK))
+}
+
+func enabledAtOrDefault(enabledAt models.OptionalTime) *time.Time {
+	if enabledAt.Set {
+		return enabledAt.Time
+	}
+
+	now := time.Now()
+	return &now
 }

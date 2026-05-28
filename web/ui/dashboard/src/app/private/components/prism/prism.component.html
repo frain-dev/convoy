@@ -6,9 +6,7 @@
   <div class="border border-new.primary-25 rounded-8px mb-26px">
     <div class="">
       @if (language) {
-        <pre class="language-{{ language }} line-numbers" [class]="showPayload && code && code.length > 300 ? 'h-[520px] overflow-y-auto' : 'max-h-[300px] overflow-y-hidden'">
-          <code #codeEle class="language-{{ language }} line-numbers">{{code}}</code>
-        </pre>
+        <pre class="language-{{ language }} line-numbers" [class]="showPayload && code && code.length > 300 ? 'h-[520px] overflow-y-auto' : 'max-h-[300px] overflow-y-hidden'"><code #codeEle class="language-{{ language }} line-numbers">{{code}}</code></pre>
       }
     </div>
     @if (code && code.length > 300) {

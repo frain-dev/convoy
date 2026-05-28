@@ -157,16 +157,17 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 			subscription.FilterConfig.EventTypes = s.Update.FilterConfig.EventTypes
 		}
 
-		if len(s.Update.FilterConfig.Filter.Body) > 0 || len(s.Update.FilterConfig.Filter.Headers) > 0 {
+		filterSchema := s.Update.FilterConfig.Filter.Transform()
+		if filterSchemaHasConditions(filterSchema) {
 			// validate that the filter is a json string
 			_, err = json.Marshal(s.Update.FilterConfig.Filter)
 			if err != nil {
 				s.Logger.ErrorContext(ctx, ErrInvalidSubscriptionFilterFormat.Error(), "error", err)
 				return nil, &ServiceError{ErrMsg: ErrInvalidSubscriptionFilterFormat.Error(), Err: err}
 			}
-			subscription.FilterConfig.Filter = s.Update.FilterConfig.Filter.Transform()
+			subscription.FilterConfig.Filter = filterSchema
 		} else {
-			subscription.FilterConfig.Filter = datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}}
+			subscription.FilterConfig.Filter = emptyFilterSchema()
 		}
 	}
 

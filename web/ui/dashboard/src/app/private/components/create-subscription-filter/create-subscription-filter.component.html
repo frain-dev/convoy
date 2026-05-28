@@ -24,7 +24,6 @@
         </li>
       }
     </ul>
-
     <div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'body' }">
       <div class="flex">
         <div class="flex flex-col w-full border-r border-r-neutral-4">
@@ -33,12 +32,12 @@
         </div>
         <div class="flex flex-col w-full">
           <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
-          <convoy-monaco [editorValue]="schema?.body ?? {}" #schemaEditor></convoy-monaco>
+          <convoy-monaco [editorValue]="schema?.raw_body ?? schema?.body ?? {}" #schemaEditor></convoy-monaco>
         </div>
       </div>
     </div>
 
-    <div [ngClass]="{ 'h-0 overflow-hidden': activeTab === 'body' }">
+    <div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'headers' }">
       <div class="flex">
         <div class="flex flex-col w-full">
           <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Headers</div>
@@ -46,7 +45,33 @@
         </div>
         <div class="flex flex-col w-full">
           <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
-          <convoy-monaco [editorValue]="schema?.headers ?? {}" #headerSchemaEditor></convoy-monaco>
+          <convoy-monaco [editorValue]="schema?.raw_headers ?? schema?.headers ?? schema?.header ?? {}" #headerSchemaEditor></convoy-monaco>
+        </div>
+      </div>
+    </div>
+
+    <div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'query' }">
+      <div class="flex">
+        <div class="flex flex-col w-full border-r border-r-neutral-4">
+          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Query</div>
+          <convoy-monaco [editorValue]="query" #requestQueryEditor></convoy-monaco>
+        </div>
+        <div class="flex flex-col w-full">
+          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
+          <convoy-monaco [editorValue]="schema?.raw_query ?? schema?.query ?? {}" #querySchemaEditor></convoy-monaco>
+        </div>
+      </div>
+    </div>
+
+    <div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'path' }">
+      <div class="flex">
+        <div class="flex flex-col w-full border-r border-r-neutral-4">
+          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Path</div>
+          <convoy-monaco [editorValue]="path" #requestPathEditor></convoy-monaco>
+        </div>
+        <div class="flex flex-col w-full">
+          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
+          <convoy-monaco [editorValue]="schema?.raw_path ?? schema?.path ?? {}" #pathSchemaEditor></convoy-monaco>
         </div>
       </div>
     </div>

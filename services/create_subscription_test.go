@@ -138,8 +138,12 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 								IsFlattened: false,
 								Headers:     datastore.M{},
 								Body:        datastore.M{},
+								Query:       datastore.M{},
+								Path:        datastore.M{},
 								RawHeaders:  datastore.M{},
 								RawBody:     datastore.M{},
+								RawQuery:    datastore.M{},
+								RawPath:     datastore.M{},
 							},
 						},
 					}
@@ -585,4 +589,55 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateSubscriptionService_PreservesQueryAndPathFilterConfig(t *testing.T) {
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	newSubscription := &models.CreateSubscription{
+		Name:       "sub 1",
+		EndpointID: "endpoint-id-1",
+		FilterConfig: &models.FilterConfiguration{
+			EventTypes: []string{"*"},
+			Filter: models.FS{
+				Query: datastore.M{"event_type": "push"},
+				Path:  datastore.M{"path": "/ingest/source-id"},
+			},
+		},
+	}
+
+	ss := provideCreateSubscriptionService(ctrl, &datastore.Project{
+		UID:    "12345",
+		Type:   datastore.OutgoingProject,
+		Config: &datastore.ProjectConfig{MultipleEndpointSubscriptions: false},
+	}, newSubscription)
+
+	ss.Licenser.(*mocks.MockLicenser).EXPECT().AdvancedSubscriptions().Times(1).Return(true)
+	ss.Licenser.(*mocks.MockLicenser).EXPECT().Transformations().Times(1).Return(false)
+
+	ss.EndpointRepo.(*mocks.MockEndpointRepository).EXPECT().
+		FindEndpointByID(gomock.Any(), "endpoint-id-1", "12345").
+		Return(&datastore.Endpoint{UID: "endpoint-id-1", ProjectID: "12345"}, nil)
+
+	ss.SubRepo.(*mocks.MockSubscriptionRepository).EXPECT().
+		CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1", gomock.Any()).
+		Return(int64(0), nil)
+
+	ss.SubRepo.(*mocks.MockSubscriptionRepository).EXPECT().
+		CreateSubscription(gomock.Any(), "12345", gomock.Cond(func(x any) bool {
+			sub := x.(*datastore.Subscription)
+			return reflect.DeepEqual(sub.FilterConfig.Filter.Query, datastore.M{"event_type": "push"}) &&
+				reflect.DeepEqual(sub.FilterConfig.Filter.Path, datastore.M{"path": "/ingest/source-id"}) &&
+				reflect.DeepEqual(sub.FilterConfig.Filter.RawQuery, datastore.M{"event_type": "push"}) &&
+				reflect.DeepEqual(sub.FilterConfig.Filter.RawPath, datastore.M{"path": "/ingest/source-id"})
+		})).
+		Return(nil)
+
+	subscription, err := ss.Run(ctx)
+
+	require.NoError(t, err)
+	require.Equal(t, datastore.M{"event_type": "push"}, subscription.FilterConfig.Filter.Query)
+	require.Equal(t, datastore.M{"path": "/ingest/source-id"}, subscription.FilterConfig.Filter.Path)
 }

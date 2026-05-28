@@ -10231,12 +10231,41 @@ const docTemplate = `{
         },
         "models.TestFilterRequest": {
             "type": "object",
-            "required": [
-                "payload"
-            ],
             "properties": {
                 "payload": {
-                    "description": "Sample payload to test against the filter (required)"
+                    "description": "Sample payload to test against body filter rules. Optional when request scopes are supplied."
+                },
+                "request": {
+                    "description": "Request scopes to test against the filter.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TestFilterRequestScopes"
+                        }
+                    ]
+                }
+            }
+        },
+        "models.TestFilterRequestScopes": {
+            "type": "object",
+            "properties": {
+                "body": {},
+                "header": {
+                    "description": "Headers accepts either \"headers\" or \"header\" for compatibility with the subscription filter tester.",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "headers": {
+                    "description": "Headers accepts either \"headers\" or \"header\" for compatibility with the subscription filter tester.",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "path": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "query": {
+                    "type": "object",
+                    "additionalProperties": true
                 }
             }
         },

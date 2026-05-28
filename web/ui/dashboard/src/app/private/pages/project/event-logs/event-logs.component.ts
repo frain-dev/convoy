@@ -55,7 +55,7 @@ import { EventDeliveryFilterComponent } from 'src/app/private/components/event-d
 export class EventLogsComponent implements OnInit, OnDestroy {
 	@ViewChild('batchDialog', { static: true }) batchDialog!: ElementRef<HTMLDialogElement>;
 	eventsDateFilterFromURL: { startDate: string; endDate: string } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
+	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Route', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventSource?: string;
 	isloadingEvents: boolean = false;
@@ -235,5 +235,13 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 
 		const url = this.router.serializeUrl(this.router.createUrlTree([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams }));
 		window.open(url, '_blank');
+	}
+
+	hasMatchedSubscription(event?: EVENT): boolean {
+		return !!event?.endpoints?.length;
+	}
+
+	getRouteStatus(event: EVENT): string {
+		return this.hasMatchedSubscription(event) ? 'Delivered' : 'Unmatched';
 	}
 }

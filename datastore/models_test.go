@@ -71,6 +71,41 @@ func TestProject_IsOwner(t *testing.T) {
 	}
 }
 
+func TestHasArrayWildcardSelector(t *testing.T) {
+	tests := []struct {
+		name   string
+		filter M
+		want   bool
+	}{
+		{
+			name:   "matches wildcard path segment",
+			filter: M{"items.$.id": "value"},
+			want:   true,
+		},
+		{
+			name:   "matches leading wildcard path segment",
+			filter: M{"$.id": "value"},
+			want:   true,
+		},
+		{
+			name:   "ignores dollar sign within field name",
+			filter: M{"price$.amount": "value"},
+			want:   false,
+		},
+		{
+			name:   "ignores dollar sign suffix segment",
+			filter: M{"price$": "value"},
+			want:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, HasArrayWildcardSelector(tt.filter))
+		})
+	}
+}
+
 func TestMtlsClientCert_ScanAndValue(t *testing.T) {
 	t.Run("should scan valid JSON", func(t *testing.T) {
 		jsonData := []byte(`{"client_cert":"-----BEGIN CERTIFICATE-----\ntest-cert\n-----END CERTIFICATE-----","client_key":"-----BEGIN PRIVATE KEY-----\ntest-key\n-----END PRIVATE KEY-----"}`)

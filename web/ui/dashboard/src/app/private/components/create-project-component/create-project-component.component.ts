@@ -247,7 +247,7 @@ export class CreateProjectComponent implements OnInit {
 
 			this.setSignatureVersions();
 
-			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history' && tab.label !== 'event types');
+			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history');
 
 			this.projectForm.patchValue(this.projectDetails);
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
@@ -513,8 +513,6 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async getEventTypes() {
-		if (this.privateService.getProjectDetailsHideNotification()?.type === 'incoming') return;
-
 		try {
 			const response = await this.privateService.getEventTypes();
 			this.eventTypes = response.data;
@@ -522,6 +520,28 @@ export class CreateProjectComponent implements OnInit {
 		} catch (error) {
 			return;
 		}
+	}
+
+	openCreateEventTypeModal() {
+		this.selectedEventType = null;
+		this.newEventTypeForm.reset({
+			name: '',
+			description: '',
+			category: '',
+			json_schema: ''
+		});
+		this.newEventTypeDialog.nativeElement.showModal();
+	}
+
+	closeEventTypeModal() {
+		this.selectedEventType = null;
+		this.newEventTypeForm.reset({
+			name: '',
+			description: '',
+			category: '',
+			json_schema: ''
+		});
+		this.newEventTypeDialog.nativeElement.close();
 	}
 
 	openEditEventTypeModal(eventType: any) {

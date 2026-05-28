@@ -124,6 +124,42 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		require.True(t, matches)
 	})
 
+	t.Run("should_match_filter_query", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"query": map[string]interface{}{
+				"event_type": "user.created",
+			},
+		}
+
+		filter := map[string]interface{}{
+			"query": map[string]interface{}{
+				"event_type": "user.created",
+			},
+		}
+
+		matches, err := service.TestSubscriptionFilter(ctx, payload, filter, false)
+		require.NoError(t, err)
+		require.True(t, matches)
+	})
+
+	t.Run("should_match_filter_path", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"path": map[string]interface{}{
+				"source": "src_123",
+			},
+		}
+
+		filter := map[string]interface{}{
+			"path": map[string]interface{}{
+				"source": "src_123",
+			},
+		}
+
+		matches, err := service.TestSubscriptionFilter(ctx, payload, filter, false)
+		require.NoError(t, err)
+		require.True(t, matches)
+	})
+
 	t.Run("should_match_flattened_filters", func(t *testing.T) {
 		payload := map[string]interface{}{
 			"body": map[string]interface{}{

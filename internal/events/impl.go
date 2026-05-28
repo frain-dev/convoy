@@ -75,6 +75,7 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 		Raw:              common.StringToPgText(event.Raw),
 		Data:             event.Data,
 		UrlQueryParams:   pgtype.Text{String: event.URLQueryParams, Valid: true},
+		UrlPath:          pgtype.Text{String: event.URLPath, Valid: true},
 		IdempotencyKey:   common.StringToPgTextNullable(event.IdempotencyKey),
 		IsDuplicateEvent: common.BoolToPgBool(event.IsDuplicateEvent),
 		AcknowledgedAt:   common.NullTimeToPgTimestamptz(event.AcknowledgedAt),
@@ -689,6 +690,7 @@ BEGIN
         updated_at         TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         deleted_at         TIMESTAMPTZ,
         url_query_params   VARCHAR,
+        url_path           VARCHAR NOT NULL DEFAULT '',
         idempotency_key    TEXT,
         is_duplicate_event BOOLEAN DEFAULT FALSE,
         acknowledged_at    TIMESTAMPTZ,
@@ -716,14 +718,16 @@ BEGIN
         );
     END LOOP;
 
+    ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS url_path VARCHAR NOT NULL DEFAULT '';
+
     RAISE NOTICE 'Migrating data...';
     INSERT INTO convoy.events_new (
         id, event_type, endpoints, project_id, source_id, headers, raw, data,
-        created_at, updated_at, deleted_at, url_query_params, idempotency_key,
+        created_at, updated_at, deleted_at, url_query_params, url_path, idempotency_key,
         is_duplicate_event, acknowledged_at, status, metadata
     )
     SELECT id, event_type, endpoints, project_id, source_id, headers, raw, data,
-           created_at, updated_at, deleted_at, url_query_params, idempotency_key,
+           created_at, updated_at, deleted_at, url_query_params, COALESCE(url_path, ''), idempotency_key,
            is_duplicate_event, acknowledged_at, status, metadata
     FROM convoy.events;
 
@@ -783,6 +787,7 @@ BEGIN
         updated_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         deleted_at         TIMESTAMP WITH TIME ZONE,
         url_query_params   VARCHAR,
+        url_path           VARCHAR NOT NULL DEFAULT '',
         idempotency_key    TEXT,
         is_duplicate_event BOOLEAN DEFAULT FALSE,
         acknowledged_at    TIMESTAMP WITH TIME ZONE,
@@ -790,8 +795,18 @@ BEGIN
         metadata           TEXT
     );
 
+    ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS url_path VARCHAR NOT NULL DEFAULT '';
+
     RAISE NOTICE 'Migrating data...';
-    INSERT INTO convoy.events_new SELECT * FROM convoy.events;
+    INSERT INTO convoy.events_new (
+        id, event_type, endpoints, project_id, source_id, headers, raw, data,
+        created_at, updated_at, deleted_at, url_query_params, url_path, idempotency_key,
+        is_duplicate_event, acknowledged_at, status, metadata
+    )
+    SELECT id, event_type, endpoints, project_id, source_id, headers, raw, data,
+           created_at, updated_at, deleted_at, url_query_params, COALESCE(url_path, ''), idempotency_key,
+           is_duplicate_event, acknowledged_at, status, metadata
+    FROM convoy.events;
 
     ALTER TABLE convoy.event_deliveries DROP CONSTRAINT IF EXISTS event_deliveries_event_id_fkey;
     ALTER TABLE convoy.event_deliveries
@@ -839,6 +854,7 @@ BEGIN
       raw                TEXT NOT NULL,
       data               BYTEA NOT NULL,
       url_query_params   VARCHAR,
+      url_path           VARCHAR NOT NULL DEFAULT '',
       idempotency_key    TEXT,
       is_duplicate_event BOOLEAN DEFAULT FALSE,
       search_token       TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple'::regconfig, raw)) STORED,
@@ -867,14 +883,16 @@ BEGIN
                     );
         END LOOP;
 
+    ALTER TABLE convoy.events_search ADD COLUMN IF NOT EXISTS url_path VARCHAR NOT NULL DEFAULT '';
+
     RAISE NOTICE 'Migrating data...';
     INSERT INTO convoy.events_search_new (
         id, event_type, endpoints, project_id, source_id,
-        headers, raw, data, url_query_params, idempotency_key,
+        headers, raw, data, url_query_params, url_path, idempotency_key,
         is_duplicate_event, created_at, updated_at, deleted_at
     )
     SELECT id, event_type, endpoints, project_id, source_id,
-           headers, raw, data, url_query_params, idempotency_key,
+           headers, raw, data, url_query_params, COALESCE(url_path, ''), idempotency_key,
            is_duplicate_event, created_at, updated_at, deleted_at
     FROM convoy.events_search;
 
@@ -919,6 +937,7 @@ BEGIN
         raw                TEXT NOT NULL,
         data               BYTEA NOT NULL,
         url_query_params   VARCHAR,
+        url_path           VARCHAR NOT NULL DEFAULT '',
         idempotency_key    TEXT,
         is_duplicate_event BOOLEAN DEFAULT FALSE,
         search_token       TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', raw)) STORED,
@@ -927,14 +946,16 @@ BEGIN
         deleted_at         TIMESTAMP WITH TIME ZONE
     );
 
+    ALTER TABLE convoy.events_search ADD COLUMN IF NOT EXISTS url_path VARCHAR NOT NULL DEFAULT '';
+
     RAISE NOTICE 'Migrating data...';
     INSERT INTO convoy.events_search_new
         (id, event_type, endpoints, project_id,
-         source_id, headers, raw, data, url_query_params,
+         source_id, headers, raw, data, url_query_params, url_path,
          idempotency_key, is_duplicate_event,
          created_at, updated_at, deleted_at)
     SELECT id, event_type, endpoints, project_id,
-           source_id, headers, raw, data, url_query_params,
+           source_id, headers, raw, data, url_query_params, COALESCE(url_path, ''),
            idempotency_key, is_duplicate_event,
            created_at, updated_at, deleted_at
     FROM convoy.events_search;

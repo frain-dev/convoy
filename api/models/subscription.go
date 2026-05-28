@@ -115,6 +115,8 @@ func (qs *QueryListSubscription) Transform(r *http.Request) *QueryListSubscripti
 type FilterSchema struct {
 	Headers interface{} `json:"header"`
 	Body    interface{} `json:"body"`
+	Query   interface{} `json:"query"`
+	Path    interface{} `json:"path"`
 }
 
 type TestFilter struct {
@@ -196,8 +198,14 @@ func (fc *FilterConfiguration) Transform() *datastore.FilterConfiguration {
 	return &datastore.FilterConfiguration{
 		EventTypes: fc.EventTypes,
 		Filter: datastore.FilterSchema{
-			Headers: fc.Filter.Headers,
-			Body:    fc.Filter.Body,
+			Headers:    CloneFilterMap(fc.Filter.Headers),
+			Body:       CloneFilterMap(fc.Filter.Body),
+			Query:      CloneFilterMap(fc.Filter.Query),
+			Path:       CloneFilterMap(fc.Filter.Path),
+			RawHeaders: CloneFilterMap(fc.Filter.Headers),
+			RawBody:    CloneFilterMap(fc.Filter.Body),
+			RawQuery:   CloneFilterMap(fc.Filter.Query),
+			RawPath:    CloneFilterMap(fc.Filter.Path),
 		},
 	}
 }
@@ -205,14 +213,50 @@ func (fc *FilterConfiguration) Transform() *datastore.FilterConfiguration {
 type FS struct {
 	Headers datastore.M `json:"headers"`
 	Body    datastore.M `json:"body"`
+	Query   datastore.M `json:"query"`
+	Path    datastore.M `json:"path"`
 }
 
 func (fs *FS) Transform() datastore.FilterSchema {
 	return datastore.FilterSchema{
-		Headers:    fs.Headers,
-		Body:       fs.Body,
-		RawHeaders: fs.Headers,
-		RawBody:    fs.Body,
+		Headers:    CloneFilterMap(fs.Headers),
+		Body:       CloneFilterMap(fs.Body),
+		Query:      CloneFilterMap(fs.Query),
+		Path:       CloneFilterMap(fs.Path),
+		RawHeaders: CloneFilterMap(fs.Headers),
+		RawBody:    CloneFilterMap(fs.Body),
+		RawQuery:   CloneFilterMap(fs.Query),
+		RawPath:    CloneFilterMap(fs.Path),
+	}
+}
+
+func CloneFilterMap(input datastore.M) datastore.M {
+	if input == nil {
+		return nil
+	}
+
+	out := make(datastore.M, len(input))
+	for key, value := range input {
+		out[key] = cloneFilterValue(value)
+	}
+
+	return out
+}
+
+func cloneFilterValue(value interface{}) interface{} {
+	switch v := value.(type) {
+	case datastore.M:
+		return CloneFilterMap(v)
+	case map[string]interface{}:
+		return CloneFilterMap(datastore.M(v))
+	case []interface{}:
+		out := make([]interface{}, len(v))
+		for i, item := range v {
+			out[i] = cloneFilterValue(item)
+		}
+		return out
+	default:
+		return value
 	}
 }
 

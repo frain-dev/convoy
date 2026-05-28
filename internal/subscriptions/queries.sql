@@ -20,9 +20,13 @@ INSERT INTO convoy.subscriptions (
     filter_config_event_types,
     filter_config_filter_headers,
     filter_config_filter_body,
+    filter_config_filter_query,
+    filter_config_filter_path,
     filter_config_filter_is_flattened,
     filter_config_filter_raw_headers,
     filter_config_filter_raw_body,
+    filter_config_filter_raw_query,
+    filter_config_filter_raw_path,
     rate_limit_config_count,
     rate_limit_config_duration,
     function,
@@ -43,9 +47,13 @@ VALUES (
     @filter_config_event_types,
     @filter_config_filter_headers,
     @filter_config_filter_body,
+    @filter_config_filter_query,
+    @filter_config_filter_path,
     @filter_config_filter_is_flattened,
     @filter_config_filter_raw_headers,
     @filter_config_filter_raw_body,
+    @filter_config_filter_raw_query,
+    @filter_config_filter_raw_path,
     @rate_limit_config_count,
     @rate_limit_config_duration,
     @function,
@@ -67,19 +75,27 @@ INSERT INTO convoy.filters (
     event_type,
     headers,
     body,
+    query,
+    path,
     raw_headers,
-    raw_body
+    raw_body,
+    raw_query,
+    raw_path
 )
 SELECT
     convoy.generate_ulid()::VARCHAR,
-    id,
+    s.id,
     unnest(filter_config_event_types),
     filter_config_filter_headers,
     filter_config_filter_body,
+    filter_config_filter_query,
+    filter_config_filter_path,
     filter_config_filter_raw_headers,
-    filter_config_filter_raw_body
-FROM convoy.subscriptions
-WHERE id = @subscription_id AND deleted_at IS NULL
+    filter_config_filter_raw_body,
+    filter_config_filter_raw_query,
+    filter_config_filter_raw_path
+FROM convoy.subscriptions s
+WHERE s.id = @subscription_id AND s.deleted_at IS NULL
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================
@@ -100,9 +116,13 @@ SET
     filter_config_event_types = @filter_config_event_types,
     filter_config_filter_headers = @filter_config_filter_headers,
     filter_config_filter_body = @filter_config_filter_body,
+    filter_config_filter_query = @filter_config_filter_query,
+    filter_config_filter_path = @filter_config_filter_path,
     filter_config_filter_is_flattened = @filter_config_filter_is_flattened,
     filter_config_filter_raw_headers = @filter_config_filter_raw_headers,
     filter_config_filter_raw_body = @filter_config_filter_raw_body,
+    filter_config_filter_raw_query = @filter_config_filter_raw_query,
+    filter_config_filter_raw_path = @filter_config_filter_raw_path,
     rate_limit_config_count = @rate_limit_config_count,
     rate_limit_config_duration = @rate_limit_config_duration,
     function = @function,
@@ -147,9 +167,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_raw_headers,
     s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.rate_limit_config_count,
     s.rate_limit_config_duration,
     COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -201,9 +225,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_raw_headers,
     s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.rate_limit_config_count,
     s.rate_limit_config_duration,
     COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -255,9 +283,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_raw_headers,
     s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.rate_limit_config_count,
     s.rate_limit_config_duration,
     COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -309,9 +341,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_raw_headers,
     s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.rate_limit_config_count,
     s.rate_limit_config_duration,
     COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -371,9 +407,13 @@ WITH filtered_subscriptions AS (
         s.filter_config_event_types,
         s.filter_config_filter_raw_headers,
         s.filter_config_filter_raw_body,
+        s.filter_config_filter_raw_query,
+        s.filter_config_filter_raw_path,
         s.filter_config_filter_is_flattened,
         s.filter_config_filter_headers,
         s.filter_config_filter_body,
+        s.filter_config_filter_query,
+        s.filter_config_filter_path,
         s.rate_limit_config_count,
         s.rate_limit_config_duration,
         COALESCE(em.id, '') AS endpoint_metadata_id,
@@ -444,8 +484,10 @@ SELECT
     endpoint_id, source_id, alert_config_count, alert_config_threshold,
     retry_config_type, retry_config_duration, retry_config_retry_count,
     filter_config_event_types, filter_config_filter_raw_headers,
-    filter_config_filter_raw_body, filter_config_filter_is_flattened,
+    filter_config_filter_raw_body, filter_config_filter_raw_query,
+    filter_config_filter_raw_path, filter_config_filter_is_flattened,
     filter_config_filter_headers, filter_config_filter_body,
+    filter_config_filter_query, filter_config_filter_path,
     rate_limit_config_count, rate_limit_config_duration,
     endpoint_metadata_id, endpoint_metadata_name, endpoint_metadata_project_id,
     endpoint_metadata_support_email, endpoint_metadata_url, endpoint_metadata_status,
@@ -502,9 +544,11 @@ SELECT
     filter_config_event_types,
     filter_config_filter_headers,
     filter_config_filter_body,
+    filter_config_filter_query,
+    filter_config_filter_path,
     filter_config_filter_is_flattened
 FROM convoy.subscriptions
-WHERE (ARRAY[@event_type] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)
+WHERE (sqlc.arg(event_type)::text = ANY(filter_config_event_types) OR '*' = ANY(filter_config_event_types))
     AND id > @cursor
     AND project_id = @project_id
     AND deleted_at IS NULL
@@ -524,6 +568,8 @@ SELECT
     filter_config_event_types,
     filter_config_filter_headers,
     filter_config_filter_body,
+    filter_config_filter_query,
+    filter_config_filter_path,
     filter_config_filter_is_flattened
 FROM convoy.subscriptions
 WHERE id > @cursor
@@ -545,9 +591,13 @@ SELECT
     s.filter_config_event_types,
     s.filter_config_filter_headers,
     s.filter_config_filter_body,
+    s.filter_config_filter_query,
+    s.filter_config_filter_path,
     s.filter_config_filter_is_flattened,
     s.filter_config_filter_raw_headers,
-    s.filter_config_filter_raw_body
+    s.filter_config_filter_raw_body,
+    s.filter_config_filter_raw_query,
+    s.filter_config_filter_raw_path
 FROM convoy.subscriptions s
 WHERE s.created_at > @last_sync_time
     AND (@has_known_ids::boolean = false OR s.id <> ALL(@known_subscription_ids::text[]))

@@ -87,6 +87,16 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 		return fmt.Errorf("failed to flatten header filter: %v", err)
 	}
 
+	err = fc.Filter.Query.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten query filter: %v", err)
+	}
+
+	err = fc.Filter.Path.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten path filter: %v", err)
+	}
+
 	fc.Filter.IsFlattened = true
 
 	// Begin transaction
@@ -107,25 +117,29 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 
 	// Create subscription
 	err = qtx.CreateSubscription(ctx, repo.CreateSubscriptionParams{
-		ID:                            common.StringToPgText(subscription.UID),
-		Name:                          common.StringToPgText(subscription.Name),
-		Type:                          common.StringToPgText(string(subscription.Type)),
-		ProjectID:                     common.StringToPgText(subscription.ProjectID),
+		ID:                            subscription.UID,
+		Name:                          subscription.Name,
+		Type:                          string(subscription.Type),
+		ProjectID:                     subscription.ProjectID,
 		EndpointID:                    common.StringToPgTextNullable(subscription.EndpointID),
 		SourceID:                      common.StringToPgTextNullable(subscription.SourceID),
-		AlertConfigCount:              pgtype.Int4{Int32: alertCount, Valid: true},
-		AlertConfigThreshold:          common.StringToPgText(alertThreshold),
-		RetryConfigType:               common.StringToPgText(retryType),
-		RetryConfigDuration:           pgtype.Int4{Int32: retryDuration, Valid: true},
-		RetryConfigRetryCount:         pgtype.Int4{Int32: retryRetryCount, Valid: true},
+		AlertConfigCount:              alertCount,
+		AlertConfigThreshold:          alertThreshold,
+		RetryConfigType:               retryType,
+		RetryConfigDuration:           retryDuration,
+		RetryConfigRetryCount:         retryRetryCount,
 		FilterConfigEventTypes:        filterParams.eventTypes,
 		FilterConfigFilterHeaders:     filterParams.headers,
 		FilterConfigFilterBody:        filterParams.body,
+		FilterConfigFilterQuery:       filterParams.query,
+		FilterConfigFilterPath:        filterParams.path,
 		FilterConfigFilterIsFlattened: filterParams.isFlattened,
 		FilterConfigFilterRawHeaders:  filterParams.rawHeaders,
 		FilterConfigFilterRawBody:     filterParams.rawBody,
-		RateLimitConfigCount:          pgtype.Int4{Int32: rateLimitCount, Valid: true},
-		RateLimitConfigDuration:       pgtype.Int4{Int32: rateLimitDuration, Valid: true},
+		FilterConfigFilterRawQuery:    filterParams.rawQuery,
+		FilterConfigFilterRawPath:     filterParams.rawPath,
+		RateLimitConfigCount:          rateLimitCount,
+		RateLimitConfigDuration:       rateLimitDuration,
 		Function:                      common.StringToPgTextNullable(subscription.Function.String),
 		DeliveryMode:                  common.StringToPgTextNullable(string(subscription.DeliveryMode)),
 	})
@@ -137,14 +151,16 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 	// Update subscription with raw filters for use in event type insertion
 	subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
 	subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
+	subscription.FilterConfig.Filter.Query = subscription.FilterConfig.Filter.RawQuery
+	subscription.FilterConfig.Filter.Path = subscription.FilterConfig.Filter.RawPath
 
 	// Create event types for each subscription
 	eventTypesSlice := make([]repo.UpsertSubscriptionEventTypesParams, len(subscription.FilterConfig.EventTypes))
 	for i := range subscription.FilterConfig.EventTypes {
 		eventTypesSlice[i] = repo.UpsertSubscriptionEventTypesParams{
-			ID:          common.StringToPgText(ulid.Make().String()),
-			Name:        common.StringToPgText(subscription.FilterConfig.EventTypes[i]),
-			ProjectID:   common.StringToPgText(subscription.ProjectID),
+			ID:          ulid.Make().String(),
+			Name:        subscription.FilterConfig.EventTypes[i],
+			ProjectID:   subscription.ProjectID,
 			Description: common.StringToPgTextNullable(""),
 			Category:    common.StringToPgTextNullable(""),
 		}
@@ -160,7 +176,7 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 	}
 
 	// Create filters for each event type
-	err = qtx.InsertSubscriptionEventTypeFilters(ctx, common.StringToPgTextNullable(subscription.UID))
+	err = qtx.InsertSubscriptionEventTypeFilters(ctx, subscription.UID)
 	if err != nil {
 		s.logger.Error("failed to insert event type filters", "error", err)
 		return &ServiceError{ErrMsg: "failed to create subscription filters", Err: err}
@@ -197,6 +213,16 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 		return fmt.Errorf("failed to flatten header filter: %v", err)
 	}
 
+	err = fc.Filter.Query.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten query filter: %v", err)
+	}
+
+	err = fc.Filter.Path.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten path filter: %v", err)
+	}
+
 	fc.Filter.IsFlattened = true
 
 	// Begin transaction
@@ -217,24 +243,28 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 
 	// Update subscription
 	result, err := qtx.UpdateSubscription(ctx, repo.UpdateSubscriptionParams{
-		ID:                            common.StringToPgText(subscription.UID),
-		ProjectID:                     common.StringToPgText(projectID),
-		Name:                          common.StringToPgText(subscription.Name),
+		ID:                            subscription.UID,
+		ProjectID:                     projectID,
+		Name:                          subscription.Name,
 		EndpointID:                    common.StringToPgTextNullable(subscription.EndpointID),
 		SourceID:                      common.StringToPgTextNullable(subscription.SourceID),
-		AlertConfigCount:              pgtype.Int4{Int32: alertCount, Valid: true},
-		AlertConfigThreshold:          common.StringToPgText(alertThreshold),
-		RetryConfigType:               common.StringToPgText(retryType),
-		RetryConfigDuration:           pgtype.Int4{Int32: retryDuration, Valid: true},
-		RetryConfigRetryCount:         pgtype.Int4{Int32: retryRetryCount, Valid: true},
+		AlertConfigCount:              alertCount,
+		AlertConfigThreshold:          alertThreshold,
+		RetryConfigType:               retryType,
+		RetryConfigDuration:           retryDuration,
+		RetryConfigRetryCount:         retryRetryCount,
 		FilterConfigEventTypes:        filterParams.eventTypes,
 		FilterConfigFilterHeaders:     filterParams.headers,
 		FilterConfigFilterBody:        filterParams.body,
+		FilterConfigFilterQuery:       filterParams.query,
+		FilterConfigFilterPath:        filterParams.path,
 		FilterConfigFilterIsFlattened: filterParams.isFlattened,
 		FilterConfigFilterRawHeaders:  filterParams.rawHeaders,
 		FilterConfigFilterRawBody:     filterParams.rawBody,
-		RateLimitConfigCount:          pgtype.Int4{Int32: rateLimitCount, Valid: true},
-		RateLimitConfigDuration:       pgtype.Int4{Int32: rateLimitDuration, Valid: true},
+		FilterConfigFilterRawQuery:    filterParams.rawQuery,
+		FilterConfigFilterRawPath:     filterParams.rawPath,
+		RateLimitConfigCount:          rateLimitCount,
+		RateLimitConfigDuration:       rateLimitDuration,
 		Function:                      common.StringToPgTextNullable(subscription.Function.String),
 		DeliveryMode:                  common.StringToPgTextNullable(string(subscription.DeliveryMode)),
 	})
@@ -256,11 +286,11 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 	eventTypesSlice := make([]repo.UpsertSubscriptionEventTypesParams, len(subscription.FilterConfig.EventTypes))
 	for i := range subscription.FilterConfig.EventTypes {
 		eventTypesSlice[i] = repo.UpsertSubscriptionEventTypesParams{
-			ID:          common.StringToPgText(ulid.Make().String()),
-			Name:        common.StringToPgText(subscription.FilterConfig.EventTypes[i]),
-			ProjectID:   common.StringToPgText(subscription.ProjectID),
-			Description: common.StringToPgText(""),
-			Category:    common.StringToPgText(""),
+			ID:          ulid.Make().String(),
+			Name:        subscription.FilterConfig.EventTypes[i],
+			ProjectID:   subscription.ProjectID,
+			Description: common.StringToPgTextNullable(""),
+			Category:    common.StringToPgTextNullable(""),
 		}
 	}
 
@@ -274,14 +304,14 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 	}
 
 	// Delete filters when they are removed from the subscription
-	err = qtx.DeleteSubscriptionEventTypes(ctx, common.StringToPgText(subscription.UID))
+	err = qtx.DeleteSubscriptionEventTypes(ctx, subscription.UID)
 	if err != nil {
 		s.logger.Error("failed to delete old event type filters", "error", err)
 		return &ServiceError{ErrMsg: "failed to delete old subscription filters", Err: err}
 	}
 
 	// Create filters for each event type
-	err = qtx.InsertSubscriptionEventTypeFilters(ctx, common.StringToPgTextNullable(subscription.UID))
+	err = qtx.InsertSubscriptionEventTypeFilters(ctx, subscription.UID)
 	if err != nil {
 		s.logger.Error("failed to insert event type filters", "error", err)
 		return &ServiceError{ErrMsg: "failed to create subscription filters", Err: err}
@@ -303,8 +333,8 @@ func (s *Service) UpdateSubscription(ctx context.Context, projectID string, subs
 
 func (s *Service) FindSubscriptionByID(ctx context.Context, projectID, subscriptionID string) (*datastore.Subscription, error) {
 	row, err := s.repo.FetchSubscriptionByID(ctx, repo.FetchSubscriptionByIDParams{
-		ID:        common.StringToPgText(subscriptionID),
-		ProjectID: common.StringToPgText(projectID),
+		ID:        subscriptionID,
+		ProjectID: projectID,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -319,7 +349,7 @@ func (s *Service) FindSubscriptionByID(ctx context.Context, projectID, subscript
 
 func (s *Service) FindSubscriptionsBySourceID(ctx context.Context, projectID, sourceID string) ([]datastore.Subscription, error) {
 	rows, err := s.repo.FetchSubscriptionsBySourceID(ctx, repo.FetchSubscriptionsBySourceIDParams{
-		ProjectID: common.StringToPgText(projectID),
+		ProjectID: projectID,
 		SourceID:  common.StringToPgTextNullable(sourceID),
 	})
 	if err != nil {
@@ -346,7 +376,7 @@ func (s *Service) FindSubscriptionsBySourceID(ctx context.Context, projectID, so
 
 func (s *Service) FindSubscriptionsByEndpointID(ctx context.Context, projectID, endpointID string) ([]datastore.Subscription, error) {
 	rows, err := s.repo.FetchSubscriptionsByEndpointID(ctx, repo.FetchSubscriptionsByEndpointIDParams{
-		ProjectID:  common.StringToPgText(projectID),
+		ProjectID:  projectID,
 		EndpointID: common.StringToPgTextNullable(endpointID),
 	})
 	if err != nil {
@@ -372,7 +402,7 @@ func (s *Service) FindSubscriptionsByEndpointID(ctx context.Context, projectID, 
 }
 
 func (s *Service) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
-	rows, err := s.repo.FetchCLISubscriptions(ctx, common.StringToPgText(projectID))
+	rows, err := s.repo.FetchCLISubscriptions(ctx, projectID)
 	if err != nil {
 		s.logger.Error("failed to fetch CLI subscriptions", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to fetch CLI subscriptions", Err: err}
@@ -419,14 +449,14 @@ func (s *Service) LoadSubscriptionsPaged(ctx context.Context, projectID string, 
 
 	// Fetch subscriptions
 	rows, err := s.repo.FetchSubscriptionsPaginated(ctx, repo.FetchSubscriptionsPaginatedParams{
-		ProjectID:         common.StringToPgText(projectID),
-		Direction:         common.StringToPgText(direction),
-		Cursor:            common.StringToPgText(pageable.Cursor()),
-		HasEndpointFilter: pgtype.Bool{Bool: hasEndpointFilter, Valid: true},
+		ProjectID:         projectID,
+		Direction:         direction,
+		Cursor:            pageable.Cursor(),
+		HasEndpointFilter: hasEndpointFilter,
 		EndpointIds:       endpointIDs,
-		HasNameFilter:     pgtype.Bool{Bool: hasNameFilter, Valid: true},
-		NameFilter:        common.StringToPgText(nameFilter),
-		LimitVal:          pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
+		HasNameFilter:     hasNameFilter,
+		NameFilter:        nameFilter,
+		LimitVal:          int32(pageable.Limit()),
 	})
 	if err != nil {
 		s.logger.Error("failed to fetch subscriptions paginated", "error", err)
@@ -449,15 +479,15 @@ func (s *Service) LoadSubscriptionsPaged(ctx context.Context, projectID string, 
 		first := subscriptions[0]
 
 		count, err := s.repo.CountPrevSubscriptions(ctx, repo.CountPrevSubscriptionsParams{
-			ProjectID:         common.StringToPgText(projectID),
-			Cursor:            common.StringToPgText(first.UID),
-			HasEndpointFilter: pgtype.Bool{Bool: hasEndpointFilter, Valid: true},
+			ProjectID:         projectID,
+			Cursor:            first.UID,
+			HasEndpointFilter: hasEndpointFilter,
 			EndpointIds:       endpointIDs,
-			HasNameFilter:     pgtype.Bool{Bool: hasNameFilter, Valid: true},
-			NameFilter:        common.StringToPgText(nameFilter),
+			HasNameFilter:     hasNameFilter,
+			NameFilter:        nameFilter,
 		})
 		if err == nil {
-			prevRowCount = datastore.PrevRowCount{Count: int(count.Int64)}
+			prevRowCount = datastore.PrevRowCount{Count: int(count)}
 		}
 	}
 
@@ -482,8 +512,8 @@ func (s *Service) LoadSubscriptionsPaged(ctx context.Context, projectID string, 
 
 func (s *Service) DeleteSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
 	result, err := s.repo.DeleteSubscription(ctx, repo.DeleteSubscriptionParams{
-		ID:        common.StringToPgText(subscription.UID),
-		ProjectID: common.StringToPgText(projectID),
+		ID:        subscription.UID,
+		ProjectID: projectID,
 	})
 	if err != nil {
 		s.logger.Error("failed to delete subscription", "error", err)
@@ -508,10 +538,10 @@ func (s *Service) FetchSubscriptionsForBroadcast(ctx context.Context, projectID,
 
 	for {
 		rows, err := s.repo.FetchSubscriptionsForBroadcast(ctx, repo.FetchSubscriptionsForBroadcastParams{
-			EventType: common.StringToPgText(eventType),
-			Cursor:    common.StringToPgText(cursor),
-			ProjectID: common.StringToPgText(projectID),
-			LimitVal:  pgtype.Int8{Int64: int64(pageSize), Valid: true},
+			EventType: eventType,
+			Cursor:    cursor,
+			ProjectID: projectID,
+			LimitVal:  int32(pageSize),
 		})
 		if err != nil {
 			s.logger.Error("failed to fetch subscriptions for broadcast", "error", err)
@@ -533,7 +563,11 @@ func (s *Service) FetchSubscriptionsForBroadcast(ctx context.Context, projectID,
 					row.FilterConfigEventTypes,
 					row.FilterConfigFilterHeaders,
 					row.FilterConfigFilterBody,
+					[]byte("{}"),
+					[]byte("{}"),
 					row.FilterConfigFilterIsFlattened,
+					[]byte("{}"),
+					[]byte("{}"),
 					[]byte("{}"),
 					[]byte("{}"),
 				),
@@ -559,19 +593,19 @@ func (s *Service) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []st
 		return nil, &ServiceError{ErrMsg: "failed to count subscriptions", Err: err}
 	}
 
-	if totalCount.Int64 == 0 {
+	if totalCount == 0 {
 		return []datastore.Subscription{}, nil
 	}
 
-	subs := make([]datastore.Subscription, 0, totalCount.Int64)
+	subs := make([]datastore.Subscription, 0, totalCount)
 	cursor := "0"
-	numBatches := int64(math.Ceil(float64(totalCount.Int64) / float64(pageSize)))
+	numBatches := int64(math.Ceil(float64(totalCount) / float64(pageSize)))
 
 	for i := int64(0); i < numBatches; i++ {
 		rows, err := s.repo.LoadAllSubscriptionsConfiguration(ctx, repo.LoadAllSubscriptionsConfigurationParams{
-			Cursor:     common.StringToPgText(cursor),
+			Cursor:     cursor,
 			ProjectIds: projectIDs,
-			LimitVal:   pgtype.Int8{Int64: int64(pageSize), Valid: true},
+			LimitVal:   int32(pageSize),
 		})
 		if err != nil {
 			s.logger.Error("failed to load subscriptions config", "error", err)
@@ -591,7 +625,11 @@ func (s *Service) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []st
 					row.FilterConfigEventTypes,
 					row.FilterConfigFilterHeaders,
 					row.FilterConfigFilterBody,
+					[]byte("{}"),
+					[]byte("{}"),
 					row.FilterConfigFilterIsFlattened,
+					[]byte("{}"),
+					[]byte("{}"),
 					[]byte("{}"),
 					[]byte("{}"),
 				),
@@ -617,7 +655,7 @@ func (s *Service) FetchDeletedSubscriptions(ctx context.Context, projectIDs []st
 	rows, err := s.repo.FetchDeletedSubscriptions(ctx, repo.FetchDeletedSubscriptionsParams{
 		SubscriptionIds: ids,
 		ProjectIds:      projectIDs,
-		LimitVal:        pgtype.Int8{Int64: int64(pageSize), Valid: true},
+		LimitVal:        int32(pageSize),
 	})
 	if err != nil {
 		s.logger.Error("failed to fetch deleted subscriptions", "error", err)
@@ -689,9 +727,13 @@ updated_existing AS (
         s.filter_config_event_types,
         s.filter_config_filter_headers,
         s.filter_config_filter_body,
+        s.filter_config_filter_query,
+        s.filter_config_filter_path,
         s.filter_config_filter_is_flattened,
         s.filter_config_filter_raw_headers,
         s.filter_config_filter_raw_body,
+        s.filter_config_filter_raw_query,
+        s.filter_config_filter_raw_path,
         s.rate_limit_config_count,
         s.rate_limit_config_duration
     FROM convoy.subscriptions s
@@ -721,9 +763,13 @@ new_subscriptions AS (
         s.filter_config_event_types,
         s.filter_config_filter_headers,
         s.filter_config_filter_body,
+        s.filter_config_filter_query,
+        s.filter_config_filter_path,
         s.filter_config_filter_is_flattened,
         s.filter_config_filter_raw_headers,
         s.filter_config_filter_raw_body,
+        s.filter_config_filter_raw_query,
+        s.filter_config_filter_raw_path,
         s.rate_limit_config_count,
         s.rate_limit_config_duration
     FROM convoy.subscriptions s
@@ -754,9 +800,9 @@ LIMIT $%d`, valuesSQL, argIdx, argIdx, argIdx+1)
 		var retryType string
 		var retryDuration, retryRetryCount int32
 		var eventTypes []string
-		var filterHeaders, filterBody []byte
+		var filterHeaders, filterBody, filterQuery, filterPath []byte
 		var filterIsFlattened pgtype.Bool
-		var filterRawHeaders, filterRawBody []byte
+		var filterRawHeaders, filterRawBody, filterRawQuery, filterRawPath []byte
 		var rateLimitCount, rateLimitDuration int32
 
 		if err := rows.Scan(
@@ -764,8 +810,8 @@ LIMIT $%d`, valuesSQL, argIdx, argIdx, argIdx+1)
 			&function, &deliveryMode, &updatedAt, &createdAt,
 			&alertCount, &alertThreshold,
 			&retryType, &retryDuration, &retryRetryCount,
-			&eventTypes, &filterHeaders, &filterBody, &filterIsFlattened,
-			&filterRawHeaders, &filterRawBody,
+			&eventTypes, &filterHeaders, &filterBody, &filterQuery, &filterPath, &filterIsFlattened,
+			&filterRawHeaders, &filterRawBody, &filterRawQuery, &filterRawPath,
 			&rateLimitCount, &rateLimitDuration,
 		); err != nil {
 			s.logger.Error("failed to scan updated subscription", "error", err)
@@ -784,7 +830,7 @@ LIMIT $%d`, valuesSQL, argIdx, argIdx, argIdx+1)
 			DeliveryMode:    datastore.DeliveryMode(common.PgTextToString(deliveryMode)),
 			AlertConfig:     paramsToAlertConfig(alertCount, alertThreshold),
 			RetryConfig:     paramsToRetryConfig(retryType, retryDuration, retryRetryCount),
-			FilterConfig:    paramsToFilterConfig(eventTypes, filterHeaders, filterBody, filterIsFlattened, filterRawHeaders, filterRawBody),
+			FilterConfig:    paramsToFilterConfig(eventTypes, filterHeaders, filterBody, filterQuery, filterPath, filterIsFlattened, filterRawHeaders, filterRawBody, filterRawQuery, filterRawPath),
 			RateLimitConfig: paramsToRateLimitConfig(rateLimitCount, rateLimitDuration),
 			CreatedAt:       common.PgTimestamptzToTime(createdAt),
 			UpdatedAt:       common.PgTimestamptzToTime(updatedAt),
@@ -818,10 +864,10 @@ func (s *Service) FetchNewSubscriptions(ctx context.Context, projectIDs, knownSu
 
 	rows, err := s.repo.FetchNewSubscriptions(ctx, repo.FetchNewSubscriptionsParams{
 		LastSyncTime:         pgtype.Timestamptz{Time: lastSyncTime, Valid: true},
-		HasKnownIds:          pgtype.Bool{Bool: hasKnownIDs, Valid: true},
+		HasKnownIds:          hasKnownIDs,
 		KnownSubscriptionIds: knownSubscriptionIDs,
 		ProjectIds:           projectIDs,
-		LimitVal:             pgtype.Int8{Int64: int64(pageSize), Valid: true},
+		LimitVal:             int32(pageSize),
 	})
 	if err != nil {
 		s.logger.Error("failed to fetch new subscriptions", "error", err)
@@ -842,9 +888,13 @@ func (s *Service) FetchNewSubscriptions(ctx context.Context, projectIDs, knownSu
 				row.FilterConfigEventTypes,
 				row.FilterConfigFilterHeaders,
 				row.FilterConfigFilterBody,
+				row.FilterConfigFilterQuery,
+				row.FilterConfigFilterPath,
 				row.FilterConfigFilterIsFlattened,
 				row.FilterConfigFilterRawHeaders,
 				row.FilterConfigFilterRawBody,
+				row.FilterConfigFilterRawQuery,
+				row.FilterConfigFilterRawPath,
 			),
 		}
 		subs = append(subs, *sub)
@@ -859,16 +909,16 @@ func (s *Service) FetchNewSubscriptions(ctx context.Context, projectIDs, knownSu
 
 func (s *Service) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID, subscriptionID string) (int64, error) {
 	count, err := s.repo.CountEndpointSubscriptions(ctx, repo.CountEndpointSubscriptionsParams{
-		ProjectID:             common.StringToPgText(projectID),
+		ProjectID:             projectID,
 		EndpointID:            common.StringToPgTextNullable(endpointID),
-		ExcludeSubscriptionID: common.StringToPgText(subscriptionID),
+		ExcludeSubscriptionID: subscriptionID,
 	})
 	if err != nil {
 		s.logger.Error("failed to count endpoint subscriptions", "error", err)
 		return 0, &ServiceError{ErrMsg: "failed to count endpoint subscriptions", Err: err}
 	}
 
-	return count.Int64, nil
+	return count, nil
 }
 
 func (s *Service) TestSubscriptionFilter(_ context.Context, payload, filter interface{}, isFlattened bool) (bool, error) {

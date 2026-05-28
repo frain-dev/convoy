@@ -26,6 +26,7 @@ export class CreateSourceComponent implements OnInit {
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
 		type: ['', Validators.required],
+		event_type_location: [''],
 		body_function: [null],
 		header_function: [null],
 		custom_response: this.formBuilder.group({
@@ -171,7 +172,6 @@ export class CreateSourceComponent implements OnInit {
 	showSourceUrl = false;
 	sourceData!: SOURCE;
 	configurations!: { uid: string; name: string; show: boolean }[];
-
 	brokerAddresses: string[] = [];
 	private rbacService = inject(RbacService);
 	sourceURL!: string;
@@ -182,6 +182,7 @@ export class CreateSourceComponent implements OnInit {
 	async ngOnInit() {
 		if (this.privateService.getProjectDetails.type === 'incoming')
 			this.configurations = [
+				{ uid: 'event_type_location', name: 'Event Type Location', show: false },
 				{ uid: 'custom_response', name: 'Custom Response', show: false },
 				{ uid: 'idempotency', name: 'Idempotency', show: false }
 			];
@@ -201,6 +202,8 @@ export class CreateSourceComponent implements OnInit {
 			const sourceProvider = response.data?.provider;
 
 			this.sourceForm.patchValue(response.data);
+
+			if (this.sourceDetails.event_type_location) this.toggleConfigForm('event_type_location');
 
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
 

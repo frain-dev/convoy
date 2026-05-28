@@ -260,11 +260,11 @@ const createEvent = `-- name: CreateEvent :exec
 
 
 INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id,
-                           headers, raw, data, url_query_params, idempotency_key,
+                           headers, raw, data, url_query_params, url_path, idempotency_key,
                            is_duplicate_event, acknowledged_at, metadata, status)
 VALUES ($1, $2, $3, $4, $5,
-        $6, $7, $8, $9, $10,
-        $11, $12, $13, $14)
+        $6, $7, $8, $9, $10, $11,
+        $12, $13, $14, $15)
 `
 
 type CreateEventParams struct {
@@ -277,6 +277,7 @@ type CreateEventParams struct {
 	Raw              pgtype.Text
 	Data             []byte
 	UrlQueryParams   pgtype.Text
+	UrlPath          pgtype.Text
 	IdempotencyKey   pgtype.Text
 	IsDuplicateEvent pgtype.Bool
 	AcknowledgedAt   pgtype.Timestamptz
@@ -300,6 +301,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error 
 		arg.Raw,
 		arg.Data,
 		arg.UrlQueryParams,
+		arg.UrlPath,
 		arg.IdempotencyKey,
 		arg.IsDuplicateEvent,
 		arg.AcknowledgedAt,
@@ -364,6 +366,7 @@ SELECT ev.id,
        COALESCE(ev.source_id, '')        AS source_id,
        COALESCE(ev.idempotency_key, '')  AS idempotency_key,
        COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
        ev.created_at,
        ev.updated_at,
        ev.acknowledged_at,
@@ -395,6 +398,7 @@ type FindEventByIDRow struct {
 	SourceID           pgtype.Text
 	IdempotencyKey     pgtype.Text
 	UrlQueryParams     pgtype.Text
+	UrlPath            pgtype.Text
 	CreatedAt          pgtype.Timestamptz
 	UpdatedAt          pgtype.Timestamptz
 	AcknowledgedAt     pgtype.Timestamptz
@@ -419,6 +423,7 @@ func (q *Queries) FindEventByID(ctx context.Context, arg FindEventByIDParams) (F
 		&i.SourceID,
 		&i.IdempotencyKey,
 		&i.UrlQueryParams,
+		&i.UrlPath,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.AcknowledgedAt,
@@ -442,6 +447,7 @@ SELECT ev.id,
        COALESCE(ev.source_id, '')        AS source_id,
        COALESCE(ev.idempotency_key, '')  AS idempotency_key,
        COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
        ev.headers,
        ev.raw,
        ev.data,
@@ -474,6 +480,7 @@ type FindEventsByIDsRow struct {
 	SourceID           pgtype.Text
 	IdempotencyKey     pgtype.Text
 	UrlQueryParams     pgtype.Text
+	UrlPath            pgtype.Text
 	Headers            []byte
 	Raw                string
 	Data               []byte
@@ -508,6 +515,7 @@ func (q *Queries) FindEventsByIDs(ctx context.Context, arg FindEventsByIDsParams
 			&i.SourceID,
 			&i.IdempotencyKey,
 			&i.UrlQueryParams,
+			&i.UrlPath,
 			&i.Headers,
 			&i.Raw,
 			&i.Data,
@@ -561,6 +569,7 @@ SELECT ev.id,
        COALESCE(ev.source_id, '')        AS source_id,
        COALESCE(ev.idempotency_key, '')  AS idempotency_key,
        COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
        ev.created_at,
        ev.updated_at,
        ev.acknowledged_at,
@@ -595,6 +604,7 @@ type FindFirstEventWithIdempotencyKeyRow struct {
 	SourceID           pgtype.Text
 	IdempotencyKey     pgtype.Text
 	UrlQueryParams     pgtype.Text
+	UrlPath            pgtype.Text
 	CreatedAt          pgtype.Timestamptz
 	UpdatedAt          pgtype.Timestamptz
 	AcknowledgedAt     pgtype.Timestamptz
@@ -619,6 +629,7 @@ func (q *Queries) FindFirstEventWithIdempotencyKey(ctx context.Context, arg Find
 		&i.SourceID,
 		&i.IdempotencyKey,
 		&i.UrlQueryParams,
+		&i.UrlPath,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.AcknowledgedAt,
@@ -686,6 +697,7 @@ WITH filtered_events AS (
            ev.created_at,
            COALESCE(ev.idempotency_key, '')  AS idempotency_key,
            COALESCE(ev.url_query_params, '') AS url_query_params,
+           COALESCE(ev.url_path, '')         AS url_path,
            ev.updated_at,
            ev.deleted_at,
            ev.acknowledged_at,
@@ -741,7 +753,7 @@ WITH filtered_events AS (
     LIMIT $18
 )
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
-       headers, raw, data, created_at, idempotency_key, url_query_params,
+       headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
        updated_at, deleted_at, acknowledged_at, metadata, status,
        "source_metadata.id", "source_metadata.name"
 FROM filtered_events
@@ -784,6 +796,7 @@ type LoadEventsPagedExistsRow struct {
 	CreatedAt          pgtype.Timestamptz
 	IdempotencyKey     pgtype.Text
 	UrlQueryParams     pgtype.Text
+	UrlPath            pgtype.Text
 	UpdatedAt          pgtype.Timestamptz
 	DeletedAt          pgtype.Timestamptz
 	AcknowledgedAt     pgtype.Timestamptz
@@ -842,6 +855,7 @@ func (q *Queries) LoadEventsPagedExists(ctx context.Context, arg LoadEventsPaged
 			&i.CreatedAt,
 			&i.IdempotencyKey,
 			&i.UrlQueryParams,
+			&i.UrlPath,
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.AcknowledgedAt,
@@ -873,6 +887,7 @@ WITH events AS (SELECT ev.id,
                        ev.created_at,
                        COALESCE(ev.idempotency_key, '')  AS idempotency_key,
                        COALESCE(ev.url_query_params, '') AS url_query_params,
+                       COALESCE(ev.url_path, '')         AS url_path,
                        ev.updated_at,
                        ev.deleted_at,
                        ev.acknowledged_at,
@@ -925,7 +940,7 @@ WITH events AS (SELECT ev.id,
                 LIMIT $17
 )
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
-       headers, raw, data, created_at, idempotency_key, url_query_params,
+       headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
        updated_at, deleted_at, acknowledged_at, metadata, status,
        "source_metadata.id", "source_metadata.name"
 FROM events
@@ -967,6 +982,7 @@ type LoadEventsPagedSearchRow struct {
 	CreatedAt          pgtype.Timestamptz
 	IdempotencyKey     pgtype.Text
 	UrlQueryParams     pgtype.Text
+	UrlPath            pgtype.Text
 	UpdatedAt          pgtype.Timestamptz
 	DeletedAt          pgtype.Timestamptz
 	AcknowledgedAt     pgtype.Timestamptz
@@ -1021,6 +1037,7 @@ func (q *Queries) LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPaged
 			&i.CreatedAt,
 			&i.IdempotencyKey,
 			&i.UrlQueryParams,
+			&i.UrlPath,
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.AcknowledgedAt,

@@ -12,6 +12,7 @@ export interface EVENT {
 	idempotency_key: string;
 	is_duplicate_event: boolean;
 	event_type: string;
+	endpoints?: string[];
 	data: any;
 	matched_endpoints: number;
 	endpoint_metadata: ENDPOINT[];

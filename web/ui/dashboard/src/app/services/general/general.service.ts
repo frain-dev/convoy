@@ -17,6 +17,8 @@ export class GeneralService {
 
 	showNotification(details: { message: string; style: NOTIFICATION_STATUS; type?: string }) {
 		this.alertStatus.next({ message: details.message, style: details.style, show: true, type: details.type ? details.type : 'alert' });
+		if (details.type === 'modal') return;
+
 		setTimeout(() => {
 			this.dismissNotification();
 		}, 7000);
