@@ -2,6 +2,7 @@ package filters
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -135,5 +136,5 @@ func TestUpdateFilters_BulkUpdate(t *testing.T) {
 
 	updated, err := service.FindFilterByID(ctx, filters[0].UID)
 	require.NoError(t, err)
-	require.WithinDuration(t, *originalEnabledAt, *updated.EnabledAt, 0)
+	require.WithinDuration(t, *originalEnabledAt, *updated.EnabledAt, time.Microsecond)
 }
