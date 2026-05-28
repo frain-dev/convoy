@@ -251,10 +251,6 @@ func (us *UpdateSource) Validate() error {
 		if err := validateEventTypeLocation(*us.EventTypeLocation); err != nil {
 			return err
 		}
-
-		if err := validateEventTypeLocationVerifierCompatibility("", us.Verifier.Type, *us.EventTypeLocation); err != nil {
-			return err
-		}
 	}
 
 	return util.Validate(us)

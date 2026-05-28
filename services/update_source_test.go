@@ -128,6 +128,42 @@ func TestUpdateSourceService_Run(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "an error occurred while updating source",
 		},
+		{
+			name: "should_reject_metadata_event_type_location_for_provider_signed_source",
+			args: args{
+				ctx: ctx,
+				source: &datastore.Source{
+					UID:      "12345",
+					Provider: datastore.GithubSourceProvider,
+					Verifier: &datastore.VerifierConfig{
+						Type: datastore.HMacVerifier,
+						HMac: &datastore.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Hub-Signature-256",
+							Hash:     "SHA256",
+							Secret:   "Convoy-Secret",
+						},
+					},
+				},
+				update: &models.UpdateSource{
+					Name:              stringPtr("Convoy-Prod"),
+					Type:              datastore.HTTPSource,
+					EventTypeLocation: stringPtr("request.query.event_type"),
+					Verifier: models.VerifierConfig{
+						Type: datastore.HMacVerifier,
+						HMac: &models.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Hub-Signature-256",
+							Hash:     "SHA256",
+							Secret:   "Convoy-Secret",
+						},
+					},
+				},
+				project: &datastore.Project{UID: "12345"},
+			},
+			wantErr:    true,
+			wantErrMsg: "event type location cannot use request headers or query parameters with payload signature verification",
+		},
 	}
 
 	for _, tc := range tests {
