@@ -151,6 +151,27 @@ func TestCreateSource_Validate(t *testing.T) {
 	}
 }
 
+func TestUpdateSource_ValidateRejectsPayloadSignatureMetadataEventTypeLocation(t *testing.T) {
+	name := "Convoy-Prod"
+	location := "request.header.X-Gitlab-Event"
+	source := &UpdateSource{
+		Name:              &name,
+		Type:              datastore.HTTPSource,
+		EventTypeLocation: &location,
+		Verifier: VerifierConfig{
+			Type: datastore.HMacVerifier,
+			HMac: &HMac{
+				Encoding: datastore.Base64Encoding,
+				Header:   "X-Convoy-Signature",
+				Hash:     "SHA512",
+				Secret:   "Convoy-Secret",
+			},
+		},
+	}
+
+	require.Error(t, source.Validate())
+}
+
 func TestValidateEventTypeLocation(t *testing.T) {
 	tests := []struct {
 		name     string

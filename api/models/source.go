@@ -102,7 +102,15 @@ func validateEventTypeLocationVerifierCompatibility(provider datastore.SourcePro
 		return nil
 	}
 
-	if datastore.SourceProviderUsesPayloadSignature(provider) || datastore.VerifierTypeUsesPayloadSignature(verifierType) {
+	if datastore.SourceProviderUsesPayloadSignature(provider) {
+		return errors.New("event type location cannot use request headers or query parameters with payload signature verification")
+	}
+
+	return validateEventTypeLocationVerifierTypeCompatibility(verifierType, location)
+}
+
+func validateEventTypeLocationVerifierTypeCompatibility(verifierType datastore.VerifierType, location string) error {
+	if datastore.EventTypeLocationUsesRequestMetadata(location) && datastore.VerifierTypeUsesPayloadSignature(verifierType) {
 		return errors.New("event type location cannot use request headers or query parameters with payload signature verification")
 	}
 
@@ -251,9 +259,13 @@ func (us *UpdateSource) Validate() error {
 		if err := validateEventTypeLocation(*us.EventTypeLocation); err != nil {
 			return err
 		}
+
+		if err := validateEventTypeLocationVerifierTypeCompatibility(us.Verifier.Type, *us.EventTypeLocation); err != nil {
+			return err
+		}
 	}
 
-	return util.Validate(us)
+	return nil
 }
 
 type QueryListSource struct {
