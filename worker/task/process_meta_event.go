@@ -128,8 +128,12 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 		return nil, err
 	}
 
+	// Metadata.Data holds the canonical {event_type, data} payload; Metadata.Raw is
+	// legacy and left empty at creation. Signing/sending Raw produced an empty
+	// json.RawMessage, which fails HMAC generation ("unexpected end of JSON input")
+	// and meant meta events were never delivered (PDE-782).
 	sig := &signature.Signature{
-		Payload: json.RawMessage(metaEvent.Metadata.Raw),
+		Payload: metaEvent.Metadata.Data,
 		Schemes: []signature.Scheme{
 			{
 				Secret:   []string{project.Config.MetaEvent.Secret},
