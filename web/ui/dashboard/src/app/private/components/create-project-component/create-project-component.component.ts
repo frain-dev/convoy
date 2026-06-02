@@ -394,15 +394,16 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	checkMetaEventsConfig() {
-		const is_meta_events_enabled = this.projectForm.value.config.meta_event.is_enabled;
-		const metaEventsConfig = Object.keys(this.projectForm.value.config.meta_event).slice(1, -1);
+		const metaEvent = this.projectForm.value.config?.meta_event;
+		const is_meta_events_enabled = metaEvent?.is_enabled;
+		const metaEventsConfig = Object.keys(metaEvent ?? {}).slice(1, -1);
 		if (!is_meta_events_enabled) {
 			metaEventsConfig.forEach(config => {
 				this.projectForm.get(`config.meta_event.${config}`)?.clearValidators();
 				this.projectForm.get(`config.meta_event.${config}`)?.setErrors(null);
 				this.projectForm.updateValueAndValidity();
 			});
-		} else if (!this.projectForm.value.config.meta_event.type) {
+		} else if (!metaEvent?.type) {
 			// `http` is currently the only supported meta event transport; it has no UI control,
 			// so ensure it's set when meta events are enabled (load can null it out).
 			this.projectForm.get('config.meta_event.type')?.patchValue('http');
