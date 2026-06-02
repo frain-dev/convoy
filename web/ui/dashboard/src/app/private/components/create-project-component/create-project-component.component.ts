@@ -350,6 +350,7 @@ export class CreateProjectComponent implements OnInit {
 			this.onAction.emit(response.data);
 			this.isCreatingProject = false;
 		} catch (error) {
+			console.error('[updateProject] update failed:', error);
 			this.isCreatingProject = false;
 		}
 	}
@@ -401,6 +402,10 @@ export class CreateProjectComponent implements OnInit {
 				this.projectForm.get(`config.meta_event.${config}`)?.setErrors(null);
 				this.projectForm.updateValueAndValidity();
 			});
+		} else if (!this.projectForm.value.config.meta_event.type) {
+			// `http` is currently the only supported meta event transport; it has no UI control,
+			// so ensure it's set when meta events are enabled (load can null it out).
+			this.projectForm.get('config.meta_event.type')?.patchValue('http');
 		}
 	}
 
@@ -438,7 +443,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	switchTab(tab: TAB) {
-		if (tab.label === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
+		if (tab.label === 'meta events config') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
 		this.activeTab = tab;
 		this.addPageToUrl();
 	}

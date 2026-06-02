@@ -93,14 +93,20 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 		}
 	}
 
+	private isSameOption(a: any, b: any): boolean {
+		// Primitive (string) options must be compared by value; they have no uid.
+		if (typeof a === 'string' || typeof b === 'string') return a === b;
+		// Object options: match by identity or a defined uid (guard against undefined === undefined).
+		return a === b || (a?.uid != null && a.uid === b?.uid);
+	}
+
+	isSelected(option: any): boolean {
+		return this.selectedOptions?.some((item: any) => this.isSameOption(item, option)) || false;
+	}
+
 	selectOption(option?: any) {
 		if (this.multiple) {
-			const selectedOption =
-				this.selectedOptions?.find((item: any) => item === option) ||
-				this.selectedOptions?.find((item: any) => item.uid === option) ||
-				this.selectedOptions?.find((item: any) => item.uid === option.uid) ||
-				this.selectedOptions?.find((item: any) => item.name === option.name && item.uid === option.uid);
-			if (!selectedOption) this.selectedOptions?.push(option);
+			if (!this.isSelected(option)) this.selectedOptions?.push(option);
 
 			this.updateSelectedOptions();
 		} else {

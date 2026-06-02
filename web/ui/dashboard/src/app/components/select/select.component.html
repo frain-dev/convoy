@@ -55,9 +55,11 @@
         <li class="text-14 text-neutral-4">Select</li>
         @if (multiple) {
           @for (option of options; track $index) {
-            <li class="list-none py-10px border-b border-new.primary-25">
-              <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
-            </li>
+            @if (!isSelected(option)) {
+              <li class="list-none py-10px border-b border-new.primary-25">
+                <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+              </li>
+            }
           }
         }
         @if (!multiple) {
