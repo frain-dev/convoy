@@ -93,11 +93,19 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 		}
 	}
 
+	private optionKey(o: any): any {
+		// Selected items can be objects ({uid, name}) while options are plain strings
+		// (or vice versa); normalise both to a comparable key before matching.
+		return typeof o === 'string' ? o : o?.uid;
+	}
+
 	private isSameOption(a: any, b: any): boolean {
-		// Primitive (string) options must be compared by value; they have no uid.
-		if (typeof a === 'string' || typeof b === 'string') return a === b;
-		// Object options: match by identity or a defined uid (guard against undefined === undefined).
-		return a === b || (a?.uid != null && a.uid === b?.uid);
+		const aKey = this.optionKey(a);
+		const bKey = this.optionKey(b);
+		// Compare by key when both resolve to one (handles object-vs-string, e.g. a
+		// loaded {uid:'x'} against the string option 'x'); otherwise fall back to identity.
+		if (aKey != null && bKey != null) return aKey === bKey;
+		return a === b;
 	}
 
 	isSelected(option: any): boolean {
