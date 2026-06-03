@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -72,6 +73,10 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			checkSignatureVersions(projectConfig.Signature.Versions)
 		} else {
 			projectConfig.Signature = datastore.DefaultProjectConfig.Signature
+		}
+
+		if strings.TrimSpace(string(projectConfig.RequestIDHeader)) == "" {
+			projectConfig.RequestIDHeader = datastore.DefaultProjectConfig.RequestIDHeader
 		}
 
 		if projectConfig.RateLimit == nil {
@@ -187,6 +192,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 		}
 
 		project.Config = update.Config.Transform()
+		normalizeRequestIDHeader(project.Config)
 		checkSignatureVersions(project.Config.Signature.Versions)
 		err := validateMetaEvent(project.Config, ps.Licenser)
 		if err != nil {
@@ -209,6 +215,16 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	}
 
 	return project, nil
+}
+
+func normalizeRequestIDHeader(cfg *datastore.ProjectConfig) {
+	if cfg == nil {
+		return
+	}
+
+	if strings.TrimSpace(string(cfg.RequestIDHeader)) == "" {
+		cfg.RequestIDHeader = datastore.DefaultProjectConfig.RequestIDHeader
+	}
 }
 
 func checkSignatureVersions(versions []datastore.SignatureVersion) {

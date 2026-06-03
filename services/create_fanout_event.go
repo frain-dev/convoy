@@ -74,6 +74,10 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
+	if err = e.Project.ValidateOutgoingEventIdempotencyKey(e.NewMessage.IdempotencyKey); err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
 	var isDuplicate bool
 	idempotencyStart := time.Now()
 	if !util.IsStringEmpty(e.NewMessage.IdempotencyKey) {

@@ -1,5 +1,5 @@
 import {CommonModule} from '@angular/common';
-import {Component, Directive, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, Directive, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
 import {ButtonComponent} from '../button/button.component';
 
 // dialog header
@@ -43,19 +43,42 @@ export class DialogHeaderComponent {
 	standalone: true,
 	host: { class: 'backdrop:bg-black backdrop:bg-opacity-50 p-0 fixed top-0 left-0 right-0', '[class]': 'classes', '[id]': 'id' }
 })
-export class DialogDirective implements OnInit {
+export class DialogDirective implements OnInit, OnDestroy {
 	@Input('position') position: 'full' | 'right' | 'center' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
 	@Input('id') id!: string;
+	/** When `delegate`, Escape is handled by the parent via `(escaped)` instead of closing the dialog. */
+	@Input() escapeAction: 'dismiss' | 'delegate' = 'dismiss';
+	@Output() escaped = new EventEmitter<void>();
+
 	modalSizes = { sm: 'w-[340px]', md: 'w-[490px]', lg: 'w-[914px]' };
 	modalType = {
 		full: ` w-full h-full`,
 		right: ` mr-0 h-full`,
 		center: ` rounded-[16px] mt-40px`
 	};
-	constructor() {}
 
-	ngOnInit(): void {}
+	private cancelListener?: (event: Event) => void;
+
+	constructor(private el: ElementRef<HTMLDialogElement>) {}
+
+	ngOnInit(): void {
+		if (this.escapeAction !== 'delegate') {
+			return;
+		}
+
+		this.cancelListener = (event: Event) => {
+			event.preventDefault();
+			this.escaped.emit();
+		};
+		this.el.nativeElement.addEventListener('cancel', this.cancelListener);
+	}
+
+	ngOnDestroy(): void {
+		if (this.cancelListener) {
+			this.el.nativeElement.removeEventListener('cancel', this.cancelListener);
+		}
+	}
 
 	get classes(): string {
 		return `${this.modalType[this.position]} bg-white-100 ${this.position === 'full' ? '' : this.modalSizes[this.size]}`;

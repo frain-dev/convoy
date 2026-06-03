@@ -355,8 +355,23 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			}
 		}
 
+		// When a project configures a custom request ID header, producers must supply a UUID
+		// as idempotency_key at publish time; that value is sent on the outbound header below.
 		requestSentAt := time.Now()
-		resp, err := deps.Dispatcher.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)
+		resp, err := deps.Dispatcher.SendWebhookWithMTLS(
+			ctx,
+			targetURL,
+			sig.Payload,
+			project.Config.Signature.Header.String(),
+			header,
+			int64(cfg.MaxResponseSize),
+			eventDelivery.Headers,
+			project.Config.GetRequestIDHeader().String(),
+			eventDelivery.IdempotencyKey,
+			httpDuration,
+			contentType,
+			mtlsCert,
+		)
 		responseReceivedAt := time.Now()
 
 		status := "-"

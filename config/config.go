@@ -462,6 +462,7 @@ const (
 const (
 	RedisQueueProvider       QueueProvider           = "redis"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
+	DefaultRequestIDHeader   RequestIDHeaderProvider = "X-Convoy-Idempotency-Key"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
 )
 
@@ -483,6 +484,7 @@ type (
 	AuthProvider            string
 	QueueProvider           string
 	SignatureHeaderProvider string
+	RequestIDHeaderProvider string
 	TracerProvider          string
 	CacheProvider           string
 	LimiterProvider         string
@@ -493,6 +495,10 @@ type (
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
+}
+
+func (r RequestIDHeaderProvider) String() string {
+	return string(r)
 }
 
 type ExecutionMode string

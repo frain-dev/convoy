@@ -69,6 +69,9 @@ type ProjectConfig struct {
 	// Signature is used to configure the project's signature header versions
 	Signature *SignatureConfiguration `json:"signature"`
 
+	// RequestIDHeader is the outbound header name for the stable request id sent on webhook deliveries.
+	RequestIDHeader config.RequestIDHeaderProvider `json:"request_id_header,omitempty" valid:"optional"`
+
 	// MetaEvent is used to configure the project's meta events
 	MetaEvent *MetaEventConfiguration `json:"meta_event"`
 
@@ -96,6 +99,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		RateLimit:                     pc.RateLimit.Transform(),
 		Strategy:                      pc.Strategy.transform(),
 		Signature:                     pc.Signature.transform(),
+		RequestIDHeader:               pc.RequestIDHeader,
 		MetaEvent:                     pc.MetaEvent.transform(),
 		CircuitBreaker:                pc.CircuitBreaker,
 	}

@@ -84,6 +84,25 @@
                 </div>
               </div>
             }
+            @if (showConfig('request_id_header') && isOutgoingProject()) {
+              <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+                <div class="flex justify-between items-center mb-24px">
+                  <p class="text-12 font-medium text-neutral-11 flex items-center">
+                    Request ID Header
+                    <convoy-tooltip size="sm" position="top-right" class="ml-4px">Outbound header for the stable request id sent on webhook deliveries (same value across retries). Defaults to X-Convoy-Idempotency-Key.</convoy-tooltip>
+                  </p>
+                  <button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="$event.preventDefault(); clearRequestIdHeaderConfig()">
+                    <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+                      <use xlink:href="#delete-icon2"></use>
+                    </svg>
+                  </button>
+                </div>
+                <convoy-input-field>
+                  <label for="request-id-header" convoy-label>Header</label>
+                  <input type="text" id="request-id-header" convoy-input autocomplete="request-id-header" formControlName="request_id_header" placeholder="X-Convoy-Idempotency-Key" />
+                </convoy-input-field>
+              </div>
+            }
             @if (showConfig('strategy')) {
               <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
                 <div class="flex justify-between items-center mb-24px">

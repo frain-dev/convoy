@@ -57,7 +57,7 @@ INSERT INTO convoy.project_configurations (
     id, search_policy, max_payload_read_size,
     replay_attacks_prevention_enabled, ratelimit_count,
     ratelimit_duration, strategy_type, strategy_duration,
-    strategy_retry_count, signature_header, signature_versions,
+    strategy_retry_count, signature_header, signature_versions, request_id_header,
     disable_endpoint, meta_events_enabled, meta_events_type,
     meta_events_event_type, meta_events_url, meta_events_secret,
     meta_events_pub_sub, ssl_enforce_secure_endpoints,
@@ -75,7 +75,7 @@ VALUES (
     $18, $19,
     $20, $21, $22,
     $23, $24,
-    $25, $26
+    $25, $26, $27
 )
 `
 
@@ -91,6 +91,7 @@ type CreateProjectConfigurationParams struct {
 	StrategyRetryCount             pgtype.Int4
 	SignatureHeader                pgtype.Text
 	SignatureVersions              []byte
+	RequestIDHeader                pgtype.Text
 	DisableEndpoint                pgtype.Bool
 	MetaEventsEnabled              pgtype.Bool
 	MetaEventsType                 pgtype.Text
@@ -122,6 +123,7 @@ func (q *Queries) CreateProjectConfiguration(ctx context.Context, arg CreateProj
 		arg.StrategyRetryCount,
 		arg.SignatureHeader,
 		arg.SignatureVersions,
+		arg.RequestIDHeader,
 		arg.DisableEndpoint,
 		arg.MetaEventsEnabled,
 		arg.MetaEventsType,
@@ -203,6 +205,7 @@ SELECT
     c.strategy_retry_count AS "config_strategy_retry_count",
     c.signature_header AS "config_signature_header",
     c.signature_versions AS "config_signature_versions",
+    c.request_id_header AS "config_request_id_header",
     c.disable_endpoint AS "config_disable_endpoint",
     c.ssl_enforce_secure_endpoints AS "config_ssl_enforce_secure_endpoints",
     c.meta_events_enabled AS "config_meta_events_enabled",
@@ -246,6 +249,7 @@ type FetchProjectByIDRow struct {
 	ConfigStrategyRetryCount             int32
 	ConfigSignatureHeader                string
 	ConfigSignatureVersions              []byte
+	ConfigRequestIDHeader                string
 	ConfigDisableEndpoint                bool
 	ConfigSslEnforceSecureEndpoints      pgtype.Bool
 	ConfigMetaEventsEnabled              bool
@@ -288,6 +292,7 @@ func (q *Queries) FetchProjectByID(ctx context.Context, id pgtype.Text) (FetchPr
 		&i.ConfigStrategyRetryCount,
 		&i.ConfigSignatureHeader,
 		&i.ConfigSignatureVersions,
+		&i.ConfigRequestIDHeader,
 		&i.ConfigDisableEndpoint,
 		&i.ConfigSslEnforceSecureEndpoints,
 		&i.ConfigMetaEventsEnabled,
@@ -359,6 +364,7 @@ SELECT
     c.strategy_retry_count AS "config_strategy_retry_count",
     c.signature_header AS "config_signature_header",
     c.signature_versions AS "config_signature_versions",
+    c.request_id_header AS "config_request_id_header",
     c.disable_endpoint AS "config_disable_endpoint",
     c.ssl_enforce_secure_endpoints AS "config_ssl_enforce_secure_endpoints",
     c.meta_events_enabled AS "config_meta_events_enabled",
@@ -403,6 +409,7 @@ type FetchProjectsRow struct {
 	ConfigStrategyRetryCount             int32
 	ConfigSignatureHeader                string
 	ConfigSignatureVersions              []byte
+	ConfigRequestIDHeader                string
 	ConfigDisableEndpoint                bool
 	ConfigSslEnforceSecureEndpoints      pgtype.Bool
 	ConfigMetaEventsEnabled              bool
@@ -451,6 +458,7 @@ func (q *Queries) FetchProjects(ctx context.Context, orgID pgtype.Text) ([]Fetch
 			&i.ConfigStrategyRetryCount,
 			&i.ConfigSignatureHeader,
 			&i.ConfigSignatureVersions,
+			&i.ConfigRequestIDHeader,
 			&i.ConfigDisableEndpoint,
 			&i.ConfigSslEnforceSecureEndpoints,
 			&i.ConfigMetaEventsEnabled,
@@ -553,24 +561,25 @@ UPDATE convoy.project_configurations SET
     strategy_retry_count = $7,
     signature_header = $8,
     signature_versions = $9,
-    disable_endpoint = $10,
-    meta_events_enabled = $11,
-    meta_events_type = $12,
-    meta_events_event_type = $13,
-    meta_events_url = $14,
-    meta_events_secret = $15,
-    meta_events_pub_sub = $16,
-    search_policy = $17,
-    ssl_enforce_secure_endpoints = $18,
-    cb_sample_rate = $19,
-    cb_error_timeout = $20,
-    cb_failure_threshold = $21,
-    cb_success_threshold = $22,
-    cb_observability_window = $23,
-    cb_minimum_request_count = $24,
-    cb_consecutive_failure_threshold = $25,
+    request_id_header = $10,
+    disable_endpoint = $11,
+    meta_events_enabled = $12,
+    meta_events_type = $13,
+    meta_events_event_type = $14,
+    meta_events_url = $15,
+    meta_events_secret = $16,
+    meta_events_pub_sub = $17,
+    search_policy = $18,
+    ssl_enforce_secure_endpoints = $19,
+    cb_sample_rate = $20,
+    cb_error_timeout = $21,
+    cb_failure_threshold = $22,
+    cb_success_threshold = $23,
+    cb_observability_window = $24,
+    cb_minimum_request_count = $25,
+    cb_consecutive_failure_threshold = $26,
     updated_at = NOW()
-WHERE id = $26 AND deleted_at IS NULL
+WHERE id = $27 AND deleted_at IS NULL
 `
 
 type UpdateProjectConfigurationParams struct {
@@ -583,6 +592,7 @@ type UpdateProjectConfigurationParams struct {
 	StrategyRetryCount             pgtype.Int4
 	SignatureHeader                pgtype.Text
 	SignatureVersions              []byte
+	RequestIDHeader                pgtype.Text
 	DisableEndpoint                pgtype.Bool
 	MetaEventsEnabled              pgtype.Bool
 	MetaEventsType                 pgtype.Text
@@ -613,6 +623,7 @@ func (q *Queries) UpdateProjectConfiguration(ctx context.Context, arg UpdateProj
 		arg.StrategyRetryCount,
 		arg.SignatureHeader,
 		arg.SignatureVersions,
+		arg.RequestIDHeader,
 		arg.DisableEndpoint,
 		arg.MetaEventsEnabled,
 		arg.MetaEventsType,

@@ -308,6 +308,7 @@ var (
 		ReplayAttacks:          false,
 		DisableEndpoint:        false,
 		AddEventIDTraceHeaders: false,
+		RequestIDHeader:        config.DefaultRequestIDHeader,
 		SSL:                    &DefaultSSLConfig,
 		RateLimit:              &DefaultRateLimitConfig,
 		Strategy:               &DefaultStrategyConfig,
@@ -641,6 +642,7 @@ type ProjectConfig struct {
 	RateLimit                     *RateLimitConfiguration      `json:"ratelimit" db:"ratelimit"`
 	Strategy                      *StrategyConfiguration       `json:"strategy" db:"strategy"`
 	Signature                     *SignatureConfiguration      `json:"signature" db:"signature"`
+	RequestIDHeader               config.RequestIDHeaderProvider `json:"request_id_header"`
 	MetaEvent                     *MetaEventConfiguration      `json:"meta_event" db:"meta_event"`
 	CircuitBreaker                *CircuitBreakerConfiguration `json:"circuit_breaker" db:"circuit_breaker"`
 }
@@ -664,6 +666,22 @@ func (p *ProjectConfig) GetSignatureConfig() SignatureConfiguration {
 		return *p.Signature
 	}
 	return SignatureConfiguration{}
+}
+
+func (p *ProjectConfig) GetRequestIDHeader() config.RequestIDHeaderProvider {
+	if p != nil && strings.TrimSpace(string(p.RequestIDHeader)) != "" {
+		return p.RequestIDHeader
+	}
+	return config.DefaultRequestIDHeader
+}
+
+func (p *ProjectConfig) UsesCustomRequestIDHeader() bool {
+	if p == nil {
+		return false
+	}
+
+	header := strings.TrimSpace(string(p.RequestIDHeader))
+	return header != "" && config.RequestIDHeaderProvider(header) != config.DefaultRequestIDHeader
 }
 
 func (p *ProjectConfig) GetSSLConfig() SSLConfiguration {
@@ -774,6 +792,22 @@ func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
 
+func (p *Project) ValidateOutgoingEventIdempotencyKey(idempotencyKey string) error {
+	if p == nil || p.Type != OutgoingProject {
+		return nil
+	}
+
+	if p.Config == nil || !p.Config.UsesCustomRequestIDHeader() {
+		return nil
+	}
+
+	if isStringEmpty(idempotencyKey) {
+		return ErrMissingIdempotencyKeyForCustomRequestIDHeader
+	}
+
+	return nil
+}
+
 var (
 	ErrSignupDisabled                = errors.New("user registration is disabled")
 	ErrUserNotFound                  = errors.New("user not found")
@@ -793,6 +827,7 @@ var (
 	ErrNoActiveSecret                = errors.New("no active secret found")
 	ErrSecretNotFound                = errors.New("secret not found")
 	ErrMetaEventNotFound             = errors.New("meta event not found")
+	ErrMissingIdempotencyKeyForCustomRequestIDHeader = errors.New("idempotency_key is required when a custom request_id_header is configured")
 )
 
 type AppMetadata struct {

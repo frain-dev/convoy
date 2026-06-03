@@ -28,6 +28,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -36,6 +37,8 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
+
+var ErrMissingIdempotencyKeyForCustomRequestIDHeader = datastore.ErrMissingIdempotencyKeyForCustomRequestIDHeader
 
 var (
 	ErrAllowListIsRequired = errors.New("allowlist is required")
@@ -585,20 +588,20 @@ func (d *Dispatcher) createClientWithMTLS(mtlsCert *tls.Certificate) *http.Clien
 // SendWebhookWithMTLS sends a webhook request with optional mTLS client certificate configuration
 func (d *Dispatcher) SendWebhookWithMTLS(ctx context.Context, endpoint string, jsonData json.RawMessage,
 	signatureHeader, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader,
-	idempotencyKey string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) (*Response, error) {
+	requestIDHeader, idempotencyKey string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) (*Response, error) {
 	client := d.createClientWithMTLS(mtlsCert)
-	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, contentType, client)
+	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, requestIDHeader, idempotencyKey, timeout, contentType, client)
 }
 
 func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage,
 	signatureHeader, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader,
-	idempotencyKey string, timeout time.Duration, contentType string) (*Response, error) {
-	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, contentType, d.client)
+	requestIDHeader, idempotencyKey string, timeout time.Duration, contentType string) (*Response, error) {
+	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, requestIDHeader, idempotencyKey, timeout, contentType, d.client)
 }
 
 func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, jsonData json.RawMessage,
 	signatureHeader, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader,
-	idempotencyKey string, timeout time.Duration, contentType string, client *http.Client) (*Response, error) {
+	requestIDHeader, idempotencyKey string, timeout time.Duration, contentType string, client *http.Client) (*Response, error) {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -638,8 +641,14 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 
 	header := httpheader.HTTPHeader(req.Header)
 	header.MergeHeaders(headers)
-	if len(idempotencyKey) > 0 && !hasHeader(header, "X-Convoy-Idempotency-Key") {
-		header["X-Convoy-Idempotency-Key"] = []string{idempotencyKey}
+	if isCustomRequestIDHeader(requestIDHeader) && len(idempotencyKey) == 0 {
+		err := ErrMissingIdempotencyKeyForCustomRequestIDHeader
+		d.logger.Error("Dispatcher invalid arguments", "error", err)
+		r.Error = err.Error()
+		return r, err
+	}
+	if len(idempotencyKey) > 0 && !util.IsStringEmpty(requestIDHeader) && !hasHeader(header, requestIDHeader) {
+		header[requestIDHeader] = []string{idempotencyKey}
 	}
 
 	req.Header = http.Header(header)
@@ -664,6 +673,10 @@ func hasHeader(header httpheader.HTTPHeader, key string) bool {
 	}
 
 	return false
+}
+
+func isCustomRequestIDHeader(requestIDHeader string) bool {
+	return !util.IsStringEmpty(requestIDHeader) && requestIDHeader != config.DefaultRequestIDHeader.String()
 }
 
 type Response struct {
