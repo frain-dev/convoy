@@ -225,6 +225,29 @@ const (
 	ORDER BY o.id DESC
 	LIMIT 1`
 
+	countPrevUserOrgsSearch = `
+	SELECT COUNT(DISTINCT(o.id)) AS count
+	FROM convoy.organisation_members m
+	JOIN convoy.organisations o ON m.organisation_id = o.id
+	WHERE m.user_id = :user_id
+	AND o.deleted_at IS NULL
+	AND m.deleted_at IS NULL
+	AND (o.name ILIKE :search_like OR o.id = :search_exact)
+	AND o.id > :cursor
+	GROUP BY o.id, m.id
+	ORDER BY o.id DESC
+	LIMIT 1`
+
+	userOrganisationsSearchClause = ` AND (o.name ILIKE :search_like OR o.id = :search_exact) `
+
+	countUserOrgs = `
+	SELECT COUNT(DISTINCT o.id) AS count
+	FROM convoy.organisation_members m
+	JOIN convoy.organisations o ON m.organisation_id = o.id
+	WHERE m.user_id = :user_id
+	AND o.deleted_at IS NULL
+	AND m.deleted_at IS NULL`
+
 	fetchUserProjects = `
 	SELECT p.id, p.name, p.type, p.retained_events, p.logo_url,
 	p.organisation_id, p.project_configuration_id, p.created_at,
@@ -406,12 +429,22 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 		query = baseFetchUserOrganisationsPagedBackward
 	}
 
-	query = fmt.Sprintf(query, fetchOrgMemberOrganisations)
+	base := fetchOrgMemberOrganisations
+	if pageable.Search != "" {
+		base += userOrganisationsSearchClause
+	}
+
+	query = fmt.Sprintf(query, base)
 
 	arg := map[string]interface{}{
 		"limit":   pageable.Limit(),
 		"cursor":  pageable.Cursor(),
 		"user_id": userID,
+	}
+
+	if pageable.Search != "" {
+		arg["search_like"] = "%" + pageable.Search + "%"
+		arg["search_exact"] = pageable.Search
 	}
 
 	query, args, err := sqlx.Named(query, arg)
@@ -450,7 +483,12 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 
 		arg["cursor"] = organisations[0].UID
 
-		countQuery, qargs, err = sqlx.Named(countPrevUserOrgs, arg)
+		prevCountQuery := countPrevUserOrgs
+		if pageable.Search != "" {
+			prevCountQuery = countPrevUserOrgsSearch
+		}
+
+		countQuery, qargs, err = sqlx.Named(prevCountQuery, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -485,6 +523,33 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 	pagination = pagination.Build(pageable, ids)
 
 	return organisations, *pagination, nil
+}
+
+// CountUserOrganisations returns the total number of organisations a user belongs to,
+// honouring the same optional name/id search filter used by LoadUserOrganisationsPaged.
+func (o *orgMemberRepo) CountUserOrganisations(ctx context.Context, userID string, search string) (int64, error) {
+	query := countUserOrgs
+	arg := map[string]interface{}{"user_id": userID}
+
+	if search != "" {
+		query += userOrganisationsSearchClause
+		arg["search_like"] = "%" + search + "%"
+		arg["search_exact"] = search
+	}
+
+	q, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return 0, err
+	}
+	q = o.db.GetReadDB().Rebind(q)
+
+	var count int64
+	err = o.db.GetReadDB().QueryRowxContext(ctx, q, args...).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (o *orgMemberRepo) FindUserProjects(ctx context.Context, userID string) ([]datastore.Project, error) {

@@ -37,12 +37,22 @@ func (h *Handler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	organisations, paginationData, err := postgres.NewOrgMemberRepo(h.A.DB).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
+	orgMemberRepo := postgres.NewOrgMemberRepo(h.A.DB)
+
+	organisations, paginationData, err := orgMemberRepo.LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch user organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	total, err := orgMemberRepo.CountUserOrganisations(r.Context(), user.UID, pageable.Search)
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to count user organisations")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	paginationData.Total = total
 
 	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
 		models.PagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))

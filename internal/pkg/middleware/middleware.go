@@ -332,6 +332,7 @@ func Pagination(next http.Handler) http.Handler {
 			Direction:  datastore.PageDirection(rawDirection),
 			NextCursor: rawNextCursor,
 			PrevCursor: rawPrevCursor,
+			Search:     strings.TrimSpace(r.URL.Query().Get("q")),
 		}
 		pageable.SetCursors()
 

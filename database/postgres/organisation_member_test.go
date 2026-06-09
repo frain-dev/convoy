@@ -99,6 +99,64 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 	require.Equal(t, 7, len(organisations))
 }
 
+func TestCountUserOrganisations(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	organisationMemberRepo := NewOrgMemberRepo(db)
+	orgRepo := NewOrgRepo(db)
+	project := seedProject(t, db)
+	user := seedUser(t, db)
+	ctx := context.Background()
+
+	names := []string{"Alpha Corp", "Beta Inc", "Gamma LLC", "Delta Ltd", "Epsilon"}
+	orgs := make([]*datastore.Organisation, 0, len(names))
+	for _, name := range names {
+		org := &datastore.Organisation{
+			UID:     ulid.Make().String(),
+			OwnerID: user.UID,
+			Name:    name,
+		}
+		require.NoError(t, orgRepo.CreateOrganisation(ctx, org))
+		orgs = append(orgs, org)
+
+		member := &datastore.OrganisationMember{
+			UID:            ulid.Make().String(),
+			OrganisationID: org.UID,
+			UserID:         user.UID,
+			Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
+		}
+		require.NoError(t, organisationMemberRepo.CreateOrganisationMember(ctx, member))
+	}
+
+	// unfiltered count returns every org the user belongs to.
+	total, err := organisationMemberRepo.CountUserOrganisations(ctx, user.UID, "")
+	require.NoError(t, err)
+	require.Equal(t, int64(5), total)
+
+	// name search is case-insensitive partial match.
+	total, err = organisationMemberRepo.CountUserOrganisations(ctx, user.UID, "alph")
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+
+	// id search is an exact match.
+	total, err = organisationMemberRepo.CountUserOrganisations(ctx, user.UID, orgs[1].UID)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+
+	// search is consistent with the paged list filter.
+	filtered, _, err := organisationMemberRepo.LoadUserOrganisationsPaged(ctx, user.UID, datastore.Pageable{PerPage: 10, Search: "alph"})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(filtered))
+	require.Equal(t, "Alpha Corp", filtered[0].Name)
+
+	// soft-deleted orgs are excluded from the count.
+	require.NoError(t, orgRepo.DeleteOrganisation(ctx, orgs[0].UID))
+	total, err = organisationMemberRepo.CountUserOrganisations(ctx, user.UID, "")
+	require.NoError(t, err)
+	require.Equal(t, int64(4), total)
+}
+
 func TestCreateOrganisationMember(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()

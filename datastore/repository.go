@@ -100,6 +100,7 @@ type OrganisationInviteRepository interface {
 type OrganisationMemberRepository interface {
 	LoadOrganisationMembersPaged(ctx context.Context, organisationID, userID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
 	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
+	CountUserOrganisations(ctx context.Context, userID string, search string) (int64, error)
 	FindUserProjects(ctx context.Context, userID string) ([]Project, error)
 	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error

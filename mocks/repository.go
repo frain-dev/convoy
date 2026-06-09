@@ -1363,6 +1363,21 @@ func (mr *MockOrganisationMemberRepositoryMockRecorder) LoadUserOrganisationsPag
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadUserOrganisationsPaged", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).LoadUserOrganisationsPaged), ctx, userID, pageable)
 }
 
+// CountUserOrganisations mocks base method.
+func (m *MockOrganisationMemberRepository) CountUserOrganisations(ctx context.Context, userID, search string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountUserOrganisations", ctx, userID, search)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountUserOrganisations indicates an expected call of CountUserOrganisations.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) CountUserOrganisations(ctx, userID, search any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountUserOrganisations", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CountUserOrganisations), ctx, userID, search)
+}
+
 // UpdateOrganisationMember mocks base method.
 func (m *MockOrganisationMemberRepository) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	m.ctrl.T.Helper()
