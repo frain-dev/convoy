@@ -20,10 +20,10 @@
           </a>
         }
 
-        @if (organisations?.length) {
+        @if (hasOrganisations) {
           <div convoy-dropdown size="lg" #organisationDropdown>
             <button dropdownTrigger convoy-button color="neutral" fill="soft" size="sm" class="py-10px px-20px rounded-8px mr-12px">
-              @if (organisations?.length) {
+              @if (userOrganization?.name) {
                 <convoy-badge className="mr-8px" [show-text]="false" [text]="userOrganization?.name || ''">
                   <div class="max-w-[110px] truncate">{{ userOrganization?.name }}</div>
                 </convoy-badge>

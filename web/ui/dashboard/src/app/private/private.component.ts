@@ -37,6 +37,11 @@ export class PrivateComponent implements OnInit {
 	orgPagination?: { has_next_page: boolean; next_page_cursor: string; total?: number };
 	orgSearch = '';
 	orgSearchEnabled = false;
+	// Tracks whether the user belongs to any organisation at all. Unlike
+	// `organisations` (which becomes the filtered dropdown list and can be empty
+	// during a no-match search), this stays true so the switcher and app shell
+	// don't unmount while searching.
+	hasOrganisations = false;
 	showOrgSearchInput = false;
 	isSearchingOrganisations = false;
 	loadingMoreOrganisations = false;
@@ -161,7 +166,7 @@ export class PrivateComponent implements OnInit {
 	}
 
 	shouldMountAppRouter(): boolean {
-		return !this.isLoadingOrganisations && (Boolean(this.organisations?.length) || this.router.url.startsWith('/user-settings'));
+		return !this.isLoadingOrganisations && (this.hasOrganisations || this.router.url.startsWith('/user-settings'));
 	}
 
 	async getConfiguration() {
@@ -176,6 +181,7 @@ export class PrivateComponent implements OnInit {
 		try {
 			const response = await this.privateService.getOrganizations({ refresh });
 			this.organisations = response.data.content;
+			this.hasOrganisations = !!this.organisations?.length;
 			this.orgPagination = response.data.pagination;
 			// Show the search affordance once the user has more orgs than a single page.
 			if (this.orgPagination?.has_next_page) this.orgSearchEnabled = true;
