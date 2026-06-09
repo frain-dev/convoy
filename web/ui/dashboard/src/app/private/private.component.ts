@@ -21,6 +21,7 @@ import { environment } from 'src/environments/environment';
 export class PrivateComponent implements OnInit {
 	@ViewChild('orgDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('verifyEmailDialog', { static: true }) verifyEmailDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('orgSearchInput') orgSearchInputEl?: ElementRef<HTMLInputElement>;
 
 	showDropdown = false;
 	showOrgDropdown = false;
@@ -33,6 +34,13 @@ export class PrivateComponent implements OnInit {
 	userOrganization?: ORGANIZATION_DATA;
 	convoyVersion: string = '';
 	isLoadingOrganisations = false;
+	orgPagination?: { has_next_page: boolean; next_page_cursor: string; total?: number };
+	orgSearch = '';
+	orgSearchEnabled = false;
+	showOrgSearchInput = false;
+	isSearchingOrganisations = false;
+	loadingMoreOrganisations = false;
+	private orgSearchTimeout: any;
 	addOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
@@ -168,12 +176,63 @@ export class PrivateComponent implements OnInit {
 		try {
 			const response = await this.privateService.getOrganizations({ refresh });
 			this.organisations = response.data.content;
+			this.orgPagination = response.data.pagination;
+			// Show the search affordance once the user has more orgs than a single page.
+			if (this.orgPagination?.has_next_page) this.orgSearchEnabled = true;
 			this.isLoadingOrganisations = false;
 			if (this.organisations?.length) await this.checkForSelectedOrganisation();
 			return;
 		} catch (error) {
 			this.isLoadingOrganisations = false;
 			return error;
+		}
+	}
+
+	toggleOrgSearch() {
+		this.showOrgSearchInput = !this.showOrgSearchInput;
+		if (this.showOrgSearchInput) {
+			setTimeout(() => this.orgSearchInputEl?.nativeElement.focus(), 0);
+			return;
+		}
+		// Collapsing the search resets back to the unfiltered first page.
+		if (this.orgSearch) {
+			this.orgSearch = '';
+			this.runOrgSearch();
+		}
+	}
+
+	onOrgSearch(term: string) {
+		this.orgSearch = term;
+		clearTimeout(this.orgSearchTimeout);
+		this.orgSearchTimeout = setTimeout(() => this.runOrgSearch(), 300);
+	}
+
+	async runOrgSearch() {
+		this.isSearchingOrganisations = true;
+		try {
+			const response = await this.privateService.getOrganizations({ q: this.orgSearch || undefined, refresh: true });
+			this.organisations = response.data.content;
+			this.orgPagination = response.data.pagination;
+		} catch (error) {
+		} finally {
+			this.isSearchingOrganisations = false;
+		}
+	}
+
+	async loadMoreOrganisations() {
+		if (!this.orgPagination?.has_next_page || this.loadingMoreOrganisations) return;
+		this.loadingMoreOrganisations = true;
+		try {
+			const response = await this.privateService.getOrganizations({
+				q: this.orgSearch || undefined,
+				next_page_cursor: this.orgPagination.next_page_cursor,
+				refresh: true
+			});
+			this.organisations = [...(this.organisations || []), ...response.data.content];
+			this.orgPagination = response.data.pagination;
+		} catch (error) {
+		} finally {
+			this.loadingMoreOrganisations = false;
 		}
 	}
 
@@ -221,7 +280,9 @@ export class PrivateComponent implements OnInit {
 		}
 
 		const organisationDetails = JSON.parse(selectedOrganisation);
-		if (this.organisations.find(org => org.uid === organisationDetails.uid)) {
+		// Trust the stored org by uid. With paginated/searched lists the selected org
+		// may not be in the currently loaded page, so we no longer reset to the first org.
+		if (organisationDetails?.uid) {
 			this.privateService.organisationDetails = organisationDetails;
 			this.userOrganization = organisationDetails;
 			await this.checkInstanceAdminAccess();

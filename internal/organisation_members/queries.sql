@@ -264,6 +264,9 @@ WITH user_organisations AS (
         AND o.deleted_at IS NULL
         AND m.deleted_at IS NULL
         AND (
+            @search::text = '' OR o.name ILIKE '%' || @search::text || '%' OR o.id = @search::text
+        )
+        AND (
             CASE
                 WHEN @direction::text = 'next' THEN o.id <= @cursor
                 WHEN @direction::text = 'prev' THEN o.id >= @cursor
@@ -290,7 +293,21 @@ JOIN convoy.organisations o ON m.organisation_id = o.id
 WHERE m.user_id = @user_id
     AND o.deleted_at IS NULL
     AND m.deleted_at IS NULL
+    AND (
+        @search::text = '' OR o.name ILIKE '%' || @search::text || '%' OR o.id = @search::text
+    )
     AND o.id > @cursor;
+
+-- name: CountUserOrganisations :one
+SELECT COUNT(DISTINCT o.id) AS count
+FROM convoy.organisation_members m
+JOIN convoy.organisations o ON m.organisation_id = o.id
+WHERE m.user_id = @user_id
+    AND o.deleted_at IS NULL
+    AND m.deleted_at IS NULL
+    AND (
+        @search::text = '' OR o.name ILIKE '%' || @search::text || '%' OR o.id = @search::text
+    );
 
 -- ===========================================================================
 -- Project Queries

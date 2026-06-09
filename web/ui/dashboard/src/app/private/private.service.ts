@@ -245,18 +245,27 @@ export class PrivateService {
 		return;
 	}
 
-	getOrganizations(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
+	getOrganizations(requestDetails?: { refresh?: boolean; q?: string; next_page_cursor?: string; perPage?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
-			if (this.organisations && !requestDetails?.refresh) return resolve(this.organisations);
+			const isFirstPage = !requestDetails?.q && !requestDetails?.next_page_cursor;
+			if (this.organisations && !requestDetails?.refresh && isFirstPage) return resolve(this.organisations);
 
 			try {
+				const query: { perPage: number; q?: string; next_page_cursor?: string } = { perPage: requestDetails?.perPage || 20 };
+				if (requestDetails?.q) query.q = requestDetails.q;
+				if (requestDetails?.next_page_cursor) query.next_page_cursor = requestDetails.next_page_cursor;
+
 				const response = await this.http.request({
 					url: `/organisations`,
-					method: 'get'
+					method: 'get',
+					query
 				});
 
-				await this.organisationConfig(response.data?.content);
-				this.organisations = response;
+				// Only the unfiltered first page seeds the cached org selection state.
+				if (isFirstPage) {
+					await this.organisationConfig(response.data?.content);
+					this.organisations = response;
+				}
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

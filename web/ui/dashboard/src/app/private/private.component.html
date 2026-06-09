@@ -31,9 +31,29 @@
               <img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
             </button>
             <ul dropdownOptions>
-              <li class="font-semibold text-12 text-neutral-11 px-16px pt-12px pb-8px border-b border-b-neutral-a3">Your organisations ({{ organisations?.length || 0 }})</li>
-              <ul [hidden]="!organisations?.length">
-                @for (organisation of organisations; track $index) {
+              <li class="flex items-center justify-between px-16px pt-12px pb-8px border-b border-b-neutral-a3" (click)="$event.stopPropagation()">
+                <span class="font-semibold text-12 text-neutral-11">Your organisations @if (orgPagination?.total) {<span>({{ organisations?.length || 0 }}/{{ orgPagination?.total }})</span>}</span>
+                @if (orgSearchEnabled) {
+                  <button type="button" class="p-4px rounded-6px transition-colors" [class.bg-neutral-3]="showOrgSearchInput" (click)="$event.stopPropagation(); toggleOrgSearch()" [attr.aria-label]="showOrgSearchInput ? 'Close search' : 'Search organisations'">
+                    <img class="w-14px" src="/assets/img/search-icon.svg" alt="search" />
+                  </button>
+                }
+              </li>
+              @if (showOrgSearchInput) {
+                <li class="px-16px py-8px border-b border-b-neutral-a3" (click)="$event.stopPropagation()">
+                  <input
+                    #orgSearchInput
+                    type="search"
+                    placeholder="Search by name or ID"
+                    [value]="orgSearch"
+                    (input)="onOrgSearch(orgSearchInput.value)"
+                    (click)="$event.stopPropagation()"
+                    class="w-full text-12 text-neutral-11 bg-neutral-3 rounded-6px px-12px py-8px outline-none border border-neutral-a3 focus:border-primary-100"
+                  />
+                </li>
+              }
+              <ul class="max-h-[260px] overflow-y-auto">
+                @for (organisation of organisations; track organisation.uid) {
                   <li convoy-dropdown-option>
                     <button convoy-button fill="text" color="neutral" size="sm" class="justify-start px-16px py-12px w-full" (click)="selectOrganisation(organisation)">
                       <div class="flex justify-between items-center w-full">
@@ -53,6 +73,16 @@
                           </div>
                         }
                       </div>
+                    </button>
+                  </li>
+                }
+                @if (!organisations?.length && !isSearchingOrganisations) {
+                  <li class="px-16px py-12px text-12 text-neutral-10">No organisations found</li>
+                }
+                @if (orgPagination?.has_next_page) {
+                  <li class="border-t border-t-neutral-a3">
+                    <button convoy-button fill="text" color="neutral" size="sm" class="justify-center w-full py-12px" (click)="$event.stopPropagation(); loadMoreOrganisations()" [disabled]="loadingMoreOrganisations">
+                      {{ loadingMoreOrganisations ? 'Loading...' : 'Load more' }}
                     </button>
                   </li>
                 }

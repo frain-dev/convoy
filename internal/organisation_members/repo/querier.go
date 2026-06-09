@@ -15,6 +15,7 @@ type Querier interface {
 	CountOrganisationAdminUsers(ctx context.Context) (pgtype.Int8, error)
 	CountPrevOrganisationMembers(ctx context.Context, arg CountPrevOrganisationMembersParams) (pgtype.Int8, error)
 	CountPrevUserOrganisations(ctx context.Context, arg CountPrevUserOrganisationsParams) (pgtype.Int8, error)
+	CountUserOrganisations(ctx context.Context, arg CountUserOrganisationsParams) (pgtype.Int8, error)
 	// Organisation Members SQLc Queries
 	// Migration from database/postgres/organisation_member.go to SQLc
 	// ===========================================================================

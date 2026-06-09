@@ -36,6 +36,7 @@ type Pageable struct {
 	Sort       string        `json:"sort"`
 	PrevCursor string        `json:"prev_page_cursor"`
 	NextCursor string        `json:"next_page_cursor"`
+	Search     string        `json:"-"`
 }
 
 type PageDirection string
@@ -86,6 +87,7 @@ type PaginationData struct {
 	HasPreviousPage bool         `json:"has_prev_page"`
 	PrevPageCursor  string       `json:"prev_page_cursor"`
 	NextPageCursor  string       `json:"next_page_cursor"`
+	Total           int64        `json:"total,omitempty"`
 }
 
 type PrevRowCount struct {
