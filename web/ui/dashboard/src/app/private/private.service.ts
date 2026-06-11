@@ -211,31 +211,33 @@ export class PrivateService {
 		const user = this.getUserProfile;
 		const userId = user?.uid;
 
-		// First, try to restore user's last selected org from per-user storage
+		// First, try to restore user's last selected org from per-user storage.
+		// The list is paginated, so the saved org may not be on this page; trust
+		// it by uid and only swap in the page's copy when present (fresher data).
 		if (userId) {
 			const userLastOrg = this.getUserOrg(userId);
-			if (userLastOrg) {
+			if (userLastOrg?.uid) {
 				const existingOrg = organisations.find((org: { uid: string }) => org.uid === userLastOrg.uid);
-				if (existingOrg) {
-					this.organisationDetails = existingOrg;
-					this.setUserOrg(userId, existingOrg);
-					return;
-				}
+				this.organisationDetails = existingOrg || userLastOrg;
+				this.setUserOrg(userId, existingOrg || userLastOrg);
+				return;
 			}
 		}
 
 		// Fallback to current session org if it exists
-		const existingOrg = organisations.find((org: { uid: string }) => org.uid === this.getOrganisation?.uid);
-		if (existingOrg) {
+		const sessionOrg = this.getOrganisation;
+		if (sessionOrg?.uid) {
+			const existingOrg = organisations.find((org: { uid: string }) => org.uid === sessionOrg.uid);
+			const selectedOrg = existingOrg || sessionOrg;
 			if (userId) {
-				this.setUserOrg(userId, existingOrg);
+				this.setUserOrg(userId, selectedOrg);
 			} else {
-				localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
+				localStorage.setItem('CONVOY_ORG', JSON.stringify(selectedOrg));
 			}
 			return;
 		}
 
-		// Default to first org
+		// Default to first org only when there is no stored selection
 		this.organisationDetails = organisations[0];
 		if (userId) {
 			this.setUserOrg(userId, organisations[0]);
