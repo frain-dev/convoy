@@ -1627,3 +1627,33 @@ var comboTestFilterThreeLevels = map[string]interface{}{
 		},
 	},
 }
+
+// TestInMixedTypeArrayNoPanic ensures the $in operator does not panic when the
+// payload array field holds mixed JSON types (e.g. a string and a number),
+// which arbitrary webhook payloads can produce. Reported in #2667.
+func TestInMixedTypeArrayNoPanic(t *testing.T) {
+	payload := map[string]interface{}{
+		"ids": []interface{}{"a", float64(1)},
+	}
+	filter := map[string]interface{}{
+		"ids": map[string]interface{}{"$in": "a"},
+	}
+
+	got, err := Compare(payload, filter)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !got {
+		t.Fatalf("expected match for %q in mixed array, got false", "a")
+	}
+
+	miss, err := Compare(payload, map[string]interface{}{
+		"ids": map[string]interface{}{"$in": "b"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if miss {
+		t.Fatalf("expected no match for %q in mixed array, got true", "b")
+	}
+}

@@ -66,16 +66,44 @@ JOIN convoy.organisations o ON m.organisation_id = o.id
 WHERE m.user_id = $1
     AND o.deleted_at IS NULL
     AND m.deleted_at IS NULL
-    AND o.id > $2
+    AND (
+        $2::text = '' OR o.name ILIKE '%' || $2::text || '%' OR o.id = $2::text
+    )
+    AND o.id > $3
 `
 
 type CountPrevUserOrganisationsParams struct {
 	UserID pgtype.Text
+	Search pgtype.Text
 	Cursor pgtype.Text
 }
 
 func (q *Queries) CountPrevUserOrganisations(ctx context.Context, arg CountPrevUserOrganisationsParams) (pgtype.Int8, error) {
-	row := q.db.QueryRow(ctx, countPrevUserOrganisations, arg.UserID, arg.Cursor)
+	row := q.db.QueryRow(ctx, countPrevUserOrganisations, arg.UserID, arg.Search, arg.Cursor)
+	var count pgtype.Int8
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countUserOrganisations = `-- name: CountUserOrganisations :one
+SELECT COUNT(DISTINCT o.id) AS count
+FROM convoy.organisation_members m
+JOIN convoy.organisations o ON m.organisation_id = o.id
+WHERE m.user_id = $1
+    AND o.deleted_at IS NULL
+    AND m.deleted_at IS NULL
+    AND (
+        $2::text = '' OR o.name ILIKE '%' || $2::text || '%' OR o.id = $2::text
+    )
+`
+
+type CountUserOrganisationsParams struct {
+	UserID pgtype.Text
+	Search pgtype.Text
+}
+
+func (q *Queries) CountUserOrganisations(ctx context.Context, arg CountUserOrganisationsParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, countUserOrganisations, arg.UserID, arg.Search)
 	var count pgtype.Int8
 	err := row.Scan(&count)
 	return count, err
@@ -505,16 +533,19 @@ WITH user_organisations AS (
         AND o.deleted_at IS NULL
         AND m.deleted_at IS NULL
         AND (
+            $3::text = '' OR o.name ILIKE '%' || $3::text || '%' OR o.id = $3::text
+        )
+        AND (
             CASE
-                WHEN $1::text = 'next' THEN o.id <= $3
-                WHEN $1::text = 'prev' THEN o.id >= $3
+                WHEN $1::text = 'next' THEN o.id <= $4
+                WHEN $1::text = 'prev' THEN o.id >= $4
                 ELSE true
             END
         )
     ORDER BY
         CASE WHEN $1::text = 'next' THEN o.id END DESC,
         CASE WHEN $1::text = 'prev' THEN o.id END ASC
-    LIMIT $4
+    LIMIT $5
 )
 SELECT
     id, name, owner_id, custom_domain, assigned_domain, license_data,
@@ -528,6 +559,7 @@ ORDER BY
 type FetchUserOrganisationsPaginatedParams struct {
 	Direction pgtype.Text
 	UserID    pgtype.Text
+	Search    pgtype.Text
 	Cursor    pgtype.Text
 	LimitVal  pgtype.Int8
 }
@@ -551,6 +583,7 @@ func (q *Queries) FetchUserOrganisationsPaginated(ctx context.Context, arg Fetch
 	rows, err := q.db.Query(ctx, fetchUserOrganisationsPaginated,
 		arg.Direction,
 		arg.UserID,
+		arg.Search,
 		arg.Cursor,
 		arg.LimitVal,
 	)

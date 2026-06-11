@@ -384,6 +384,7 @@ func (s *Service) LoadUserOrganisationsPaged(ctx context.Context, userID string,
 	rows, err := s.repo.FetchUserOrganisationsPaginated(ctx, repo.FetchUserOrganisationsPaginatedParams{
 		Direction: common.StringToPgText(direction),
 		UserID:    common.StringToPgText(userID),
+		Search:    common.StringToPgText(pageable.Search),
 		Cursor:    common.StringToPgText(pageable.Cursor()),
 		LimitVal:  pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	})
@@ -416,6 +417,7 @@ func (s *Service) LoadUserOrganisationsPaged(ctx context.Context, userID string,
 		first := organisations[0]
 		count, err2 := s.repo.CountPrevUserOrganisations(ctx, repo.CountPrevUserOrganisationsParams{
 			UserID: common.StringToPgText(userID),
+			Search: common.StringToPgText(pageable.Search),
 			Cursor: common.StringToPgText(first.UID),
 		})
 		if err2 != nil {
@@ -430,6 +432,21 @@ func (s *Service) LoadUserOrganisationsPaged(ctx context.Context, userID string,
 	pagination = pagination.Build(pageable, ids)
 
 	return organisations, *pagination, nil
+}
+
+// CountUserOrganisations returns the total number of organisations a user belongs to,
+// honouring the same optional name/id search filter used by LoadUserOrganisationsPaged.
+func (s *Service) CountUserOrganisations(ctx context.Context, userID, search string) (int64, error) {
+	count, err := s.repo.CountUserOrganisations(ctx, repo.CountUserOrganisationsParams{
+		UserID: common.StringToPgText(userID),
+		Search: common.StringToPgText(search),
+	})
+	if err != nil {
+		s.logger.Error("failed to count user organisations", "error", err)
+		return 0, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	return count.Int64, nil
 }
 
 // FindUserProjects retrieves all projects for a user

@@ -211,31 +211,40 @@ export class PrivateService {
 		const user = this.getUserProfile;
 		const userId = user?.uid;
 
-		// First, try to restore user's last selected org from per-user storage
+		// First, try to restore user's last selected org from per-user storage.
+		// The list is paginated, so the saved org may not be on this page; trust
+		// it by uid and only swap in the page's copy when present (fresher data).
+		let rejectedOrgUid: string | undefined;
 		if (userId) {
 			const userLastOrg = this.getUserOrg(userId);
-			if (userLastOrg) {
-				const existingOrg = organisations.find((org: { uid: string }) => org.uid === userLastOrg.uid);
+			if (userLastOrg?.uid) {
+				const existingOrg = organisations.find((org: { uid: string }) => org.uid === userLastOrg.uid) || (await this.confirmOrgMembership(userLastOrg));
 				if (existingOrg) {
 					this.organisationDetails = existingOrg;
 					this.setUserOrg(userId, existingOrg);
 					return;
 				}
+				// Saved org was deleted or membership revoked; fall through.
+				rejectedOrgUid = userLastOrg.uid;
 			}
 		}
 
 		// Fallback to current session org if it exists
-		const existingOrg = organisations.find((org: { uid: string }) => org.uid === this.getOrganisation?.uid);
-		if (existingOrg) {
-			if (userId) {
-				this.setUserOrg(userId, existingOrg);
-			} else {
-				localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
+		const sessionOrg = this.getOrganisation;
+		if (sessionOrg?.uid && sessionOrg.uid !== rejectedOrgUid) {
+			const existingOrg = organisations.find((org: { uid: string }) => org.uid === sessionOrg.uid) || (await this.confirmOrgMembership(sessionOrg));
+			if (existingOrg) {
+				if (userId) {
+					this.setUserOrg(userId, existingOrg);
+				} else {
+					localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
+				}
+				return;
 			}
-			return;
+			// Saved org was deleted or membership revoked; fall through.
 		}
 
-		// Default to first org
+		// Default to first org when there is no valid stored selection
 		this.organisationDetails = organisations[0];
 		if (userId) {
 			this.setUserOrg(userId, organisations[0]);
@@ -245,18 +254,45 @@ export class PrivateService {
 		return;
 	}
 
-	getOrganizations(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
+	// Confirms a saved org that is not on the loaded page is still one of the
+	// user's organisations by searching their own org list (the backend search
+	// matches org id exactly). Returns the fresh copy when confirmed, null when
+	// the server says it is gone, and the saved copy on transport errors so a
+	// flaky request cannot switch the active org.
+	private async confirmOrgMembership(savedOrg: ORGANIZATION_DATA): Promise<ORGANIZATION_DATA | null> {
+		try {
+			const response = await this.http.request({
+				url: `/organisations`,
+				method: 'get',
+				query: { perPage: 20, q: savedOrg.uid }
+			});
+			return (response.data?.content || []).find((org: ORGANIZATION_DATA) => org.uid === savedOrg.uid) || null;
+		} catch {
+			return savedOrg;
+		}
+	}
+
+	getOrganizations(requestDetails?: { refresh?: boolean; q?: string; next_page_cursor?: string; perPage?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
-			if (this.organisations && !requestDetails?.refresh) return resolve(this.organisations);
+			const isFirstPage = !requestDetails?.q && !requestDetails?.next_page_cursor;
+			if (this.organisations && !requestDetails?.refresh && isFirstPage) return resolve(this.organisations);
 
 			try {
+				const query: { perPage: number; q?: string; next_page_cursor?: string } = { perPage: requestDetails?.perPage || 20 };
+				if (requestDetails?.q) query.q = requestDetails.q;
+				if (requestDetails?.next_page_cursor) query.next_page_cursor = requestDetails.next_page_cursor;
+
 				const response = await this.http.request({
 					url: `/organisations`,
-					method: 'get'
+					method: 'get',
+					query
 				});
 
-				await this.organisationConfig(response.data?.content);
-				this.organisations = response;
+				// Only the unfiltered first page seeds the cached org selection state.
+				if (isFirstPage) {
+					await this.organisationConfig(response.data?.content);
+					this.organisations = response;
+				}
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -234,29 +233,16 @@ func in(payload, filter interface{}) (bool, error) {
 		}
 	}
 
-	pCopy := make([]interface{}, len(p))
-	copy(pCopy, p)
-	sort.SliceStable(pCopy, func(i, j int) bool {
-		switch pi := pCopy[i].(type) {
-		case string:
-			return pi < pCopy[j].(string)
-		case float64:
-			return pi < pCopy[j].(float64)
-		case int:
-			return pi < pCopy[j].(int)
-		}
-
-		return false
-	})
-
-	found := false
-	for _, v := range pCopy {
+	// Membership is decided by a linear scan, so no sorting is needed. The
+	// previous sort comparator also panicked on mixed-type arrays (e.g.
+	// ["a", 1]) because it used unchecked type assertions.
+	for _, v := range p {
 		if v == filter {
-			found = true
+			return true, nil
 		}
 	}
 
-	return found, nil
+	return false, nil
 }
 
 func nin(payload, filter interface{}) (bool, error) {
