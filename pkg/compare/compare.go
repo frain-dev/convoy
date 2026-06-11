@@ -239,11 +239,14 @@ func in(payload, filter interface{}) (bool, error) {
 	sort.SliceStable(pCopy, func(i, j int) bool {
 		switch pi := pCopy[i].(type) {
 		case string:
-			return pi < pCopy[j].(string)
+			pj, ok := pCopy[j].(string)
+			return ok && pi < pj
 		case float64:
-			return pi < pCopy[j].(float64)
+			pj, ok := pCopy[j].(float64)
+			return ok && pi < pj
 		case int:
-			return pi < pCopy[j].(int)
+			pj, ok := pCopy[j].(int)
+			return ok && pi < pj
 		}
 
 		return false
