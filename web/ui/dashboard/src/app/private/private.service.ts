@@ -214,30 +214,37 @@ export class PrivateService {
 		// First, try to restore user's last selected org from per-user storage.
 		// The list is paginated, so the saved org may not be on this page; trust
 		// it by uid and only swap in the page's copy when present (fresher data).
+		let rejectedOrgUid: string | undefined;
 		if (userId) {
 			const userLastOrg = this.getUserOrg(userId);
 			if (userLastOrg?.uid) {
-				const existingOrg = organisations.find((org: { uid: string }) => org.uid === userLastOrg.uid);
-				this.organisationDetails = existingOrg || userLastOrg;
-				this.setUserOrg(userId, existingOrg || userLastOrg);
-				return;
+				const existingOrg = organisations.find((org: { uid: string }) => org.uid === userLastOrg.uid) || (await this.confirmOrgMembership(userLastOrg));
+				if (existingOrg) {
+					this.organisationDetails = existingOrg;
+					this.setUserOrg(userId, existingOrg);
+					return;
+				}
+				// Saved org was deleted or membership revoked; fall through.
+				rejectedOrgUid = userLastOrg.uid;
 			}
 		}
 
 		// Fallback to current session org if it exists
 		const sessionOrg = this.getOrganisation;
-		if (sessionOrg?.uid) {
-			const existingOrg = organisations.find((org: { uid: string }) => org.uid === sessionOrg.uid);
-			const selectedOrg = existingOrg || sessionOrg;
-			if (userId) {
-				this.setUserOrg(userId, selectedOrg);
-			} else {
-				localStorage.setItem('CONVOY_ORG', JSON.stringify(selectedOrg));
+		if (sessionOrg?.uid && sessionOrg.uid !== rejectedOrgUid) {
+			const existingOrg = organisations.find((org: { uid: string }) => org.uid === sessionOrg.uid) || (await this.confirmOrgMembership(sessionOrg));
+			if (existingOrg) {
+				if (userId) {
+					this.setUserOrg(userId, existingOrg);
+				} else {
+					localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
+				}
+				return;
 			}
-			return;
+			// Saved org was deleted or membership revoked; fall through.
 		}
 
-		// Default to first org only when there is no stored selection
+		// Default to first org when there is no valid stored selection
 		this.organisationDetails = organisations[0];
 		if (userId) {
 			this.setUserOrg(userId, organisations[0]);
@@ -245,6 +252,24 @@ export class PrivateService {
 			localStorage.setItem('CONVOY_ORG', JSON.stringify(organisations[0]));
 		}
 		return;
+	}
+
+	// Confirms a saved org that is not on the loaded page is still one of the
+	// user's organisations by searching their own org list (the backend search
+	// matches org id exactly). Returns the fresh copy when confirmed, null when
+	// the server says it is gone, and the saved copy on transport errors so a
+	// flaky request cannot switch the active org.
+	private async confirmOrgMembership(savedOrg: ORGANIZATION_DATA): Promise<ORGANIZATION_DATA | null> {
+		try {
+			const response = await this.http.request({
+				url: `/organisations`,
+				method: 'get',
+				query: { perPage: 20, q: savedOrg.uid }
+			});
+			return (response.data?.content || []).find((org: ORGANIZATION_DATA) => org.uid === savedOrg.uid) || null;
+		} catch {
+			return savedOrg;
+		}
 	}
 
 	getOrganizations(requestDetails?: { refresh?: boolean; q?: string; next_page_cursor?: string; perPage?: number }): Promise<HTTP_RESPONSE> {
