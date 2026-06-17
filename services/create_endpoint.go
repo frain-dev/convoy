@@ -294,12 +294,17 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		// OAuth2 token exchange uses a dedicated dispatcher that keeps the SSRF
 		// allow/block rules but always validates TLS (it must not inherit the
 		// webhook insecure_skip_verify setting, since it carries credentials).
-		oauth2Dispatcher, innerErr := net.NewOAuth2Dispatcher(a.Licenser, a.FeatureFlag, a.Logger, cfg, caCertTLSCfg)
-		if innerErr != nil {
-			return "", innerErr
-		}
+		// Only build it when OAuth2 is configured so non-OAuth2 endpoints do not
+		// pay for an unused dispatcher.
+		var oauth2TokenGetter net.OAuth2TokenGetter
+		if a.E.Authentication != nil && a.E.Authentication.Type == datastore.OAuth2Authentication && a.E.Authentication.OAuth2 != nil {
+			oauth2Dispatcher, innerErr := net.NewOAuth2Dispatcher(a.Licenser, a.FeatureFlag, a.Logger, cfg, caCertTLSCfg)
+			if innerErr != nil {
+				return "", innerErr
+			}
 
-		oauth2TokenGetter := createOAuth2TokenGetter(a.E.Authentication, a.E.URL, "", a.Logger, oauth2Dispatcher)
+			oauth2TokenGetter = createOAuth2TokenGetter(a.E.Authentication, a.E.URL, "", a.Logger, oauth2Dispatcher)
+		}
 
 		pingErr = dispatcher.Ping(ctx, net.PingOptions{
 			Endpoint:          a.E.URL,
