@@ -32,6 +32,7 @@ const (
 	maxTokenCacheTTL          = 1 * time.Hour
 	oauth2TokenCacheKeyPrefix = "oauth2_token:"
 	defaultTokenType          = "Bearer"
+	tokenExchangeTimeout      = 30 * time.Second
 )
 
 // OAuth2TokenResponse represents the response from OAuth2 token endpoint
@@ -189,6 +190,12 @@ func (s *OAuth2TokenService) exchangeToken(ctx context.Context, oauth2 *datastor
 	if s.prepareContext != nil {
 		ctx = s.prepareContext(ctx)
 	}
+
+	// Cap the exchange so a slow tenant-controlled token URL cannot stall the
+	// caller indefinitely. A tighter parent deadline (e.g. the ping timeout)
+	// still wins; this only bounds callers that pass an unbounded context.
+	ctx, cancel := context.WithTimeout(ctx, tokenExchangeTimeout)
+	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "POST", oauth2.URL, strings.NewReader(reqBody.Encode()))
 	if err != nil {

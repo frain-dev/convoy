@@ -126,13 +126,24 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			contentType = *a.E.ContentType
 		}
 
+		// OAuth2 token exchange uses a dedicated dispatcher that keeps the SSRF
+		// allow/block rules but always validates TLS (it must not inherit the
+		// webhook insecure_skip_verify setting, since it carries credentials).
 		var oauth2TokenGetter net.OAuth2TokenGetter
-		if a.E.Authentication != nil && a.E.Authentication.Type == datastore.OAuth2Authentication {
-			// OAuth2 is being set or updated
-			oauth2TokenGetter = createOAuth2TokenGetter(a.E.Authentication, a.E.URL, existingEndpoint.UID, a.Logger)
-		} else if existingEndpoint != nil && existingEndpoint.Authentication != nil && existingEndpoint.Authentication.Type == datastore.OAuth2Authentication {
-			// OAuth2 is not being updated, but endpoint already has OAuth2 - use existing config
-			oauth2TokenGetter = createOAuth2TokenGetterFromDatastore(existingEndpoint.Authentication.OAuth2, a.E.URL, existingEndpoint.UID, a.Logger)
+		if (a.E.Authentication != nil && a.E.Authentication.Type == datastore.OAuth2Authentication) ||
+			(existingEndpoint != nil && existingEndpoint.Authentication != nil && existingEndpoint.Authentication.Type == datastore.OAuth2Authentication) {
+			oauth2Dispatcher, innerErr := net.NewOAuth2Dispatcher(a.Licenser, a.FeatureFlag, a.Logger, cfg, caCertTLSCfg)
+			if innerErr != nil {
+				return "", innerErr
+			}
+
+			if a.E.Authentication != nil && a.E.Authentication.Type == datastore.OAuth2Authentication {
+				// OAuth2 is being set or updated
+				oauth2TokenGetter = createOAuth2TokenGetter(a.E.Authentication, a.E.URL, existingEndpoint.UID, a.Logger, oauth2Dispatcher)
+			} else {
+				// OAuth2 is not being updated, but endpoint already has OAuth2 - use existing config
+				oauth2TokenGetter = createOAuth2TokenGetterFromDatastore(existingEndpoint.Authentication.OAuth2, a.E.URL, existingEndpoint.UID, a.Logger, oauth2Dispatcher)
+			}
 		}
 
 		pingErr = dispatcher.Ping(ctx, net.PingOptions{

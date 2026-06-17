@@ -283,6 +283,24 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	return d, nil
 }
 
+// NewOAuth2Dispatcher builds a dispatcher for OAuth2 token exchange. It mirrors
+// the webhook dispatcher's SSRF protection (IP allow/block rules) and proxy,
+// but always enforces TLS verification regardless of the webhook
+// `insecure_skip_verify` setting. OAuth2 token endpoints carry client secrets,
+// signed assertions, and access tokens, so their TLS trust must not be weakened
+// by a webhook compatibility flag. Custom CA trust is preserved when licensed.
+func NewOAuth2Dispatcher(l license.Licenser, ff *fflag.FFlag, logger log.Logger, cfg config.Configuration, caCertTLSConfig *tls.Config) (*Dispatcher, error) {
+	return NewDispatcher(
+		l,
+		ff,
+		LoggerOption(logger),
+		ProxyOption(cfg.Server.HTTP.HttpProxy, cfg.Server.HTTP.NoProxy),
+		AllowListOption(cfg.Dispatcher.AllowList),
+		BlockListOption(cfg.Dispatcher.BlockList),
+		TLSConfigOption(false, l, caCertTLSConfig),
+	)
+}
+
 func (d *Dispatcher) HTTPClient() *http.Client {
 	return d.client
 }
