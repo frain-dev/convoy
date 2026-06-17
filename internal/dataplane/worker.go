@@ -299,15 +299,22 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
-	// Route OAuth2 token exchange through the same netjail dispatcher used for
-	// webhook delivery so the outbound request to authentication.oauth2.url is
-	// subject to the IP allow/block rules when IpRules is enabled. Without this
-	// the token endpoint is an unfiltered outbound request (SSRF bypass).
+	// Route OAuth2 token exchange through a netjail dispatcher so the outbound
+	// request to authentication.oauth2.url is subject to the IP allow/block
+	// rules when IpRules is enabled. Without this the token endpoint is an
+	// unfiltered outbound request (SSRF bypass). A dedicated dispatcher is used
+	// so the token hop always validates TLS, instead of inheriting the webhook
+	// insecure_skip_verify setting.
+	oauth2Dispatcher, err := net.NewOAuth2Dispatcher(opts.Licenser, featureFlag, lo, cfg, caCertTLSCfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create oauth2 dispatcher: %w", err)
+	}
+
 	oauth2TokenService := services.NewOAuth2TokenService(
 		opts.Cache,
 		lo,
-		services.WithOAuth2HTTPClient(dispatcher.HTTPClient()),
-		services.WithOAuth2Context(dispatcher.ContextWithRules),
+		services.WithOAuth2HTTPClient(oauth2Dispatcher.HTTPClient()),
+		services.WithOAuth2Context(oauth2Dispatcher.ContextWithRules),
 	)
 
 	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
