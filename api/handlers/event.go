@@ -358,10 +358,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.Filter.Project = p
-	ep := datastore.Pageable{}
-	if data.Filter.Pageable == ep {
-		data.Filter.Pageable.PerPage = 2000000000
-	}
+	data.Filter.Pageable = services.NormalizeBatchReplayPageable(data.Filter.Pageable)
 
 	bs := services.BatchReplayEventService{
 		EndpointRepo: endpoints.New(h.A.Logger, h.A.DB),
@@ -373,6 +370,14 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 
 	successes, failures, err := bs.Run(r.Context())
 	if err != nil {
+		if successes > 0 || failures > 0 {
+			_ = render.Render(w, r, util.NewServerResponse(
+				fmt.Sprintf("%d successful, %d failed; batch replay incomplete: %s", successes, failures, err.Error()),
+				nil,
+				http.StatusInternalServerError,
+			))
+			return
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
