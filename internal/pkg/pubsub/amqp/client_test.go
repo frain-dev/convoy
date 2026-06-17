@@ -2,7 +2,6 @@ package rqm
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"testing"
 	"time"
@@ -197,7 +196,7 @@ func TestDialerWithEscapedPassword_Integration(t *testing.T) {
 		require.Equal(t, 0, code, "rabbitmqctl command failed: %v", cmd)
 	}
 
-	port := fmt.Sprintf("%d", mappedPort.Int())
+	port := mappedPort.Port()
 	vhost := "/"
 
 	// Test 1: Verify connection works with the escaped password using our buildConnectionString
