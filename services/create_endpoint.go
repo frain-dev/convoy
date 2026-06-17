@@ -26,17 +26,19 @@ import (
 )
 
 // createOAuth2TokenGetter creates an OAuth2TokenGetter for ping validation.
-// It uses a noop cache since this is a one-time validation.
-func createOAuth2TokenGetter(auth *models.EndpointAuthentication, endpointURL, existingEndpointID string, logger log.Logger) net.OAuth2TokenGetter {
+// It uses a noop cache since this is a one-time validation. The dispatcher is
+// threaded through so the token exchange request honours the IP allow/block
+// rules, matching the webhook ping.
+func createOAuth2TokenGetter(auth *models.EndpointAuthentication, endpointURL, existingEndpointID string, logger log.Logger, dispatcher *net.Dispatcher) net.OAuth2TokenGetter {
 	if auth == nil || auth.Type != datastore.OAuth2Authentication || auth.OAuth2 == nil {
 		return nil
 	}
 
-	return createOAuth2TokenGetterFromDatastore(auth.OAuth2.Transform(), endpointURL, existingEndpointID, logger)
+	return createOAuth2TokenGetterFromDatastore(auth.OAuth2.Transform(), endpointURL, existingEndpointID, logger, dispatcher)
 }
 
 // createOAuth2TokenGetterFromDatastore creates an OAuth2TokenGetter from a datastore OAuth2 config.
-func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL, existingEndpointID string, logger log.Logger) net.OAuth2TokenGetter {
+func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL, existingEndpointID string, logger log.Logger, dispatcher *net.Dispatcher) net.OAuth2TokenGetter {
 	if oauth2 == nil {
 		return nil
 	}
@@ -56,7 +58,12 @@ func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL,
 	}
 
 	noopCache := ncache.NewNoopCache()
-	oauth2TokenService := NewOAuth2TokenService(noopCache, logger)
+	oauth2TokenService := NewOAuth2TokenService(
+		noopCache,
+		logger,
+		WithOAuth2HTTPClient(dispatcher.HTTPClient()),
+		WithOAuth2Context(dispatcher.ContextWithRules),
+	)
 
 	return func(ctx context.Context) (string, error) {
 		return oauth2TokenService.GetAuthorizationHeader(ctx, tempEndpoint)
@@ -284,7 +291,7 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			}
 		}
 
-		oauth2TokenGetter := createOAuth2TokenGetter(a.E.Authentication, a.E.URL, "", a.Logger)
+		oauth2TokenGetter := createOAuth2TokenGetter(a.E.Authentication, a.E.URL, "", a.Logger, dispatcher)
 
 		pingErr = dispatcher.Ping(ctx, net.PingOptions{
 			Endpoint:          a.E.URL,

@@ -299,7 +299,16 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
-	oauth2TokenService := services.NewOAuth2TokenService(opts.Cache, lo)
+	// Route OAuth2 token exchange through the same netjail dispatcher used for
+	// webhook delivery so the outbound request to authentication.oauth2.url is
+	// subject to the IP allow/block rules when IpRules is enabled. Without this
+	// the token endpoint is an unfiltered outbound request (SSRF bypass).
+	oauth2TokenService := services.NewOAuth2TokenService(
+		opts.Cache,
+		lo,
+		services.WithOAuth2HTTPClient(dispatcher.HTTPClient()),
+		services.WithOAuth2Context(dispatcher.ContextWithRules),
+	)
 
 	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
 		EndpointRepo:               endpointRepo,

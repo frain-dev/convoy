@@ -129,10 +129,10 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		var oauth2TokenGetter net.OAuth2TokenGetter
 		if a.E.Authentication != nil && a.E.Authentication.Type == datastore.OAuth2Authentication {
 			// OAuth2 is being set or updated
-			oauth2TokenGetter = createOAuth2TokenGetter(a.E.Authentication, a.E.URL, existingEndpoint.UID, a.Logger)
+			oauth2TokenGetter = createOAuth2TokenGetter(a.E.Authentication, a.E.URL, existingEndpoint.UID, a.Logger, dispatcher)
 		} else if existingEndpoint != nil && existingEndpoint.Authentication != nil && existingEndpoint.Authentication.Type == datastore.OAuth2Authentication {
 			// OAuth2 is not being updated, but endpoint already has OAuth2 - use existing config
-			oauth2TokenGetter = createOAuth2TokenGetterFromDatastore(existingEndpoint.Authentication.OAuth2, a.E.URL, existingEndpoint.UID, a.Logger)
+			oauth2TokenGetter = createOAuth2TokenGetterFromDatastore(existingEndpoint.Authentication.OAuth2, a.E.URL, existingEndpoint.UID, a.Logger, dispatcher)
 		}
 
 		pingErr = dispatcher.Ping(ctx, net.PingOptions{
