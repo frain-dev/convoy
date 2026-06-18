@@ -15,8 +15,8 @@ COPY sql/ /sql/
 # Set permissions
 RUN chmod +x /cmd
 
-# Install necessary dependencies
-RUN apk add --no-cache gcompat
+# Install necessary dependencies + pull latest security patches for base packages
+RUN apk upgrade --no-cache && apk add --no-cache gcompat
 
 # Set the startup command
 ENTRYPOINT ["/cmd"]
