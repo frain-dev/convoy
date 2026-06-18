@@ -49,6 +49,33 @@ type UserInviteTokenResponse struct {
 	User  *datastore.User               `json:"user" extensions:"x-nullable"`
 }
 
+type InviteTokenLookupResponse struct {
+	Token      *OrganisationInviteToken `json:"token" extensions:"x-nullable"`
+	UserExists bool                     `json:"user_exists"`
+	FirstName  string                   `json:"first_name,omitempty"`
+	LastName   string                   `json:"last_name,omitempty"`
+}
+
+type OrganisationInviteToken struct {
+	OrganisationName string                 `json:"organisation_name,omitempty"`
+	InviteeEmail     string                 `json:"invitee_email"`
+	Role             auth.Role              `json:"role"`
+	Status           datastore.InviteStatus `json:"status"`
+}
+
+func NewOrganisationInviteToken(invite *datastore.OrganisationInvite) *OrganisationInviteToken {
+	if invite == nil {
+		return nil
+	}
+
+	return &OrganisationInviteToken{
+		OrganisationName: invite.OrganisationName,
+		InviteeEmail:     invite.InviteeEmail,
+		Role:             invite.Role,
+		Status:           invite.Status,
+	}
+}
+
 type DeliveryAttempt struct {
 	MessageID  string `json:"msg_id" bson:"msg_id"`
 	APIVersion string `json:"api_version" bson:"api_version"`

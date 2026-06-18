@@ -7976,6 +7976,9 @@
         "updated_at": {
           "type": "string"
         },
+        "url_path": {
+          "type": "string"
+        },
         "url_query_params": {
           "type": "string"
         }
@@ -8042,6 +8045,12 @@
         },
         "is_flattened": {
           "type": "boolean"
+        },
+        "path": {
+          "$ref": "#/definitions/datastore.M"
+        },
+        "query": {
+          "$ref": "#/definitions/datastore.M"
         }
       }
     },
@@ -8378,6 +8387,9 @@
         },
         "prev_page_cursor": {
           "type": "string"
+        },
+        "total": {
+          "type": "integer"
         }
       }
     },
@@ -8576,6 +8588,9 @@
           "$ref": "#/definitions/datastore.CustomResponse"
         },
         "deleted_at": {
+          "type": "string"
+        },
+        "event_type_location": {
           "type": "string"
         },
         "forward_headers": {
@@ -8933,10 +8948,21 @@
           "type": "object",
           "additionalProperties": true
         },
+        "enabled_at": {
+          "$ref": "#/definitions/models.OptionalTime"
+        },
         "event_type": {
           "type": "string"
         },
         "headers": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "path": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "query": {
           "type": "object",
           "additionalProperties": true
         },
@@ -9090,12 +9116,36 @@
             }
           ]
         },
+        "enabled_at": {
+          "description": "Non-null when this filter is active. Defaults to now when omitted.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.OptionalTime"
+            }
+          ]
+        },
         "event_type": {
           "description": "Type of event this filter applies to (required)",
           "type": "string"
         },
         "headers": {
           "description": "Header matching criteria (optional)",
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.M"
+            }
+          ]
+        },
+        "path": {
+          "description": "Path matching criteria (optional)",
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.M"
+            }
+          ]
+        },
+        "query": {
+          "description": "Query matching criteria (optional)",
           "allOf": [
             {
               "$ref": "#/definitions/datastore.M"
@@ -9118,6 +9168,10 @@
               "$ref": "#/definitions/models.CustomResponse"
             }
           ]
+        },
+        "event_type_location": {
+          "description": "EventTypeLocation is used to specify where Convoy should read the event type\nfrom an incoming webhook request.",
+          "type": "string"
         },
         "header_function": {
           "description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
@@ -9523,6 +9577,9 @@
         "updated_at": {
           "type": "string"
         },
+        "url_path": {
+          "type": "string"
+        },
         "url_query_params": {
           "type": "string"
         }
@@ -9574,6 +9631,12 @@
           "$ref": "#/definitions/datastore.M"
         },
         "headers": {
+          "$ref": "#/definitions/datastore.M"
+        },
+        "path": {
+          "$ref": "#/definitions/datastore.M"
+        },
+        "query": {
           "$ref": "#/definitions/datastore.M"
         }
       }
@@ -9632,16 +9695,31 @@
         "body": {
           "$ref": "#/definitions/datastore.M"
         },
+        "enabled_at": {
+          "type": "string"
+        },
         "event_type": {
           "type": "string"
         },
         "headers": {
           "$ref": "#/definitions/datastore.M"
         },
+        "path": {
+          "$ref": "#/definitions/datastore.M"
+        },
+        "query": {
+          "$ref": "#/definitions/datastore.M"
+        },
         "raw_body": {
           "$ref": "#/definitions/datastore.M"
         },
         "raw_headers": {
+          "$ref": "#/definitions/datastore.M"
+        },
+        "raw_path": {
+          "$ref": "#/definitions/datastore.M"
+        },
+        "raw_query": {
           "$ref": "#/definitions/datastore.M"
         },
         "subscription_id": {
@@ -9656,7 +9734,9 @@
       "type": "object",
       "properties": {
         "body": {},
-        "header": {}
+        "header": {},
+        "path": {},
+        "query": {}
       }
     },
     "models.FunctionRequest": {
@@ -9989,6 +10069,17 @@
         }
       }
     },
+    "models.OptionalTime": {
+      "type": "object",
+      "properties": {
+        "set": {
+          "type": "boolean"
+        },
+        "time": {
+          "type": "string"
+        }
+      }
+    },
     "models.PagedResponse": {
       "type": "object",
       "properties": {
@@ -10092,6 +10183,9 @@
           "$ref": "#/definitions/datastore.CustomResponse"
         },
         "deleted_at": {
+          "type": "string"
+        },
+        "event_type_location": {
           "type": "string"
         },
         "forward_headers": {
@@ -10247,22 +10341,21 @@
       "properties": {
         "body": {},
         "header": {
-          "description": "Headers accepts either \"headers\" or \"header\" for compatibility with the subscription filter tester.",
-          "type": "object",
-          "additionalProperties": true
+          "$ref": "#/definitions/datastore.M"
         },
         "headers": {
           "description": "Headers accepts either \"headers\" or \"header\" for compatibility with the subscription filter tester.",
-          "type": "object",
-          "additionalProperties": true
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.M"
+            }
+          ]
         },
         "path": {
-          "type": "object",
-          "additionalProperties": true
+          "$ref": "#/definitions/datastore.M"
         },
         "query": {
-          "type": "object",
-          "additionalProperties": true
+          "$ref": "#/definitions/datastore.M"
         }
       }
     },
@@ -10420,6 +10513,14 @@
             }
           ]
         },
+        "enabled_at": {
+          "description": "Non-null when this filter is active.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.OptionalTime"
+            }
+          ]
+        },
         "event_type": {
           "description": "Type of event this filter applies to (optional)",
           "type": "string"
@@ -10435,6 +10536,22 @@
         "is_flattened": {
           "description": "Whether the filter uses flattened JSON paths (optional)",
           "type": "boolean"
+        },
+        "path": {
+          "description": "Path matching criteria (optional)",
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.M"
+            }
+          ]
+        },
+        "query": {
+          "description": "Query matching criteria (optional)",
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.M"
+            }
+          ]
         }
       }
     },
@@ -10452,6 +10569,10 @@
               "$ref": "#/definitions/models.UpdateCustomResponse"
             }
           ]
+        },
+        "event_type_location": {
+          "description": "EventTypeLocation is used to specify where Convoy should read the event type\nfrom an incoming webhook request.",
+          "type": "string"
         },
         "forward_headers": {
           "description": "Soecfy header you want convoy to save from the ingest request and forward to your endpoints when the event is dispatched.",
