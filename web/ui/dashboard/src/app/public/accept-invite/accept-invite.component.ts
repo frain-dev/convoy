@@ -50,6 +50,8 @@ export class AcceptInviteComponent implements OnInit {
 			inviteeDetails.status === 'accepted' ? (this.isInviteAccepted = true) : (this.isInviteAccepted = false);
 
 			this.acceptInviteForm.patchValue({
+				first_name: response.data.first_name ? response.data.first_name : '',
+				last_name: response.data.last_name ? response.data.last_name : '',
 				email: inviteeDetails.invitee_email,
 				role: { type: inviteeDetails.role.type }
 			});
@@ -61,14 +63,17 @@ export class AcceptInviteComponent implements OnInit {
 	}
 	async acceptInvite() {
 		if (!this.userDetailsAvailable && this.acceptInviteForm.invalid) return this.acceptInviteForm.markAllAsTouched();
+		const body = { ...this.acceptInviteForm.value };
 		if (this.userDetailsAvailable) {
-			delete this.acceptInviteForm.value.password;
+			delete body.password;
+			delete body.first_name;
+			delete body.last_name;
 		}
 
 		this.loading = true;
 		try {
 			const token = this.route.snapshot.queryParams['invite-token'];
-			const response = await this.acceptInviteService.acceptInvite({ token: token, body: this.acceptInviteForm.value });
+			const response = await this.acceptInviteService.acceptInvite({ token: token, body });
 			this.loading = false;
 
 			const authDetails = localStorage.getItem('CONVOY_AUTH');

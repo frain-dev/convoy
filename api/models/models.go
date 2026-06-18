@@ -52,6 +52,8 @@ type UserInviteTokenResponse struct {
 type InviteTokenLookupResponse struct {
 	Token      *OrganisationInviteToken `json:"token" extensions:"x-nullable"`
 	UserExists bool                     `json:"user_exists"`
+	FirstName  string                   `json:"first_name,omitempty"`
+	LastName   string                   `json:"last_name,omitempty"`
 }
 
 type OrganisationInviteToken struct {

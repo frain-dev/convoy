@@ -2217,6 +2217,8 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 
 	require.Equal(s.T(), iv.InviteeEmail, response.Token.InviteeEmail)
 	require.True(s.T(), response.UserExists)
+	require.Equal(s.T(), user.FirstName, response.FirstName)
+	require.Equal(s.T(), user.LastName, response.LastName)
 	require.Equal(s.T(), response.Token.OrganisationName, s.DefaultOrg.Name)
 
 	require.NotContains(s.T(), raw, "user")
@@ -2259,6 +2261,10 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 
 	require.Equal(s.T(), iv.InviteeEmail, response.Token.InviteeEmail)
 	require.False(s.T(), response.UserExists)
+	require.Empty(s.T(), response.FirstName)
+	require.Empty(s.T(), response.LastName)
+	require.NotContains(s.T(), raw, "first_name")
+	require.NotContains(s.T(), raw, "last_name")
 
 	require.NotContains(s.T(), raw, "user")
 	require.NotContains(s.T(), raw["token"], "token")
