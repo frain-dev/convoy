@@ -3,6 +3,7 @@ package testenv
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -88,7 +89,7 @@ func (r *RabbitMQContainer) Restart(ctx context.Context) error {
 	}
 
 	// Try to connect to RabbitMQ and verify it's operational for up to 90 seconds
-	connStr := fmt.Sprintf("amqp://guest:guest@%s:%d/", host, mappedPort.Int())
+	connStr := fmt.Sprintf("amqp://guest:guest@%s:%s/", host, mappedPort.Port())
 	deadline := time.Now().Add(90 * time.Second)
 
 	for time.Now().Before(deadline) {
@@ -134,6 +135,11 @@ func newRabbitMQConnectionFunc(container testcontainers.Container) RabbitMQConne
 			return "", 0, fmt.Errorf("failed to get rabbitmq port: %w", err)
 		}
 
-		return host, mappedPort.Int(), nil
+		port, err := strconv.Atoi(mappedPort.Port())
+		if err != nil {
+			return "", 0, fmt.Errorf("failed to parse rabbitmq port: %w", err)
+		}
+
+		return host, port, nil
 	}
 }

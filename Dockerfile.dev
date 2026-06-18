@@ -42,7 +42,7 @@ COPY --from=build-env /go/src/frain-dev/convoy/internal/email/templates/* templa
 COPY --from=build-env /go/src/frain-dev/convoy/api/ui/build /ui/build
 
 RUN chmod +x /cmd
-RUN apk add --no-cache gcompat
+RUN apk upgrade --no-cache && apk add --no-cache gcompat
 
 COPY --from=build-env /go/src/frain-dev/convoy/sql /sql
 
