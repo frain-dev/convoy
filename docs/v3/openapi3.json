@@ -9010,6 +9010,9 @@
           "updated_at": {
             "type": "string"
           },
+          "url_path": {
+            "type": "string"
+          },
           "url_query_params": {
             "type": "string"
           }
@@ -9076,6 +9079,12 @@
           },
           "is_flattened": {
             "type": "boolean"
+          },
+          "path": {
+            "$ref": "#/components/schemas/datastore.M"
+          },
+          "query": {
+            "$ref": "#/components/schemas/datastore.M"
           }
         },
         "type": "object"
@@ -9412,6 +9421,9 @@
           },
           "prev_page_cursor": {
             "type": "string"
+          },
+          "total": {
+            "type": "integer"
           }
         },
         "type": "object"
@@ -9610,6 +9622,9 @@
             "$ref": "#/components/schemas/datastore.CustomResponse"
           },
           "deleted_at": {
+            "type": "string"
+          },
+          "event_type_location": {
             "type": "string"
           },
           "forward_headers": {
@@ -9964,10 +9979,21 @@
             "additionalProperties": true,
             "type": "object"
           },
+          "enabled_at": {
+            "$ref": "#/components/schemas/models.OptionalTime"
+          },
           "event_type": {
             "type": "string"
           },
           "headers": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "path": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "query": {
             "additionalProperties": true,
             "type": "object"
           },
@@ -10121,6 +10147,14 @@
             ],
             "description": "Body matching criteria (optional)"
           },
+          "enabled_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/models.OptionalTime"
+              }
+            ],
+            "description": "Non-null when this filter is active. Defaults to now when omitted."
+          },
           "event_type": {
             "description": "Type of event this filter applies to (required)",
             "type": "string"
@@ -10132,6 +10166,22 @@
               }
             ],
             "description": "Header matching criteria (optional)"
+          },
+          "path": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.M"
+              }
+            ],
+            "description": "Path matching criteria (optional)"
+          },
+          "query": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.M"
+              }
+            ],
+            "description": "Query matching criteria (optional)"
           }
         },
         "required": [
@@ -10152,6 +10202,10 @@
               }
             ],
             "description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only."
+          },
+          "event_type_location": {
+            "description": "EventTypeLocation is used to specify where Convoy should read the event type\nfrom an incoming webhook request.",
+            "type": "string"
           },
           "header_function": {
             "description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
@@ -10557,6 +10611,9 @@
           "updated_at": {
             "type": "string"
           },
+          "url_path": {
+            "type": "string"
+          },
           "url_query_params": {
             "type": "string"
           }
@@ -10608,6 +10665,12 @@
             "$ref": "#/components/schemas/datastore.M"
           },
           "headers": {
+            "$ref": "#/components/schemas/datastore.M"
+          },
+          "path": {
+            "$ref": "#/components/schemas/datastore.M"
+          },
+          "query": {
             "$ref": "#/components/schemas/datastore.M"
           }
         },
@@ -10666,16 +10729,31 @@
           "body": {
             "$ref": "#/components/schemas/datastore.M"
           },
+          "enabled_at": {
+            "type": "string"
+          },
           "event_type": {
             "type": "string"
           },
           "headers": {
             "$ref": "#/components/schemas/datastore.M"
           },
+          "path": {
+            "$ref": "#/components/schemas/datastore.M"
+          },
+          "query": {
+            "$ref": "#/components/schemas/datastore.M"
+          },
           "raw_body": {
             "$ref": "#/components/schemas/datastore.M"
           },
           "raw_headers": {
+            "$ref": "#/components/schemas/datastore.M"
+          },
+          "raw_path": {
+            "$ref": "#/components/schemas/datastore.M"
+          },
+          "raw_query": {
             "$ref": "#/components/schemas/datastore.M"
           },
           "subscription_id": {
@@ -10690,7 +10768,9 @@
       "models.FilterSchema": {
         "properties": {
           "body": {},
-          "header": {}
+          "header": {},
+          "path": {},
+          "query": {}
         },
         "type": "object"
       },
@@ -11024,6 +11104,17 @@
         },
         "type": "object"
       },
+      "models.OptionalTime": {
+        "properties": {
+          "set": {
+            "type": "boolean"
+          },
+          "time": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "models.PagedResponse": {
         "properties": {
           "content": {},
@@ -11126,6 +11217,9 @@
             "$ref": "#/components/schemas/datastore.CustomResponse"
           },
           "deleted_at": {
+            "type": "string"
+          },
+          "event_type_location": {
             "type": "string"
           },
           "forward_headers": {
@@ -11264,12 +11358,40 @@
       "models.TestFilterRequest": {
         "properties": {
           "payload": {
-            "description": "Sample payload to test against the filter (required)"
+            "description": "Sample payload to test against body filter rules. Optional when request scopes are supplied."
+          },
+          "request": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/models.TestFilterRequestScopes"
+              }
+            ],
+            "description": "Request scopes to test against the filter."
           }
         },
-        "required": [
-          "payload"
-        ],
+        "type": "object"
+      },
+      "models.TestFilterRequestScopes": {
+        "properties": {
+          "body": {},
+          "header": {
+            "$ref": "#/components/schemas/datastore.M"
+          },
+          "headers": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.M"
+              }
+            ],
+            "description": "Headers accepts either \"headers\" or \"header\" for compatibility with the subscription filter tester."
+          },
+          "path": {
+            "$ref": "#/components/schemas/datastore.M"
+          },
+          "query": {
+            "$ref": "#/components/schemas/datastore.M"
+          }
+        },
         "type": "object"
       },
       "models.TestFilterResponse": {
@@ -11425,6 +11547,14 @@
             ],
             "description": "Body matching criteria (optional)"
           },
+          "enabled_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/models.OptionalTime"
+              }
+            ],
+            "description": "Non-null when this filter is active."
+          },
           "event_type": {
             "description": "Type of event this filter applies to (optional)",
             "type": "string"
@@ -11440,6 +11570,22 @@
           "is_flattened": {
             "description": "Whether the filter uses flattened JSON paths (optional)",
             "type": "boolean"
+          },
+          "path": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.M"
+              }
+            ],
+            "description": "Path matching criteria (optional)"
+          },
+          "query": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.M"
+              }
+            ],
+            "description": "Query matching criteria (optional)"
           }
         },
         "type": "object"
@@ -11457,6 +11603,10 @@
               }
             ],
             "description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only."
+          },
+          "event_type_location": {
+            "description": "EventTypeLocation is used to specify where Convoy should read the event type\nfrom an incoming webhook request.",
+            "type": "string"
           },
           "forward_headers": {
             "description": "Soecfy header you want convoy to save from the ingest request and forward to your endpoints when the event is dispatched.",

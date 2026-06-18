@@ -43,16 +43,13 @@ export class AcceptInviteComponent implements OnInit {
 		this.fetchingDetails = true;
 		try {
 			const response = await this.acceptInviteService.getUserDetails(token);
-			response.data.user ? (this.userDetailsAvailable = true) : (this.userDetailsAvailable = false);
+			this.userDetailsAvailable = !!response.data.user_exists;
 
 			const inviteeDetails = response.data.token;
 			if (inviteeDetails?.organisation_name) this.organisationName = inviteeDetails?.organisation_name;
 			inviteeDetails.status === 'accepted' ? (this.isInviteAccepted = true) : (this.isInviteAccepted = false);
-			const userDetails = response.data.user;
 
 			this.acceptInviteForm.patchValue({
-				first_name: userDetails?.first_name ? userDetails.first_name : '',
-				last_name: userDetails?.last_name ? userDetails.last_name : '',
 				email: inviteeDetails.invitee_email,
 				role: { type: inviteeDetails.role.type }
 			});

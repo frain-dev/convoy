@@ -300,6 +300,8 @@ definitions:
         type: string
       updated_at:
         type: string
+      url_path:
+        type: string
       url_query_params:
         type: string
     type: object
@@ -350,6 +352,10 @@ definitions:
         $ref: '#/definitions/datastore.M'
       is_flattened:
         type: boolean
+      path:
+        $ref: '#/definitions/datastore.M'
+      query:
+        $ref: '#/definitions/datastore.M'
     type: object
   datastore.GooglePubSubConfig:
     properties:
@@ -579,6 +585,8 @@ definitions:
         type: integer
       prev_page_cursor:
         type: string
+      total:
+        type: integer
     type: object
   datastore.PortalAuthType:
     enum:
@@ -711,6 +719,8 @@ definitions:
       custom_response:
         $ref: '#/definitions/datastore.CustomResponse'
       deleted_at:
+        type: string
+      event_type_location:
         type: string
       forward_headers:
         items:
@@ -957,9 +967,17 @@ definitions:
       body:
         additionalProperties: true
         type: object
+      enabled_at:
+        $ref: '#/definitions/models.OptionalTime'
       event_type:
         type: string
       headers:
+        additionalProperties: true
+        type: object
+      path:
+        additionalProperties: true
+        type: object
+      query:
         additionalProperties: true
         type: object
       uid:
@@ -1084,6 +1102,10 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.M'
         description: Body matching criteria (optional)
+      enabled_at:
+        allOf:
+          - $ref: '#/definitions/models.OptionalTime'
+        description: Non-null when this filter is active. Defaults to now when omitted.
       event_type:
         description: Type of event this filter applies to (required)
         type: string
@@ -1091,6 +1113,14 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.M'
         description: Header matching criteria (optional)
+      path:
+        allOf:
+          - $ref: '#/definitions/datastore.M'
+        description: Path matching criteria (optional)
+      query:
+        allOf:
+          - $ref: '#/definitions/datastore.M'
+        description: Query matching criteria (optional)
     required:
       - event_type
     type: object
@@ -1107,6 +1137,11 @@ definitions:
         description: |-
           Custom response is used to define a custom response for incoming
           webhooks project sources only.
+      event_type_location:
+        description: |-
+          EventTypeLocation is used to specify where Convoy should read the event type
+          from an incoming webhook request.
+        type: string
       header_function:
         description: |-
           Function is a javascript function used to mutate the headers
@@ -1385,6 +1420,8 @@ definitions:
         type: string
       updated_at:
         type: string
+      url_path:
+        type: string
       url_query_params:
         type: string
     type: object
@@ -1422,6 +1459,10 @@ definitions:
       body:
         $ref: '#/definitions/datastore.M'
       headers:
+        $ref: '#/definitions/datastore.M'
+      path:
+        $ref: '#/definitions/datastore.M'
+      query:
         $ref: '#/definitions/datastore.M'
     type: object
   models.FanoutEvent:
@@ -1462,13 +1503,23 @@ definitions:
     properties:
       body:
         $ref: '#/definitions/datastore.M'
+      enabled_at:
+        type: string
       event_type:
         type: string
       headers:
         $ref: '#/definitions/datastore.M'
+      path:
+        $ref: '#/definitions/datastore.M'
+      query:
+        $ref: '#/definitions/datastore.M'
       raw_body:
         $ref: '#/definitions/datastore.M'
       raw_headers:
+        $ref: '#/definitions/datastore.M'
+      raw_path:
+        $ref: '#/definitions/datastore.M'
+      raw_query:
         $ref: '#/definitions/datastore.M'
       subscription_id:
         type: string
@@ -1479,6 +1530,8 @@ definitions:
     properties:
       body: {}
       header: {}
+      path: {}
+      query: {}
     type: object
   models.FunctionRequest:
     properties:
@@ -1702,6 +1755,13 @@ definitions:
       row:
         type: integer
     type: object
+  models.OptionalTime:
+    properties:
+      set:
+        type: boolean
+      time:
+        type: string
+    type: object
   models.PagedResponse:
     properties:
       content: {}
@@ -1768,6 +1828,8 @@ definitions:
       custom_response:
         $ref: '#/definitions/datastore.CustomResponse'
       deleted_at:
+        type: string
+      event_type_location:
         type: string
       forward_headers:
         items:
@@ -1865,19 +1927,15 @@ definitions:
     properties:
       body: {}
       header:
-        additionalProperties: true
-        description: Headers accepts either "headers" or "header" for compatibility with the subscription filter tester.
-        type: object
+        $ref: '#/definitions/datastore.M'
       headers:
-        additionalProperties: true
+        allOf:
+          - $ref: '#/definitions/datastore.M'
         description: Headers accepts either "headers" or "header" for compatibility with the subscription filter tester.
-        type: object
       path:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/datastore.M'
       query:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/datastore.M'
     type: object
   models.TestFilterResponse:
     properties:
@@ -1999,6 +2057,10 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.M'
         description: Body matching criteria (optional)
+      enabled_at:
+        allOf:
+          - $ref: '#/definitions/models.OptionalTime'
+        description: Non-null when this filter is active.
       event_type:
         description: Type of event this filter applies to (optional)
         type: string
@@ -2009,6 +2071,14 @@ definitions:
       is_flattened:
         description: Whether the filter uses flattened JSON paths (optional)
         type: boolean
+      path:
+        allOf:
+          - $ref: '#/definitions/datastore.M'
+        description: Path matching criteria (optional)
+      query:
+        allOf:
+          - $ref: '#/definitions/datastore.M'
+        description: Query matching criteria (optional)
     type: object
   models.UpdateSource:
     properties:
@@ -2023,6 +2093,11 @@ definitions:
         description: |-
           Custom response is used to define a custom response for incoming
           webhooks project sources only.
+      event_type_location:
+        description: |-
+          EventTypeLocation is used to specify where Convoy should read the event type
+          from an incoming webhook request.
+        type: string
       forward_headers:
         description: Soecfy header you want convoy to save from the ingest request and forward to your endpoints when the event is dispatched.
         items:

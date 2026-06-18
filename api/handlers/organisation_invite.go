@@ -150,7 +150,10 @@ func (h *Handler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res := models.UserInviteTokenResponse{Token: iv, User: user}
+	res := models.InviteTokenLookupResponse{
+		Token:      models.NewOrganisationInviteToken(iv),
+		UserExists: user != nil,
+	}
 
 	_ = render.Render(w, r, util.NewServerResponse("retrieved user", res, http.StatusOK))
 }
