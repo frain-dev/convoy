@@ -13,22 +13,24 @@
       }
       <section class="max-w-[445px] mx-auto px-24px py-24px w-full bg-white-100 shadow-default rounded-8px" [ngClass]="{ 'mt-20px': userDetailsAvailable }">
         <form [formGroup]="acceptInviteForm" (ngSubmit)="acceptInvite()">
-          <div class="grid grid-cols-2 gap-6">
-            <convoy-input-field>
-              <label for="first_name" convoy-label required="true">First name</label>
-              <input id="first_name" convoy-input autocomplete="first_name" formControlName="first_name" placeholder="Enter your first name" [readonly]="userDetailsAvailable" />
-              @if (acceptInviteForm.get('first_name')?.touched && acceptInviteForm.get('first_name')?.invalid) {
-                <convoy-input-error>First name is required</convoy-input-error>
-              }
-            </convoy-input-field>
-            <convoy-input-field>
-              <label for="last_name" convoy-label required="true">Last name</label>
-              <input id="last_name" convoy-input autocomplete="last_name" formControlName="last_name" placeholder="Enter your last name" [readonly]="userDetailsAvailable" />
-              @if (acceptInviteForm.get('last_name')?.touched && acceptInviteForm.get('last_name')?.invalid) {
-                <convoy-input-error>Last name is required</convoy-input-error>
-              }
-            </convoy-input-field>
-          </div>
+          @if (!userDetailsAvailable) {
+            <div class="grid grid-cols-2 gap-6">
+              <convoy-input-field>
+                <label for="first_name" convoy-label required="true">First name</label>
+                <input id="first_name" convoy-input autocomplete="first_name" formControlName="first_name" placeholder="Enter your first name" />
+                @if (acceptInviteForm.get('first_name')?.touched && acceptInviteForm.get('first_name')?.invalid) {
+                  <convoy-input-error>First name is required</convoy-input-error>
+                }
+              </convoy-input-field>
+              <convoy-input-field>
+                <label for="last_name" convoy-label required="true">Last name</label>
+                <input id="last_name" convoy-input autocomplete="last_name" formControlName="last_name" placeholder="Enter your last name" />
+                @if (acceptInviteForm.get('last_name')?.touched && acceptInviteForm.get('last_name')?.invalid) {
+                  <convoy-input-error>Last name is required</convoy-input-error>
+                }
+              </convoy-input-field>
+            </div>
+          }
           <convoy-input-field>
             <label for="email" convoy-label required="true">Email Address</label>
             <input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="Enter your email" [readonly]="true" />
