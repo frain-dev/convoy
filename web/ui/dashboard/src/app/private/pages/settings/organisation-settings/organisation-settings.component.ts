@@ -6,7 +6,8 @@ import {Router} from '@angular/router';
 import {PrivateService} from 'src/app/private/private.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
-import {ConfigService} from 'src/app/services/config/config.service';
+import {HttpService} from 'src/app/services/http/http.service';
+import {OrganisationStateService} from 'src/app/services/organisation-state/organisation-state.service';
 
 @Component({
     selector: 'organisation-settings',
@@ -40,7 +41,8 @@ export class OrganisationSettingsComponent implements OnInit {
 		private router: Router,
 		private privateService: PrivateService,
 		public licenseService: LicensesService,
-		private configService: ConfigService
+		private httpService: HttpService,
+		private orgState: OrganisationStateService
 	) {}
 
 	async ngOnInit() {
@@ -50,12 +52,7 @@ export class OrganisationSettingsComponent implements OnInit {
 	}
 
 	private async loadBillingStrategy() {
-		try {
-			const config = await this.configService.getConfig();
-			this.isCloudBilling = config.billing_strategy === 'cloud';
-		} catch {
-			this.isCloudBilling = false;
-		}
+		this.isCloudBilling = (await this.orgState.getBillingStrategy()) === 'cloud';
 	}
 
 	async updateOrganisation() {
@@ -76,9 +73,8 @@ export class OrganisationSettingsComponent implements OnInit {
 	}
 
 	getOrganisationDetails() {
-		const org = localStorage.getItem('CONVOY_ORG');
-		if (org) {
-			const organisationDetails = JSON.parse(org);
+		const organisationDetails = this.httpService.getOrganisation();
+		if (organisationDetails) {
 			this.organisationId = organisationDetails.uid;
 			this.organisationName = organisationDetails.name;
 			this.editOrganisationForm.patchValue({

@@ -58,9 +58,19 @@ type Client interface {
 	DeleteSelfHostedPaymentMethod(ctx context.Context, licenseKey, pmID string) (*Response[interface{}], error)
 }
 
+// headerLicenseKey is the request header carrying the self-hosted license proof.
+const headerLicenseKey = "X-Convoy-License-Key"
+
 type HTTPClient struct {
 	httpClient *http.Client
 	config     config.BillingConfiguration
+}
+
+// setBillingAuthHeader sets the bearer Authorization header when an API key is configured.
+func setBillingAuthHeader(req *http.Request, cfg config.BillingConfiguration) {
+	if cfg.APIKey != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.APIKey))
+	}
 }
 
 type Response[T any] struct {
@@ -90,9 +100,7 @@ func (c *HTTPClient) HealthCheck(ctx context.Context) error {
 		return fmt.Errorf("failed to create health check request: %w", err)
 	}
 
-	if c.config.APIKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
-	}
+	setBillingAuthHeader(req, c.config)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -138,9 +146,7 @@ func (c *HTTPClient) GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType],
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	if c.config.APIKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
-	}
+	setBillingAuthHeader(req, c.config)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -148,6 +154,9 @@ func (c *HTTPClient) GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType],
 	}
 	defer resp.Body.Close()
 
+	// NOTE: /tax_id_types returns a bare JSON array, not the {status,message,data}
+	// envelope every other endpoint uses, so this method intentionally does not route
+	// through makeRequestWithHeaders. See overwatch TaxIdTypesController#index.
 	var taxIdTypes []TaxIDType
 	if err := json.NewDecoder(resp.Body).Decode(&taxIdTypes); err != nil {
 		return nil, fmt.Errorf("failed to read billing response: %w", err)
@@ -257,22 +266,7 @@ func (c *HTTPClient) DownloadSelfHostedInvoice(ctx context.Context, licenseKey, 
 		return nil, fmt.Errorf("invoice PDF link not found")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", pdfLink, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create PDF download request: %w", err)
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download PDF from billing service: %w", err)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		resp.Body.Close()
-		return nil, fmt.Errorf("billing service returned error status: %d", resp.StatusCode)
-	}
-
-	return resp, nil
+	return c.downloadPDF(ctx, pdfLink, false)
 }
 
 func (c *HTTPClient) GetSelfHostedPaymentMethods(ctx context.Context, licenseKey string) (*Response[[]PaymentMethod], error) {
@@ -327,13 +321,20 @@ func (c *HTTPClient) DownloadInvoice(ctx context.Context, orgID, invoiceID strin
 		return nil, fmt.Errorf("invoice PDF link not found")
 	}
 
+	return c.downloadPDF(ctx, pdfLink, true)
+}
+
+// downloadPDF resolves a billing PDF link and streams it back. When auth is true the
+// configured billing API key is sent as a bearer token (cloud invoices); self-hosted
+// invoices use a pre-signed link and pass auth=false.
+func (c *HTTPClient) downloadPDF(ctx context.Context, pdfLink string, auth bool) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", pdfLink, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create PDF download request: %w", err)
 	}
 
-	if c.config.APIKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
+	if auth {
+		setBillingAuthHeader(req, c.config)
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -363,7 +364,7 @@ func makeLicenseRequestWithBody[T any](ctx context.Context, httpClient *http.Cli
 		return nil, fmt.Errorf("self-hosted license key is required")
 	}
 	return makeRequestWithHeaders[T](ctx, httpClient, config, method, path, body, map[string]string{
-		"X-Convoy-License-Key": licenseKey,
+		headerLicenseKey: licenseKey,
 	})
 }
 
@@ -397,8 +398,8 @@ func makeRequestWithHeaders[T any](ctx context.Context, httpClient *http.Client,
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	if config.APIKey != "" && !isPublicPath {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.APIKey))
+	if !isPublicPath {
+		setBillingAuthHeader(req, config)
 	}
 	for key, value := range headers {
 		req.Header.Set(key, value)

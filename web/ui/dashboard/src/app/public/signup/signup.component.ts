@@ -72,19 +72,6 @@ export class SignupComponent implements OnInit {
 		}
 	}
 
-	async getSignUpConfig() {
-		this.isFetchingConfig = true;
-		try {
-			const response = await this.signupService.getSignupConfig();
-			const isSignupEnabled = response.data?.is_signup_enabled ?? false;
-			if (!isSignupEnabled) this.router.navigateByUrl('/login');
-			this.isFetchingConfig = false;
-		} catch (error) {
-			this.isFetchingConfig = false;
-			throw error;
-		}
-	}
-
 	private async checkGoogleOAuthConfig() {
 		try {
 			const config = await this.configService.getConfig();
@@ -99,7 +86,6 @@ export class SignupComponent implements OnInit {
 
 		try {
 			const res = await this.signupService.signUpWithSSO();
-			console.log(res);
 			const { redirectUrl } = res.data;
 			window.open(redirectUrl, '_blank');
 		} catch (error) {

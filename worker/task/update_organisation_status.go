@@ -8,7 +8,6 @@ import (
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
-	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -81,30 +80,25 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 				continue
 			}
 
-			hasActiveSubscription := billing.HasActiveSubscription(resp.Data)
+			active := billing.HasActiveSubscription(resp.Data)
+			if !billing.ApplySubscriptionStatus(&org, active) {
+				continue
+			}
 
-			if hasActiveSubscription {
-				if org.DisabledAt.Valid {
-					org.DisabledAt = null.Time{}
-					if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
-						logger.Errorf("Failed to clear organisation %s disabled_at: %v", org.UID, err)
-						errorCount++
-						continue
-					}
-					updatedCount++
-					logger.Infof("Cleared organisation %s disabled_at - subscription active", org.UID)
+			if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
+				if active {
+					logger.Errorf("Failed to clear organisation %s disabled_at: %v", org.UID, err)
+				} else {
+					logger.Errorf("Failed to set organisation %s disabled_at: %v", org.UID, err)
 				}
+				errorCount++
+				continue
+			}
+			updatedCount++
+			if active {
+				logger.Infof("Cleared organisation %s disabled_at - subscription active", org.UID)
 			} else {
-				if !org.DisabledAt.Valid {
-					org.DisabledAt = null.NewTime(time.Now(), true)
-					if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
-						logger.Errorf("Failed to set organisation %s disabled_at: %v", org.UID, err)
-						errorCount++
-						continue
-					}
-					updatedCount++
-					logger.Infof("Set organisation %s disabled_at - subscription not active", org.UID)
-				}
+				logger.Infof("Set organisation %s disabled_at - subscription not active", org.UID)
 			}
 		}
 

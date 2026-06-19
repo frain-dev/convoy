@@ -51,13 +51,7 @@ func RefreshLicenseDataForUser(userID string, deps RefreshLicenseDataDeps) {
 
 	defaultKey := deps.Cfg.LicenseKey
 	useOrgBilling := deps.Cfg.UsesOrgBilling() && deps.BillingClient != nil
-	licClient := licensesvc.NewClient(licensesvc.Config{
-		Host:         deps.Cfg.LicenseService.Host,
-		ValidatePath: deps.Cfg.LicenseService.ValidatePath,
-		Timeout:      deps.Cfg.LicenseService.Timeout,
-		RetryCount:   deps.Cfg.LicenseService.RetryCount,
-		Logger:       deps.Logger,
-	})
+	licClient := licensesvc.NewClientFromConfig(deps.Cfg.LicenseService, deps.Logger)
 
 	for _, org := range orgs {
 		RefreshLicenseDataForOrg(ctx, org, defaultKey, useOrgBilling, deps, licClient)
@@ -146,13 +140,7 @@ func CheckOrganisationProjectLimit(ctx context.Context, org *datastore.Organisat
 	if key == "" {
 		return false, nil
 	}
-	licClient := licensesvc.NewClient(licensesvc.Config{
-		Host:         deps.Cfg.LicenseService.Host,
-		ValidatePath: deps.Cfg.LicenseService.ValidatePath,
-		Timeout:      deps.Cfg.LicenseService.Timeout,
-		RetryCount:   deps.Cfg.LicenseService.RetryCount,
-		Logger:       deps.Logger,
-	})
+	licClient := licensesvc.NewClientFromConfig(deps.Cfg.LicenseService, deps.Logger)
 	data, err := licClient.ValidateLicense(ctx, key)
 	if err != nil {
 		return false, err

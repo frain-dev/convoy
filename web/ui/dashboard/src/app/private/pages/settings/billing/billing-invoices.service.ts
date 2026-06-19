@@ -4,6 +4,8 @@ import {map} from 'rxjs/operators';
 import {HttpService} from 'src/app/services/http/http.service';
 import axios from 'axios';
 import {environment} from 'src/environments/environment';
+import {BillingStrategy} from 'src/app/models/billing.model';
+import {BillingEndpoints} from './billing-endpoints';
 
 export interface InvoiceRow {
   id: string;
@@ -17,11 +19,11 @@ export interface InvoiceRow {
 
 @Injectable({ providedIn: 'root' })
 export class BillingInvoicesService {
-  private billingStrategy: 'oss' | 'cloud' | 'licensed_self_hosted' = 'cloud';
+  private billingStrategy: BillingStrategy = 'cloud';
 
   constructor(private httpService: HttpService) {}
 
-  setBillingStrategy(strategy: 'oss' | 'cloud' | 'licensed_self_hosted'): void {
+  setBillingStrategy(strategy: BillingStrategy): void {
     this.billingStrategy = strategy;
   }
 
@@ -38,9 +40,7 @@ export class BillingInvoicesService {
   private async getInvoicesData() {
     try {
       const orgId = this.getOrganisationId();
-      const url = this.billingStrategy === 'licensed_self_hosted'
-        ? '/billing/sh_invoices'
-        : `/billing/organisations/${orgId}/invoices`;
+      const url = BillingEndpoints.billingUrl(this.billingStrategy, 'invoices', orgId);
       const response = await this.httpService.request({
         url,
         method: 'get',
@@ -56,18 +56,11 @@ export class BillingInvoicesService {
   private async downloadInvoiceData(orgID: string, invoiceID: string): Promise<Blob> {
     try {
       // Get auth token for the request
-      const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
-      let authToken = '';
-      if (authDetails && authDetails !== 'undefined') {
-        const token = JSON.parse(authDetails);
-        authToken = token.access_token || '';
-      }
+      const authToken = this.httpService.getAccessToken();
 
       // Both strategies download in-app: the backend proxies the provider PDF and
       // streams it back with auth, so the browser never hits the provider directly.
-      const path = this.billingStrategy === 'licensed_self_hosted'
-        ? `/billing/sh_invoices/${invoiceID}/download`
-        : `/billing/organisations/${orgID}/invoices/${invoiceID}/download`;
+      const path = `${BillingEndpoints.billingUrl(this.billingStrategy, 'invoices', orgID)}/${invoiceID}/download`;
 
       // Build the URL
       const baseElement = document.querySelector('base');
@@ -152,7 +145,7 @@ export class BillingInvoicesService {
   }
 
   private getOrganisationId(): string {
-    const org = localStorage.getItem('CONVOY_ORG');
-    return org ? JSON.parse(org).uid : '';
+    const org = this.httpService.getOrganisation();
+    return org ? org.uid : '';
   }
 }

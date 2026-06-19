@@ -1,5 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpService} from '../http/http.service';
+import {BillingStrategy} from 'src/app/models/billing.model';
 
 export interface GoogleOAuthConfig {
   enabled: boolean;
@@ -14,7 +15,7 @@ export interface AppConfig {
     is_signup_enabled?: boolean;
     [key: string]: any;
   };
-  billing_strategy?: 'oss' | 'cloud' | 'licensed_self_hosted';
+  billing_strategy?: BillingStrategy;
   [key: string]: any;
 }
 

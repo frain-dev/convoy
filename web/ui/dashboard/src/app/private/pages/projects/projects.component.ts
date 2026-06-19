@@ -3,9 +3,8 @@ import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { ConfigService } from 'src/app/services/config/config.service';
-
-type BillingStrategy = 'oss' | 'cloud' | 'licensed_self_hosted';
+import { OrganisationStateService } from 'src/app/services/organisation-state/organisation-state.service';
+import { BillingStrategy } from 'src/app/models/billing.model';
 
 @Component({
     selector: 'app-projects',
@@ -25,7 +24,7 @@ export class ProjectsComponent implements OnInit {
 		private privateService: PrivateService,
 		private router: Router,
 		public licenseService: LicensesService,
-		private configService: ConfigService
+		private orgState: OrganisationStateService
 	) {
 		this.privateService.projects$.subscribe(projects => (this.projects = projects.data));
 	}
@@ -35,12 +34,7 @@ export class ProjectsComponent implements OnInit {
 	}
 
 	private async loadBillingStrategy() {
-		try {
-			const config = await this.configService.getConfig();
-			this.billingStrategy = config.billing_strategy || 'oss';
-		} catch {
-			this.billingStrategy = 'oss';
-		}
+		this.billingStrategy = await this.orgState.getBillingStrategy();
 	}
 
 	async getProject(projectId: string) {
@@ -71,14 +65,7 @@ export class ProjectsComponent implements OnInit {
 	}
 
 	get isDisabled(): boolean {
-		const org = localStorage.getItem('CONVOY_ORG');
-		if (!org) return false;
-		try {
-			const organisationDetails = JSON.parse(org);
-			return organisationDetails.disabled_at != null && organisationDetails.disabled_at !== undefined;
-		} catch {
-			return false;
-		}
+		return this.orgState.isDisabled();
 	}
 
 	/** Message for the card layout (grid) overlay. */
@@ -122,10 +109,7 @@ export class ProjectsComponent implements OnInit {
 	}
 
 	private get projectLimitReachedMessage(): string {
-		const limitInfo = this.licenseService.getLimitInfo('project_limit');
-		const current = limitInfo?.current ?? 0;
-		const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
-		return `Limit reached (${current}/${limit})`;
+		return this.licenseService.limitReachedMessage('project_limit');
 	}
 
 	get canOpenBillingForProjectLimit(): boolean {
@@ -133,10 +117,6 @@ export class ProjectsComponent implements OnInit {
 	}
 
 	get disabledOrganisationMessage(): string {
-		if (this.billingStrategy === 'cloud') {
-			return 'This action is disabled for this organization. Subscribe to a plan to create projects.';
-		}
-
-		return 'This action is disabled for this organization. Please contact support.';
+		return this.orgState.disabledOrganisationMessage(this.billingStrategy);
 	}
 }

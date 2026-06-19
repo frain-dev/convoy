@@ -151,6 +151,13 @@ export class GeneralService {
 		return displayMessage;
 	}
 
+	// Pull the most specific message out of an HTTP/error object, falling back to
+	// the provided default. Centralises the repeated
+	// `error?.error?.message || error?.message || 'fallback'` chain.
+	extractMessage(error: any, fallback: string): string {
+		return error?.error?.message || error?.message || fallback;
+	}
+
 	convertStringToJson(str: string) {
 		try {
 			const jsonObject = JSON.parse(str);

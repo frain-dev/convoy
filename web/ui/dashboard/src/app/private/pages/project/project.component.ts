@@ -3,9 +3,8 @@ import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { ConfigService } from 'src/app/services/config/config.service';
-
-type BillingStrategy = 'oss' | 'cloud' | 'licensed_self_hosted';
+import { OrganisationStateService } from 'src/app/services/organisation-state/organisation-state.service';
+import { BillingStrategy } from 'src/app/models/billing.model';
 
 @Component({
     selector: 'app-project',
@@ -59,20 +58,15 @@ export class ProjectComponent implements OnInit {
 		private privateService: PrivateService,
 		private router: Router,
 		public licenseService: LicensesService,
-		private configService: ConfigService
+		private orgState: OrganisationStateService
 	) {}
 
-	ngOnInit() {
-		Promise.all([this.getProjectDetails(), this.getProjects(), this.loadBillingStrategy()]);
+	async ngOnInit() {
+		await Promise.all([this.getProjectDetails(), this.getProjects(), this.loadBillingStrategy()]);
 	}
 
 	private async loadBillingStrategy() {
-		try {
-			const config = await this.configService.getConfig();
-			this.billingStrategy = config.billing_strategy || 'oss';
-		} catch {
-			this.billingStrategy = 'oss';
-		}
+		this.billingStrategy = await this.orgState.getBillingStrategy();
 	}
 
 	get activeTab(): any {
@@ -135,36 +129,14 @@ export class ProjectComponent implements OnInit {
 	}
 
 	get isDisabled(): boolean {
-		const org = localStorage.getItem('CONVOY_ORG');
-		if (!org) return false;
-		try {
-			const organisationDetails = JSON.parse(org);
-			return organisationDetails.disabled_at != null && organisationDetails.disabled_at !== undefined;
-		} catch {
-			return false;
-		}
+		return this.orgState.isDisabled();
 	}
 
 	get disabledOrganisationMessage(): string {
-		if (this.billingStrategy === 'cloud') {
-			return 'This action is disabled for this organization. Subscribe to a plan to create projects.';
-		}
-
-		return 'This action is disabled for this organization. Please contact support.';
+		return this.orgState.disabledOrganisationMessage(this.billingStrategy);
 	}
 
 	getProjectLimitMessage(): string {
-		if (!this.licenseService.hasLicense('project_limit')) {
-			if (!this.licenseService.isLimitAvailable('project_limit')) {
-				return 'Business';
-			}
-			if (this.licenseService.isLimitAvailable('project_limit') && this.licenseService.isLimitReached('project_limit')) {
-				const limitInfo = this.licenseService.getLimitInfo('project_limit');
-				const current = limitInfo?.current ?? 0;
-				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
-				return `Limit reached (${current}/${limit})`;
-			}
-		}
-		return '';
+		return this.licenseService.limitMessage('project_limit');
 	}
 }

@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"github.com/frain-dev/convoy/config"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -42,6 +43,19 @@ type Config struct {
 	Timeout      time.Duration
 	RetryCount   int
 	Logger       log.Logger
+}
+
+// NewClientFromConfig builds a license service client from the typed license service
+// configuration plus a logger. It is the single construction site for the repeated
+// host/validate-path/timeout/retry wiring.
+func NewClientFromConfig(cfg config.LicenseServiceConfiguration, l log.Logger) *Client {
+	return NewClient(Config{
+		Host:         cfg.Host,
+		ValidatePath: cfg.ValidatePath,
+		Timeout:      cfg.Timeout,
+		RetryCount:   cfg.RetryCount,
+		Logger:       l,
+	})
 }
 
 // NewClient creates a new license service client

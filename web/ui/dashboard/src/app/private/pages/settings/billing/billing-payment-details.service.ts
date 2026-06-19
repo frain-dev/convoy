@@ -2,14 +2,11 @@ import {Injectable} from '@angular/core';
 import {from, Observable, of, Subject} from 'rxjs';
 import {catchError, map, mergeMap} from 'rxjs/operators';
 import {HttpService} from 'src/app/services/http/http.service';
+import {BillingStrategy} from 'src/app/models/billing.model';
+import {BillingEndpoints} from './billing-endpoints';
 
-export interface PaymentMethodUpdate {
-  cardholderName: string;
-  cardNumber: string;
-  expiryMonth: string;
-  expiryYear: string;
-  cvv: string;
-}
+// Tax id type used when a country has no specific match in the provider catalog.
+const DEFAULT_TAX_ID_TYPE = 'us_ein';
 
 export interface PaymentMethodDetails {
   cardholderName: string;
@@ -62,7 +59,7 @@ export interface VatInfoDetails {
 
 @Injectable({ providedIn: 'root' })
 export class BillingPaymentDetailsService {
-  private billingStrategy: 'oss' | 'cloud' | 'licensed_self_hosted' = 'cloud';
+  private billingStrategy: BillingStrategy = 'cloud';
 
   // Emitted when a post-checkout subscription poll confirms the new subscription
   // is active. The billing page reloads its data so the plan card, Manage plan,
@@ -76,7 +73,7 @@ export class BillingPaymentDetailsService {
     this.checkoutSubscriptionVerifiedSource.next();
   }
 
-  setBillingStrategy(strategy: 'oss' | 'cloud' | 'licensed_self_hosted'): void {
+  setBillingStrategy(strategy: BillingStrategy): void {
     this.billingStrategy = strategy;
   }
 
@@ -106,10 +103,8 @@ export class BillingPaymentDetailsService {
   }
 
   getPaymentMethods(): Observable<PaymentMethod[]> {
-    const orgId = this.getOrganisationId();
-    const url = this.billingStrategy === 'licensed_self_hosted'
-      ? '/billing/sh_payment_methods'
-      : `/billing/organisations/${orgId}/payment_methods`;
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId);
     return from(this.httpService.request({
       url,
       method: 'get'
@@ -125,10 +120,8 @@ export class BillingPaymentDetailsService {
   }
 
   getPaymentMethodDetails(): Observable<PaymentMethodDetails> {
-    const orgId = this.getOrganisationId();
-    const url = this.billingStrategy === 'licensed_self_hosted'
-      ? '/billing/sh_payment_methods'
-      : `/billing/organisations/${orgId}/payment_methods`;
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId);
     return from(this.httpService.request({
       url,
       method: 'get'
@@ -168,10 +161,8 @@ export class BillingPaymentDetailsService {
   }
 
   setDefaultPaymentMethod(pmId: string): Observable<any> {
-    const orgId = this.getOrganisationId();
-    const url = this.billingStrategy === 'licensed_self_hosted'
-      ? `/billing/sh_payment_methods/${pmId}/default`
-      : `/billing/organisations/${orgId}/payment_methods/${pmId}/default`;
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = `${BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId)}/${pmId}/default`;
 
     return from(this.httpService.request({
       url,
@@ -180,10 +171,8 @@ export class BillingPaymentDetailsService {
   }
 
   deletePaymentMethod(pmId: string): Observable<any> {
-    const orgId = this.getOrganisationId();
-    const url = this.billingStrategy === 'licensed_self_hosted'
-      ? `/billing/sh_payment_methods/${pmId}`
-      : `/billing/organisations/${orgId}/payment_methods/${pmId}`;
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = `${BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId)}/${pmId}`;
 
     return from(this.httpService.request({
       url,
@@ -192,10 +181,8 @@ export class BillingPaymentDetailsService {
   }
 
   getBillingAddress(): Observable<BillingAddressDetails> {
-    const orgId = this.getOrganisationId();
-    const url = this.billingStrategy === 'licensed_self_hosted'
-      ? '/billing/sh_organisation'
-      : `/billing/organisations/${orgId}`;
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'organisation', orgId);
 
     return from(this.httpService.request({
       url,
@@ -231,10 +218,8 @@ export class BillingPaymentDetailsService {
   }
 
   getVatInfo(): Observable<VatInfoDetails> {
-    const orgId = this.getOrganisationId();
-    const url = this.billingStrategy === 'licensed_self_hosted'
-      ? '/billing/sh_organisation'
-      : `/billing/organisations/${orgId}`;
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'organisation', orgId);
 
     return from(this.httpService.request({
       url,
@@ -282,10 +267,8 @@ export class BillingPaymentDetailsService {
   }
 
   getSetupIntent(): Observable<any> {
-    const orgId = this.getOrganisationId();
-    const url = this.billingStrategy === 'licensed_self_hosted'
-      ? '/billing/sh_payment_methods/setup_intent'
-      : `/billing/organisations/${orgId}/payment_methods/setup_intent`;
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = `${BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId)}/setup_intent`;
 
     return from(this.httpService.request({
       url,
@@ -300,21 +283,9 @@ export class BillingPaymentDetailsService {
     }));
   }
 
-  updatePaymentMethod(paymentMethod: PaymentMethodUpdate, returnFullError: boolean = false): Observable<any> {
-    const orgId = this.getOrganisationId();
-    return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}/payment_methods`,
-      method: 'post',
-      body: paymentMethod,
-      returnFullError: returnFullError
-    }));
-  }
-
   updateBillingAddress(billingAddress: BillingAddressUpdate): Observable<any> {
-    const orgId = this.getOrganisationId();
-    const url = this.billingStrategy === 'licensed_self_hosted'
-      ? '/billing/sh_address'
-      : `/billing/organisations/${orgId}/address`;
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'address', orgId);
 
     const addressData = {
       billing_name: billingAddress.name,
@@ -334,16 +305,10 @@ export class BillingPaymentDetailsService {
   }
 
   updateVatInfo(vatInfo: VatInfoUpdate): Observable<any> {
-    const orgId = this.getOrganisationId();
-    const orgUrl = this.billingStrategy === 'licensed_self_hosted'
-      ? '/billing/sh_organisation'
-      : `/billing/organisations/${orgId}`;
-    const taxUrl = this.billingStrategy === 'licensed_self_hosted'
-      ? '/billing/sh_tax_id'
-      : `/billing/organisations/${orgId}/tax_id`;
-    const addressUrl = this.billingStrategy === 'licensed_self_hosted'
-      ? '/billing/sh_address'
-      : `/billing/organisations/${orgId}/address`;
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const orgUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'organisation', orgId);
+    const taxUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'tax_id', orgId);
+    const addressUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'address', orgId);
 
     const orgUpdateData = {
       name: vatInfo.businessName
@@ -423,38 +388,18 @@ export class BillingPaymentDetailsService {
 
         if (!taxIdType) {
           console.warn(`No tax ID type found for country code: ${countryCode}`);
-          taxIdType = 'us_ein';
+          taxIdType = DEFAULT_TAX_ID_TYPE;
         }
 
         return taxIdType;
       }),
       catchError((error) => {
         console.error('Failed to fetch tax ID types:', error);
-        return of('us_ein');
+        return of(DEFAULT_TAX_ID_TYPE);
       })
     );
   }
 
 
 
-  private getOrganisationId(): string {
-    const org = localStorage.getItem('CONVOY_ORG');
-
-    if (!org) {
-      throw new Error('No organisation found. Please refresh the page and try again.');
-    }
-
-    try {
-      const orgData = JSON.parse(org);
-
-      if (!orgData.uid) {
-        throw new Error('Invalid organisation data. Please refresh the page and try again.');
-      }
-
-      return orgData.uid;
-    } catch (error) {
-      console.error('Error parsing organisation data from localStorage:', error);
-      throw new Error('Invalid organisation data. Please refresh the page and try again.');
-    }
-  }
 }

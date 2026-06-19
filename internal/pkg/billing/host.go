@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+// CanonicalOrigin validates and normalises a caller-supplied origin into a canonical
+// "scheme://host[:port]" form. It requires an http or https scheme and a hostname,
+// rejects userinfo, path, query, fragment, and non-ASCII hosts, lowercases the host, and
+// strips default ports (80 for http, 443 for https). It is the single origin-validation
+// source for billing checkout redirects.
 func CanonicalOrigin(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {

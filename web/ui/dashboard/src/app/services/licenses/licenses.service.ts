@@ -27,6 +27,8 @@ export class LicensesService {
 		try {
 			return JSON.parse(raw) as Record<string, any>;
 		} catch {
+			// Fail closed: unreadable/corrupt cache reads as no license data,
+			// so callers deny access rather than trusting a partial parse.
 			return null;
 		}
 	}
@@ -103,7 +105,10 @@ export class LicensesService {
 			const response = await this.getLicenses(undefined, instanceLevelOnly);
 			const key = instanceLevelOnly ? this.INSTANCE_LICENSES_KEY : this.ORG_LICENSES_KEY;
 			localStorage.setItem(key, JSON.stringify(response.data));
-		} catch {}
+		} catch {
+			// Fail open: a license fetch/cache failure must not block login or
+			// signup. Feature gates read fail-closed from the (now absent) cache.
+		}
 	}
 
 	/**
@@ -172,6 +177,32 @@ export class LicensesService {
 		const defined = [inst, org].filter((d): d is NonNullable<typeof d> => d !== null);
 		if (defined.length === 0) return false;
 		return defined.some(d => d.limit_reached === true);
+	}
+
+	// -1 means unlimited; render it as ∞. Single owner of the -1 → ∞ formatting.
+	formatLimit(limit: number | undefined | null): string {
+		return limit === -1 ? '∞' : String(limit ?? 0);
+	}
+
+	// "Limit reached (current/limit)" copy for an exhausted limit.
+	limitReachedMessage(limitKey: string): string {
+		const limitInfo = this.getLimitInfo(limitKey);
+		const current = limitInfo?.current ?? 0;
+		return `Limit reached (${current}/${this.formatLimit(limitInfo?.limit)})`;
+	}
+
+	// Shared project/user limit gating copy: upsell label when the plan does not
+	// include the limit, the reached message when it is included and exhausted.
+	limitMessage(limitKey: string): string {
+		if (!this.hasLicense(limitKey)) {
+			if (!this.isLimitAvailable(limitKey)) {
+				return 'Business';
+			}
+			if (this.isLimitAvailable(limitKey) && this.isLimitReached(limitKey)) {
+				return this.limitReachedMessage(limitKey);
+			}
+		}
+		return '';
 	}
 
 	// Combined view: the more restrictive (smaller) limit, with that side's usage.
