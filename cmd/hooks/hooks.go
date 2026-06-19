@@ -188,6 +188,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				return err
 			}
 
+			if err := applyInstanceLicenseConfig(context.Background(), app, &cfg); err != nil {
+				return err
+			}
+
 			t := telemetry.NewTelemetry(lo, dbCfg,
 				telemetry.OptionBackend(telemetry.NewposthogBackend()),
 				telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
@@ -216,13 +220,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			LicenseService: service.LicenserConfig{
-				LicenseKey:     cfg.LicenseKey,
-				BillingEnabled: cfg.Billing.Enabled,
-				Client:         licenseClient,
-				OrgRepo:        organisations.New(lo, app.DB),
-				UserRepo:       users.New(log.New("convoy", log.LevelError), app.DB),
-				ProjectRepo:    projectRepo,
-				Logger:         lo,
+				LicenseKey:    cfg.LicenseKey,
+				UseOrgBilling: cfg.UsesOrgBilling(),
+				Client:        licenseClient,
+				OrgRepo:       organisations.New(lo, app.DB),
+				UserRepo:      users.New(log.New("convoy", log.LevelError), app.DB),
+				ProjectRepo:   projectRepo,
+				Logger:        lo,
 			},
 		})
 		if err != nil {
@@ -266,6 +270,34 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		return nil
 	}
+}
+
+func applyInstanceLicenseConfig(ctx context.Context, a *cli.App, cfg *config.Configuration) error {
+	configRepo := configuration.New(a.Logger, a.DB)
+	instCfg, err := configRepo.LoadInstanceBillingConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	if shouldUpdate := applyLicensePrecedence(instCfg, cfg); shouldUpdate {
+		return configRepo.UpdateInstanceBillingConfig(ctx, instCfg)
+	}
+
+	return nil
+}
+
+func applyLicensePrecedence(instCfg *datastore.Configuration, cfg *config.Configuration) bool {
+	// An explicit CONVOY_LICENSE_KEY owns boot-time self-hosted licensing. The
+	// persisted checkout key is only the fallback when env/config has no key.
+	if licenseKey := strings.TrimSpace(cfg.LicenseKey); licenseKey != "" {
+		instCfg.LicenseKey = licenseKey
+		instCfg.LicenseSyncedAt = null.NewTime(time.Now(), true)
+		return true
+	} else if instCfg.LicenseKey != "" {
+		cfg.LicenseKey = instCfg.LicenseKey
+	}
+
+	return false
 }
 
 func licenseOverrideCfg(cfg *config.Configuration, licenser license.Licenser) {
@@ -798,38 +830,26 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
-	// Billing configuration
-	enableBilling, err := cmd.Flags().GetBool("enable-billing")
+	billingURL, err := cmd.Flags().GetString("billing-url")
 	if err != nil {
 		return nil, err
 	}
 
-	if enableBilling {
-		c.Billing.Enabled = true
+	billingAPIKey, err := cmd.Flags().GetString("billing-api-key")
+	if err != nil {
+		return nil, err
+	}
 
-		billingURL, err := cmd.Flags().GetString("billing-url")
-		if err != nil {
-			return nil, err
-		}
+	if !util.IsStringEmpty(billingURL) {
+		c.Billing.URL = billingURL
+	}
 
-		billingAPIKey, err := cmd.Flags().GetString("billing-api-key")
-		if err != nil {
-			return nil, err
-		}
+	if !util.IsStringEmpty(billingAPIKey) {
+		c.Billing.APIKey = billingAPIKey
+	}
 
-		// Only set values if they are provided (not empty)
-		if !util.IsStringEmpty(billingURL) {
-			c.Billing.URL = billingURL
-		}
-
-		if !util.IsStringEmpty(billingAPIKey) {
-			c.Billing.APIKey = billingAPIKey
-		}
-
-		// Validate billing configuration
-		if err := c.Billing.Validate(); err != nil {
-			return nil, fmt.Errorf("billing configuration error: %w", err)
-		}
+	if err := c.Billing.Validate(); err != nil {
+		return nil, fmt.Errorf("billing configuration error: %w", err)
 	}
 
 	return c, nil

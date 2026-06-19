@@ -56,7 +56,6 @@
         "skip_ping_validation": true
     },
     "billing": {
-        "enabled": true,
         "url": "http://localhost:8080",
         "api_key": "test-key"
     }

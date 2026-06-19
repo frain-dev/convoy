@@ -24,6 +24,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	internalconfiguration "github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisation_members"
@@ -145,6 +146,27 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
 	parseResponse(u.T(), w.Result(), &response)
 
 	require.Equal(u.T(), true, response["is_signup_enabled"])
+}
+
+func (u *AuthIntegrationTestSuite) Test_GetAuthConfiguration_UsesPersistedInstanceLicenseForBillingStrategy() {
+	cfgSvc := internalconfiguration.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
+	instanceCfg, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
+	require.NoError(u.T(), err)
+	instanceCfg.LicenseKey = "licensed-self-hosted-key"
+	err = cfgSvc.UpdateInstanceBillingConfig(context.Background(), instanceCfg)
+	require.NoError(u.T(), err)
+
+	req := createRequest(http.MethodGet, "/ui/configuration/auth", "", nil)
+	w := httptest.NewRecorder()
+
+	u.Router.ServeHTTP(w, req)
+
+	require.Equal(u.T(), http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	parseResponse(u.T(), w.Result(), &response)
+
+	require.Equal(u.T(), string(config.BillingModeLicensedSelfHosted), response["billing_strategy"])
 }
 
 func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Username() {

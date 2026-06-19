@@ -29,19 +29,18 @@ func (noCallBillingClient) CreateOrganisation(context.Context, billing.BillingOr
 	panic("billing client must not be called when billing is disabled")
 }
 
-func TestGetInternalOrganisationID_BillingDisabled_DoesNotCallBilling(t *testing.T) {
+func TestGetInternalOrganisationID_BillingUnavailable_DoesNotCallBilling(t *testing.T) {
 	base := &billing.MockBillingClient{}
 	client := noCallBillingClient{MockBillingClient: base}
 
 	h := &BillingHandler{
 		Handler: &Handler{
 			A: &types.APIOptions{
-				Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: false}},
-				BillingClient: &client,
-				Logger:        log.New("convoy", log.LevelInfo),
+				Cfg:    config.Configuration{},
+				Logger: log.New("convoy", log.LevelInfo),
 			},
 		},
-		BillingClient: &client,
+		BillingClient: nil,
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/ui/billing/organisations/org-123/internal_id", nil)
@@ -53,10 +52,11 @@ func TestGetInternalOrganisationID_BillingDisabled_DoesNotCallBilling(t *testing
 
 	h.GetInternalOrganisationID(w, req)
 
-	require.Equal(t, http.StatusForbidden, w.Code)
+	require.Equal(t, http.StatusServiceUnavailable, w.Code)
 	var body map[string]interface{}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
-	require.Contains(t, body["message"], "Billing module is not enabled")
+	require.Contains(t, body["message"], "cloud org billing is not configured")
+	_ = client
 }
 
 func TestIsBillingOrgNotFound(t *testing.T) {

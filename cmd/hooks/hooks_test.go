@@ -4,8 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
@@ -65,5 +67,30 @@ func TestGetQueueOptions(t *testing.T) {
 		_, err := getQueueOptions(cfg, redis)
 
 		assert.Error(t, err)
+	})
+}
+
+func TestApplyLicensePrecedence(t *testing.T) {
+	t.Run("explicit config license overrides persisted instance license", func(t *testing.T) {
+		instCfg := &datastore.Configuration{LicenseKey: "persisted-cancelled-license"}
+		cfg := &config.Configuration{LicenseKey: "server-qa-license"}
+
+		shouldUpdate := applyLicensePrecedence(instCfg, cfg)
+
+		require.True(t, shouldUpdate)
+		assert.Equal(t, "server-qa-license", instCfg.LicenseKey)
+		assert.Equal(t, "server-qa-license", cfg.LicenseKey)
+		assert.True(t, instCfg.LicenseSyncedAt.Valid)
+	})
+
+	t.Run("persisted instance license is fallback when config license is empty", func(t *testing.T) {
+		instCfg := &datastore.Configuration{LicenseKey: "persisted-license"}
+		cfg := &config.Configuration{}
+
+		shouldUpdate := applyLicensePrecedence(instCfg, cfg)
+
+		require.False(t, shouldUpdate)
+		assert.Equal(t, "persisted-license", cfg.LicenseKey)
+		assert.Equal(t, "persisted-license", instCfg.LicenseKey)
 	})
 }

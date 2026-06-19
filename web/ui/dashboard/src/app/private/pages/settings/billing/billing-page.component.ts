@@ -1,4 +1,5 @@
-import {ChangeDetectorRef, Component, ElementRef, HostListener, OnInit, ViewChild} from '@angular/core';
+import {ChangeDetectorRef, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Subscription} from 'rxjs';
 import {ActivatedRoute, Router} from '@angular/router';
 import {StripeElementsComponent} from './stripe-elements.component';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
@@ -15,15 +16,19 @@ import {CountriesService} from 'src/app/services/countries/countries.service';
 import {Plan, PlanService} from './plan.service';
 import {BillingOverviewService, BillingOverview} from './billing-overview.service';
 import {BillingUsageService, UsageRow} from './billing-usage.service';
+import {BillingInvoicesService} from './billing-invoices.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
+
+type BillingStrategy = 'oss' | 'cloud' | 'licensed_self_hosted';
+
 @Component({
     selector: 'app-billing-page',
     templateUrl: './billing-page.component.html',
     styleUrls: ['./billing-page.component.scss'],
     standalone: false
 })
-export class BillingPageComponent implements OnInit {
+export class BillingPageComponent implements OnInit, OnDestroy {
   @ViewChild('paymentDetailsDialog') paymentDetailsDialog!: ElementRef<HTMLDialogElement>;
   @ViewChild('managePlanDialog') managePlanDialog!: ElementRef<HTMLDialogElement>;
   @ViewChild('cancelConfirmDialog') cancelConfirmDialog!: ElementRef<HTMLDialogElement>;
@@ -38,6 +43,9 @@ export class BillingPageComponent implements OnInit {
 
   plans: Plan[] = [];
   isLoadingPlans = false;
+  hasAttemptedPlansLoad = false;
+  hasLoadedPlans = false;
+  plansUnavailableMessage = '';
   currentSubscription: any = null;
   overwatchPlans: Plan[] = [];
 
@@ -58,6 +66,9 @@ export class BillingPageComponent implements OnInit {
   isLoadingVat = false;
   isLoadingCheckout = false;
 
+  selfHostedCheckoutForm!: FormGroup;
+  selfHostedBillingConfig: any = null;
+  billingStrategy: BillingStrategy = 'oss';
   billingAddressForm!: FormGroup;
   vatForm!: FormGroup;
 
@@ -104,6 +115,7 @@ export class BillingPageComponent implements OnInit {
     private planService: PlanService,
     private cdr: ChangeDetectorRef,
     private overviewService: BillingOverviewService,
+    private invoicesService: BillingInvoicesService,
     private usageService: BillingUsageService,
     private httpService: HttpService,
     private licensesService: LicensesService,
@@ -114,19 +126,41 @@ export class BillingPageComponent implements OnInit {
   }
 
   private bootstrapSubscriptionPromise: Promise<void> | null = null;
+  private checkoutVerifiedSub?: Subscription;
   private locationRequestToken = 0;
   private activeCountryRequestToken = 0;
   private activeCityRequestToken = 0;
   private cityLoadingRequestToken: number | null = null;
 
-  ngOnInit() {
-    this.validateOrganisation();
-    this.loadCountries(); // Load immediately, independent of bootstrap
-    this.loadBillingConfiguration();
+  async ngOnInit() {
+    // When the post-checkout poll confirms the subscription is active, reload
+    // billing data so the plan card and Manage plan reflect it immediately.
+    this.checkoutVerifiedSub = this.billingPaymentDetailsService.checkoutSubscriptionVerified$.subscribe(() => {
+      if (this.canShowBillingPanels) {
+        this.loadBillingData();
+      }
+    });
 
-    // Start bootstrap in background - code that needs it will await the promise
-    this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
-    this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
+    this.validateOrganisation();
+    this.loadCountries();
+    await this.loadBillingConfiguration();
+    if (this.billingStrategy === 'oss' && this.hasActiveSelfHostedCheckout) {
+      await this.checkActiveSelfHostedCheckout(false);
+    }
+
+    if (this.billingStrategy === 'cloud') {
+      // Start bootstrap in background - code that needs it will await the promise
+      this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
+      this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
+    } else if (this.billingStrategy === 'licensed_self_hosted') {
+      this.bootstrapSubscriptionPromise = null;
+      this.overviewService.setBootstrapPromise(null);
+      await this.loadBillingData();
+    } else {
+      this.bootstrapSubscriptionPromise = null;
+      this.overviewService.setBootstrapPromise(null);
+      this.markBillingDataIdle();
+    }
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);
@@ -139,6 +173,33 @@ export class BillingPageComponent implements OnInit {
       this.onVatCountryChange(countryCode);
     });
 
+  }
+
+  ngOnDestroy() {
+    this.checkoutVerifiedSub?.unsubscribe();
+  }
+
+  get isSelfHostedBilling(): boolean {
+    return this.billingStrategy !== 'cloud';
+  }
+
+  get canShowBillingPanels(): boolean {
+    return this.billingStrategy === 'cloud' || this.billingStrategy === 'licensed_self_hosted';
+  }
+
+  get selfHostedSetupTitle(): string {
+    return this.billingStrategy === 'licensed_self_hosted' ? 'Manage self-hosted billing' : 'Start self-hosted billing';
+  }
+
+  get selfHostedSetupMessage(): string {
+    if (this.billingStrategy === 'licensed_self_hosted') {
+      return 'Manage your plan and payment details for this self-hosted instance.';
+    }
+    return 'Choose a plan and enter a billing email to start checkout for this self-hosted instance.';
+  }
+
+  get hasActiveSelfHostedCheckout(): boolean {
+    return !!this.selfHostedBillingConfig?.active_checkout?.attempt_id;
   }
 
   private async bootstrapOrganisation() {
@@ -157,13 +218,24 @@ export class BillingPageComponent implements OnInit {
   }
 
   private async loadBillingData() {
+    if (!this.canShowBillingPanels) {
+      this.markBillingDataIdle();
+      return;
+    }
+
     this.isLoadingBillingData = true;
     this.isLoadingUsage = true;
     try {
       const orgId = this.getOrganisationId();
+      const subscriptionUrl = this.billingStrategy === 'licensed_self_hosted'
+        ? '/billing/sh_subscription'
+        : `/billing/organisations/${orgId}/subscription`;
+      const paymentMethodsUrl = this.billingStrategy === 'licensed_self_hosted'
+        ? '/billing/sh_payment_methods'
+        : `/billing/organisations/${orgId}/payment_methods`;
       const paymentResponse = await this.httpService
         .request({
-          url: `/billing/organisations/${orgId}/payment_methods`,
+          url: paymentMethodsUrl,
           method: 'get',
           hideNotification: true
         })
@@ -171,7 +243,7 @@ export class BillingPageComponent implements OnInit {
 
       const subscriptionResponse = await this.httpService
         .request({
-          url: `/billing/organisations/${orgId}/subscription`,
+          url: subscriptionUrl,
           method: 'get',
           hideNotification: true
         })
@@ -180,7 +252,7 @@ export class BillingPageComponent implements OnInit {
       const hadSubscription = this.hasActiveSubscription(this.currentSubscription);
       const hasSubscription = this.hasActiveSubscription(subscriptionResponse.data);
       if (hadSubscription !== hasSubscription) {
-        this.licensesService.setLicenses().catch(() => {});
+        this.licensesService.loadAllLicenses().catch(() => {});
       }
 
       const overviewData = {
@@ -218,7 +290,12 @@ export class BillingPageComponent implements OnInit {
 
       this.isLoadingBillingData = false;
       this.loadUsageSeparately();
-      await this.loadOrganisationData();
+      if (this.billingStrategy === 'cloud' || this.billingStrategy === 'licensed_self_hosted') {
+        await this.loadOrganisationData();
+      } else {
+        this.isLoadingBillingAddress = false;
+        this.isLoadingVat = false;
+      }
     } catch (error) {
       console.error('Failed to load billing data:', error);
       this.isLoadingBillingData = false;
@@ -227,10 +304,20 @@ export class BillingPageComponent implements OnInit {
   }
 
   private loadUsageSeparately() {
+    if (this.billingStrategy !== 'cloud' && this.billingStrategy !== 'licensed_self_hosted') {
+      this.isLoadingUsage = false;
+      this.usageRows = [];
+      return;
+    }
+
     const orgId = this.getOrganisationId();
+    // Self-hosted usage is local instance data; cloud usage comes from the provider.
+    const usageUrl = this.billingStrategy === 'licensed_self_hosted'
+      ? `/billing/sh_usage?orgID=${orgId}`
+      : `/billing/organisations/${orgId}/usage`;
     this.httpService
       .request({
-        url: `/billing/organisations/${orgId}/usage`,
+        url: usageUrl,
         method: 'get',
         hideNotification: true
       })
@@ -251,6 +338,16 @@ export class BillingPageComponent implements OnInit {
   }
 
   private async loadOrganisationData() {
+    if (this.billingStrategy === 'licensed_self_hosted') {
+      this.loadExistingData();
+      return;
+    }
+
+    if (!this.canShowBillingPanels) {
+      this.loadExistingData();
+      return;
+    }
+
     if (this.bootstrapSubscriptionPromise) {
       await this.bootstrapSubscriptionPromise;
     }
@@ -334,21 +431,45 @@ export class BillingPageComponent implements OnInit {
     }
   }
 
-  private loadBillingConfiguration() {
-    this.billingPaymentDetailsService.getBillingConfig().subscribe({
-      next: (config) => {
-        this.paymentProviderType = config.data.payment_provider.type;
-        this.paymentProviderPublishableKey = config.data.payment_provider.publishable_key;
-        this.loadInternalOrganisationId();
-      },
-      error: (error) => {
-        console.error('Failed to load billing configuration:', error);
-        this.generalService.showNotification({
-          message: 'Failed to load billing configuration. Please refresh the page.',
-          style: 'error'
-        });
-      }
+  private loadBillingConfiguration(): Promise<void> {
+    return new Promise(resolve => {
+      this.billingPaymentDetailsService.getBillingConfig().subscribe({
+        next: (config) => {
+          this.paymentProviderType = config.data.payment_provider.type;
+          this.paymentProviderPublishableKey = config.data.payment_provider.publishable_key;
+          this.billingStrategy = config.data.strategy || 'oss';
+          this.overviewService.setBillingStrategy(this.billingStrategy);
+          this.invoicesService.setBillingStrategy(this.billingStrategy);
+          this.billingPaymentDetailsService.setBillingStrategy(this.billingStrategy);
+          this.selfHostedBillingConfig = config.data.self_hosted || null;
+          if (this.billingStrategy === 'cloud') {
+            this.loadInternalOrganisationId();
+          }
+          resolve();
+        },
+        error: (error) => {
+          console.error('Failed to load billing configuration:', error);
+          this.generalService.showNotification({
+            message: 'Failed to load billing configuration. Please refresh the page.',
+            style: 'error'
+          });
+          this.billingStrategy = 'oss';
+          this.markBillingDataIdle();
+          resolve();
+        }
+      });
     });
+  }
+
+  private markBillingDataIdle() {
+    this.isLoadingBillingData = false;
+    this.isLoadingUsage = false;
+    this.billingOverview = null;
+    this.usageRows = [];
+    this.paymentMethods = [];
+    this.paymentMethodDetails = null;
+    this.isLoadingBillingAddress = false;
+    this.isLoadingVat = false;
   }
 
   private loadInternalOrganisationId() {
@@ -634,6 +755,10 @@ export class BillingPageComponent implements OnInit {
   }
 
   private initializeForms() {
+    this.selfHostedCheckoutForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]]
+    });
+
     this.billingAddressForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       addressLine1: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(200)]],
@@ -652,6 +777,7 @@ export class BillingPageComponent implements OnInit {
   }
 
   openPaymentDetails() {
+    if (!this.canShowBillingPanels) return;
     this.paymentDetailsDialog.nativeElement.showModal();
     this.loadExistingData();
   }
@@ -668,51 +794,114 @@ export class BillingPageComponent implements OnInit {
     this.managePlanDialog.nativeElement.showModal();
   }
 
+  async resumeSelfHostedCheckout() {
+    await this.checkActiveSelfHostedCheckout(true);
+  }
+
+  private async checkActiveSelfHostedCheckout(redirectOnPending: boolean) {
+    const activeCheckout = this.selfHostedBillingConfig?.active_checkout;
+    if (!activeCheckout?.attempt_id) {
+      if (redirectOnPending) {
+        this.openManagePlan();
+      }
+      return;
+    }
+
+    this.isLoadingCheckout = true;
+    try {
+      const response = await this.httpService.request({
+        url: '/billing/sh_checkout/complete',
+        method: 'post',
+        body: {
+          attempt_id: activeCheckout.attempt_id,
+          checkout_id: activeCheckout.checkout_id
+        },
+        hideNotification: true
+      });
+
+      if (response.data?.status === 'completed') {
+        await this.licensesService.loadAllLicenses();
+        this.generalService.showNotification({ message: 'License activated successfully!', style: 'success' });
+        await this.loadBillingConfiguration();
+        return;
+      }
+
+      if (redirectOnPending && response.data?.status === 'pending' && activeCheckout.checkout_url) {
+        window.location.href = activeCheckout.checkout_url;
+        return;
+      }
+
+      if (!redirectOnPending && response.data?.status === 'pending') {
+        return;
+      }
+
+      this.generalService.showNotification({
+        message: response.data?.status === 'expired' ? 'Checkout has expired. Start a new checkout to continue.' : 'Checkout is still waiting for payment. Start a new checkout if the payment page is no longer available.',
+        style: 'warning'
+      });
+    } catch (error: any) {
+      this.generalService.showNotification({
+        message: error?.error?.message || 'Unable to resume checkout. Please try again.',
+        style: 'error'
+      });
+    } finally {
+      this.isLoadingCheckout = false;
+    }
+  }
+
   private loadPlans() {
     this.isLoadingPlans = true;
+    this.hasAttemptedPlansLoad = true;
+    this.hasLoadedPlans = false;
+    this.plansUnavailableMessage = '';
 
     this.planService.getPlans().subscribe({
       next: (response) => {
         const defaultData = this.planService.getDefaultPlanComparison();
+        const plansFromApi = Array.isArray(response.data) ? response.data : [];
 
-        if (!response.data || response.data.length === 0) {
-          this.plans = defaultData.plans;
+        if (plansFromApi.length === 0) {
+          this.plans = [];
           this.overwatchPlans = [];
+          this.plansUnavailableMessage = 'Plans are not available right now. Please try again later.';
         } else {
-          this.overwatchPlans = response.data;
+          this.overwatchPlans = plansFromApi;
 
-          const overwatchPlansMap = new Map<string, Plan>();
-          response.data.forEach((plan: Plan) => {
-            overwatchPlansMap.set(plan.name.toLowerCase(), plan);
-          });
-
-          this.plans = defaultData.plans.map((defaultPlan: Plan) => {
-            const overwatchPlan = overwatchPlansMap.get(defaultPlan.name.toLowerCase());
-
-            if (overwatchPlan) {
-              if (!overwatchPlan.features || overwatchPlan.features.length === 0) {
-                return {
-                  ...overwatchPlan,
-                  features: defaultPlan.features,
-                  description: overwatchPlan.description || defaultPlan.description,
-                  price: overwatchPlan.price || defaultPlan.price,
-                  currency: overwatchPlan.currency || defaultPlan.currency,
-                  interval: overwatchPlan.interval || defaultPlan.interval
-                };
-              }
-              return overwatchPlan;
+          if (this.isSelfHostedBilling) {
+            const selfHostedPlans = plansFromApi.filter((plan: Plan) => this.isSelfHostedPlan(plan));
+            this.plans = selfHostedPlans.map((plan: Plan) => this.mergePlanWithDefaultComparison(plan, defaultData.plans));
+            if (this.plans.length === 0) {
+              this.plansUnavailableMessage = 'Self-hosted plans are not available right now. Please try again later.';
             }
+          } else {
+            const overwatchPlansMap = new Map<string, Plan>();
+            plansFromApi.forEach((plan: Plan) => {
+              overwatchPlansMap.set(plan.name.toLowerCase(), plan);
+            });
 
-            return defaultPlan;
-          });
+            this.plans = defaultData.plans.map((defaultPlan: Plan) => {
+              const overwatchPlan = overwatchPlansMap.get(defaultPlan.name.toLowerCase());
+
+              if (overwatchPlan) {
+                return this.mergePlanWithDefaultComparison(overwatchPlan, [defaultPlan]);
+              }
+
+              return defaultPlan;
+            });
+          }
+        }
+        this.hasLoadedPlans = this.plans.length > 0;
+        if (this.selectedPlan && !this.plans.some(plan => plan.id === this.selectedPlan)) {
+          this.selectedPlan = null;
         }
         this.isLoadingPlans = false;
       },
       error: (error) => {
         console.warn('Failed to load plans from backend:', error);
-        const defaultData = this.planService.getDefaultPlanComparison();
-        this.plans = defaultData.plans;
+        this.plans = [];
         this.overwatchPlans = [];
+        this.selectedPlan = null;
+        this.plansUnavailableMessage = 'Plans could not be loaded. Please try again later.';
         this.isLoadingPlans = false;
       }
     });
@@ -754,11 +943,16 @@ export class BillingPageComponent implements OnInit {
     try {
       const orgId = this.getOrganisationId();
       const subscriptionId = this.currentSubscription.id;
+      const url = this.billingStrategy === 'licensed_self_hosted'
+        ? '/billing/sh_subscription'
+        : `/billing/organisations/${orgId}/subscriptions/${subscriptionId}`;
+
       await this.httpService.request({
-        url: `/billing/organisations/${orgId}/subscriptions/${subscriptionId}`,
+        url,
         method: 'delete'
       });
 
+      await this.licensesService.loadAllLicenses();
       this.closeManagePlan();
 
       this.generalService.showNotification({
@@ -779,6 +973,14 @@ export class BillingPageComponent implements OnInit {
   }
 
   async onUpgradePlan() {
+    if (!this.hasPlanReadyState) {
+      this.generalService.showNotification({
+        message: this.plansUnavailableMessage || 'Plans are not available right now',
+        style: 'error'
+      });
+      return;
+    }
+
     if (!this.selectedPlan) {
       this.generalService.showNotification({
         message: 'Please select a plan first',
@@ -796,10 +998,14 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    const planName = selectedPlanData.name.toLowerCase();
-    const isProOrEnterprise = planName.includes('pro') || planName.includes('enterprise');
-
     const { planExistsInOverwatch, planIdForApi } = this.resolvePlanForApi(selectedPlanData);
+    if (!this.canUsePlan(selectedPlanData)) {
+      this.generalService.showNotification({
+        message: 'This plan is not available for checkout right now',
+        style: 'error'
+      });
+      return;
+    }
 
     if (this.isCurrentSubscriptionPlan(planIdForApi, selectedPlanData.name)) {
       this.generalService.showNotification({
@@ -809,10 +1015,8 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    if (isProOrEnterprise && !planExistsInOverwatch) {
-      const subject = encodeURIComponent(`${selectedPlanData.name} Plan Request`);
-      const body = encodeURIComponent(`Hello,\n\nI would like to subscribe to the ${selectedPlanData.name} plan.\n\nThank you.`);
-      window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+    if (this.planRequiresContact(selectedPlanData) || this.shouldContactForMissingCloudPlan(selectedPlanData, planExistsInOverwatch)) {
+      this.openPlanContact(selectedPlanData);
       return;
     }
 
@@ -822,6 +1026,32 @@ export class BillingPageComponent implements OnInit {
       const host = window.location.origin;
 
       let checkoutUrl: string;
+
+      if (this.isSelfHostedBilling || this.isSelfHostedPlan(selectedPlanData)) {
+        if (!this.selfHostedCheckoutForm.valid) {
+          this.selfHostedCheckoutForm.markAllAsTouched();
+          this.isLoadingCheckout = false;
+          return;
+        }
+
+        const response = await this.httpService.request({
+          url: '/billing/sh_checkout/start',
+          method: 'post',
+          body: {
+            plan_id: planIdForApi,
+            interval: this.resolveCheckoutCadence(selectedPlanData),
+            email: this.selfHostedCheckoutForm.value.email,
+            host: host
+          }
+        });
+
+        if (response.data && response.data.checkout_url) {
+          window.location.href = response.data.checkout_url;
+          return;
+        }
+
+        throw new Error('Checkout URL not found in response');
+      }
 
       if (this.currentSubscription && this.currentSubscription.id) {
         const response = await this.httpService.request({
@@ -880,13 +1110,28 @@ export class BillingPageComponent implements OnInit {
   }
 
   getButtonText(planId: string): string {
+    if (!this.hasPlanReadyState) {
+      return 'Unavailable';
+    }
+
+    const plan = this.plans.find(p => p.id === planId);
+
     if (this.isLoadingCheckout && this.selectedPlan === planId) {
       return 'Loading...';
     }
     if (this.isCurrentPlan(planId)) {
       return 'Current Plan';
     }
+    if (plan && this.planRequiresContact(plan)) {
+      return 'Contact Us';
+    }
+    if (plan && !this.canUsePlan(plan)) {
+      return 'Unavailable';
+    }
     if (this.selectedPlan === planId) {
+      if (plan && (this.isSelfHostedBilling || this.isSelfHostedPlan(plan))) {
+        return 'Start checkout';
+      }
       return this.currentSubscription ? 'Upgrade' : 'Subscribe';
     }
     return 'Select';
@@ -897,12 +1142,119 @@ export class BillingPageComponent implements OnInit {
   }
 
   selectPlan(planId: string) {
+    if (!this.plans.some(plan => plan.id === planId)) {
+      return;
+    }
+
     this.selectedPlan = planId;
+  }
+
+  clearPlanSelection(): void {
+    if (this.isLoadingCheckout) {
+      return;
+    }
+
+    this.selectedPlan = null;
+  }
+
+  selectedPlanIsSelfHosted(): boolean {
+    const plan = this.plans.find(p => p.id === this.selectedPlan);
+    return !!plan && !this.planRequiresContact(plan) && (this.isSelfHostedBilling || this.isSelfHostedPlan(plan));
+  }
+
+  // The billing email is only needed to start a checkout. Selecting the current
+  // plan is allowed for visibility, but it cannot be checked out, so hide the form.
+  showSelfHostedCheckoutForm(): boolean {
+    return this.selectedPlanIsSelfHosted() && !!this.selectedPlan && !this.isCurrentPlan(this.selectedPlan);
+  }
+
+  private isSelfHostedPlan(plan: Plan): boolean {
+    const name = plan.name.toLowerCase();
+    return plan.product_type === 'self_hosted' || name.includes('self-hosted') || name.includes('self hosted');
+  }
+
+  private resolveCheckoutCadence(plan: Plan): string {
+    const pricingInterval = plan.pricing_options?.find(option => !!option?.interval)?.interval;
+    const intervalsInterval = plan.intervals?.find(interval => !!interval);
+
+    return this.normalizeCheckoutCadence(pricingInterval) ||
+      this.normalizeCheckoutCadence(intervalsInterval) ||
+      this.normalizeCheckoutCadence(plan.interval) ||
+      'monthly';
+  }
+
+  private normalizeCheckoutCadence(value?: string | null): string {
+    const raw = (value || '').trim().toLowerCase();
+    if (!raw) return '';
+    if (raw === 'month') return 'monthly';
+    if (raw === 'year' || raw === 'yearly') return 'annual';
+    return raw;
+  }
+
+  private mergePlanWithDefaultComparison(plan: Plan, defaultPlans: Plan[]): Plan {
+    const defaultPlan = this.findDefaultPlanComparison(plan, defaultPlans);
+    if (!defaultPlan || (plan.features && plan.features.length > 0)) {
+      return plan;
+    }
+
+    return {
+      ...plan,
+      features: defaultPlan.features,
+      description: plan.description || defaultPlan.description,
+      price: plan.price || defaultPlan.price,
+      currency: plan.currency || defaultPlan.currency,
+      interval: plan.interval || defaultPlan.interval
+    };
+  }
+
+  private findDefaultPlanComparison(plan: Plan, defaultPlans: Plan[]): Plan | undefined {
+    const name = plan.name.toLowerCase();
+    if (name.includes('enterprise')) {
+      return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes('enterprise'));
+    }
+    if (name.includes('premium') || name.includes('pro')) {
+      return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes('pro'));
+    }
+    return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase() === name);
+  }
+
+  private isEnterprisePlan(plan: Plan): boolean {
+    const key = (plan.key || plan.id || '').toLowerCase();
+    const name = plan.name.toLowerCase();
+    return key.includes('enterprise') || name.includes('enterprise');
+  }
+
+  planRequiresContact(plan: Plan): boolean {
+    if (plan.requires_contact !== undefined) {
+      return plan.requires_contact;
+    }
+    if (plan.checkout_enabled !== undefined) {
+      return !plan.checkout_enabled;
+    }
+    return this.isEnterprisePlan(plan);
+  }
+
+  private shouldContactForMissingCloudPlan(plan: Plan, planExistsInOverwatch: boolean): boolean {
+    const name = plan.name.toLowerCase();
+    return !this.isSelfHostedBilling && (name.includes('pro') || name.includes('enterprise')) && !planExistsInOverwatch;
+  }
+
+  private openPlanContact(plan: Plan): void {
+    const subject = encodeURIComponent(`${plan.name} Plan Request`);
+    const body = encodeURIComponent(`Hello,\n\nI would like to learn more about the ${plan.name} plan.\n\nThank you.`);
+    window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
   }
 
   /** Handle plan card button: Select selects the plan; Upgrade/Subscribe triggers checkout. */
   onPlanCardButtonClick(planId: string): void {
     if (this.isCurrentPlan(planId)) return;
+    const plan = this.plans.find(p => p.id === planId);
+    if (!plan || !this.canUsePlan(plan)) return;
+    if (plan && this.planRequiresContact(plan)) {
+      this.selectedPlan = planId;
+      this.openPlanContact(plan);
+      return;
+    }
     if (this.selectedPlan === planId) {
       this.onUpgradePlan();
     } else {
@@ -922,6 +1274,31 @@ export class BillingPageComponent implements OnInit {
     );
 
     return uniqueFeatures;
+  }
+
+  get hasPlanLoadingState(): boolean {
+    return this.isLoadingPlans;
+  }
+
+  get hasPlanUnavailableState(): boolean {
+    return !this.isLoadingPlans && this.hasAttemptedPlansLoad && !this.hasLoadedPlans;
+  }
+
+  get hasPlanReadyState(): boolean {
+    return !this.isLoadingPlans && this.hasLoadedPlans && this.plans.length > 0;
+  }
+
+  canUsePlan(plan: Plan): boolean {
+    if (this.planRequiresContact(plan)) {
+      return true;
+    }
+
+    const { planExistsInOverwatch } = this.resolvePlanForApi(plan);
+    if (this.isSelfHostedBilling || this.isSelfHostedPlan(plan)) {
+      return planExistsInOverwatch;
+    }
+
+    return true;
   }
 
   getFeatureValue(planId: string, featureName: string): string {

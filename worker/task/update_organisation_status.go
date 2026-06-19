@@ -36,8 +36,8 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 			return fmt.Errorf("failed to get config: %w", err)
 		}
 
-		if !cfg.Billing.Enabled {
-			logger.Info("Billing is not enabled, skipping organisation status update")
+		if !cfg.UsesOrgBilling() {
+			logger.Info("cloud org billing is not configured, skipping organisation status update")
 			return nil
 		}
 

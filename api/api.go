@@ -181,14 +181,15 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 	appHandler.cfg = cfg
 
-	// Initialize billing service if enabled
-	if cfg.Billing.Enabled {
+	// A billing URL enables shared billing/catalog calls. The API key is the
+	// separate cloud/org-billing signal used when mounting org-scoped routes.
+	if strings.TrimSpace(cfg.Billing.URL) != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		billingClient := billing.NewClient(cfg.Billing)
 		if err := billingClient.HealthCheck(ctx); err != nil {
-			return nil, fmt.Errorf("billing service health check failed: %w", err)
+			a.Logger.Warnf("billing service health check failed (url=%s): %v", cfg.Billing.URL, err)
 		}
 		a.BillingClient = billingClient
 	}
@@ -678,13 +679,26 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			BillingClient: a.A.BillingClient,
 		}
 		uiRouter.Route("/billing", func(billingRouter chi.Router) {
-			billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
+			billingRouter.Get("/config", billingHandler.GetBillingConfig)
+			billingRouter.Get("/plans", billingHandler.GetPlans)
+			billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
+			billingRouter.Post("/sh_checkout/start", billingHandler.StartSelfHostedCheckout)
+			billingRouter.Post("/sh_checkout/complete", billingHandler.CompleteSelfHostedCheckout)
+			billingRouter.Get("/sh_subscription", billingHandler.GetSelfHostedSubscription)
+			billingRouter.Delete("/sh_subscription", billingHandler.DeleteSelfHostedSubscription)
+			billingRouter.Get("/sh_organisation", billingHandler.GetSelfHostedOrganisation)
+			billingRouter.Put("/sh_tax_id", billingHandler.UpdateSelfHostedOrganisationTaxID)
+			billingRouter.Put("/sh_address", billingHandler.UpdateSelfHostedOrganisationAddress)
+			billingRouter.Get("/sh_usage", billingHandler.GetSelfHostedUsage)
+			billingRouter.Get("/sh_invoices", billingHandler.GetSelfHostedInvoices)
+			billingRouter.Get("/sh_invoices/{invoiceID}", billingHandler.GetSelfHostedInvoice)
+			billingRouter.Get("/sh_invoices/{invoiceID}/download", billingHandler.DownloadSelfHostedInvoice)
+			billingRouter.Get("/sh_payment_methods", billingHandler.GetSelfHostedPaymentMethods)
+			billingRouter.Get("/sh_payment_methods/setup_intent", billingHandler.GetSelfHostedSetupIntent)
+			billingRouter.Put("/sh_payment_methods/{pmID}/default", billingHandler.SetDefaultSelfHostedPaymentMethod)
+			billingRouter.Delete("/sh_payment_methods/{pmID}", billingHandler.DeleteSelfHostedPaymentMethod)
 
-			if a.cfg.Billing.Enabled {
-				billingRouter.Get("/config", billingHandler.GetBillingConfig)
-				billingRouter.Get("/plans", billingHandler.GetPlans)
-				billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
-
+			if a.cfg.UsesOrgBilling() {
 				billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
 					orgBillingRouter.Get("/", billingHandler.GetOrganisation)
 					orgBillingRouter.Put("/", billingHandler.UpdateOrganisation)
@@ -1110,7 +1124,9 @@ func shouldAuthRoute(r *http.Request) bool {
 }
 
 func shouldApplyCORS(r *http.Request) bool {
-	corsRoutes := []string{"/ui", "/portal-api"}
+	// /queue/monitoring covers the session create/revoke endpoints and the asynqmon
+	// embed/monitor handlers, which the dashboard calls cross-origin in development.
+	corsRoutes := []string{"/ui", "/portal-api", "/queue/monitoring"}
 
 	for _, route := range corsRoutes {
 		if strings.HasPrefix(r.URL.Path, route) {

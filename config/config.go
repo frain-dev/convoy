@@ -24,6 +24,28 @@ const (
 	DefaultAPIVersion                 = "2025-11-24"
 )
 
+type BillingMode string
+
+const (
+	BillingModeOSS                BillingMode = "oss"
+	BillingModeCloud              BillingMode = "cloud"
+	BillingModeLicensedSelfHosted BillingMode = "licensed_self_hosted"
+)
+
+func (c Configuration) BillingMode(instanceLicenseKey string) BillingMode {
+	if strings.TrimSpace(c.Billing.APIKey) != "" {
+		return BillingModeCloud
+	}
+	if strings.TrimSpace(instanceLicenseKey) != "" {
+		return BillingModeLicensedSelfHosted
+	}
+	return BillingModeOSS
+}
+
+func (c Configuration) UsesOrgBilling() bool {
+	return c.BillingMode("") == BillingModeCloud
+}
+
 var cfgSingleton atomic.Value
 
 var DefaultConfiguration = Configuration{
@@ -131,9 +153,8 @@ var DefaultConfiguration = Configuration{
 	ApiRateLimit:        1000,
 	WorkerExecutionMode: DefaultExecutionMode,
 	Billing: BillingConfiguration{
-		Enabled: false,
-		URL:     "",
-		APIKey:  "",
+		URL:    "",
+		APIKey: "",
 	},
 	SSOService: SSOServiceConfiguration{
 		Host:            "https://overwatch.getconvoy.cloud",
@@ -563,7 +584,6 @@ type BillingPlanConfig struct {
 }
 
 type BillingConfiguration struct {
-	Enabled          bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
 	URL              string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
 	APIKey           string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
 	OrganisationHost string                       `json:"organisation_host" envconfig:"CONVOY_BILLING_ORGANISATION_HOST"`
@@ -622,18 +642,9 @@ func (s *SSOServiceConfiguration) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Validate checks if the billing configuration is valid when enabled
 func (b *BillingConfiguration) Validate() error {
-	if !b.Enabled {
-		return nil // No validation needed if disabled
-	}
-
-	if b.URL == "" {
-		return fmt.Errorf("billing URL is required when billing is enabled")
-	}
-
-	if b.APIKey == "" {
-		return fmt.Errorf("billing API key is required when billing is enabled")
+	if strings.TrimSpace(b.APIKey) != "" && strings.TrimSpace(b.URL) == "" {
+		return fmt.Errorf("billing URL is required when billing API key is configured")
 	}
 
 	return nil

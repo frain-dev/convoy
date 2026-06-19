@@ -3,7 +3,9 @@ import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { HttpService } from 'src/app/services/http/http.service';
+import { ConfigService } from 'src/app/services/config/config.service';
+
+type BillingStrategy = 'oss' | 'cloud' | 'licensed_self_hosted';
 
 @Component({
     selector: 'app-projects',
@@ -17,32 +19,27 @@ export class ProjectsComponent implements OnInit {
 	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
 	showOrganisationModal = false;
 	isLoadingProject: boolean = false;
-	/** True when instance uses billing (instance license path); false for community/OSS. Matches backend Billing.Enabled. */
-	billingEnabled = false;
+	billingStrategy: BillingStrategy = 'oss';
 
 	constructor(
 		private privateService: PrivateService,
 		private router: Router,
 		public licenseService: LicensesService,
-		private httpService: HttpService
+		private configService: ConfigService
 	) {
 		this.privateService.projects$.subscribe(projects => (this.projects = projects.data));
 	}
 
 	async ngOnInit() {
-		await Promise.all([this.getProjects(), this.checkBillingEnabled()]);
+		await Promise.all([this.getProjects(), this.loadBillingStrategy()]);
 	}
 
-	private async checkBillingEnabled() {
+	private async loadBillingStrategy() {
 		try {
-			const response = await this.httpService.request({
-				url: '/billing/enabled',
-				method: 'get',
-				hideNotification: true
-			});
-			this.billingEnabled = response.data?.enabled === true;
+			const config = await this.configService.getConfig();
+			this.billingStrategy = config.billing_strategy || 'oss';
 		} catch {
-			this.billingEnabled = false;
+			this.billingStrategy = 'oss';
 		}
 	}
 
@@ -86,35 +83,60 @@ export class ProjectsComponent implements OnInit {
 
 	/** Message for the card layout (grid) overlay. */
 	getProjectLimitMessage(): string {
-		if (!this.licenseService.hasLicense('project_limit')) {
-			if (!this.licenseService.isLimitAvailable('project_limit')) {
-				return 'Available on Business';
-			}
-			if (this.licenseService.isLimitAvailable('project_limit') && this.licenseService.isLimitReached('project_limit')) {
-				const limitInfo = this.licenseService.getLimitInfo('project_limit');
-				const current = limitInfo?.current ?? 0;
-				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
-				return `Limit reached (${current}/${limit})`;
-			}
+		if (this.isProjectLimitReached) {
+			return this.projectLimitReachedMessage;
 		}
+
+		if (this.canShowProjectLimitUpgrade) {
+			return 'Available on Business';
+		}
+
 		return '';
 	}
 
 	/** Message for the empty state only (improved, billing-aware copy). */
 	getProjectLimitMessageForEmptyState(): string {
-		if (!this.licenseService.hasLicense('project_limit')) {
-			if (!this.licenseService.isLimitAvailable('project_limit')) {
-				return this.billingEnabled
-					? 'Upgrade to Business plan to create more projects'
-					: 'Project limit reached';
-			}
-			if (this.licenseService.isLimitAvailable('project_limit') && this.licenseService.isLimitReached('project_limit')) {
-				const limitInfo = this.licenseService.getLimitInfo('project_limit');
-				const current = limitInfo?.current ?? 0;
-				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
-				return `Limit reached (${current}/${limit})`;
-			}
+		if (this.isProjectLimitReached) {
+			return this.projectLimitReachedMessage;
 		}
+
+		if (this.canShowProjectLimitUpgrade) {
+			return 'Upgrade your plan to create more projects';
+		}
+
 		return '';
+	}
+
+	get shouldBlockProjectCreation(): boolean {
+		return this.isDisabled || this.isProjectLimitReached || this.canShowProjectLimitUpgrade;
+	}
+
+	private get isProjectLimitReached(): boolean {
+		return this.licenseService.isLimitAvailable('project_limit') && this.licenseService.isLimitReached('project_limit');
+	}
+
+	private get canShowProjectLimitUpgrade(): boolean {
+		return this.canOpenBillingForProjectLimit &&
+			!this.licenseService.hasLicense('project_limit') &&
+			!this.licenseService.isLimitAvailable('project_limit');
+	}
+
+	private get projectLimitReachedMessage(): string {
+		const limitInfo = this.licenseService.getLimitInfo('project_limit');
+		const current = limitInfo?.current ?? 0;
+		const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
+		return `Limit reached (${current}/${limit})`;
+	}
+
+	get canOpenBillingForProjectLimit(): boolean {
+		return this.billingStrategy === 'cloud' || this.billingStrategy === 'licensed_self_hosted';
+	}
+
+	get disabledOrganisationMessage(): string {
+		if (this.billingStrategy === 'cloud') {
+			return 'This action is disabled for this organization. Subscribe to a plan to create projects.';
+		}
+
+		return 'This action is disabled for this organization. Please contact support.';
 	}
 }

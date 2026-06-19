@@ -4,6 +4,7 @@ import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {GeneralService} from 'src/app/services/general/general.service';
+import {BillingPaymentDetailsService} from './billing/billing-payment-details.service';
 import {CheckoutResolverData} from './billing/checkout.resolver';
 
 export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing' | 'early adopter features';
@@ -16,7 +17,6 @@ export type SETTINGS = 'organisation settings' | 'configuration settings' | 'per
 })
 export class SettingsComponent implements OnInit {
 	activePage: SETTINGS = 'organisation settings';
-	billingEnabled = false;
 	canAccessBilling = false;
 	canAccessEarlyAdopterFeatures = false;
 	isVerifyingSubscription = false;
@@ -31,22 +31,31 @@ export class SettingsComponent implements OnInit {
 		public licenseService: LicensesService,
 		private httpService: HttpService,
 		private rbacService: RbacService,
-		private generalService: GeneralService
+		private generalService: GeneralService,
+		private billingPaymentDetailsService: BillingPaymentDetailsService
 	) {}
 
 	async ngOnInit() {
 		await this.checkBillingAccess();
-		this.checkBillingStatus();
+		this.updateSettingsMenu();
 
 		const checkoutData: CheckoutResolverData = this.route.snapshot.data['checkout'];
 		if (checkoutData?.checkoutProcessed) {
+			this.setActivePageWithLicenseCheck('usage and billing');
 			this.cleanupCheckoutParams();
+		} else if (checkoutData?.token || checkoutData?.attemptId) {
+			this.setActivePageWithLicenseCheck('usage and billing');
+			this.cleanupCheckoutParams();
+			this.completeSelfHostedCheckout(checkoutData.token, checkoutData.attemptId);
 		} else if (checkoutData?.needsPolling) {
+			this.setActivePageWithLicenseCheck('usage and billing');
 			this.pollSubscriptionStatus(checkoutData.orgId);
 		}
 
-		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'organisation settings';
-		this.setActivePageWithLicenseCheck(requestedPage);
+		if (!checkoutData?.checkoutProcessed && !checkoutData?.token && !checkoutData?.attemptId && !checkoutData?.needsPolling) {
+			const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'organisation settings';
+			this.setActivePageWithLicenseCheck(requestedPage);
+		}
 	}
 	
 	private async pollSubscriptionStatus(orgId: string) {
@@ -63,6 +72,8 @@ export class SettingsComponent implements OnInit {
 					hideNotification: true
 				});
 				if (response.data?.status === 'active') {
+					await this.licenseService.loadAllLicenses();
+					this.billingPaymentDetailsService.notifyCheckoutSubscriptionVerified();
 					this.generalService.showNotification({ message: 'Subscription activated successfully!', style: 'success' });
 					this.isVerifyingSubscription = false;
 					this.cleanupCheckoutParams();
@@ -76,6 +87,38 @@ export class SettingsComponent implements OnInit {
 		this.cleanupCheckoutParams();
 	}
 
+	private async completeSelfHostedCheckout(token: string, attemptId: string) {
+		this.isVerifyingSubscription = true;
+		const maxAttempts = 30;
+		const pollInterval = 2000;
+
+		for (let i = 0; i < maxAttempts; i++) {
+			try {
+				const response = await this.httpService.request({
+					url: '/billing/sh_checkout/complete',
+					method: 'post',
+					body: { token, attempt_id: attemptId },
+					hideNotification: true
+				});
+
+				if (response.data?.status === 'completed') {
+					if (attemptId) localStorage.setItem(`checkout_processed_${attemptId}`, 'true');
+					await this.licenseService.loadAllLicenses();
+					this.generalService.showNotification({ message: 'License activated successfully!', style: 'success' });
+					this.isVerifyingSubscription = false;
+					this.cleanupCheckoutParams();
+					return;
+				}
+			} catch (_) {}
+
+			await new Promise(r => setTimeout(r, pollInterval));
+		}
+
+		this.generalService.showNotification({ message: 'Payment is still pending. You can resume checkout from Usage and Billing shortly.', style: 'warning' });
+		this.isVerifyingSubscription = false;
+		this.cleanupCheckoutParams();
+	}
+
 	private cleanupCheckoutParams() {
 		const activePage = this.route.snapshot.queryParams?.['activePage'] || 'usage and billing';
 		this.router.navigate([], {
@@ -85,27 +128,12 @@ export class SettingsComponent implements OnInit {
 		});
 	}
 
-	private async checkBillingStatus() {
-		try {
-			const response = await this.httpService.request({
-				url: '/billing/enabled',
-				method: 'get',
-				hideNotification: true
-			});
-			// Billing is now controlled by backend configuration, not entitlements
-			this.billingEnabled = response.data?.enabled || false;
-			this.updateSettingsMenu();
-		} catch (error) {
-			console.warn('Failed to check billing status:', error);
-			this.billingEnabled = false;
-			this.updateSettingsMenu();
-		}
-	}
-
 	private async checkBillingAccess() {
 		try {
 			const userRole = await this.rbacService.getUserRole();
-			this.canAccessBilling = userRole === 'BILLING_ADMIN' || userRole === 'ORGANISATION_ADMIN';
+			// Instance admins need billing access for the self-hosted instance license flow;
+			// cloud org billing still relies on the backend's org-scoped billing checks.
+			this.canAccessBilling = userRole === 'BILLING_ADMIN' || userRole === 'ORGANISATION_ADMIN' || userRole === 'INSTANCE_ADMIN';
 			this.canAccessEarlyAdopterFeatures = true;
 		} catch (error) {
 			console.warn('Failed to check billing access:', error);
@@ -120,7 +148,7 @@ export class SettingsComponent implements OnInit {
 			{ name: 'team', icon: 'team', svg: 'stroke' }
 		];
 
-		if (this.billingEnabled && this.canAccessBilling) {
+		if (this.canAccessBilling) {
 			this.settingsMenu.push({ name: 'usage and billing', icon: 'status', svg: 'stroke' });
 		}
 
@@ -128,7 +156,7 @@ export class SettingsComponent implements OnInit {
 			this.settingsMenu.push({ name: 'early adopter features', icon: 'settings', svg: 'fill' });
 		}
 
-		if (this.activePage === 'usage and billing' && (!this.billingEnabled || !this.canAccessBilling)) {
+		if (this.activePage === 'usage and billing' && !this.canAccessBilling) {
 			this.toggleActivePage('organisation settings');
 		}
 

@@ -21,6 +21,7 @@ export interface BillingOverview {
 @Injectable({ providedIn: 'root' })
 export class BillingOverviewService {
   bootstrapPromise: Promise<void> | null = null;
+  private billingStrategy: 'oss' | 'cloud' | 'licensed_self_hosted' = 'cloud';
 
   constructor(private httpService: HttpService) {}
 
@@ -30,8 +31,12 @@ export class BillingOverviewService {
     );
   }
 
-  setBootstrapPromise(promise: Promise<void>): void {
+  setBootstrapPromise(promise: Promise<void> | null): void {
     this.bootstrapPromise = promise;
+  }
+
+  setBillingStrategy(strategy: 'oss' | 'cloud' | 'licensed_self_hosted'): void {
+    this.billingStrategy = strategy;
   }
 
   async waitForBootstrap(): Promise<void> {
@@ -41,6 +46,11 @@ export class BillingOverviewService {
   }
 
   async ensureBillingReady(): Promise<void> {
+    if (this.billingStrategy === 'licensed_self_hosted') {
+      await this.httpService.request({ url: '/billing/sh_subscription', method: 'get', hideNotification: true });
+      return;
+    }
+
     const orgId = this.getOrganisationId();
     await this.httpService.request({ url: `/billing/organisations/${orgId}/subscription`, method: 'get', hideNotification: true });
   }
@@ -48,14 +58,22 @@ export class BillingOverviewService {
   async getOverviewData() {
     try {
       const orgId = this.getOrganisationId();
+      const subscriptionUrl = this.billingStrategy === 'licensed_self_hosted'
+        ? '/billing/sh_subscription'
+        : `/billing/organisations/${orgId}/subscription`;
+      const paymentMethodsUrl = this.billingStrategy === 'licensed_self_hosted'
+        ? '/billing/sh_payment_methods'
+        : `/billing/organisations/${orgId}/payment_methods`;
 
       // First call - if this fails, don't make other calls
-      const subscriptionResponse = await this.httpService.request({ url: `/billing/organisations/${orgId}/subscription`, method: 'get', hideNotification: true });
+      const subscriptionResponse = await this.httpService.request({ url: subscriptionUrl, method: 'get', hideNotification: true });
 
       // Only make other calls if subscription call succeeded
       const [usageResponse, paymentResponse] = await Promise.all([
-        this.httpService.request({ url: `/billing/organisations/${orgId}/usage`, method: 'get', hideNotification: true }),
-        this.httpService.request({ url: `/billing/organisations/${orgId}/payment_methods`, method: 'get', hideNotification: true })
+        this.billingStrategy === 'licensed_self_hosted'
+          ? Promise.resolve({ data: null })
+          : this.httpService.request({ url: `/billing/organisations/${orgId}/usage`, method: 'get', hideNotification: true }),
+        this.httpService.request({ url: paymentMethodsUrl, method: 'get', hideNotification: true })
       ]);
 
       return {

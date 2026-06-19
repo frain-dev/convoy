@@ -84,7 +84,7 @@ export class PrivateComponent implements OnInit {
 
 		this.checkIfTokenIsExpired();
 		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
-		await this.licenseService.setLicenses();
+		await this.licenseService.loadAllLicenses();
 		await this.checkInstanceAdminAccess();
 	}
 
@@ -144,6 +144,7 @@ export class PrivateComponent implements OnInit {
 		}
 
 		this.privateService.clearCache();
+		this.licenseService.clearLicenses();
 
 		localStorage.removeItem('CONVOY_AUTH');
 		localStorage.removeItem('CONVOY_AUTH_TOKENS');

@@ -56,6 +56,8 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 	filterRepo := mocks.NewMockFilterRepository(ctrl)
 	mockTracer := mocks.NewMockBackend(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	mockLicenser.EXPECT().ProjectEnabled(gomock.Any()).Return(true).AnyTimes()
 
 	// Create a simple mock OAuth2TokenService that returns empty token (no-op for tests)
 	oAuth2TokenService := &mockOAuth2TokenService{}
@@ -71,7 +73,7 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 		subRepo:            subRepo,
 		subTable:           subTable,
 		filterRepo:         filterRepo,
-		licenser:           mocks.NewMockLicenser(ctrl),
+		licenser:           mockLicenser,
 		tracer:             mockTracer,
 		logger:             mockLogger,
 		oauth2TokenService: oAuth2TokenService,

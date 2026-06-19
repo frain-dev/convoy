@@ -30,6 +30,8 @@ export class StatusColorPipe implements PipeTransform {
 			case 'Failure':
 			case 'failed':
 			case 'disabled':
+			case 'Overdue':
+			case 'overdue':
 				type = 'error';
 				break;
 

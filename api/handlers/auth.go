@@ -25,11 +25,11 @@ import (
 
 func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
-	billingEnabled := configuration.Billing.Enabled && h.A.BillingClient != nil
+	useOrgBilling := configuration.UsesOrgBilling() && h.A.BillingClient != nil
 	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
 
 	licenseKey := configuration.LicenseKey
-	if billingEnabled && slug != "" {
+	if useOrgBilling && slug != "" {
 		orgRepo := organisations.New(h.A.Logger, h.A.DB)
 		orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
 		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
@@ -122,15 +122,13 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if configuration.Billing.Enabled {
-		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
-			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-			BillingClient: h.A.BillingClient,
-			Logger:        h.A.Logger,
-			Cfg:           h.A.Cfg,
-		})
-	}
+	go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
+		BillingClient: h.A.BillingClient,
+		Logger:        h.A.Logger,
+		Cfg:           h.A.Cfg,
+	})
 
 	u := &models.LoginUserResponse{
 		User:  user,
@@ -175,7 +173,7 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 		Timeout:         configuration.SSOService.Timeout,
 		RetryCount:      configuration.SSOService.RetryCount,
 	}
-	if configuration.Billing.Enabled && configuration.Billing.APIKey != "" {
+	if configuration.UsesOrgBilling() {
 		sc.APIKey = configuration.Billing.APIKey
 		sc.LicenseKey = configuration.LicenseKey
 		sc.OrgID = r.Header.Get("X-Organisation-Id")
@@ -243,15 +241,13 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if configuration.Billing.Enabled {
-		go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
-			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-			OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-			BillingClient: h.A.BillingClient,
-			Logger:        h.A.Logger,
-			Cfg:           h.A.Cfg,
-		})
-	}
+	go services.RefreshLicenseDataForUser(user.UID, services.RefreshLicenseDataDeps{
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
+		BillingClient: h.A.BillingClient,
+		Logger:        h.A.Logger,
+		Cfg:           h.A.Cfg,
+	})
 
 	u := &models.LoginUserResponse{
 		User:  user,

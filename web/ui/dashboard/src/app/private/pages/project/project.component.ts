@@ -3,6 +3,9 @@ import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { ConfigService } from 'src/app/services/config/config.service';
+
+type BillingStrategy = 'oss' | 'cloud' | 'licensed_self_hosted';
 
 @Component({
     selector: 'app-project',
@@ -50,15 +53,26 @@ export class ProjectComponent implements OnInit {
 	showHelpDropdown = false;
 	projects: PROJECT[] = [];
 	activeNavTab: any;
+	billingStrategy: BillingStrategy = 'oss';
 
 	constructor(
 		private privateService: PrivateService,
 		private router: Router,
-		public licenseService: LicensesService
+		public licenseService: LicensesService,
+		private configService: ConfigService
 	) {}
 
 	ngOnInit() {
-		Promise.all([this.getProjectDetails(), this.getProjects()]);
+		Promise.all([this.getProjectDetails(), this.getProjects(), this.loadBillingStrategy()]);
+	}
+
+	private async loadBillingStrategy() {
+		try {
+			const config = await this.configService.getConfig();
+			this.billingStrategy = config.billing_strategy || 'oss';
+		} catch {
+			this.billingStrategy = 'oss';
+		}
 	}
 
 	get activeTab(): any {
@@ -129,6 +143,14 @@ export class ProjectComponent implements OnInit {
 		} catch {
 			return false;
 		}
+	}
+
+	get disabledOrganisationMessage(): string {
+		if (this.billingStrategy === 'cloud') {
+			return 'This action is disabled for this organization. Subscribe to a plan to create projects.';
+		}
+
+		return 'This action is disabled for this organization. Please contact support.';
 	}
 
 	getProjectLimitMessage(): string {

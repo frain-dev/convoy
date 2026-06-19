@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -71,6 +72,10 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 
 		project, err := deps.ProjectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
+			return &EndpointError{Err: err, delay: defaultEventDelay}
+		}
+		if err = license.EnsureProjectEnabled(deps.Licenser, project.UID); err != nil {
 			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}

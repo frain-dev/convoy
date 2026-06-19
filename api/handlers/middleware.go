@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 
@@ -13,10 +12,9 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/util"
 )
-
-var ErrProjectDisabled = errors.New("this project has been disabled for write operations until you re-subscribe your convoy instance")
 
 func (h *Handler) RequireEnabledProject() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -27,8 +25,8 @@ func (h *Handler) RequireEnabledProject() func(next http.Handler) http.Handler {
 				return
 			}
 
-			if !h.A.Licenser.ProjectEnabled(p.UID) {
-				_ = render.Render(w, r, util.NewErrorResponse(ErrProjectDisabled.Error(), http.StatusBadRequest))
+			if err = license.EnsureProjectEnabled(h.A.Licenser, p.UID); err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
 			}
 
@@ -101,7 +99,7 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 				return
 			}
 
-			if h.A.Cfg.Billing.Enabled && h.isOrganisationDisabled(org) {
+			if h.A.Cfg.UsesOrgBilling() && h.isOrganisationDisabled(org) {
 				_ = render.Render(w, r, util.NewErrorResponse("This action is disabled for this organization. Please contact support or subscribe to a plan.", http.StatusForbidden))
 				return
 			}

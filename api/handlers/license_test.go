@@ -71,7 +71,7 @@ func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{APIKey: "test-key"}},
 			BillingClient: &billing.MockBillingClient{},
 			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
@@ -123,7 +123,7 @@ func TestGetLicenseFeatures_OrgLevel_Header(t *testing.T) {
 	mockOrgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{APIKey: "test-key"}},
 			BillingClient: &billing.MockBillingClient{},
 			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,
@@ -168,7 +168,7 @@ func TestGetLicenseFeatures_OrgLevel_BillingRequiredWhenNoLicenseData(t *testing
 
 	handler := &Handler{
 		A: &types.APIOptions{
-			Cfg:           config.Configuration{Billing: config.BillingConfiguration{Enabled: true}},
+			Cfg:           config.Configuration{Billing: config.BillingConfiguration{APIKey: "test-key"}},
 			BillingClient: &billing.MockBillingClient{},
 			Logger:        log.New("convoy", log.LevelInfo),
 			OrgRepo:       mockOrgRepo,

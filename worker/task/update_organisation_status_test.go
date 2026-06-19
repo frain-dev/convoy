@@ -97,7 +97,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 
 	cfg, err := config.Get()
 	require.NoError(u.T(), err)
-	cfg.Billing.Enabled = true
+	cfg.Billing.APIKey = "test-key"
 	config.Override(&cfg)
 
 	rd, err := rdb.NewClientFromConfig(
@@ -144,7 +144,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 
 	cfg, err := config.Get()
 	require.NoError(u.T(), err)
-	cfg.Billing.Enabled = true
+	cfg.Billing.APIKey = "test-key"
 	config.Override(&cfg)
 
 	rd, err := rdb.NewClientFromConfig(
@@ -184,7 +184,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 
 	cfg, err := config.Get()
 	require.NoError(u.T(), err)
-	cfg.Billing.Enabled = true
+	cfg.Billing.APIKey = "test-key"
 	config.Override(&cfg)
 
 	rd, err := rdb.NewClientFromConfig(
@@ -208,10 +208,10 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.True(u.T(), updatedOrg.DisabledAt.Valid, "org should be disabled")
 }
 
-func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationStatus_SkipsWhenBillingDisabled() {
+func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationStatus_SkipsWhenCloudBillingNotConfigured() {
 	cfg, err := config.Get()
 	require.NoError(u.T(), err)
-	cfg.Billing.Enabled = false
+	cfg.Billing.APIKey = ""
 	config.Override(&cfg)
 
 	rd, err := rdb.NewClientFromConfig(
@@ -250,7 +250,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 
 	cfg, err := config.Get()
 	require.NoError(u.T(), err)
-	cfg.Billing.Enabled = true
+	cfg.Billing.APIKey = "test-key"
 	config.Override(&cfg)
 
 	rd, err := rdb.NewClientFromConfig(

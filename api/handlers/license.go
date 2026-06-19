@@ -23,7 +23,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		orgID = r.Header.Get("X-Organisation-Id")
 	}
 
-	if h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil && !util.IsStringEmpty(orgID) {
+	if h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil && !util.IsStringEmpty(orgID) {
 		var org *datastore.Organisation
 		var err error
 		if h.A.OrgRepo != nil {
@@ -71,7 +71,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			orgMemberRepo = organisation_members.New(h.A.Logger, h.A.DB)
 		}
 		defaultKey := h.A.Cfg.LicenseKey
-		billingEnabled := h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil
+		useOrgBilling := h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil
 		deps := services.RefreshLicenseDataDeps{
 			OrgMemberRepo: orgMemberRepo,
 			OrgRepo:       orgRepo,
@@ -80,7 +80,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 			Cfg:           h.A.Cfg,
 		}
 
-		// When billing is enabled, try billing first for fresh license data.
+		// In cloud org billing mode, try billing first for fresh license data.
 		if resp, err := h.A.BillingClient.GetOrganisationLicense(r.Context(), org.UID); err == nil && resp != nil && resp.Data.Organisation != nil && resp.Data.Organisation.LicenseKey != "" {
 			licenseKey := resp.Data.Organisation.LicenseKey
 			data, err := licClient.ValidateLicense(r.Context(), licenseKey)
@@ -89,7 +89,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 				if err == nil && len(entitlements) > 0 {
 					v, encErr := license.FeatureListFromEntitlementsWithOrgProjectCount(entitlements, projectCount)
 					if encErr == nil {
-						go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, billingEnabled, deps, licClient)
+						go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, useOrgBilling, deps, licClient)
 						_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
 						return
 					}
@@ -132,7 +132,7 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		}
 		// Always trigger refresh when returning billing-required so license_data can be repopulated (e.g. after subscription activated).
 		h.A.Logger.Info("get license features: returning billing-required, triggering license refresh", "org_id", org.UID)
-		go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, billingEnabled, deps, licClient)
+		go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, useOrgBilling, deps, licClient)
 		v, _ := license.BillingRequiredFeatureListJSON()
 		msg := "Retrieved license features successfully"
 		if billingRequiredReason != "" {

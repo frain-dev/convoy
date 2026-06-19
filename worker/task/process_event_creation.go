@@ -124,6 +124,10 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
+	if err = license.EnsureProjectEnabled(args.licenser, project.UID); err != nil {
+		tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
+		return nil, &EndpointError{Err: err, delay: defaultEventDelay}
+	}
 
 	if createEvent.Event == nil {
 		event, err = buildEvent(ctx, args.eventRepo, args.endpointRepo, &createEvent.Params, project, args.logger)
@@ -188,6 +192,9 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	project, err := args.projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
+	}
+	if err = license.EnsureProjectEnabled(args.licenser, project.UID); err != nil {
+		return nil, &EndpointError{Err: err, delay: defaultEventDelay}
 	}
 	event, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
 	if err != nil {

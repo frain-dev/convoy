@@ -14,7 +14,7 @@ export interface AppConfig {
     is_signup_enabled?: boolean;
     [key: string]: any;
   };
-  billing_enabled?: boolean;
+  billing_strategy?: 'oss' | 'cloud' | 'licensed_self_hosted';
   [key: string]: any;
 }
 
@@ -46,7 +46,7 @@ export class ConfigService {
 
       if (response.data) {
         const config = {
-          billing_enabled: response.data.billing_enabled,
+          billing_strategy: response.data.billing_strategy,
           auth: {
             google_oauth: {
               enabled: response.data.google_oauth?.enabled || false,

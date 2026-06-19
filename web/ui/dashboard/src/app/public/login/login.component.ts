@@ -1,5 +1,5 @@
 
-import {AfterViewInit, Component, OnInit} from '@angular/core';
+import {AfterViewInit, Component} from '@angular/core';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
 import {ButtonComponent} from 'src/app/components/button/button.component';
@@ -26,7 +26,7 @@ import {GeneralService} from 'src/app/services/general/general.service';
     templateUrl: './login.component.html',
     styleUrls: ['./login.component.scss']
 })
-export class LoginComponent implements OnInit, AfterViewInit {
+export class LoginComponent implements AfterViewInit {
 	showLoginPassword = false;
 	disableLoginBtn = false;
 	loginForm: FormGroup = this.formBuilder.group({
@@ -41,7 +41,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 	isSSOEnabled = false;
 	googleClientId = '';
 	organisations?: ORGANIZATION_DATA[];
-	billingEnabled = false;
+	isCloudBilling = false;
 	showSlugInput = false;
 	workspaceSlug = '';
 	isSubmittingSSO = false;
@@ -61,26 +61,25 @@ export class LoginComponent implements OnInit, AfterViewInit {
 		private generalService: GeneralService
 	) {}
 
-	ngOnInit() {
-		this.licenseService.setLicenses(true);
-	}
-
 	async ngAfterViewInit() {
+		const licensePromise = this.licenseService.setLicenses(true);
+
 		try {
 			const config = await this.configService.getConfig();
-			this.billingEnabled = config.billing_enabled ?? false;
+			this.isCloudBilling = config.billing_strategy === 'cloud';
 			this.isGoogleOAuthEnabled = config.auth?.google_oauth?.enabled || false;
 			this.isSSOEnabled = config.auth?.sso?.enabled || false;
 			this.googleClientId = config.auth?.google_oauth?.client_id || '';
 			this.isSignupEnabled = config.auth?.is_signup_enabled || false;
 		} catch (error) {
 			console.error('Failed to get config:', error);
-			this.billingEnabled = false;
+			this.isCloudBilling = false;
 			this.isGoogleOAuthEnabled = false;
 			this.isSSOEnabled = false;
 			this.googleClientId = '';
 			this.isSignupEnabled = false;
 		} finally {
+			await licensePromise;
 			this.authConfigLoaded = true;
 		}
 
@@ -187,9 +186,9 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
 	async loginWithSSO() {
 		localStorage.setItem('AUTH_TYPE', 'login');
-		const slug = this.billingEnabled ? this.workspaceSlug.trim() : undefined;
+		const slug = this.isCloudBilling ? this.workspaceSlug.trim() : undefined;
 
-		if (this.billingEnabled && !slug) {
+		if (this.isCloudBilling && !slug) {
 			this.showSlugError = true;
 			setTimeout(() => document.getElementById('workspace-slug')?.focus(), 0);
 			return;

@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -60,6 +61,10 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 	if err != nil {
 		tracer.AddEvent(ctx, tracer.EventBroadcastEventCreationError, attributes)
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: defaultBroadcastDelay}
+	}
+	if err = license.EnsureProjectEnabled(args.licenser, project.UID); err != nil {
+		tracer.AddEvent(ctx, tracer.EventBroadcastEventCreationError, attributes)
+		return nil, &EndpointError{Err: err, delay: defaultEventDelay}
 	}
 
 	var isDuplicate bool
@@ -115,6 +120,10 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	if err != nil {
 		tracer.AddEvent(ctx, tracer.EventBroadcastSubscriptionMatchingErr, attributes)
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
+	}
+	if err = license.EnsureProjectEnabled(args.licenser, project.UID); err != nil {
+		tracer.AddEvent(ctx, tracer.EventBroadcastSubscriptionMatchingErr, attributes)
+		return nil, &EndpointError{Err: err, delay: defaultEventDelay}
 	}
 
 	attributes["project.id"] = project.UID

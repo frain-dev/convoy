@@ -124,9 +124,9 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	billingEnabled := h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil
+	useOrgBilling := h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil
 	skipLimitCheck := false
-	if billingEnabled {
+	if useOrgBilling {
 		sub, err := h.A.BillingClient.GetSubscription(r.Context(), org.UID)
 		if err != nil || !sub.Status || sub.Data.ID == "" {
 			pms, pmErr := h.A.BillingClient.GetPaymentMethods(r.Context(), org.UID)

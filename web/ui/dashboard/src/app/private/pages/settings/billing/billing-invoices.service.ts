@@ -17,7 +17,13 @@ export interface InvoiceRow {
 
 @Injectable({ providedIn: 'root' })
 export class BillingInvoicesService {
+  private billingStrategy: 'oss' | 'cloud' | 'licensed_self_hosted' = 'cloud';
+
   constructor(private httpService: HttpService) {}
+
+  setBillingStrategy(strategy: 'oss' | 'cloud' | 'licensed_self_hosted'): void {
+    this.billingStrategy = strategy;
+  }
 
   getInvoices(): Observable<InvoiceRow[]> {
     return from(this.getInvoicesData()).pipe(
@@ -32,8 +38,11 @@ export class BillingInvoicesService {
   private async getInvoicesData() {
     try {
       const orgId = this.getOrganisationId();
+      const url = this.billingStrategy === 'licensed_self_hosted'
+        ? '/billing/sh_invoices'
+        : `/billing/organisations/${orgId}/invoices`;
       const response = await this.httpService.request({
-        url: `/billing/organisations/${orgId}/invoices`,
+        url,
         method: 'get',
         hideNotification: true
       });
@@ -54,12 +63,18 @@ export class BillingInvoicesService {
         authToken = token.access_token || '';
       }
 
+      // Both strategies download in-app: the backend proxies the provider PDF and
+      // streams it back with auth, so the browser never hits the provider directly.
+      const path = this.billingStrategy === 'licensed_self_hosted'
+        ? `/billing/sh_invoices/${invoiceID}/download`
+        : `/billing/organisations/${orgID}/invoices/${invoiceID}/download`;
+
       // Build the URL
       const baseElement = document.querySelector('base');
       const baseHref = baseElement?.getAttribute('href') || '/';
       const rootPath = baseHref.replace(/\/$/, '');
       const apiURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
-      const url = `${rootPath === '/' ? '' : rootPath}${apiURL}/billing/organisations/${orgID}/invoices/${invoiceID}/download`;
+      const url = `${rootPath === '/' ? '' : rootPath}${apiURL}${path}`;
 
       // Make request with blob response type
       const response = await axios.get(url, {
@@ -108,9 +123,10 @@ export class BillingInvoicesService {
         }
       }
       
-      // Format due date (use paid_date if available, otherwise invoice_date)
+      // Use the real due date from the provider; fall back to invoice_date only when
+      // an older record predates the stored due_date.
       let dueDate = 'N/A';
-      const dateToUse = invoice.paid_date || invoice.invoice_date;
+      const dateToUse = invoice.due_date || invoice.invoice_date;
       if (dateToUse) {
         try {
           dueDate = new Date(dateToUse).toLocaleDateString('en-US', {

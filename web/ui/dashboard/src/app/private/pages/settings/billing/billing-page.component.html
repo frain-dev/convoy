@@ -1,15 +1,54 @@
-<app-billing-overview
-  [overview]="billingOverview"
-  [isLoading]="isLoadingBillingData"
-  [refreshTrigger]="refreshOverviewTrigger"
-  (openPaymentDetails)="openPaymentDetails()"
-  (openManagePlan)="openManagePlan()">
-</app-billing-overview>
-<app-billing-usage
-  [usageRows]="usageRows"
-  [isFetchingUsage]="isLoadingUsage">
-</app-billing-usage>
-<app-billing-invoices></app-billing-invoices>
+@if (canShowBillingPanels) {
+  <app-billing-overview
+    [overview]="billingOverview"
+    [isLoading]="isLoadingBillingData"
+    [refreshTrigger]="refreshOverviewTrigger"
+    (openPaymentDetails)="openPaymentDetails()"
+    (openManagePlan)="openManagePlan()">
+  </app-billing-overview>
+  <app-billing-usage
+    [usageRows]="usageRows"
+    [isFetchingUsage]="isLoadingUsage">
+  </app-billing-usage>
+  <app-billing-invoices></app-billing-invoices>
+} @else {
+  <div class="flex justify-between items-center mb-28px">
+    <div>
+      <h3 class="font-semibold">Usage and Billing</h3>
+      <p class="text-12 text-neutral-10">Manage billing for this self-hosted instance.</p>
+    </div>
+  </div>
+
+  <div convoy-card class="p-24px mb-24px">
+    <div class="flex items-start justify-between gap-24px">
+      <div class="flex-1 min-w-0">
+        <h4 class="text-12 font-medium text-neutral-11 mb-6px">{{ selfHostedSetupTitle }}</h4>
+        <p class="text-12 text-neutral-10 mt-4px max-w-[640px]">{{ selfHostedSetupMessage }}</p>
+        @if (hasActiveSelfHostedCheckout) {
+          <p class="text-12 text-neutral-10 mt-8px max-w-[640px]">A checkout is already in progress. Continue payment to reopen the checkout page, or start a new checkout to replace it.</p>
+        }
+        @if (selfHostedBillingConfig?.license_configured) {
+          <p class="text-12 text-neutral-10 mt-8px">Instance license is configured.</p>
+        }
+      </div>
+      <div class="flex shrink-0 items-center gap-8px">
+        @if (hasActiveSelfHostedCheckout) {
+          <button type="button" convoy-button size="sm" [disabled]="isLoadingCheckout" (click)="resumeSelfHostedCheckout()">
+            Continue payment
+          </button>
+        }
+        <button type="button" class="text-12 font-medium text-neutral-11 hover:text-neutral-12 px-8px py-6px" [disabled]="isLoadingCheckout" (click)="openManagePlan()">
+          {{ hasActiveSelfHostedCheckout ? 'Start new checkout' : 'Start checkout' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-24px bg-neutral-a2 rounded-8px">
+    <h4 class="text-12 font-medium text-neutral-11 mb-6px">Billing data</h4>
+    <p class="text-12 text-neutral-10 mt-4px">Subscription, usage, payment, and invoice data will appear after checkout is confirmed.</p>
+  </div>
+}
 
 <dialog #paymentDetailsDialog convoy-dialog>
   <div convoy-dialog-header (closeDialog)="closePaymentDetails()">
@@ -478,14 +517,36 @@
           <h2 class="font-semibold text-14">Plan</h2>
         </div>
 
-        <div class="manage-plan-content">
+        <div class="manage-plan-content" (click)="clearPlanSelection()">
           <h3 class="text-20 font-medium mb-24px">Manage your plan</h3>
-          <p class="text-14 text-neutral-11 mb-16px">Click a plan card or the Select button to choose a plan, then click Upgrade to continue.</p>
+          <p class="text-14 text-neutral-11 mb-16px">Click a plan card or the Select button to choose a plan. Contact-only plans open a sales request instead of checkout.</p>
+
+          @if (showSelfHostedCheckoutForm()) {
+            <form [formGroup]="selfHostedCheckoutForm" class="mb-24px">
+              <convoy-input-field>
+                <label for="selfHostedBillingEmail" convoy-label required="true">Billing email</label>
+                <input
+                  id="selfHostedBillingEmail"
+                  type="email"
+                  convoy-input
+                  formControlName="email"
+                  placeholder="billing@example.com" />
+                @if (selfHostedCheckoutForm.get('email')?.touched && selfHostedCheckoutForm.get('email')?.invalid) {
+                  <convoy-input-error>Please enter a valid billing email</convoy-input-error>
+                }
+              </convoy-input-field>
+              @if (selfHostedBillingConfig?.active_checkout) {
+                <p class="text-12 text-neutral-11 mt-8px">
+                  Starting checkout again will replace the active checkout on this instance.
+                </p>
+              }
+            </form>
+          }
 
           <!-- Plan Cards -->
-          @if (!isLoadingPlans) {
-            <div class="flex gap-16px mb-40px">
-              @for (plan of plans; track $index) {
+          @if (hasPlanReadyState) {
+            <div class="flex gap-16px mb-40px" (click)="$event.stopPropagation()">
+              @for (plan of plans; track plan.id) {
                 <div
                   class="plan-card flex-1 cursor-pointer"
                   [class.plan-card-selected]="selectedPlan === plan.id"
@@ -517,7 +578,7 @@
                     convoy-button
                     [fill]="selectedPlan === plan.id ? 'solid' : 'outline'"
                     [color]="selectedPlan === plan.id ? 'primary' : 'neutral'"
-                    [disabled]="isCurrentPlan(plan.id) || (selectedPlan === plan.id && isLoadingCheckout)"
+                    [disabled]="isCurrentPlan(plan.id) || !canUsePlan(plan) || (selectedPlan === plan.id && isLoadingCheckout)"
                     class="plan-card-button"
                     (click)="onPlanCardButtonClick(plan.id); $event.stopPropagation()">
                     {{ getButtonText(plan.id) }}
@@ -528,7 +589,7 @@
           }
 
           <!-- Loading State -->
-          @if (isLoadingPlans) {
+          @if (hasPlanLoadingState) {
             <div class="flex gap-16px mb-40px">
               <div class="plan-card flex-1">
                 <convoy-skeleton-loader className="w-full h-48"></convoy-skeleton-loader>
@@ -539,9 +600,15 @@
             </div>
           }
 
+          @if (hasPlanUnavailableState) {
+            <div class="plan-unavailable-state mb-40px">
+              <h4 class="text-14 font-medium mb-8px">Plans unavailable</h4>
+              <p class="text-12 text-neutral-10">{{ plansUnavailableMessage }}</p>
+            </div>
+          }
 
           <!-- Compare Plans Section -->
-          @if (!isLoadingPlans) {
+          @if (hasPlanReadyState) {
             <div class="compare-plans-section">
               <h4 class="compare-plans-title">Compare plans</h4>
               <!-- Comparison Table -->
@@ -549,7 +616,7 @@
                 <!-- Table Header -->
                 <div class="comparison-table-header">
                   <div class="comparison-table-cell header-category"></div>
-                  @for (plan of plans; track $index) {
+                  @for (plan of plans; track plan.id) {
                     <div class="comparison-table-cell header-plan">{{ plan.name }}</div>
                   }
                 </div>
@@ -560,7 +627,7 @@
                     @for (feature of getFeaturesByCategory('core'); track $index) {
                       <div class="comparison-table-row">
                         <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
-                        @for (plan of plans; track $index) {
+                        @for (plan of plans; track plan.id) {
                           <div class="comparison-table-cell feature-value">
                             <span class="status-badge"
                               [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
@@ -581,7 +648,7 @@
                     @for (feature of getFeaturesByCategory('security'); track $index) {
                       <div class="comparison-table-row">
                         <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
-                        @for (plan of plans; track $index) {
+                        @for (plan of plans; track plan.id) {
                           <div class="comparison-table-cell feature-value">
                             <span class="status-badge"
                               [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
@@ -602,7 +669,7 @@
                     @for (feature of getFeaturesByCategory('support'); track $index) {
                       <div class="comparison-table-row">
                         <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
-                        @for (plan of plans; track $index) {
+                        @for (plan of plans; track plan.id) {
                           <div class="comparison-table-cell feature-value">
                             <span class="status-badge"
                               [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"

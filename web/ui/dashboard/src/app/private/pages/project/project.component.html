@@ -76,12 +76,12 @@
                   {{ getProjectLimitMessage() }}
                 </div>
               }
-              @if (isDisabled && licenseService.hasLicense('project_limit')) {
-                <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full">
-                  <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+              @if (isDisabled && !getProjectLimitMessage()) {
+                <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full px-16px text-center">
+                  <svg width="10" height="10" class="fill-new.primary-400 scale-150 shrink-0">
                     <use xlink:href="#lock-icon"></use>
                   </svg>
-                  Disabled
+                  {{ disabledOrganisationMessage }}
                 </div>
               }
             </div>

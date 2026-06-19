@@ -55,7 +55,7 @@ func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
 			Timeout:         cfg.SSOService.Timeout,
 			RetryCount:      cfg.SSOService.RetryCount,
 		}
-		if cfg.Billing.Enabled && cfg.Billing.APIKey != "" {
+		if cfg.UsesOrgBilling() {
 			sc.APIKey = cfg.Billing.APIKey
 			sc.LicenseKey = u.LicenseKey
 		}
@@ -116,7 +116,7 @@ func (u *LoginUserSSOService) RedeemToken(queryValues url.Values) (*models.SSOTo
 			Timeout:         cfg.SSOService.Timeout,
 			RetryCount:      cfg.SSOService.RetryCount,
 		}
-		if cfg.Billing.Enabled && cfg.Billing.APIKey != "" {
+		if cfg.UsesOrgBilling() {
 			sc.APIKey = cfg.Billing.APIKey
 			sc.LicenseKey = u.LicenseKey
 		}

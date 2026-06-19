@@ -31,9 +31,8 @@ func setupTestClient(t *testing.T) (*HTTPClient, *httptest.Server) {
 func setupTestClientWithHandler(t *testing.T, handler http.Handler) (*HTTPClient, *httptest.Server) {
 	server := httptest.NewServer(handler)
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
+		URL:    server.URL,
+		APIKey: "test-key",
 	}
 	client := NewClient(cfg)
 	return client, server
@@ -55,9 +54,8 @@ func setupTestClientWithResponse[T any](t *testing.T, data T) (*HTTPClient, *htt
 
 func TestNewClient(t *testing.T) {
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     "http://localhost:8080",
-		APIKey:  "test-key",
+		URL:    "http://localhost:8080",
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -77,9 +75,8 @@ func TestClient_HealthCheck_Success(t *testing.T) {
 	}))
 
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
+		URL:    server.URL,
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -89,25 +86,10 @@ func TestClient_HealthCheck_Success(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestClient_HealthCheck_Disabled(t *testing.T) {
-	cfg := config.BillingConfiguration{
-		Enabled: false,
-		URL:     "http://localhost:8080",
-		APIKey:  "test-key",
-	}
-
-	client := NewClient(cfg)
-
-	err := client.HealthCheck(context.Background())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "billing is not enabled")
-}
-
 func TestClient_HealthCheck_NoURL(t *testing.T) {
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     "",
-		APIKey:  "test-key",
+		URL:    "",
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -123,9 +105,8 @@ func TestClient_HealthCheck_ServerError(t *testing.T) {
 	}))
 
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
+		URL:    server.URL,
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -146,11 +127,9 @@ func TestClient_GetUsage_Success(t *testing.T) {
 	assert.Equal(t, "Success", resp.Message)
 }
 
-func TestClient_GetUsage_Disabled(t *testing.T) {
+func TestClient_GetUsage_NoURL(t *testing.T) {
 	cfg := config.BillingConfiguration{
-		Enabled: false,
-		URL:     "http://localhost:8080",
-		APIKey:  "test-key",
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -158,7 +137,7 @@ func TestClient_GetUsage_Disabled(t *testing.T) {
 	resp, err := client.GetUsage(context.Background(), "test-org")
 	assert.Error(t, err)
 	assert.Nil(t, resp)
-	assert.Contains(t, err.Error(), "billing is not enabled")
+	assert.Contains(t, err.Error(), "billing service URL is not configured")
 }
 
 func TestClient_GetInvoices_Success(t *testing.T) {
@@ -214,9 +193,8 @@ func TestClient_GetTaxIDTypes_Success(t *testing.T) {
 	}))
 
 	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
+		URL:    server.URL,
+		APIKey: "test-key",
 	}
 
 	client := NewClient(cfg)
@@ -287,6 +265,7 @@ func TestClient_UpdateOrganisationAddress_Success(t *testing.T) {
 	defer server.Close()
 
 	addressData := UpdateOrganisationAddressRequest{
+		BillingName:    "Acme Billing",
 		BillingAddress: "123 Main St",
 		BillingCity:    "New York",
 		BillingState:   "NY",
@@ -323,6 +302,61 @@ func TestClient_OnboardSubscription_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, resp.Status)
 	assert.Equal(t, "Success", resp.Message)
+}
+
+func TestClient_StartGuestCheckout_Success(t *testing.T) {
+	client, server := setupTestClientWithHandler(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/public/self_hosted_checkouts/start", r.URL.Path)
+		assert.Empty(t, r.Header.Get("Authorization"))
+
+		var req StartGuestCheckoutRequest
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+		assert.Equal(t, "buyer@example.com", req.Email)
+		assert.Equal(t, "Acme", req.OrganisationName)
+		assert.Equal(t, "attempt_123", req.AttemptID)
+		assert.NotEmpty(t, req.CheckoutNonceHash)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		require.NoError(t, json.NewEncoder(w).Encode(Response[Checkout]{
+			Status:  true,
+			Message: "Self-hosted checkout started",
+			Data:    Checkout{CheckoutURL: "https://checkout.example", CheckoutID: "checkout_123", AttemptID: "attempt_123"},
+		}))
+	}))
+	defer server.Close()
+
+	resp, err := client.StartGuestCheckout(context.Background(), StartGuestCheckoutRequest{
+		Email:             "buyer@example.com",
+		PlanID:            "plan_123",
+		Host:              "https://customer.example.com",
+		OrganisationName:  "Acme",
+		AttemptID:         "attempt_123",
+		CheckoutNonceHash: "nonce_hash",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "checkout_123", resp.Data.CheckoutID)
+}
+
+func TestClient_CompleteGuestCheckout_Success(t *testing.T) {
+	client, server := setupTestClientWithResponse(t, GuestCheckoutCompletion{
+		Status:     "completed",
+		LicenseKey: "license-key",
+		CheckoutID: "checkout_123",
+		ExternalID: "sh_ck_attempt_123",
+	})
+	defer server.Close()
+
+	resp, err := client.CompleteGuestCheckout(context.Background(), CompleteGuestCheckoutRequest{
+		Token:         "signed-token",
+		AttemptID:     "attempt_123",
+		CheckoutID:    "checkout_123",
+		CheckoutNonce: "nonce",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "completed", resp.Data.Status)
+	assert.Equal(t, "license-key", resp.Data.LicenseKey)
 }
 
 func TestClient_UpgradeSubscription_Success(t *testing.T) {
@@ -378,4 +412,60 @@ func TestClient_GetInvoice_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, resp.Status)
 	assert.Equal(t, "Success", resp.Message)
+}
+
+func TestBillingClientPublicSelfHostedCallsDoNotSendBearerToken(t *testing.T) {
+	seen := make(map[string]string)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen[r.URL.Path] = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": true, "message": "ok", "data": []interface{}{}})
+	}))
+	defer server.Close()
+
+	client := NewClient(config.BillingConfiguration{URL: server.URL})
+
+	_, err := client.GetPlans(context.Background())
+	require.NoError(t, err)
+
+	require.Equal(t, "", seen["/public/self_hosted/plans"])
+}
+
+func TestBillingClientCloudPlanCatalogSendsBearerToken(t *testing.T) {
+	var authHeader string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/api/v1/plans", r.URL.Path)
+		authHeader = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": true, "message": "ok", "data": []interface{}{}})
+	}))
+	defer server.Close()
+
+	client := NewClient(config.BillingConfiguration{URL: server.URL, APIKey: "cloud-api-key"})
+
+	_, err := client.GetPlans(context.Background())
+	require.NoError(t, err)
+
+	require.Equal(t, "Bearer cloud-api-key", authHeader)
+}
+
+func TestBillingClientSelfHostedBillingUsesLicenseProof(t *testing.T) {
+	var authHeader string
+	var licenseHeader string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/public/self_hosted_billing/subscription", r.URL.Path)
+		authHeader = r.Header.Get("Authorization")
+		licenseHeader = r.Header.Get("X-Convoy-License-Key")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": true, "message": "ok", "data": map[string]interface{}{"id": "sub_123"}})
+	}))
+	defer server.Close()
+
+	client := NewClient(config.BillingConfiguration{URL: server.URL})
+
+	_, err := client.GetSelfHostedSubscription(context.Background(), "license-key")
+	require.NoError(t, err)
+
+	require.Equal(t, "", authHeader)
+	require.Equal(t, "license-key", licenseHeader)
 }
