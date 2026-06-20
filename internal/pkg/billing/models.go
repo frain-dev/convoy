@@ -133,6 +133,8 @@ type StartGuestCheckoutRequest struct {
 	OrganisationName  string `json:"organisation_name,omitempty"`
 	AttemptID         string `json:"attempt_id,omitempty"`
 	CheckoutNonceHash string `json:"checkout_nonce_hash,omitempty"`
+	// LicenseKey, when set, resubscribes the org for that key (empty = first purchase).
+	LicenseKey string `json:"license_key,omitempty"`
 }
 
 type CompleteGuestCheckoutRequest struct {

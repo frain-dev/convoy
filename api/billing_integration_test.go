@@ -38,11 +38,21 @@ type BillingIntegrationTestSuite struct {
 type countingBillingClient struct {
 	*billing.MockBillingClient
 	completeCalls int
+	lastStart     billing.StartGuestCheckoutRequest
+	startErr      error
 }
 
 func (c *countingBillingClient) CompleteGuestCheckout(ctx context.Context, req billing.CompleteGuestCheckoutRequest) (*billing.Response[billing.GuestCheckoutCompletion], error) {
 	c.completeCalls++
 	return c.MockBillingClient.CompleteGuestCheckout(ctx, req)
+}
+
+func (c *countingBillingClient) StartGuestCheckout(ctx context.Context, req billing.StartGuestCheckoutRequest) (*billing.Response[billing.Checkout], error) {
+	c.lastStart = req
+	if c.startErr != nil {
+		return nil, c.startErr
+	}
+	return c.MockBillingClient.StartGuestCheckout(ctx, req)
 }
 
 func (s *BillingIntegrationTestSuite) SetupSuite() {
@@ -231,6 +241,150 @@ func (s *BillingIntegrationTestSuite) Test_SelfHostedOrganisationAdminCanStartCh
 	attemptID := s.startSelfHostedCheckout("org-admin@example.com")
 
 	require.NotEmpty(s.T(), attemptID)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedCheckout_SendsCheckoutLicenseKeyForResubscribe() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleInstanceAdmin)
+	require.NoError(s.T(), err)
+
+	// Persist a purchased guest key so the handler resubscribes against it.
+	billingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	billingCfg.CheckoutLicenseKey = "RESUB-KEY-123"
+	require.NoError(s.T(), cfgSvc.UpdateInstanceBillingConfig(context.Background(), billingCfg))
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	attemptID := s.startSelfHostedCheckout("resub@example.com")
+	require.NotEmpty(s.T(), attemptID)
+	require.Equal(s.T(), "RESUB-KEY-123", client.lastStart.LicenseKey)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedCheckout_ResubscribeWithoutEmail() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleInstanceAdmin)
+	require.NoError(s.T(), err)
+
+	// A purchased guest key makes this a resubscribe, so email may be omitted.
+	billingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	billingCfg.CheckoutLicenseKey = "RESUB-KEY-456"
+	require.NoError(s.T(), cfgSvc.UpdateInstanceBillingConfig(context.Background(), billingCfg))
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{
+		"plan_id": "self_hosted_premium",
+		"host":    "https://customer.example.com",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_checkout/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+	require.Equal(s.T(), "RESUB-KEY-456", client.lastStart.LicenseKey)
+	require.Empty(s.T(), client.lastStart.Email)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedCheckout_SurfacesResubscribeBlock() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleInstanceAdmin)
+	require.NoError(s.T(), err)
+
+	// Overwatch returns 409 for a duplicate checkout; the handler must surface it.
+	client := &countingBillingClient{
+		MockBillingClient: &billing.MockBillingClient{},
+		startErr:          &billing.Error{StatusCode: http.StatusConflict, Message: "an active subscription already exists; cancel it before resubscribing"},
+	}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{
+		"email":   "resub-blocked@example.com",
+		"plan_id": "self_hosted_premium",
+		"host":    "https://customer.example.com",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_checkout/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusConflict, w.Code, w.Body.String())
+	var response map[string]interface{}
+	require.NoError(s.T(), json.Unmarshal(w.Body.Bytes(), &response))
+	require.Contains(s.T(), response["message"], "cancel it before resubscribing")
 }
 
 func (s *BillingIntegrationTestSuite) seedActiveSelfHostedCheckout() func() {

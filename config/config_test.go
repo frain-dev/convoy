@@ -680,3 +680,47 @@ func TestResolveEffectiveLicense(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveCheckoutLicenseKey(t *testing.T) {
+	tests := []struct {
+		name        string
+		checkoutKey string
+		licenseKey  string
+		source      string
+		expected    string
+	}{
+		{
+			name:        "checkout key wins",
+			checkoutKey: "  checkout-key  ",
+			licenseKey:  "license-key",
+			source:      LicenseSourceEnv,
+			expected:    "checkout-key",
+		},
+		{
+			name:        "legacy guest row falls back to license key",
+			checkoutKey: "  ",
+			licenseKey:  "  legacy-guest-key  ",
+			source:      LicenseSourceGuestCheckout,
+			expected:    "legacy-guest-key",
+		},
+		{
+			name:        "env override is not a resubscribe",
+			checkoutKey: "",
+			licenseKey:  "env-key",
+			source:      LicenseSourceEnv,
+			expected:    "",
+		},
+		{
+			name:        "unknown source is treated as first purchase",
+			checkoutKey: "",
+			licenseKey:  "some-key",
+			source:      "",
+			expected:    "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expected, ResolveCheckoutLicenseKey(tc.checkoutKey, tc.licenseKey, tc.source))
+		})
+	}
+}

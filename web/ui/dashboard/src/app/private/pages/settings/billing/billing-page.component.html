@@ -523,18 +523,24 @@
 
           @if (showSelfHostedCheckoutForm()) {
             <form [formGroup]="selfHostedCheckoutForm" class="mb-24px" (click)="$event.stopPropagation()">
-              <convoy-input-field>
-                <label for="selfHostedBillingEmail" convoy-label required="true">Billing email</label>
-                <input
-                  id="selfHostedBillingEmail"
-                  type="email"
-                  convoy-input
-                  formControlName="email"
-                  placeholder="billing@example.com" />
-                @if (selfHostedCheckoutForm.get('email')?.touched && selfHostedCheckoutForm.get('email')?.invalid) {
-                  <convoy-input-error>Please enter a valid billing email</convoy-input-error>
-                }
-              </convoy-input-field>
+              @if (isSelfHostedResubscribe) {
+                <p class="text-12 text-neutral-11">
+                  Resubscribing to your existing billing account.
+                </p>
+              } @else {
+                <convoy-input-field>
+                  <label for="selfHostedBillingEmail" convoy-label required="true">Billing email</label>
+                  <input
+                    id="selfHostedBillingEmail"
+                    type="email"
+                    convoy-input
+                    formControlName="email"
+                    placeholder="billing@example.com" />
+                  @if (selfHostedCheckoutForm.get('email')?.touched && selfHostedCheckoutForm.get('email')?.invalid) {
+                    <convoy-input-error>Please enter a valid billing email</convoy-input-error>
+                  }
+                </convoy-input-field>
+              }
               @if (selfHostedBillingConfig?.active_checkout) {
                 <p class="text-12 text-neutral-11 mt-8px">
                   Starting checkout again will replace the active checkout on this instance.

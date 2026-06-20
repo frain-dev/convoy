@@ -594,7 +594,9 @@ func (m *MockBillingClient) DownloadInvoice(ctx context.Context, orgID, invoiceI
 }
 
 type Error struct {
-	Message string
+	// StatusCode is the upstream HTTP status (0 for local/transport errors).
+	StatusCode int
+	Message    string
 }
 
 func (e *Error) Error() string {

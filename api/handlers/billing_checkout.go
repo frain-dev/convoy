@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -54,6 +55,9 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 	if instanceBilling != nil {
 		selfHosted["license_synced_at"] = instanceBilling.LicenseSyncedAt
 		selfHosted["license_source"] = instanceBilling.LicenseKeySource
+		// Same resolver the start handler uses, so the UI's Resubscribe label cannot
+		// disagree with whether a license_key is actually sent to Overwatch.
+		selfHosted["resubscribe"] = config.ResolveCheckoutLicenseKey(instanceBilling.CheckoutLicenseKey, instanceBilling.LicenseKey, instanceBilling.LicenseKeySource) != ""
 		if h.isInstanceAdmin(r) {
 			activeAttempt, hasActiveAttempt := instanceBilling.CheckoutAttempts[instanceBilling.ActiveCheckoutAttemptID]
 			selfHosted["active_checkout_attempt_id"] = instanceBilling.ActiveCheckoutAttemptID
@@ -107,10 +111,6 @@ func (h *BillingHandler) StartSelfHostedCheckout(w http.ResponseWriter, r *http.
 	}
 
 	email := strings.TrimSpace(req.Email)
-	if email == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("email is required", http.StatusBadRequest))
-		return
-	}
 	if req.PlanID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("plan_id is required", http.StatusBadRequest))
 		return
@@ -121,6 +121,18 @@ func (h *BillingHandler) StartSelfHostedCheckout(w http.ResponseWriter, r *http.
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	// A non-empty resubscribe key (empty = first purchase) reuses the existing org;
+	// Overwatch returns 409 if it still has a live subscription.
+	resubscribeKey := config.ResolveCheckoutLicenseKey(cfg.CheckoutLicenseKey, cfg.LicenseKey, cfg.LicenseKeySource)
+
+	// Email identifies a first-time buyer's new org. On resubscribe the org is already
+	// known by the license key, so email is optional and Overwatch reuses the stored one.
+	if email == "" && resubscribeKey == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("email is required", http.StatusBadRequest))
+		return
+	}
+
 	host, err := billing.CanonicalOrigin(req.Host)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -146,9 +158,15 @@ func (h *BillingHandler) StartSelfHostedCheckout(w http.ResponseWriter, r *http.
 		OrganisationName:  h.activeOrganisationName(r.Context(), r),
 		AttemptID:         attemptID,
 		CheckoutNonceHash: nonceHash,
+		LicenseKey:        resubscribeKey,
 	})
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusServiceUnavailable))
+		status := http.StatusServiceUnavailable
+		var billErr *billing.Error
+		if errors.As(err, &billErr) && billErr.StatusCode == http.StatusConflict {
+			status = http.StatusConflict
+		}
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), status))
 		return
 	}
 

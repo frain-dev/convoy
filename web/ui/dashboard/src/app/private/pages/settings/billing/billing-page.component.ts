@@ -220,6 +220,11 @@ export class BillingPageComponent implements OnInit {
     return !!this.selfHostedBillingConfig?.active_checkout?.attempt_id;
   }
 
+  // Server-resolved flag, so the label matches whether checkout actually resubscribes.
+  get isSelfHostedResubscribe(): boolean {
+    return this.selfHostedBillingConfig?.resubscribe === true;
+  }
+
   private async bootstrapOrganisation() {
     try {
       const orgId = this.getOrganisationId();
@@ -1004,21 +1009,26 @@ export class BillingPageComponent implements OnInit {
       let checkoutUrl: string;
 
       if (this.isSelfHostedBilling || this.planCatalog.isSelfHostedPlan(selectedPlanData)) {
-        if (!this.selfHostedCheckoutForm.valid) {
+        // Resubscribe reuses the known org/customer by license key, so email is omitted.
+        if (!this.isSelfHostedResubscribe && !this.selfHostedCheckoutForm.valid) {
           this.selfHostedCheckoutForm.markAllAsTouched();
           this.isLoadingCheckout = false;
           return;
         }
 
+        const body: { plan_id: string; interval: string; host: string; email?: string } = {
+          plan_id: planIdForApi,
+          interval: this.planCatalog.resolveCheckoutCadence(selectedPlanData),
+          host: host
+        };
+        if (!this.isSelfHostedResubscribe) {
+          body.email = this.selfHostedCheckoutForm.value.email;
+        }
+
         const response = await this.httpService.request({
           url: '/billing/sh_checkout/start',
           method: 'post',
-          body: {
-            plan_id: planIdForApi,
-            interval: this.planCatalog.resolveCheckoutCadence(selectedPlanData),
-            email: this.selfHostedCheckoutForm.value.email,
-            host: host
-          }
+          body
         });
 
         if (response.data && response.data.checkout_url) {
@@ -1106,7 +1116,7 @@ export class BillingPageComponent implements OnInit {
     }
     if (this.selectedPlan === planId) {
       if (plan && (this.isSelfHostedBilling || this.planCatalog.isSelfHostedPlan(plan))) {
-        return 'Start checkout';
+        return this.isSelfHostedResubscribe ? 'Resubscribe' : 'Start checkout';
       }
       return this.currentSubscription ? 'Upgrade' : 'Subscribe';
     }

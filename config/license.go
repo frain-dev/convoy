@@ -23,3 +23,20 @@ func ResolveEffectiveLicense(envKey, checkoutKey string) (key, source string) {
 	}
 	return "", ""
 }
+
+// ResolveCheckoutLicenseKey returns the purchased guest key used to resubscribe an
+// existing self-hosted org, or "" for a first purchase. The canonical home is
+// checkoutKey; legacy guest rows that predate that column kept the key in licenseKey,
+// so fall back to it only when the source is a guest checkout (never an env/file
+// override, which is not a purchase and which Overwatch would not recognise).
+// This single resolver keeps the start handler, the config endpoint, and the UI in
+// agreement on whether a checkout is a resubscribe.
+func ResolveCheckoutLicenseKey(checkoutKey, licenseKey, source string) string {
+	if c := strings.TrimSpace(checkoutKey); c != "" {
+		return c
+	}
+	if source == LicenseSourceGuestCheckout {
+		return strings.TrimSpace(licenseKey)
+	}
+	return ""
+}

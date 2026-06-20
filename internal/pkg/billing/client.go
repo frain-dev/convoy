@@ -426,7 +426,12 @@ func makeRequestWithHeaders[T any](ctx context.Context, httpClient *http.Client,
 	}
 
 	if !baseResp.Status {
-		return nil, fmt.Errorf("billing service error: %s", baseResp.Message)
+		// Typed error carries the upstream status so callers map it without string matching.
+		msg := baseResp.Message
+		if msg == "" {
+			msg = fmt.Sprintf("billing service returned error status: %d", resp.StatusCode)
+		}
+		return nil, &Error{StatusCode: resp.StatusCode, Message: msg}
 	}
 
 	var data T

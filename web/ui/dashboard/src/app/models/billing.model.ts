@@ -34,6 +34,8 @@ export interface SelfHostedActiveCheckout {
 
 export interface SelfHostedBillingConfig {
 	license_configured?: boolean;
+	// Server-resolved: a prior guest purchase exists, so checkout is a resubscribe.
+	resubscribe?: boolean;
 	active_checkout?: SelfHostedActiveCheckout | null;
 }
 
