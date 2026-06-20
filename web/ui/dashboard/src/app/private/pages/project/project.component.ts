@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, OnInit, QueryList, ViewChildren, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { OrganisationStateService } from 'src/app/services/organisation-state/organisation-state.service';
 import { BillingStrategy } from 'src/app/models/billing.model';
@@ -12,7 +14,7 @@ import { BillingStrategy } from 'src/app/models/billing.model';
     styleUrls: ['./project.component.scss'],
     standalone: false
 })
-export class ProjectComponent implements OnInit {
+export class ProjectComponent implements OnInit, AfterViewInit {
 	sideBarItems = [
 		{
 			name: 'Event Deliveries',
@@ -51,8 +53,11 @@ export class ProjectComponent implements OnInit {
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;
 	projects: PROJECT[] = [];
-	activeNavTab: any;
+	tabIndicator = { left: 0, width: 0 };
 	billingStrategy: BillingStrategy = 'oss';
+
+	@ViewChildren('navTab', { read: ElementRef }) navTabs!: QueryList<ElementRef<HTMLElement>>;
+	private destroyRef = inject(DestroyRef);
 
 	constructor(
 		private privateService: PrivateService,
@@ -65,14 +70,28 @@ export class ProjectComponent implements OnInit {
 		await Promise.all([this.getProjectDetails(), this.getProjects(), this.loadBillingStrategy()]);
 	}
 
+	ngAfterViewInit() {
+		this.updateTabIndicator();
+		this.navTabs.changes.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.updateTabIndicator());
+		this.router.events
+			.pipe(
+				filter(event => event instanceof NavigationEnd),
+				takeUntilDestroyed(this.destroyRef)
+			)
+			.subscribe(() => this.updateTabIndicator());
+	}
+
 	private async loadBillingStrategy() {
 		this.billingStrategy = await this.orgState.getBillingStrategy();
 	}
 
-	get activeTab(): any {
-		const element = document.querySelector('.nav-tab.on') as any;
-		if (element) this.activeNavTab = element;
-		return element || this.activeNavTab;
+	// Position the sliding tab indicator over the active nav tab. Deferred a tick
+	// so routerLinkActive has applied the `on` class before we read geometry.
+	private updateTabIndicator() {
+		setTimeout(() => {
+			const active = this.navTabs?.find(tab => tab.nativeElement.classList.contains('on'))?.nativeElement;
+			if (active) this.tabIndicator = { left: active.offsetLeft, width: active.offsetWidth };
+		});
 	}
 
 	async getProjectDetails() {

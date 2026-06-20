@@ -271,10 +271,11 @@ export class PrivateComponent implements OnInit {
 		await this.checkInstanceAdminAccess();
 		this.showOrgDropdown = false;
 
-		this.router.navigateByUrl('/projects');
-		setInterval(() => {
+		try {
+			await this.router.navigateByUrl('/projects');
+		} finally {
 			this.isLoadingOrganisations = false;
-		}, 1000);
+		}
 	}
 
 	async checkForSelectedOrganisation() {

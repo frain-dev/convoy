@@ -139,40 +139,22 @@ export class PrivateService {
 		});
 	}
 
+	// Synchronous read of the active project from per-user storage (preferred)
+	// or the session cache. Returns null when nothing is cached; callers that
+	// need to fetch must call getProject({ projectId }) with an explicit id.
+	// The projectResolver populates this cache for /projects/:id routes, and
+	// setup-project fetches by its own route id.
 	get getProjectDetails() {
-		// Try to get from per-user storage first
-		const user = this.getUserProfile;
-		const userId = user?.uid;
+		const userId = this.getUserProfile?.uid;
 		if (userId) {
 			const userProject = this.getUserProject(userId);
 			if (userProject) return userProject;
 		}
-		
-		// Fallback to current session
+
 		const localProject = localStorage.getItem('CONVOY_PROJECT');
 		if (localProject) return JSON.parse(localProject);
 
-		return this.getProject().then(project => {
-			return project.data;
-		});
-	}
-
-    getProjectDetailsHideNotification() {
-		// Try to get from per-user storage first
-		const user = this.getUserProfile;
-		const userId = user?.uid;
-		if (userId) {
-			const userProject = this.getUserProject(userId);
-			if (userProject) return userProject;
-		}
-		
-		// Fallback to current session
-		const localProject = localStorage.getItem('CONVOY_PROJECT');
-		if (localProject) return JSON.parse(localProject);
-
-		return this.getProject({hideNotification: true}).then(project => {
-			return project.data;
-		});
+		return null;
 	}
 
 	getProject(requestDetails?: { refresh?: boolean; projectId?: string, hideNotification?: boolean }): Promise<HTTP_RESPONSE> {

@@ -63,7 +63,7 @@ export class SetupProjectComponent implements OnInit, AfterViewInit {
 		this.dialog.nativeElement.showModal();
 		if (!this.privateService.getProjectDetails?.uid) {
 			this.showLoader = true;
-			await this.privateService.getProjectDetails;
+			await this.privateService.getProject({ projectId: this.activeProjectId });
 			this.showLoader = false;
 		}
 

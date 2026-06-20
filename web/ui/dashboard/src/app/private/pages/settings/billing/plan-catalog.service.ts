@@ -1,12 +1,17 @@
 import {Injectable} from '@angular/core';
 import {Plan} from './plan.service';
 
-// Plan classification tokens. The data model does not carry a single stable
-// catalog key shared with the backend, so classification still matches on
-// product_type plus plan-name substrings; these constants only name the
-// literals that were previously inlined and do not change classification.
+// Plan classification. The pure classifiers use backend-guaranteed signals:
+// product_type (Overwatch plans.product_type is not-null: cloud | self_hosted)
+// and the canonical enterprise keys below. The default-to-overwatch merge
+// (findDefaultPlanComparison / resolvePlanForApi / shouldContactForMissingCloudPlan)
+// stays name-keyed by design: it mirrors the backend merge in
+// api/handlers/billing_plans.go (mergePlansWithFeatures), which joins config and
+// service plans by lowercased name.
 const PRODUCT_TYPE_SELF_HOSTED = 'self_hosted';
-const SELF_HOSTED_NAME_TOKENS = ['self-hosted', 'self hosted'];
+// Canonical enterprise plan keys. Backend (Overwatch plans.key) uses the
+// cloud_/self_hosted_ forms; the bundled default comparison plan uses 'enterprise'.
+const ENTERPRISE_KEYS = ['enterprise', 'cloud_enterprise', 'self_hosted_enterprise'];
 const ENTERPRISE_TOKEN = 'enterprise';
 const PRO_TOKENS = ['premium', 'pro'];
 
@@ -27,14 +32,12 @@ export interface ResolvedPlanForApi {
 @Injectable({ providedIn: 'root' })
 export class PlanCatalogService {
 	isSelfHostedPlan(plan: Plan): boolean {
-		const name = plan.name.toLowerCase();
-		return plan.product_type === PRODUCT_TYPE_SELF_HOSTED || SELF_HOSTED_NAME_TOKENS.some(token => name.includes(token));
+		return plan.product_type === PRODUCT_TYPE_SELF_HOSTED;
 	}
 
 	isEnterprisePlan(plan: Plan): boolean {
 		const key = (plan.key || plan.id || '').toLowerCase();
-		const name = plan.name.toLowerCase();
-		return key.includes(ENTERPRISE_TOKEN) || name.includes(ENTERPRISE_TOKEN);
+		return ENTERPRISE_KEYS.includes(key);
 	}
 
 	shouldContactForMissingCloudPlan(plan: Plan, isSelfHostedBilling: boolean, planExistsInOverwatch: boolean): boolean {

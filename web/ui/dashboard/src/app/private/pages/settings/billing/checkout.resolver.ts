@@ -28,7 +28,7 @@ export const checkoutResolver: ResolveFn<CheckoutResolverData> = (route: Activat
     return { needsPolling: false, checkoutProcessed: true, sessionId, orgId: '', token, attemptId };
   }
 
-  const orgId = privateService.getOrganisation?.uid || localStorage.getItem('CONVOY_ORG_ID') || '';
+  const orgId = privateService.getOrganisation?.uid || '';
 
   return { needsPolling: true, checkoutProcessed: false, sessionId, orgId, token, attemptId };
 };
