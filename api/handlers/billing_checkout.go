@@ -40,7 +40,15 @@ const (
 )
 
 func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request) {
-	instanceBilling, _ := configuration.New(h.A.Logger, h.A.DB).LoadInstanceBillingConfig(r.Context())
+	instanceBilling, err := configuration.New(h.A.Logger, h.A.DB).LoadInstanceBillingConfig(r.Context())
+	// Fail closed on a real read error like the checkout handlers, which load the
+	// same config: a DB failure must not be reported as an unlicensed instance.
+	// ErrConfigNotFound is the legitimate fresh-instance state, so let it fall
+	// through to the unlicensed response below.
+	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	instanceLicenseKey := ""
 	if instanceBilling != nil {
 		instanceLicenseKey = instanceBilling.LicenseKey
