@@ -57,14 +57,11 @@ func (h *BillingHandler) selfHostedLicenseKey(w http.ResponseWriter, r *http.Req
 		return "", false
 	}
 
-	// Overwatch keys the self-hosted org/subscription by the purchased guest key it
-	// issued. Under an env/file override the effective license_key is the env key,
-	// which Overwatch does not know, so address Overwatch with the preserved checkout
-	// key. Fall back to the effective key for legacy rows that predate the column.
-	billingKey := strings.TrimSpace(instanceBilling.CheckoutLicenseKey)
-	if billingKey == "" {
-		billingKey = effectiveKey
-	}
+	// The billing view follows the effective license: an env/file override (e.g. a
+	// payment-link license) is Overwatch-issued, so address Overwatch with it.
+	// Otherwise use the purchased checkout key Overwatch issued at guest checkout,
+	// falling back to the effective key for legacy rows that predate the column.
+	billingKey := config.ResolveBillingLicenseKey(effectiveKey, instanceBilling.CheckoutLicenseKey, instanceBilling.LicenseKeySource)
 
 	return billingKey, true
 }
@@ -128,9 +125,9 @@ func (h *BillingHandler) DeleteSelfHostedSubscription(w http.ResponseWriter, r *
 
 	// Rebuild the local licenser around the effective key. The env/file key and the
 	// db checkout key are both purchased keys; they differ only by source, and
-	// precedence makes the env/file key effective when set. Overwatch is addressed
-	// by the db checkout key it issued (used for the cancel above), but local
-	// entitlements must track whichever key precedence selects.
+	// precedence makes the env/file key effective when set. The cancel above and the
+	// local entitlements both follow that effective key (selfHostedLicenseKey returns
+	// the env key when its source is env, else the db checkout key).
 	effectiveKey, err := h.effectiveInstanceLicenseKey(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))

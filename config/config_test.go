@@ -724,3 +724,47 @@ func TestResolveCheckoutLicenseKey(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveBillingLicenseKey(t *testing.T) {
+	tests := []struct {
+		name         string
+		effectiveKey string
+		checkoutKey  string
+		source       string
+		expected     string
+	}{
+		{
+			name:         "env override addresses overwatch with the effective key",
+			effectiveKey: "  env-key  ",
+			checkoutKey:  "checkout-key",
+			source:       LicenseSourceEnv,
+			expected:     "env-key",
+		},
+		{
+			name:         "guest checkout uses the purchased checkout key",
+			effectiveKey: "checkout-key",
+			checkoutKey:  "  checkout-key  ",
+			source:       LicenseSourceGuestCheckout,
+			expected:     "checkout-key",
+		},
+		{
+			name:         "legacy guest row without checkout column falls back to effective key",
+			effectiveKey: "  legacy-guest-key  ",
+			checkoutKey:  "",
+			source:       LicenseSourceGuestCheckout,
+			expected:     "legacy-guest-key",
+		},
+		{
+			name:         "env source with blank effective key falls back to checkout key",
+			effectiveKey: "  ",
+			checkoutKey:  "checkout-key",
+			source:       LicenseSourceEnv,
+			expected:     "checkout-key",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expected, ResolveBillingLicenseKey(tc.effectiveKey, tc.checkoutKey, tc.source))
+		})
+	}
+}
