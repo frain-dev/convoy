@@ -73,6 +73,10 @@ func (s *BillingIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *BillingIntegrationTestSuite) SetupTest() {
+	// The suite clones one DB in SetupSuite and shares it across tests, so purge before
+	// each test to stop seeded roles (e.g. instance admins) leaking between cases.
+	testdb.PurgeDB(s.T(), s.ConvoyApp.A.DB)
+
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user

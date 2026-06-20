@@ -313,8 +313,12 @@ func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID, subsc
 }
 
 func (m *MockBillingClient) StartGuestCheckout(ctx context.Context, req StartGuestCheckoutRequest) (*Response[Checkout], error) {
-	if req.Email == "" || req.PlanID == "" || req.Host == "" || req.AttemptID == "" || req.CheckoutNonceHash == "" {
-		return nil, &Error{Message: "email, plan_id, host, attempt_id, and checkout_nonce_hash are required"}
+	if req.PlanID == "" || req.Host == "" || req.AttemptID == "" || req.CheckoutNonceHash == "" {
+		return nil, &Error{Message: "plan_id, host, attempt_id, and checkout_nonce_hash are required"}
+	}
+	// Mirror Overwatch: email is optional on resubscribe (a license key is present).
+	if req.Email == "" && req.LicenseKey == "" {
+		return nil, &Error{Message: "email is required"}
 	}
 
 	return &Response[Checkout]{
