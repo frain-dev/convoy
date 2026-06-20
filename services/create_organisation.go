@@ -87,7 +87,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	if cfg.Billing.OrganisationHost != "" {
 		hostForBilling = cfg.Billing.OrganisationHost
 	}
-	if cfg.Billing.Enabled && hostForBilling != "" {
+	if cfg.UsesOrgBilling() && hostForBilling != "" {
 		orgCopy := *org
 		cfgCopy := cfg
 		go RunBillingOrganisationSync(

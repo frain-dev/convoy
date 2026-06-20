@@ -4,9 +4,21 @@ import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {GeneralService} from 'src/app/services/general/general.service';
+import {BillingPaymentDetailsService} from './billing/billing-payment-details.service';
 import {CheckoutResolverData} from './billing/checkout.resolver';
+import {pollUntil} from 'src/app/utils/poll.util';
+import {CHECKOUT_STATUS} from 'src/app/models/billing.model';
 
-export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing' | 'early adopter features';
+export const SETTINGS_PAGE = {
+	ORGANISATION: 'organisation settings',
+	CONFIGURATION: 'configuration settings',
+	TOKENS: 'personal access tokens',
+	TEAM: 'team',
+	BILLING: 'usage and billing',
+	EARLY_ADOPTER: 'early adopter features'
+} as const;
+
+export type SETTINGS = typeof SETTINGS_PAGE[keyof typeof SETTINGS_PAGE];
 
 @Component({
     selector: 'convoy-settings',
@@ -15,14 +27,13 @@ export type SETTINGS = 'organisation settings' | 'configuration settings' | 'per
     standalone: false
 })
 export class SettingsComponent implements OnInit {
-	activePage: SETTINGS = 'organisation settings';
-	billingEnabled = false;
+	activePage: SETTINGS = SETTINGS_PAGE.ORGANISATION;
 	canAccessBilling = false;
 	canAccessEarlyAdopterFeatures = false;
 	isVerifyingSubscription = false;
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
-		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
-		{ name: 'team', icon: 'team', svg: 'stroke' }
+		{ name: SETTINGS_PAGE.ORGANISATION, icon: 'org', svg: 'fill' },
+		{ name: SETTINGS_PAGE.TEAM, icon: 'team', svg: 'stroke' }
 	];
 
 	constructor(
@@ -31,44 +42,53 @@ export class SettingsComponent implements OnInit {
 		public licenseService: LicensesService,
 		private httpService: HttpService,
 		private rbacService: RbacService,
-		private generalService: GeneralService
+		private generalService: GeneralService,
+		private billingPaymentDetailsService: BillingPaymentDetailsService
 	) {}
 
 	async ngOnInit() {
 		await this.checkBillingAccess();
-		this.checkBillingStatus();
+		this.updateSettingsMenu();
 
 		const checkoutData: CheckoutResolverData = this.route.snapshot.data['checkout'];
 		if (checkoutData?.checkoutProcessed) {
+			this.setActivePageWithLicenseCheck(SETTINGS_PAGE.BILLING);
 			this.cleanupCheckoutParams();
+		} else if (checkoutData?.token || checkoutData?.attemptId) {
+			this.setActivePageWithLicenseCheck(SETTINGS_PAGE.BILLING);
+			this.cleanupCheckoutParams();
+			this.completeSelfHostedCheckout(checkoutData.token, checkoutData.attemptId);
 		} else if (checkoutData?.needsPolling) {
+			this.setActivePageWithLicenseCheck(SETTINGS_PAGE.BILLING);
 			this.pollSubscriptionStatus(checkoutData.orgId);
 		}
 
-		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'organisation settings';
-		this.setActivePageWithLicenseCheck(requestedPage);
+		if (!checkoutData?.checkoutProcessed && !checkoutData?.token && !checkoutData?.attemptId && !checkoutData?.needsPolling) {
+			const requestedPage = this.route.snapshot.queryParams?.activePage ?? SETTINGS_PAGE.ORGANISATION;
+			this.setActivePageWithLicenseCheck(requestedPage);
+		}
 	}
-	
+
 	private async pollSubscriptionStatus(orgId: string) {
 		this.isVerifyingSubscription = true;
-		const maxAttempts = 30;
-		const pollInterval = 2000;
 
-		for (let i = 0; i < maxAttempts; i++) {
-			await new Promise(r => setTimeout(r, pollInterval));
-			try {
-				const response = await this.httpService.request({
-					url: `/billing/organisations/${orgId}/subscription`,
-					method: 'get',
-					hideNotification: true
-				});
-				if (response.data?.status === 'active') {
-					this.generalService.showNotification({ message: 'Subscription activated successfully!', style: 'success' });
-					this.isVerifyingSubscription = false;
-					this.cleanupCheckoutParams();
-					return;
-				}
-			} catch (_) {}
+		const verified = await pollUntil({
+			request: () => this.httpService.request({
+				url: `/billing/organisations/${orgId}/subscription`,
+				method: 'get',
+				hideNotification: true
+			}),
+			isDone: (response: any) => response.data?.status === CHECKOUT_STATUS.ACTIVE,
+			delayFirst: true
+		});
+
+		if (verified) {
+			await this.licenseService.loadAllLicenses();
+			this.billingPaymentDetailsService.notifyCheckoutSubscriptionVerified();
+			this.generalService.showNotification({ message: 'Subscription activated successfully!', style: 'success' });
+			this.isVerifyingSubscription = false;
+			this.cleanupCheckoutParams();
+			return;
 		}
 
 		this.generalService.showNotification({ message: 'Unable to verify subscription. Please check billing page.', style: 'warning' });
@@ -76,8 +96,35 @@ export class SettingsComponent implements OnInit {
 		this.cleanupCheckoutParams();
 	}
 
+	private async completeSelfHostedCheckout(token: string, attemptId: string) {
+		this.isVerifyingSubscription = true;
+
+		const completed = await pollUntil({
+			request: () => this.httpService.request({
+				url: '/billing/sh_checkout/complete',
+				method: 'post',
+				body: { token, attempt_id: attemptId },
+				hideNotification: true
+			}),
+			isDone: (response: any) => response.data?.status === CHECKOUT_STATUS.COMPLETED
+		});
+
+		if (completed) {
+			if (attemptId) localStorage.setItem(`checkout_processed_${attemptId}`, 'true');
+			await this.licenseService.loadAllLicenses();
+			this.generalService.showNotification({ message: 'License activated successfully!', style: 'success' });
+			this.isVerifyingSubscription = false;
+			this.cleanupCheckoutParams();
+			return;
+		}
+
+		this.generalService.showNotification({ message: 'Payment is still pending. You can resume checkout from Usage and Billing shortly.', style: 'warning' });
+		this.isVerifyingSubscription = false;
+		this.cleanupCheckoutParams();
+	}
+
 	private cleanupCheckoutParams() {
-		const activePage = this.route.snapshot.queryParams?.['activePage'] || 'usage and billing';
+		const activePage = this.route.snapshot.queryParams?.['activePage'] || SETTINGS_PAGE.BILLING;
 		this.router.navigate([], {
 			relativeTo: this.route,
 			queryParams: { activePage },
@@ -85,27 +132,12 @@ export class SettingsComponent implements OnInit {
 		});
 	}
 
-	private async checkBillingStatus() {
-		try {
-			const response = await this.httpService.request({
-				url: '/billing/enabled',
-				method: 'get',
-				hideNotification: true
-			});
-			// Billing is now controlled by backend configuration, not entitlements
-			this.billingEnabled = response.data?.enabled || false;
-			this.updateSettingsMenu();
-		} catch (error) {
-			console.warn('Failed to check billing status:', error);
-			this.billingEnabled = false;
-			this.updateSettingsMenu();
-		}
-	}
-
 	private async checkBillingAccess() {
 		try {
 			const userRole = await this.rbacService.getUserRole();
-			this.canAccessBilling = userRole === 'BILLING_ADMIN' || userRole === 'ORGANISATION_ADMIN';
+			// Instance admins need billing access for the self-hosted instance license flow;
+			// cloud org billing still relies on the backend's org-scoped billing checks.
+			this.canAccessBilling = userRole === 'BILLING_ADMIN' || userRole === 'ORGANISATION_ADMIN' || userRole === 'INSTANCE_ADMIN';
 			this.canAccessEarlyAdopterFeatures = true;
 		} catch (error) {
 			console.warn('Failed to check billing access:', error);
@@ -116,24 +148,24 @@ export class SettingsComponent implements OnInit {
 
 	private updateSettingsMenu() {
 		this.settingsMenu = [
-			{ name: 'organisation settings', icon: 'org', svg: 'fill' },
-			{ name: 'team', icon: 'team', svg: 'stroke' }
+			{ name: SETTINGS_PAGE.ORGANISATION, icon: 'org', svg: 'fill' },
+			{ name: SETTINGS_PAGE.TEAM, icon: 'team', svg: 'stroke' }
 		];
 
-		if (this.billingEnabled && this.canAccessBilling) {
-			this.settingsMenu.push({ name: 'usage and billing', icon: 'status', svg: 'stroke' });
+		if (this.canAccessBilling) {
+			this.settingsMenu.push({ name: SETTINGS_PAGE.BILLING, icon: 'status', svg: 'stroke' });
 		}
 
 		if (this.canAccessEarlyAdopterFeatures) {
-			this.settingsMenu.push({ name: 'early adopter features', icon: 'settings', svg: 'fill' });
+			this.settingsMenu.push({ name: SETTINGS_PAGE.EARLY_ADOPTER, icon: 'settings', svg: 'fill' });
 		}
 
-		if (this.activePage === 'usage and billing' && (!this.billingEnabled || !this.canAccessBilling)) {
-			this.toggleActivePage('organisation settings');
+		if (this.activePage === SETTINGS_PAGE.BILLING && !this.canAccessBilling) {
+			this.toggleActivePage(SETTINGS_PAGE.ORGANISATION);
 		}
 
-		if (this.activePage === 'early adopter features' && !this.canAccessEarlyAdopterFeatures) {
-			this.toggleActivePage('organisation settings');
+		if (this.activePage === SETTINGS_PAGE.EARLY_ADOPTER && !this.canAccessEarlyAdopterFeatures) {
+			this.toggleActivePage(SETTINGS_PAGE.ORGANISATION);
 		}
 	}
 
@@ -141,8 +173,8 @@ export class SettingsComponent implements OnInit {
 		// CREATE_USER entitlement removed - user limits handle this now
 		// Team page access is now controlled by user limits on the backend
 
-		if (requestedPage === 'usage and billing' && !this.canAccessBilling) {
-			this.toggleActivePage('organisation settings');
+		if (requestedPage === SETTINGS_PAGE.BILLING && !this.canAccessBilling) {
+			this.toggleActivePage(SETTINGS_PAGE.ORGANISATION);
 			return;
 		}
 
@@ -162,17 +194,6 @@ export class SettingsComponent implements OnInit {
 	}
 
 	getUserLimitMessage(): string {
-		if (!this.licenseService.hasLicense('user_limit')) {
-			if (!this.licenseService.isLimitAvailable('user_limit')) {
-				return 'Business';
-			}
-			if (this.licenseService.isLimitAvailable('user_limit') && this.licenseService.isLimitReached('user_limit')) {
-				const limitInfo = this.licenseService.getLimitInfo('user_limit');
-				const current = limitInfo?.current ?? 0;
-				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
-				return `Limit reached (${current}/${limit})`;
-			}
-		}
-		return '';
+		return this.licenseService.limitMessage('user_limit');
 	}
 }

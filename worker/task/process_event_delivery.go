@@ -120,6 +120,10 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
 			return &DeliveryError{Err: err}
 		}
+		if err = license.EnsureProjectEnabled(deps.Licenser, project.UID); err != nil {
+			tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
+			return &DeliveryError{Err: err}
+		}
 
 		endpoint, err := deps.EndpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
 		if err != nil {

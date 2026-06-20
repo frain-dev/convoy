@@ -19,7 +19,7 @@ func TestCheckOrganisationProjectLimit_NoKey_ReturnsFalseNil(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	// Billing enabled, mock returns no org license key → resolveKey returns "" → (false, nil).
+	// Cloud org billing configured, mock returns no org license key → resolveKey returns "" → (false, nil).
 	mockBilling := &billing.MockBillingClient{}
 	// GetOrganisationLicenseKey left empty so Data.Key is ""
 
@@ -32,7 +32,7 @@ func TestCheckOrganisationProjectLimit_NoKey_ReturnsFalseNil(t *testing.T) {
 		BillingClient: mockBilling,
 		ProjectRepo:   mockProjectRepo,
 		Cfg: config.Configuration{
-			Billing:    config.BillingConfiguration{Enabled: true},
+			Billing:    config.BillingConfiguration{APIKey: "test-key"},
 			LicenseKey: "",
 		},
 		Logger: log.New("convoy", log.LevelInfo),

@@ -149,7 +149,7 @@
 @if (!licenseService.hasLicense('PortalLinks')) {
   <div class="bg-white-64 backdrop-blur-[8px] absolute top-0 h-full w-full py-80px">
     <div convoy-empty-state imgSrc="/assets/img/svg/page-locked.svg" heading="You currently do not have access to portal links on this plan" description="Upgrade your current plan to access Portal Links." id="license-empty-state">
-      <a emptyStateCTA href="https://cloud.getconvoy.io" target="_blank">
+      <a emptyStateCTA routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }">
         <button convoy-button class="mt-36px">Upgrade Plan</button>
       </a>
     </div>

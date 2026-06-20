@@ -1,15 +1,12 @@
 import {Injectable} from '@angular/core';
-import {from, Observable, of} from 'rxjs';
+import {from, Observable, of, Subject} from 'rxjs';
 import {catchError, map, mergeMap} from 'rxjs/operators';
 import {HttpService} from 'src/app/services/http/http.service';
+import {BillingStrategy} from 'src/app/models/billing.model';
+import {BillingEndpoints} from './billing-endpoints';
 
-export interface PaymentMethodUpdate {
-  cardholderName: string;
-  cardNumber: string;
-  expiryMonth: string;
-  expiryYear: string;
-  cvv: string;
-}
+// Tax id type used when a country has no specific match in the provider catalog.
+const DEFAULT_TAX_ID_TYPE = 'us_ein';
 
 export interface PaymentMethodDetails {
   cardholderName: string;
@@ -62,7 +59,23 @@ export interface VatInfoDetails {
 
 @Injectable({ providedIn: 'root' })
 export class BillingPaymentDetailsService {
+  private billingStrategy: BillingStrategy = 'cloud';
+
+  // Emitted when a post-checkout subscription poll confirms the new subscription
+  // is active. The billing page reloads its data so the plan card, Manage plan,
+  // and payment details reflect the activated subscription without a full refresh.
+  private checkoutSubscriptionVerifiedSource = new Subject<void>();
+  checkoutSubscriptionVerified$ = this.checkoutSubscriptionVerifiedSource.asObservable();
+
   constructor(private httpService: HttpService) {}
+
+  notifyCheckoutSubscriptionVerified(): void {
+    this.checkoutSubscriptionVerifiedSource.next();
+  }
+
+  setBillingStrategy(strategy: BillingStrategy): void {
+    this.billingStrategy = strategy;
+  }
 
   getBillingConfig(): Observable<any> {
     return from(this.httpService.request({
@@ -90,9 +103,10 @@ export class BillingPaymentDetailsService {
   }
 
   getPaymentMethods(): Observable<PaymentMethod[]> {
-    const orgId = this.getOrganisationId();
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId);
     return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}/payment_methods`,
+      url,
       method: 'get'
     })).pipe(
       map((response: any) => {
@@ -106,9 +120,10 @@ export class BillingPaymentDetailsService {
   }
 
   getPaymentMethodDetails(): Observable<PaymentMethodDetails> {
-    const orgId = this.getOrganisationId();
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId);
     return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}/payment_methods`,
+      url,
       method: 'get'
     })).pipe(
       map((response: any) => {
@@ -146,25 +161,31 @@ export class BillingPaymentDetailsService {
   }
 
   setDefaultPaymentMethod(pmId: string): Observable<any> {
-    const orgId = this.getOrganisationId();
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = `${BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId)}/${pmId}/default`;
+
     return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}/payment_methods/${pmId}/default`,
+      url,
       method: 'put'
     }));
   }
 
   deletePaymentMethod(pmId: string): Observable<any> {
-    const orgId = this.getOrganisationId();
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = `${BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId)}/${pmId}`;
+
     return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}/payment_methods/${pmId}`,
+      url,
       method: 'delete'
     }));
   }
 
   getBillingAddress(): Observable<BillingAddressDetails> {
-    const orgId = this.getOrganisationId();
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'organisation', orgId);
+
     return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}`,
+      url,
       method: 'get'
     })).pipe(
       map((response: any) => {
@@ -197,21 +218,31 @@ export class BillingPaymentDetailsService {
   }
 
   getVatInfo(): Observable<VatInfoDetails> {
-    const orgId = this.getOrganisationId();
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'organisation', orgId);
+
     return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}`,
+      url,
       method: 'get'
     })).pipe(
       map((response: any) => {
         const org = response.data || {};
         return {
-          businessName: org.name || 'Business Name',
+          businessName: org.billing_name ?? org.name ?? 'Business Name',
           country: org.billing_country || '',
           vatNumber: org.tax_number || ''
         };
       }),
       catchError((error) => {
         console.error('Failed to fetch VAT info:', error);
+        if (this.billingStrategy === 'licensed_self_hosted') {
+          return of({
+            businessName: '',
+            country: '',
+            vatNumber: ''
+          });
+        }
+
         // Fallback to organisation data if billing data not available
         return from(this.httpService.request({
           url: `/organisations/${orgId}`,
@@ -236,9 +267,11 @@ export class BillingPaymentDetailsService {
   }
 
   getSetupIntent(): Observable<any> {
-    const orgId = this.getOrganisationId();
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = `${BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId)}/setup_intent`;
+
     return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}/payment_methods/setup_intent`,
+      url,
       method: 'get'
     }));
   }
@@ -250,18 +283,9 @@ export class BillingPaymentDetailsService {
     }));
   }
 
-  updatePaymentMethod(paymentMethod: PaymentMethodUpdate, returnFullError: boolean = false): Observable<any> {
-    const orgId = this.getOrganisationId();
-    return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}/payment_methods`,
-      method: 'post',
-      body: paymentMethod,
-      returnFullError: returnFullError
-    }));
-  }
-
   updateBillingAddress(billingAddress: BillingAddressUpdate): Observable<any> {
-    const orgId = this.getOrganisationId();
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const url = BillingEndpoints.billingUrl(this.billingStrategy, 'address', orgId);
 
     const addressData = {
       billing_name: billingAddress.name,
@@ -274,14 +298,17 @@ export class BillingPaymentDetailsService {
     };
 
     return from(this.httpService.request({
-      url: `/billing/organisations/${orgId}/address`,
+      url,
       method: 'put',
       body: addressData
     }));
   }
 
   updateVatInfo(vatInfo: VatInfoUpdate): Observable<any> {
-    const orgId = this.getOrganisationId();
+    const orgId = this.httpService.getOrganisationIdOrThrow();
+    const orgUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'organisation', orgId);
+    const taxUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'tax_id', orgId);
+    const addressUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'address', orgId);
 
     const orgUpdateData = {
       name: vatInfo.businessName
@@ -295,14 +322,14 @@ export class BillingPaymentDetailsService {
 
         // Fetch current organisation data to preserve existing address fields
         return from(this.httpService.request({
-          url: `/billing/organisations/${orgId}`,
+          url: orgUrl,
           method: 'get'
         })).pipe(
           mergeMap((orgResponse: any) => {
             const org = orgResponse.data || {};
             // Include all existing address fields, only update the country
             const addressData = {
-              billing_name: org.billing_name || org.name || '',
+              billing_name: vatInfo.businessName,
               billing_address: org.billing_address || '',
               billing_address_line2: org.billing_address_line2 || '',
               billing_city: org.billing_city || '',
@@ -311,21 +338,25 @@ export class BillingPaymentDetailsService {
               billing_country: vatInfo.country
             };
 
-            return from(this.httpService.request({
-              url: `/organisations/${orgId}`,
-              method: 'put',
-              body: orgUpdateData
-            })).pipe(
+            const orgUpdate: Observable<any> = this.billingStrategy === 'licensed_self_hosted'
+              ? of(null)
+              : from(this.httpService.request({
+                url: `/organisations/${orgId}`,
+                method: 'put',
+                body: orgUpdateData
+              }));
+
+            return orgUpdate.pipe(
               mergeMap(() => {
                 return from(this.httpService.request({
-                  url: `/billing/organisations/${orgId}/tax_id`,
+                  url: taxUrl,
                   method: 'put',
                   body: taxData
                 }));
               }),
               mergeMap(() => {
                 return from(this.httpService.request({
-                  url: `/billing/organisations/${orgId}/address`,
+                  url: addressUrl,
                   method: 'put',
                   body: addressData
                 }));
@@ -357,38 +388,18 @@ export class BillingPaymentDetailsService {
 
         if (!taxIdType) {
           console.warn(`No tax ID type found for country code: ${countryCode}`);
-          taxIdType = 'us_ein';
+          taxIdType = DEFAULT_TAX_ID_TYPE;
         }
 
         return taxIdType;
       }),
       catchError((error) => {
         console.error('Failed to fetch tax ID types:', error);
-        return of('us_ein');
+        return of(DEFAULT_TAX_ID_TYPE);
       })
     );
   }
 
 
 
-  private getOrganisationId(): string {
-    const org = localStorage.getItem('CONVOY_ORG');
-
-    if (!org) {
-      throw new Error('No organisation found. Please refresh the page and try again.');
-    }
-
-    try {
-      const orgData = JSON.parse(org);
-
-      if (!orgData.uid) {
-        throw new Error('Invalid organisation data. Please refresh the page and try again.');
-      }
-
-      return orgData.uid;
-    } catch (error) {
-      console.error('Error parsing organisation data from localStorage:', error);
-      throw new Error('Invalid organisation data. Please refresh the page and try again.');
-    }
-  }
 }

@@ -9,14 +9,27 @@ export interface PlanFeature {
   value: string;
 }
 
+export interface PlanPricingOption {
+  interval: string;
+  amount_cents?: number;
+  currency?: string;
+  trial_days?: number;
+}
+
 export interface Plan {
   id: string;
+  key?: string;
   name: string;
+  product_type?: string;
   description: string;
   price: number;
   currency: string;
   interval: string;
+  intervals?: string[];
+  pricing_options?: PlanPricingOption[];
   features: PlanFeature[];
+  checkout_enabled?: boolean;
+  requires_contact?: boolean;
   isPopular?: boolean;
   isCurrent?: boolean;
 }
@@ -66,11 +79,14 @@ export class PlanService {
         },
         {
           id: 'enterprise',
+          key: 'enterprise',
           name: 'Enterprise',
           description: 'For large organizations',
-          price: 299,
+          price: 0,
           currency: 'USD',
           interval: 'month',
+          checkout_enabled: false,
+          requires_contact: true,
           features: [
             { name: 'Static IPs', category: 'core', value: 'Supported' },
             { name: 'Incoming & Outgoing Webhooks', category: 'core', value: 'Supported' },

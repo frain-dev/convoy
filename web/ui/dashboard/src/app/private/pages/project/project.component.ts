@@ -1,8 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, OnInit, QueryList, ViewChildren, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { OrganisationStateService } from 'src/app/services/organisation-state/organisation-state.service';
+import { BillingStrategy } from 'src/app/models/billing.model';
 
 @Component({
     selector: 'app-project',
@@ -10,7 +14,7 @@ import { LicensesService } from 'src/app/services/licenses/licenses.service';
     styleUrls: ['./project.component.scss'],
     standalone: false
 })
-export class ProjectComponent implements OnInit {
+export class ProjectComponent implements OnInit, AfterViewInit {
 	sideBarItems = [
 		{
 			name: 'Event Deliveries',
@@ -49,22 +53,45 @@ export class ProjectComponent implements OnInit {
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;
 	projects: PROJECT[] = [];
-	activeNavTab: any;
+	tabIndicator = { left: 0, width: 0 };
+	billingStrategy: BillingStrategy = 'oss';
+
+	@ViewChildren('navTab', { read: ElementRef }) navTabs!: QueryList<ElementRef<HTMLElement>>;
+	private destroyRef = inject(DestroyRef);
 
 	constructor(
 		private privateService: PrivateService,
 		private router: Router,
-		public licenseService: LicensesService
+		public licenseService: LicensesService,
+		private orgState: OrganisationStateService
 	) {}
 
-	ngOnInit() {
-		Promise.all([this.getProjectDetails(), this.getProjects()]);
+	async ngOnInit() {
+		await Promise.all([this.getProjectDetails(), this.getProjects(), this.loadBillingStrategy()]);
 	}
 
-	get activeTab(): any {
-		const element = document.querySelector('.nav-tab.on') as any;
-		if (element) this.activeNavTab = element;
-		return element || this.activeNavTab;
+	ngAfterViewInit() {
+		this.updateTabIndicator();
+		this.navTabs.changes.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.updateTabIndicator());
+		this.router.events
+			.pipe(
+				filter(event => event instanceof NavigationEnd),
+				takeUntilDestroyed(this.destroyRef)
+			)
+			.subscribe(() => this.updateTabIndicator());
+	}
+
+	private async loadBillingStrategy() {
+		this.billingStrategy = await this.orgState.getBillingStrategy();
+	}
+
+	// Position the sliding tab indicator over the active nav tab. Deferred a tick
+	// so routerLinkActive has applied the `on` class before we read geometry.
+	private updateTabIndicator() {
+		setTimeout(() => {
+			const active = this.navTabs?.find(tab => tab.nativeElement.classList.contains('on'))?.nativeElement;
+			if (active) this.tabIndicator = { left: active.offsetLeft, width: active.offsetWidth };
+		});
 	}
 
 	async getProjectDetails() {
@@ -121,28 +148,14 @@ export class ProjectComponent implements OnInit {
 	}
 
 	get isDisabled(): boolean {
-		const org = localStorage.getItem('CONVOY_ORG');
-		if (!org) return false;
-		try {
-			const organisationDetails = JSON.parse(org);
-			return organisationDetails.disabled_at != null && organisationDetails.disabled_at !== undefined;
-		} catch {
-			return false;
-		}
+		return this.orgState.isDisabled();
+	}
+
+	get disabledOrganisationMessage(): string {
+		return this.orgState.disabledOrganisationMessage(this.billingStrategy);
 	}
 
 	getProjectLimitMessage(): string {
-		if (!this.licenseService.hasLicense('project_limit')) {
-			if (!this.licenseService.isLimitAvailable('project_limit')) {
-				return 'Business';
-			}
-			if (this.licenseService.isLimitAvailable('project_limit') && this.licenseService.isLimitReached('project_limit')) {
-				const limitInfo = this.licenseService.getLimitInfo('project_limit');
-				const current = limitInfo?.current ?? 0;
-				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
-				return `Limit reached (${current}/${limit})`;
-			}
-		}
-		return '';
+		return this.licenseService.limitMessage('project_limit');
 	}
 }

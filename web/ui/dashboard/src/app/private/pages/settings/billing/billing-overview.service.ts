@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
-import {from, Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
 import {HttpService} from 'src/app/services/http/http.service';
+import {BillingStrategy} from 'src/app/models/billing.model';
+import {BillingEndpoints} from './billing-endpoints';
 
 export interface BillingOverview {
   plan: {
@@ -20,57 +20,51 @@ export interface BillingOverview {
 
 @Injectable({ providedIn: 'root' })
 export class BillingOverviewService {
-  bootstrapPromise: Promise<void> | null = null;
+	bootstrapPromise: Promise<void> | null = null;
+	private billingStrategy: BillingStrategy = 'cloud';
 
-  constructor(private httpService: HttpService) {}
+	constructor(private httpService: HttpService) {}
 
-  getOverview(): Observable<BillingOverview> {
-    return from(this.getOverviewData()).pipe(
-      map(data => this.formatOverviewData(data))
-    );
-  }
+	setBootstrapPromise(promise: Promise<void> | null): void {
+		this.bootstrapPromise = promise;
+	}
 
-  setBootstrapPromise(promise: Promise<void>): void {
-    this.bootstrapPromise = promise;
-  }
+	setBillingStrategy(strategy: BillingStrategy): void {
+		this.billingStrategy = strategy;
+	}
 
-  async waitForBootstrap(): Promise<void> {
-    if (this.bootstrapPromise) {
-      await this.bootstrapPromise;
-    }
-  }
+	// Canonical overview fetch (subscription first, then usage + payment).
+	// Fail-closed: a subscription error returns null and skips the other calls.
+	async getOverviewData() {
+		try {
+			const orgId = this.getOrganisationId();
+			const subscriptionUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'subscription', orgId);
+			const paymentMethodsUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId);
 
-  async ensureBillingReady(): Promise<void> {
-    const orgId = this.getOrganisationId();
-    await this.httpService.request({ url: `/billing/organisations/${orgId}/subscription`, method: 'get', hideNotification: true });
-  }
+			// First call - if this fails, don't make other calls
+			const subscriptionResponse = await this.httpService.request({ url: subscriptionUrl, method: 'get', hideNotification: true });
 
-  async getOverviewData() {
-    try {
-      const orgId = this.getOrganisationId();
+			// Only make other calls if subscription call succeeded
+			const [usageResponse, paymentResponse] = await Promise.all([
+				this.billingStrategy === 'licensed_self_hosted'
+					? Promise.resolve({ data: null })
+					: this.httpService.request({ url: BillingEndpoints.billingUrl(this.billingStrategy, 'usage', orgId), method: 'get', hideNotification: true }),
+				this.httpService.request({ url: paymentMethodsUrl, method: 'get', hideNotification: true })
+			]);
 
-      // First call - if this fails, don't make other calls
-      const subscriptionResponse = await this.httpService.request({ url: `/billing/organisations/${orgId}/subscription`, method: 'get', hideNotification: true });
+			return {
+				subscription: subscriptionResponse.data,
+				usage: usageResponse.data,
+				payment: paymentResponse.data
+			};
+		} catch (error) {
+			console.warn('Failed to load overview data:', error);
+			// Return null to indicate failure - don't make additional calls
+			return null;
+		}
+	}
 
-      // Only make other calls if subscription call succeeded
-      const [usageResponse, paymentResponse] = await Promise.all([
-        this.httpService.request({ url: `/billing/organisations/${orgId}/usage`, method: 'get', hideNotification: true }),
-        this.httpService.request({ url: `/billing/organisations/${orgId}/payment_methods`, method: 'get', hideNotification: true })
-      ]);
-
-      return {
-        subscription: subscriptionResponse.data,
-        usage: usageResponse.data,
-        payment: paymentResponse.data
-      };
-    } catch (error) {
-      console.warn('Failed to load overview data:', error);
-      // Return null to indicate failure - don't make additional calls
-      return null;
-    }
-  }
-
-  formatOverviewData(data: any): BillingOverview {
+	formatOverviewData(data: any): BillingOverview {
     if (!data) {
       return {
         plan: { name: 'No plan', price: '$0' },
@@ -143,7 +137,7 @@ export class BillingOverviewService {
   }
 
   private getOrganisationId(): string {
-    const org = localStorage.getItem('CONVOY_ORG');
-    return org ? JSON.parse(org).uid : '';
+    const org = this.httpService.getOrganisation();
+    return org ? org.uid : '';
   }
 }

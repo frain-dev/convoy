@@ -134,7 +134,7 @@
   }
 
   <div class="mt-60px">
-    @if (!shouldMountAppRouter()) {
+    @if (!isLoadingOrganisations && !shouldMountAppRouter()) {
       <div
         convoy-empty-state
         imgSrc="/assets/img/organizations-empty-state.svg"

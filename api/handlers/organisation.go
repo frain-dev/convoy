@@ -172,7 +172,7 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.A.Cfg.Billing.Enabled && h.A.BillingClient != nil {
+	if h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil {
 		if err = h.A.BillingClient.DeactivateOrganisation(r.Context(), org.UID); err != nil {
 			h.A.Logger.ErrorContext(r.Context(), "failed to deactivate organisation in billing", "error", err)
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -193,8 +193,8 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 
 // UpdateOrganisationSlug sets the workspace slug in billing (Overwatch) for SSO/login by slug.
 func (h *Handler) UpdateOrganisationSlug(w http.ResponseWriter, r *http.Request) {
-	if !h.A.Cfg.Billing.Enabled || h.A.BillingClient == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Billing is not enabled", http.StatusBadRequest))
+	if !h.A.Cfg.UsesOrgBilling() || h.A.BillingClient == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("cloud org billing is not configured", http.StatusBadRequest))
 		return
 	}
 

@@ -188,6 +188,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				return err
 			}
 
+			if err := applyInstanceLicenseConfig(context.Background(), app, &cfg); err != nil {
+				return err
+			}
+
 			t := telemetry.NewTelemetry(lo, dbCfg,
 				telemetry.OptionBackend(telemetry.NewposthogBackend()),
 				telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
@@ -216,13 +220,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			LicenseService: service.LicenserConfig{
-				LicenseKey:     cfg.LicenseKey,
-				BillingEnabled: cfg.Billing.Enabled,
-				Client:         licenseClient,
-				OrgRepo:        organisations.New(lo, app.DB),
-				UserRepo:       users.New(log.New("convoy", log.LevelError), app.DB),
-				ProjectRepo:    projectRepo,
-				Logger:         lo,
+				LicenseKey:    cfg.LicenseKey,
+				UseOrgBilling: cfg.UsesOrgBilling(),
+				Client:        licenseClient,
+				OrgRepo:       organisations.New(lo, app.DB),
+				UserRepo:      users.New(log.New("convoy", log.LevelError), app.DB),
+				ProjectRepo:   projectRepo,
+				Logger:        lo,
 			},
 		})
 		if err != nil {
@@ -266,6 +270,58 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		return nil
 	}
+}
+
+func applyInstanceLicenseConfig(ctx context.Context, a *cli.App, cfg *config.Configuration) error {
+	configRepo := configuration.New(a.Logger, a.DB)
+	instCfg, err := configRepo.LoadInstanceBillingConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	if applyLicensePrecedence(instCfg, cfg) {
+		if err := configRepo.UpdateInstanceBillingConfig(ctx, instCfg); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// applyLicensePrecedence resolves the effective instance license (env/file key
+// wins, else the persisted guest-checkout key), points the runtime cfg at it for
+// the licenser, and records the resolved value + provenance back onto instCfg so
+// the row is the single, debuggable source of truth for reads. It never writes
+// checkout_license_key: that column is owned by the guest-checkout flow, so an
+// env override stays reversible (drop env and the next boot falls back to the
+// purchased key). Boot runs before serving requests, so persisting here cannot
+// race a concurrent checkout. Returns true when instCfg changed and must be
+// persisted.
+func applyLicensePrecedence(instCfg *datastore.Configuration, cfg *config.Configuration) bool {
+	// The purchased guest key lives in checkout_license_key. Legacy rows (pre-column
+	// or pre-migration) persisted a guest key only in license_key, so when the
+	// checkout column is empty but license_key holds a non-env key, treat that key
+	// as the purchased handle and self-heal the column. Without this, resolving from
+	// an empty checkout key would blank an already-paid license at boot.
+	checkoutKey := instCfg.CheckoutLicenseKey
+	healed := false
+	if checkoutKey == "" && instCfg.LicenseKey != "" && instCfg.LicenseKeySource != config.LicenseSourceEnv {
+		checkoutKey = instCfg.LicenseKey
+		instCfg.CheckoutLicenseKey = checkoutKey
+		healed = true
+	}
+
+	effective, source := config.ResolveEffectiveLicense(cfg.LicenseKey, checkoutKey)
+	cfg.LicenseKey = effective
+
+	if instCfg.LicenseKey == effective && instCfg.LicenseKeySource == source && !healed {
+		return false
+	}
+	instCfg.LicenseKey = effective
+	instCfg.LicenseKeySource = source
+	if effective != "" {
+		instCfg.LicenseSyncedAt = null.NewTime(time.Now(), true)
+	}
+	return true
 }
 
 func licenseOverrideCfg(cfg *config.Configuration, licenser license.Licenser) {
@@ -798,38 +854,26 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
-	// Billing configuration
-	enableBilling, err := cmd.Flags().GetBool("enable-billing")
+	billingURL, err := cmd.Flags().GetString("billing-url")
 	if err != nil {
 		return nil, err
 	}
 
-	if enableBilling {
-		c.Billing.Enabled = true
+	billingAPIKey, err := cmd.Flags().GetString("billing-api-key")
+	if err != nil {
+		return nil, err
+	}
 
-		billingURL, err := cmd.Flags().GetString("billing-url")
-		if err != nil {
-			return nil, err
-		}
+	if !util.IsStringEmpty(billingURL) {
+		c.Billing.URL = billingURL
+	}
 
-		billingAPIKey, err := cmd.Flags().GetString("billing-api-key")
-		if err != nil {
-			return nil, err
-		}
+	if !util.IsStringEmpty(billingAPIKey) {
+		c.Billing.APIKey = billingAPIKey
+	}
 
-		// Only set values if they are provided (not empty)
-		if !util.IsStringEmpty(billingURL) {
-			c.Billing.URL = billingURL
-		}
-
-		if !util.IsStringEmpty(billingAPIKey) {
-			c.Billing.APIKey = billingAPIKey
-		}
-
-		// Validate billing configuration
-		if err := c.Billing.Validate(); err != nil {
-			return nil, fmt.Errorf("billing configuration error: %w", err)
-		}
+	if err := c.Billing.Validate(); err != nil {
+		return nil, fmt.Errorf("billing configuration error: %w", err)
 	}
 
 	return c, nil

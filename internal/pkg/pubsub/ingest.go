@@ -130,6 +130,11 @@ func (i *Ingest) run() error {
 			return errors.New("invalid source in memory store")
 		}
 
+		if err := license.EnsureProjectEnabled(i.licenser, ss.ProjectID); err != nil {
+			i.log.Warnf("Skipping pub/sub source %s for disabled project %s: %v", ss.UID, ss.ProjectID, err)
+			continue
+		}
+
 		i.log.Infof("Starting new source: %s (type: %s, project: %s)", ss.UID, ss.Type, ss.ProjectID)
 		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.licenser, i.instanceId)
 		if err != nil {
@@ -148,6 +153,10 @@ func (i *Ingest) run() error {
 
 func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg string, metadata []byte) error {
 	defer i.handlePanic(source)
+
+	if err := license.EnsureProjectEnabled(i.licenser, source.ProjectID); err != nil {
+		return err
+	}
 
 	i.log.Infof("AMQP handler called for source %s (project: %s), message: %s", source.UID, source.ProjectID, msg)
 

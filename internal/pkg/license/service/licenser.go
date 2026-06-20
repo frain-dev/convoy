@@ -48,20 +48,20 @@ type Licenser struct {
 
 // Config holds configuration for the license service licenser
 type LicenserConfig struct {
-	LicenseKey     string
-	BillingEnabled bool
-	Client         *Client
-	OrgRepo        datastore.OrganisationRepository
-	UserRepo       datastore.UserRepository
-	ProjectRepo    datastore.ProjectRepository
-	CacheTTL       time.Duration
-	Logger         log.Logger
+	LicenseKey    string
+	UseOrgBilling bool
+	Client        *Client
+	OrgRepo       datastore.OrganisationRepository
+	UserRepo      datastore.UserRepository
+	ProjectRepo   datastore.ProjectRepository
+	CacheTTL      time.Duration
+	Logger        log.Logger
 }
 
 // NewLicenser creates a new license service licenser
 func NewLicenser(cfg LicenserConfig) (*Licenser, error) {
 	if util.IsStringEmpty(cfg.LicenseKey) {
-		if cfg.BillingEnabled {
+		if cfg.UseOrgBilling {
 			return newBillingOnlyLicenser(cfg)
 		}
 		return newCommunityLicenser(cfg)
@@ -490,6 +490,11 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 	userLimit, userLimitExists := GetNumberEntitlement(l.entitlements, "user_limit")
 	projectLimit, projectLimitExists := GetNumberEntitlement(l.entitlements, "project_limit")
 	l.entitlementsMu.RUnlock()
+	if l.isCommunity {
+		orgLimit, orgLimitExists = communityOrgLimit, true
+		userLimit, userLimitExists = communityUserLimit, true
+		projectLimit, projectLimitExists = communityProjectLimit, true
+	}
 
 	orgCount, err := l.orgRepo.CountOrganisations(ctx)
 	if err != nil {

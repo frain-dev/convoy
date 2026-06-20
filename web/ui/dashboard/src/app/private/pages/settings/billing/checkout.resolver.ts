@@ -7,25 +7,28 @@ export interface CheckoutResolverData {
   checkoutProcessed: boolean;
   sessionId: string;
   orgId: string;
+  token: string;
+  attemptId: string;
 }
 
 export const checkoutResolver: ResolveFn<CheckoutResolverData> = (route: ActivatedRouteSnapshot) => {
   const privateService = inject(PrivateService);
 
   const checkoutCompleted = route.queryParams?.['checkout'] === 'completed';
+  const token = route.queryParams?.['token'] || '';
+  const attemptId = route.queryParams?.['attempt_id'] || '';
   const sessionId = route.queryParams?.['session_id'] || '';
 
-  if (!checkoutCompleted || !sessionId) {
-    return { needsPolling: false, checkoutProcessed: false, sessionId: '', orgId: '' };
+  if (!checkoutCompleted || (!token && !sessionId && !attemptId)) {
+    return { needsPolling: false, checkoutProcessed: false, sessionId: '', orgId: '', token: '', attemptId: '' };
   }
 
-  const checkoutKey = `checkout_processed_${sessionId}`;
-  if (localStorage.getItem(checkoutKey)) {
-    return { needsPolling: false, checkoutProcessed: true, sessionId, orgId: '' };
+  const checkoutKey = attemptId || sessionId;
+  if (checkoutKey && localStorage.getItem(`checkout_processed_${checkoutKey}`)) {
+    return { needsPolling: false, checkoutProcessed: true, sessionId, orgId: '', token, attemptId };
   }
 
-  localStorage.setItem(checkoutKey, 'true');
-  const orgId = privateService.getOrganisation?.uid || localStorage.getItem('CONVOY_ORG_ID') || '';
+  const orgId = privateService.getOrganisation?.uid || '';
 
-  return { needsPolling: true, checkoutProcessed: false, sessionId, orgId };
+  return { needsPolling: true, checkoutProcessed: false, sessionId, orgId, token, attemptId };
 };

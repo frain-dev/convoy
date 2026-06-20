@@ -1726,9 +1726,35 @@ type Configuration struct {
 	StoragePolicy   *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
 	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 
+	LicenseKey              string                               `json:"license_key,omitempty" db:"license_key"`
+	CheckoutLicenseKey      string                               `json:"checkout_license_key,omitempty" db:"checkout_license_key"`
+	LicenseKeySource        string                               `json:"license_key_source,omitempty" db:"license_key_source"`
+	CheckoutAttempts        map[string]SelfHostedCheckoutAttempt `json:"checkout_attempts,omitempty" db:"checkout_attempts"`
+	ActiveCheckoutAttemptID string                               `json:"active_checkout_attempt_id,omitempty" db:"active_checkout_attempt_id"`
+	CheckoutID              string                               `json:"checkout_id,omitempty" db:"checkout_id"`
+	ExternalID              string                               `json:"external_id,omitempty" db:"external_id"`
+	LicenseSyncedAt         null.Time                            `json:"license_synced_at,omitempty" db:"license_synced_at" swaggertype:"string"`
+
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type SelfHostedCheckoutAttempt struct {
+	AttemptID            string    `json:"attempt_id"`
+	CheckoutID           string    `json:"checkout_id,omitempty"`
+	CheckoutURL          string    `json:"checkout_url,omitempty"`
+	CheckoutNonce        string    `json:"checkout_nonce,omitempty"`
+	CheckoutNonceHash    string    `json:"checkout_nonce_hash,omitempty"`
+	Email                string    `json:"email,omitempty"`
+	PlanID               string    `json:"plan_id,omitempty"`
+	Interval             string    `json:"interval,omitempty"`
+	Status               string    `json:"status"`
+	ExternalID           string    `json:"external_id,omitempty"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
+	CompletedAt          null.Time `json:"completed_at,omitempty" swaggertype:"string"`
+	LastCompletionStatus string    `json:"last_completion_status,omitempty"`
 }
 
 func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration {

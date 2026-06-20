@@ -84,7 +84,7 @@ export class PrivateComponent implements OnInit {
 
 		this.checkIfTokenIsExpired();
 		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
-		await this.licenseService.setLicenses();
+		await this.licenseService.loadAllLicenses();
 		await this.checkInstanceAdminAccess();
 	}
 
@@ -144,6 +144,7 @@ export class PrivateComponent implements OnInit {
 		}
 
 		this.privateService.clearCache();
+		this.licenseService.clearLicenses();
 
 		localStorage.removeItem('CONVOY_AUTH');
 		localStorage.removeItem('CONVOY_AUTH_TOKENS');
@@ -270,10 +271,11 @@ export class PrivateComponent implements OnInit {
 		await this.checkInstanceAdminAccess();
 		this.showOrgDropdown = false;
 
-		this.router.navigateByUrl('/projects');
-		setInterval(() => {
+		try {
+			await this.router.navigateByUrl('/projects');
+		} finally {
 			this.isLoadingOrganisations = false;
-		}, 1000);
+		}
 	}
 
 	async checkForSelectedOrganisation() {

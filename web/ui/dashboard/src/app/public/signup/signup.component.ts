@@ -43,11 +43,10 @@ export class SignupComponent implements OnInit {
 		private configService: ConfigService
 	) {}
 
-	ngOnInit(): void {
-		this.licenseService.setLicenses(true);
-		this.checkGoogleOAuthConfig();
+	async ngOnInit(): Promise<void> {
+		await Promise.all([this.licenseService.setLicenses(true), this.checkGoogleOAuthConfig()]);
 
-		if (!this.licenseService.hasLicense('user_limit')) this.router.navigateByUrl('/login');
+		if (!this.licenseService.hasInstanceLicense('user_limit')) this.router.navigateByUrl('/login');
 	}
 
 	async signup() {
@@ -62,7 +61,7 @@ export class SignupComponent implements OnInit {
 			// Clear org/project and licenses so private app uses the new user's org, not a previous session
 			localStorage.removeItem('CONVOY_ORG');
 			localStorage.removeItem('CONVOY_PROJECT');
-			localStorage.removeItem('licenses');
+			this.licenseService.clearLicenses();
 
 			if (window.location.hostname === 'dashboard.getconvoy.io') await this.hubspotService.sendWelcomeEmail({ email: this.signupForm.value.email, firstname: this.signupForm.value.first_name, lastname: this.signupForm.value.last_name });
 
@@ -70,19 +69,6 @@ export class SignupComponent implements OnInit {
 			this.disableSignupBtn = false;
 		} catch {
 			this.disableSignupBtn = false;
-		}
-	}
-
-	async getSignUpConfig() {
-		this.isFetchingConfig = true;
-		try {
-			const response = await this.signupService.getSignupConfig();
-			const isSignupEnabled = response.data?.is_signup_enabled ?? false;
-			if (!isSignupEnabled) this.router.navigateByUrl('/login');
-			this.isFetchingConfig = false;
-		} catch (error) {
-			this.isFetchingConfig = false;
-			throw error;
 		}
 	}
 
@@ -100,7 +86,6 @@ export class SignupComponent implements OnInit {
 
 		try {
 			const res = await this.signupService.signUpWithSSO();
-			console.log(res);
 			const { redirectUrl } = res.data;
 			window.open(redirectUrl, '_blank');
 		} catch (error) {

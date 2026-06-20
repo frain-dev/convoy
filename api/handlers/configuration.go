@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -116,11 +117,22 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load configuration", http.StatusBadRequest))
 		return
 	}
-	billingEnabled := cfg.Billing.Enabled && h.A.BillingClient != nil
+	useOrgBilling := cfg.UsesOrgBilling() && h.A.BillingClient != nil
+	// Floor with the in-memory env/file license so a DB read failure or an absent
+	// config row does not misreport an env-licensed instance as OSS on this
+	// pre-login auth surface. A non-empty persisted key (env resolved at boot, or a
+	// guest purchase) takes precedence. Unlike the billing management endpoints,
+	// this stays available on DB errors rather than failing closed.
+	instanceLicenseKey := strings.TrimSpace(cfg.LicenseKey)
+	if instanceBilling, err := configuration.New(h.A.Logger, h.A.DB).LoadInstanceBillingConfig(r.Context()); err == nil && instanceBilling != nil {
+		if k := strings.TrimSpace(instanceBilling.LicenseKey); k != "" {
+			instanceLicenseKey = k
+		}
+	}
 	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
 
 	ssoEnabled := h.A.Licenser.EnterpriseSSO()
-	if billingEnabled && slug != "" {
+	if useOrgBilling && slug != "" {
 		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
 			BillingClient: h.A.BillingClient,
 			OrgRepo:       h.A.OrgRepo,
@@ -140,7 +152,7 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authConfig := map[string]interface{}{
-		"billing_enabled":   billingEnabled,
+		"billing_strategy":  string(cfg.BillingMode(instanceLicenseKey)),
 		"is_signup_enabled": cfg.Auth.IsSignupEnabled,
 		"google_oauth": map[string]interface{}{
 			"enabled":      cfg.Auth.GoogleOAuth.Enabled && h.A.Licenser.GoogleOAuth(),

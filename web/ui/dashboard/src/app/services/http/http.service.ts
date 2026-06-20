@@ -80,6 +80,25 @@ export class HttpService {
 		return org ? JSON.parse(org) : null;
 	}
 
+	// Fail-closed org id accessor for billing calls: any missing/invalid org data
+	// throws so callers never build URLs with an empty org id.
+	getOrganisationIdOrThrow(): string {
+		let org: any = null;
+		try {
+			org = this.getOrganisation();
+		} catch {
+			org = null;
+		}
+		if (!org || !org.uid) {
+			throw new Error('Invalid organisation data. Please refresh the page and try again.');
+		}
+		return org.uid;
+	}
+
+	getAccessToken(): string {
+		return this.authDetails().access_token || '';
+	}
+
 	getPortalLinkAuthToken() {
 		return localStorage.getItem('CONVOY_PORTAL_LINK_AUTH_TOKEN');
 	}

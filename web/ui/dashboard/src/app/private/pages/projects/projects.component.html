@@ -10,7 +10,7 @@
           </svg>
           <span class="text-primary-100 font-medium text-12">Create new project</span>
         </a>
-        @if (!licenseService.hasLicense('project_limit') && getProjectLimitMessage()) {
+        @if (getProjectLimitMessage()) {
           <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full">
             <svg width="10" height="10" class="fill-new.primary-400 scale-150">
               <use xlink:href="#lock-icon"></use>
@@ -18,12 +18,12 @@
             {{ getProjectLimitMessage() }}
           </div>
         }
-        @if (isDisabled && licenseService.hasLicense('project_limit')) {
-          <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full">
-            <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+        @if (isDisabled && !getProjectLimitMessage()) {
+          <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full px-16px text-center">
+            <svg width="10" height="10" class="fill-new.primary-400 scale-150 shrink-0">
               <use xlink:href="#lock-icon"></use>
             </svg>
-            Organisation Disabled
+            {{ disabledOrganisationMessage }}
           </div>
         }
       </div>
@@ -66,22 +66,19 @@
   <div class="mt-50px">
     <div convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" heading="Create a project to get started" description="Your incoming and outgoing projects appear here." id="subscriptions-empty-state">
       <div emptyStateCTA class="mt-24px flex flex-col items-center gap-24px">
-        <button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" [routerLink]="(isDisabled || (!licenseService.hasLicense('project_limit') && getProjectLimitMessage())) ? null : './new'" [disabled]="isDisabled || (!licenseService.hasLicense('project_limit') && getProjectLimitMessage())" class="!py-12px" [class.opacity-50]="isDisabled || (!licenseService.hasLicense('project_limit') && getProjectLimitMessage())" [class.cursor-not-allowed]="isDisabled || (!licenseService.hasLicense('project_limit') && getProjectLimitMessage())">
+        <button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" [routerLink]="shouldBlockProjectCreation ? null : './new'" [disabled]="shouldBlockProjectCreation" class="!py-12px" [class.opacity-50]="shouldBlockProjectCreation" [class.cursor-not-allowed]="shouldBlockProjectCreation">
           <img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
           Create a Project
         </button>
-        @if (isDisabled || (!licenseService.hasLicense('project_limit') && getProjectLimitMessage())) {
+        @if (shouldBlockProjectCreation) {
           <div class="flex flex-col items-center gap-8px text-center">
-            @if (!licenseService.hasLicense('project_limit') && getProjectLimitMessage()) {
+            @if (getProjectLimitMessageForEmptyState()) {
               <p class="text-12 text-new.primary-400 font-medium">{{ getProjectLimitMessageForEmptyState() }}</p>
             }
-            @if (isDisabled && billingEnabled) {
-              <p class="text-12 text-neutral-11">This action is disabled for this organization. Subscribe to a plan to create projects.</p>
+            @if (isDisabled) {
+              <p class="text-12 text-neutral-11">{{ disabledOrganisationMessage }}</p>
             }
-            @if (isDisabled && !billingEnabled) {
-              <p class="text-12 text-neutral-11">This action is disabled for this organization. Please contact support.</p>
-            }
-            @if (billingEnabled) {
+            @if (canOpenBillingForProjectLimit) {
               <a routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="text-12 font-medium text-neutral-11 hover:text-primary-100 underline hover:no-underline">Go to Billing</a>
             }
           </div>

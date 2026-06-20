@@ -29,6 +29,33 @@ type Handler struct {
 	Versioning *requestmigrations.RequestMigration
 }
 
+// orgRepo returns the injected organisation repository, falling back to a freshly
+// constructed one when none was wired (e.g. in tests).
+func (h *Handler) orgRepo() datastore.OrganisationRepository {
+	if h.A.OrgRepo != nil {
+		return h.A.OrgRepo
+	}
+	return organisations.New(h.A.Logger, h.A.DB)
+}
+
+// projectRepo returns the injected project repository, falling back to a freshly
+// constructed one when none was wired (e.g. in tests).
+func (h *Handler) projectRepo() datastore.ProjectRepository {
+	if h.A.ProjectRepo != nil {
+		return h.A.ProjectRepo
+	}
+	return projects.New(h.A.Logger, h.A.DB)
+}
+
+// orgMemberRepo returns the injected organisation member repository, falling back to a
+// freshly constructed one when none was wired (e.g. in tests).
+func (h *Handler) orgMemberRepo() datastore.OrganisationMemberRepository {
+	if h.A.OrgMemberRepo != nil {
+		return h.A.OrgMemberRepo
+	}
+	return organisation_members.New(h.A.Logger, h.A.DB)
+}
+
 func (h *Handler) IsReqWithProjectAPIKey(authUser *auth.AuthenticatedUser) bool {
 	keyIsAPIKey := authUser.Credential.Type == auth.CredentialTypeAPIKey
 	userIsNil := authUser.User == nil

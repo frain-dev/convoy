@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -56,9 +57,9 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if !a.A.Licenser.ProjectEnabled(project.UID) {
+	if err = license.EnsureProjectEnabled(a.A.Licenser, project.UID); err != nil {
 		a.A.Logger.Errorf("Project disabled for project ID %s", project.UID)
-		_ = render.Render(w, r, util.NewErrorResponse("Project access denied", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 

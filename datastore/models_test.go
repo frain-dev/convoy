@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -42,6 +43,27 @@ func TestProject_IsDeleted(t *testing.T) {
 			require.Equal(t, tc.isDeleted, tc.project.IsDeleted())
 		})
 	}
+}
+
+func TestSelfHostedCheckoutAttempt_PreservesNonceInJSON(t *testing.T) {
+	attempts := map[string]SelfHostedCheckoutAttempt{
+		"attempt_123": {
+			AttemptID:         "attempt_123",
+			CheckoutNonce:     "raw-nonce",
+			CheckoutNonceHash: "nonce-hash",
+			Status:            "pending",
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+		},
+	}
+
+	raw, err := json.Marshal(attempts)
+	require.NoError(t, err)
+	require.Contains(t, string(raw), "checkout_nonce")
+
+	var decoded map[string]SelfHostedCheckoutAttempt
+	require.NoError(t, json.Unmarshal(raw, &decoded))
+	require.Equal(t, "raw-nonce", decoded["attempt_123"].CheckoutNonce)
 }
 
 func TestProject_IsOwner(t *testing.T) {

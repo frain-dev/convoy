@@ -13,6 +13,7 @@ type BillingOrganisation struct {
 	Slug           string `json:"slug,omitempty"`
 	ExternalID     string `json:"external_id,omitempty"`
 	BillingEmail   string `json:"billing_email,omitempty"`
+	BillingName    string `json:"billing_name,omitempty"`
 	Host           string `json:"host,omitempty"`
 	LicenseKey     string `json:"license_key,omitempty"`
 	TaxIDType      string `json:"tax_id_type,omitempty"`
@@ -46,6 +47,7 @@ type UpdateOrganisationTaxIDRequest struct {
 }
 
 type UpdateOrganisationAddressRequest struct {
+	BillingName    string `json:"billing_name,omitempty"`
 	BillingAddress string `json:"billing_address,omitempty"`
 	BillingCity    string `json:"billing_city,omitempty"`
 	BillingState   string `json:"billing_state,omitempty"`
@@ -64,9 +66,22 @@ type UpgradeSubscriptionRequest struct {
 }
 
 type Plan struct {
-	ID          string `json:"id,omitempty"`
-	Name        string `json:"name,omitempty"`
-	ProductType string `json:"product_type,omitempty"`
+	ID              string          `json:"id,omitempty"`
+	Key             string          `json:"key,omitempty"`
+	Name            string          `json:"name,omitempty"`
+	ProductType     string          `json:"product_type,omitempty"`
+	Interval        string          `json:"interval,omitempty"`
+	Intervals       []string        `json:"intervals,omitempty"`
+	PricingOptions  []PricingOption `json:"pricing_options,omitempty"`
+	CheckoutEnabled *bool           `json:"checkout_enabled,omitempty"`
+	RequiresContact *bool           `json:"requires_contact,omitempty"`
+}
+
+type PricingOption struct {
+	Interval    string `json:"interval,omitempty"`
+	AmountCents int    `json:"amount_cents,omitempty"`
+	Currency    string `json:"currency,omitempty"`
+	TrialDays   int    `json:"trial_days,omitempty"`
 }
 
 type BillingSubscription struct {
@@ -82,6 +97,7 @@ type Invoice struct {
 	ID          string `json:"id,omitempty"`
 	Number      string `json:"number,omitempty"`
 	InvoiceDate string `json:"invoice_date,omitempty"`
+	DueDate     string `json:"due_date,omitempty"`
 	Currency    string `json:"currency,omitempty"`
 	Status      string `json:"status,omitempty"`
 	HostedLink  string `json:"hosted_link,omitempty"`
@@ -105,6 +121,34 @@ type SetupIntent struct {
 
 type Checkout struct {
 	CheckoutURL string `json:"checkout_url,omitempty"`
+	CheckoutID  string `json:"checkout_id,omitempty"`
+	AttemptID   string `json:"attempt_id,omitempty"`
+}
+
+type StartGuestCheckoutRequest struct {
+	Email             string `json:"email,omitempty"`
+	PlanID            string `json:"plan_id,omitempty"`
+	Interval          string `json:"interval,omitempty"`
+	Host              string `json:"host,omitempty"`
+	OrganisationName  string `json:"organisation_name,omitempty"`
+	AttemptID         string `json:"attempt_id,omitempty"`
+	CheckoutNonceHash string `json:"checkout_nonce_hash,omitempty"`
+	// LicenseKey, when set, resubscribes the org for that key (empty = first purchase).
+	LicenseKey string `json:"license_key,omitempty"`
+}
+
+type CompleteGuestCheckoutRequest struct {
+	Token         string `json:"token,omitempty"`
+	AttemptID     string `json:"attempt_id,omitempty"`
+	CheckoutID    string `json:"checkout_id,omitempty"`
+	CheckoutNonce string `json:"checkout_nonce,omitempty"`
+}
+
+type GuestCheckoutCompletion struct {
+	Status     string `json:"status,omitempty"`
+	LicenseKey string `json:"license_key,omitempty"`
+	CheckoutID string `json:"checkout_id,omitempty"`
+	ExternalID string `json:"external_id,omitempty"`
 }
 
 type TaxIDType struct {

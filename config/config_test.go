@@ -641,3 +641,86 @@ func Test_DatabaseConfigurationBuildDsn(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveEffectiveLicense(t *testing.T) {
+	tests := []struct {
+		name           string
+		envKey         string
+		checkoutKey    string
+		expectedKey    string
+		expectedSource string
+	}{
+		{
+			name:           "env wins over checkout",
+			envKey:         "  env-license  ",
+			checkoutKey:    "checkout-license",
+			expectedKey:    "env-license",
+			expectedSource: LicenseSourceEnv,
+		},
+		{
+			name:           "checkout used when env empty",
+			envKey:         "   ",
+			checkoutKey:    "checkout-license",
+			expectedKey:    "checkout-license",
+			expectedSource: LicenseSourceGuestCheckout,
+		},
+		{
+			name:           "unset when both empty",
+			envKey:         "",
+			checkoutKey:    "  ",
+			expectedKey:    "",
+			expectedSource: "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			key, source := ResolveEffectiveLicense(tc.envKey, tc.checkoutKey)
+			require.Equal(t, tc.expectedKey, key)
+			require.Equal(t, tc.expectedSource, source)
+		})
+	}
+}
+
+func TestResolveCheckoutLicenseKey(t *testing.T) {
+	tests := []struct {
+		name        string
+		checkoutKey string
+		licenseKey  string
+		source      string
+		expected    string
+	}{
+		{
+			name:        "checkout key wins",
+			checkoutKey: "  checkout-key  ",
+			licenseKey:  "license-key",
+			source:      LicenseSourceEnv,
+			expected:    "checkout-key",
+		},
+		{
+			name:        "legacy guest row falls back to license key",
+			checkoutKey: "  ",
+			licenseKey:  "  legacy-guest-key  ",
+			source:      LicenseSourceGuestCheckout,
+			expected:    "legacy-guest-key",
+		},
+		{
+			name:        "env override is not a resubscribe",
+			checkoutKey: "",
+			licenseKey:  "env-key",
+			source:      LicenseSourceEnv,
+			expected:    "",
+		},
+		{
+			name:        "unknown source is treated as first purchase",
+			checkoutKey: "",
+			licenseKey:  "some-key",
+			source:      "",
+			expected:    "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expected, ResolveCheckoutLicenseKey(tc.checkoutKey, tc.licenseKey, tc.source))
+		})
+	}
+}

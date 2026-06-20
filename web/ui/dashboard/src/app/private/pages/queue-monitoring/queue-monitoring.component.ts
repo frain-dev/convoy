@@ -53,7 +53,9 @@ export class QueueMonitoringComponent implements OnInit {
 	}
 
 	hasAsynqLicense(): boolean {
-		return this.licenses.hasLicense('AsynqMonitoring');
+		// Queue monitoring is an instance-admin platform tool; no org plan sells it,
+		// so it is gated on the deployment (instance) license only.
+		return this.licenses.hasInstanceLicense('AsynqMonitoring');
 	}
 
 	@HostListener('document:keydown.escape')

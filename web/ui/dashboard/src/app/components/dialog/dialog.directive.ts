@@ -9,7 +9,7 @@ import {ButtonComponent} from '../button/button.component';
     template: `
 		<div
 		  class="px-32px pt-32px pb-24px border-y border-y-neutral-4 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
-		  <div class="flex justify-between items-center w-full">
+		  <div class="flex justify-between items-center max-w-[770px] m-auto">
 		    <div class="flex items-center w-full" [ngClass]="{ 'justify-between': fullscreen === 'false' }">
 		      <div class="w-full" [class]="fullscreen !== 'false' ? 'order-2' : 'order-1'">
 		        <ng-content></ng-content>

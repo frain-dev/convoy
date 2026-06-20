@@ -6,6 +6,8 @@ import {Router} from '@angular/router';
 import {PrivateService} from 'src/app/private/private.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {HttpService} from 'src/app/services/http/http.service';
+import {OrganisationStateService} from 'src/app/services/organisation-state/organisation-state.service';
 
 @Component({
     selector: 'organisation-settings',
@@ -23,6 +25,7 @@ export class OrganisationSettingsComponent implements OnInit {
 	isEditingOrganisation = false;
 	isDeletingOrganisation = false;
 	configuringSSO = false;
+	isCloudBilling = false;
 	/** True when this org's license has enterprise_sso; false or null when not or unknown. */
 	orgHasEnterpriseSSO: boolean | null = null;
 	editOrganisationForm: FormGroup = this.formBuilder.group({
@@ -37,12 +40,19 @@ export class OrganisationSettingsComponent implements OnInit {
 		private generalService: GeneralService,
 		private router: Router,
 		private privateService: PrivateService,
-		public licenseService: LicensesService
+		public licenseService: LicensesService,
+		private httpService: HttpService,
+		private orgState: OrganisationStateService
 	) {}
 
 	async ngOnInit() {
+		await this.loadBillingStrategy();
 		this.getOrganisationDetails();
 		if (!(await this.rbacService.userCanAccess('Organisations|MANAGE'))) this.editOrganisationForm.disable();
+	}
+
+	private async loadBillingStrategy() {
+		this.isCloudBilling = (await this.orgState.getBillingStrategy()) === 'cloud';
 	}
 
 	async updateOrganisation() {
@@ -63,16 +73,15 @@ export class OrganisationSettingsComponent implements OnInit {
 	}
 
 	getOrganisationDetails() {
-		const org = localStorage.getItem('CONVOY_ORG');
-		if (org) {
-			const organisationDetails = JSON.parse(org);
+		const organisationDetails = this.httpService.getOrganisation();
+		if (organisationDetails) {
 			this.organisationId = organisationDetails.uid;
 			this.organisationName = organisationDetails.name;
 			this.editOrganisationForm.patchValue({
 				name: organisationDetails.name
 			});
 			this.currentWorkspaceSlug = typeof organisationDetails.slug === 'string' && organisationDetails.slug.length > 0 ? organisationDetails.slug : null;
-			this.loadWorkspaceSlug();
+			if (this.isCloudBilling) this.loadWorkspaceSlug();
 			this.loadOrgLicenseForSSO();
 		}
 	}
@@ -88,10 +97,9 @@ export class OrganisationSettingsComponent implements OnInit {
 		}
 	}
 
-	/** Load this org's license so Configure SSO visibility uses org license, not instance. */
+	/** SSO availability is instance-scoped (deployment license), not per-org plan. */
 	private loadOrgLicenseForSSO() {
-		if (!this.organisationId) return;
-		this.licenseService.hasEnterpriseSSO(this.organisationId).then((has) => (this.orgHasEnterpriseSSO = has));
+		this.licenseService.hasEnterpriseSSO().then((has) => (this.orgHasEnterpriseSSO = has));
 	}
 
 	async configureSSO() {
