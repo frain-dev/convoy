@@ -39,8 +39,13 @@ func (h *BillingHandler) selfHostedLicenseKey(w http.ResponseWriter, r *http.Req
 	}
 
 	// The mode gate uses the effective license (env/file wins, else purchased),
-	// resolved and persisted at boot.
+	// resolved and persisted at boot. Floor with the in-memory env/file key so a
+	// not-yet-persisted or absent row stays consistent with the config/auth
+	// surfaces, which apply the same floor, instead of 403-ing a licensed instance.
 	effectiveKey := strings.TrimSpace(instanceBilling.LicenseKey)
+	if effectiveKey == "" {
+		effectiveKey = strings.TrimSpace(h.A.Cfg.LicenseKey)
+	}
 	if effectiveKey == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("self-hosted license is not configured", http.StatusForbidden))
 		return "", false
@@ -73,7 +78,14 @@ func (h *BillingHandler) effectiveInstanceLicenseKey(ctx context.Context) (strin
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(instanceBilling.LicenseKey), nil
+	// Floor with the in-memory env/file key so the licenser rebuilds around the
+	// same effective license the config/auth surfaces report when the persisted
+	// row is blank.
+	key := strings.TrimSpace(instanceBilling.LicenseKey)
+	if key == "" {
+		key = strings.TrimSpace(h.A.Cfg.LicenseKey)
+	}
+	return key, nil
 }
 
 // serveSelfHosted handles the uniform self-hosted GET pass-throughs: resolve the license
