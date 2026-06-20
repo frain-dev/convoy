@@ -40,3 +40,23 @@ func ResolveCheckoutLicenseKey(checkoutKey, licenseKey, source string) string {
 	}
 	return ""
 }
+
+// ResolveBillingLicenseKey returns the license key the self-hosted billing view
+// uses to address Overwatch. The billing identity follows the effective license:
+// when the source is an env/file override it wins, since a payment-link license is
+// delivered that way and is Overwatch-issued, so the view must address that org.
+// Otherwise use the purchased checkout key Overwatch issued at guest checkout,
+// falling back to the effective key for legacy rows that predate the checkout
+// column. The checkout key stays persisted either way, so removing the env
+// override still reverts the view to the purchased subscription.
+func ResolveBillingLicenseKey(effectiveKey, checkoutKey, source string) string {
+	if source == LicenseSourceEnv {
+		if e := strings.TrimSpace(effectiveKey); e != "" {
+			return e
+		}
+	}
+	if c := strings.TrimSpace(checkoutKey); c != "" {
+		return c
+	}
+	return strings.TrimSpace(effectiveKey)
+}
