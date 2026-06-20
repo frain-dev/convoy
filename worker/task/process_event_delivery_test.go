@@ -1041,6 +1041,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			rateLimiter := mocks.NewMockRateLimiter(ctrl)
 			attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
 			licenser := mocks.NewMockLicenser(ctrl)
+			licenser.EXPECT().ProjectEnabled(gomock.Any()).Return(true).AnyTimes()
 			mt := mocks.NewMockBackend(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)

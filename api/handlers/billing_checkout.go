@@ -36,7 +36,6 @@ const (
 	checkoutStatusSuperseded = "superseded"
 	checkoutStatusFailed     = "failed"
 	checkoutStatusCompleted  = "completed"
-	checkoutStatusStalePaid  = "stale_paid"
 )
 
 func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request) {
@@ -45,14 +44,16 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 	if instanceBilling != nil {
 		instanceLicenseKey = instanceBilling.LicenseKey
 	}
+	// license_key already holds the effective license (env/file wins, else the
+	// purchased key), resolved and persisted at boot, so reads use it directly.
 	mode := h.A.Cfg.BillingMode(instanceLicenseKey)
 	selfHosted := map[string]interface{}{
 		"enabled":            mode != config.BillingModeCloud,
-		"license_configured": false,
+		"license_configured": instanceLicenseKey != "",
 	}
 	if instanceBilling != nil {
-		selfHosted["license_configured"] = instanceBilling.LicenseKey != ""
 		selfHosted["license_synced_at"] = instanceBilling.LicenseSyncedAt
+		selfHosted["license_source"] = instanceBilling.LicenseKeySource
 		if h.isInstanceAdmin(r) {
 			activeAttempt, hasActiveAttempt := instanceBilling.CheckoutAttempts[instanceBilling.ActiveCheckoutAttemptID]
 			selfHosted["active_checkout_attempt_id"] = instanceBilling.ActiveCheckoutAttemptID
@@ -134,6 +135,23 @@ func (h *BillingHandler) StartSelfHostedCheckout(w http.ResponseWriter, r *http.
 	}
 	nonceHash := hashCheckoutNonce(nonce)
 
+	// Call the billing service before mutating local state. If StartGuestCheckout
+	// fails, we have not superseded the prior active attempt nor persisted a new
+	// one, so a transient failure cannot orphan an in-flight checkout.
+	resp, err := h.BillingClient.StartGuestCheckout(r.Context(), billing.StartGuestCheckoutRequest{
+		Email:             email,
+		PlanID:            req.PlanID,
+		Interval:          req.Interval,
+		Host:              host,
+		OrganisationName:  h.activeOrganisationName(r.Context(), r),
+		AttemptID:         attemptID,
+		CheckoutNonceHash: nonceHash,
+	})
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusServiceUnavailable))
+		return
+	}
+
 	now := time.Now()
 	if cfg.CheckoutAttempts == nil {
 		cfg.CheckoutAttempts = map[string]datastore.SelfHostedCheckoutAttempt{}
@@ -147,7 +165,7 @@ func (h *BillingHandler) StartSelfHostedCheckout(w http.ResponseWriter, r *http.
 			cfg.CheckoutAttempts[cfg.ActiveCheckoutAttemptID] = activeAttempt
 		}
 	}
-	attempt := datastore.SelfHostedCheckoutAttempt{
+	cfg.CheckoutAttempts[attemptID] = datastore.SelfHostedCheckoutAttempt{
 		AttemptID:         attemptID,
 		CheckoutNonce:     nonce,
 		CheckoutNonceHash: nonceHash,
@@ -155,43 +173,26 @@ func (h *BillingHandler) StartSelfHostedCheckout(w http.ResponseWriter, r *http.
 		PlanID:            req.PlanID,
 		Interval:          req.Interval,
 		Status:            checkoutStatusPending,
+		CheckoutID:        resp.Data.CheckoutID,
+		CheckoutURL:       resp.Data.CheckoutURL,
 		CreatedAt:         now,
 		UpdatedAt:         now,
 	}
-	cfg.CheckoutAttempts[attemptID] = attempt
 	cfg.ActiveCheckoutAttemptID = attemptID
-
-	if err := cfgSvc.UpdateInstanceBillingConfig(r.Context(), cfg); err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	resp, err := h.BillingClient.StartGuestCheckout(r.Context(), billing.StartGuestCheckoutRequest{
-		Email:             email,
-		PlanID:            req.PlanID,
-		Interval:          req.Interval,
-		Host:              host,
-		OrganisationName:  h.activeOrganisationName(r.Context(), r),
-		AttemptID:         attemptID,
-		CheckoutNonceHash: nonceHash,
-	})
-	if err != nil {
-		attempt.Status = checkoutStatusFailed
-		attempt.UpdatedAt = time.Now()
-		cfg.CheckoutAttempts[attemptID] = attempt
-		cfg.ActiveCheckoutAttemptID = ""
-		_ = cfgSvc.UpdateInstanceBillingConfig(r.Context(), cfg)
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusServiceUnavailable))
-		return
-	}
-
-	attempt.CheckoutID = resp.Data.CheckoutID
-	attempt.CheckoutURL = resp.Data.CheckoutURL
-	attempt.UpdatedAt = time.Now()
-	cfg.CheckoutAttempts[attemptID] = attempt
 	cfg.CheckoutID = resp.Data.CheckoutID
 
-	if err := cfgSvc.UpdateInstanceBillingConfig(r.Context(), cfg); err != nil {
+	// Persist only attempt bookkeeping. Starting a checkout must never write the
+	// license columns: this cfg was loaded at request start, so a full-row write
+	// could erase a license a concurrent completion just persisted.
+	//
+	// Failure policy (fail closed, external-first): the Overwatch session is
+	// created before this write, so a persist failure leaves it orphaned. We do
+	// not compensate because (a) there is no cancel-checkout API, (b) the session
+	// is unpaid and self-expires via Overwatch's checkout-expiry job, and (c) the
+	// prior active attempt is only superseded in-memory above, so on failure it
+	// stays the active attempt locally and in Overwatch. The caller gets an error
+	// and simply retries; no license or payment state diverges.
+	if err := cfgSvc.UpdateCheckoutAttempts(r.Context(), cfg); err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -234,18 +235,54 @@ func (h *BillingHandler) CompleteSelfHostedCheckout(w http.ResponseWriter, r *ht
 		attemptID = cfg.ActiveCheckoutAttemptID
 	}
 	attempt, ok := cfg.CheckoutAttempts[attemptID]
-	if !ok || attempt.CheckoutNonce == "" {
+	if !ok {
 		_ = render.Render(w, r, util.NewErrorResponse("active checkout attempt not found", http.StatusNotFound))
 		return
 	}
-	isActiveAttempt := attemptID == cfg.ActiveCheckoutAttemptID
-	if !isActiveAttempt {
+
+	// Recovery (idempotent): the attempt already completed and its license is
+	// persisted, but a prior in-memory licenser refresh may have failed. The
+	// active attempt is consumed on completion, so a plain retry would 404 and
+	// leave entitlements stale until restart. Rebuild the licenser from the
+	// stored key and return success. Fail closed if the rebuild errors.
+	if attempt.Status == checkoutStatusCompleted && cfg.LicenseKey != "" {
+		if err := h.refreshInstanceLicenser(cfg.LicenseKey); err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))
+			return
+		}
+		// Prefer this attempt's own checkout/external id: when it was settled on
+		// the superseded path the instance-level columns belong to a newer active
+		// attempt, so fall back to them only when the attempt has none.
+		checkoutID := attempt.CheckoutID
+		if checkoutID == "" {
+			checkoutID = cfg.CheckoutID
+		}
+		externalID := attempt.ExternalID
+		if externalID == "" {
+			externalID = cfg.ExternalID
+		}
+		_ = render.Render(w, r, util.NewServerResponse("Self-hosted checkout completion checked", map[string]interface{}{
+			"status":      checkoutStatusCompleted,
+			"license_key": cfg.LicenseKey,
+			"checkout_id": checkoutID,
+			"external_id": externalID,
+		}, http.StatusOK))
+		return
+	}
+
+	if attempt.CheckoutNonce == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("active checkout attempt not found", http.StatusNotFound))
+		return
+	}
+	if attemptID != cfg.ActiveCheckoutAttemptID {
 		attempt.Status = checkoutStatusSuperseded
 		attempt.CheckoutNonce = ""
 		attempt.CheckoutNonceHash = ""
 		attempt.UpdatedAt = time.Now()
 		cfg.CheckoutAttempts[attemptID] = attempt
-		if err := cfgSvc.UpdateInstanceBillingConfig(r.Context(), cfg); err != nil {
+		// Marking an attempt superseded touches only attempt bookkeeping; never
+		// write the license columns from this stale snapshot.
+		if err := cfgSvc.UpdateCheckoutAttempts(r.Context(), cfg); err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
@@ -276,57 +313,95 @@ func (h *BillingHandler) CompleteSelfHostedCheckout(w http.ResponseWriter, r *ht
 	attempt.LastCompletionStatus = resp.Data.Status
 	attempt.CheckoutID = resp.Data.CheckoutID
 	attempt.ExternalID = resp.Data.ExternalID
+
 	if resp.Data.Status == checkoutStatusCompleted && resp.Data.LicenseKey != "" {
-		if !isActiveAttempt {
-			attempt.Status = checkoutStatusStalePaid
-			attempt.CompletedAt = null.NewTime(now, true)
-			attempt.CheckoutNonce = ""
-			attempt.LastCompletionStatus = checkoutStatusStalePaid
-			cfg.CheckoutAttempts[attemptID] = attempt
-			if err := cfgSvc.UpdateInstanceBillingConfig(r.Context(), cfg); err != nil {
-				_ = render.Render(w, r, util.NewServiceErrResponse(err))
-				return
-			}
-			_ = render.Render(w, r, util.NewServerResponse("Self-hosted checkout attempt is no longer active", map[string]interface{}{
-				"status":      "stale",
-				"checkout_id": resp.Data.CheckoutID,
-				"external_id": resp.Data.ExternalID,
-			}, http.StatusConflict))
-			return
-		}
+		purchased := resp.Data.LicenseKey
+		// envActive: an env/file CONVOY_LICENSE_KEY is the active effective source
+		// (resolved and persisted at boot). When it is, it wins and the purchased
+		// key is only stashed for reversibility; otherwise the purchase becomes the
+		// effective license.
+		envActive := cfg.LicenseKeySource == config.LicenseSourceEnv
+
 		attempt.Status = checkoutStatusCompleted
 		attempt.CompletedAt = null.NewTime(now, true)
 		attempt.CheckoutNonce = ""
-		cfg.LicenseKey = resp.Data.LicenseKey
+		cfg.CheckoutAttempts[attemptID] = attempt
 		cfg.CheckoutID = resp.Data.CheckoutID
 		cfg.ExternalID = resp.Data.ExternalID
-		cfg.LicenseSyncedAt = null.NewTime(now, true)
 		cfg.ActiveCheckoutAttemptID = ""
-	} else {
-		attempt.Status = resp.Data.Status
-	}
-	cfg.CheckoutAttempts[attemptID] = attempt
 
-	if err := cfgSvc.UpdateInstanceBillingConfig(r.Context(), cfg); err != nil {
+		// The purchased key always lands in checkout_license_key (owned by checkout,
+		// preserved so an env override stays reversible).
+		cfg.CheckoutLicenseKey = purchased
+		if !envActive {
+			cfg.LicenseKey = purchased
+			cfg.LicenseKeySource = config.LicenseSourceGuestCheckout
+			cfg.LicenseSyncedAt = null.NewTime(now, true)
+		}
+		effectiveKey := cfg.LicenseKey
+
+		// Apply the license only while this attempt is still the active one, so a
+		// concurrent start/complete that superseded it cannot be clobbered.
+		applied, err := cfgSvc.CompleteCheckoutIfActive(r.Context(), cfg, attemptID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+		if !applied {
+			// The active attempt changed under us: a concurrent start superseded
+			// it, or a concurrent complete already settled it. Overwatch still
+			// minted the org license (one per org, idempotent). Mark only this
+			// attempt's entry completed (carrying its checkout_id/external_id) and
+			// record the paid key, without touching the newer active attempt's
+			// bookkeeping or the instance-level checkout_id/external_id it now owns.
+			// Persisting this attempt as completed lets a retry recover via the
+			// idempotent branch above if the refresh below fails. Fail closed on
+			// persist/refresh errors so a paid customer is never left unlicensed.
+			if err := cfgSvc.CompleteSupersededCheckout(r.Context(), cfg.UID, attemptID, attempt, purchased, !envActive); err != nil {
+				_ = render.Render(w, r, util.NewServiceErrResponse(err))
+				return
+			}
+			if err := h.refreshInstanceLicenser(effectiveKey); err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))
+				return
+			}
+			_ = render.Render(w, r, util.NewServerResponse("Self-hosted checkout completed", map[string]interface{}{
+				"status":      checkoutStatusCompleted,
+				"license_key": purchased,
+				"checkout_id": resp.Data.CheckoutID,
+				"external_id": resp.Data.ExternalID,
+			}, http.StatusOK))
+			return
+		}
+
+		if err := h.refreshInstanceLicenser(effectiveKey); err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))
+			return
+		}
+
+		_ = render.Render(w, r, util.NewServerResponse("Self-hosted checkout completion checked", map[string]interface{}{
+			"status":      resp.Data.Status,
+			"license_key": purchased,
+			"checkout_id": resp.Data.CheckoutID,
+			"external_id": resp.Data.ExternalID,
+		}, http.StatusOK))
+		return
+	}
+
+	attempt.Status = resp.Data.Status
+	cfg.CheckoutAttempts[attemptID] = attempt
+	// Not completed/licensed: record the latest attempt status only. This path
+	// must not write the license columns, so a concurrent completion that
+	// persisted a license is not clobbered by this stale snapshot.
+	if err := cfgSvc.UpdateCheckoutAttempts(r.Context(), cfg); err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if resp.Data.Status == checkoutStatusCompleted && resp.Data.LicenseKey != "" {
-		if err := h.refreshInstanceLicenser(resp.Data.LicenseKey); err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))
-			return
-		}
-	}
-
-	status := http.StatusAccepted
-	if resp.Data.Status == checkoutStatusCompleted {
-		status = http.StatusOK
-	}
 	_ = render.Render(w, r, util.NewServerResponse("Self-hosted checkout completion checked", map[string]interface{}{
 		"status":      resp.Data.Status,
 		"license_key": resp.Data.LicenseKey,
 		"checkout_id": resp.Data.CheckoutID,
 		"external_id": resp.Data.ExternalID,
-	}, status))
+	}, http.StatusAccepted))
 }

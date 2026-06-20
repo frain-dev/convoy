@@ -279,25 +279,49 @@ func applyInstanceLicenseConfig(ctx context.Context, a *cli.App, cfg *config.Con
 		return err
 	}
 
-	if shouldUpdate := applyLicensePrecedence(instCfg, cfg); shouldUpdate {
-		return configRepo.UpdateInstanceBillingConfig(ctx, instCfg)
+	if applyLicensePrecedence(instCfg, cfg) {
+		if err := configRepo.UpdateInstanceBillingConfig(ctx, instCfg); err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 
+// applyLicensePrecedence resolves the effective instance license (env/file key
+// wins, else the persisted guest-checkout key), points the runtime cfg at it for
+// the licenser, and records the resolved value + provenance back onto instCfg so
+// the row is the single, debuggable source of truth for reads. It never writes
+// checkout_license_key: that column is owned by the guest-checkout flow, so an
+// env override stays reversible (drop env and the next boot falls back to the
+// purchased key). Boot runs before serving requests, so persisting here cannot
+// race a concurrent checkout. Returns true when instCfg changed and must be
+// persisted.
 func applyLicensePrecedence(instCfg *datastore.Configuration, cfg *config.Configuration) bool {
-	// An explicit CONVOY_LICENSE_KEY owns boot-time self-hosted licensing. The
-	// persisted checkout key is only the fallback when env/config has no key.
-	if licenseKey := strings.TrimSpace(cfg.LicenseKey); licenseKey != "" {
-		instCfg.LicenseKey = licenseKey
-		instCfg.LicenseSyncedAt = null.NewTime(time.Now(), true)
-		return true
-	} else if instCfg.LicenseKey != "" {
-		cfg.LicenseKey = instCfg.LicenseKey
+	// The purchased guest key lives in checkout_license_key. Legacy rows (pre-column
+	// or pre-migration) persisted a guest key only in license_key, so when the
+	// checkout column is empty but license_key holds a non-env key, treat that key
+	// as the purchased handle and self-heal the column. Without this, resolving from
+	// an empty checkout key would blank an already-paid license at boot.
+	checkoutKey := instCfg.CheckoutLicenseKey
+	healed := false
+	if checkoutKey == "" && instCfg.LicenseKey != "" && instCfg.LicenseKeySource != config.LicenseSourceEnv {
+		checkoutKey = instCfg.LicenseKey
+		instCfg.CheckoutLicenseKey = checkoutKey
+		healed = true
 	}
 
-	return false
+	effective, source := config.ResolveEffectiveLicense(cfg.LicenseKey, checkoutKey)
+	cfg.LicenseKey = effective
+
+	if instCfg.LicenseKey == effective && instCfg.LicenseKeySource == source && !healed {
+		return false
+	}
+	instCfg.LicenseKey = effective
+	instCfg.LicenseKeySource = source
+	if effective != "" {
+		instCfg.LicenseSyncedAt = null.NewTime(time.Now(), true)
+	}
+	return true
 }
 
 func licenseOverrideCfg(cfg *config.Configuration, licenser license.Licenser) {

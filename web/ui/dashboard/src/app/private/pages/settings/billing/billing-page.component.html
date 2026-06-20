@@ -522,7 +522,7 @@
           <p class="text-14 text-neutral-11 mb-16px">Click a plan card or the Select button to choose a plan. Contact-only plans open a sales request instead of checkout.</p>
 
           @if (showSelfHostedCheckoutForm()) {
-            <form [formGroup]="selfHostedCheckoutForm" class="mb-24px">
+            <form [formGroup]="selfHostedCheckoutForm" class="mb-24px" (click)="$event.stopPropagation()">
               <convoy-input-field>
                 <label for="selfHostedBillingEmail" convoy-label required="true">Billing email</label>
                 <input

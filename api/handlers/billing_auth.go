@@ -83,7 +83,7 @@ func (h *BillingHandler) requireSelfHostedBillingAdmin(w http.ResponseWriter, r 
 		return true
 	}
 
-	_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: organisation admin access required", http.StatusForbidden))
+	_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required to manage self-hosted billing", http.StatusForbidden))
 	return false
 }
 
@@ -98,6 +98,22 @@ func (h *BillingHandler) canManageSelfHostedBilling(r *http.Request) bool {
 		return true
 	}
 	if h.A.Cfg.UsesOrgBilling() {
+		return false
+	}
+
+	// Self-hosted billing is instance-global, so it is instance-admin only.
+	// Bootstrap policy (fail closed once configured): before any instance admin
+	// exists, allow an organisation admin so a fresh instance can buy its first
+	// license without a separate promotion step. In single-user mode the caller
+	// is already an instance admin (org members are auto-promoted), so this path
+	// only applies to multi-user instances that have not yet promoted one. Once
+	// an instance admin is provisioned, org admins can no longer manage instance
+	// billing.
+	count, err := memberRepo.CountInstanceAdminUsers(r.Context())
+	if err != nil {
+		return false
+	}
+	if count > 0 {
 		return false
 	}
 

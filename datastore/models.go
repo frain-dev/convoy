@@ -1727,6 +1727,8 @@ type Configuration struct {
 	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 
 	LicenseKey              string                               `json:"license_key,omitempty" db:"license_key"`
+	CheckoutLicenseKey      string                               `json:"checkout_license_key,omitempty" db:"checkout_license_key"`
+	LicenseKeySource        string                               `json:"license_key_source,omitempty" db:"license_key_source"`
 	CheckoutAttempts        map[string]SelfHostedCheckoutAttempt `json:"checkout_attempts,omitempty" db:"checkout_attempts"`
 	ActiveCheckoutAttemptID string                               `json:"active_checkout_attempt_id,omitempty" db:"active_checkout_attempt_id"`
 	CheckoutID              string                               `json:"checkout_id,omitempty" db:"checkout_id"`

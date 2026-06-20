@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,19 +38,30 @@ func (h *BillingHandler) selfHostedLicenseKey(w http.ResponseWriter, r *http.Req
 		return "", false
 	}
 
-	licenseKey := strings.TrimSpace(instanceBilling.LicenseKey)
-	if licenseKey == "" {
+	// The mode gate uses the effective license (env/file wins, else purchased),
+	// resolved and persisted at boot.
+	effectiveKey := strings.TrimSpace(instanceBilling.LicenseKey)
+	if effectiveKey == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("self-hosted license is not configured", http.StatusForbidden))
 		return "", false
 	}
 
-	mode := h.A.Cfg.BillingMode(licenseKey)
+	mode := h.A.Cfg.BillingMode(effectiveKey)
 	if mode != config.BillingModeLicensedSelfHosted {
 		_ = render.Render(w, r, util.NewErrorResponse("licensed self-hosted billing is not configured", http.StatusForbidden))
 		return "", false
 	}
 
-	return licenseKey, true
+	// Overwatch keys the self-hosted org/subscription by the purchased guest key it
+	// issued. Under an env/file override the effective license_key is the env key,
+	// which Overwatch does not know, so address Overwatch with the preserved checkout
+	// key. Fall back to the effective key for legacy rows that predate the column.
+	billingKey := strings.TrimSpace(instanceBilling.CheckoutLicenseKey)
+	if billingKey == "" {
+		billingKey = effectiveKey
+	}
+
+	return billingKey, true
 }
 
 // serveSelfHosted handles the uniform self-hosted GET pass-throughs: resolve the license
@@ -90,11 +102,14 @@ func (h *BillingHandler) DeleteSelfHostedSubscription(w http.ResponseWriter, r *
 		return
 	}
 
+	// Fail closed on a self-hosted instance: the cancel succeeded upstream, but if
+	// the local licenser cannot rebuild around the existing license key we surface
+	// the error so it is retried. Do not fall back to an org-billing licenser,
+	// which would wrongly flip a licensed self-hosted instance into org billing
+	// with no key.
 	if err := h.refreshInstanceLicenser(licenseKey); err != nil {
-		if fallbackErr := h.useBillingRequiredLicenser(); fallbackErr != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))
-			return
-		}
+		_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))
+		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscription cancelled successfully", resp.Data, http.StatusOK))
@@ -300,40 +315,29 @@ func (h *BillingHandler) DeleteSelfHostedPaymentMethod(w http.ResponseWriter, r 
 	_ = render.Render(w, r, util.NewServerResponse("Payment method deleted successfully", resp.Data, http.StatusOK))
 }
 
+// refreshInstanceLicenser re-initialises h.A.Licenser around the given license
+// key (cloud org-billing mode is derived from config) and persists it via
+// config.Override. The key must be non-empty; callers guard that, and an empty
+// key is rejected so the persisted license can never be wiped here.
 func (h *BillingHandler) refreshInstanceLicenser(licenseKey string) error {
-	return h.rebuildLicenser(licenseKey)
-}
+	if licenseKey == "" {
+		return errors.New("license key cannot be empty")
+	}
 
-func (h *BillingHandler) useBillingRequiredLicenser() error {
-	return h.rebuildLicenser("")
-}
-
-// rebuildLicenser re-initialises h.A.Licenser. A non-empty licenseKey rebuilds the
-// instance licenser around that key (cloud org-billing mode is derived from config) and
-// persists it via config.Override; an empty licenseKey installs the billing-required
-// licenser (org billing on, no key/client) without persisting config.
-func (h *BillingHandler) rebuildLicenser(licenseKey string) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
 	}
+	cfg.LicenseKey = licenseKey
 
 	lc := licenseservice.LicenserConfig{
-		OrgRepo:     h.orgRepo(),
-		UserRepo:    users.New(h.A.Logger, h.A.DB),
-		ProjectRepo: h.projectRepo(),
-		Logger:      h.A.Logger,
-	}
-
-	persist := false
-	if licenseKey != "" {
-		cfg.LicenseKey = licenseKey
-		lc.LicenseKey = cfg.LicenseKey
-		lc.UseOrgBilling = cfg.UsesOrgBilling()
-		lc.Client = licenseservice.NewClientFromConfig(cfg.LicenseService, h.A.Logger)
-		persist = true
-	} else {
-		lc.UseOrgBilling = true
+		OrgRepo:       h.orgRepo(),
+		UserRepo:      users.New(h.A.Logger, h.A.DB),
+		ProjectRepo:   h.projectRepo(),
+		Logger:        h.A.Logger,
+		LicenseKey:    cfg.LicenseKey,
+		UseOrgBilling: cfg.UsesOrgBilling(),
+		Client:        licenseservice.NewClientFromConfig(cfg.LicenseService, h.A.Logger),
 	}
 
 	licenser, err := license.NewLicenser(&license.Config{LicenseService: lc})
@@ -343,8 +347,5 @@ func (h *BillingHandler) rebuildLicenser(licenseKey string) error {
 
 	h.A.Licenser = licenser
 	h.A.Cfg = cfg
-	if persist {
-		return config.Override(&cfg)
-	}
-	return nil
+	return config.Override(&cfg)
 }

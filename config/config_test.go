@@ -641,3 +641,42 @@ func Test_DatabaseConfigurationBuildDsn(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveEffectiveLicense(t *testing.T) {
+	tests := []struct {
+		name           string
+		envKey         string
+		checkoutKey    string
+		expectedKey    string
+		expectedSource string
+	}{
+		{
+			name:           "env wins over checkout",
+			envKey:         "  env-license  ",
+			checkoutKey:    "checkout-license",
+			expectedKey:    "env-license",
+			expectedSource: LicenseSourceEnv,
+		},
+		{
+			name:           "checkout used when env empty",
+			envKey:         "   ",
+			checkoutKey:    "checkout-license",
+			expectedKey:    "checkout-license",
+			expectedSource: LicenseSourceGuestCheckout,
+		},
+		{
+			name:           "unset when both empty",
+			envKey:         "",
+			checkoutKey:    "  ",
+			expectedKey:    "",
+			expectedSource: "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			key, source := ResolveEffectiveLicense(tc.envKey, tc.checkoutKey)
+			require.Equal(t, tc.expectedKey, key)
+			require.Equal(t, tc.expectedSource, source)
+		})
+	}
+}
