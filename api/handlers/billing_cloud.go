@@ -240,22 +240,6 @@ func (h *BillingHandler) DeletePaymentMethod(w http.ResponseWriter, r *http.Requ
 }
 
 // Organisation handlers
-func (h *BillingHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
-	var orgData billing.BillingOrganisation
-	if err := json.NewDecoder(r.Body).Decode(&orgData); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.CreateOrganisation(r.Context(), orgData)
-	if err != nil {
-		renderBillingError(w, r, err)
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Organisation created successfully", resp.Data, http.StatusCreated))
-}
-
 func (h *BillingHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 	orgID, ok := h.orgGuard(w, r)
 	if !ok {

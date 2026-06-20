@@ -189,7 +189,9 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 		billingClient := billing.NewClient(cfg.Billing)
 		if err := billingClient.HealthCheck(ctx); err != nil {
-			a.Logger.Warnf("billing service health check failed (url=%s): %v", cfg.Billing.URL, err)
+			// Do not log cfg.Billing.URL: it can carry credentials in userinfo or
+			// tokens in the query string. The operator already knows the configured URL.
+			a.Logger.Warnf("billing service health check failed: %v", err)
 		}
 		a.BillingClient = billingClient
 	}
@@ -709,10 +711,6 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					orgBillingRouter.Get("/internal_id", billingHandler.GetInternalOrganisationID)
 					orgBillingRouter.Put("/tax_id", billingHandler.UpdateOrganisationTaxID)
 					orgBillingRouter.Put("/address", billingHandler.UpdateOrganisationAddress)
-				})
-
-				billingRouter.Route("/organisations", func(billingOrgRouter chi.Router) {
-					billingOrgRouter.Post("/", billingHandler.CreateOrganisation)
 				})
 
 				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {

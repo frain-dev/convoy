@@ -49,12 +49,15 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	instanceLicenseKey := ""
+	// Floor with the in-memory env/file license so a not-yet-persisted or absent
+	// config row does not misreport an env-licensed instance as OSS. A non-empty
+	// persisted key (env resolved at boot, or a guest purchase) takes precedence.
+	instanceLicenseKey := strings.TrimSpace(h.A.Cfg.LicenseKey)
 	if instanceBilling != nil {
-		instanceLicenseKey = instanceBilling.LicenseKey
+		if k := strings.TrimSpace(instanceBilling.LicenseKey); k != "" {
+			instanceLicenseKey = k
+		}
 	}
-	// license_key already holds the effective license (env/file wins, else the
-	// purchased key), resolved and persisted at boot, so reads use it directly.
 	mode := h.A.Cfg.BillingMode(instanceLicenseKey)
 	selfHosted := map[string]interface{}{
 		"enabled":            mode != config.BillingModeCloud,

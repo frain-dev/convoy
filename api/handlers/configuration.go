@@ -118,9 +118,16 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	useOrgBilling := cfg.UsesOrgBilling() && h.A.BillingClient != nil
-	instanceLicenseKey := ""
+	// Floor with the in-memory env/file license so a DB read failure or an absent
+	// config row does not misreport an env-licensed instance as OSS on this
+	// pre-login auth surface. A non-empty persisted key (env resolved at boot, or a
+	// guest purchase) takes precedence. Unlike the billing management endpoints,
+	// this stays available on DB errors rather than failing closed.
+	instanceLicenseKey := strings.TrimSpace(cfg.LicenseKey)
 	if instanceBilling, err := configuration.New(h.A.Logger, h.A.DB).LoadInstanceBillingConfig(r.Context()); err == nil && instanceBilling != nil {
-		instanceLicenseKey = instanceBilling.LicenseKey
+		if k := strings.TrimSpace(instanceBilling.LicenseKey); k != "" {
+			instanceLicenseKey = k
+		}
 	}
 	slug := strings.TrimSpace(r.URL.Query().Get("slug"))
 

@@ -610,30 +610,6 @@ func (s *BillingIntegrationTestSuite) Test_GetPaymentMethods() {
 	require.True(s.T(), response["status"].(bool))
 }
 
-func (s *BillingIntegrationTestSuite) Test_CreateOrganisation() {
-	orgData := map[string]interface{}{
-		"name":          "Test Org",
-		"billing_email": "test@example.com",
-	}
-
-	body, _ := json.Marshal(orgData)
-	req := createRequest(http.MethodPost, "/ui/billing/organisations", "", bytes.NewBuffer(body))
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-	w := httptest.NewRecorder()
-
-	s.Router.ServeHTTP(w, req)
-
-	require.Equal(s.T(), http.StatusCreated, w.Code)
-
-	var response map[string]interface{}
-	err = json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(s.T(), err)
-
-	require.Equal(s.T(), "Organisation created successfully", response["message"])
-	require.True(s.T(), response["status"].(bool))
-}
-
 func (s *BillingIntegrationTestSuite) Test_GetOrganisation() {
 	url := fmt.Sprintf("/ui/billing/organisations/%s", s.DefaultOrg.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
