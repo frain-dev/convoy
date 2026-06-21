@@ -346,7 +346,6 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 							r.Post("/dynamic", handler.CreateDynamicEvent)
 						})
 
-						// Batch replay route (different middleware - no rate limiting)
 						eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).
 							Post("/batchreplay", handler.BatchReplayEvents)
 
