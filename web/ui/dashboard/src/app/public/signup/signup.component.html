@@ -54,13 +54,31 @@
     </button>
 
     <button convoy-button size="sm" type="button" fill="text" class="w-full" (click)="signUpWithSSO()">Sign Up with SSO</button>
+
+    @if (authConfigLoaded && isGoogleOAuthEnabled) {
+      <button convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="signUpWithGoogle()" [disabled]="isGoogleSigningIn">
+        @if (!isGoogleSigningIn) {
+          <img src="/assets/img/svg/google.svg" alt="Google icon" class="w-16px h-16px inline mr-8px" />
+        }
+        @if (isGoogleSigningIn) {
+          <div class="loading-dots inline mr-8px">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        }
+        @if (!isGoogleSigningIn) {
+          <span>Sign up with Google</span>
+        }
+        @if (isGoogleSigningIn) {
+          <span>Signing up...</span>
+        }
+      </button>
+    }
   </form>
 </section>
 
 <button convoy-button fill="link" class="mt-34px w-full" (click)="router.navigateByUrl('/login')" size="sm">Log in if you already have an account</button>
-@if (isGoogleOAuthEnabled) {
-  <div class="text-center text-12 text-gray-600 mt-0px">Google sign-in available</div>
-}
 </div>
 
 @if (isFetchingConfig) {
