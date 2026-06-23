@@ -710,6 +710,7 @@ BEGIN
         created_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
         updated_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
         deleted_at       TIMESTAMP WITH TIME ZONE,
+        target_url       TEXT,
         url_query_params VARCHAR,
         idempotency_key  TEXT,
         latency          TEXT,
@@ -743,11 +744,11 @@ BEGIN
     RAISE NOTICE 'Migrating data...';
     INSERT INTO convoy.event_deliveries_new (
         id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
-        attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
+        attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
         latency_seconds, delivery_mode
     )
     SELECT id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
-           attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
+           attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
            latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode
     FROM convoy.event_deliveries;
 
@@ -808,6 +809,7 @@ begin
         created_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
         updated_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
         deleted_at       TIMESTAMP WITH TIME ZONE,
+        target_url       TEXT,
         url_query_params VARCHAR,
         idempotency_key  TEXT,
         latency          TEXT,
@@ -820,11 +822,11 @@ begin
     RAISE NOTICE 'Migrating data...';
     INSERT INTO convoy.event_deliveries_new (
         id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
-        attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
+        attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
         latency_seconds, delivery_mode
     )
     SELECT id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
-           attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
+           attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
            latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode
     FROM convoy.event_deliveries;
 
