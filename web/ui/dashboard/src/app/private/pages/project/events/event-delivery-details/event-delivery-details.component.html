@@ -52,146 +52,162 @@
 
   <!-- event delivery details  -->
   @if (!isLoadingDeliveryDetails) {
-    <div class="flex items-center py-16px border-t border-t-new.primary-25">
-      <div class="flex items-center">
-        <div class="pr-30px">
-          <p class="text-neutral-10 text-12 font-light mb-6px">STATUS</p>
-          <convoy-tag [color]="eventDelsDetails?.status || '' | statuscolor">{{ eventDelsDetails?.status }}</convoy-tag>
-        </div>
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="flex items-center">
-        <div class="px-30px">
-          <p class="text-neutral-10 text-12 font-light mb-6px">EVENT TYPE</p>
-          <convoy-tag color="primary" fill="soft">{{ eventDelsDetails?.event_metadata?.event_type }}</convoy-tag>
-        </div>
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="flex items-center">
-        @if (!eventDelsDetails?.device_id) {
-          <div class="px-30px">
-            <p class="text-neutral-10 text-12 font-light mb-6px">IP ADDRESS</p>
-            <p class="text-12 font-medium">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
+    <div class="relative mb-50px">
+      <div #metaStrip (scroll)="onStripScroll()" [style.mask-image]="stripMaskImage" [style.-webkit-mask-image]="stripMaskImage" class="overflow-x-auto no-scrollbar border-t border-b border-t-new.primary-25 border-b-new.primary-25">
+        <div class="flex items-center py-16px w-max">
+        <div class="flex items-center">
+          <div class="pr-30px">
+            <p class="text-neutral-10 text-12 font-light mb-6px">STATUS</p>
+            <convoy-tag [color]="eventDelsDetails?.status || '' | statuscolor">{{ eventDelsDetails?.status }}</convoy-tag>
           </div>
-        }
-        @if (eventDelsDetails?.device_id) {
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
           <div class="px-30px">
-            <p class="text-neutral-10 text-12 font-light mb-6px">DEVICE</p>
-            <div class="flex items-center text-12 font-medium">
-              <div>
-                <svg width="16" height="14" class="mr-8px">
-                  <use xlink:href="#cli-icon"></use>
-                </svg>
-              </div>
-              <span class="w-100px whitespace-nowrap overflow-hidden overflow-ellipsis">{{ eventDelsDetails?.device_metadata?.host_name || '-' }}</span>
+            <p class="text-neutral-10 text-12 font-light mb-6px">EVENT TYPE</p>
+            <convoy-tag color="primary" fill="soft">{{ eventDelsDetails?.event_metadata?.event_type }}</convoy-tag>
+          </div>
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
+          <div class="px-30px">
+            <p class="text-neutral-10 text-12 font-light mb-6px">EVENT RECEIVED</p>
+            @if (eventDelsDetails?.event_metadata?.created_at) {
+              <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)" show-icon="false" notificationText="Event received timestamp copied to clipboard">
+                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)">
+                  <span>{{ eventDelsDetails?.event_metadata?.created_at | date : 'medium' }}</span>
+                  <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                    {{ formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at) }}
+                  </span>
+                </span>
+              </convoy-copy-button>
+            } @else {
+              <p class="text-12 font-medium">-</p>
+            }
+          </div>
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
+          <div class="px-30px">
+            <p class="text-neutral-10 text-12 font-light mb-6px">DELIVERY QUEUED</p>
+            @if (eventDelsDetails?.created_at) {
+              <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.created_at)" show-icon="false" notificationText="Delivery queued timestamp copied to clipboard">
+                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.created_at)">
+                  <span>{{ eventDelsDetails?.created_at | date : 'medium' }}</span>
+                  <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                    {{ formatPreciseTimestamp(eventDelsDetails?.created_at) }}
+                  </span>
+                </span>
+              </convoy-copy-button>
+            } @else {
+              <p class="text-12 font-medium">-</p>
+            }
+          </div>
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
+          <div class="px-30px">
+            <p class="text-neutral-10 text-12 font-light mb-6px">ACKNOWLEDGED</p>
+            @if (eventDelsDetails?.acknowledged_at) {
+              <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)" show-icon="false" notificationText="Acknowledged timestamp copied to clipboard">
+                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)">
+                  <span>{{ eventDelsDetails?.acknowledged_at | date : 'medium' }}</span>
+                  <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                    {{ formatPreciseTimestamp(eventDelsDetails?.acknowledged_at) }}
+                  </span>
+                </span>
+              </convoy-copy-button>
+            } @else {
+              <p class="text-12 font-medium">-</p>
+            }
+          </div>
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
+          <div class="px-30px">
+            <p class="text-neutral-10 text-12 font-light mb-6px">LATEST ATTEMPT</p>
+            @if (eventDeliveryAtempt?.created_at) {
+              <convoy-copy-button [text]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)" show-icon="false" notificationText="Latest attempt timestamp copied to clipboard">
+                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)">
+                  <span>{{ eventDeliveryAtempt?.created_at | date : 'medium' }}</span>
+                  <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                    {{ formatPreciseTimestamp(eventDeliveryAtempt?.created_at) }}
+                  </span>
+                </span>
+              </convoy-copy-button>
+            } @else {
+              <p class="text-12 font-medium">-</p>
+            }
+          </div>
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
+          <div class="px-30px">
+            <p class="text-neutral-10 text-12 font-light mb-6px">LATENCY</p>
+            <p class="text-12 font-medium">{{ formatLatencySeconds(eventDelsDetails?.latency_seconds, eventDelsDetails?.status) }}</p>
+          </div>
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
+          @if (!eventDelsDetails?.device_id) {
+            <div class="px-30px">
+              <p class="text-neutral-10 text-12 font-light mb-6px">IP ADDRESS</p>
+              <p class="text-12 font-medium">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
             </div>
-          </div>
-        }
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="flex items-center">
-        @if (!eventDelsDetails?.device_id) {
+          }
+          @if (eventDelsDetails?.device_id) {
+            <div class="px-30px">
+              <p class="text-neutral-10 text-12 font-light mb-6px">DEVICE</p>
+              <div class="flex items-center text-12 font-medium">
+                <div>
+                  <svg width="16" height="14" class="mr-8px">
+                    <use xlink:href="#cli-icon"></use>
+                  </svg>
+                </div>
+                <span class="w-100px whitespace-nowrap overflow-hidden overflow-ellipsis">{{ eventDelsDetails?.device_metadata?.host_name || '-' }}</span>
+              </div>
+            </div>
+          }
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
+          @if (!eventDelsDetails?.device_id) {
+            <div class="px-30px">
+              <p class="text-neutral-10 text-12 font-light mb-6px">API VERSION</p>
+              <p class="text-12 font-medium">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
+            </div>
+          }
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
           <div class="px-30px">
-            <p class="text-neutral-10 text-12 font-light mb-6px">API VERSION</p>
-            <p class="text-12 font-medium">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
+            <p class="text-neutral-10 text-12 font-light mb-6px">IDEMPOTENCY KEY</p>
+            <p class="text-12 font-medium w-150px truncate">{{ eventDelsDetails?.idempotency_key || '-' }}</p>
           </div>
-        }
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="flex items-center">
-        <div class="px-30px">
-          <p class="text-neutral-10 text-12 font-light mb-6px">IDEMPOTENCY KEY</p>
-          <p class="text-12 font-medium w-150px truncate">{{ eventDelsDetails?.idempotency_key || '-' }}</p>
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
         </div>
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="pl-30px">
-        <p class="text-neutral-10 text-12 font-light mb-6px">DESCRIPTION</p>
-        <p class="text-12 font-medium w-150px text-wrap">{{ eventDelsDetails?.description || '-' }}</p>
-      </div>
-    </div>
-  }
-
-  @if (!isLoadingDeliveryDetails) {
-    <div class="flex items-center mb-50px py-16px border-t border-b border-t-neutral-a3 border-b-new.primary-25">
-      <div class="flex items-center">
-        <div class="pr-30px">
-          <p class="text-neutral-10 text-12 font-light mb-6px">EVENT RECEIVED</p>
-          @if (eventDelsDetails?.event_metadata?.created_at) {
-            <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)" show-icon="false" notificationText="Event received timestamp copied to clipboard">
-              <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)">
-                <span>{{ eventDelsDetails?.event_metadata?.created_at | date : 'medium' }}</span>
-                <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                  {{ formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at) }}
-                </span>
-              </span>
-            </convoy-copy-button>
-          } @else {
-            <p class="text-12 font-medium">-</p>
-          }
-        </div>
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="flex items-center">
-        <div class="px-30px">
-          <p class="text-neutral-10 text-12 font-light mb-6px">DELIVERY QUEUED</p>
-          @if (eventDelsDetails?.created_at) {
-            <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.created_at)" show-icon="false" notificationText="Delivery queued timestamp copied to clipboard">
-              <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.created_at)">
-                <span>{{ eventDelsDetails?.created_at | date : 'medium' }}</span>
-                <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                  {{ formatPreciseTimestamp(eventDelsDetails?.created_at) }}
-                </span>
-              </span>
-            </convoy-copy-button>
-          } @else {
-            <p class="text-12 font-medium">-</p>
-          }
-        </div>
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="flex items-center">
-        <div class="px-30px">
-          <p class="text-neutral-10 text-12 font-light mb-6px">ACKNOWLEDGED</p>
-          @if (eventDelsDetails?.acknowledged_at) {
-            <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)" show-icon="false" notificationText="Acknowledged timestamp copied to clipboard">
-              <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)">
-                <span>{{ eventDelsDetails?.acknowledged_at | date : 'medium' }}</span>
-                <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                  {{ formatPreciseTimestamp(eventDelsDetails?.acknowledged_at) }}
-                </span>
-              </span>
-            </convoy-copy-button>
-          } @else {
-            <p class="text-12 font-medium">-</p>
-          }
-        </div>
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="flex items-center">
-        <div class="px-30px">
-          <p class="text-neutral-10 text-12 font-light mb-6px">LATEST ATTEMPT</p>
-          @if (eventDeliveryAtempt?.created_at) {
-            <convoy-copy-button [text]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)" show-icon="false" notificationText="Latest attempt timestamp copied to clipboard">
-              <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)">
-                <span>{{ eventDeliveryAtempt?.created_at | date : 'medium' }}</span>
-                <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                  {{ formatPreciseTimestamp(eventDeliveryAtempt?.created_at) }}
-                </span>
-              </span>
-            </convoy-copy-button>
-          } @else {
-            <p class="text-12 font-medium">-</p>
-          }
-        </div>
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="flex items-center">
-        <div class="px-30px">
-          <p class="text-neutral-10 text-12 font-light mb-6px">LATENCY</p>
-          <p class="text-12 font-medium">{{ formatLatencySeconds(eventDelsDetails?.latency_seconds, eventDelsDetails?.status) }}</p>
+        <div class="flex items-center">
+          <div class="px-30px">
+            <p class="text-neutral-10 text-12 font-light mb-6px">DESCRIPTION</p>
+            <p class="text-12 font-medium w-150px text-wrap">{{ eventDelsDetails?.description || '-' }}</p>
+          </div>
         </div>
       </div>
+      </div>
+      @if (canScrollLeft) {
+        <button type="button" aria-label="Scroll left" (click)="scrollStrip('left')" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-[28px] h-[28px] rounded-[50%] bg-white-100 shadow-md border border-new.primary-25">
+          <svg width="20" height="20" class="fill-primary-100">
+            <use xlink:href="#arrow-left-icon"></use>
+          </svg>
+        </button>
+      }
+      @if (canScrollRight) {
+        <button type="button" aria-label="Scroll right" (click)="scrollStrip('right')" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-[28px] h-[28px] rounded-[50%] bg-white-100 shadow-md border border-new.primary-25">
+          <svg width="20" height="20" class="fill-primary-100">
+            <use xlink:href="#arrow-right-icon"></use>
+          </svg>
+        </button>
+      }
     </div>
   }
 
