@@ -31,6 +31,7 @@ var (
 	errDynamicURLTemplateNotConcrete   = errors.New("dynamic event URL must be concrete, not an endpoint URL template")
 	errDynamicURLTemplateNoMatch       = errors.New("dynamic URL does not match any configured endpoint URL template")
 	errDynamicURLTemplateMultipleMatch = errors.New("multiple endpoint URL templates match dynamic URL")
+	errDynamicURLTemplateFeatureLookup = errors.New("endpoint URL template feature lookup failed")
 )
 
 func NewDynamicEventChannel() *DynamicEventChannel {
@@ -245,7 +246,7 @@ func findEndpoint(ctx context.Context, project *datastore.Project, args EventCha
 				return nil, &EndpointError{Err: templateErr, delay: 10 * time.Second}
 			}
 			if foundTemplates {
-				return nil, &EndpointError{Err: fmt.Errorf("endpoint URL template feature lookup failed: %w", featureErr), delay: 10 * time.Second}
+				return nil, &EndpointError{Err: fmt.Errorf("%w: %w", errDynamicURLTemplateFeatureLookup, featureErr), delay: 10 * time.Second}
 			}
 		} else if endpointURLTemplatesEnabled {
 			endpoint, foundTemplates, err := findTemplatedEndpoint(ctx, args, project.UID, dynamicEvent.URL)
@@ -326,7 +327,8 @@ func isDynamicURLTemplateValidationError(err error) bool {
 
 	return errors.Is(endpointErr.Err, errDynamicURLTemplateNotConcrete) ||
 		errors.Is(endpointErr.Err, errDynamicURLTemplateNoMatch) ||
-		errors.Is(endpointErr.Err, errDynamicURLTemplateMultipleMatch)
+		errors.Is(endpointErr.Err, errDynamicURLTemplateMultipleMatch) ||
+		errors.Is(endpointErr.Err, errDynamicURLTemplateFeatureLookup)
 }
 
 func hasValidEndpointURLTemplates(ctx context.Context, args EventChannelArgs, projectID string) (bool, error) {
