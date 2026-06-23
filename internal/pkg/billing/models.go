@@ -85,12 +85,18 @@ type PricingOption struct {
 }
 
 type BillingSubscription struct {
-	ID        string `json:"id,omitempty"`
-	Status    string `json:"status,omitempty"`
-	PlanID    string `json:"plan_id,omitempty"`
-	Plan      *Plan  `json:"plan,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-	UpdatedAt string `json:"updated_at,omitempty"`
+	ID     string `json:"id,omitempty"`
+	Status string `json:"status,omitempty"`
+	PlanID string `json:"plan_id,omitempty"`
+	Plan   *Plan  `json:"plan,omitempty"`
+	// Billing cycle as reported by the billing service. ISO8601 strings, empty when there
+	// is no upcoming invoice. Passed through so the dashboard shows the real subscription
+	// period instead of deriving it from the usage month.
+	CurrentPeriodStart string `json:"current_period_start,omitempty"`
+	CurrentPeriodEnd   string `json:"current_period_end,omitempty"`
+	NextInvoiceDate    string `json:"next_invoice_date,omitempty"`
+	CreatedAt          string `json:"created_at,omitempty"`
+	UpdatedAt          string `json:"updated_at,omitempty"`
 }
 
 type Invoice struct {
