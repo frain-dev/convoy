@@ -94,7 +94,19 @@
                     </td>
                     <td convoy-table-cell>{{ event.device_id ? '-' : event.metadata.num_trials }}</td>
                     <td convoy-table-cell>{{ event?.status == 'Success' || event.metadata.num_trials >= event.metadata.retry_limit || event?.status == 'Discarded' ? '-' : (event.metadata.next_send_time | date: 'mediumTime') }}</td>
-                    <td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
+                    <td convoy-table-cell>
+                      <convoy-copy-button
+                        [text]="formatPreciseTimestamp(event.created_at)"
+                        show-icon="false"
+                        notificationText="Queued timestamp copied to clipboard">
+                        <span class="relative inline-flex group" [title]="formatPreciseTimestamp(event.created_at)">
+                          <span>{{ event.created_at | date: 'mediumTime' }}</span>
+                          <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                            {{ formatPreciseTimestamp(event.created_at) }}
+                          </span>
+                        </span>
+                      </convoy-copy-button>
+                    </td>
                     <td convoy-table-cell>
                       <button
                         convoy-button

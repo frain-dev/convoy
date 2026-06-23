@@ -211,6 +211,12 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		attributes["project.id"] = subResponse.Project.UID
 
 		event, subscriptions := subResponse.Event, subResponse.Subscriptions
+		if subResponse.IsDuplicateEvent {
+			deps.Logger.InfoContext(ctx, fmt.Sprintf("CODE: 1007, duplicate event with idempotency key %v will not be sent", event.IdempotencyKey))
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingDuplicate, attributes)
+			return nil
+		}
+
 		if len(subscriptions) < 1 {
 			err = &EndpointError{Err: fmt.Errorf("CODE: 1011, empty subscriptions via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
 			deps.Logger.Error(fmt.Sprintf("failed to send %s: %v", event.UID, err))
@@ -230,12 +236,6 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		if err != nil {
 			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return &EndpointError{Err: err, delay: defaultDelay}
-		}
-
-		if subResponse.IsDuplicateEvent {
-			deps.Logger.InfoContext(ctx, fmt.Sprintf("CODE: 1007, duplicate event with idempotency key %v will not be sent", event.IdempotencyKey))
-			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingDuplicate, attributes)
-			return nil
 		}
 
 		// no need for a separate queue

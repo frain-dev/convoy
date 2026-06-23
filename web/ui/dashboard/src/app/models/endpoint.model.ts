@@ -65,6 +65,7 @@ export interface ENDPOINT {
 	url: string;
 	target_url: string;
 	updated_at: string;
+	deleted_at?: string;
 	rate_limit: number;
 	rate_limit_duration: string;
 	http_timeout?: string;

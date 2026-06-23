@@ -3,7 +3,7 @@
 
   <!-- event delivery details loader  -->
   @if (isLoadingDeliveryDetails) {
-    <div class="flex items-center mb-50px py-16px border-y border-y-new.primary-25">
+    <div class="flex items-center py-16px border-y border-y-new.primary-25">
       <div class="flex items-center">
         <div class="pr-30px py-24px">
           <p class="text-neutral-10 text-12 font-light">STATUS</p>
@@ -20,7 +20,7 @@
       </div>
       <div class="flex items-center">
         <div class="px-30px py-24px">
-          <p class="text-neutral-10 text-12 font-light">TIME</p>
+          <p class="text-neutral-10 text-12 font-light">QUEUED AT</p>
           <convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
         </div>
         <div class="w-[1px] h-40px bg-new.primary-25"></div>
@@ -52,7 +52,7 @@
 
   <!-- event delivery details  -->
   @if (!isLoadingDeliveryDetails) {
-    <div class="flex items-center mb-50px py-16px border-y border-y-new.primary-25">
+    <div class="flex items-center py-16px border-t border-t-new.primary-25">
       <div class="flex items-center">
         <div class="pr-30px">
           <p class="text-neutral-10 text-12 font-light mb-6px">STATUS</p>
@@ -64,13 +64,6 @@
         <div class="px-30px">
           <p class="text-neutral-10 text-12 font-light mb-6px">EVENT TYPE</p>
           <convoy-tag color="primary" fill="soft">{{ eventDelsDetails?.event_metadata?.event_type }}</convoy-tag>
-        </div>
-        <div class="w-[1px] h-40px bg-new.primary-25"></div>
-      </div>
-      <div class="flex items-center">
-        <div class="px-30px">
-          <p class="text-neutral-10 text-12 font-light mb-6px">TIME</p>
-          <p class="text-12 font-medium">{{ eventDelsDetails?.created_at | date : 'medium' }}</p>
         </div>
         <div class="w-[1px] h-40px bg-new.primary-25"></div>
       </div>
@@ -119,6 +112,89 @@
     </div>
   }
 
+  @if (!isLoadingDeliveryDetails) {
+    <div class="flex items-center mb-50px py-16px border-t border-b border-t-neutral-a3 border-b-new.primary-25">
+      <div class="flex items-center">
+        <div class="pr-30px">
+          <p class="text-neutral-10 text-12 font-light mb-6px">EVENT RECEIVED</p>
+          @if (eventDelsDetails?.event_metadata?.created_at) {
+            <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)" show-icon="false" notificationText="Event received timestamp copied to clipboard">
+              <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)">
+                <span>{{ eventDelsDetails?.event_metadata?.created_at | date : 'medium' }}</span>
+                <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                  {{ formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at) }}
+                </span>
+              </span>
+            </convoy-copy-button>
+          } @else {
+            <p class="text-12 font-medium">-</p>
+          }
+        </div>
+        <div class="w-[1px] h-40px bg-new.primary-25"></div>
+      </div>
+      <div class="flex items-center">
+        <div class="px-30px">
+          <p class="text-neutral-10 text-12 font-light mb-6px">DELIVERY QUEUED</p>
+          @if (eventDelsDetails?.created_at) {
+            <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.created_at)" show-icon="false" notificationText="Delivery queued timestamp copied to clipboard">
+              <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.created_at)">
+                <span>{{ eventDelsDetails?.created_at | date : 'medium' }}</span>
+                <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                  {{ formatPreciseTimestamp(eventDelsDetails?.created_at) }}
+                </span>
+              </span>
+            </convoy-copy-button>
+          } @else {
+            <p class="text-12 font-medium">-</p>
+          }
+        </div>
+        <div class="w-[1px] h-40px bg-new.primary-25"></div>
+      </div>
+      <div class="flex items-center">
+        <div class="px-30px">
+          <p class="text-neutral-10 text-12 font-light mb-6px">ACKNOWLEDGED</p>
+          @if (eventDelsDetails?.acknowledged_at) {
+            <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)" show-icon="false" notificationText="Acknowledged timestamp copied to clipboard">
+              <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)">
+                <span>{{ eventDelsDetails?.acknowledged_at | date : 'medium' }}</span>
+                <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                  {{ formatPreciseTimestamp(eventDelsDetails?.acknowledged_at) }}
+                </span>
+              </span>
+            </convoy-copy-button>
+          } @else {
+            <p class="text-12 font-medium">-</p>
+          }
+        </div>
+        <div class="w-[1px] h-40px bg-new.primary-25"></div>
+      </div>
+      <div class="flex items-center">
+        <div class="px-30px">
+          <p class="text-neutral-10 text-12 font-light mb-6px">LATEST ATTEMPT</p>
+          @if (eventDeliveryAtempt?.created_at) {
+            <convoy-copy-button [text]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)" show-icon="false" notificationText="Latest attempt timestamp copied to clipboard">
+              <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)">
+                <span>{{ eventDeliveryAtempt?.created_at | date : 'medium' }}</span>
+                <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                  {{ formatPreciseTimestamp(eventDeliveryAtempt?.created_at) }}
+                </span>
+              </span>
+            </convoy-copy-button>
+          } @else {
+            <p class="text-12 font-medium">-</p>
+          }
+        </div>
+        <div class="w-[1px] h-40px bg-new.primary-25"></div>
+      </div>
+      <div class="flex items-center">
+        <div class="px-30px">
+          <p class="text-neutral-10 text-12 font-light mb-6px">LATENCY</p>
+          <p class="text-12 font-medium">{{ formatLatencySeconds(eventDelsDetails?.latency_seconds, eventDelsDetails?.acknowledged_at) }}</p>
+        </div>
+      </div>
+    </div>
+  }
+
   <h3 class="text-14 text-neutral-12 font-semibold mb-16px">Endpoint Details</h3>
 
   <!-- event delivery details loader  -->
@@ -138,18 +214,20 @@
 
   <div class="mb-50px py-16px border-y border-y-new.primary-25 flex justify-between items-center">
     <div class="flex items-center gap-24px">
-      <div class="text-12 text-neutral-12">{{ eventDelsDetails?.endpoint_metadata?.name }}</div>
-      @if (eventDelsDetails?.endpoint_metadata?.status) {
+      <div class="text-12 text-neutral-12">{{ eventDelsDetails?.endpoint_metadata?.name || '-' }}</div>
+      @if (isEndpointDeleted()) {
+        <convoy-tag color="neutral">Deleted</convoy-tag>
+      } @else if (eventDelsDetails?.endpoint_metadata?.status) {
         <convoy-tag [color]="eventDelsDetails?.endpoint_metadata?.status || '' | statuscolor">{{ eventDelsDetails?.endpoint_metadata?.status }}</convoy-tag>
       }
     </div>
 
-    <div class="text-12 text-neutral-12 truncate max-w-[370px]">{{ eventDelsDetails?.endpoint_metadata?.url }}</div>
+    <div class="text-12 text-neutral-12 truncate max-w-[370px]">{{ eventDelsDetails?.endpoint_metadata?.url || '-' }}</div>
 
     <div class="flex items-center gap-24px">
       <convoy-copy-button [text]="eventDelsDetails?.endpoint_metadata?.url || ''" color="primary" show-icon="false" [notificationText]="eventDelsDetails?.endpoint_metadata?.name + ' URL has been copied to clipboard'">
         <div convoy-tag color="primary" class="flex items-center !gap-12px">
-          <span class="max-w-[230px] truncate">{{ eventDelsDetails?.endpoint_metadata?.url }}</span>
+          <span class="max-w-[230px] truncate">{{ eventDelsDetails?.endpoint_metadata?.url || '-' }}</span>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="scale-[.6]" xmlns="http://www.w3.org/2000/svg">
             <path d="M8 12.2002H15" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
             <path d="M8 16.2002H12.38" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
@@ -166,19 +244,21 @@
         </div>
       </convoy-copy-button>
 
-      <button convoy-button fill="soft" color="neutral" size="sm" class="px-10px" [routerLink]="'../../../endpoints/' + eventDelsDetails?.endpoint_metadata?.uid">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M7.73463 2.10021L2.94546 7.16937C2.76463 7.36187 2.58963 7.74104 2.55463 8.00354L2.3388 9.89354C2.26296 10.576 2.75296 11.0427 3.42963 10.926L5.30796 10.6052C5.57046 10.5585 5.93796 10.366 6.11879 10.1677L10.908 5.09854C11.7363 4.22354 12.1096 3.22604 10.8205 2.00687C9.53713 0.799375 8.56296 1.22521 7.73463 2.10021Z"
-            stroke="#475467"
-            stroke-miterlimit="10"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            />
-          <path d="M6.93555 2.94629C7.18638 4.55629 8.49305 5.78712 10.1147 5.95046" stroke="#475467" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-          <path d="M1.75 12.833H12.25" stroke="#475467" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </button>
+      @if (!isEndpointDeleted()) {
+        <button convoy-button fill="soft" color="neutral" size="sm" class="px-10px" [routerLink]="'../../../endpoints/' + eventDelsDetails?.endpoint_metadata?.uid">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M7.73463 2.10021L2.94546 7.16937C2.76463 7.36187 2.58963 7.74104 2.55463 8.00354L2.3388 9.89354C2.26296 10.576 2.75296 11.0427 3.42963 10.926L5.30796 10.6052C5.57046 10.5585 5.93796 10.366 6.11879 10.1677L10.908 5.09854C11.7363 4.22354 12.1096 3.22604 10.8205 2.00687C9.53713 0.799375 8.56296 1.22521 7.73463 2.10021Z"
+              stroke="#475467"
+              stroke-miterlimit="10"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              />
+            <path d="M6.93555 2.94629C7.18638 4.55629 8.49305 5.78712 10.1147 5.95046" stroke="#475467" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M1.75 12.833H12.25" stroke="#475467" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      }
     </div>
   </div>
 
@@ -219,7 +299,14 @@
                   @if (deliveryAttempt?.http_status) {
                     <convoy-tag [color]="deliveryAttempt?.status ? 'success' : 'error'" className="ml-18px">{{ deliveryAttempt?.http_status }}</convoy-tag>
                   }
-                  <span class="ml-8px">{{ deliveryAttempt.created_at | date : 'medium' }}</span>
+                  <convoy-copy-button [text]="formatPreciseTimestamp(deliveryAttempt.created_at)" show-icon="false" notificationText="Attempt timestamp copied to clipboard">
+                    <span class="relative ml-8px inline-flex group" [title]="formatPreciseTimestamp(deliveryAttempt.created_at)">
+                      <span>Attempt at {{ deliveryAttempt.created_at | date : 'medium' }}</span>
+                      <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                        {{ formatPreciseTimestamp(deliveryAttempt.created_at) }}
+                      </span>
+                    </span>
+                  </convoy-copy-button>
                 </p>
               </div>
               <img src="/assets/img/angle-arrow-right.svg" class="ml-6px h-16px transition-all duration-300" alt="link out" />

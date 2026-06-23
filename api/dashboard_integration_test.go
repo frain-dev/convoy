@@ -1286,6 +1286,9 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	var respEventDelivery datastore.EventDelivery
 	parseResponse(s.T(), w.Result(), &respEventDelivery)
 	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
+	require.NotNil(s.T(), respEventDelivery.Event)
+	require.Equal(s.T(), event.UID, respEventDelivery.Event.UID)
+	require.False(s.T(), respEventDelivery.Event.CreatedAt.IsZero())
 }
 
 func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {
