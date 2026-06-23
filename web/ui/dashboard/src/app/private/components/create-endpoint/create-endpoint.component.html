@@ -12,7 +12,10 @@
 
         <convoy-input-field>
           <label for="endpoint_url" convoy-label required="true">Enter URL</label>
-          <input type="url" id="endpoint_url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter endpoint URL here" />
+          <input type="url" id="endpoint_url" convoy-input autocomplete="url" formControlName="url" [placeholder]="endpointURLTemplatesFeatureEnabled ? 'https://example.com/orders/{reference}/callback' : 'Enter endpoint URL here'" />
+          @if (endpointURLTemplatesFeatureEnabled) {
+            <p class="text-10 text-neutral-10 mt-6px">Use single-segment placeholders like <code>{{ '{' }}reference{{ '}' }}</code> in the path or query for dynamic callback URLs.</p>
+          }
           @if (addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid) {
             <convoy-input-error>Invalid endpoint URL</convoy-input-error>
           }
@@ -199,8 +202,7 @@
                     (selectedOption)="onAuthTypeChange($event)"
                   ></convoy-select>
                 </div>
-                <!-- TODO: Replace 'OAuth2EndpointAuth' with 'BasicAuthEndpointAuth' once basic_auth_endpoint_auth entitlement is available -->
-                @if (selectedAuthType == 'basic_auth' && !licenseService.hasLicense('OAuth2EndpointAuth')) {
+                @if (selectedAuthType == 'basic_auth' && !licenseService.hasLicense('BasicAuthEndpointAuth')) {
                   <div convoy-tag size="sm" color="primary">
                     <svg width="10" height="10" class="fill-new.primary-400 scale-150">
                       <use xlink:href="#lock-icon"></use>
@@ -241,8 +243,7 @@
             }
             <!-- Basic Auth Authentication -->
             @if (selectedAuthType === 'basic_auth') {
-              <!-- TODO: Replace 'OAuth2EndpointAuth' with 'BasicAuthEndpointAuth' once basic_auth_endpoint_auth entitlement is available -->
-              @if (!licenseService.hasLicense('OAuth2EndpointAuth')) {
+              @if (!licenseService.hasLicense('BasicAuthEndpointAuth')) {
                 <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
@@ -256,7 +257,7 @@
                   <p class="text-10 text-neutral-10">Basic Auth endpoint authentication is a Business plan feature. Please upgrade your license to use this feature.</p>
                 </div>
               }
-              @if (licenseService.hasLicense('OAuth2EndpointAuth') && !basicAuthFeatureEnabled) {
+              @if (licenseService.hasLicense('BasicAuthEndpointAuth') && !basicAuthFeatureEnabled) {
                 <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
@@ -268,7 +269,7 @@
                 </div>
               }
             }
-            @if (selectedAuthType === 'basic_auth' && licenseService.hasLicense('OAuth2EndpointAuth') && basicAuthFeatureEnabled) {
+            @if (selectedAuthType === 'basic_auth' && licenseService.hasLicense('BasicAuthEndpointAuth') && basicAuthFeatureEnabled) {
               <ng-container formGroupName="basic_auth">
                 <div class="grid grid-cols-2 gap-24px">
                   <convoy-input-field className="mb-0">

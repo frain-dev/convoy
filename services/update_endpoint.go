@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"net/url"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -17,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/net"
 	log "github.com/frain-dev/convoy/pkg/logger"
+	endpointurl "github.com/frain-dev/convoy/pkg/url"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -43,7 +43,7 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	}
 
 	// Validate the endpoint URL with the existing endpoint data
-	endpointUrl, err := a.ValidateEndpoint(ctx, a.Project.Config.SSL.EnforceSecureEndpoints, a.E.MtlsClientCert, endpoint)
+	endpointUrl, err := a.ValidateEndpoint(ctx, a.Project, a.E.MtlsClientCert, endpoint)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -64,22 +64,29 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	return endpoint, nil
 }
 
-func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool, mtlsClientCert *models.MtlsClientCert, existingEndpoint *datastore.Endpoint) (string, error) {
+func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, project *datastore.Project, mtlsClientCert *models.MtlsClientCert, existingEndpoint *datastore.Endpoint) (string, error) {
 	if util.IsStringEmpty(a.E.URL) {
 		return "", ErrEndpointURLRequired
 	}
 
-	u, pingErr := url.Parse(a.E.URL)
+	endpointURLTemplatesEnabled := a.Licenser.EndpointURLTemplates() &&
+		a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.EndpointURLTemplates, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, a.Project.OrganisationID)
+
+	u, hasTemplate, pingErr := endpointurl.ValidateEndpointTemplate(a.E.URL, endpointURLTemplatesEnabled)
 	if pingErr != nil {
 		return "", pingErr
 	}
 
 	switch u.Scheme {
 	case "http":
-		if enforceSecure {
+		if project.Config.SSL.EnforceSecureEndpoints {
 			return "", ErrHTTPSOnly
 		}
 	case "https":
+		if hasTemplate {
+			return a.E.URL, nil
+		}
+
 		cfg, innerErr := config.Get()
 		if innerErr != nil {
 			return "", innerErr
@@ -165,6 +172,10 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		return "", ErrInvalidEndpointScheme
 	}
 
+	if hasTemplate {
+		return a.E.URL, nil
+	}
+
 	return u.String(), nil
 }
 
@@ -217,8 +228,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 
 	// Check license + feature flag before allowing Basic Auth configuration
 	if auth != nil && auth.Type == datastore.BasicAuthentication {
-		// TODO: Replace with a.Licenser.BasicAuthEndpointAuth() once basic_auth_endpoint_auth entitlement is available
-		if !a.Licenser.OAuth2EndpointAuth() {
+		if !a.Licenser.BasicAuthEndpointAuth() {
 			return nil, &ServiceError{ErrMsg: ErrBasicAuthFeatureUnavailable}
 		}
 

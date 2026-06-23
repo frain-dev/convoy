@@ -177,7 +177,7 @@ func buildEndpoint(ctx context.Context, deps BulkOnboardDeps, project *datastore
 
 	// Set basic auth if both username and password provided
 	if item.AuthUsername != "" && item.AuthPassword != "" {
-		if deps.Licenser.OAuth2EndpointAuth() {
+		if deps.Licenser.BasicAuthEndpointAuth() {
 			basicAuthEnabled := deps.FeatureFlag.CanAccessOrgFeature(
 				ctx, fflag.BasicAuthEndpoint, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
 			if basicAuthEnabled {

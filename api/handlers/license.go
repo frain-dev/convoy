@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/render"
 
@@ -36,8 +37,8 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 }
 
 // serveOrgLicenseFeatures resolves license features for a specific organisation in cloud
-// org-billing mode: it tries the billing service license first, then falls back to the
-// org's stored license_data, and finally to the billing-required feature list.
+// org-billing mode: it tries the billing service license first, falls back to the
+// org's stored license_data only on billing errors, and finally to the billing-required feature list.
 func (h *Handler) serveOrgLicenseFeatures(w http.ResponseWriter, r *http.Request, orgID string) {
 	org, err := h.orgRepo().FetchOrganisationByID(r.Context(), orgID)
 	if err != nil || org == nil {
@@ -53,6 +54,8 @@ func (h *Handler) serveOrgLicenseFeatures(w http.ResponseWriter, r *http.Request
 	}
 
 	var billingRequiredReason string
+	allowStoredLicenseFallback := false
+	billingReturnedNoLicense := false
 
 	projectCount := int64(0)
 	if projs, err := h.projectRepo().LoadProjects(r.Context(), &datastore.ProjectFilter{OrgID: org.UID}); err == nil {
@@ -95,18 +98,31 @@ func (h *Handler) serveOrgLicenseFeatures(w http.ResponseWriter, r *http.Request
 		}
 	} else {
 		if err != nil {
+			allowStoredLicenseFallback = true
 			if billingRequiredReason == "" {
 				billingRequiredReason = fmt.Sprintf("GetOrganisationLicense failed: %v", err)
 			}
 			logReason(billingRequiredReason)
 		} else {
+			billingReturnedNoLicense = true
 			billingRequiredReason = "no billing license key"
 			logReason(billingRequiredReason)
 		}
 	}
 
-	// Fall back to stored org license_data if billing didn't return features.
-	if org.LicenseData != "" {
+	if billingReturnedNoLicense && org.LicenseData != "" {
+		clearCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		org.LicenseData = ""
+		if err := h.orgRepo().UpdateOrganisationLicenseData(clearCtx, org.UID, ""); err != nil {
+			h.A.Logger.Warn("get license features: clear stale license_data failed", "error", err, "org_id", org.UID)
+			billingRequiredReason = fmt.Sprintf("clear stale license_data failed after billing returned no license key: %v", err)
+		}
+	}
+
+	// Stored license_data is a cache only. When billing answers definitively with
+	// no license key, fail closed instead of letting stale entitlements grant access.
+	if allowStoredLicenseFallback && org.LicenseData != "" {
 		payload, decErr := license.DecryptLicenseData(org.UID, org.LicenseData)
 		if decErr == nil && payload != nil && len(payload.Entitlements) > 0 {
 			v, encErr := license.FeatureListFromEntitlementsWithOrgProjectCount(payload.Entitlements, projectCount)
@@ -120,9 +136,11 @@ func (h *Handler) serveOrgLicenseFeatures(w http.ResponseWriter, r *http.Request
 	if billingRequiredReason == "" {
 		billingRequiredReason = "no license data"
 	}
-	// Always trigger refresh when returning billing-required so license_data can be repopulated (e.g. after subscription activated).
+	// Trigger refresh on uncertain local/license-service failures so license_data can be repopulated (e.g. after subscription activated).
 	h.A.Logger.Info("get license features: returning billing-required, triggering license refresh", "org_id", org.UID)
-	go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, useOrgBilling, deps, licClient)
+	if !billingReturnedNoLicense {
+		go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, useOrgBilling, deps, licClient)
+	}
 	v, _ := license.BillingRequiredFeatureListJSON()
 	msg := "Retrieved license features successfully"
 	if billingRequiredReason != "" {

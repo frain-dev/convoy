@@ -1737,6 +1737,21 @@ func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByTargetURL(ctx, proje
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByTargetURL", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByTargetURL), ctx, projectID, targetURL)
 }
 
+// FindEndpointsWithURLTemplates mocks base method.
+func (m *MockEndpointRepository) FindEndpointsWithURLTemplates(ctx context.Context, projectID string) ([]datastore.Endpoint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEndpointsWithURLTemplates", ctx, projectID)
+	ret0, _ := ret[0].([]datastore.Endpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEndpointsWithURLTemplates indicates an expected call of FindEndpointsWithURLTemplates.
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsWithURLTemplates(ctx, projectID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointsWithURLTemplates", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointsWithURLTemplates), ctx, projectID)
+}
+
 // FindEndpointsByAppID mocks base method.
 func (m *MockEndpointRepository) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
 	m.ctrl.T.Helper()
@@ -1906,6 +1921,21 @@ func (m *MockSubscriptionRepository) CreateSubscription(arg0 context.Context, ar
 func (mr *MockSubscriptionRepositoryMockRecorder) CreateSubscription(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSubscription", reflect.TypeOf((*MockSubscriptionRepository)(nil).CreateSubscription), arg0, arg1, arg2)
+}
+
+// FindOrCreateDynamicSubscription mocks base method.
+func (m *MockSubscriptionRepository) FindOrCreateDynamicSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) (*datastore.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindOrCreateDynamicSubscription", ctx, projectID, subscription)
+	ret0, _ := ret[0].(*datastore.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindOrCreateDynamicSubscription indicates an expected call of FindOrCreateDynamicSubscription.
+func (mr *MockSubscriptionRepositoryMockRecorder) FindOrCreateDynamicSubscription(ctx, projectID, subscription any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrCreateDynamicSubscription", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindOrCreateDynamicSubscription), ctx, projectID, subscription)
 }
 
 // DeleteSubscription mocks base method.

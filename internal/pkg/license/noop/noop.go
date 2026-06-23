@@ -78,6 +78,10 @@ func (Licenser) BasicAuthEndpointAuth() bool {
 	return true
 }
 
+func (Licenser) EndpointURLTemplates() bool {
+	return true
+}
+
 func (Licenser) RemoveEnabledProject(_ string) {}
 
 func (Licenser) ProjectEnabled(_ string) bool {

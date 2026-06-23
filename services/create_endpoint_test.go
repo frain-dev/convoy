@@ -27,10 +27,13 @@ import (
 )
 
 func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoint, projectID string) *CreateEndpointService {
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().EndpointURLTemplates().Return(false).AnyTimes()
+
 	return &CreateEndpointService{
 		EndpointRepo:               mocks.NewMockEndpointRepository(ctrl),
 		ProjectRepo:                mocks.NewMockProjectRepository(ctrl),
-		Licenser:                   mocks.NewMockLicenser(ctrl),
+		Licenser:                   licenser,
 		Logger:                     log.New("convoy", log.LevelInfo),
 		FeatureFlag:                fflag.NoopFflag(),
 		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),

@@ -32,14 +32,17 @@ type EventChannelMetadata struct {
 }
 
 type EventChannelArgs struct {
-	eventRepo          datastore.EventRepository
-	projectRepo        datastore.ProjectRepository
-	endpointRepo       datastore.EndpointRepository
-	subRepo            datastore.SubscriptionRepository
-	filterRepo         datastore.FilterRepository
-	licenser           license.Licenser
-	oauth2TokenService OAuth2TokenService
-	logger             log.Logger
+	eventRepo                  datastore.EventRepository
+	projectRepo                datastore.ProjectRepository
+	endpointRepo               datastore.EndpointRepository
+	subRepo                    datastore.SubscriptionRepository
+	filterRepo                 datastore.FilterRepository
+	licenser                   license.Licenser
+	oauth2TokenService         OAuth2TokenService
+	featureFlag                *fflag.FFlag
+	featureFlagFetcher         fflag.FeatureFlagFetcher
+	earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	logger                     log.Logger
 }
 
 type EventChannelSubResponse struct {
@@ -47,6 +50,7 @@ type EventChannelSubResponse struct {
 	Project          *datastore.Project
 	Subscriptions    []datastore.Subscription
 	IsDuplicateEvent bool
+	TargetURL        string
 }
 
 type EventChannel interface {
@@ -58,7 +62,9 @@ type EventChannel interface {
 func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository,
 	eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
-	licenser license.Licenser, oauth2TokenService OAuth2TokenService, logger log.Logger) func(context.Context, *asynq.Task) error {
+	licenser license.Licenser, oauth2TokenService OAuth2TokenService, featureFlag *fflag.FFlag,
+	featureFlagFetcher fflag.FeatureFlagFetcher, earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher,
+	logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
@@ -79,14 +85,17 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			event = lastEvent
 		} else {
 			event, err = channel.CreateEvent(ctx, t, channel, EventChannelArgs{
-				eventRepo:          eventRepo,
-				projectRepo:        projectRepo,
-				endpointRepo:       endpointRepo,
-				subRepo:            subRepo,
-				filterRepo:         filterRepo,
-				licenser:           licenser,
-				oauth2TokenService: oauth2TokenService,
-				logger:             logger,
+				eventRepo:                  eventRepo,
+				projectRepo:                projectRepo,
+				endpointRepo:               endpointRepo,
+				subRepo:                    subRepo,
+				filterRepo:                 filterRepo,
+				licenser:                   licenser,
+				oauth2TokenService:         oauth2TokenService,
+				featureFlag:                featureFlag,
+				featureFlagFetcher:         featureFlagFetcher,
+				earlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
+				logger:                     logger,
 			})
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate key") {
@@ -178,14 +187,17 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		deps.Logger.Info(fmt.Sprintf("about to match subs for channel: %s\n", cfg.Channel))
 
 		subResponse, err := channel.MatchSubscriptions(ctx, metadata, EventChannelArgs{
-			eventRepo:          deps.EventRepo,
-			projectRepo:        deps.ProjectRepo,
-			endpointRepo:       deps.EndpointRepo,
-			subRepo:            deps.SubRepo,
-			filterRepo:         deps.FilterRepo,
-			licenser:           deps.Licenser,
-			oauth2TokenService: deps.OAuth2TokenService,
-			logger:             deps.Logger,
+			eventRepo:                  deps.EventRepo,
+			projectRepo:                deps.ProjectRepo,
+			endpointRepo:               deps.EndpointRepo,
+			subRepo:                    deps.SubRepo,
+			filterRepo:                 deps.FilterRepo,
+			licenser:                   deps.Licenser,
+			oauth2TokenService:         deps.OAuth2TokenService,
+			featureFlag:                deps.FeatureFlag,
+			featureFlagFetcher:         deps.FeatureFlagFetcher,
+			earlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
+			logger:                     deps.Logger,
 		})
 		if err != nil {
 			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
@@ -231,6 +243,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			Subscriptions:              subResponse.Subscriptions,
 			Event:                      subResponse.Event,
 			Project:                    subResponse.Project,
+			TargetURL:                  subResponse.TargetURL,
 			EventDeliveryRepo:          deps.EventDeliveryRepo,
 			EventQueue:                 deps.EventQueue,
 			EndpointRepo:               deps.EndpointRepo,

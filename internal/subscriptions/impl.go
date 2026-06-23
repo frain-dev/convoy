@@ -71,6 +71,86 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 		return datastore.ErrNotAuthorisedToAccessDocument
 	}
 
+	// Begin transaction
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		s.logger.Error("failed to start transaction", "error", err)
+		return &ServiceError{ErrMsg: "failed to create subscription", Err: err}
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := repo.New(tx)
+
+	err = s.createSubscriptionInTx(ctx, qtx, subscription)
+	if err != nil {
+		return err
+	}
+
+	// Commit transaction
+	err = tx.Commit(ctx)
+	if err != nil {
+		s.logger.Error("failed to commit transaction", "error", err)
+		return &ServiceError{ErrMsg: "failed to create subscription", Err: err}
+	}
+
+	return nil
+}
+
+func (s *Service) FindOrCreateDynamicSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) (*datastore.Subscription, error) {
+	if projectID != subscription.ProjectID {
+		return nil, datastore.ErrNotAuthorisedToAccessDocument
+	}
+
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		s.logger.Error("failed to start transaction", "error", err)
+		return nil, &ServiceError{ErrMsg: "failed to create subscription", Err: err}
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", "dynamic-subscription:"+projectID+":"+subscription.EndpointID)
+	if err != nil {
+		s.logger.Error("failed to acquire dynamic subscription lock", "error", err)
+		return nil, &ServiceError{ErrMsg: "failed to create subscription", Err: err}
+	}
+
+	qtx := repo.New(tx)
+	rows, err := qtx.FetchSubscriptionsByEndpointID(ctx, repo.FetchSubscriptionsByEndpointIDParams{
+		ProjectID:  projectID,
+		EndpointID: common.StringToPgTextNullable(subscription.EndpointID),
+	})
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			s.logger.Error("failed to fetch subscriptions by endpoint ID", "error", err)
+			return nil, &ServiceError{ErrMsg: "failed to fetch subscriptions", Err: err}
+		}
+	}
+	if len(rows) > 0 {
+		existing, innerErr := rowToSubscription(rows[0])
+		if innerErr != nil {
+			return nil, &ServiceError{ErrMsg: "failed to fetch subscriptions", Err: innerErr}
+		}
+		if commitErr := tx.Commit(ctx); commitErr != nil {
+			s.logger.Error("failed to commit transaction", "error", commitErr)
+			return nil, &ServiceError{ErrMsg: "failed to create subscription", Err: commitErr}
+		}
+		return existing, nil
+	}
+
+	err = s.createSubscriptionInTx(ctx, qtx, subscription)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		s.logger.Error("failed to commit transaction", "error", err)
+		return nil, &ServiceError{ErrMsg: "failed to create subscription", Err: err}
+	}
+
+	return subscription, nil
+}
+
+func (s *Service) createSubscriptionInTx(ctx context.Context, qtx repo.Querier, subscription *datastore.Subscription) error {
 	ac := subscription.GetAlertConfig()
 	rc := subscription.GetRetryConfig()
 	fc := subscription.GetFilterConfig()
@@ -98,16 +178,6 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 	}
 
 	fc.Filter.IsFlattened = true
-
-	// Begin transaction
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		s.logger.Error("failed to start transaction", "error", err)
-		return &ServiceError{ErrMsg: "failed to create subscription", Err: err}
-	}
-	defer tx.Rollback(ctx)
-
-	qtx := repo.New(tx)
 
 	// Prepare parameters
 	alertCount, alertThreshold := alertConfigToParams(&ac)
@@ -180,13 +250,6 @@ func (s *Service) CreateSubscription(ctx context.Context, projectID string, subs
 	if err != nil {
 		s.logger.Error("failed to insert event type filters", "error", err)
 		return &ServiceError{ErrMsg: "failed to create subscription filters", Err: err}
-	}
-
-	// Commit transaction
-	err = tx.Commit(ctx)
-	if err != nil {
-		s.logger.Error("failed to commit transaction", "error", err)
-		return &ServiceError{ErrMsg: "failed to create subscription", Err: err}
 	}
 
 	return nil

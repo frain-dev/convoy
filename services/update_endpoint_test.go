@@ -19,11 +19,14 @@ import (
 )
 
 func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoint, Endpoint *datastore.Endpoint, Project *datastore.Project) *UpdateEndpointService {
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().EndpointURLTemplates().Return(false).AnyTimes()
+
 	return &UpdateEndpointService{
 		Cache:                      mocks.NewMockCache(ctrl),
 		EndpointRepo:               mocks.NewMockEndpointRepository(ctrl),
 		ProjectRepo:                mocks.NewMockProjectRepository(ctrl),
-		Licenser:                   mocks.NewMockLicenser(ctrl),
+		Licenser:                   licenser,
 		FeatureFlag:                fflag.NoopFflag(),
 		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),
 		EarlyAdopterFeatureFetcher: mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),

@@ -109,11 +109,11 @@ var EntitlementKeyMapping = map[string]string{
 	"custom_certificate_authority": "CustomCertificateAuthority",
 	"static_ip":                    "StaticIP",
 	"oauth2_endpoint_auth":         "OAuth2EndpointAuth",
-	// TODO: Add once basic_auth_endpoint_auth entitlement is available in the license service
-	// "basic_auth_endpoint_auth":     "BasicAuthEndpointAuth",
-	"use_forward_proxy":    "UseForwardProxy",
-	"asynq_monitoring":     "AsynqMonitoring",
-	"agent_execution_mode": "AgentExecutionMode",
+	"basic_auth_endpoint_auth":     "BasicAuthEndpointAuth",
+	"endpoint_url_templates":       "EndpointURLTemplates",
+	"use_forward_proxy":            "UseForwardProxy",
+	"asynq_monitoring":             "AsynqMonitoring",
+	"agent_execution_mode":         "AgentExecutionMode",
 }
 
 // LimitEntitlementMapping maps limit entitlement keys (deprecated CreateOrg/CreateUser/CreateProject removed)

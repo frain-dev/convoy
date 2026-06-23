@@ -243,6 +243,9 @@ func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.
 		deps.FilterRepo,
 		deps.Licenser,
 		deps.OAuth2TokenService,
+		deps.FeatureFlag,
+		deps.FeatureFlagFetcher,
+		deps.EarlyAdopterFeatureFetcher,
 		deps.Logger,
 	)
 }
@@ -251,6 +254,7 @@ type WriteEventDeliveriesToQueueOptions struct {
 	Subscriptions              []datastore.Subscription
 	Event                      *datastore.Event
 	Project                    *datastore.Project
+	TargetURL                  string
 	EventDeliveryRepo          datastore.EventDeliveryRepository
 	EventQueue                 queue.Queuer
 	EndpointRepo               datastore.EndpointRepository
@@ -389,6 +393,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			EndpointID:     s.EndpointID,
 			DeviceID:       s.DeviceID,
 			Headers:        headers,
+			TargetURL:      opts.TargetURL,
 			IdempotencyKey: opts.Event.IdempotencyKey,
 			URLQueryParams: opts.Event.URLQueryParams,
 			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, opts.Logger),

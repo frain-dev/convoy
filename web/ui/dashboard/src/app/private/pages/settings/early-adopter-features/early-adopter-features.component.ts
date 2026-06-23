@@ -70,8 +70,8 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 		const licenseMap: { [key: string]: string } = {
 			'mtls': 'MutualTLS',
 			'oauth-token-exchange': 'OAuth2EndpointAuth',
-			// TODO: Replace with 'BasicAuthEndpointAuth' once basic_auth_endpoint_auth entitlement is available
-			'basic-auth-endpoint': 'OAuth2EndpointAuth',
+			'basic-auth-endpoint': 'BasicAuthEndpointAuth',
+			'endpoint-url-templates': 'EndpointURLTemplates',
 		};
 
 		const license = licenseMap[featureKey];

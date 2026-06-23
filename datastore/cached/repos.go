@@ -148,6 +148,9 @@ func (r *CachedEndpointRepository) FetchEndpointIDsByOwnerID(ctx context.Context
 func (r *CachedEndpointRepository) FindEndpointByTargetURL(ctx context.Context, projectID, targetURL string) (*datastore.Endpoint, error) {
 	return r.inner.FindEndpointByTargetURL(ctx, projectID, targetURL)
 }
+func (r *CachedEndpointRepository) FindEndpointsWithURLTemplates(ctx context.Context, projectID string) ([]datastore.Endpoint, error) {
+	return r.inner.FindEndpointsWithURLTemplates(ctx, projectID)
+}
 func (r *CachedEndpointRepository) CountProjectEndpoints(ctx context.Context, projectID string) (int64, error) {
 	return r.inner.CountProjectEndpoints(ctx, projectID)
 }
@@ -183,6 +186,14 @@ func (r *CachedSubscriptionRepository) CreateSubscription(ctx context.Context, p
 		cachedrepo.Invalidate(ctx, r.cache, r.logger, "subs_by_endpoint:"+projectID+":"+sub.EndpointID)
 	}
 	return err
+}
+
+func (r *CachedSubscriptionRepository) FindOrCreateDynamicSubscription(ctx context.Context, projectID string, sub *datastore.Subscription) (*datastore.Subscription, error) {
+	subscription, err := r.inner.FindOrCreateDynamicSubscription(ctx, projectID, sub)
+	if err == nil && sub.EndpointID != "" {
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, "subs_by_endpoint:"+projectID+":"+sub.EndpointID)
+	}
+	return subscription, err
 }
 
 func (r *CachedSubscriptionRepository) UpdateSubscription(ctx context.Context, projectID string, sub *datastore.Subscription) error {

@@ -630,6 +630,7 @@ func deliveryToCreateParams(delivery *datastore.EventDelivery) repo.CreateEventD
 		Metadata:       metadataToJSONB(delivery.Metadata),
 		CliMetadata:    cliMetadataToJSONB(delivery.CLIMetadata),
 		Description:    common.StringToPgText(delivery.Description),
+		TargetUrl:      common.StringToPgText(delivery.TargetURL),
 		UrlQueryParams: common.StringToPgText(delivery.URLQueryParams),
 		IdempotencyKey: common.StringToPgTextNullable(delivery.IdempotencyKey),
 		EventType:      common.StringToPgTextNullable(string(delivery.EventType)),

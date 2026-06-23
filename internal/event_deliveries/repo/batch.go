@@ -22,10 +22,10 @@ const createEventDelivery = `-- name: CreateEventDelivery :batchexec
 
 INSERT INTO convoy.event_deliveries (
     id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
-    metadata, cli_metadata, description, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
+    metadata, cli_metadata, description, target_url, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
-        $9, $10, $11, $12, $13, $14, $15, $16)
+        $9, $10, $11, $12, $13, $14, $15, $16, $17)
 `
 
 type CreateEventDeliveryBatchResults struct {
@@ -46,6 +46,7 @@ type CreateEventDeliveryParams struct {
 	Metadata       []byte
 	CliMetadata    []byte
 	Description    pgtype.Text
+	TargetUrl      pgtype.Text
 	UrlQueryParams pgtype.Text
 	IdempotencyKey pgtype.Text
 	EventType      pgtype.Text
@@ -73,6 +74,7 @@ func (q *Queries) CreateEventDelivery(ctx context.Context, arg []CreateEventDeli
 			a.Metadata,
 			a.CliMetadata,
 			a.Description,
+			a.TargetUrl,
 			a.UrlQueryParams,
 			a.IdempotencyKey,
 			a.EventType,

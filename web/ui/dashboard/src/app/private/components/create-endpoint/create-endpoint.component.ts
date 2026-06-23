@@ -94,7 +94,7 @@ export class CreateEndpointComponent implements OnInit {
 	selectedKeyType: string = 'EC';
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		url: ['', Validators.compose([Validators.required, Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)])],
+		url: ['', Validators.compose([Validators.required, Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%{}]*)?$`)])],
 		support_email: ['', Validators.email],
 		slack_webhook_url: ['', Validators.pattern(`^$|^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
 		secret: [null],
@@ -172,6 +172,7 @@ export class CreateEndpointComponent implements OnInit {
 	mtlsFeatureEnabled = false;
 	oauth2FeatureEnabled = false;
 	basicAuthFeatureEnabled = false;
+	endpointURLTemplatesFeatureEnabled = false;
 	organisationId!: string;
 	private rbacService = inject(RbacService);
 
@@ -192,6 +193,7 @@ export class CreateEndpointComponent implements OnInit {
 		await this.checkMTLSFeatureFlag();
 		await this.checkOAuth2FeatureFlag();
 		await this.checkBasicAuthFeatureFlag();
+		await this.checkEndpointURLTemplatesFeatureFlag();
 
 		if (this.type !== 'portal')
 			this.configurations.push(
@@ -456,6 +458,18 @@ export class CreateEndpointComponent implements OnInit {
 		}
 	}
 
+	async checkEndpointURLTemplatesFeatureFlag() {
+		if (!this.organisationId) return;
+		try {
+			this.endpointURLTemplatesFeatureEnabled = await this.settingsService.checkFeatureFlagEnabled({
+				org_id: this.organisationId,
+				feature_key: 'endpoint-url-templates'
+			});
+		} catch (error) {
+			this.endpointURLTemplatesFeatureEnabled = false;
+		}
+	}
+
 	async runEndpointValidation() {
 		const authType = this.selectedAuthType || this.addNewEndpointForm.get('authentication.type')?.value || 'api_key';
 		
@@ -628,6 +642,8 @@ export class CreateEndpointComponent implements OnInit {
 			this.endpointCreated = false;
 			this.savingEndpoint = false;
 			const errorMessage =
+				(typeof error === 'string' ? error : undefined) ??
+				error?.data?.message ??
 				error?.response?.data?.message ??
 				error?.error?.message ??
 				error?.message ??
