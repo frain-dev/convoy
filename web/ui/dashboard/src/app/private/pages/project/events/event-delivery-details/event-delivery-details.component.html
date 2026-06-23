@@ -189,7 +189,7 @@
       <div class="flex items-center">
         <div class="px-30px">
           <p class="text-neutral-10 text-12 font-light mb-6px">LATENCY</p>
-          <p class="text-12 font-medium">{{ formatLatencySeconds(eventDelsDetails?.latency_seconds, eventDelsDetails?.acknowledged_at) }}</p>
+          <p class="text-12 font-medium">{{ formatLatencySeconds(eventDelsDetails?.latency_seconds, eventDelsDetails?.status) }}</p>
         </div>
       </div>
     </div>
@@ -299,14 +299,12 @@
                   @if (deliveryAttempt?.http_status) {
                     <convoy-tag [color]="deliveryAttempt?.status ? 'success' : 'error'" className="ml-18px">{{ deliveryAttempt?.http_status }}</convoy-tag>
                   }
-                  <convoy-copy-button [text]="formatPreciseTimestamp(deliveryAttempt.created_at)" show-icon="false" notificationText="Attempt timestamp copied to clipboard">
-                    <span class="relative ml-8px inline-flex group" [title]="formatPreciseTimestamp(deliveryAttempt.created_at)">
-                      <span>Attempt at {{ deliveryAttempt.created_at | date : 'medium' }}</span>
-                      <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                        {{ formatPreciseTimestamp(deliveryAttempt.created_at) }}
-                      </span>
+                  <span class="relative ml-8px inline-flex group" [title]="formatPreciseTimestamp(deliveryAttempt.created_at)">
+                    <span>Attempt at {{ deliveryAttempt.created_at | date : 'medium' }}</span>
+                    <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                      {{ formatPreciseTimestamp(deliveryAttempt.created_at) }}
                     </span>
-                  </convoy-copy-button>
+                  </span>
                 </p>
               </div>
               <img src="/assets/img/angle-arrow-right.svg" class="ml-6px h-16px transition-all duration-300" alt="link out" />

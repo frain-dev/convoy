@@ -92,8 +92,8 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		}
 	}
 
-	formatLatencySeconds(latencySeconds?: number, acknowledgedAt?: string): string {
-		if (!acknowledgedAt || latencySeconds === undefined || latencySeconds === null) return '-';
+	formatLatencySeconds(latencySeconds?: number, deliveryStatus?: string): string {
+		if (deliveryStatus !== 'Success' || latencySeconds === undefined || latencySeconds === null) return '-';
 
 		if (latencySeconds < 1) {
 			return `${Math.round(latencySeconds * 1000)}ms`;
