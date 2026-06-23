@@ -1363,6 +1363,8 @@ definitions:
         $ref: '#/definitions/datastore.EventDeliveryStatus'
       subscription_id:
         type: string
+      target_url:
+        type: string
       uid:
         type: string
       updated_at:

@@ -266,6 +266,20 @@ func (mr *MockLicenserMockRecorder) DatadogTracing() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DatadogTracing", reflect.TypeOf((*MockLicenser)(nil).DatadogTracing))
 }
 
+// EndpointURLTemplates mocks base method.
+func (m *MockLicenser) EndpointURLTemplates() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EndpointURLTemplates")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// EndpointURLTemplates indicates an expected call of EndpointURLTemplates.
+func (mr *MockLicenserMockRecorder) EndpointURLTemplates() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndpointURLTemplates", reflect.TypeOf((*MockLicenser)(nil).EndpointURLTemplates))
+}
+
 // EnterpriseSSO mocks base method.
 func (m *MockLicenser) EnterpriseSSO() bool {
 	m.ctrl.T.Helper()

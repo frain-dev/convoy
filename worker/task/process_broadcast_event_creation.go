@@ -190,6 +190,9 @@ func ProcessBroadcastEventCreation(
 		deps.FilterRepo,
 		deps.Licenser,
 		deps.OAuth2TokenService,
+		deps.FeatureFlag,
+		deps.FeatureFlagFetcher,
+		deps.EarlyAdopterFeatureFetcher,
 		deps.Logger,
 	)
 }

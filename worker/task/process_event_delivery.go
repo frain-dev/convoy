@@ -34,6 +34,28 @@ const (
 	errMutualTLSFeatureUnavailable = "mutual TLS feature unavailable, please upgrade your license"
 )
 
+var errEndpointURLTemplateTargetMissing = errors.New("endpoint URL template requires a concrete target URL")
+
+func resolveEventDeliveryTargetURL(endpoint *datastore.Endpoint, eventDelivery *datastore.EventDelivery) (string, error) {
+	targetURL := eventDelivery.TargetURL
+	if util.IsStringEmpty(targetURL) && url.ContainsTemplate(endpoint.Url) {
+		return "", errEndpointURLTemplateTargetMissing
+	}
+
+	if util.IsStringEmpty(eventDelivery.URLQueryParams) {
+		if !util.IsStringEmpty(targetURL) {
+			return targetURL, nil
+		}
+		return endpoint.Url, nil
+	}
+
+	if !util.IsStringEmpty(targetURL) {
+		return url.ConcatQueryParams(targetURL, eventDelivery.URLQueryParams)
+	}
+
+	return url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
+}
+
 //nolint:cyclop // Large function handling complex event delivery logic with many conditional branches
 type EventDeliveryProcessorDeps struct {
 	EndpointRepo               datastore.EndpointRepository
@@ -202,14 +224,22 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			return &DeliveryError{Err: err}
 		}
 
-		targetURL := endpoint.Url
-		if !util.IsStringEmpty(eventDelivery.URLQueryParams) {
-			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
-			if err != nil {
-				deps.Logger.ErrorContext(ctx, "failed to concat url query params", "error", err)
-				tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
-				return &DeliveryError{Err: err}
+		targetURL, err := resolveEventDeliveryTargetURL(endpoint, eventDelivery)
+		if err != nil {
+			if errors.Is(err, errEndpointURLTemplateTargetMissing) {
+				eventDelivery.Description = err.Error()
+				if updateErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus); updateErr != nil {
+					deps.Logger.ErrorContext(ctx, "failed to discard event delivery with unresolved endpoint URL template", "error", updateErr)
+					tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
+					return &DeliveryError{Err: updateErr}
+				}
+				tracer.AddEvent(ctx, tracer.EventEventDeliveryDiscarded, attributes)
+				return nil
 			}
+
+			deps.Logger.ErrorContext(ctx, "failed to resolve event delivery target url", "error", err)
+			tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
+			return &DeliveryError{Err: err}
 		}
 
 		attemptStatus := false

@@ -27,6 +27,61 @@ import (
 	"github.com/frain-dev/convoy/queue"
 )
 
+func TestResolveEventDeliveryTargetURL(t *testing.T) {
+	tests := []struct {
+		name          string
+		endpoint      *datastore.Endpoint
+		eventDelivery *datastore.EventDelivery
+		wantURL       string
+		wantErr       error
+	}{
+		{
+			name:     "uses concrete target URL when present",
+			endpoint: &datastore.Endpoint{Url: "https://example.com/orders/{reference}/callback"},
+			eventDelivery: &datastore.EventDelivery{
+				TargetURL: "https://example.com/orders/123/callback",
+			},
+			wantURL: "https://example.com/orders/123/callback",
+		},
+		{
+			name:     "appends query params to concrete target URL",
+			endpoint: &datastore.Endpoint{Url: "https://example.com/orders/{reference}/callback"},
+			eventDelivery: &datastore.EventDelivery{
+				TargetURL:      "https://example.com/orders/123/callback?reference=ORD-123",
+				URLQueryParams: "source=mobile",
+			},
+			wantURL: "https://example.com/orders/123/callback?reference=ORD-123&source=mobile",
+		},
+		{
+			name:     "falls back to regular endpoint URL",
+			endpoint: &datastore.Endpoint{Url: "https://example.com/callback"},
+			eventDelivery: &datastore.EventDelivery{
+				URLQueryParams: "source=mobile",
+			},
+			wantURL: "https://example.com/callback?source=mobile",
+		},
+		{
+			name:          "fails closed for templated endpoint without target URL",
+			endpoint:      &datastore.Endpoint{Url: "https://example.com/orders/{reference}/callback"},
+			eventDelivery: &datastore.EventDelivery{},
+			wantErr:       errEndpointURLTemplateTargetMissing,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveEventDeliveryTargetURL(tt.endpoint, tt.eventDelivery)
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.wantURL, got)
+		})
+	}
+}
+
 func TestProcessEventDelivery(t *testing.T) {
 	badRequestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)

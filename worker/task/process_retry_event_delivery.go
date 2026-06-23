@@ -22,9 +22,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/signature"
-	"github.com/frain-dev/convoy/pkg/url"
 	"github.com/frain-dev/convoy/retrystrategies"
-	"github.com/frain-dev/convoy/util"
 )
 
 var (
@@ -176,14 +174,22 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
-		targetURL := endpoint.Url
-		if !util.IsStringEmpty(eventDelivery.URLQueryParams) {
-			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
-			if err != nil {
-				deps.Logger.ErrorContext(ctx, "failed to concat url query params", "error", err)
-				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
-				return &EndpointError{Err: err, delay: defaultEventDelay}
+		targetURL, err := resolveEventDeliveryTargetURL(endpoint, eventDelivery)
+		if err != nil {
+			if errors.Is(err, errEndpointURLTemplateTargetMissing) {
+				eventDelivery.Description = err.Error()
+				if updateErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus); updateErr != nil {
+					deps.Logger.ErrorContext(ctx, "failed to discard retry event delivery with unresolved endpoint URL template", "error", updateErr)
+					tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
+					return &EndpointError{Err: updateErr, delay: defaultEventDelay}
+				}
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryDiscarded, attributes)
+				return nil
 			}
+
+			deps.Logger.ErrorContext(ctx, "failed to resolve event retry delivery target url", "error", err)
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
+			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
 		attemptStatus := false

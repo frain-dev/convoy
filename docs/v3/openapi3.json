@@ -10529,6 +10529,9 @@
           "subscription_id": {
             "type": "string"
           },
+          "target_url": {
+            "type": "string"
+          },
           "uid": {
             "type": "string"
           },

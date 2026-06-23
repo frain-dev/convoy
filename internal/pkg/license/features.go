@@ -30,6 +30,8 @@ var featureKeys = []struct {
 	{"custom_certificate_authority", "CustomCertificateAuthority"},
 	{"static_ip", "StaticIP"},
 	{"oauth2_endpoint_auth", "OAuth2EndpointAuth"},
+	{"basic_auth_endpoint_auth", "BasicAuthEndpointAuth"},
+	{"endpoint_url_templates", "EndpointURLTemplates"},
 	{"use_forward_proxy", "UseForwardProxy"},
 	{"asynq_monitoring", "AsynqMonitoring"},
 	{"agent_execution_mode", "AgentExecutionMode"},

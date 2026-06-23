@@ -199,6 +199,7 @@ type EndpointRepository interface {
 	FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]Endpoint, error)
 	FetchEndpointIDsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]string, error)
 	FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*Endpoint, error)
+	FindEndpointsWithURLTemplates(ctx context.Context, projectID string) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) error
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
@@ -210,6 +211,7 @@ type EndpointRepository interface {
 
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
+	FindOrCreateDynamicSubscription(ctx context.Context, projectID string, subscription *Subscription) (*Subscription, error)
 	UpdateSubscription(ctx context.Context, projectID string, subscription *Subscription) error
 	LoadSubscriptionsPaged(ctx context.Context, projectID string, filter *FilterBy, pageable Pageable) ([]Subscription, PaginationData, error)
 	DeleteSubscription(ctx context.Context, projectID string, subscription *Subscription) error

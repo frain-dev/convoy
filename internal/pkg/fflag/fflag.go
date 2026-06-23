@@ -16,6 +16,7 @@ var ErrPrometheusMetricsNotEnabled = errors.New("[feature flag] prometheus metri
 var ErrCredentialEncryptionNotEnabled = errors.New("[feature flag] credential encryption is not enabled")
 var ErrMTLSNotEnabled = errors.New("[feature flag] mTLS is not enabled")
 var ErrOAuthTokenExchangeNotEnabled = errors.New("[feature flag] OAuth token exchange is not enabled")
+var ErrEndpointURLTemplatesNotEnabled = errors.New("[feature flag] endpoint URL templates is not enabled")
 
 type (
 	FeatureFlagKey string
@@ -32,6 +33,7 @@ const (
 	MTLS                 FeatureFlagKey = "mtls"
 	OAuthTokenExchange   FeatureFlagKey = "oauth-token-exchange"
 	BasicAuthEndpoint    FeatureFlagKey = "basic-auth-endpoint"
+	EndpointURLTemplates FeatureFlagKey = "endpoint-url-templates"
 )
 
 type (
@@ -54,6 +56,7 @@ var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
 	MTLS:                 disabled,
 	OAuthTokenExchange:   disabled,
 	BasicAuthEndpoint:    disabled,
+	EndpointURLTemplates: disabled,
 }
 
 type FFlag struct {
@@ -87,6 +90,8 @@ func NewFFlag(enableFeatureFlags []string) *FFlag {
 			f.Features[OAuthTokenExchange] = enabled
 		case string(BasicAuthEndpoint):
 			f.Features[BasicAuthEndpoint] = enabled
+		case string(EndpointURLTemplates):
+			f.Features[EndpointURLTemplates] = enabled
 		}
 	}
 
@@ -209,6 +214,7 @@ var EarlyAdopterFeatures = []FeatureFlagKey{
 	MTLS,
 	OAuthTokenExchange,
 	BasicAuthEndpoint,
+	EndpointURLTemplates,
 }
 
 // GetEarlyAdopterFeatures returns the list of features available under Early Adopter

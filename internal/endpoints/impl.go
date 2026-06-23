@@ -295,6 +295,103 @@ func (s *Service) FindEndpointByTargetURL(ctx context.Context, projectID, target
 	return rowToEndpoint(row)
 }
 
+// FindEndpointsWithURLTemplates retrieves endpoints whose URLs contain raw
+// template delimiters. Template matching stays in Go so validation and runtime
+// matching share the same grammar.
+func (s *Service) FindEndpointsWithURLTemplates(ctx context.Context, projectID string) ([]datastore.Endpoint, error) {
+	key, err := s.km.GetCurrentKeyFromCache()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := s.db.Query(ctx, `
+SELECT
+    e.id, e.name, e.status, e.owner_id, e.url, e.description,
+    e.http_timeout, e.rate_limit, e.rate_limit_duration, e.advanced_signatures,
+    e.slack_webhook_url, e.support_email, e.app_id, e.project_id,
+    CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.secrets_cipher::bytea, $1)::jsonb
+        ELSE e.secrets
+    END AS secrets,
+    e.created_at, e.updated_at,
+    COALESCE(e.authentication_type, '') AS authentication_type,
+    COALESCE(e.authentication_type_api_key_header_name, '') AS authentication_type_api_key_header_name,
+    CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $1)::TEXT
+        ELSE e.authentication_type_api_key_header_value
+    END AS authentication_type_api_key_header_value,
+    CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.mtls_client_cert_cipher::bytea, $1)::jsonb
+        ELSE e.mtls_client_cert
+    END AS mtls_client_cert,
+    CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.oauth2_config_cipher::bytea, $1)::jsonb
+        ELSE e.oauth2_config
+    END AS oauth2_config,
+    CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
+        ELSE e.basic_auth_config
+    END AS basic_auth_config,
+    e.content_type
+FROM convoy.endpoints AS e
+WHERE e.deleted_at IS NULL
+    AND e.project_id = $2
+    AND (e.url LIKE '%{%' OR e.url LIKE '%}%')
+ORDER BY e.id DESC`, common.StringToPgTextNullable(key), common.StringToPgTextNullable(projectID))
+	if err != nil {
+		isEncErr, err2 := s.isEncryptionError(ctx, err)
+		if isEncErr && err2 != nil {
+			return nil, err2
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	endpoints := make([]datastore.Endpoint, 0)
+	for rows.Next() {
+		var f endpointFields
+		if err := rows.Scan(
+			&f.ID,
+			&f.Name,
+			&f.Status,
+			&f.OwnerID,
+			&f.Url,
+			&f.Description,
+			&f.HttpTimeout,
+			&f.RateLimit,
+			&f.RateLimitDuration,
+			&f.AdvancedSignatures,
+			&f.SlackWebhookUrl,
+			&f.SupportEmail,
+			&f.AppID,
+			&f.ProjectID,
+			&f.Secrets,
+			&f.CreatedAt,
+			&f.UpdatedAt,
+			&f.AuthenticationType,
+			&f.AuthenticationTypeApiKeyHeaderName,
+			&f.AuthenticationTypeApiKeyHeaderValue,
+			&f.MtlsClientCert,
+			&f.Oauth2Config,
+			&f.BasicAuthConfig,
+			&f.ContentType,
+		); err != nil {
+			return nil, err
+		}
+
+		endpoint, err := fieldsToEndpoint(f)
+		if err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, *endpoint)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return endpoints, nil
+}
+
 // UpdateEndpoint updates an existing endpoint.
 func (s *Service) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	key, err := s.km.GetCurrentKeyFromCache()

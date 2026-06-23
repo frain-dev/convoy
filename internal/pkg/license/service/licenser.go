@@ -460,6 +460,10 @@ func (l *Licenser) BasicAuthEndpointAuth() bool {
 	return l.hasFeature("basic_auth_endpoint_auth")
 }
 
+func (l *Licenser) EndpointURLTemplates() bool {
+	return l.hasFeature("endpoint_url_templates")
+}
+
 func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	if err := l.ensureValidCache(ctx); err != nil {
 		return nil, err
@@ -560,6 +564,7 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 	featureList["StaticIP"] = l.StaticIP()
 	featureList["OAuth2EndpointAuth"] = l.OAuth2EndpointAuth()
 	featureList["BasicAuthEndpointAuth"] = l.BasicAuthEndpointAuth()
+	featureList["EndpointURLTemplates"] = l.EndpointURLTemplates()
 	featureList["UseForwardProxy"] = l.UseForwardProxy()
 	featureList["AsynqMonitoring"] = l.AsynqMonitoring()
 	featureList["AgentExecutionMode"] = l.AgentExecutionMode()
