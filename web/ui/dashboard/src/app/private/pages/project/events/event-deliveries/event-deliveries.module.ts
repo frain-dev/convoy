@@ -21,6 +21,7 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { EndpointFilterComponent } from 'src/app/private/components/endpoints-filter/endpoints-filter.component';
 import { EventDeliveryFilterComponent } from 'src/app/private/components/event-delivery-filter/event-delivery-filter.component';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 @NgModule({
 	declarations: [EventDeliveriesComponent],
@@ -51,7 +52,8 @@ import { EventDeliveryFilterComponent } from 'src/app/private/components/event-d
 		PaginationComponent,
 		DialogDirective,
 		EndpointFilterComponent,
-        EventDeliveryFilterComponent
+        EventDeliveryFilterComponent,
+		CopyButtonComponent
 	],
 	exports: [EventDeliveriesComponent],
 	providers: [DatePipe]

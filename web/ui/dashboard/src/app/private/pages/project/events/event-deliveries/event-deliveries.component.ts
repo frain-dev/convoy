@@ -17,7 +17,7 @@ import { ProjectService } from '../../project.service';
 export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	@Output() pushEventDeliveries = new EventEmitter<any>();
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDelTableHead: string[] = ['Status', 'Event type', this.projectService.activeProjectDetails?.type == 'incoming' ? 'Subscription' : 'Endpoint', 'Attempts', 'Next Attempt', 'Time', '', ''];
+	eventDelTableHead: string[] = ['Status', 'Event type', this.projectService.activeProjectDetails?.type == 'incoming' ? 'Subscription' : 'Endpoint', 'Attempts', 'Next Attempt', 'Queued At', '', ''];
 	fetchingCount = false;
 	showBatchRetryModal = false;
 	isloadingEventDeliveries = false;
@@ -36,6 +36,15 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	ngOnDestroy() {
 		clearInterval(this.getEventDeliveriesInterval);
+	}
+
+	formatPreciseTimestamp(value?: string): string {
+		if (!value) return '';
+
+		const date = new Date(value);
+		if (Number.isNaN(date.getTime())) return value;
+
+		return date.toISOString();
 	}
 
 	fetchEventDeliveries(requestDetails?: FILTER_QUERY_PARAM) {

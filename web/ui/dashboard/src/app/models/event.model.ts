@@ -29,6 +29,7 @@ export interface EVENT {
 
 export interface EVENT_DELIVERY {
 	created_at: string;
+	acknowledged_at?: string;
 	status: string;
 	uid: string;
 	updated_at: string;
@@ -53,6 +54,7 @@ export interface EVENT_DELIVERY {
 	event_metadata: EVENT;
 	device_metadata: DEVICE;
 	endpoint_id: string;
+	latency_seconds?: number;
 }
 
 export interface EVENT_DELIVERY_ATTEMPT {

@@ -531,8 +531,11 @@ SELECT
     COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
     COALESCE(ep.url, '') AS "endpoint_metadata.url",
     COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
+    COALESCE(ep.status, '') AS "endpoint_metadata.status",
+    ep.deleted_at AS "endpoint_metadata.deleted_at",
     ev.id AS "event_metadata.id",
     ev.event_type AS "event_metadata.event_type",
+    ev.created_at AS "event_metadata.created_at",
     COALESCE(d.id, '') AS "device_metadata.id",
     COALESCE(d.status, '') AS "device_metadata.status",
     COALESCE(d.host_name, '') AS "device_metadata.host_name",
@@ -580,8 +583,11 @@ type FindEventDeliveryByIDRow struct {
 	EndpointMetadataSupportEmail pgtype.Text
 	EndpointMetadataUrl          pgtype.Text
 	EndpointMetadataOwnerID      pgtype.Text
+	EndpointMetadataStatus       pgtype.Text
+	EndpointMetadataDeletedAt    pgtype.Timestamptz
 	EventMetadataID              string
 	EventMetadataEventType       string
+	EventMetadataCreatedAt       pgtype.Timestamptz
 	DeviceMetadataID             pgtype.Text
 	DeviceMetadataStatus         pgtype.Text
 	DeviceMetadataHostName       pgtype.Text
@@ -623,8 +629,11 @@ func (q *Queries) FindEventDeliveryByID(ctx context.Context, arg FindEventDelive
 		&i.EndpointMetadataSupportEmail,
 		&i.EndpointMetadataUrl,
 		&i.EndpointMetadataOwnerID,
+		&i.EndpointMetadataStatus,
+		&i.EndpointMetadataDeletedAt,
 		&i.EventMetadataID,
 		&i.EventMetadataEventType,
+		&i.EventMetadataCreatedAt,
 		&i.DeviceMetadataID,
 		&i.DeviceMetadataStatus,
 		&i.DeviceMetadataHostName,
@@ -781,8 +790,11 @@ WITH filtered_deliveries AS (
         COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
         COALESCE(ep.url, '') AS "endpoint_metadata.url",
         COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
+        COALESCE(ep.status, '') AS "endpoint_metadata.status",
+        ep.deleted_at AS "endpoint_metadata.deleted_at",
         ev.id AS "event_metadata.id",
         ev.event_type AS "event_metadata.event_type",
+        ev.created_at AS "event_metadata.created_at",
         COALESCE(d.id, '') AS "device_metadata.id",
         COALESCE(d.status, '') AS "device_metadata.status",
         COALESCE(d.host_name, '') AS "device_metadata.host_name",
@@ -832,7 +844,8 @@ SELECT id, project_id, event_id, subscription_id,
        event_type, device_id, endpoint_id, delivery_mode, latency_seconds,
        "endpoint_metadata.id", "endpoint_metadata.name", "endpoint_metadata.project_id",
        "endpoint_metadata.support_email", "endpoint_metadata.url", "endpoint_metadata.owner_id",
-       "event_metadata.id", "event_metadata.event_type",
+       "endpoint_metadata.status", "endpoint_metadata.deleted_at",
+       "event_metadata.id", "event_metadata.event_type", "event_metadata.created_at",
        "device_metadata.id", "device_metadata.status", "device_metadata.host_name",
        "source_metadata.id", "source_metadata.name", "source_metadata.idempotency_keys"
 FROM filtered_deliveries
@@ -891,8 +904,11 @@ type LoadEventDeliveriesPagedRow struct {
 	EndpointMetadataSupportEmail  pgtype.Text
 	EndpointMetadataUrl           pgtype.Text
 	EndpointMetadataOwnerID       pgtype.Text
+	EndpointMetadataStatus        pgtype.Text
+	EndpointMetadataDeletedAt     pgtype.Timestamptz
 	EventMetadataID               string
 	EventMetadataEventType        string
+	EventMetadataCreatedAt        pgtype.Timestamptz
 	DeviceMetadataID              pgtype.Text
 	DeviceMetadataStatus          pgtype.Text
 	DeviceMetadataHostName        pgtype.Text
@@ -963,8 +979,11 @@ func (q *Queries) LoadEventDeliveriesPaged(ctx context.Context, arg LoadEventDel
 			&i.EndpointMetadataSupportEmail,
 			&i.EndpointMetadataUrl,
 			&i.EndpointMetadataOwnerID,
+			&i.EndpointMetadataStatus,
+			&i.EndpointMetadataDeletedAt,
 			&i.EventMetadataID,
 			&i.EventMetadataEventType,
+			&i.EventMetadataCreatedAt,
 			&i.DeviceMetadataID,
 			&i.DeviceMetadataStatus,
 			&i.DeviceMetadataHostName,

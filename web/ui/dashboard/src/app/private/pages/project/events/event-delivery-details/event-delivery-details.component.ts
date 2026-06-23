@@ -1,11 +1,9 @@
 import { Component, EventEmitter, HostListener, OnInit, Output } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { EventDeliveryDetailsService } from './event-delivery-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
-import { PrivateService } from 'src/app/private/private.service';
-import { EndpointsService } from '../../endpoints/endpoints.service';
 
 @Component({
     selector: 'app-event-delivery-details',
@@ -29,17 +27,14 @@ export class EventDeliveryDetailsComponent implements OnInit {
 
 	constructor(
 		private route: ActivatedRoute,
-		private router: Router,
-		private privateService: PrivateService,
 		private eventDeliveryDetailsService: EventDeliveryDetailsService,
 		public generalService: GeneralService,
-		private eventsService: EventsService,
-		private endpointService: EndpointsService
+		private eventsService: EventsService
 	) {}
 
 	ngOnInit(): void {
 		const eventDeliveryId = this.route.snapshot.params.id;
-		this.getEventDeliveryDetails(eventDeliveryId).then(_ => this.getEndpoint());
+		this.getEventDeliveryDetails(eventDeliveryId);
 		this.getEventDeliveryAttempts(eventDeliveryId);
 	}
 
@@ -97,8 +92,27 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		}
 	}
 
-	viewEndpoint(endpointId: string) {
-		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/endpoints/' + endpointId);
+	formatLatencySeconds(latencySeconds?: number, deliveryStatus?: string): string {
+		if (deliveryStatus !== 'Success' || latencySeconds === undefined || latencySeconds === null) return '-';
+
+		if (latencySeconds < 1) {
+			return `${Math.round(latencySeconds * 1000)}ms`;
+		}
+
+		return `${latencySeconds.toFixed(2)}s`;
+	}
+
+	formatPreciseTimestamp(value?: string | Date): string {
+		if (!value) return '';
+
+		const date = new Date(value);
+		if (Number.isNaN(date.getTime())) return String(value);
+
+		return date.toISOString();
+	}
+
+	isEndpointDeleted(): boolean {
+		return !!this.eventDelsDetails?.endpoint_metadata?.deleted_at;
 	}
 
 	checkScreenSize() {
@@ -109,19 +123,5 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	onWindowResize() {
 		this.screenWidth = window.innerWidth;
 		this.checkScreenSize();
-	}
-
-	async getEndpoint() {
-		if (!this.eventDelsDetails?.endpoint_id) return;
-		this.isloadingEndpoint = true;
-
-		try {
-			const response = await this.endpointService.getEndpoint(this.eventDelsDetails?.endpoint_id, true);
-			this.eventDelsDetails.endpoint_metadata = response.data;
-
-			this.isloadingEndpoint = false;
-		} catch (error) {
-			this.isloadingEndpoint = false;
-		}
 	}
 }

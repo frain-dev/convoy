@@ -73,8 +73,11 @@ type joinedMetadata struct {
 	EndpointSupportEmail  pgtype.Text
 	EndpointUrl           pgtype.Text
 	EndpointOwnerID       pgtype.Text
+	EndpointStatus        pgtype.Text
+	EndpointDeletedAt     pgtype.Timestamptz
 	EventID               string
 	EventType             string
+	EventCreatedAt        pgtype.Timestamptz
 	DeviceID              pgtype.Text
 	DeviceStatus          pgtype.Text
 	DeviceHostName        pgtype.Text
@@ -92,8 +95,14 @@ func applyJoinedMetadata(d *datastore.EventDelivery, m joinedMetadata) {
 		SupportEmail: common.PgTextToString(m.EndpointSupportEmail),
 		Url:          common.PgTextToString(m.EndpointUrl),
 		OwnerID:      common.PgTextToString(m.EndpointOwnerID),
+		Status:       datastore.EndpointStatus(common.PgTextToString(m.EndpointStatus)),
+		DeletedAt:    common.PgTimestamptzToNullTime(m.EndpointDeletedAt),
 	}
-	d.Event = &datastore.Event{EventType: datastore.EventType(m.EventType)}
+	d.Event = &datastore.Event{
+		UID:       m.EventID,
+		EventType: datastore.EventType(m.EventType),
+		CreatedAt: common.PgTimestamptzToTime(m.EventCreatedAt),
+	}
 	d.Device = &datastore.Device{
 		UID:      common.PgTextToString(m.DeviceID),
 		Status:   datastore.DeviceStatus(common.PgTextToString(m.DeviceStatus)),
@@ -122,7 +131,8 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 			EndpointID: r.EndpointMetadataID, EndpointName: r.EndpointMetadataName,
 			EndpointProjectID: r.EndpointMetadataProjectID, EndpointSupportEmail: r.EndpointMetadataSupportEmail,
 			EndpointUrl: r.EndpointMetadataUrl, EndpointOwnerID: r.EndpointMetadataOwnerID,
-			EventID: r.EventMetadataID, EventType: r.EventMetadataEventType,
+			EndpointStatus: r.EndpointMetadataStatus, EndpointDeletedAt: r.EndpointMetadataDeletedAt,
+			EventID: r.EventMetadataID, EventType: r.EventMetadataEventType, EventCreatedAt: r.EventMetadataCreatedAt,
 			DeviceID: r.DeviceMetadataID, DeviceStatus: r.DeviceMetadataStatus, DeviceHostName: r.DeviceMetadataHostName,
 			SourceID: r.SourceMetadataID, SourceName: r.SourceMetadataName,
 		})
@@ -187,7 +197,8 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 			EndpointID: r.EndpointMetadataID, EndpointName: r.EndpointMetadataName,
 			EndpointProjectID: r.EndpointMetadataProjectID, EndpointSupportEmail: r.EndpointMetadataSupportEmail,
 			EndpointUrl: r.EndpointMetadataUrl, EndpointOwnerID: r.EndpointMetadataOwnerID,
-			EventID: r.EventMetadataID, EventType: r.EventMetadataEventType,
+			EndpointStatus: r.EndpointMetadataStatus, EndpointDeletedAt: r.EndpointMetadataDeletedAt,
+			EventID: r.EventMetadataID, EventType: r.EventMetadataEventType, EventCreatedAt: r.EventMetadataCreatedAt,
 			DeviceID: r.DeviceMetadataID, DeviceStatus: r.DeviceMetadataStatus, DeviceHostName: r.DeviceMetadataHostName,
 			SourceID: r.SourceMetadataID, SourceName: r.SourceMetadataName,
 			SourceIdempotencyKeys: r.SourceMetadataIdempotencyKeys,
