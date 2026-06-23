@@ -9,6 +9,7 @@ import {Plan} from './plan.service';
 // api/handlers/billing_plans.go (mergePlansWithFeatures), which joins config and
 // service plans by lowercased name.
 const PRODUCT_TYPE_SELF_HOSTED = 'self_hosted';
+const PRODUCT_TYPE_CLOUD = 'cloud';
 // Canonical enterprise plan keys. Backend (Overwatch plans.key) uses the
 // cloud_/self_hosted_ forms; the bundled default comparison plan uses 'enterprise'.
 const ENTERPRISE_KEYS = ['enterprise', 'cloud_enterprise', 'self_hosted_enterprise'];
@@ -33,6 +34,10 @@ export interface ResolvedPlanForApi {
 export class PlanCatalogService {
 	isSelfHostedPlan(plan: Plan): boolean {
 		return plan.product_type === PRODUCT_TYPE_SELF_HOSTED;
+	}
+
+	isCloudPlan(plan: Plan): boolean {
+		return plan.product_type === PRODUCT_TYPE_CLOUD;
 	}
 
 	isEnterprisePlan(plan: Plan): boolean {
@@ -115,19 +120,18 @@ export class PlanCatalogService {
 			};
 		}
 
-		const overwatchPlans = plansFromApi;
+		const overwatchPlans = plansFromApi.filter((plan: Plan) => isSelfHostedBilling ? this.isSelfHostedPlan(plan) : this.isCloudPlan(plan));
 		let plans: Plan[];
 		let plansUnavailableMessage = '';
 
 		if (isSelfHostedBilling) {
-			const selfHostedPlans = plansFromApi.filter((plan: Plan) => this.isSelfHostedPlan(plan));
-			plans = selfHostedPlans.map((plan: Plan) => this.mergePlanWithDefaultComparison(plan, defaultPlans));
+			plans = overwatchPlans.map((plan: Plan) => this.mergePlanWithDefaultComparison(plan, defaultPlans));
 			if (plans.length === 0) {
 				plansUnavailableMessage = 'Self-hosted plans are not available right now. Please try again later.';
 			}
 		} else {
 			const overwatchPlansMap = new Map<string, Plan>();
-			plansFromApi.forEach((plan: Plan) => {
+			overwatchPlans.forEach((plan: Plan) => {
 				overwatchPlansMap.set(plan.name.toLowerCase(), plan);
 			});
 
