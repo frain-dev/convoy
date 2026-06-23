@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, OnInit, Output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { EventDeliveryDetailsService } from './event-delivery-details.service';
@@ -11,8 +11,12 @@ import { EventsService } from '../events.service';
     styleUrls: ['./event-delivery-details.component.scss'],
     standalone: false
 })
-export class EventDeliveryDetailsComponent implements OnInit {
+export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
 	@Output('onViewEndpoint') onViewEndpoint = new EventEmitter<any>();
+	@ViewChild('metaStrip') metaStrip?: ElementRef<HTMLDivElement>;
+	canScrollLeft = false;
+	canScrollRight = false;
+	private readonly stripFadeWidth = 64;
 	eventDelsDetails?: EVENT_DELIVERY;
 	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
 	eventDeliveryAtempts: EVENT_DELIVERY_ATTEMPT[] = [];
@@ -38,6 +42,10 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.getEventDeliveryAttempts(eventDeliveryId);
 	}
 
+	ngAfterViewInit(): void {
+		this.updateStripFade();
+	}
+
 	async getEventDeliveryDetails(id: string) {
 		this.isLoadingDeliveryDetails = true;
 
@@ -45,6 +53,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			const response = await this.eventDeliveryDetailsService.getEventDeliveryDetails(id);
 			this.eventDelsDetails = response.data;
 			this.isLoadingDeliveryDetails = false;
+			this.scheduleStripFadeUpdate();
 		} catch (error) {
 			this.isLoadingDeliveryDetails = false;
 		}
@@ -87,6 +96,9 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			this.selectedDeliveryAttempt = this.eventDeliveryAtempt;
 
 			this.isloadingDeliveryAttempts = false;
+			// Attempt data fills LATEST ATTEMPT / IP ADDRESS / API VERSION, so the strip width
+			// can change after this second response; recompute the scroll arrows and fade.
+			this.scheduleStripFadeUpdate();
 		} catch (error) {
 			this.isloadingDeliveryAttempts = false;
 		}
@@ -119,9 +131,49 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
 	}
 
+	onStripScroll() {
+		this.updateStripFade();
+	}
+
+	scrollStrip(direction: 'left' | 'right') {
+		const el = this.metaStrip?.nativeElement;
+		if (!el) return;
+
+		const amount = Math.max(el.clientWidth * 0.8, 200);
+		el.scrollBy({ left: direction === 'right' ? amount : -amount, behavior: 'smooth' });
+	}
+
+	private scheduleStripFadeUpdate() {
+		// Recompute once the strip has rendered with the loaded data.
+		setTimeout(() => this.updateStripFade());
+	}
+
+	updateStripFade() {
+		const el = this.metaStrip?.nativeElement;
+		if (!el) {
+			this.canScrollLeft = false;
+			this.canScrollRight = false;
+			return;
+		}
+
+		const maxScroll = el.scrollWidth - el.clientWidth;
+		this.canScrollLeft = el.scrollLeft > 1;
+		this.canScrollRight = el.scrollLeft < maxScroll - 1;
+	}
+
+	// Android-style fading edge: only fade the side that still has content to scroll to,
+	// and leave both edges crisp when the strip fits without scrolling.
+	get stripMaskImage(): string {
+		const fade = this.stripFadeWidth;
+		const leftStop = this.canScrollLeft ? 'transparent 0' : '#000 0';
+		const rightStop = this.canScrollRight ? 'transparent 100%' : '#000 100%';
+		return `linear-gradient(to right, ${leftStop}, #000 ${fade}px, #000 calc(100% - ${fade}px), ${rightStop})`;
+	}
+
 	@HostListener('window:resize')
 	onWindowResize() {
 		this.screenWidth = window.innerWidth;
 		this.checkScreenSize();
+		this.updateStripFade();
 	}
 }

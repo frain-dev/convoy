@@ -10,7 +10,7 @@ export interface BillingOverview {
   };
   usage: {
     period: string;
-    daysUntilReset: number;
+    daysUntilReset?: number;
   };
   payment: {
     last4: string;
@@ -73,11 +73,37 @@ export class BillingOverviewService {
       };
     }
 
-    const currentPlan = data.subscription?.plan || { name: 'No plan', price: 0, currency: 'USD' };
+    const subscription = data.subscription;
+    const currentPlan = subscription?.plan || { name: 'No plan', price: 0, currency: 'USD' };
+    // Match the billing page's own notion of an active subscription (an id, or a plan with
+    // an id/name) rather than only the nested plan object. A subscription can carry cycle
+    // fields at the root with the plan omitted; treating that as "no cycle" would wrongly
+    // render "No active cycle" and skip the usage-month fallback below.
+    const hasActiveSubscription = !!(subscription && (subscription.id || subscription.plan?.id || subscription.plan?.name));
 
     const usage = data.usage || { period: this.getCurrentPeriod() };
-    const usagePeriod = this.formatUsagePeriod(usage.period);
-    const daysUntilReset = this.calculateDaysUntilReset(usage.period);
+    // Resolve the period label and the reset countdown from a single source so the two
+    // cards never disagree. Prefer the real billing cycle reported by the billing service
+    // (current_period_start/end + next_invoice_date); only when both the cycle range and a
+    // future next-invoice date are present do we use them together. Otherwise fall back to
+    // the usage-month derivation for both, matching the backend's fail-open behaviour, so we
+    // never render a wrong fixed "month 01 - next month 01" cycle or a period that resets on
+    // an unrelated date. With no subscription there is no cycle, so we show neither.
+    const billingPeriod = this.formatBillingCycle(data.subscription?.current_period_start, data.subscription?.current_period_end);
+    const daysFromCycle = this.daysUntilDate(data.subscription?.next_invoice_date);
+
+    let usagePeriod: string;
+    let daysUntilReset: number | undefined;
+    if (!hasActiveSubscription) {
+      usagePeriod = 'No active cycle';
+      daysUntilReset = undefined;
+    } else if (billingPeriod && daysFromCycle !== null) {
+      usagePeriod = billingPeriod;
+      daysUntilReset = daysFromCycle;
+    } else {
+      usagePeriod = this.formatUsagePeriod(usage.period);
+      daysUntilReset = this.calculateDaysUntilReset(usage.period);
+    }
     // Find the default payment method, or fall back to the first one if no default is set
     const payment = data.payment && data.payment.length > 0 
       ? (data.payment.find((pm: any) => pm.defaulted_at !== null && pm.defaulted_at !== undefined) || data.payment[0])
@@ -97,6 +123,45 @@ export class BillingOverviewService {
         brand: payment.card_type || payment.brand || 'unknown'
       } : null
     };
+  }
+
+  // Formats the provider billing cycle as "May 28 - Jun 28". Returns null when either
+  // bound is missing or unparseable so the caller falls back to the usage-month period.
+  // Includes the year on both bounds when they span different years (e.g. yearly terms),
+  // otherwise "Jun 28 - Jun 28" would render as an identical, confusing range.
+  private formatBillingCycle(startIso?: string, endIso?: string): string | null {
+    if (!startIso || !endIso) return null;
+
+    const start = new Date(startIso);
+    const end = new Date(endIso);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+
+    const withYear = start.getUTCFullYear() !== end.getUTCFullYear();
+    return `${this.formatCycleDay(start, withYear)} - ${this.formatCycleDay(end, withYear)}`;
+  }
+
+  // Billing-cycle boundaries from the billing service are UTC instants (often midnight UTC
+  // on yearly terms). Format them in UTC so a user west of UTC doesn't see the previous
+  // calendar day and disagree with the provider invoice date.
+  private formatCycleDay(date: Date, withYear = false): string {
+    const month = date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+    const day = date.getUTCDate().toString().padStart(2, '0');
+    return withYear ? `${month} ${day}, ${date.getUTCFullYear()}` : `${month} ${day}`;
+  }
+
+  // Whole days from now until the next invoice date. Returns null when the date is missing
+  // or unparseable so the caller falls back to the usage-month reset calculation.
+  private daysUntilDate(iso?: string): number | null {
+    if (!iso) return null;
+
+    const target = new Date(iso);
+    if (isNaN(target.getTime())) return null;
+
+    const diffMs = target.getTime() - Date.now();
+    // A past invoice date means our cached cycle is stale; return null so the caller falls
+    // back to the usage-month reset instead of showing a misleading "Resets in 0 days".
+    if (diffMs < 0) return null;
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   }
 
   private formatUsagePeriod(period: string): string {
