@@ -36,7 +36,7 @@
   }
 
   @if (!isloadingEventDeliveries && displayedEventDeliveries && displayedEventDeliveries.length > 0) {
-    <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
+    <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px] mobile:min-w-0" id="event-deliveries-table-container">
       <div convoy-card>
         <table convoy-table>
           <thead convoy-table-head>

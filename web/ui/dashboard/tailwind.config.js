@@ -94,7 +94,11 @@ module.exports = {
 			extrabold: '800'
 		},
 		screens: {
+			// Max-width tiers (mobile-last so the smaller max wins on phones):
+			// `desktop:` applies at <= 1050px (tablet and below), `mobile:` at
+			// <= 640px (phones). `md:` is the one min-width tier (>= 850px).
 			desktop: { max: '1050px' },
+			mobile: { max: '640px' },
 			md: { min: '850px' }
 		},
 		borderRadius: {

@@ -13,7 +13,7 @@
         <convoy-table-loader id="meta_events_loader" [tableHead]="metaEventsTableHead"></convoy-table-loader>
       }
       @if (!isLoadingMetaEvents && displayedMetaEvents && displayedMetaEvents.length > 0) {
-        <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container">
+        <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px] mobile:min-w-0" id="events-table-container">
           <table convoy-table>
             <thead convoy-table-head>
               @for (head of metaEventsTableHead; track $index; let i = $index) {

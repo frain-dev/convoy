@@ -19,7 +19,7 @@
         <convoy-table-loader id="events_loader_loader" [tableHead]="eventLogsTableHead"></convoy-table-loader>
       }
       @if (!isloadingEvents && displayedEvents && displayedEvents.length > 0) {
-        <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container">
+        <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px] mobile:min-w-0" id="events-table-container">
           <table convoy-table>
             <thead convoy-table-head>
               @for (head of eventLogsTableHead; track $index; let i = $index) {
