@@ -624,21 +624,25 @@ func deliveryToCreateParams(delivery *datastore.EventDelivery) repo.CreateEventD
 		EventID:   common.StringToPgTextNullable(delivery.EventID),
 		// Denormalize the parent event's persisted byte size onto the delivery so
 		// egress usage sums event_bytes without joining back to the events payload.
-		EventIDLookup:  common.StringToPgTextNullable(delivery.EventID),
-		EndpointID:     common.StringPtrToPgTextNullable(emptyToNilStr(delivery.EndpointID)),
-		DeviceID:       common.StringPtrToPgTextNullable(emptyToNilStr(delivery.DeviceID)),
-		SubscriptionID: common.StringToPgTextNullable(delivery.SubscriptionID),
-		Headers:        headersToJSONB(delivery.Headers),
-		Status:         common.StringToPgText(string(delivery.Status)),
-		Metadata:       metadataToJSONB(delivery.Metadata),
-		CliMetadata:    cliMetadataToJSONB(delivery.CLIMetadata),
-		Description:    common.StringToPgText(delivery.Description),
-		TargetUrl:      common.StringToPgText(delivery.TargetURL),
-		UrlQueryParams: common.StringToPgText(delivery.URLQueryParams),
-		IdempotencyKey: common.StringToPgTextNullable(delivery.IdempotencyKey),
-		EventType:      common.StringToPgTextNullable(string(delivery.EventType)),
-		AcknowledgedAt: common.NullTimeToPgTimestamptz(delivery.AcknowledgedAt),
-		DeliveryMode:   string(delivery.DeliveryMode),
+		// Scope the lookup by (id, project_id): events are partitioned by
+		// (project_id, created_at), so including project_id prunes to the parent's
+		// partition and guarantees the scalar subquery resolves a single row.
+		EventIDLookup:   common.StringToPgTextNullable(delivery.EventID),
+		ProjectIDLookup: common.StringToPgTextNullable(delivery.ProjectID),
+		EndpointID:      common.StringPtrToPgTextNullable(emptyToNilStr(delivery.EndpointID)),
+		DeviceID:        common.StringPtrToPgTextNullable(emptyToNilStr(delivery.DeviceID)),
+		SubscriptionID:  common.StringToPgTextNullable(delivery.SubscriptionID),
+		Headers:         headersToJSONB(delivery.Headers),
+		Status:          common.StringToPgText(string(delivery.Status)),
+		Metadata:        metadataToJSONB(delivery.Metadata),
+		CliMetadata:     cliMetadataToJSONB(delivery.CLIMetadata),
+		Description:     common.StringToPgText(delivery.Description),
+		TargetUrl:       common.StringToPgText(delivery.TargetURL),
+		UrlQueryParams:  common.StringToPgText(delivery.URLQueryParams),
+		IdempotencyKey:  common.StringToPgTextNullable(delivery.IdempotencyKey),
+		EventType:       common.StringToPgTextNullable(string(delivery.EventType)),
+		AcknowledgedAt:  common.NullTimeToPgTimestamptz(delivery.AcknowledgedAt),
+		DeliveryMode:    string(delivery.DeliveryMode),
 	}
 }
 

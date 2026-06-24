@@ -164,8 +164,33 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
-	period := startOfMonth.Format("2006-01")
-	cacheKey := fmt.Sprintf("billing:usage:%s:%s", orgID, period)
+
+	// Usage window. Default to the current calendar month, but honor an explicit
+	// range from the caller (the subscription billing cycle the UI displays) so
+	// the figures match the period shown. Fall back to the month on missing,
+	// invalid, or absurdly large (> ~1 year) input to bound the aggregation.
+	startTime, endTime := startOfMonth, endOfMonth
+	if s, e := r.URL.Query().Get("start"), r.URL.Query().Get("end"); s != "" && e != "" {
+		ps, errS := time.Parse(time.RFC3339, s)
+		pe, errE := time.Parse(time.RFC3339, e)
+		if errS == nil && errE == nil && ps.Before(pe) && pe.Sub(ps) <= 366*24*time.Hour {
+			startTime, endTime = ps, pe
+		}
+	}
+	period := startTime.Format("2006-01")
+
+	// Cache key. The billing-service source returns figures scoped to the
+	// provider's own billing period and ignores the caller-supplied window
+	// (GetUsage takes only the org id), so key it per org/source to avoid
+	// caching the same provider totals under many range keys and mislabeling
+	// them as the requested window. The Postgres source aggregates over the
+	// requested window, so its key varies by range.
+	var cacheKey string
+	if cfg.Billing.UsageSource == config.BillingUsageSourceBillingService {
+		cacheKey = fmt.Sprintf("billing:usage:%s:service", orgID)
+	} else {
+		cacheKey = fmt.Sprintf("billing:usage:%s:%d-%d", orgID, startTime.Unix(), endTime.Unix())
+	}
 
 	// Fail soft: a cache read error (Redis unavailable) is treated like a miss
 	// so the caller is never blocked. The background recompute is itself gated
@@ -177,12 +202,12 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if cached != nil {
-		h.recomputeUsageInBackground(orgID, period, cacheKey, startOfMonth, endOfMonth, cfg.Billing.UsageSource)
+		h.recomputeUsageInBackground(orgID, period, cacheKey, startTime, endTime, cfg.Billing.UsageSource)
 		_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", cached, http.StatusOK))
 		return
 	}
 
-	h.recomputeUsageInBackground(orgID, period, cacheKey, startOfMonth, endOfMonth, cfg.Billing.UsageSource)
+	h.recomputeUsageInBackground(orgID, period, cacheKey, startTime, endTime, cfg.Billing.UsageSource)
 
 	pending := &billing.Usage{
 		OrganisationID: orgID,
@@ -225,13 +250,25 @@ func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey stri
 		}
 		defer h.releaseUsageLock(lockKey, token)
 
+		// Fail-to-placeholder: if the aggregation errors or exceeds the lock TTL
+		// (e.g. a large window still falling back to payload scans for
+		// pre-migration rows), nothing is cached and the caller keeps seeing the
+		// pending sentinel. The dashboard polls a bounded number of times and
+		// then renders a placeholder. The figure resolves on a later recompute as
+		// more rows carry the persisted byte columns and the read goes index-only.
 		usage, err := h.computeUsage(ctx, orgID, period, startTime, endTime, source)
 		if err != nil {
 			h.A.Logger.Error("failed to compute usage", "error", err)
 			return
 		}
 
-		if err := h.A.Cache.Set(ctx, cacheKey, usage, usageCacheTTL); err != nil {
+		// Persist with a fresh short-lived context: a compute that consumed most
+		// of the lock budget would otherwise fail Cache.Set on the already-expired
+		// context, discarding a successful result and leaving callers stuck on the
+		// pending sentinel.
+		setCtx, cancelSet := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancelSet()
+		if err := h.A.Cache.Set(setCtx, cacheKey, usage, usageCacheTTL); err != nil {
 			h.A.Logger.Error("failed to cache usage", "error", err)
 		}
 	}()

@@ -17,7 +17,7 @@ INSERT INTO convoy.event_deliveries (
 )
 VALUES (@id, @project_id, @event_id, @endpoint_id, @device_id, @subscription_id, @headers, @status,
 		@metadata, @cli_metadata, @description, @target_url, @url_query_params, @idempotency_key, @event_type, @acknowledged_at, @delivery_mode,
-		(SELECT e.raw_bytes + e.data_bytes FROM convoy.events e WHERE e.id = @event_id_lookup));
+		(SELECT e.raw_bytes + e.data_bytes FROM convoy.events e WHERE e.id = @event_id_lookup AND e.project_id = @project_id_lookup));
 
 -- name: UpdateEventDeliveryMetadata :exec
 UPDATE convoy.event_deliveries

@@ -347,9 +347,15 @@ export class BillingPageComponent implements OnInit {
 
     const orgId = this.getOrganisationId();
     // Self-hosted usage is local instance data; cloud usage comes from the provider.
-    const usageUrl = this.billingStrategy === 'licensed_self_hosted'
-      ? `/billing/sh_usage?orgID=${orgId}`
-      : `/billing/organisations/${orgId}/usage`;
+    // For cloud, scope the query to the billing cycle the UI shows so the figures
+    // match the displayed period (backend defaults to the calendar month).
+    let usageUrl: string;
+    if (this.billingStrategy === 'licensed_self_hosted') {
+      usageUrl = `/billing/sh_usage?orgID=${orgId}`;
+    } else {
+      const { start, end } = this.usageRange();
+      usageUrl = `/billing/organisations/${orgId}/usage?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+    }
     this.httpService
       .request({
         url: usageUrl,
@@ -391,6 +397,26 @@ export class BillingPageComponent implements OnInit {
         this.isLoadingUsage = false;
         this.cdr.detectChanges();
       });
+  }
+
+  // Resolves the usage window to the active subscription billing cycle, falling
+  // back to the current calendar month when no valid cycle is available. Bounds
+  // are ISO 8601 so they round-trip through the backend's RFC3339 parsing.
+  private usageRange(): { start: string; end: string } {
+    const cycleStart = this.currentSubscription?.current_period_start;
+    const cycleEnd = this.currentSubscription?.current_period_end;
+    if (cycleStart && cycleEnd) {
+      const s = new Date(cycleStart);
+      const e = new Date(cycleEnd);
+      if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && s < e) {
+        return { start: s.toISOString(), end: e.toISOString() };
+      }
+    }
+
+    const now = new Date();
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
+    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0) - 1);
+    return { start: start.toISOString(), end: end.toISOString() };
   }
 
   private clearUsagePoll() {

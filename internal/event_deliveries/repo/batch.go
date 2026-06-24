@@ -27,7 +27,7 @@ INSERT INTO convoy.event_deliveries (
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
 		$9, $10, $11, $12, $13, $14, $15, $16, $17,
-		(SELECT e.raw_bytes + e.data_bytes FROM convoy.events e WHERE e.id = $18))
+		(SELECT e.raw_bytes + e.data_bytes FROM convoy.events e WHERE e.id = $18 AND e.project_id = $19))
 `
 
 type CreateEventDeliveryBatchResults struct {
@@ -37,24 +37,25 @@ type CreateEventDeliveryBatchResults struct {
 }
 
 type CreateEventDeliveryParams struct {
-	ID             pgtype.Text
-	ProjectID      pgtype.Text
-	EventID        pgtype.Text
-	EndpointID     pgtype.Text
-	DeviceID       pgtype.Text
-	SubscriptionID pgtype.Text
-	Headers        []byte
-	Status         pgtype.Text
-	Metadata       []byte
-	CliMetadata    []byte
-	Description    pgtype.Text
-	TargetUrl      pgtype.Text
-	UrlQueryParams pgtype.Text
-	IdempotencyKey pgtype.Text
-	EventType      pgtype.Text
-	AcknowledgedAt pgtype.Timestamptz
-	DeliveryMode   interface{}
-	EventIDLookup  pgtype.Text
+	ID              pgtype.Text
+	ProjectID       pgtype.Text
+	EventID         pgtype.Text
+	EndpointID      pgtype.Text
+	DeviceID        pgtype.Text
+	SubscriptionID  pgtype.Text
+	Headers         []byte
+	Status          pgtype.Text
+	Metadata        []byte
+	CliMetadata     []byte
+	Description     pgtype.Text
+	TargetUrl       pgtype.Text
+	UrlQueryParams  pgtype.Text
+	IdempotencyKey  pgtype.Text
+	EventType       pgtype.Text
+	AcknowledgedAt  pgtype.Timestamptz
+	DeliveryMode    interface{}
+	EventIDLookup   pgtype.Text
+	ProjectIDLookup pgtype.Text
 }
 
 // Event Deliveries Repository SQL Queries
@@ -88,6 +89,7 @@ func (q *Queries) CreateEventDelivery(ctx context.Context, arg []CreateEventDeli
 			a.AcknowledgedAt,
 			a.DeliveryMode,
 			a.EventIDLookup,
+			a.ProjectIDLookup,
 		}
 		batch.Queue(createEventDelivery, vals...)
 	}
