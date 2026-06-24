@@ -9,7 +9,37 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      has_backend: ${{ steps.filter.outputs.has_backend }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      # has_backend is true when ANY changed file is NOT under web/ui/dashboard/**
+      # or docs/**. With predicate-quantifier 'every', a file counts only if it
+      # matches '**' AND none of the negated frontend globs, so a single .go/go.mod/
+      # cmd/** change (or a change to this workflow) marks the set as backend. This
+      # suite is skipped only when has_backend is explicitly 'false', so the gate is
+      # fail-safe and a mixed UI+backend PR always runs it.
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@668c092af3649c4b664c54e4b704aa46782f6f7c # v3
+        with:
+          predicate-quantifier: 'every'
+          filters: |
+            has_backend:
+              - '**'
+              - '!web/ui/dashboard/**'
+              - '!docs/**'
+
   pubsub-tests:
+    needs: changes
+    if: ${{ needs.changes.outputs.has_backend != 'false' }}
     runs-on: ubuntu-latest
     env:
       CONVOY_JWT_SECRET: test-access-secret
