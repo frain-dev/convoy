@@ -72,6 +72,7 @@ func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.
 	}
 
 	if _, err := static.Open(strings.TrimLeft(p, "/")); err == nil {
+		setUICacheHeaders(rw, p)
 		http.FileServer(http.FS(static)).ServeHTTP(rw, req)
 		return
 	}
@@ -80,7 +81,25 @@ func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.
 	if a.cfg.RootPath != "" {
 		a.serveIndexWithRootPath(rw)
 	} else {
+		// SPA fallback serves the index.html shell; keep it revalidated so a
+		// deploy is never masked by a stale shell pointing at old bundles.
+		setUICacheHeaders(rw, "/")
 		http.FileServer(http.FS(static)).ServeHTTP(rw, req)
+	}
+}
+
+// setUICacheHeaders keeps the dashboard HTML shell revalidated so a deploy is
+// never masked by a stale shell that still references old content-hashed
+// bundles. Only the shell (index.html and the SPA fallback "/") is forced to
+// revalidate; the hashed JS/CSS bundles are fingerprinted, so their URLs change
+// on every deploy and the browser's default caching can never serve stale code.
+// We deliberately do not blanket-cache by extension: not all embedded .js/.css
+// are fingerprinted (e.g. Monaco ships stable-named loader.js/editor.main.js
+// under assets/), so an immutable header there would pin old code after a
+// release.
+func setUICacheHeaders(rw http.ResponseWriter, p string) {
+	if p == "/" || strings.HasSuffix(p, ".html") {
+		rw.Header().Set("Cache-Control", "no-cache")
 	}
 }
 
@@ -160,6 +179,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	contentStr = strings.Replace(contentStr, `</body>`, clientScript+`</body>`, 1)
 
 	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// The HTML shell must revalidate so a deploy is not masked by a stale shell
+	// that still references old content-hashed bundles.
+	rw.Header().Set("Cache-Control", "no-cache")
 	if _, err := rw.Write([]byte(contentStr)); err != nil {
 		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
 		return
@@ -181,15 +203,20 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 	appHandler.cfg = cfg
 
-	// A billing URL enables shared billing/catalog calls. The API key is the
-	// separate cloud/org-billing signal used when mounting org-scoped routes.
-	if strings.TrimSpace(cfg.Billing.URL) != "" {
+	// Resolve the billing service URL: OSS/self-hosted default to prod Overwatch
+	// so catalog/checkout/license management work out of the box, while cloud
+	// (API key set) keeps requiring an explicit URL (Billing.Validate fails closed
+	// otherwise). The API key, not the URL, remains the cloud/org-billing signal
+	// used when mounting org-scoped routes.
+	billingCfg := cfg.Billing
+	billingCfg.URL = cfg.BillingServiceURL()
+	if strings.TrimSpace(billingCfg.URL) != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		billingClient := billing.NewClient(cfg.Billing)
+		billingClient := billing.NewClient(billingCfg)
 		if err := billingClient.HealthCheck(ctx); err != nil {
-			// Do not log cfg.Billing.URL: it can carry credentials in userinfo or
+			// Do not log the billing URL: it can carry credentials in userinfo or
 			// tokens in the query string. The operator already knows the configured URL.
 			a.Logger.Warnf("billing service health check failed: %v", err)
 		}
