@@ -768,3 +768,36 @@ func TestResolveBillingLicenseKey(t *testing.T) {
 		})
 	}
 }
+
+func TestBillingServiceURL(t *testing.T) {
+	// OSS (no API key, no URL): default to prod Overwatch so catalog/checkout
+	// reach the billing service without operator config. Mode stays OSS.
+	ossCfg := DefaultConfiguration
+	require.Equal(t, DefaultOverwatchHost, ossCfg.BillingServiceURL())
+	require.Equal(t, BillingModeOSS, ossCfg.BillingMode(""))
+	require.False(t, ossCfg.UsesOrgBilling())
+
+	// Licensed self-hosted (no API key): same prod default; mode is licensed.
+	require.Equal(t, DefaultOverwatchHost, ossCfg.BillingServiceURL())
+	require.Equal(t, BillingModeLicensedSelfHosted, ossCfg.BillingMode("license-key"))
+
+	// Self-hosted with an explicit URL override is honoured verbatim.
+	shOverride := DefaultConfiguration
+	shOverride.Billing.URL = "https://billing.internal.example"
+	require.Equal(t, "https://billing.internal.example", shOverride.BillingServiceURL())
+
+	// Cloud (API key + explicit URL): the configured URL is used, mode is cloud.
+	cloudCfg := DefaultConfiguration
+	cloudCfg.Billing.APIKey = "ovw_test_key"
+	cloudCfg.Billing.URL = "https://overwatch.example.cloud"
+	require.Equal(t, "https://overwatch.example.cloud", cloudCfg.BillingServiceURL())
+	require.Equal(t, BillingModeCloud, cloudCfg.BillingMode(""))
+	require.True(t, cloudCfg.UsesOrgBilling())
+
+	// Cloud misconfig (API key, no URL): never invent a host. The empty result
+	// keeps the client unbuilt, and Billing.Validate fails closed at load.
+	cloudNoURL := DefaultConfiguration
+	cloudNoURL.Billing.APIKey = "ovw_test_key"
+	require.Equal(t, "", cloudNoURL.BillingServiceURL())
+	require.Error(t, cloudNoURL.Billing.Validate())
+}
