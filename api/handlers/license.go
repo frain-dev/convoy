@@ -36,6 +36,36 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
 }
 
+// GetPortalLicenseFeatures serves license features for the organisation that owns
+// the portal link. In cloud org-billing mode the org is derived from the portal
+// token only (via the resolved project), never from a client-supplied orgID, so a
+// portal token can only ever read its own org's plan. This is what lets a portal
+// session gate features on the customer's actual entitlements (e.g. a Pro org sees
+// AdvancedSubscriptions enabled) instead of the deployment/operator license.
+func (h *Handler) GetPortalLicenseFeatures(w http.ResponseWriter, r *http.Request) {
+	if h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil {
+		project, err := h.retrieveProject(r)
+		if err != nil {
+			h.A.Logger.Error("portal license features: failed to resolve project from token", "error", err)
+			_ = render.Render(w, r, util.NewErrorResponse("failed to get license features", http.StatusBadRequest))
+			return
+		}
+
+		h.serveOrgLicenseFeatures(w, r, project.OrganisationID)
+		return
+	}
+
+	// Self-hosted / non-org-billing: the deployment licenser holds the plan.
+	v, err := h.A.Licenser.FeatureListJSON(r.Context())
+	if err != nil {
+		h.A.Logger.Error("failed to get license features", "error", err)
+		_ = render.Render(w, r, util.NewErrorResponse("failed to get license features", http.StatusBadRequest))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
+}
+
 // serveOrgLicenseFeatures resolves license features for a specific organisation in cloud
 // org-billing mode: it tries the billing service license first, falls back to the
 // org's stored license_data only on billing errors, and finally to the billing-required feature list.

@@ -121,6 +121,29 @@ export class LicensesService {
 		await Promise.all([this.setLicenses(true), this.setLicenses(false)]);
 	}
 
+	/**
+	 * Populate both caches for a portal session. A portal token has a single
+	 * authority: the org that owns the link. The portal license endpoint always
+	 * returns that org's plan (the server resolves the org from the token and
+	 * ignores any client orgID), so we write the same payload to both the
+	 * instance and org caches. hasLicense (instance AND org) then collapses to
+	 * the org plan: a licensed org unlocks gated features, an unlicensed org
+	 * keeps the upsell. Call from portal components before reading hasLicense.
+	 */
+	async setPortalLicenses() {
+		try {
+			const response = await this.getLicenses();
+			const data = JSON.stringify(response.data);
+			localStorage.setItem(this.INSTANCE_LICENSES_KEY, data);
+			localStorage.setItem(this.ORG_LICENSES_KEY, data);
+		} catch {
+			// Fail closed: drop any cache left by a prior dashboard/portal
+			// session so a failed fetch cannot keep gates unlocked with another
+			// org's entitlements. Gates then read not-allowed.
+			this.clearLicenses();
+		}
+	}
+
 	clearLicenses() {
 		localStorage.removeItem(this.ORG_LICENSES_KEY);
 		localStorage.removeItem(this.INSTANCE_LICENSES_KEY);

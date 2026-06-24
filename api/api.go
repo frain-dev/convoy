@@ -750,7 +750,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
 
-		portalLinkRouter.Get("/license/features", handler.GetLicenseFeatures)
+		portalLinkRouter.Get("/license/features", handler.GetPortalLicenseFeatures)
 
 		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
 			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
@@ -1009,7 +1009,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser, handler.A.Logger))
 		portalLinkRouter.Use(middleware.RequireAuth(handler.A.Logger))
 
-		portalLinkRouter.Get("/license/features", handler.GetLicenseFeatures)
+		portalLinkRouter.Get("/license/features", handler.GetPortalLicenseFeatures)
 
 		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
 			eventRouter.Post("/", handler.CreateEndpointEvent)

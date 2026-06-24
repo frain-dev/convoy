@@ -345,6 +345,11 @@ function transform(payload) {
     async ngOnInit() {
         this.isLoadingForm = true;
 
+        // Load the portal org's plan into the license cache so feature gates
+        // (e.g. AdvancedSubscriptions) reflect the customer's actual entitlements
+        // instead of failing closed because the portal never populated the cache.
+        await this.licenseService.setPortalLicenses();
+
         // Get the endpoint ID from route params if not provided via input
         if (!this.endpointUid) {
             this.endpointUid = this.route.snapshot.params['id'];
