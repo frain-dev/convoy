@@ -18,6 +18,9 @@ export class LicensesService {
 	// so instance AND org collapses to the single license there.
 	private readonly ORG_LICENSES_KEY = 'licenses';
 	private readonly INSTANCE_LICENSES_KEY = 'instanceLicenses';
+	// Portal sessions keep their own cache so they never overwrite the
+	// dashboard's instance/org caches in a shared-browser session.
+	private readonly PORTAL_LICENSES_KEY = 'portalLicenses';
 
 	constructor(private http: HttpService) {}
 
@@ -121,9 +124,28 @@ export class LicensesService {
 		await Promise.all([this.setLicenses(true), this.setLicenses(false)]);
 	}
 
+	/**
+	 * Populate the portal-only cache. A portal token has a single authority: the
+	 * org that owns the link. The portal license endpoint resolves that org from
+	 * the token and returns its plan. We keep this in a dedicated portal cache so
+	 * it never overwrites the dashboard's instance/org caches in a shared-browser
+	 * session. Call from portal components before reading hasPortalLicense.
+	 */
+	async setPortalLicenses() {
+		try {
+			const response = await this.getLicenses();
+			localStorage.setItem(this.PORTAL_LICENSES_KEY, JSON.stringify(response.data));
+		} catch {
+			// Fail closed: drop the portal cache so a failed fetch cannot leave
+			// gates unlocked. hasPortalLicense then reads not-allowed.
+			localStorage.removeItem(this.PORTAL_LICENSES_KEY);
+		}
+	}
+
 	clearLicenses() {
 		localStorage.removeItem(this.ORG_LICENSES_KEY);
 		localStorage.removeItem(this.INSTANCE_LICENSES_KEY);
+		localStorage.removeItem(this.PORTAL_LICENSES_KEY);
 	}
 
 	hasOrgLicense(org: { license_data?: string } | null): boolean {
@@ -137,6 +159,15 @@ export class LicensesService {
 	 */
 	hasLicense(license: string): boolean {
 		return this.allowsInCache(this.INSTANCE_LICENSES_KEY, license) && this.allowsInCache(this.ORG_LICENSES_KEY, license);
+	}
+
+	/**
+	 * Portal-context entitlement. A portal token's only authority is the org that
+	 * owns the link, so the portal reads its own cache and never depends on the
+	 * dashboard instance/org caches. Used by portal feature gates.
+	 */
+	hasPortalLicense(license: string): boolean {
+		return this.allowsInCache(this.PORTAL_LICENSES_KEY, license);
 	}
 
 	/**
