@@ -345,9 +345,10 @@ function transform(payload) {
     async ngOnInit() {
         this.isLoadingForm = true;
 
-        // Load the portal org's plan into the license cache so feature gates
-        // (e.g. AdvancedSubscriptions) reflect the customer's actual entitlements
-        // instead of failing closed because the portal never populated the cache.
+        // Await the shared portal license cache before rendering gated controls so
+        // feature gates (e.g. AdvancedSubscriptions) reflect the customer's plan on
+        // first paint. PortalComponent also triggers this on init; setPortalLicenses
+        // dedupes the two callers onto a single fetch.
         await this.licenseService.setPortalLicenses();
 
         // Get the endpoint ID from route params if not provided via input
