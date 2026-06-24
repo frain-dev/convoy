@@ -192,7 +192,7 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	if cfg.Billing.UsageSource == config.BillingUsageSourceBillingService {
 		cacheKey = fmt.Sprintf("billing:usage:%s:service", orgID)
 	} else {
-		cacheKey = fmt.Sprintf("billing:usage:%s:%d-%d", orgID, startTime.Unix(), endTime.Unix())
+		cacheKey = fmt.Sprintf("billing:usage:%s:%d-%d", orgID, startTime.UnixNano(), endTime.UnixNano())
 	}
 
 	// Fail soft: a cache read error (Redis unavailable) is treated like a miss
