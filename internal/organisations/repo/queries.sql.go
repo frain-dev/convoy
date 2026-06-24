@@ -13,7 +13,7 @@ import (
 )
 
 const calculateEgressBytes = `-- name: CalculateEgressBytes :one
-SELECT COALESCE(SUM(LENGTH(e.raw)), 0) + COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS bytes
+SELECT COALESCE(SUM(COALESCE(d.event_bytes, OCTET_LENGTH(e.raw) + OCTET_LENGTH(e.data))), 0)::BIGINT AS bytes
 FROM convoy.event_deliveries d
 JOIN convoy.events e ON e.id = d.event_id
 JOIN convoy.projects p ON p.id = e.project_id
@@ -30,6 +30,9 @@ type CalculateEgressBytesParams struct {
 	EndTime        pgtype.Timestamptz
 }
 
+// Hybrid read: prefer the denormalized event_bytes on the delivery; fall back to the
+// parent event's true byte size for pre-migration deliveries. Once event_bytes is
+// populated the COALESCE short-circuits and the events join never reads payloads.
 func (q *Queries) CalculateEgressBytes(ctx context.Context, arg CalculateEgressBytesParams) (pgtype.Int8, error) {
 	row := q.db.QueryRow(ctx, calculateEgressBytes, arg.OrganisationID, arg.StartTime, arg.EndTime)
 	var bytes pgtype.Int8
@@ -40,8 +43,8 @@ func (q *Queries) CalculateEgressBytes(ctx context.Context, arg CalculateEgressB
 const calculateIngressBytes = `-- name: CalculateIngressBytes :one
 
 SELECT
-    COALESCE(SUM(LENGTH(e.raw)), 0) AS raw_bytes,
-    COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS data_bytes
+    COALESCE(SUM(COALESCE(e.raw_bytes, OCTET_LENGTH(e.raw))), 0)::BIGINT AS raw_bytes,
+    COALESCE(SUM(COALESCE(e.data_bytes, OCTET_LENGTH(e.data))), 0)::BIGINT AS data_bytes
 FROM convoy.events e
 JOIN convoy.projects p ON p.id = e.project_id
 WHERE p.organisation_id = $1
@@ -63,6 +66,9 @@ type CalculateIngressBytesRow struct {
 }
 
 // Usage Calculation Queries
+// Hybrid read: prefer the persisted byte columns and fall back to the true octet
+// length of the payload for pre-migration rows. As the window fills with populated
+// rows the fallback stops firing and the scan converges to index-only column reads.
 func (q *Queries) CalculateIngressBytes(ctx context.Context, arg CalculateIngressBytesParams) (CalculateIngressBytesRow, error) {
 	row := q.db.QueryRow(ctx, calculateIngressBytes, arg.OrganisationID, arg.StartTime, arg.EndTime)
 	var i CalculateIngressBytesRow

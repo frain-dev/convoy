@@ -49,6 +49,16 @@ export class BillingUsageService {
   }
 
   formatUsageData(usage: any): UsageRow[] {
+    // Cloud usage is computed off the request path. While the API reports
+    // pending it carries no figures yet, so render a placeholder instead of a
+    // misleading zero until the background recompute lands.
+    if (usage?.pending) {
+      return [
+        { name: 'Webhook event volume', sent: '-', received: '-', total: '-' },
+        { name: 'Webhook event size', sent: '-', received: '-', total: '-' }
+      ];
+    }
+
     const sentVolume = Number(usage?.sent?.volume || 0);       // outgoing deliveries count
     const receivedVolume = Number(usage?.received?.volume || 0); // incoming events count
     const sentBytes = Number(usage?.sent?.bytes || 0);         // outgoing bytes (egress)

@@ -801,3 +801,19 @@ func TestBillingServiceURL(t *testing.T) {
 	require.Equal(t, "", cloudNoURL.BillingServiceURL())
 	require.Error(t, cloudNoURL.Billing.Validate())
 }
+
+func TestBillingUsageSource(t *testing.T) {
+	// Cloud usage defaults to local Postgres byte columns.
+	require.Equal(t, BillingUsageSourcePostgres, DefaultConfiguration.Billing.UsageSource)
+
+	valid := []string{"", BillingUsageSourcePostgres, BillingUsageSourceBillingService}
+	for _, src := range valid {
+		cfg := DefaultConfiguration
+		cfg.Billing.UsageSource = src
+		require.NoError(t, cfg.Billing.Validate(), "usage source %q should be valid", src)
+	}
+
+	invalid := DefaultConfiguration
+	invalid.Billing.UsageSource = "clickhouse"
+	require.Error(t, invalid.Billing.Validate())
+}

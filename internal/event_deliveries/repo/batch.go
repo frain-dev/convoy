@@ -22,10 +22,12 @@ const createEventDelivery = `-- name: CreateEventDelivery :batchexec
 
 INSERT INTO convoy.event_deliveries (
     id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
-    metadata, cli_metadata, description, target_url, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
+	metadata, cli_metadata, description, target_url, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode,
+	event_bytes
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
-        $9, $10, $11, $12, $13, $14, $15, $16, $17)
+		$9, $10, $11, $12, $13, $14, $15, $16, $17,
+		(SELECT e.raw_bytes + e.data_bytes FROM convoy.events e WHERE e.id = $18))
 `
 
 type CreateEventDeliveryBatchResults struct {
@@ -52,6 +54,7 @@ type CreateEventDeliveryParams struct {
 	EventType      pgtype.Text
 	AcknowledgedAt pgtype.Timestamptz
 	DeliveryMode   interface{}
+	EventIDLookup  pgtype.Text
 }
 
 // Event Deliveries Repository SQL Queries
@@ -59,6 +62,10 @@ type CreateEventDeliveryParams struct {
 // ============================================================================
 // Group 1: CRUD Operations
 // ============================================================================
+// event_bytes denormalizes the parent event's persisted byte size (raw_bytes +
+// data_bytes) so egress usage can be summed without joining back to the events
+// payload. NULL for deliveries of pre-migration events; usage reads COALESCE those
+// to a join-time fallback.
 func (q *Queries) CreateEventDelivery(ctx context.Context, arg []CreateEventDeliveryParams) *CreateEventDeliveryBatchResults {
 	batch := &pgx.Batch{}
 	for _, a := range arg {
@@ -80,6 +87,7 @@ func (q *Queries) CreateEventDelivery(ctx context.Context, arg []CreateEventDeli
 			a.EventType,
 			a.AcknowledgedAt,
 			a.DeliveryMode,
+			a.EventIDLookup,
 		}
 		batch.Queue(createEventDelivery, vals...)
 	}

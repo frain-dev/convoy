@@ -619,9 +619,12 @@ func (s *Service) UnPartitionEventDeliveriesTable(ctx context.Context) error {
 
 func deliveryToCreateParams(delivery *datastore.EventDelivery) repo.CreateEventDeliveryParams {
 	return repo.CreateEventDeliveryParams{
-		ID:             common.StringToPgTextNullable(delivery.UID),
-		ProjectID:      common.StringToPgTextNullable(delivery.ProjectID),
-		EventID:        common.StringToPgTextNullable(delivery.EventID),
+		ID:        common.StringToPgTextNullable(delivery.UID),
+		ProjectID: common.StringToPgTextNullable(delivery.ProjectID),
+		EventID:   common.StringToPgTextNullable(delivery.EventID),
+		// Denormalize the parent event's persisted byte size onto the delivery so
+		// egress usage sums event_bytes without joining back to the events payload.
+		EventIDLookup:  common.StringToPgTextNullable(delivery.EventID),
 		EndpointID:     common.StringPtrToPgTextNullable(emptyToNilStr(delivery.EndpointID)),
 		DeviceID:       common.StringPtrToPgTextNullable(emptyToNilStr(delivery.DeviceID)),
 		SubscriptionID: common.StringToPgTextNullable(delivery.SubscriptionID),
@@ -718,6 +721,7 @@ BEGIN
         acknowledged_at  TIMESTAMP WITH TIME ZONE,
         latency_seconds  NUMERIC,
         delivery_mode    convoy.delivery_mode NOT NULL DEFAULT 'at_least_once',
+        event_bytes      BIGINT,
         PRIMARY KEY (id, created_at, project_id)
     ) PARTITION BY RANGE (project_id, created_at);
 
@@ -745,11 +749,11 @@ BEGIN
     INSERT INTO convoy.event_deliveries_new (
         id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
         attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-        latency_seconds, delivery_mode
+        latency_seconds, delivery_mode, event_bytes
     )
     SELECT id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
            attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-           latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode
+           latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode, event_bytes
     FROM convoy.event_deliveries;
 
     -- Manage table renaming
@@ -816,18 +820,19 @@ begin
         event_type       TEXT,
         acknowledged_at  TIMESTAMP WITH TIME ZONE,
         latency_seconds  NUMERIC,
-        delivery_mode    convoy.delivery_mode NOT NULL DEFAULT 'at_least_once'
+        delivery_mode    convoy.delivery_mode NOT NULL DEFAULT 'at_least_once',
+        event_bytes      BIGINT
     );
 
     RAISE NOTICE 'Migrating data...';
     INSERT INTO convoy.event_deliveries_new (
         id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
         attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-        latency_seconds, delivery_mode
+        latency_seconds, delivery_mode, event_bytes
     )
     SELECT id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
            attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-           latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode
+           latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode, event_bytes
     FROM convoy.event_deliveries;
 
     ALTER TABLE convoy.delivery_attempts DROP CONSTRAINT if exists delivery_attempts_event_delivery_id_fkey;

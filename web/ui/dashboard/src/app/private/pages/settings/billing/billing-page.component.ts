@@ -35,6 +35,13 @@ const PAYMENT_SUBMIT_DELAY_MS = 100;
 const PAYMENT_DETAILS_MAX_RETRIES = 5;
 const PAYMENT_DETAILS_RETRY_DELAY_MS = 1000;
 const SUPPORT_EMAIL = 'support@getconvoy.io';
+// Cloud usage is computed in the background; while the API reports pending,
+// poll a bounded number of times so the placeholder is replaced once the
+// figure is ready, then give up (the backend logs persistent failures). The
+// window (~2 min) matches the backend recompute lock TTL so a slow first
+// aggregation still resolves before polling stops.
+const USAGE_PENDING_MAX_POLLS = 24;
+const USAGE_PENDING_POLL_DELAY_MS = 5000;
 
 @Component({
     selector: 'app-billing-page',
@@ -145,8 +152,12 @@ export class BillingPageComponent implements OnInit {
   private activeCountryRequestToken = 0;
   private activeCityRequestToken = 0;
   private cityLoadingRequestToken: number | null = null;
+  private usagePollHandle: ReturnType<typeof setTimeout> | null = null;
+  private usageRequestToken = 0;
 
   async ngOnInit() {
+    this.destroyRef.onDestroy(() => this.clearUsagePoll());
+
     // When the post-checkout poll confirms the subscription is active, reload
     // billing data so the plan card and Manage plan reflect it immediately.
     this.billingPaymentDetailsService.checkoutSubscriptionVerified$
@@ -318,12 +329,21 @@ export class BillingPageComponent implements OnInit {
     }
   }
 
-  private loadUsageSeparately() {
+  private loadUsageSeparately(attempt = 0, token?: number) {
     if (this.billingStrategy !== 'cloud' && this.billingStrategy !== 'licensed_self_hosted') {
+      this.clearUsagePoll();
       this.isLoadingUsage = false;
       this.usageRows = [];
       return;
     }
+
+    // A fresh load (attempt 0) cancels any in-flight poll chain and mints a new
+    // request token so a late response from a superseded chain is ignored.
+    if (attempt === 0) {
+      this.clearUsagePoll();
+      token = ++this.usageRequestToken;
+    }
+    const requestToken = token!;
 
     const orgId = this.getOrganisationId();
     // Self-hosted usage is local instance data; cloud usage comes from the provider.
@@ -337,19 +357,50 @@ export class BillingPageComponent implements OnInit {
         hideNotification: true
       })
       .then(res => {
-        if (res?.data) {
-          this.usageRows = this.usageService.formatUsageData(res.data);
-        } else {
+        // Drop stale responses: a newer load has superseded this chain.
+        if (requestToken !== this.usageRequestToken) {
+          return;
+        }
+
+        const data = res?.data;
+        if (!data) {
           this.usageRows = [];
+          return;
+        }
+
+        this.usageRows = this.usageService.formatUsageData(data);
+        // Cloud usage may still be computing; re-poll a bounded number of times
+        // so the placeholder is replaced once the real figure is cached.
+        if (data.pending && attempt < USAGE_PENDING_MAX_POLLS) {
+          this.usagePollHandle = setTimeout(
+            () => this.loadUsageSeparately(attempt + 1, requestToken),
+            USAGE_PENDING_POLL_DELAY_MS
+          );
         }
       })
       .catch(() => {
+        if (requestToken !== this.usageRequestToken) {
+          return;
+        }
         this.usageRows = [];
       })
       .finally(() => {
+        if (requestToken !== this.usageRequestToken) {
+          return;
+        }
         this.isLoadingUsage = false;
         this.cdr.detectChanges();
       });
+  }
+
+  private clearUsagePoll() {
+    if (this.usagePollHandle) {
+      clearTimeout(this.usagePollHandle);
+      this.usagePollHandle = null;
+    }
+    // Invalidate any in-flight usage response so a late resolve from a cancelled
+    // chain cannot repopulate rows after idle/destroy.
+    this.usageRequestToken++;
   }
 
   private async loadOrganisationData() {
@@ -470,6 +521,7 @@ export class BillingPageComponent implements OnInit {
   }
 
   private markBillingDataIdle() {
+    this.clearUsagePoll();
     this.isLoadingBillingData = false;
     this.isLoadingUsage = false;
     this.billingOverview = null;

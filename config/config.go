@@ -173,8 +173,9 @@ var DefaultConfiguration = Configuration{
 	ApiRateLimit:        1000,
 	WorkerExecutionMode: DefaultExecutionMode,
 	Billing: BillingConfiguration{
-		URL:    "",
-		APIKey: "",
+		URL:         "",
+		APIKey:      "",
+		UsageSource: BillingUsageSourcePostgres,
 	},
 	SSOService: SSOServiceConfiguration{
 		Host:            "https://overwatch.getconvoy.cloud",
@@ -603,12 +604,26 @@ type BillingPlanConfig struct {
 	ProductType string `json:"product_type,omitempty"`
 }
 
+// Billing usage sources select where cloud usage figures are read from. They only
+// apply in cloud mode; self-hosted always computes usage from local event data.
+const (
+	// BillingUsageSourcePostgres computes usage from this instance's own Postgres
+	// event data (the persisted byte columns). This is the cloud default.
+	BillingUsageSourcePostgres = "postgres"
+	// BillingUsageSourceBillingService delegates usage to the external billing
+	// service instead of computing it locally.
+	BillingUsageSourceBillingService = "billing_service"
+)
+
 type BillingConfiguration struct {
 	URL              string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
 	APIKey           string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
 	OrganisationHost string                       `json:"organisation_host" envconfig:"CONVOY_BILLING_ORGANISATION_HOST"`
 	PaymentProvider  PaymentProviderConfiguration `json:"payment_provider"`
 	Plans            []BillingPlanConfig          `json:"plans,omitempty"`
+	// UsageSource selects the cloud usage source: "postgres" (default, local byte
+	// columns) or "billing_service". Empty is treated as "postgres".
+	UsageSource string `json:"usage_source" envconfig:"CONVOY_BILLING_USAGE_SOURCE"`
 }
 
 type PaymentProviderConfiguration struct {
@@ -665,6 +680,12 @@ func (s *SSOServiceConfiguration) UnmarshalJSON(data []byte) error {
 func (b *BillingConfiguration) Validate() error {
 	if strings.TrimSpace(b.APIKey) != "" && strings.TrimSpace(b.URL) == "" {
 		return fmt.Errorf("billing URL is required when billing API key is configured")
+	}
+
+	switch strings.TrimSpace(b.UsageSource) {
+	case "", BillingUsageSourcePostgres, BillingUsageSourceBillingService:
+	default:
+		return fmt.Errorf("invalid billing usage source %q: must be %q or %q", b.UsageSource, BillingUsageSourcePostgres, BillingUsageSourceBillingService)
 	}
 
 	return nil

@@ -23,6 +23,10 @@ type Querier interface {
 	// ============================================================================
 	// Group 1: CRUD Operations
 	// ============================================================================
+	// event_bytes denormalizes the parent event's persisted byte size (raw_bytes +
+	// data_bytes) so egress usage can be summed without joining back to the events
+	// payload. NULL for deliveries of pre-migration events; usage reads COALESCE those
+	// to a join-time fallback.
 	CreateEventDelivery(ctx context.Context, arg []CreateEventDeliveryParams) *CreateEventDeliveryBatchResults
 	// ============================================================================
 	// Group 7: Export Operations

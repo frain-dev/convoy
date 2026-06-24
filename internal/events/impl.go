@@ -81,6 +81,10 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 		AcknowledgedAt:   common.NullTimeToPgTimestamptz(event.AcknowledgedAt),
 		Metadata:         common.StringToPgTextNullable(event.Metadata),
 		Status:           common.StringToPgTextNullable(string(event.Status)),
+		// True octet length of the ingested payload, persisted so usage reads sum
+		// columns instead of re-scanning raw/data.
+		RawBytes:  pgtype.Int8{Int64: int64(len(event.Raw)), Valid: true},
+		DataBytes: pgtype.Int8{Int64: int64(len(event.Data)), Valid: true},
 	}
 
 	// Insert event
@@ -696,6 +700,8 @@ BEGIN
         acknowledged_at    TIMESTAMPTZ,
         status             TEXT,
         metadata           TEXT,
+        raw_bytes          BIGINT,
+        data_bytes         BIGINT,
         PRIMARY KEY (id, created_at, project_id)
     ) PARTITION BY RANGE (project_id, created_at);
 
@@ -724,11 +730,11 @@ BEGIN
     INSERT INTO convoy.events_new (
         id, event_type, endpoints, project_id, source_id, headers, raw, data,
         created_at, updated_at, deleted_at, url_query_params, url_path, idempotency_key,
-        is_duplicate_event, acknowledged_at, status, metadata
+        is_duplicate_event, acknowledged_at, status, metadata, raw_bytes, data_bytes
     )
     SELECT id, event_type, endpoints, project_id, source_id, headers, raw, data,
            created_at, updated_at, deleted_at, url_query_params, COALESCE(url_path, ''), idempotency_key,
-           is_duplicate_event, acknowledged_at, status, metadata
+           is_duplicate_event, acknowledged_at, status, metadata, raw_bytes, data_bytes
     FROM convoy.events;
 
     -- Manage table renaming
@@ -792,7 +798,9 @@ BEGIN
         is_duplicate_event BOOLEAN DEFAULT FALSE,
         acknowledged_at    TIMESTAMP WITH TIME ZONE,
         status             TEXT,
-        metadata           TEXT
+        metadata           TEXT,
+        raw_bytes          BIGINT,
+        data_bytes         BIGINT
     );
 
     ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS url_path VARCHAR NOT NULL DEFAULT '';
@@ -801,11 +809,11 @@ BEGIN
     INSERT INTO convoy.events_new (
         id, event_type, endpoints, project_id, source_id, headers, raw, data,
         created_at, updated_at, deleted_at, url_query_params, url_path, idempotency_key,
-        is_duplicate_event, acknowledged_at, status, metadata
+        is_duplicate_event, acknowledged_at, status, metadata, raw_bytes, data_bytes
     )
     SELECT id, event_type, endpoints, project_id, source_id, headers, raw, data,
            created_at, updated_at, deleted_at, url_query_params, COALESCE(url_path, ''), idempotency_key,
-           is_duplicate_event, acknowledged_at, status, metadata
+           is_duplicate_event, acknowledged_at, status, metadata, raw_bytes, data_bytes
     FROM convoy.events;
 
     ALTER TABLE convoy.event_deliveries DROP CONSTRAINT IF EXISTS event_deliveries_event_id_fkey;

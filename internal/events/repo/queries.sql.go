@@ -261,10 +261,12 @@ const createEvent = `-- name: CreateEvent :exec
 
 INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id,
                            headers, raw, data, url_query_params, url_path, idempotency_key,
-                           is_duplicate_event, acknowledged_at, metadata, status)
+                           is_duplicate_event, acknowledged_at, metadata, status,
+                           raw_bytes, data_bytes)
 VALUES ($1, $2, $3, $4, $5,
         $6, $7, $8, $9, $10, $11,
-        $12, $13, $14, $15)
+        $12, $13, $14, $15,
+        $16, $17)
 `
 
 type CreateEventParams struct {
@@ -283,6 +285,8 @@ type CreateEventParams struct {
 	AcknowledgedAt   pgtype.Timestamptz
 	Metadata         pgtype.Text
 	Status           pgtype.Text
+	RawBytes         pgtype.Int8
+	DataBytes        pgtype.Int8
 }
 
 // Events Repository SQL Queries
@@ -290,6 +294,8 @@ type CreateEventParams struct {
 // ============================================================================
 // Group 1: Simple CRUD Operations (5 queries)
 // ============================================================================
+// raw_bytes/data_bytes are persisted at write time as the true octet length of the
+// ingested payload so usage can be summed from columns without re-scanning raw/data.
 func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error {
 	_, err := q.db.Exec(ctx, createEvent,
 		arg.ID,
@@ -307,13 +313,15 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error 
 		arg.AcknowledgedAt,
 		arg.Metadata,
 		arg.Status,
+		arg.RawBytes,
+		arg.DataBytes,
 	)
 	return err
 }
 
 const exportEvents = `-- name: ExportEvents :many
 SELECT ed.id,
-       TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
+       TO_JSONB(ed) - 'id' - 'raw_bytes' - 'data_bytes' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
 FROM convoy.events AS ed
 WHERE created_at < $1
   AND created_at >= $2
@@ -334,8 +342,15 @@ type ExportEventsRow struct {
 	JsonOutput []byte
 }
 
+// raw_bytes/data_bytes are internal usage-accounting columns recomputed on write,
+// so they are stripped from the backup to keep the export format stable.
 func (q *Queries) ExportEvents(ctx context.Context, arg ExportEventsParams) ([]ExportEventsRow, error) {
-	rows, err := q.db.Query(ctx, exportEvents, arg.CreatedAtEnd, arg.CreatedAtStart, arg.Cursor, arg.PageLimit)
+	rows, err := q.db.Query(ctx, exportEvents,
+		arg.CreatedAtEnd,
+		arg.CreatedAtStart,
+		arg.Cursor,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

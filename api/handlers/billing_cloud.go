@@ -11,11 +11,24 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/oklog/ulid/v2"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/util"
 )
+
+// usageLockReleaseScript releases the recompute lock only if the caller still
+// owns it (atomic compare-and-delete) so a worker that outlived the TTL cannot
+// clear a lock a newer worker has since acquired.
+var usageLockReleaseScript = redis.NewScript(`
+if redis.call("get", KEYS[1]) == ARGV[1] then
+    return redis.call("del", KEYS[1])
+end
+return 0
+`)
 
 func (h *BillingHandler) ensureOrganisationInBilling(w http.ResponseWriter, r *http.Request, orgID string) bool {
 	orgRepo := h.orgRepo()
@@ -122,21 +135,148 @@ func (h *BillingHandler) updateBillingEmailIfEmpty(orgID string) {
 	}()
 }
 
+const (
+	// usageCacheTTL is how long a computed usage figure is served before a
+	// background refresh recomputes it.
+	usageCacheTTL = time.Hour
+	// usageRecomputeLockTTL bounds a single background recompute and dedupes
+	// concurrent recomputes for the same org/period.
+	usageRecomputeLockTTL = 2 * time.Minute
+)
+
+// GetUsage returns the current month's usage for the org without blocking the
+// caller on the aggregation. It serves the last computed value from Redis and
+// refreshes it in the background (stale-while-revalidate, like dashboard stats).
+// On a cold cache it returns a pending response so the dashboard renders a
+// placeholder instead of a misleading zero until the real figure is known.
 func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	orgID, ok := h.orgGuard(w, r)
 	if !ok {
 		return
 	}
 
-	resp, err := h.BillingClient.GetUsage(r.Context(), orgID)
+	cfg, err := config.Get()
 	if err != nil {
-		// GetUsage intentionally maps billing failures to 503, unlike the other
-		// cloud reads which use renderBillingError (500). Preserved per A11.
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusServiceUnavailable))
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch config", http.StatusInternalServerError))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse(resp.Message, resp.Data, http.StatusOK))
+	now := time.Now()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
+	period := startOfMonth.Format("2006-01")
+	cacheKey := fmt.Sprintf("billing:usage:%s:%s", orgID, period)
+
+	// Fail soft: a cache read error (Redis unavailable) is treated like a miss
+	// so the caller is never blocked. The background recompute is itself gated
+	// by a Redis lock below that also fails closed when Redis is down, so a
+	// read outage cannot stampede Postgres with concurrent aggregations.
+	var cached *billing.Usage
+	if cacheErr := h.A.Cache.Get(r.Context(), cacheKey, &cached); cacheErr != nil {
+		h.A.Logger.Error("failed to read usage from cache", "error", cacheErr)
+	}
+
+	if cached != nil {
+		h.recomputeUsageInBackground(orgID, period, cacheKey, startOfMonth, endOfMonth, cfg.Billing.UsageSource)
+		_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", cached, http.StatusOK))
+		return
+	}
+
+	h.recomputeUsageInBackground(orgID, period, cacheKey, startOfMonth, endOfMonth, cfg.Billing.UsageSource)
+
+	pending := &billing.Usage{
+		OrganisationID: orgID,
+		Period:         period,
+		Pending:        true,
+		CreatedAt:      now.Format(time.RFC3339),
+	}
+	_ = render.Render(w, r, util.NewServerResponse("Usage is being calculated", pending, http.StatusOK))
+}
+
+// recomputeUsageInBackground refreshes the cached usage figure off the request
+// path. An atomic Redis lock dedupes concurrent recomputes for the same
+// org/period so a burst of requests cannot stampede Postgres.
+func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey string, startTime, endTime time.Time, source string) {
+	// Fail closed: without Redis we cannot dedupe, so skip the recompute rather
+	// than risk concurrent heavy aggregations. The caller still gets a pending
+	// response and the figure resolves once Redis is available again.
+	if h.A.Redis == nil {
+		h.A.Logger.Error("skipping usage recompute: redis is not configured")
+		return
+	}
+
+	lockKey := cacheKey + ":query"
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), usageRecomputeLockTTL)
+		defer cancel()
+
+		// Atomic acquire. Fail closed on Redis error (skip rather than run a
+		// duplicate aggregation); skip quietly if another recompute holds it.
+		token := ulid.Make().String()
+		acquired, err := h.A.Redis.SetNX(ctx, lockKey, token, usageRecomputeLockTTL).Result()
+		if err != nil {
+			h.A.Logger.Error("failed to acquire usage recompute lock", "error", err)
+			return
+		}
+		if !acquired {
+			h.A.Logger.Debug("usage recompute already running")
+			return
+		}
+		defer h.releaseUsageLock(lockKey, token)
+
+		usage, err := h.computeUsage(ctx, orgID, period, startTime, endTime, source)
+		if err != nil {
+			h.A.Logger.Error("failed to compute usage", "error", err)
+			return
+		}
+
+		if err := h.A.Cache.Set(ctx, cacheKey, usage, usageCacheTTL); err != nil {
+			h.A.Logger.Error("failed to cache usage", "error", err)
+		}
+	}()
+}
+
+// releaseUsageLock releases the recompute lock with an owner check so a worker
+// that overran the TTL cannot delete a newer worker's lock. Uses a fresh
+// timeout so release still runs if the compute context was cancelled.
+func (h *BillingHandler) releaseUsageLock(lockKey, token string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := usageLockReleaseScript.Run(ctx, h.A.Redis, []string{lockKey}, token).Err(); err != nil {
+		h.A.Logger.Error("failed to release usage recompute lock", "error", err)
+	}
+}
+
+// computeUsage resolves usage from the configured cloud source. Default
+// ("postgres") computes from this instance's persisted byte columns; the column
+// reads converge to index-only as the window fills with populated rows.
+func (h *BillingHandler) computeUsage(ctx context.Context, orgID, period string, startTime, endTime time.Time, source string) (*billing.Usage, error) {
+	if source == config.BillingUsageSourceBillingService {
+		resp, err := h.BillingClient.GetUsage(ctx, orgID)
+		if err != nil {
+			return nil, err
+		}
+		usage := resp.Data
+		usage.Pending = false
+		return &usage, nil
+	}
+
+	orgSvc := organisations.New(h.A.Logger, h.A.DB)
+	usage, err := orgSvc.CalculateUsage(ctx, orgID, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+
+	return &billing.Usage{
+		OrganisationID: usage.OrganisationID,
+		Period:         period,
+		Received:       billing.UsageMetrics{Volume: usage.Received.Volume, Bytes: usage.Received.Bytes},
+		Sent:           billing.UsageMetrics{Volume: usage.Sent.Volume, Bytes: usage.Sent.Bytes},
+		CreatedAt:      usage.CreatedAt.Format(time.RFC3339),
+		Pending:        false,
+	}, nil
 }
 
 func (h *BillingHandler) GetInvoices(w http.ResponseWriter, r *http.Request) {
