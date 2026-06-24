@@ -425,7 +425,9 @@ export class BillingPageComponent implements OnInit {
         !isNaN(e.getTime()) &&
         !isNaN(reset.getTime()) &&
         s < e &&
-        reset.getTime() > Date.now()
+        // >= now to match the overview's daysUntilDate, which treats a due-now
+        // reset (diffMs >= 0) as a valid cycle and only nulls out a past date.
+        reset.getTime() >= Date.now()
       ) {
         // current_period_end is the start of the next cycle, and the backend
         // window is inclusive on both bounds. Forward end - 1ms so an event at
