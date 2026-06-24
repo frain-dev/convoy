@@ -28,7 +28,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      has_backend: ${{ steps.filter.outputs.has_backend }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - name: Check out code
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -36,9 +36,7 @@ jobs:
       # has_backend is true when ANY changed file is NOT under web/ui/dashboard/**
       # or docs/**. With predicate-quantifier 'every', a file counts only if it
       # matches '**' AND none of the negated frontend globs, so a single .go/go.mod/
-      # cmd/** change (or a change to this workflow) marks the set as backend. The Go
-      # analysis is skipped only when has_backend is explicitly 'false', so the gate
-      # is fail-safe; javascript-typescript and actions always run.
+      # cmd/** change (or a change to this workflow) marks the set as backend.
       - name: Detect changed paths
         id: filter
         uses: dorny/paths-filter@668c092af3649c4b664c54e4b704aa46782f6f7c # v3
@@ -50,14 +48,31 @@ jobs:
               - '!web/ui/dashboard/**'
               - '!docs/**'
 
+      # Build the CodeQL language matrix. javascript-typescript (the dashboard is TS)
+      # and actions always run. The Go leg is dropped only on pure UI/docs pull
+      # requests (has_backend == 'false'); push-to-main and the weekly schedule
+      # always include Go so the periodic full-tree scan is never skipped, since
+      # paths-filter has no reliable diff base on non-PR events. This is the only
+      # valid way to skip a single matrix leg, because matrix context is not
+      # available to a job-level if. The gate is fail-safe: any non-'false'
+      # has_backend value keeps Go in the matrix.
+      - name: Build CodeQL language matrix
+        id: matrix
+        env:
+          HAS_BACKEND: ${{ steps.filter.outputs.has_backend }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          all='[{"language":"actions","build-mode":"none"},{"language":"go","build-mode":"autobuild"},{"language":"javascript-typescript","build-mode":"none"}]'
+          ui_only='[{"language":"actions","build-mode":"none"},{"language":"javascript-typescript","build-mode":"none"}]'
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$HAS_BACKEND" = "false" ]; then
+            echo "matrix=$ui_only" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=$all" >> "$GITHUB_OUTPUT"
+          fi
+
   analyze:
     name: Analyze (${{ matrix.language }})
     needs: changes
-    # Skip only the Go leg on pure UI/docs pull requests; keep javascript-typescript
-    # (the dashboard is TS) and actions analysis running on every PR. push-to-main
-    # and the weekly schedule always run Go so the periodic full-tree scan is never
-    # skipped (paths-filter has no reliable diff base on non-PR events).
-    if: ${{ github.event_name != 'pull_request' || matrix.language != 'go' || needs.changes.outputs.has_backend != 'false' }}
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
     #   - https://gh.io/supported-runners-and-hardware-resources
@@ -77,14 +92,10 @@ jobs:
 
     strategy:
       fail-fast: false
+      # Languages come from the changes job so the Go leg can be dropped on
+      # pure UI/docs PRs. See "Build CodeQL language matrix" above.
       matrix:
-        include:
-        - language: actions
-          build-mode: none
-        - language: go
-          build-mode: autobuild
-        - language: javascript-typescript
-          build-mode: none
+        include: ${{ fromJSON(needs.changes.outputs.matrix) }}
         # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
         # Use `c-cpp` to analyze code written in C, C++ or both
         # Use 'java-kotlin' to analyze code written in Java, Kotlin or both
