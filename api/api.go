@@ -181,15 +181,20 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 	appHandler.cfg = cfg
 
-	// A billing URL enables shared billing/catalog calls. The API key is the
-	// separate cloud/org-billing signal used when mounting org-scoped routes.
-	if strings.TrimSpace(cfg.Billing.URL) != "" {
+	// Resolve the billing service URL: OSS/self-hosted default to prod Overwatch
+	// so catalog/checkout/license management work out of the box, while cloud
+	// (API key set) keeps requiring an explicit URL (Billing.Validate fails closed
+	// otherwise). The API key, not the URL, remains the cloud/org-billing signal
+	// used when mounting org-scoped routes.
+	billingCfg := cfg.Billing
+	billingCfg.URL = cfg.BillingServiceURL()
+	if strings.TrimSpace(billingCfg.URL) != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		billingClient := billing.NewClient(cfg.Billing)
+		billingClient := billing.NewClient(billingCfg)
 		if err := billingClient.HealthCheck(ctx); err != nil {
-			// Do not log cfg.Billing.URL: it can carry credentials in userinfo or
+			// Do not log the billing URL: it can carry credentials in userinfo or
 			// tokens in the query string. The operator already knows the configured URL.
 			a.Logger.Warnf("billing service health check failed: %v", err)
 		}
