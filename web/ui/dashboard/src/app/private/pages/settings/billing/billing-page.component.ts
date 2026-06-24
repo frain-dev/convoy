@@ -412,7 +412,11 @@ export class BillingPageComponent implements OnInit {
       const s = new Date(cycleStart);
       const e = new Date(cycleEnd);
       if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && s < e) {
-        return { start: s.toISOString(), end: e.toISOString() };
+        // current_period_end is the start of the next cycle, and the backend
+        // window is inclusive on both bounds. Forward end - 1ms so an event at
+        // the cutover instant is counted in the next cycle only, not both.
+        const endExclusive = new Date(e.getTime() - 1);
+        return { start: s.toISOString(), end: endExclusive.toISOString() };
       }
     }
 
