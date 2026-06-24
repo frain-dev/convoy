@@ -32,6 +32,10 @@ const (
 	BillingModeLicensedSelfHosted BillingMode = "licensed_self_hosted"
 )
 
+// DefaultOverwatchHost is the production billing/license service used when an
+// OSS or self-hosted instance has not configured an explicit billing URL.
+const DefaultOverwatchHost = "https://overwatch.getconvoy.cloud"
+
 func (c Configuration) BillingMode(instanceLicenseKey string) BillingMode {
 	if strings.TrimSpace(c.Billing.APIKey) != "" {
 		return BillingModeCloud
@@ -44,6 +48,22 @@ func (c Configuration) BillingMode(instanceLicenseKey string) BillingMode {
 
 func (c Configuration) UsesOrgBilling() bool {
 	return c.BillingMode("") == BillingModeCloud
+}
+
+// BillingServiceURL returns the billing service base URL to use. OSS and
+// self-hosted instances (no billing API key) default to prod Overwatch so the
+// plan catalog, guest checkout, and license management work without operator
+// config, mirroring the SSO/license service defaults. Cloud (API key set) keeps
+// requiring an explicit URL: an empty URL there is a misconfiguration that
+// Billing.Validate already fails closed on, so this never invents a cloud host.
+func (c Configuration) BillingServiceURL() string {
+	if url := strings.TrimSpace(c.Billing.URL); url != "" {
+		return url
+	}
+	if strings.TrimSpace(c.Billing.APIKey) == "" {
+		return DefaultOverwatchHost
+	}
+	return ""
 }
 
 var cfgSingleton atomic.Value
