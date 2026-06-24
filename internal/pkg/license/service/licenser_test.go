@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -121,4 +123,142 @@ func (r communityProjectRepo) GetProjectsWithEventsInTheInterval(context.Context
 }
 func (r communityProjectRepo) FillProjectsStatistics(context.Context, *datastore.Project) error {
 	return nil
+}
+
+// mutableProjectRepo lets a test change the set of projects (and force a DB
+// error) after the licenser has been built, simulating projects created in
+// another process and transient database failures.
+type mutableProjectRepo struct {
+	communityProjectRepo
+	mu     sync.Mutex
+	uids   []string
+	err    error
+	onLoad func()
+}
+
+func (r *mutableProjectRepo) set(uids []string, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.uids = uids
+	r.err = err
+}
+
+func (r *mutableProjectRepo) LoadProjects(context.Context, *datastore.ProjectFilter) ([]*datastore.Project, error) {
+	r.mu.Lock()
+	onLoad := r.onLoad
+	err := r.err
+	uids := append([]string(nil), r.uids...)
+	r.mu.Unlock()
+
+	// Simulate a concurrent project mutation that commits while this read is in
+	// flight. Run outside the repo lock so it can take the licenser lock.
+	if onLoad != nil {
+		onLoad()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	projects := make([]*datastore.Project, 0, len(uids))
+	for _, id := range uids {
+		projects = append(projects, &datastore.Project{UID: id})
+	}
+	return projects, nil
+}
+
+func (r *mutableProjectRepo) CountProjects(context.Context) (int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.err != nil {
+		return 0, r.err
+	}
+	return int64(len(r.uids)), nil
+}
+
+func newCommunityLicenserForTest(t *testing.T, repo datastore.ProjectRepository) *Licenser {
+	t.Helper()
+	l, err := NewLicenser(LicenserConfig{
+		OrgRepo:     communityOrgRepo{},
+		UserRepo:    communityUserRepo{},
+		ProjectRepo: repo,
+	})
+	require.NoError(t, err)
+	require.True(t, l.isCommunity)
+	return l
+}
+
+func (l *Licenser) expireProjectCacheForTest() {
+	l.mu.Lock()
+	l.projectsFetchedAt = time.Now().Add(-2 * communityProjectCacheTTL)
+	l.mu.Unlock()
+}
+
+// TestCommunityProjectEnabledRefreshesFromDB proves the worker picks up a
+// project created after it started. Without the refresh, the per-process
+// snapshot would gate that project's event deliveries forever.
+func TestCommunityProjectEnabledRefreshesFromDB(t *testing.T) {
+	repo := &mutableProjectRepo{uids: []string{"a"}}
+	l := newCommunityLicenserForTest(t, repo)
+
+	require.True(t, l.ProjectEnabled("a"))
+	require.False(t, l.ProjectEnabled("b"))
+
+	// A project is created in another process after this licenser started.
+	repo.set([]string{"a", "b"}, nil)
+
+	// Within the miss window the cached set is reused (no DB refresh yet).
+	require.False(t, l.ProjectEnabled("b"))
+
+	// Once the cache is stale, the next lookup reconciles with the DB.
+	l.expireProjectCacheForTest()
+	require.True(t, l.ProjectEnabled("b"))
+	require.True(t, l.ProjectEnabled("a"))
+}
+
+// TestCommunityProjectEnabledEnforcesLimit proves the downgrade case still
+// holds: with more projects than the community limit, only the allowed subset
+// stays enabled.
+func TestCommunityProjectEnabledEnforcesLimit(t *testing.T) {
+	repo := &mutableProjectRepo{uids: []string{"a", "b", "c"}}
+	l := newCommunityLicenserForTest(t, repo)
+
+	// enforceProjectLimit keeps the last communityProjectLimit projects.
+	require.False(t, l.ProjectEnabled("a"))
+	require.True(t, l.ProjectEnabled("b"))
+	require.True(t, l.ProjectEnabled("c"))
+}
+
+// TestCommunityProjectEnabledKeepsCacheOnRefreshError proves the failure policy:
+// a transient DB error keeps the last-known set and does not enable an unknown
+// project (fail closed), rather than bypassing the project limit.
+func TestCommunityProjectEnabledKeepsCacheOnRefreshError(t *testing.T) {
+	repo := &mutableProjectRepo{uids: []string{"a"}}
+	l := newCommunityLicenserForTest(t, repo)
+	require.True(t, l.ProjectEnabled("a"))
+
+	repo.set([]string{"a"}, errors.New("db down"))
+	l.expireProjectCacheForTest()
+
+	require.True(t, l.ProjectEnabled("a"))
+	require.False(t, l.ProjectEnabled("b"))
+}
+
+// TestCommunityProjectEnabledRefreshDoesNotClobberConcurrentMutation proves a
+// refresh that read the DB before a concurrent AddEnabledProject committed does
+// not overwrite that optimistic mutation. The repo's read returns the stale set
+// (without "b"), but "b" is added during the read, so the refresh is discarded.
+func TestCommunityProjectEnabledRefreshDoesNotClobberConcurrentMutation(t *testing.T) {
+	repo := &mutableProjectRepo{uids: []string{"a"}}
+	l := newCommunityLicenserForTest(t, repo)
+
+	repo.mu.Lock()
+	repo.onLoad = func() { l.AddEnabledProject("b") }
+	repo.mu.Unlock()
+
+	l.expireProjectCacheForTest()
+
+	// The lookup triggers a refresh; the DB read does not include "b", but "b"
+	// is added mid-read. The refresh must not drop it.
+	require.True(t, l.ProjectEnabled("b"))
+	require.True(t, l.ProjectEnabled("a"))
 }
