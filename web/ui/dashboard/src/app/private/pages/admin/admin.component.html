@@ -1,9 +1,9 @@
 <div
-  class="mt-24px mx-auto w-full"
+  class="mt-24px mx-auto w-full desktop:px-24px"
   [class.max-w-[1000px]]="activePage !== 'queue monitoring'"
   [class.max-w-[1440px]]="activePage === 'queue monitoring'"
   >
-  <div class="flex" [class.gap-100px]="activePage !== 'queue monitoring'" [class.gap-40px]="activePage === 'queue monitoring'">
+  <div class="flex flex-col md:flex-row gap-24px" [ngClass]="{ 'md:gap-100px': activePage !== 'queue monitoring', 'md:gap-40px': activePage === 'queue monitoring' }">
     <div class="w-full max-w-[200px] settings-sidebar">
       <div class="flex gap-8px items-center mb-24px">
         <a routerLink="/projects" class="block p-2px rounded-100px border border-new.primary-50">
