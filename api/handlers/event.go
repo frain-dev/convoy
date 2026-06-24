@@ -59,6 +59,13 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	projectID := project.UID
 
+	// A portal-link token may only create events against an endpoint it owns. This
+	// fails closed (401) for a portal request with an empty or foreign endpoint id.
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) && !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, newMessage.EndpointID) {
+		return
+	}
+
 	if !util.IsStringEmpty(newMessage.EndpointID) {
 		_, err = h.retrieveEndpoint(r.Context(), newMessage.EndpointID, projectID)
 		if err != nil {
@@ -312,6 +319,14 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Replay re-queues the event to every endpoint on event.Endpoints, so a portal
+	// caller must own all of them; owning one endpoint must not trigger redelivery to
+	// foreign endpoints. Fail closed if any endpoint is not owned.
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, event.Endpoints...) {
+		return
+	}
+
 	rs := services.ReplayEventService{
 		EndpointRepo: endpoints.New(h.A.Logger, h.A.DB),
 		Queue:        h.A.Queue,
@@ -358,17 +373,43 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.Filter.Project = p
+
+	var ownedEndpointIDs []string
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, innerErr := h.retrievePortalLinkFromToken(r)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
+			return
+		}
+
+		endpointIDs, innerErr := h.getEndpoints(r, portalLink)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("0 successful, 0 failed", nil, http.StatusOK))
+			return
+		}
+
+		data.Filter.EndpointIDs = endpointIDs
+		ownedEndpointIDs = endpointIDs
+	}
+
 	ep := datastore.Pageable{}
 	if data.Filter.Pageable == ep {
 		data.Filter.Pageable.PerPage = 2000000000
 	}
 
 	bs := services.BatchReplayEventService{
-		EndpointRepo: endpoints.New(h.A.Logger, h.A.DB),
-		Queue:        h.A.Queue,
-		EventRepo:    events.New(h.A.Logger, h.A.DB),
-		Filter:       data.Filter,
-		Logger:       h.A.Logger,
+		EndpointRepo:     endpoints.New(h.A.Logger, h.A.DB),
+		Queue:            h.A.Queue,
+		EventRepo:        events.New(h.A.Logger, h.A.DB),
+		Filter:           data.Filter,
+		OwnedEndpointIDs: ownedEndpointIDs,
+		Logger:           h.A.Logger,
 	}
 
 	successes, failures, err := bs.Run(r.Context())
@@ -398,6 +439,11 @@ func (h *Handler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	event, err := h.retrieveEvent(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+		return
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsAnyEndpoint(w, r, authUser, event.Endpoints...) {
 		return
 	}
 

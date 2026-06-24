@@ -166,6 +166,12 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointID := chi.URLParam(r, "endpointID")
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, endpointID) {
+		return
+	}
+
 	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
 		h.A.Logger.Errorf("Failed to retrieve endpoint: %v", err)
@@ -359,6 +365,12 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointID := chi.URLParam(r, "endpointID")
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, endpointID) {
+		return
+	}
+
 	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -443,6 +455,12 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointID := chi.URLParam(r, "endpointID")
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, endpointID) {
+		return
+	}
+
 	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -489,6 +507,12 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointID := chi.URLParam(r, "endpointID")
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, endpointID) {
+		return
+	}
+
 	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -544,10 +568,17 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	endpointID := chi.URLParam(r, "endpointID")
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, endpointID) {
+		return
+	}
+
 	ps := services.PauseEndpointService{
 		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectID:    project.UID,
-		EndpointId:   chi.URLParam(r, "endpointID"),
+		EndpointId:   endpointID,
 	}
 
 	endpoint, err := ps.Run(r.Context())

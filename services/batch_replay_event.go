@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"slices"
 
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -14,7 +15,11 @@ type BatchReplayEventService struct {
 	EventRepo    datastore.EventRepository
 
 	Filter *datastore.Filter
-	Logger log.Logger
+	// OwnedEndpointIDs, when non-empty, restricts replay to events whose endpoints are
+	// all in the set. Portal-link callers set it so replaying a multi-endpoint event
+	// cannot redeliver to endpoints the caller does not own. Empty means no restriction.
+	OwnedEndpointIDs []string
+	Logger           log.Logger
 }
 
 func (e *BatchReplayEventService) Run(ctx context.Context) (int, int, error) {
@@ -30,16 +35,34 @@ func (e *BatchReplayEventService) Run(ctx context.Context) (int, int, error) {
 		Logger:       e.Logger,
 	}
 
-	failures := 0
+	successes, failures := 0, 0
 	for _, ev := range events {
+		// Count ownership-skipped events as failures so the summary does not over-report
+		// successes: a partially foreign multi-endpoint event matches the owned-endpoint
+		// filter but must not be replayed (that would redeliver to foreign endpoints).
+		if len(e.OwnedEndpointIDs) > 0 && !e.eventFullyOwned(ev) {
+			failures++
+			e.Logger.WarnContext(ctx, "batch replay skipped event not fully owned by caller", "event_id", ev.UID)
+			continue
+		}
+
 		rs.Event = &ev
-		err = rs.Run(ctx)
-		if err != nil {
+		if err = rs.Run(ctx); err != nil {
 			failures++
 			e.Logger.ErrorContext(ctx, "an item in the batch replay failed", "error", err)
+			continue
 		}
+		successes++
 	}
 
-	successes := len(events) - failures
 	return successes, failures, nil
+}
+
+func (e *BatchReplayEventService) eventFullyOwned(ev datastore.Event) bool {
+	for _, endpointID := range ev.Endpoints {
+		if !slices.Contains(e.OwnedEndpointIDs, endpointID) {
+			return false
+		}
+	}
+	return true
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -256,6 +257,129 @@ func (h *Handler) retrievePortalLinkFromToken(r *http.Request) (*datastore.Porta
 	}
 
 	return pLink, nil
+}
+
+// portalLinkOwnedEndpointIDs resolves the endpoint ids owned by the portal link behind
+// the current request. The isPortal return reports whether the request actually uses a
+// portal-link token; for non-portal requests (JWT / API key / dashboard) it is false and
+// the caller must skip owner scoping. On a resolution error it writes the error response
+// and returns ok=false; callers must stop processing in that case.
+func (h *Handler) portalLinkOwnedEndpointIDs(w http.ResponseWriter, r *http.Request, authUser *auth.AuthenticatedUser) (ownedIDs []string, isPortal, ok bool) {
+	if !h.IsReqWithPortalLinkToken(authUser) {
+		return nil, false, true
+	}
+
+	portalLink, err := h.retrievePortalLinkFromToken(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return nil, true, false
+	}
+
+	ownedIDs, err = h.getEndpoints(r, portalLink)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return nil, true, false
+	}
+
+	return ownedIDs, true, true
+}
+
+// ensurePortalLinkOwnsEndpoints enforces portal-link owner scoping for by-id and
+// sub-resource handlers reachable on /portal-api. For a portal-link request EVERY
+// supplied endpoint id must belong to the portal link's owner; for non-portal requests
+// it is a no-op so admin / API access is unchanged. It writes the error response and
+// returns false when the request must be stopped.
+//
+// Failure policy: fail closed. An empty id list, an empty id, or any id not owned by the
+// caller is rejected with 401. Use this for resources tied to exactly one endpoint
+// (endpoints, subscriptions, event deliveries, filters) and for batch operations where
+// every targeted resource must belong to the caller.
+func (h *Handler) ensurePortalLinkOwnsEndpoints(w http.ResponseWriter, r *http.Request, authUser *auth.AuthenticatedUser, endpointIDs ...string) bool {
+	ownedIDs, isPortal, ok := h.portalLinkOwnedEndpointIDs(w, r, authUser)
+	if !ok {
+		return false
+	}
+	if !isPortal {
+		return true
+	}
+
+	if len(endpointIDs) == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		return false
+	}
+
+	for _, endpointID := range endpointIDs {
+		if util.IsStringEmpty(endpointID) || !util.StringSliceContains(ownedIDs, endpointID) {
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+			return false
+		}
+	}
+
+	return true
+}
+
+// ensurePortalLinkOwnsAnyEndpoint enforces portal-link owner scoping for resources that
+// can be associated with several endpoints (events). For a portal-link request AT LEAST
+// ONE supplied endpoint id must be owned by the portal link, mirroring the list handlers
+// which surface an event when any of its endpoints is owned by the caller. No-op for
+// non-portal requests.
+//
+// Failure policy: fail closed. If none of the ids are owned (or the list is empty) the
+// request is rejected with 401.
+func (h *Handler) ensurePortalLinkOwnsAnyEndpoint(w http.ResponseWriter, r *http.Request, authUser *auth.AuthenticatedUser, endpointIDs ...string) bool {
+	ownedIDs, isPortal, ok := h.portalLinkOwnedEndpointIDs(w, r, authUser)
+	if !ok {
+		return false
+	}
+	if !isPortal {
+		return true
+	}
+
+	for _, endpointID := range endpointIDs {
+		if !util.IsStringEmpty(endpointID) && util.StringSliceContains(ownedIDs, endpointID) {
+			return true
+		}
+	}
+
+	_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+	return false
+}
+
+// requirePortalLinkOwnsSubscription is route middleware that, for portal-link requests,
+// verifies the {subscriptionID} in the path belongs to an endpoint owned by the portal
+// link before the wrapped (filter) handlers run. It centralizes owner scoping for the
+// filter sub-resource so every current and future filter route shares one check. No-op
+// for non-portal (JWT / API key) requests. Fail closed: a missing or foreign
+// subscription is rejected before the handler runs.
+func (h *Handler) RequirePortalLinkOwnsSubscription() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := middleware.GetAuthUserFromContext(r.Context())
+			if h.IsReqWithPortalLinkToken(authUser) {
+				project, err := h.retrieveProject(r)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
+
+				sub, err := subscriptions.New(h.A.Logger, h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+				if err != nil {
+					if errors.Is(err, datastore.ErrSubscriptionNotFound) {
+						_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
+						return
+					}
+					_ = render.Render(w, r, util.NewServiceErrResponse(err))
+					return
+				}
+
+				if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, sub.EndpointID) {
+					return
+				}
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func (h *Handler) CanManageEndpoint() func(next http.Handler) http.Handler {

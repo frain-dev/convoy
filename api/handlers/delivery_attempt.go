@@ -8,6 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -31,6 +32,11 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := h.retrieveEventDelivery(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, eventDelivery.EndpointID) {
 		return
 	}
 
@@ -73,6 +79,11 @@ func (h *Handler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := h.retrieveEventDelivery(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, eventDelivery.EndpointID) {
 		return
 	}
 

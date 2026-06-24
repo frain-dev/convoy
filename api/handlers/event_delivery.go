@@ -40,6 +40,11 @@ func (h *Handler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, eventDelivery.EndpointID) {
+		return
+	}
+
 	resp := &models.EventDeliveryResponse{EventDelivery: eventDelivery}
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
 		resp, http.StatusOK))
@@ -69,6 +74,11 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := h.retrieveEventDelivery(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, eventDelivery.EndpointID) {
 		return
 	}
 
@@ -196,6 +206,40 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		// Resolve the target deliveries up front so we can prove every one of them is
+		// owned by the portal link before queueing any re-delivery. Fail closed: if a
+		// requested id is foreign or unknown the whole batch is rejected.
+		deliveries, innerErr := event_deliveries.New(h.A.Logger, h.A.DB).FindEventDeliveriesByIDs(r.Context(), project.UID, eventDeliveryIDs.IDs)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
+			return
+		}
+
+		// FindEventDeliveriesByIDs dedupes rows, so compare against the set of resolved
+		// ids rather than the raw count; a repeated (but owned) id must not fail closed.
+		foundIDs := make(map[string]struct{}, len(deliveries))
+		for i := range deliveries {
+			foundIDs[deliveries[i].UID] = struct{}{}
+		}
+		for _, id := range eventDeliveryIDs.IDs {
+			if _, ok := foundIDs[id]; !ok {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+		}
+
+		endpointIDs := make([]string, 0, len(deliveries))
+		for i := range deliveries {
+			endpointIDs = append(endpointIDs, deliveries[i].EndpointID)
+		}
+
+		if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, endpointIDs...) {
+			return
+		}
 	}
 
 	fr := services.ForceResendEventDeliveriesService{

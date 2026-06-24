@@ -421,6 +421,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 						// Filter routes
 						subscriptionRouter.Route("/{subscriptionID}/filters", func(filterRouter chi.Router) {
+							// Portal-link callers reaching filters through the control plane must
+							// still be scoped to subscriptions they own; no-op for JWT/API key.
+							filterRouter.Use(handler.RequirePortalLinkOwnsSubscription())
 							filterRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateFilter)
 							filterRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/bulk", handler.BulkCreateFilters)
 							filterRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/bulk_update", handler.BulkUpdateFilters)
@@ -646,6 +649,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 							// Filter routes
 							subscriptionRouter.Route("/{subscriptionID}/filters", func(filterRouter chi.Router) {
+								// Portal-link callers reaching filters through the control plane must
+								// still be scoped to subscriptions they own; no-op for JWT/API key.
+								filterRouter.Use(handler.RequirePortalLinkOwnsSubscription())
 								filterRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateFilter)
 								filterRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/bulk", handler.BulkCreateFilters)
 								filterRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/bulk_update", handler.BulkUpdateFilters)
@@ -841,6 +847,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 			// Filter routes
 			subscriptionRouter.Route("/{subscriptionID}/filters", func(filterRouter chi.Router) {
+				filterRouter.Use(handler.RequirePortalLinkOwnsSubscription())
 				filterRouter.Post("/", handler.CreateFilter)
 				filterRouter.With(handler.RequireEnabledProject()).Post("/bulk", handler.BulkCreateFilters)
 				filterRouter.With(handler.RequireEnabledProject()).Post("/bulk_update", handler.BulkUpdateFilters)

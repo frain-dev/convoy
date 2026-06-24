@@ -164,6 +164,139 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 	require.Equal(s.T(), 2, len(respEndpoints))
 }
 
+func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_CrossTenant_Unauthorized() {
+	ownerA := ulid.Make().String()
+	ownerB := ulid.Make().String()
+
+	// endpoint owned by A backs the portal link; endpoint owned by B is the victim.
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victim, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ownerB, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/endpoints/%s?token=%s", victim.UID, portalLink.Token)
+	req := createRequest(http.MethodGet, url, portalLink.Token, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
+func (s *PortalEndpointIntegrationTestSuite) Test_ExpireSecret_CrossTenant_Unauthorized() {
+	ownerA := ulid.Make().String()
+	ownerB := ulid.Make().String()
+
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victim, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ownerB, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/endpoints/%s/expire_secret?token=%s", victim.UID, portalLink.Token)
+	req := createRequest(http.MethodPut, url, portalLink.Token, serialize(`{}`))
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
+func (s *PortalEndpointIntegrationTestSuite) Test_GetSubscription_CrossTenant_Unauthorized() {
+	ownerA := ulid.Make().String()
+	ownerB := ulid.Make().String()
+
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ownerB, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimSub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, victimEndpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/subscriptions/%s?token=%s", victimSub.UID, portalLink.Token)
+	req := createRequest(http.MethodGet, url, portalLink.Token, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
+func (s *PortalEndpointIntegrationTestSuite) Test_GetFilter_CrossTenant_Unauthorized() {
+	ownerA := ulid.Make().String()
+	ownerB := ulid.Make().String()
+
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ownerB, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimSub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, victimEndpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	// The owner gate runs as route middleware, so even a non-existent filter id is
+	// rejected before the handler when the subscription is not owned by the caller.
+	url := fmt.Sprintf("/portal-api/subscriptions/%s/filters/%s?token=%s", victimSub.UID, ulid.Make().String(), portalLink.Token)
+	req := createRequest(http.MethodGet, url, portalLink.Token, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
+func (s *PortalEndpointIntegrationTestSuite) Test_GetFilter_ControlPlane_CrossTenant_Unauthorized() {
+	ownerA := ulid.Make().String()
+	ownerB := ulid.Make().String()
+
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ownerB, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimSub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, victimEndpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	// The filter handlers are also mounted on the control plane; the portal owner gate
+	// must apply there too, not only on /portal-api.
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/filters/%s", s.DefaultProject.UID, victimSub.UID, ulid.Make().String())
+	req := createRequest(http.MethodGet, url, portalLink.Token, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
 func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 	s.T().Skip("Depends on #637")
 }
@@ -502,6 +635,132 @@ func (s *PortalEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), expectedMessage, response["message"].(string))
+}
+
+func (s *PortalEventIntegrationTestSuite) Test_GetEndpointEvent_CrossTenant_Unauthorized() {
+	ownerA := ulid.Make().String()
+
+	// portal link owns endpoint A; the event belongs to endpoint B (a different owner).
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ulid.Make().String(), false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, victimEndpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/events/%s?token=%s", event.UID, portalLink.Token)
+	req := createRequest(http.MethodGet, url, portalLink.Token, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
+func (s *PortalEventIntegrationTestSuite) Test_GetEventDelivery_CrossTenant_Unauthorized() {
+	ownerA := ulid.Make().String()
+
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ulid.Make().String(), false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, victimEndpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	subscription, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, victimEndpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	eventDelivery, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, victimEndpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries/%s?token=%s", eventDelivery.UID, portalLink.Token)
+	req := createRequest(http.MethodGet, url, portalLink.Token, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
+func (s *PortalEventIntegrationTestSuite) Test_ResendEventDelivery_CrossTenant_Unauthorized() {
+	ownerA := ulid.Make().String()
+
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ulid.Make().String(), false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, victimEndpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	subscription, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, victimEndpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	eventDelivery, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, victimEndpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries/%s/resend?token=%s", eventDelivery.UID, portalLink.Token)
+	req := createRequest(http.MethodPut, url, portalLink.Token, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
+func (s *PortalEventIntegrationTestSuite) Test_ForceResendEventDeliveries_CrossTenant_Unauthorized() {
+	ownerA := ulid.Make().String()
+
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	victimEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ulid.Make().String(), false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, victimEndpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	subscription, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, victimEndpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	victimDelivery, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, victimEndpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.SuccessEventStatus, subscription)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries/forceresend?token=%s", portalLink.Token)
+	body := serialize(`{"ids":["%s"]}`, victimDelivery.UID)
+
+	req := createRequest(http.MethodPost, url, portalLink.Token, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
 }
 
 func (s *PortalEventIntegrationTestSuite) Test_PortalEventWrites_RequireEnabledProject() {

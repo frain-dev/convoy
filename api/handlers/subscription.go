@@ -157,6 +157,11 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, subscription.EndpointID) {
+		return
+	}
+
 	if subscription.FilterConfig != nil {
 		subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
 		subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
