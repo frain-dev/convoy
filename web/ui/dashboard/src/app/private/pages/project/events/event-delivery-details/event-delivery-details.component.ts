@@ -91,8 +91,10 @@ export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
 		try {
 			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts({ eventId });
 			const deliveries = response.data;
+			// API returns attempts oldest -> newest; reverse so the strip renders newest first.
 			this.eventDeliveryAtempts = deliveries.reverse();
-			this.eventDeliveryAtempt = this.eventDeliveryAtempts[this.eventDeliveryAtempts.length - 1];
+			// Newest attempt is now at index 0, so LATEST ATTEMPT must read the head, not the tail.
+			this.eventDeliveryAtempt = this.eventDeliveryAtempts[0];
 			this.selectedDeliveryAttempt = this.eventDeliveryAtempt;
 
 			this.isloadingDeliveryAttempts = false;
@@ -121,6 +123,27 @@ export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
 		if (Number.isNaN(date.getTime())) return String(value);
 
 		return date.toISOString();
+	}
+
+	// Render an inline timestamp with milliseconds, following the viewer's browser
+	// locale. The locale (not a hardcoded pattern) decides 12h vs 24h, so 24h locales
+	// like fr-FR drop the AM/PM marker while en-US keeps it. The hover/copy value
+	// (formatPreciseTimestamp) stays UTC ISO.
+	formatLocalTimestamp(value?: string | Date): string {
+		if (!value) return '-';
+
+		const date = new Date(value);
+		if (Number.isNaN(date.getTime())) return String(value);
+
+		return new Intl.DateTimeFormat(undefined, {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			fractionalSecondDigits: 3
+		}).format(date);
 	}
 
 	isEndpointDeleted(): boolean {
