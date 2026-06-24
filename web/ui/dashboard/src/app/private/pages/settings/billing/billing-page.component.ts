@@ -356,8 +356,11 @@ export class BillingPageComponent implements OnInit {
     if (this.billingStrategy === 'licensed_self_hosted') {
       usageUrl = `/billing/sh_usage?orgID=${orgId}`;
     } else {
-      const { start, end } = this.usageRange();
-      usageUrl = `/billing/organisations/${orgId}/usage?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+      usageUrl = `/billing/organisations/${orgId}/usage`;
+      const range = this.usageRange();
+      if (range) {
+        usageUrl += `?start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`;
+      }
     }
     this.httpService
       .request({
@@ -402,16 +405,28 @@ export class BillingPageComponent implements OnInit {
       });
   }
 
-  // Resolves the usage window to the active subscription billing cycle, falling
-  // back to the current calendar month when no valid cycle is available. Bounds
-  // are ISO 8601 so they round-trip through the backend's RFC3339 parsing.
-  private usageRange(): { start: string; end: string } {
+  // Resolves the usage window to the active subscription billing cycle, or null to
+  // let the backend default to its own calendar month. Mirrors the billing overview
+  // (billing-overview.service.ts): the cycle is authoritative only when both period
+  // bounds parse AND next_invoice_date is a valid future reset. Otherwise we send no
+  // window so the aggregated totals and the displayed period both come from the
+  // backend month and cannot disagree. Bounds are ISO 8601 for the backend's RFC3339
+  // parsing.
+  private usageRange(): { start: string; end: string } | null {
     const cycleStart = this.currentSubscription?.current_period_start;
     const cycleEnd = this.currentSubscription?.current_period_end;
-    if (cycleStart && cycleEnd) {
+    const nextInvoice = this.currentSubscription?.next_invoice_date;
+    if (cycleStart && cycleEnd && nextInvoice) {
       const s = new Date(cycleStart);
       const e = new Date(cycleEnd);
-      if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && s < e) {
+      const reset = new Date(nextInvoice);
+      if (
+        !isNaN(s.getTime()) &&
+        !isNaN(e.getTime()) &&
+        !isNaN(reset.getTime()) &&
+        s < e &&
+        reset.getTime() > Date.now()
+      ) {
         // current_period_end is the start of the next cycle, and the backend
         // window is inclusive on both bounds. Forward end - 1ms so an event at
         // the cutover instant is counted in the next cycle only, not both.
@@ -420,10 +435,7 @@ export class BillingPageComponent implements OnInit {
       }
     }
 
-    const now = new Date();
-    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
-    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0) - 1);
-    return { start: start.toISOString(), end: end.toISOString() };
+    return null;
   }
 
   private clearUsagePoll() {
