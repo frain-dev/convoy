@@ -594,6 +594,106 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	}
 }
 
+// TestCrossOrgReads_NonMember_Unauthorized asserts that a user who is not a
+// member of an organisation cannot read its members, invites, or projects via
+// the dashboard org-scoped routes (cross-org disclosure protection).
+func (s *DashboardIntegrationTestSuite) TestCrossOrgReads_NonMember_Unauthorized() {
+	otherOwner, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+
+	otherOrg, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, otherOwner)
+	require.NoError(s.T(), err)
+
+	foreignMemberUser, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+
+	foreignMember, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, otherOrg, foreignMemberUser, &auth.Role{Type: auth.RoleOrganisationAdmin})
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, otherOrg,
+		fmt.Sprintf("invitee-%d@test.com", time.Now().UnixNano()),
+		&auth.Role{Type: auth.RoleOrganisationAdmin}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, otherOrg.UID)
+	require.NoError(s.T(), err)
+
+	foreignURLs := []string{
+		fmt.Sprintf("/ui/organisations/%s/members", otherOrg.UID),
+		fmt.Sprintf("/ui/organisations/%s/members/%s", otherOrg.UID, foreignMember.UID),
+		fmt.Sprintf("/ui/organisations/%s/invites/pending", otherOrg.UID),
+		fmt.Sprintf("/ui/organisations/%s/projects", otherOrg.UID),
+	}
+
+	for _, url := range foreignURLs {
+		req := httptest.NewRequest(http.MethodGet, url, nil)
+		err = s.AuthenticatorFn(req, s.Router)
+		require.NoError(s.T(), err)
+
+		w := httptest.NewRecorder()
+		s.Router.ServeHTTP(w, req)
+
+		require.Equalf(s.T(), http.StatusForbidden, w.Code, "expected 403 for %s, got %d", url, w.Code)
+	}
+}
+
+// TestCrossOrgReads_Member_Authorized asserts that a member of an organisation
+// can still read its members, invites, and projects.
+func (s *DashboardIntegrationTestSuite) TestCrossOrgReads_Member_Authorized() {
+	ownURLs := []string{
+		fmt.Sprintf("/ui/organisations/%s/members", s.DefaultOrg.UID),
+		fmt.Sprintf("/ui/organisations/%s/invites/pending", s.DefaultOrg.UID),
+		fmt.Sprintf("/ui/organisations/%s/projects", s.DefaultOrg.UID),
+	}
+
+	for _, url := range ownURLs {
+		req := httptest.NewRequest(http.MethodGet, url, nil)
+		err := s.AuthenticatorFn(req, s.Router)
+		require.NoError(s.T(), err)
+
+		w := httptest.NewRecorder()
+		s.Router.ServeHTTP(w, req)
+
+		require.Equalf(s.T(), http.StatusOK, w.Code, "expected 200 for %s, got %d", url, w.Code)
+	}
+}
+
+// TestCrossOrgReads_InstanceAdmin_Authorized asserts that a global instance
+// admin can read another organisation's members, invites, and projects without
+// an explicit membership in that organisation, matching the access the sibling
+// write routes already grant instance admins via OrganisationPolicy.
+func (s *DashboardIntegrationTestSuite) TestCrossOrgReads_InstanceAdmin_Authorized() {
+	// Promote the authenticated default user to a global instance admin.
+	_, err := testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleInstanceAdmin)
+	require.NoError(s.T(), err)
+
+	otherOwner, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+
+	otherOrg, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, otherOwner)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, otherOrg.UID)
+	require.NoError(s.T(), err)
+
+	foreignURLs := []string{
+		fmt.Sprintf("/ui/organisations/%s/members", otherOrg.UID),
+		fmt.Sprintf("/ui/organisations/%s/invites/pending", otherOrg.UID),
+		fmt.Sprintf("/ui/organisations/%s/projects", otherOrg.UID),
+	}
+
+	for _, url := range foreignURLs {
+		req := httptest.NewRequest(http.MethodGet, url, nil)
+		err = s.AuthenticatorFn(req, s.Router)
+		require.NoError(s.T(), err)
+
+		w := httptest.NewRecorder()
+		s.Router.ServeHTTP(w, req)
+
+		require.Equalf(s.T(), http.StatusOK, w.Code, "expected 200 for %s, got %d", url, w.Code)
+	}
+}
+
 func TestDashboardIntegrationTestSuiteTest(t *testing.T) {
 	suite.Run(t, new(DashboardIntegrationTestSuite))
 }

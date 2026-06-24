@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -101,6 +102,44 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 
 			if h.A.Cfg.UsesOrgBilling() && h.isOrganisationDisabled(org) {
 				_ = render.Render(w, r, util.NewErrorResponse("This action is disabled for this organization. Please contact support or subscribe to a plan.", http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// RequireOrganisationMembership fails closed unless the authenticated user is a
+// member of the organisation resolved from the request (orgID URL/query param).
+// It guards org-scoped dashboard reads against cross-org disclosure. It must not
+// be mounted on the public API or instance-admin routers, which authenticate via
+// API key / instance-admin role rather than org membership.
+func (h *Handler) RequireOrganisationMembership() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Instance admins manage every organisation (the same trust the
+			// sibling write routes grant via OrganisationPolicy), so they
+			// bypass the per-org membership requirement on these reads.
+			if h.isInstanceAdmin(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if _, err := h.retrieveMembership(r); err != nil {
+				// Fail closed on every path, but distinguish a definitive
+				// negative (the org or the membership does not exist -> 403)
+				// from an internal/lookup failure (-> 500). Mapping a DB outage
+				// to 403 would block real members and hide the fault from
+				// operators; both sentinels return 403 so a non-existent org is
+				// not enumerable against a real-but-foreign org.
+				if errors.Is(err, datastore.ErrOrgMemberNotFound) || errors.Is(err, datastore.ErrOrgNotFound) {
+					_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: must be a member of the organisation", http.StatusForbidden))
+					return
+				}
+
+				h.A.Logger.Error("Failed to verify organisation membership", "error", err)
+				_ = render.Render(w, r, util.NewErrorResponse("failed to verify organisation membership", http.StatusInternalServerError))
 				return
 			}
 

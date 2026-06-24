@@ -551,20 +551,20 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					orgInvitesRouter.With(handler.RequireEnabledOrganisation()).Post("/", handler.InviteUserToOrganisation)
 					orgInvitesRouter.With(handler.RequireEnabledOrganisation()).Post("/{inviteID}/resend", handler.ResendOrganizationInvite)
 					orgInvitesRouter.With(handler.RequireEnabledOrganisation()).Post("/{inviteID}/cancel", handler.CancelOrganizationInvite)
-					orgInvitesRouter.With(middleware.Pagination).Get("/pending", handler.GetPendingOrganisationInvites)
+					orgInvitesRouter.With(middleware.Pagination, handler.RequireOrganisationMembership()).Get("/pending", handler.GetPendingOrganisationInvites)
 				})
 
 				orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
-					orgMemberRouter.With(middleware.Pagination).Get("/", handler.GetOrganisationMembers)
+					orgMemberRouter.With(middleware.Pagination, handler.RequireOrganisationMembership()).Get("/", handler.GetOrganisationMembers)
 					orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
-						orgMemberSubRouter.Get("/", handler.GetOrganisationMember)
+						orgMemberSubRouter.With(handler.RequireOrganisationMembership()).Get("/", handler.GetOrganisationMember)
 						orgMemberSubRouter.Put("/", handler.UpdateOrganisationMember)
 						orgMemberSubRouter.Delete("/", handler.DeleteOrganisationMember)
 					})
 				})
 
 				orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
-					projectRouter.Get("/", handler.GetProjects)
+					projectRouter.With(handler.RequireOrganisationMembership()).Get("/", handler.GetProjects)
 					projectRouter.With(handler.RequireEnabledOrganisation()).Post("/", handler.CreateProject)
 
 					projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
