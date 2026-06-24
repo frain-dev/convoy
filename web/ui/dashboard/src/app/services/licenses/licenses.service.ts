@@ -18,6 +18,9 @@ export class LicensesService {
 	// so instance AND org collapses to the single license there.
 	private readonly ORG_LICENSES_KEY = 'licenses';
 	private readonly INSTANCE_LICENSES_KEY = 'instanceLicenses';
+	// Portal sessions keep their own cache so they never overwrite the
+	// dashboard's instance/org caches in a shared-browser session.
+	private readonly PORTAL_LICENSES_KEY = 'portalLicenses';
 
 	constructor(private http: HttpService) {}
 
@@ -122,31 +125,27 @@ export class LicensesService {
 	}
 
 	/**
-	 * Populate both caches for a portal session. A portal token has a single
-	 * authority: the org that owns the link. The portal license endpoint always
-	 * returns that org's plan (the server resolves the org from the token and
-	 * ignores any client orgID), so we write the same payload to both the
-	 * instance and org caches. hasLicense (instance AND org) then collapses to
-	 * the org plan: a licensed org unlocks gated features, an unlicensed org
-	 * keeps the upsell. Call from portal components before reading hasLicense.
+	 * Populate the portal-only cache. A portal token has a single authority: the
+	 * org that owns the link. The portal license endpoint resolves that org from
+	 * the token and returns its plan. We keep this in a dedicated portal cache so
+	 * it never overwrites the dashboard's instance/org caches in a shared-browser
+	 * session. Call from portal components before reading hasPortalLicense.
 	 */
 	async setPortalLicenses() {
 		try {
 			const response = await this.getLicenses();
-			const data = JSON.stringify(response.data);
-			localStorage.setItem(this.INSTANCE_LICENSES_KEY, data);
-			localStorage.setItem(this.ORG_LICENSES_KEY, data);
+			localStorage.setItem(this.PORTAL_LICENSES_KEY, JSON.stringify(response.data));
 		} catch {
-			// Fail closed: drop any cache left by a prior dashboard/portal
-			// session so a failed fetch cannot keep gates unlocked with another
-			// org's entitlements. Gates then read not-allowed.
-			this.clearLicenses();
+			// Fail closed: drop the portal cache so a failed fetch cannot leave
+			// gates unlocked. hasPortalLicense then reads not-allowed.
+			localStorage.removeItem(this.PORTAL_LICENSES_KEY);
 		}
 	}
 
 	clearLicenses() {
 		localStorage.removeItem(this.ORG_LICENSES_KEY);
 		localStorage.removeItem(this.INSTANCE_LICENSES_KEY);
+		localStorage.removeItem(this.PORTAL_LICENSES_KEY);
 	}
 
 	hasOrgLicense(org: { license_data?: string } | null): boolean {
@@ -160,6 +159,15 @@ export class LicensesService {
 	 */
 	hasLicense(license: string): boolean {
 		return this.allowsInCache(this.INSTANCE_LICENSES_KEY, license) && this.allowsInCache(this.ORG_LICENSES_KEY, license);
+	}
+
+	/**
+	 * Portal-context entitlement. A portal token's only authority is the org that
+	 * owns the link, so the portal reads its own cache and never depends on the
+	 * dashboard instance/org caches. Used by portal feature gates.
+	 */
+	hasPortalLicense(license: string): boolean {
+		return this.allowsInCache(this.PORTAL_LICENSES_KEY, license);
 	}
 
 	/**

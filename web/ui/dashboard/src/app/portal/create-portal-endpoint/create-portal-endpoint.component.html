@@ -145,7 +145,7 @@
               }
             </div>
             <div class="mt-16px">
-              @if (!licenseService.hasLicense('AdvancedSubscriptions')) {
+              @if (!licenseService.hasPortalLicense('AdvancedSubscriptions')) {
                 <div convoy-tag size="sm" color="primary"
                   >
                   <svg width="10" height="10" class="fill-new.primary-400 scale-150">
@@ -154,7 +154,7 @@
                   Business
                 </div>
               }
-              @if (licenseService.hasLicense('AdvancedSubscriptions')) {
+              @if (licenseService.hasPortalLicense('AdvancedSubscriptions')) {
                 <div>
                   @for (eventType of validEventTypes(); track $index; let i = $index) {
                     <div
@@ -189,7 +189,7 @@
                           color="primary"
                           class="flex items-center"
                           (click)="openFilterDialog(i)"
-                          [disabled]="action === 'view' || !licenseService.hasLicense('AdvancedSubscriptions') || !selectedEventTypes.includes(eventType.name)">
+                          [disabled]="action === 'view' || !licenseService.hasPortalLicense('AdvancedSubscriptions') || !selectedEventTypes.includes(eventType.name)">
                           @if (!filtersMap.has(eventType.name)) {
                             <span>Add Filter</span>
                           }
@@ -365,7 +365,7 @@
                     Convoy wait for a response from this endpoint before timing out?
                   </convoy-tooltip>
                 </p>
-                @if (!licenseService.hasLicense('AdvancedEndpointMgmt')) {
+                @if (!licenseService.hasPortalLicense('AdvancedEndpointMgmt')) {
                   <div convoy-tag size="sm" color="primary"
                     >
                     <svg width="10" height="10" class="fill-new.primary-400 scale-150">
@@ -387,7 +387,7 @@
               <div class="relative">
                 <input id="http_timeout" type="number" convoy-input formControlName="http_timeout"
                   placeholder="e.g 60"
-                  [readonly]="!licenseService.hasLicense('AdvancedEndpointMgmt')"/>
+                  [readonly]="!licenseService.hasPortalLicense('AdvancedEndpointMgmt')"/>
                 <div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">
                   sec
                 </div>
@@ -407,7 +407,7 @@
             <div class="flex justify-between items-center mb-16px">
               <div class="flex items-center gap-12px">
                 <p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
-                @if (!licenseService.hasLicense('AdvancedEndpointMgmt')) {
+                @if (!licenseService.hasPortalLicense('AdvancedEndpointMgmt')) {
                   <div convoy-tag size="sm" color="primary"
                     >
                     <svg width="10" height="10" class="fill-new.primary-400 scale-150">
@@ -424,7 +424,7 @@
                 </svg>
               </button>
             </div>
-            @if (licenseService.hasLicense('AdvancedEndpointMgmt')) {
+            @if (licenseService.hasPortalLicense('AdvancedEndpointMgmt')) {
               <div class="grid grid-cols-2 gap-24px"
                 >
                 <convoy-input-field className="mb-0">
