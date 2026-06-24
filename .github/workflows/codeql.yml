@@ -22,8 +22,42 @@ on:
     - cron: '40 17 * * 1'
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      has_backend: ${{ steps.filter.outputs.has_backend }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      # has_backend is true when ANY changed file is NOT under web/ui/dashboard/**
+      # or docs/**. With predicate-quantifier 'every', a file counts only if it
+      # matches '**' AND none of the negated frontend globs, so a single .go/go.mod/
+      # cmd/** change (or a change to this workflow) marks the set as backend. The Go
+      # analysis is skipped only when has_backend is explicitly 'false', so the gate
+      # is fail-safe; javascript-typescript and actions always run.
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@668c092af3649c4b664c54e4b704aa46782f6f7c # v3
+        with:
+          predicate-quantifier: 'every'
+          filters: |
+            has_backend:
+              - '**'
+              - '!web/ui/dashboard/**'
+              - '!docs/**'
+
   analyze:
     name: Analyze (${{ matrix.language }})
+    needs: changes
+    # Skip only the Go leg on pure UI/docs pull requests; keep javascript-typescript
+    # (the dashboard is TS) and actions analysis running on every PR. push-to-main
+    # and the weekly schedule always run Go so the periodic full-tree scan is never
+    # skipped (paths-filter has no reliable diff base on non-PR events).
+    if: ${{ github.event_name != 'pull_request' || matrix.language != 'go' || needs.changes.outputs.has_backend != 'false' }}
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
     #   - https://gh.io/supported-runners-and-hardware-resources
