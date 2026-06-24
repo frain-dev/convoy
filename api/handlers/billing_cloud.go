@@ -165,17 +165,20 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	// Usage window. Default to the current calendar month, but honor an explicit
-	// range from the caller (the subscription billing cycle the UI displays) so
-	// the figures match the period shown. Fall back to the month on missing,
-	// invalid, or absurdly large (> ~1 year) input to bound the aggregation.
+	// Usage window. Default to the current calendar month when no range is
+	// supplied. When the caller does supply a range (the subscription billing
+	// cycle the UI displays), reject it if malformed rather than silently
+	// aggregating a different window than the figure is labeled with. Cap the
+	// span at ~1 year to bound the aggregation.
 	startTime, endTime := startOfMonth, endOfMonth
-	if s, e := r.URL.Query().Get("start"), r.URL.Query().Get("end"); s != "" && e != "" {
+	if s, e := r.URL.Query().Get("start"), r.URL.Query().Get("end"); s != "" || e != "" {
 		ps, errS := time.Parse(time.RFC3339, s)
 		pe, errE := time.Parse(time.RFC3339, e)
-		if errS == nil && errE == nil && ps.Before(pe) && pe.Sub(ps) <= 366*24*time.Hour {
-			startTime, endTime = ps, pe
+		if errS != nil || errE != nil || !ps.Before(pe) || pe.Sub(ps) > 366*24*time.Hour {
+			_ = render.Render(w, r, util.NewErrorResponse("invalid usage window: start and end must be RFC3339 timestamps with start before end and a span of at most 366 days", http.StatusBadRequest))
+			return
 		}
+		startTime, endTime = ps, pe
 	}
 	period := startTime.Format("2006-01")
 
@@ -219,8 +222,8 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 }
 
 // recomputeUsageInBackground refreshes the cached usage figure off the request
-// path. An atomic Redis lock dedupes concurrent recomputes for the same
-// org/period so a burst of requests cannot stampede Postgres.
+// path. An atomic Redis lock dedupes concurrent recomputes per org so a burst of
+// requests cannot stampede Postgres.
 func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey string, startTime, endTime time.Time, source string) {
 	// Fail closed: without Redis we cannot dedupe, so skip the recompute rather
 	// than risk concurrent heavy aggregations. The caller still gets a pending
@@ -230,7 +233,11 @@ func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey stri
 		return
 	}
 
-	lockKey := cacheKey + ":query"
+	// Scope the lock to the org, not the requested window: a billing-authorized
+	// caller could otherwise bypass dedup by issuing many distinct windows, each
+	// spawning its own heavy aggregation. At most one recompute runs per org at a
+	// time; the result is still cached under the window-specific cacheKey.
+	lockKey := fmt.Sprintf("billing:usage:%s:query", orgID)
 
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), usageRecomputeLockTTL)

@@ -40,7 +40,10 @@ const SUPPORT_EMAIL = 'support@getconvoy.io';
 // figure is ready, then give up (the backend logs persistent failures). The
 // window (~2 min) matches the backend recompute lock TTL so a slow first
 // aggregation still resolves before polling stops.
-const USAGE_PENDING_MAX_POLLS = 24;
+// Poll past the server's ~2 minute recompute lock so a figure cached right at
+// the lock boundary is still picked up before the page gives up and leaves the
+// placeholder for a manual reload. 30 x 5s = 150s.
+const USAGE_PENDING_MAX_POLLS = 30;
 const USAGE_PENDING_POLL_DELAY_MS = 5000;
 
 @Component({
