@@ -20,6 +20,16 @@ const (
 	communityProjectLimit = 2
 	communityOrgLimit     = 1
 	communityUserLimit    = 1
+
+	// Community mode resolves its enabled-project set from the database so the
+	// API and worker processes agree on which projects are active. A frozen
+	// startup snapshot is per-process, so a project created after a process
+	// started (the worker, typically) would never be enabled there and its
+	// event deliveries would be gated. communityProjectCacheTTL is the steady
+	// refresh interval; communityProjectMissTTL bounds extra refreshes when a
+	// delivery asks about a project not yet in the cached set.
+	communityProjectCacheTTL = 1 * time.Minute
+	communityProjectMissTTL  = 5 * time.Second
 )
 
 // Licenser implements the license.Licenser interface using the license service
@@ -38,10 +48,12 @@ type Licenser struct {
 	projectRepo datastore.ProjectRepository
 
 	// For community mode: track enabled projects
-	mu              sync.RWMutex
-	enabledProjects map[string]bool
-	isCommunity     bool
-	denyLimits      bool
+	mu                    sync.RWMutex
+	enabledProjects       map[string]bool
+	projectsFetchedAt     time.Time
+	lastProjectMutationAt time.Time
+	isCommunity           bool
+	denyLimits            bool
 
 	logger log.Logger
 }
@@ -115,13 +127,14 @@ func newCommunityLicenser(cfg LicenserConfig) (*Licenser, error) {
 	}
 
 	return &Licenser{
-		isCommunity:     true,
-		enabledProjects: enabledProjects,
-		orgRepo:         cfg.OrgRepo,
-		userRepo:        cfg.UserRepo,
-		projectRepo:     cfg.ProjectRepo,
-		entitlements:    make(map[string]EntitlementValue),
-		logger:          cfg.Logger,
+		isCommunity:       true,
+		enabledProjects:   enabledProjects,
+		projectsFetchedAt: time.Now(),
+		orgRepo:           cfg.OrgRepo,
+		userRepo:          cfg.UserRepo,
+		projectRepo:       cfg.ProjectRepo,
+		entitlements:      make(map[string]EntitlementValue),
+		logger:            cfg.Logger,
 	}, nil
 }
 
@@ -573,12 +586,67 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 }
 
 func (l *Licenser) ProjectEnabled(projectID string) bool {
-	if l.isCommunity {
-		l.mu.RLock()
-		defer l.mu.RUnlock()
-		return l.enabledProjects[projectID]
+	if !l.isCommunity {
+		return true
 	}
-	return true
+
+	l.refreshEnabledProjectsIfStale(projectID)
+
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.enabledProjects[projectID]
+}
+
+// refreshEnabledProjectsIfStale reconciles the community enabled-project set
+// with the database. It refreshes when the cached set is older than the TTL, or
+// when projectID is unknown (likely created after this process started) and we
+// have not refreshed within the shorter miss window. This keeps the delivery
+// hot path cheap while still letting the worker pick up newly created projects.
+//
+// Failure policy: if the database read fails we keep the last-known set and do
+// not change any project's enablement. This fails closed (a not-yet-enabled
+// project stays gated until a successful refresh) rather than bypassing the
+// community project limit on a transient DB error.
+func (l *Licenser) refreshEnabledProjectsIfStale(projectID string) {
+	l.mu.RLock()
+	_, present := l.enabledProjects[projectID]
+	age := time.Since(l.projectsFetchedAt)
+	l.mu.RUnlock()
+
+	if age < communityProjectCacheTTL && (present || age < communityProjectMissTTL) {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// startedAt is captured before the read so we can detect an AddEnabledProject
+	// or RemoveEnabledProject that committed while the read was in flight on this
+	// (API) process. The DB read may predate that mutation, so applying its
+	// result would clobber the fresher local state (re-enable a deleted project
+	// or drop a newly created one). When that happens we discard this refresh and
+	// let the next one reconcile.
+	startedAt := time.Now()
+
+	enabled, err := enforceProjectLimit(ctx, l.projectRepo)
+	if err != nil {
+		if l.logger != nil {
+			l.logger.Warnf("failed to refresh community enabled projects, keeping cached set: %v", err)
+		}
+		// Mark the attempt so a failing DB does not trigger a refresh on every
+		// delivery; the miss/TTL windows still apply on the next call.
+		l.mu.Lock()
+		l.projectsFetchedAt = time.Now()
+		l.mu.Unlock()
+		return
+	}
+
+	l.mu.Lock()
+	if !l.lastProjectMutationAt.After(startedAt) {
+		l.enabledProjects = enabled
+	}
+	l.projectsFetchedAt = time.Now()
+	l.mu.Unlock()
 }
 
 func (l *Licenser) AddEnabledProject(projectID string) {
@@ -594,6 +662,9 @@ func (l *Licenser) AddEnabledProject(projectID string) {
 	}
 
 	l.enabledProjects[projectID] = true
+	// Record the mutation so an in-flight DB refresh that predates this create
+	// does not overwrite it with a staler set.
+	l.lastProjectMutationAt = time.Now()
 }
 
 func (l *Licenser) RemoveEnabledProject(projectID string) {
@@ -605,6 +676,9 @@ func (l *Licenser) RemoveEnabledProject(projectID string) {
 	defer l.mu.Unlock()
 
 	delete(l.enabledProjects, projectID)
+	// Record the mutation so an in-flight DB refresh that predates this delete
+	// does not re-enable the removed project.
+	l.lastProjectMutationAt = time.Now()
 }
 
 var ErrLicenseExpired = errors.New("license expired")
