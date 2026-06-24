@@ -41,7 +41,9 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 		}
 
 		const userRole = await this.rbacService.getUserRole();
-		this.canManage = userRole === 'ORGANISATION_ADMIN';
+		// Instance admins are a superset of organisation admins (see RbacService.userPermission),
+		// so they must also be able to manage early adopter features.
+		this.canManage = userRole === 'ORGANISATION_ADMIN' || userRole === 'INSTANCE_ADMIN';
 		await this.getEarlyAdopterFeatures();
 	}
 
