@@ -21,6 +21,10 @@ export class LicensesService {
 	// Portal sessions keep their own cache so they never overwrite the
 	// dashboard's instance/org caches in a shared-browser session.
 	private readonly PORTAL_LICENSES_KEY = 'portalLicenses';
+	// Dedupe the shared portal bootstrap (PortalComponent) and the create-endpoint
+	// call into a single in-flight fetch so the portal cache is loaded exactly once
+	// per page load instead of racing two requests.
+	private portalLicensesInFlight: Promise<void> | null = null;
 
 	constructor(private http: HttpService) {}
 
@@ -131,9 +135,37 @@ export class LicensesService {
 	 * it never overwrites the dashboard's instance/org caches in a shared-browser
 	 * session. Call from portal components before reading hasPortalLicense.
 	 */
-	async setPortalLicenses() {
+	setPortalLicenses(): Promise<void> {
+		// Coalesce concurrent callers (the PortalComponent bootstrap and the
+		// create-endpoint await) onto one request so they share a single fetch and
+		// the same completion point.
+		if (this.portalLicensesInFlight) return this.portalLicensesInFlight;
+		this.portalLicensesInFlight = this.fetchPortalLicenses().finally(() => {
+			this.portalLicensesInFlight = null;
+		});
+		return this.portalLicensesInFlight;
+	}
+
+	private async fetchPortalLicenses(): Promise<void> {
+		// Portal-only: HttpService.request() routes to /portal-api only when a
+		// portal token/owner is present, otherwise it falls back to the dashboard
+		// /ui/license/features route with the operator's access token. Fail closed
+		// if there is no portal credential so the portal cache is never filled from
+		// the wrong (deployment/operator) plan.
+		if (!this.http.token && !this.http.ownerId) {
+			localStorage.removeItem(this.PORTAL_LICENSES_KEY);
+			return;
+		}
+
 		try {
-			const response = await this.getLicenses();
+			// The portal license endpoint resolves the org from the portal token and
+			// ignores any client-supplied orgID, so we send none. Going through
+			// getLicenses() would attach the dashboard org id from a shared-browser
+			// session, which is unused at best and misleading at worst.
+			const response = await this.http.request({
+				url: `/license/features`,
+				method: 'get'
+			});
 			localStorage.setItem(this.PORTAL_LICENSES_KEY, JSON.stringify(response.data));
 		} catch {
 			// Fail closed: drop the portal cache so a failed fetch cannot leave

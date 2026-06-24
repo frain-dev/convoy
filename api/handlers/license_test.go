@@ -61,6 +61,78 @@ func TestGetLicenseFeatures_InstanceLevel(t *testing.T) {
 	require.Equal(t, instanceFeatures, resp.Data)
 }
 
+func TestGetPortalLicenseFeatures_SelfHosted_UsesDeploymentLicenser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	deploymentFeatures := json.RawMessage(`{"PortalLinks":true,"AdvancedSubscriptions":false}`)
+
+	// No billing config and no billing client: self-hosted / non-org-billing.
+	handler := &Handler{
+		A: &types.APIOptions{
+			Licenser: mockLicenser,
+		},
+	}
+
+	mockLicenser.EXPECT().
+		FeatureListJSON(gomock.Any()).
+		Return(deploymentFeatures, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/portal-api/license/features", nil)
+	w := httptest.NewRecorder()
+
+	handler.GetPortalLicenseFeatures(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp struct {
+		Data json.RawMessage `json:"data"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	require.Equal(t, deploymentFeatures, resp.Data)
+}
+
+// TestGetPortalLicenseFeatures_IgnoresClientOrgID proves the portal handler never
+// branches into org-scoped features off a client-supplied orgID. Unlike
+// GetLicenseFeatures, the org is derived from the portal token only, so a portal
+// token cannot read another org's plan by passing ?orgID=. In self-hosted mode it
+// must still resolve to the deployment licenser and never touch the org repo.
+func TestGetPortalLicenseFeatures_IgnoresClientOrgID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	mockOrgRepo := mocks.NewMockOrganisationRepository(ctrl)
+	deploymentFeatures := json.RawMessage(`{"PortalLinks":true}`)
+
+	handler := &Handler{
+		A: &types.APIOptions{
+			Licenser: mockLicenser,
+			OrgRepo:  mockOrgRepo,
+		},
+	}
+
+	// Deployment licenser is consulted; org repo is never called with the
+	// attacker-supplied orgID (no EXPECT means a call would fail the test).
+	mockLicenser.EXPECT().
+		FeatureListJSON(gomock.Any()).
+		Return(deploymentFeatures, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/portal-api/license/features?orgID=attacker-org", nil)
+	w := httptest.NewRecorder()
+
+	handler.GetPortalLicenseFeatures(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp struct {
+		Data json.RawMessage `json:"data"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	require.Equal(t, deploymentFeatures, resp.Data)
+}
+
 func TestGetLicenseFeatures_OrgLevel(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

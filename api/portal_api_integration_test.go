@@ -301,6 +301,27 @@ func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 	s.T().Skip("Depends on #637")
 }
 
+func (s *PortalEndpointIntegrationTestSuite) Test_GetPortalLicenseFeatures_SelfHosted() {
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, "test")
+	require.NoError(s.T(), err)
+
+	// Self-hosted suite config: features come from the deployment licenser,
+	// resolved from the portal token. The route must serve the feature map.
+	url := fmt.Sprintf("/portal-api/license/features?token=%s", portalLink.Token)
+	req := createRequest(http.MethodGet, url, portalLink.Token, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	var resp struct {
+		Data map[string]interface{} `json:"data"`
+	}
+	parseResponse(s.T(), w.Result(), &resp)
+	require.NotEmpty(s.T(), resp.Data)
+}
+
 func TestPortalEndpointIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(PortalEndpointIntegrationTestSuite))
 }
