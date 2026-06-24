@@ -75,27 +75,9 @@
             @if (eventDelsDetails?.event_metadata?.created_at) {
               <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)" show-icon="false" notificationText="Event received timestamp copied to clipboard">
                 <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)">
-                  <span>{{ eventDelsDetails?.event_metadata?.created_at | date : 'medium' }}</span>
+                  <span>{{ formatLocalTimestamp(eventDelsDetails?.event_metadata?.created_at) }}</span>
                   <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                     {{ formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at) }}
-                  </span>
-                </span>
-              </convoy-copy-button>
-            } @else {
-              <p class="text-12 font-medium">-</p>
-            }
-          </div>
-          <div class="w-[1px] h-40px bg-new.primary-25"></div>
-        </div>
-        <div class="flex items-center">
-          <div class="px-30px">
-            <p class="text-neutral-10 text-12 font-light mb-6px">DELIVERY QUEUED</p>
-            @if (eventDelsDetails?.created_at) {
-              <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.created_at)" show-icon="false" notificationText="Delivery queued timestamp copied to clipboard">
-                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.created_at)">
-                  <span>{{ eventDelsDetails?.created_at | date : 'medium' }}</span>
-                  <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                    {{ formatPreciseTimestamp(eventDelsDetails?.created_at) }}
                   </span>
                 </span>
               </convoy-copy-button>
@@ -111,9 +93,27 @@
             @if (eventDelsDetails?.acknowledged_at) {
               <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)" show-icon="false" notificationText="Acknowledged timestamp copied to clipboard">
                 <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)">
-                  <span>{{ eventDelsDetails?.acknowledged_at | date : 'medium' }}</span>
+                  <span>{{ formatLocalTimestamp(eventDelsDetails?.acknowledged_at) }}</span>
                   <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                     {{ formatPreciseTimestamp(eventDelsDetails?.acknowledged_at) }}
+                  </span>
+                </span>
+              </convoy-copy-button>
+            } @else {
+              <p class="text-12 font-medium">-</p>
+            }
+          </div>
+          <div class="w-[1px] h-40px bg-new.primary-25"></div>
+        </div>
+        <div class="flex items-center">
+          <div class="px-30px">
+            <p class="text-neutral-10 text-12 font-light mb-6px">DELIVERY QUEUED</p>
+            @if (eventDelsDetails?.created_at) {
+              <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.created_at)" show-icon="false" notificationText="Delivery queued timestamp copied to clipboard">
+                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.created_at)">
+                  <span>{{ formatLocalTimestamp(eventDelsDetails?.created_at) }}</span>
+                  <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                    {{ formatPreciseTimestamp(eventDelsDetails?.created_at) }}
                   </span>
                 </span>
               </convoy-copy-button>
@@ -129,7 +129,7 @@
             @if (eventDeliveryAtempt?.created_at) {
               <convoy-copy-button [text]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)" show-icon="false" notificationText="Latest attempt timestamp copied to clipboard">
                 <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)">
-                  <span>{{ eventDeliveryAtempt?.created_at | date : 'medium' }}</span>
+                  <span>{{ formatLocalTimestamp(eventDeliveryAtempt?.created_at) }}</span>
                   <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                     {{ formatPreciseTimestamp(eventDeliveryAtempt?.created_at) }}
                   </span>
@@ -316,7 +316,7 @@
                     <convoy-tag [color]="deliveryAttempt?.status ? 'success' : 'error'" className="ml-18px">{{ deliveryAttempt?.http_status }}</convoy-tag>
                   }
                   <span class="relative ml-8px inline-flex group" [title]="formatPreciseTimestamp(deliveryAttempt.created_at)">
-                    <span>Attempt at {{ deliveryAttempt.created_at | date : 'medium' }}</span>
+                    <span>{{ formatLocalTimestamp(deliveryAttempt.created_at) }}</span>
                     <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                       {{ formatPreciseTimestamp(deliveryAttempt.created_at) }}
                     </span>
