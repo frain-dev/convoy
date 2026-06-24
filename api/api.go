@@ -72,6 +72,7 @@ func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.
 	}
 
 	if _, err := static.Open(strings.TrimLeft(p, "/")); err == nil {
+		setUICacheHeaders(rw, p)
 		http.FileServer(http.FS(static)).ServeHTTP(rw, req)
 		return
 	}
@@ -80,7 +81,25 @@ func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.
 	if a.cfg.RootPath != "" {
 		a.serveIndexWithRootPath(rw)
 	} else {
+		// SPA fallback serves the index.html shell; keep it revalidated so a
+		// deploy is never masked by a stale shell pointing at old bundles.
+		setUICacheHeaders(rw, "/")
 		http.FileServer(http.FS(static)).ServeHTTP(rw, req)
+	}
+}
+
+// setUICacheHeaders keeps the dashboard HTML shell revalidated so a deploy is
+// never masked by a stale shell that still references old content-hashed
+// bundles. Only the shell (index.html and the SPA fallback "/") is forced to
+// revalidate; the hashed JS/CSS bundles are fingerprinted, so their URLs change
+// on every deploy and the browser's default caching can never serve stale code.
+// We deliberately do not blanket-cache by extension: not all embedded .js/.css
+// are fingerprinted (e.g. Monaco ships stable-named loader.js/editor.main.js
+// under assets/), so an immutable header there would pin old code after a
+// release.
+func setUICacheHeaders(rw http.ResponseWriter, p string) {
+	if p == "/" || strings.HasSuffix(p, ".html") {
+		rw.Header().Set("Cache-Control", "no-cache")
 	}
 }
 
@@ -160,6 +179,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	contentStr = strings.Replace(contentStr, `</body>`, clientScript+`</body>`, 1)
 
 	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// The HTML shell must revalidate so a deploy is not masked by a stale shell
+	// that still references old content-hashed bundles.
+	rw.Header().Set("Cache-Control", "no-cache")
 	if _, err := rw.Write([]byte(contentStr)); err != nil {
 		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
 		return
