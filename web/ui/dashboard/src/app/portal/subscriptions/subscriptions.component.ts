@@ -30,7 +30,7 @@ export class SubscriptionsComponent implements OnInit {
 	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
 
 	endpointId = this.route.snapshot.queryParams.endpointId;
-	portalDetails!: PORTAL_LINK;
+	portalDetails?: PORTAL_LINK;
 
 	isLoadingSubscriptions = false;
 	isDeletingSubscription = false;

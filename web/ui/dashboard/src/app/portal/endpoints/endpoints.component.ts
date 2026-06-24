@@ -65,7 +65,7 @@ export class EndpointsComponent implements OnInit {
 	showCreateEndpoint = false;
 	showSubscriptionsList = false;
 	isTogglingEndpoint = false;
-	portalDetails!: PORTAL_LINK;
+	portalDetails?: PORTAL_LINK;
 	fetchedEndpoints?: { content: ENDPOINT[]; pagination?: PAGINATION };
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints: PORTAL_ENDPOINT[] = [];

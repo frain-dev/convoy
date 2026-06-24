@@ -10,7 +10,7 @@
         </button>
       }
     </form>
-    @if (portalDetails.can_manage_endpoint && portalDetails.owner_id) {
+    @if (portalDetails?.can_manage_endpoint && portalDetails?.owner_id) {
       <button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="openEndpointForm('create')">
         <img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
         Add Endpoint
@@ -63,7 +63,7 @@
               <img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
             </button>
             <ul dropdownOptions class="p-10px">
-              @if (portalDetails.can_manage_endpoint) {
+              @if (portalDetails?.can_manage_endpoint) {
                 <li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
                   <button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral"
                     (click)="activeEndpoint = endpoint; openEndpointForm('update')">
@@ -74,7 +74,7 @@
                   </button>
                 </li>
               }
-              @if (portalDetails.can_manage_endpoint) {
+              @if (portalDetails?.can_manage_endpoint) {
                 <li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
                   <button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="activeEndpoint = endpoint; secretDialog.showModal()">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
@@ -113,7 +113,7 @@
                   Send Test Event
                 </button>
               </li>
-              @if (portalDetails.can_manage_endpoint) {
+              @if (portalDetails?.can_manage_endpoint) {
                 <li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
                   <button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="toggleEndpoint(i, endpoint)">
                     @if (endpoint.status === 'active') {
