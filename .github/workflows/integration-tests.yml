@@ -159,7 +159,16 @@ jobs:
     test:
         needs: [changes, shard]
         if: always()
-        runs-on: ubuntu-latest
+        # Single-combination matrix so this required check keeps the exact name
+        # branch protection expects: "test (1.26.2, ubuntu-latest, 15, 6.2.6)".
+        # The values are display-only here; the real services live on the shards.
+        strategy:
+            matrix:
+                go-version: [1.26.2]
+                os: [ubuntu-latest]
+                postgres-version: ["15"]
+                redis-version: ["6.2.6"]
+        runs-on: ${{ matrix.os }}
         steps:
             - name: Verify all test shards passed
               env:
