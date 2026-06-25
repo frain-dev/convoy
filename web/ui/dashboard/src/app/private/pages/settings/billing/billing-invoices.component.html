@@ -9,6 +9,7 @@
 
   @if (!isFetchingInvoices) {
     <div convoy-card>
+      <div class="overflow-x-auto w-full">
       <table convoy-table>
         <thead convoy-table-head>
           @for (head of tableHead; track $index; let i = $index) {
@@ -38,6 +39,7 @@
           }
         </tbody>
       </table>
+      </div>
     </div>
   }
 </div>

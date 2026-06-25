@@ -250,6 +250,7 @@
           </button>
         </div>
         <div convoy-card>
+          <div class="overflow-x-auto w-full">
           <table convoy-table>
             <thead convoy-table-head>
               @for (head of signatureTableHead; track $index; let i = $index) {
@@ -279,6 +280,7 @@
               }
             </tbody>
           </table>
+          </div>
         </div>
       }
 
@@ -463,6 +465,7 @@
             </div>
           }
           @if (validEventTypes().length > 0) {
+            <div class="overflow-x-auto w-full">
             <table convoy-table>
               <thead convoy-table-head>
                 @for (head of eventTypeTableHead; track $index; let i = $index) {
@@ -502,6 +505,7 @@
                 }
               </tbody>
             </table>
+            </div>
           }
         </div>
       }

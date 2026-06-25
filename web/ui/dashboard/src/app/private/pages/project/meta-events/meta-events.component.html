@@ -8,7 +8,7 @@
     </div>
   </div>
   <div convoy-card class="flex">
-    <div class="min-w-[605px] w-full h-full overflow-hidden relative">
+    <div class="min-w-0 md:min-w-[605px] w-full h-full overflow-hidden relative">
       @if (isLoadingMetaEvents) {
         <convoy-table-loader id="meta_events_loader" [tableHead]="metaEventsTableHead"></convoy-table-loader>
       }
