@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core
 
 @Component({
     selector: 'convoy-button, [convoy-button]',
-    host: { class: 'flex items-center justify-center disabled:opacity-50 cursor-pointer', '[class]': 'classes' },
+    host: { class: 'flex items-center justify-center whitespace-nowrap disabled:opacity-50 cursor-pointer', '[class]': 'classes' },
     imports: [],
     templateUrl: './button.component.html',
     styleUrls: ['./button.component.scss'],
