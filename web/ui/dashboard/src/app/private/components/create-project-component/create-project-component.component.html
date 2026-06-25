@@ -1,5 +1,5 @@
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled id="project-form">
-  <div class="mt-24px flex gap-100px" [class]="action !== 'update' ? 'rounded-8px p-24px my-24px block border border-new.primary-50' : ''">
+  <div class="mt-24px flex flex-col md:flex-row gap-24px md:gap-100px" [class]="action !== 'update' ? 'rounded-8px p-24px my-24px block border border-new.primary-50' : ''">
     @if (action === 'update') {
       <div class="min-w-[170px]">
         <h3 class="mb-24px text-12 text-neutral-12 font-semibold">Project Settings</h3>
@@ -32,7 +32,7 @@
         </convoy-input-field>
         @if (action !== 'update') {
           <h3 class="mt-24px mb-16px font-medium text-14">Project type</h3>
-          <div class="project-types grid grid-cols-2 gap-24px">
+          <div class="project-types grid grid-cols-2 mobile:grid-cols-1 gap-24px">
             <convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
             <convoy-radio formControlName="type" description="Create an outgoing webhooks project to publish events to your customer-provided endpoints" label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
           </div>
@@ -58,7 +58,7 @@
                     </svg>
                   </button>
                 </div>
-                <div formGroupName="signature" class="mb-24px" [ngClass]="{ 'grid grid-cols-2 gap-x-24px': action === 'create' }">
+                <div formGroupName="signature" class="mb-24px" [ngClass]="{ 'grid grid-cols-2 mobile:grid-cols-1 gap-x-24px': action === 'create' }">
                   <convoy-input-field>
                     <label for="header" required="true" convoy-label>Header</label>
                     <input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="X-Convoy-Signature" />
@@ -100,7 +100,7 @@
                     </svg>
                   </button>
                 </div>
-                <div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
+                <div class="grid grid-cols-2 mobile:grid-cols-1 gap-x-24px" formGroupName="strategy">
                   <convoy-select
                     label="Mechanism"
                     name="type"
@@ -142,7 +142,7 @@
                     </svg>
                   </button>
                 </div>
-                <div class="grid grid-cols-2 gap-24px" formGroupName="ratelimit">
+                <div class="grid grid-cols-2 mobile:grid-cols-1 gap-24px" formGroupName="ratelimit">
                   <convoy-input-field className="mb-0">
                     <label for="rate-limit-duration" convoy-label>Duration</label>
                     <div class="relative">
@@ -222,7 +222,7 @@
           <div class="flex justify-between items-start">
             <div class="max-w-[500px]">
               <h3 class="font-semibold mb-8px text-12">Disable Failing Endpoint</h3>
-              <p class="text-12 text-neutral-11 mt-10px w-[460px]">Toggling this configuration on will automatically disable all endpoints in this project with failure response untill request to them are manually retried</p>
+              <p class="text-12 text-neutral-11 mt-10px w-full max-w-[460px]">Toggling this configuration on will automatically disable all endpoints in this project with failure response untill request to them are manually retried</p>
             </div>
             <convoy-toggle name="disable_endpoint" formControlName="disable_endpoint" (onChange)="confirmToggleAction($event, 'endpoints')"></convoy-toggle>
           </div>
@@ -230,7 +230,7 @@
           <div class="flex justify-between items-start" formGroupName="ssl">
             <div class="max-w-[500px]">
               <h3 class="font-semibold mb-8px text-12">Allow Only HTTPS Secure Endpoints</h3>
-              <p class="text-12 text-neutral-11 mt-10px w-[460px]">Toggling this will allow only HTTPS secure endpoints, this allows only TLS connections to your endpoints.</p>
+              <p class="text-12 text-neutral-11 mt-10px w-full max-w-[460px]">Toggling this will allow only HTTPS secure endpoints, this allows only TLS connections to your endpoints.</p>
             </div>
             <convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle>
           </div>
@@ -298,7 +298,7 @@
             @if (projectForm.get('config.meta_event.is_enabled')?.value) {
               <hr class="border-neutral-5 mb-24px" />
               <h4 class="text-12 font-semibold mb-24px" [ngClass]="{ 'opacity-60 pointer-events-none': !projectForm.get('config.meta_event.is_enabled')?.value }">Meta Events Configurations</h4>
-              <div class="grid grid-cols-2 gap-24px">
+              <div class="grid grid-cols-2 mobile:grid-cols-1 gap-24px">
                 <convoy-input-field>
                   <label for="url" convoy-label required="true">Webhook URL</label>
                   <input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter URL" />
@@ -365,7 +365,7 @@
           </div>
         }
         @if (circuitBreakerFeatureEnabled) {
-          <div class="grid grid-cols-2 gap-24px">
+          <div class="grid grid-cols-2 mobile:grid-cols-1 gap-24px">
             <div>
               <label class="text-12 font-medium text-neutral-11 mb-8px block">Sample Rate (seconds)</label>
               <div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
