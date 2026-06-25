@@ -113,7 +113,7 @@ jobs:
           CONVOY_REDIS_PORT: 6379
 
       - name: Run Google Pub/Sub E2E tests (testcontainers)
-        run: go test -race -v ./e2e/pubsub -timeout 30m
+        run: go test -race -count=1 -v ./e2e/pubsub -timeout 30m
         env:
           TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
           CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}

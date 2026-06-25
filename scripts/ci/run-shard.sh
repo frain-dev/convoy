@@ -40,7 +40,7 @@ case "$GROUP" in
         fi
         regex="^($(IFS='|'; echo "${sel[*]}"))$"
         echo "api shard ${SHARD}/${TOTAL}: ${#sel[@]} tests -> ${regex}"
-        exec go test -race -p 1 ./api/ -run "$regex" -v -timeout 30m
+        exec go test -race -count=1 -p 1 ./api/ -run "$regex" -v -timeout 30m
         ;;
     unit)
         pkgs=()
@@ -56,7 +56,7 @@ case "$GROUP" in
             exit 0
         fi
         echo "unit shard ${SHARD}/${TOTAL}: ${#sel[@]} packages"
-        exec go test -race -p 1 "${sel[@]}" -v -timeout 30m
+        exec go test -race -count=1 -p 1 "${sel[@]}" -v -timeout 30m
         ;;
     *)
         echo "unknown group: ${GROUP} (expected 'api' or 'unit')" >&2
