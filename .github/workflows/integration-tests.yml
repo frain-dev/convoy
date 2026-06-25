@@ -62,7 +62,10 @@ jobs:
                     POSTGRES_DB: convoy
                     POSTGRES_PASSWORD: postgres
                     POSTGRES_MAX_CONNECTIONS: 2000
-                options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
+                # Back the data dir with RAM. The CI database is disposable, so we
+                # trade durability for speed; tmpfs makes the DB-bound integration
+                # suite materially faster than a disk-backed PGDATA.
+                options: --tmpfs /var/lib/postgresql/data --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
             redis:
                 image: redis:${{ matrix.redis-version }}
                 ports:
@@ -86,6 +89,19 @@ jobs:
                   path: ~/go/pkg/mod
                   key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
                   restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+
+            # Cache the compiler/test build cache so build, vet, and the
+            # race-instrumented test binaries are not recompiled from scratch each
+            # run. Keyed per-commit with a restore fallback to the latest cache.
+            - name: Cache go build
+              if: ${{ needs.changes.outputs.has_backend != 'false' }}
+              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+              with:
+                  path: ~/.cache/go-build
+                  key: ${{ runner.os }}-gobuild-${{ hashFiles('go.sum') }}-${{ github.sha }}
+                  restore-keys: |
+                      ${{ runner.os }}-gobuild-${{ hashFiles('go.sum') }}-
+                      ${{ runner.os }}-gobuild-
 
             - name: Check out code
               if: ${{ needs.changes.outputs.has_backend != 'false' }}
