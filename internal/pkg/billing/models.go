@@ -177,4 +177,8 @@ type Usage struct {
 	Received       UsageMetrics `json:"received,omitempty"`
 	Sent           UsageMetrics `json:"sent,omitempty"`
 	CreatedAt      string       `json:"created_at,omitempty"`
+	// Pending is true while usage is still being computed in the background. When
+	// true, the metric values are not yet known and clients should render a
+	// placeholder (e.g. "-") instead of treating zeros as real usage.
+	Pending bool `json:"pending,omitempty"`
 }

@@ -35,6 +35,16 @@ const PAYMENT_SUBMIT_DELAY_MS = 100;
 const PAYMENT_DETAILS_MAX_RETRIES = 5;
 const PAYMENT_DETAILS_RETRY_DELAY_MS = 1000;
 const SUPPORT_EMAIL = 'support@getconvoy.io';
+// Cloud usage is computed in the background; while the API reports pending,
+// poll a bounded number of times so the placeholder is replaced once the
+// figure is ready, then give up (the backend logs persistent failures). The
+// window (~2 min) matches the backend recompute lock TTL so a slow first
+// aggregation still resolves before polling stops.
+// Poll past the server's ~2 minute recompute lock so a figure cached right at
+// the lock boundary is still picked up before the page gives up and leaves the
+// placeholder for a manual reload. 30 x 5s = 150s.
+const USAGE_PENDING_MAX_POLLS = 30;
+const USAGE_PENDING_POLL_DELAY_MS = 5000;
 
 @Component({
     selector: 'app-billing-page',
@@ -145,8 +155,12 @@ export class BillingPageComponent implements OnInit {
   private activeCountryRequestToken = 0;
   private activeCityRequestToken = 0;
   private cityLoadingRequestToken: number | null = null;
+  private usagePollHandle: ReturnType<typeof setTimeout> | null = null;
+  private usageRequestToken = 0;
 
   async ngOnInit() {
+    this.destroyRef.onDestroy(() => this.clearUsagePoll());
+
     // When the post-checkout poll confirms the subscription is active, reload
     // billing data so the plan card and Manage plan reflect it immediately.
     this.billingPaymentDetailsService.checkoutSubscriptionVerified$
@@ -318,18 +332,36 @@ export class BillingPageComponent implements OnInit {
     }
   }
 
-  private loadUsageSeparately() {
+  private loadUsageSeparately(attempt = 0, token?: number) {
     if (this.billingStrategy !== 'cloud' && this.billingStrategy !== 'licensed_self_hosted') {
+      this.clearUsagePoll();
       this.isLoadingUsage = false;
       this.usageRows = [];
       return;
     }
 
+    // A fresh load (attempt 0) cancels any in-flight poll chain and mints a new
+    // request token so a late response from a superseded chain is ignored.
+    if (attempt === 0) {
+      this.clearUsagePoll();
+      token = ++this.usageRequestToken;
+    }
+    const requestToken = token!;
+
     const orgId = this.getOrganisationId();
     // Self-hosted usage is local instance data; cloud usage comes from the provider.
-    const usageUrl = this.billingStrategy === 'licensed_self_hosted'
-      ? `/billing/sh_usage?orgID=${orgId}`
-      : `/billing/organisations/${orgId}/usage`;
+    // For cloud, scope the query to the billing cycle the UI shows so the figures
+    // match the displayed period (backend defaults to the calendar month).
+    let usageUrl: string;
+    if (this.billingStrategy === 'licensed_self_hosted') {
+      usageUrl = `/billing/sh_usage?orgID=${orgId}`;
+    } else {
+      usageUrl = `/billing/organisations/${orgId}/usage`;
+      const range = this.usageRange();
+      if (range) {
+        usageUrl += `?start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`;
+      }
+    }
     this.httpService
       .request({
         url: usageUrl,
@@ -337,19 +369,85 @@ export class BillingPageComponent implements OnInit {
         hideNotification: true
       })
       .then(res => {
-        if (res?.data) {
-          this.usageRows = this.usageService.formatUsageData(res.data);
-        } else {
+        // Drop stale responses: a newer load has superseded this chain.
+        if (requestToken !== this.usageRequestToken) {
+          return;
+        }
+
+        const data = res?.data;
+        if (!data) {
           this.usageRows = [];
+          return;
+        }
+
+        this.usageRows = this.usageService.formatUsageData(data);
+        // Cloud usage may still be computing; re-poll a bounded number of times
+        // so the placeholder is replaced once the real figure is cached.
+        if (data.pending && attempt < USAGE_PENDING_MAX_POLLS) {
+          this.usagePollHandle = setTimeout(
+            () => this.loadUsageSeparately(attempt + 1, requestToken),
+            USAGE_PENDING_POLL_DELAY_MS
+          );
         }
       })
       .catch(() => {
+        if (requestToken !== this.usageRequestToken) {
+          return;
+        }
         this.usageRows = [];
       })
       .finally(() => {
+        if (requestToken !== this.usageRequestToken) {
+          return;
+        }
         this.isLoadingUsage = false;
         this.cdr.detectChanges();
       });
+  }
+
+  // Resolves the usage window to the active subscription billing cycle, or null to
+  // let the backend default to its own calendar month. Mirrors the billing overview
+  // (billing-overview.service.ts): the cycle is authoritative only when both period
+  // bounds parse AND next_invoice_date is a valid future reset. Otherwise we send no
+  // window so the aggregated totals and the displayed period both come from the
+  // backend month and cannot disagree. Bounds are ISO 8601 for the backend's RFC3339
+  // parsing.
+  private usageRange(): { start: string; end: string } | null {
+    const cycleStart = this.currentSubscription?.current_period_start;
+    const cycleEnd = this.currentSubscription?.current_period_end;
+    const nextInvoice = this.currentSubscription?.next_invoice_date;
+    if (cycleStart && cycleEnd && nextInvoice) {
+      const s = new Date(cycleStart);
+      const e = new Date(cycleEnd);
+      const reset = new Date(nextInvoice);
+      if (
+        !isNaN(s.getTime()) &&
+        !isNaN(e.getTime()) &&
+        !isNaN(reset.getTime()) &&
+        s < e &&
+        // >= now to match the overview's daysUntilDate, which treats a due-now
+        // reset (diffMs >= 0) as a valid cycle and only nulls out a past date.
+        reset.getTime() >= Date.now()
+      ) {
+        // current_period_end is the start of the next cycle, and the backend
+        // window is inclusive on both bounds. Forward end - 1ms so an event at
+        // the cutover instant is counted in the next cycle only, not both.
+        const endExclusive = new Date(e.getTime() - 1);
+        return { start: s.toISOString(), end: endExclusive.toISOString() };
+      }
+    }
+
+    return null;
+  }
+
+  private clearUsagePoll() {
+    if (this.usagePollHandle) {
+      clearTimeout(this.usagePollHandle);
+      this.usagePollHandle = null;
+    }
+    // Invalidate any in-flight usage response so a late resolve from a cancelled
+    // chain cannot repopulate rows after idle/destroy.
+    this.usageRequestToken++;
   }
 
   private async loadOrganisationData() {
@@ -470,6 +568,7 @@ export class BillingPageComponent implements OnInit {
   }
 
   private markBillingDataIdle() {
+    this.clearUsagePoll();
     this.isLoadingBillingData = false;
     this.isLoadingUsage = false;
     this.billingOverview = null;

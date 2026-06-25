@@ -24,6 +24,13 @@ export interface Subscription {
 	id?: string;
 	status?: string;
 	plan?: SubscriptionPlan;
+	// Billing cycle bounds (ISO 8601) reported by the billing service; used to
+	// scope the usage query to the displayed period.
+	current_period_start?: string;
+	current_period_end?: string;
+	// Next invoice / cycle reset (ISO 8601). The cycle window is only authoritative
+	// when this is a valid future date, matching the billing overview's period label.
+	next_invoice_date?: string;
 }
 
 export interface SelfHostedActiveCheckout {

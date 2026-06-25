@@ -218,7 +218,12 @@ type ExportEventDeliveriesRow struct {
 // Group 7: Export Operations
 // ============================================================================
 func (q *Queries) ExportEventDeliveries(ctx context.Context, arg ExportEventDeliveriesParams) ([]ExportEventDeliveriesRow, error) {
-	rows, err := q.db.Query(ctx, exportEventDeliveries, arg.CreatedAtEnd, arg.CreatedAtStart, arg.Cursor, arg.PageLimit)
+	rows, err := q.db.Query(ctx, exportEventDeliveries,
+		arg.CreatedAtEnd,
+		arg.CreatedAtStart,
+		arg.Cursor,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +246,7 @@ const findDiscardedEventDeliveries = `-- name: FindDiscardedEventDeliveries :man
 SELECT
     id, project_id, event_id, subscription_id,
     headers, attempts, status, metadata, cli_metadata,
-    COALESCE(target_url, '') AS target_url,
+	COALESCE(target_url, '') AS target_url,
     COALESCE(idempotency_key, '') AS idempotency_key,
     COALESCE(url_query_params, '') AS url_query_params,
     description, created_at, updated_at,
@@ -339,7 +344,7 @@ const findEventDeliveriesByEventID = `-- name: FindEventDeliveriesByEventID :man
 SELECT
     id, project_id, event_id, subscription_id,
     headers, attempts, status, metadata, cli_metadata,
-    COALESCE(target_url, '') AS target_url,
+	COALESCE(target_url, '') AS target_url,
     COALESCE(idempotency_key, '') AS idempotency_key,
     COALESCE(url_query_params, '') AS url_query_params,
     description, created_at, updated_at,
@@ -427,7 +432,7 @@ const findEventDeliveriesByIDs = `-- name: FindEventDeliveriesByIDs :many
 SELECT
     id, project_id, event_id, subscription_id,
     headers, attempts, status, metadata, cli_metadata,
-    COALESCE(target_url, '') AS target_url,
+	COALESCE(target_url, '') AS target_url,
     COALESCE(idempotency_key, '') AS idempotency_key,
     COALESCE(url_query_params, '') AS url_query_params,
     description, created_at, updated_at,
@@ -516,7 +521,7 @@ const findEventDeliveryByID = `-- name: FindEventDeliveryByID :one
 SELECT
     ed.id, ed.project_id, ed.event_id, ed.subscription_id,
     ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
-    COALESCE(ed.target_url, '') AS target_url,
+	COALESCE(ed.target_url, '') AS target_url,
     COALESCE(ed.url_query_params, '') AS url_query_params,
     COALESCE(ed.idempotency_key, '') AS idempotency_key,
     ed.description, ed.created_at, ed.updated_at, ed.acknowledged_at,
@@ -647,7 +652,7 @@ const findEventDeliveryByIDSlim = `-- name: FindEventDeliveryByIDSlim :one
 SELECT
     id, project_id, event_id, subscription_id,
     headers, attempts, status, metadata, cli_metadata,
-    COALESCE(target_url, '') AS target_url,
+	COALESCE(target_url, '') AS target_url,
     COALESCE(url_query_params, '') AS url_query_params,
     COALESCE(idempotency_key, '') AS idempotency_key,
     created_at, updated_at,

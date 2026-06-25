@@ -177,6 +177,9 @@ func TestLoadConfig(t *testing.T) {
 					},
 					IsSignupEnabled: true,
 				},
+				Billing: BillingConfiguration{
+					UsageSource: BillingUsageSourcePostgres,
+				},
 				Analytics: AnalyticsConfiguration{
 					IsEnabled: true,
 				},
@@ -279,6 +282,9 @@ func TestLoadConfig(t *testing.T) {
 					},
 					IsSignupEnabled: true,
 				},
+				Billing: BillingConfiguration{
+					UsageSource: BillingUsageSourcePostgres,
+				},
 				Analytics: AnalyticsConfiguration{
 					IsEnabled: true,
 				},
@@ -379,6 +385,9 @@ func TestLoadConfig(t *testing.T) {
 						Enabled: true,
 					},
 					IsSignupEnabled: true,
+				},
+				Billing: BillingConfiguration{
+					UsageSource: BillingUsageSourcePostgres,
 				},
 				Analytics: AnalyticsConfiguration{
 					IsEnabled: true,
@@ -800,4 +809,27 @@ func TestBillingServiceURL(t *testing.T) {
 	cloudNoURL.Billing.APIKey = "ovw_test_key"
 	require.Equal(t, "", cloudNoURL.BillingServiceURL())
 	require.Error(t, cloudNoURL.Billing.Validate())
+}
+
+func TestBillingUsageSource(t *testing.T) {
+	// Cloud usage defaults to local Postgres byte columns.
+	require.Equal(t, BillingUsageSourcePostgres, DefaultConfiguration.Billing.UsageSource)
+
+	valid := []string{"", BillingUsageSourcePostgres, BillingUsageSourceBillingService}
+	for _, src := range valid {
+		cfg := DefaultConfiguration
+		cfg.Billing.UsageSource = src
+		require.NoError(t, cfg.Billing.Validate(), "usage source %q should be valid", src)
+	}
+
+	// Whitespace is trimmed in place so a padded config value still selects the
+	// intended source via the handler's exact-match check.
+	padded := DefaultConfiguration
+	padded.Billing.UsageSource = "  billing_service  "
+	require.NoError(t, padded.Billing.Validate())
+	require.Equal(t, BillingUsageSourceBillingService, padded.Billing.UsageSource)
+
+	invalid := DefaultConfiguration
+	invalid.Billing.UsageSource = "clickhouse"
+	require.Error(t, invalid.Billing.Validate())
 }

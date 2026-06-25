@@ -12,8 +12,14 @@ import (
 )
 
 type Querier interface {
+	// Hybrid read: prefer the denormalized event_bytes on the delivery; fall back to the
+	// parent event's true byte size for pre-migration deliveries. Once event_bytes is
+	// populated the COALESCE short-circuits and the events join never reads payloads.
 	CalculateEgressBytes(ctx context.Context, arg CalculateEgressBytesParams) (pgtype.Int8, error)
 	// Usage Calculation Queries
+	// Hybrid read: prefer the persisted byte columns and fall back to the true octet
+	// length of the payload for pre-migration rows. As the window fills with populated
+	// rows the fallback stops firing and the scan converges to index-only column reads.
 	CalculateIngressBytes(ctx context.Context, arg CalculateIngressBytesParams) (CalculateIngressBytesRow, error)
 	CountOrgDeliveries(ctx context.Context, arg CountOrgDeliveriesParams) (pgtype.Int8, error)
 	CountOrgEvents(ctx context.Context, arg CountOrgEventsParams) (pgtype.Int8, error)

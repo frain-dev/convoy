@@ -160,9 +160,12 @@ WHERE deleted_at IS NULL
 -- Usage Calculation Queries
 
 -- name: CalculateIngressBytes :one
+-- Hybrid read: prefer the persisted byte columns and fall back to the true octet
+-- length of the payload for pre-migration rows. As the window fills with populated
+-- rows the fallback stops firing and the scan converges to index-only column reads.
 SELECT
-    COALESCE(SUM(LENGTH(e.raw)), 0) AS raw_bytes,
-    COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS data_bytes
+    COALESCE(SUM(COALESCE(e.raw_bytes, OCTET_LENGTH(e.raw))), 0)::BIGINT AS raw_bytes,
+    COALESCE(SUM(COALESCE(e.data_bytes, OCTET_LENGTH(e.data))), 0)::BIGINT AS data_bytes
 FROM convoy.events e
 JOIN convoy.projects p ON p.id = e.project_id
 WHERE p.organisation_id = @organisation_id
@@ -172,7 +175,10 @@ WHERE p.organisation_id = @organisation_id
   AND p.deleted_at IS NULL;
 
 -- name: CalculateEgressBytes :one
-SELECT COALESCE(SUM(LENGTH(e.raw)), 0) + COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS bytes
+-- Hybrid read: prefer the denormalized event_bytes on the delivery; fall back to the
+-- parent event's true byte size for pre-migration deliveries. Once event_bytes is
+-- populated the COALESCE short-circuits and the events join never reads payloads.
+SELECT COALESCE(SUM(COALESCE(d.event_bytes, OCTET_LENGTH(e.raw) + OCTET_LENGTH(e.data))), 0)::BIGINT AS bytes
 FROM convoy.event_deliveries d
 JOIN convoy.events e ON e.id = d.event_id
 JOIN convoy.projects p ON p.id = e.project_id

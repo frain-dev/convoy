@@ -26,8 +26,12 @@ type Querier interface {
 	// ============================================================================
 	// Group 1: Simple CRUD Operations (5 queries)
 	// ============================================================================
+	// raw_bytes/data_bytes are persisted at write time as the true octet length of the
+	// ingested payload so usage can be summed from columns without re-scanning raw/data.
 	CreateEvent(ctx context.Context, arg CreateEventParams) error
 	CreateEventEndpoint(ctx context.Context, arg []CreateEventEndpointParams) *CreateEventEndpointBatchResults
+	// raw_bytes/data_bytes are internal usage-accounting columns recomputed on write,
+	// so they are stripped from the backup to keep the export format stable.
 	ExportEvents(ctx context.Context, arg ExportEventsParams) ([]ExportEventsRow, error)
 	FindEventByID(ctx context.Context, arg FindEventByIDParams) (FindEventByIDRow, error)
 	// ============================================================================

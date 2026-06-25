@@ -6,12 +6,18 @@
 -- ============================================================================
 
 -- name: CreateEventDelivery :batchexec
+-- event_bytes denormalizes the parent event's persisted byte size (raw_bytes +
+-- data_bytes) so egress usage can be summed without joining back to the events
+-- payload. NULL for deliveries of pre-migration events; usage reads COALESCE those
+-- to a join-time fallback.
 INSERT INTO convoy.event_deliveries (
     id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
-	metadata, cli_metadata, description, target_url, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
+	metadata, cli_metadata, description, target_url, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode,
+	event_bytes
 )
 VALUES (@id, @project_id, @event_id, @endpoint_id, @device_id, @subscription_id, @headers, @status,
-		@metadata, @cli_metadata, @description, @target_url, @url_query_params, @idempotency_key, @event_type, @acknowledged_at, @delivery_mode);
+		@metadata, @cli_metadata, @description, @target_url, @url_query_params, @idempotency_key, @event_type, @acknowledged_at, @delivery_mode,
+		(SELECT e.raw_bytes + e.data_bytes FROM convoy.events e WHERE e.id = @event_id_lookup AND e.project_id = @project_id_lookup));
 
 -- name: UpdateEventDeliveryMetadata :exec
 UPDATE convoy.event_deliveries

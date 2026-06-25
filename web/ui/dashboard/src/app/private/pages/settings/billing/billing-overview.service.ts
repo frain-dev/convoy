@@ -135,6 +135,10 @@ export class BillingOverviewService {
     const start = new Date(startIso);
     const end = new Date(endIso);
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+    // Require start before end so the overview falls back to the usage-month label
+    // on a degenerate cycle, matching usageRange() in billing-page.component.ts,
+    // which sends no window (and thus aggregates the month) for inverted/equal bounds.
+    if (start.getTime() >= end.getTime()) return null;
 
     const withYear = start.getUTCFullYear() !== end.getUTCFullYear();
     return `${this.formatCycleDay(start, withYear)} - ${this.formatCycleDay(end, withYear)}`;

@@ -6,12 +6,16 @@
 -- ============================================================================
 
 -- name: CreateEvent :exec
+-- raw_bytes/data_bytes are persisted at write time as the true octet length of the
+-- ingested payload so usage can be summed from columns without re-scanning raw/data.
 INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id,
                            headers, raw, data, url_query_params, url_path, idempotency_key,
-                           is_duplicate_event, acknowledged_at, metadata, status)
+                           is_duplicate_event, acknowledged_at, metadata, status,
+                           raw_bytes, data_bytes)
 VALUES (@id, @event_type, @endpoints, @project_id, @source_id,
         @headers, @raw, @data, @url_query_params, @url_path, @idempotency_key,
-        @is_duplicate_event, @acknowledged_at, @metadata, @status);
+        @is_duplicate_event, @acknowledged_at, @metadata, @status,
+        @raw_bytes, @data_bytes);
 
 -- name: CreateEventEndpoint :batchexec
 INSERT INTO convoy.events_endpoints (event_id, endpoint_id)
@@ -416,8 +420,10 @@ WHERE project_id = @project_id
 SELECT convoy.copy_rows(@project_id, @batch_size);
 
 -- name: ExportEvents :many
+-- raw_bytes/data_bytes are internal usage-accounting columns recomputed on write,
+-- so they are stripped from the backup to keep the export format stable.
 SELECT ed.id,
-       TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
+       TO_JSONB(ed) - 'id' - 'raw_bytes' - 'data_bytes' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
 FROM convoy.events AS ed
 WHERE created_at < @created_at_end
   AND created_at >= @created_at_start
