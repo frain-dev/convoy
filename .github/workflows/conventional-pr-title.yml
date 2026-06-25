@@ -33,6 +33,7 @@ jobs:
             controlplane
             dataplane
             dashboard
+            billing
             infra
             release
             docs
