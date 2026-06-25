@@ -306,8 +306,8 @@
     }
     <!-- event delivery attempts  -->
     @if (eventDeliveryAtempts) {
-      <div class="flex justify-between gap-16px border-t border-new.primary-25">
-        <div class="w-[730px]">
+      <div class="flex flex-col md:flex-row justify-between gap-16px border-t border-new.primary-25">
+        <div class="w-full md:w-[730px]">
           @for (deliveryAttempt of eventDeliveryAtempts; track $index; let i = $index) {
             <button class="flex justify-between items-center py-12px w-full border-b border-new.primary-25" (click)="selectedDeliveryAttempt = deliveryAttempt">
               <div>
@@ -327,8 +327,8 @@
             </button>
           }
         </div>
-        <div class="w-[1px] bg-new.primary-25"></div>
-        <div class="w-[620px]">
+        <div class="hidden md:block w-[1px] bg-new.primary-25"></div>
+        <div class="w-full md:w-[620px] min-w-0">
           <div class="py-12px w-full">
             @if (isloadingDeliveryAttempts) {
               <div class="skeleton-loader code mt-16px"></div>

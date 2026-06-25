@@ -1,4 +1,4 @@
-<div class="max-w-[1000px] m-auto">
+<div class="max-w-[1000px] m-auto desktop:px-24px">
   <div id="project-settings"></div>
   @if (isloading) {
     <convoy-loader></convoy-loader>
@@ -6,7 +6,7 @@
 
   <app-create-project-component [action]="'update'" class="block -mt-24px"></app-create-project-component>
 
-  <div class="w-[730px] ml-auto">
+  <div class="w-full max-w-[730px] ml-auto">
     <hr class="border-t border-neutral-a3 my-40px" />
     <div convoy-card color="error" class="p-26px my-24px">
       <h2 class="text-error-9 text-14 font-semibold mb-20px">Danger zone</h2>

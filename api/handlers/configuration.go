@@ -94,6 +94,7 @@ func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	uc := services.UpdateConfigService{
 		ConfigRepo: h.A.ConfigRepo,
 		Config:     &newConfig,
+		Logger:     h.A.Logger,
 	}
 
 	configuration, err := uc.Run(r.Context())

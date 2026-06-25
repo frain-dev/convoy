@@ -32,7 +32,7 @@
       <a
         convoy-permission="Sources|MANAGE"
         routerLink="./new"
-        class="w-full max-w-[440px] min-w-[300px] rounded-8px border border-dashed border-new.primary-400 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]"
+        class="w-full max-w-[440px] min-w-[300px] mobile:min-w-0 rounded-8px border border-dashed border-new.primary-400 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]"
         >
         <svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
           <use xlink:href="#plus-icon"></use>
@@ -40,7 +40,7 @@
         <span class="text-primary-100 font-medium text-12">Create new Source</span>
       </a>
       @for (source of sources.content; track $index; let i = $index) {
-        <div convoy-card [id]="'source' + i" class="w-full max-w-[440px] min-w-[300px] py-20px h-fit">
+        <div convoy-card [id]="'source' + i" class="w-full max-w-[440px] min-w-[300px] mobile:min-w-0 py-20px h-fit">
           <!-- outgoing project sources -->
           @if (privateService.getProjectDetails?.type === 'outgoing') {
             <div class="flex items-center justify-between px-24px">
@@ -152,7 +152,7 @@
   </div>
 
   <div class="w-full h-full">
-    <div class="max-w-[770px] pt-24px m-auto">
+    <div class="max-w-[770px] pt-24px m-auto desktop:px-24px">
       <convoy-create-source [showModal]="privateService.getProjectDetails?.type === 'incoming' ? 'true' : 'false'" showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
     </div>
   </div>

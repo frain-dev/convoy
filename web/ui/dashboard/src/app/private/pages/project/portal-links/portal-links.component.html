@@ -66,14 +66,14 @@
   </div>
   <div class="min-h-[600px]">
     <div class="flex flex-wrap gap-24px">
-      <a convoy-card hover="true" class="w-full max-w-[440px] min-h-[160px] min-w-[300px] flex items-center justify-center border border-dashed border-new.primary-400 hover:!border-new.primary-400" convoy-permission="Portal Links|MANAGE" routerLink="./new">
+      <a convoy-card hover="true" class="w-full max-w-[440px] min-h-[160px] min-w-[300px] mobile:min-w-0 flex items-center justify-center border border-dashed border-new.primary-400 hover:!border-new.primary-400" convoy-permission="Portal Links|MANAGE" routerLink="./new">
         <svg width="22" height="22" class="mr-2 scale-75 fill-new.primary-400">
           <use xlink:href="#plus-icon"></use>
         </svg>
         <span class="text-new.primary-400 font-medium text-12">Create Portal Link</span>
       </a>
       @for (link of portalLinks?.content; track $index; let i = $index) {
-        <div convoy-card hover="true" class="w-full max-w-[440px] min-w-[300px]" [id]="'portal-link' + i">
+        <div convoy-card hover="true" class="w-full max-w-[440px] min-w-[300px] mobile:min-w-0" [id]="'portal-link' + i">
           <div class="px-24px py-20px border-b border-b-neutral-a3">
             <div class="flex justify-between items-center">
               <div class="text-14 font-medium overflow-hidden max-w-[260px] text-ellipsis whitespace-nowrap">

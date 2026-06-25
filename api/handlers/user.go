@@ -95,6 +95,7 @@ func (h *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request
 		Queue:    h.A.Queue,
 		BaseURL:  baseUrl,
 		User:     user,
+		Logger:   h.A.Logger,
 	}
 
 	err = rs.Run(r.Context())
@@ -142,6 +143,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Data:     &userUpdate,
 		User:     user,
+		Logger:   h.A.Logger,
 	}
 
 	user, err = u.Run(r.Context())
@@ -179,6 +181,7 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Data:     &updatePassword,
 		User:     user,
+		Logger:   h.A.Logger,
 	}
 
 	user, err = up.Run(r.Context())
@@ -221,6 +224,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		Queue:    h.A.Queue,
 		BaseURL:  baseUrl,
 		Data:     &forgotPassword,
+		Logger:   h.A.Logger,
 	}
 
 	_ = gp.Run(r.Context())
@@ -231,6 +235,7 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	ve := services.VerifyEmailService{
 		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Token:    r.URL.Query().Get("token"),
+		Logger:   h.A.Logger,
 	}
 
 	err := ve.Run(r.Context())
@@ -262,6 +267,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		UserRepo: users.New(h.A.Logger, h.A.DB),
 		Token:    token,
 		Data:     &resetPassword,
+		Logger:   h.A.Logger,
 	}
 
 	user, err := rs.Run(r.Context())

@@ -102,7 +102,7 @@ func (h *Handler) ResendMetaEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metaEventRepo := meta_events.New(h.A.Logger, h.A.DB)
-	metaEventService := &services.MetaEventService{Queue: h.A.Queue, MetaEventRepo: metaEventRepo}
+	metaEventService := &services.MetaEventService{Queue: h.A.Queue, MetaEventRepo: metaEventRepo, Logger: h.A.Logger}
 	err = metaEventService.Run(r.Context(), metaEvent)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

@@ -108,7 +108,7 @@
           @for (nav of secondarySideBarItems; track $index) {
             <li class="transition-all duration-200 z-[1]">
               <a [routerLink]="'.' + nav.route" routerLinkActive="!text-new.primary-400 on hover:bg-transparent" #route="routerLinkActive" #navTab class="nav-tab text-neutral-10 rounded-22px py-8px px-16px transition-all duration-200 font-medium hover:bg-neutral-a2">
-              <span class="text-12 transition-all duration-200">{{ nav.name }}</span>
+              <span class="text-12 transition-all duration-200 whitespace-nowrap">{{ nav.name }}</span>
             </a>
           </li>
         }
@@ -119,7 +119,7 @@
           <svg width="18" height="18" class="mr-10px" [class]="route.isActive ? 'fill-primary-100' : 'fill-neutral-10'">
             <use xlink:href="#settings-icon"></use>
           </svg>
-          <span class="font-medium text-12 transition-all duration-200">Project Settings</span>
+          <span class="font-medium text-12 transition-all duration-200 whitespace-nowrap">Project Settings</span>
         </a>
       </li>
     </ul>
