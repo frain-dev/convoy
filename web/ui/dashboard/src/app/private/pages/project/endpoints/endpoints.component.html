@@ -83,7 +83,7 @@
                 </td>
                 <td convoy-table-cell class="relative">
                   <div convoy-tag class="!gap-10px flex items-center">
-                    <span class="w-[200px] truncate">{{ endpoint.url || endpoint.target_url }}</span>
+                    <span class="w-[200px] overflow-x-auto whitespace-nowrap">@if (endpointURLTemplatesFeatureEnabled) {@for (part of (endpoint.url || endpoint.target_url | urlTemplateParts); track $index) {<span [class]="part.token ? 'text-new.primary-400 font-medium bg-new.primary-25 rounded-[3px] px-[3px]' : ''">{{ part.text }}</span>}} @else {{{ endpoint.url || endpoint.target_url }}}</span>
                     <convoy-copy-button size="sm" [notificationText]="endpoint.name || endpoint.title + ' Url has been copied to clipboard'" [text]="endpoint.url || endpoint.target_url"></convoy-copy-button>
                   </div>
                 </td>

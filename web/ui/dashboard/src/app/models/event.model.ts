@@ -55,6 +55,7 @@ export interface EVENT_DELIVERY {
 	device_metadata: DEVICE;
 	endpoint_id: string;
 	latency_seconds?: number;
+	target_url?: string;
 }
 
 export interface EVENT_DELIVERY_ATTEMPT {

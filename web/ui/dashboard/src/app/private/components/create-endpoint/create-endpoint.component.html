@@ -11,11 +11,8 @@
         </convoy-input-field>
 
         <convoy-input-field>
-          <label for="endpoint_url" convoy-label required="true">Enter URL</label>
+          <label for="endpoint_url" convoy-label required="true" class="flex items-center">Enter URL@if (endpointURLTemplatesFeatureEnabled) {<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Use single-segment placeholders like {reference} in the path or query for dynamic callback URLs."></convoy-tooltip>}</label>
           <input type="url" id="endpoint_url" convoy-input autocomplete="url" formControlName="url" [placeholder]="endpointURLTemplatesFeatureEnabled ? 'https://example.com/orders/{reference}/callback' : 'Enter endpoint URL here'" />
-          @if (endpointURLTemplatesFeatureEnabled) {
-            <p class="text-10 text-neutral-10 mt-6px">Use single-segment placeholders like <code>{{ '{' }}reference{{ '}' }}</code> in the path or query for dynamic callback URLs.</p>
-          }
           @if (addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid) {
             <convoy-input-error>Invalid endpoint URL</convoy-input-error>
           }

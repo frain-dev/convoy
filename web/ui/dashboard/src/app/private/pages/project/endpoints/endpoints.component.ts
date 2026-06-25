@@ -24,6 +24,8 @@ import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.compo
 import { EndpointsService } from './endpoints.service';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { LicensesService } from '../../../../services/licenses/licenses.service';
+import { SettingsService } from '../../settings/settings.service';
+import { UrlTemplatePartsPipe } from 'src/app/pipes/url-template-parts/url-template-parts.pipe';
 
 @Component({
     selector: 'convoy-endpoints',
@@ -52,7 +54,8 @@ import { LicensesService } from '../../../../services/licenses/licenses.service'
         EndpointSecretComponent,
         DeleteModalComponent,
         LoaderModule,
-        DialogDirective
+        DialogDirective,
+        UrlTemplatePartsPipe
     ],
     templateUrl: './endpoints.component.html',
     styleUrls: ['./endpoints.component.scss']
@@ -76,8 +79,10 @@ export class EndpointsComponent implements OnInit {
 	endpointSearchString!: string;
 	action: 'create' | 'update' = 'create';
 	userSearch = false;
+	endpointURLTemplatesFeatureEnabled = false;
+	private featureFlagReady?: Promise<void>;
 
-	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute, public licenseService: LicensesService) {}
+	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute, public licenseService: LicensesService, private settingsService: SettingsService) {}
 
 	ngOnInit() {
 		const urlParam = this.route.snapshot.params.id;
@@ -87,7 +92,24 @@ export class EndpointsComponent implements OnInit {
 		}
 		this.endpointsTableHead[4] = this.licenseService.hasLicense('CircuitBreaking') ? 'Failure Rate' : '';
 
+		this.featureFlagReady = this.checkEndpointURLTemplatesFeatureFlag();
 		this.getEndpoints();
+	}
+
+	async checkEndpointURLTemplatesFeatureFlag() {
+		// Only the org-scoped early-adopter feature flag is checked here; the license
+		// side is verified separately in sendTestEvent. Both must hold for the backend
+		// to run template matching, so we mirror that before using the dynamic path.
+		const org = localStorage.getItem('CONVOY_ORG');
+		if (!org) return;
+		try {
+			this.endpointURLTemplatesFeatureEnabled = await this.settingsService.checkFeatureFlagEnabled({
+				org_id: JSON.parse(org).uid,
+				feature_key: 'endpoint-url-templates'
+			});
+		} catch {
+			this.endpointURLTemplatesFeatureEnabled = false;
+		}
 	}
 
 	async getEndpoints(requestDetails?: CURSOR & { search?: string; hideLoader?: boolean }) {
@@ -162,20 +184,57 @@ export class EndpointsComponent implements OnInit {
 	}
 
 	async sendTestEvent() {
-		const testEvent = {
-			data: { data: 'test event from Convoy', convoy: 'https://getconvoy.io', amount: 1000 },
-			endpoint_id: this.selectedEndpoint?.uid,
-			event_type: 'test.convoy'
-		};
+		// Under the dashboard version header the endpoint URL comes back as target_url,
+		// so read both before deciding there is nothing to test against.
+		const url = this.selectedEndpoint?.url || this.selectedEndpoint?.target_url;
+		if (!url) {
+			this.generalService.showNotification({ message: 'Endpoint has no URL to test against', style: 'error' });
+			return;
+		}
+
+		const data = { data: 'test event from Convoy', convoy: 'https://getconvoy.io', amount: 1000 };
+
+		// Only templated endpoints (e.g. /tx/{reference}/callback) use the dynamic path:
+		// it resolves the concrete URL against the endpoint template and bypasses
+		// subscription event-type filters. Concrete endpoints keep the endpoint-bound
+		// path so the test stays tied to the selected endpoint (its secrets, auth and
+		// state); routing them through dynamic would bind by URL match and could
+		// auto-create an orphan endpoint when the URL does not match exactly.
+		//
+		// The dynamic worker only runs template matching when both the license and the
+		// org feature flag are on. If either is off it skips the lookup and mints a new
+		// orphan endpoint for the URL, so we require both here and otherwise fall back
+		// to the endpoint-bound path.
+		const isTemplated = /\{[A-Za-z_][A-Za-z0-9_]*\}/.test(url);
 
 		this.isSendingTestEvent = true;
 		try {
-			const response = await this.endpointService.sendEvent({ body: testEvent });
+			// Wait for the feature flag check kicked off in ngOnInit so a fast click does
+			// not misroute a templated endpoint to the endpoint-bound path (which cannot
+			// resolve the template) just because the check is still in flight.
+			await this.featureFlagReady;
+			const useDynamic = isTemplated && this.endpointURLTemplatesFeatureEnabled && this.licenseService.hasLicense('EndpointURLTemplates');
+
+			// For the templated path, substitute each {token} with a dummy value so the
+			// URL is concrete; event_types (plural) is intentionally omitted so the
+			// endpoint's real subscription filter is not overwritten.
+			const response = useDynamic
+				? await this.endpointService.sendDynamicEvent({
+						body: { url: url.replace(/\{[A-Za-z_][A-Za-z0-9_]*\}/g, () => this.generateTestToken()), data, event_type: 'test.convoy' }
+				  })
+				: await this.endpointService.sendEvent({ body: { data, endpoint_id: this.selectedEndpoint?.uid, event_type: 'test.convoy' } });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isSendingTestEvent = false;
 		} catch {
 			this.isSendingTestEvent = false;
 		}
+	}
+
+	private generateTestToken(): string {
+		if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+			return crypto.randomUUID().replace(/-/g, '');
+		}
+		return `test${Date.now()}${Math.random().toString(36).slice(2)}`;
 	}
 
 	viewSubscription() {
