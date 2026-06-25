@@ -39,14 +39,26 @@ jobs:
                         - '!web/ui/dashboard/**'
                         - '!docs/**'
 
-    test:
+    # The test suite is split into parallel shards so wall-clock time is bounded
+    # by the slowest shard rather than the serial total. The heavy `api`
+    # integration package is sharded by test name across 4 jobs; every other
+    # package is split across 2. Each shard gets its own Postgres + Redis service
+    # (full per-shard isolation), so we keep `-race -p 1` within a shard for
+    # deterministic, collision-free runs. The aggregate `test` job below keeps a
+    # single, stable required status check for branch protection.
+    shard:
         needs: changes
+        if: ${{ needs.changes.outputs.has_backend != 'false' }}
         strategy:
+            fail-fast: false
             matrix:
-                go-version: [1.26.2]
-                os: [ubuntu-latest]
-                postgres-version: ["15"]
-                redis-version: ["6.2.6"]
+                include:
+                    - { group: unit, shard: 1, total: 2 }
+                    - { group: unit, shard: 2, total: 2 }
+                    - { group: api, shard: 1, total: 4 }
+                    - { group: api, shard: 2, total: 4 }
+                    - { group: api, shard: 3, total: 4 }
+                    - { group: api, shard: 4, total: 4 }
 
         runs-on: ubuntu-latest
         env:
@@ -54,7 +66,7 @@ jobs:
             CONVOY_JWT_REFRESH_SECRET: test-refresh-secret
         services:
             postgres:
-                image: postgres:${{ matrix.postgres-version }}
+                image: postgres:15
                 ports:
                     - 5432:5432
                 env:
@@ -67,7 +79,7 @@ jobs:
                 # suite materially faster than a disk-backed PGDATA.
                 options: --tmpfs /var/lib/postgresql/data --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
             redis:
-                image: redis:${{ matrix.redis-version }}
+                image: redis:6.2.6
                 ports:
                     - 6379:6379
                 options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
@@ -77,13 +89,11 @@ jobs:
               run: echo "tag=${GITHUB_SHA:0:8}" >> "$GITHUB_OUTPUT"
 
             - name: Set up Go
-              if: ${{ needs.changes.outputs.has_backend != 'false' }}
               uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
               with:
-                  go-version: ${{ matrix.go-version }}
+                  go-version: '1.26.2'
 
             - name: Cache go modules
-              if: ${{ needs.changes.outputs.has_backend != 'false' }}
               uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
               with:
                   path: ~/go/pkg/mod
@@ -92,35 +102,35 @@ jobs:
 
             # Cache the compiler/test build cache so build, vet, and the
             # race-instrumented test binaries are not recompiled from scratch each
-            # run. Keyed per-commit with a restore fallback to the latest cache.
+            # run. Keyed per-commit per-shard with a restore fallback to the latest
+            # cache for the same shard, then any cache.
             - name: Cache go build
-              if: ${{ needs.changes.outputs.has_backend != 'false' }}
               uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
               with:
                   path: ~/.cache/go-build
-                  key: ${{ runner.os }}-gobuild-${{ hashFiles('go.sum') }}-${{ github.sha }}
+                  key: ${{ runner.os }}-gobuild-${{ matrix.group }}${{ matrix.shard }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
                   restore-keys: |
-                      ${{ runner.os }}-gobuild-${{ hashFiles('go.sum') }}-
+                      ${{ runner.os }}-gobuild-${{ matrix.group }}${{ matrix.shard }}-${{ hashFiles('go.sum') }}-
+                      ${{ runner.os }}-gobuild-${{ matrix.group }}${{ matrix.shard }}-
                       ${{ runner.os }}-gobuild-
 
             - name: Check out code
-              if: ${{ needs.changes.outputs.has_backend != 'false' }}
               uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
             - name: Get and verify dependencies
-              if: ${{ needs.changes.outputs.has_backend != 'false' }}
               run: go mod download && go mod verify
 
+            # The compile check and full `go vet` only need to run once, so pin
+            # them to a single shard instead of repeating across all of them.
             - name: Build app to make sure there are zero issues
-              if: ${{ needs.changes.outputs.has_backend != 'false' }}
+              if: ${{ matrix.group == 'unit' && matrix.shard == 1 }}
               run: go build -ldflags="-X github.com/frain-dev/convoy.Version=test-${{ steps.get_version.outputs.tag }}" -o convoy ./cmd
 
             - name: Go vet
-              if: ${{ needs.changes.outputs.has_backend != 'false' }}
+              if: ${{ matrix.group == 'unit' && matrix.shard == 1 }}
               run: go vet ./...
 
             - name: Migrate Postgres
-              if: ${{ needs.changes.outputs.has_backend != 'false' }}
               run: go run ./cmd migrate up
               env:
                   CONVOY_DB_SCHEME: postgres
@@ -134,12 +144,40 @@ jobs:
                   CONVOY_REDIS_HOST: localhost
                   CONVOY_REDIS_PORT: 6379
 
-            - name: Run integration tests
-              if: ${{ needs.changes.outputs.has_backend != 'false' }}
-              run: make test
+            - name: Run tests (shard ${{ matrix.group }}/${{ matrix.shard }})
+              run: bash scripts/ci/run-shard.sh ${{ matrix.group }} ${{ matrix.shard }} ${{ matrix.total }}
               env:
-                  TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+                  TEST_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
                   CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
                   CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
                   CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
 
+    # Stable, single required status check. Branch protection should require
+    # `test`. Fail closed: the only green-without-running-tests case is a genuine
+    # docs/UI-only change (has_backend == 'false'). If the changes gate itself
+    # failed, or backend changed and the shards did not all succeed, this fails.
+    test:
+        needs: [changes, shard]
+        if: always()
+        runs-on: ubuntu-latest
+        steps:
+            - name: Verify all test shards passed
+              env:
+                  CHANGES_RESULT: ${{ needs.changes.result }}
+                  SHARD_RESULT: ${{ needs.shard.result }}
+                  HAS_BACKEND: ${{ needs.changes.outputs.has_backend }}
+              run: |
+                  echo "changes=${CHANGES_RESULT} shard=${SHARD_RESULT} has_backend=${HAS_BACKEND}"
+                  if [ "${CHANGES_RESULT}" != "success" ]; then
+                      echo "changes gate did not succeed; failing closed"
+                      exit 1
+                  fi
+                  if [ "${HAS_BACKEND}" = "false" ]; then
+                      echo "no backend changes; shards intentionally skipped"
+                      exit 0
+                  fi
+                  if [ "${SHARD_RESULT}" != "success" ]; then
+                      echo "backend changed but test shards did not all succeed (result=${SHARD_RESULT})"
+                      exit 1
+                  fi
+                  echo "all test shards passed"
