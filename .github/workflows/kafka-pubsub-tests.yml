@@ -80,6 +80,18 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
           restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
 
+      # Cache the compiler/test build cache so the migrate compile and the
+      # race-instrumented e2e build are not recompiled from scratch each run.
+      - name: Cache go build
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-gobuild-kafka-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-gobuild-kafka-${{ hashFiles('go.sum') }}-
+            ${{ runner.os }}-gobuild-kafka-
+            ${{ runner.os }}-gobuild-
+
       - name: Check out code
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
