@@ -394,6 +394,13 @@ func findDynamicSubscription(ctx context.Context, dynamicEvent *models.DynamicEv
 			return nil, err
 		}
 	case errors.Is(err, datastore.ErrSubscriptionNotFound):
+		// A brand-new dynamic subscription needs a catch-all filter so future
+		// (non-dynamic) events to this endpoint still match when the caller did not
+		// specify event_types. Callers that supply explicit event_types keep them.
+		newSubEventTypes := dynamicEvent.EventTypes
+		if len(newSubEventTypes) == 0 {
+			newSubEventTypes = []string{"*"}
+		}
 		subscription = &datastore.Subscription{
 			UID:        ulid.Make().String(),
 			ProjectID:  project.UID,
@@ -401,7 +408,7 @@ func findDynamicSubscription(ctx context.Context, dynamicEvent *models.DynamicEv
 			Type:       datastore.SubscriptionTypeAPI,
 			EndpointID: endpoint.UID,
 			FilterConfig: &datastore.FilterConfiguration{
-				EventTypes: dynamicEvent.EventTypes,
+				EventTypes: newSubEventTypes,
 			},
 			RetryConfig:     &datastore.DefaultRetryConfig,
 			AlertConfig:     &datastore.DefaultAlertConfig,

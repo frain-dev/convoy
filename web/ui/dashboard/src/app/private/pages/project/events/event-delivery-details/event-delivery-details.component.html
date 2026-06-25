@@ -74,8 +74,9 @@
             <p class="text-neutral-10 text-12 font-light mb-6px">EVENT RECEIVED</p>
             @if (eventDelsDetails?.event_metadata?.created_at) {
               <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)" show-icon="false" notificationText="Event received timestamp copied to clipboard">
-                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)">
+                <span class="relative inline-flex items-center text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at)">
                   <span>{{ formatLocalTimestamp(eventDelsDetails?.event_metadata?.created_at) }}</span>
+                  <svg class="ml-4px h-12px w-12px shrink-0 opacity-0 transition-opacity group-hover:opacity-100 stroke-neutral-10"><use xlink:href="#copy-icon-3"></use></svg>
                   <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                     {{ formatPreciseTimestamp(eventDelsDetails?.event_metadata?.created_at) }}
                   </span>
@@ -92,8 +93,9 @@
             <p class="text-neutral-10 text-12 font-light mb-6px">ACKNOWLEDGED</p>
             @if (eventDelsDetails?.acknowledged_at) {
               <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)" show-icon="false" notificationText="Acknowledged timestamp copied to clipboard">
-                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)">
+                <span class="relative inline-flex items-center text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.acknowledged_at)">
                   <span>{{ formatLocalTimestamp(eventDelsDetails?.acknowledged_at) }}</span>
+                  <svg class="ml-4px h-12px w-12px shrink-0 opacity-0 transition-opacity group-hover:opacity-100 stroke-neutral-10"><use xlink:href="#copy-icon-3"></use></svg>
                   <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                     {{ formatPreciseTimestamp(eventDelsDetails?.acknowledged_at) }}
                   </span>
@@ -110,8 +112,9 @@
             <p class="text-neutral-10 text-12 font-light mb-6px">DELIVERY QUEUED</p>
             @if (eventDelsDetails?.created_at) {
               <convoy-copy-button [text]="formatPreciseTimestamp(eventDelsDetails?.created_at)" show-icon="false" notificationText="Delivery queued timestamp copied to clipboard">
-                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.created_at)">
+                <span class="relative inline-flex items-center text-12 font-medium group" [title]="formatPreciseTimestamp(eventDelsDetails?.created_at)">
                   <span>{{ formatLocalTimestamp(eventDelsDetails?.created_at) }}</span>
+                  <svg class="ml-4px h-12px w-12px shrink-0 opacity-0 transition-opacity group-hover:opacity-100 stroke-neutral-10"><use xlink:href="#copy-icon-3"></use></svg>
                   <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                     {{ formatPreciseTimestamp(eventDelsDetails?.created_at) }}
                   </span>
@@ -128,8 +131,9 @@
             <p class="text-neutral-10 text-12 font-light mb-6px">LATEST ATTEMPT</p>
             @if (eventDeliveryAtempt?.created_at) {
               <convoy-copy-button [text]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)" show-icon="false" notificationText="Latest attempt timestamp copied to clipboard">
-                <span class="relative inline-flex text-12 font-medium group" [title]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)">
+                <span class="relative inline-flex items-center text-12 font-medium group" [title]="formatPreciseTimestamp(eventDeliveryAtempt?.created_at)">
                   <span>{{ formatLocalTimestamp(eventDeliveryAtempt?.created_at) }}</span>
+                  <svg class="ml-4px h-12px w-12px shrink-0 opacity-0 transition-opacity group-hover:opacity-100 stroke-neutral-10"><use xlink:href="#copy-icon-3"></use></svg>
                   <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                     {{ formatPreciseTimestamp(eventDeliveryAtempt?.created_at) }}
                   </span>
@@ -238,12 +242,22 @@
       }
     </div>
 
-    <div class="text-12 text-neutral-12 truncate max-w-[370px]">{{ eventDelsDetails?.endpoint_metadata?.url || '-' }}</div>
+    <convoy-copy-button [text]="eventDelsDetails?.target_url || eventDelsDetails?.endpoint_metadata?.url || ''" show-icon="false" notificationText="Endpoint URL copied to clipboard">
+      <span class="relative inline-flex items-center max-w-[370px] group cursor-pointer">
+        <span class="truncate text-12 text-neutral-12">{{ eventDelsDetails?.target_url || eventDelsDetails?.endpoint_metadata?.url || '-' }}</span>
+        <svg class="ml-6px h-12px w-12px shrink-0 opacity-0 transition-opacity group-hover:opacity-100 stroke-neutral-10">
+          <use xlink:href="#copy-icon-3"></use>
+        </svg>
+        <span class="pointer-events-none absolute left-0 bottom-[calc(100%+8px)] z-50 max-w-[560px] truncate whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+          {{ eventDelsDetails?.target_url || eventDelsDetails?.endpoint_metadata?.url }}
+        </span>
+      </span>
+    </convoy-copy-button>
 
     <div class="flex items-center gap-24px">
       <convoy-copy-button [text]="eventDelsDetails?.endpoint_metadata?.url || ''" color="primary" show-icon="false" [notificationText]="eventDelsDetails?.endpoint_metadata?.name + ' URL has been copied to clipboard'">
         <div convoy-tag color="primary" class="flex items-center !gap-12px">
-          <span class="max-w-[230px] truncate">{{ eventDelsDetails?.endpoint_metadata?.url || '-' }}</span>
+          <span class="max-w-[230px] overflow-x-auto whitespace-nowrap">@if (eventDelsDetails?.endpoint_metadata?.url) {@for (part of (eventDelsDetails?.endpoint_metadata?.url | urlTemplateParts); track $index) {<span [class]="part.token ? 'text-new.primary-400 font-medium bg-new.primary-25 rounded-[3px] px-[3px]' : ''">{{ part.text }}</span>}} @else {-}</span>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="scale-[.6]" xmlns="http://www.w3.org/2000/svg">
             <path d="M8 12.2002H15" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
             <path d="M8 16.2002H12.38" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
