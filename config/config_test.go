@@ -177,6 +177,9 @@ func TestLoadConfig(t *testing.T) {
 					},
 					IsSignupEnabled: true,
 				},
+				Billing: BillingConfiguration{
+					UsageSource: BillingUsageSourcePostgres,
+				},
 				Analytics: AnalyticsConfiguration{
 					IsEnabled: true,
 				},
@@ -279,6 +282,9 @@ func TestLoadConfig(t *testing.T) {
 					},
 					IsSignupEnabled: true,
 				},
+				Billing: BillingConfiguration{
+					UsageSource: BillingUsageSourcePostgres,
+				},
 				Analytics: AnalyticsConfiguration{
 					IsEnabled: true,
 				},
@@ -379,6 +385,9 @@ func TestLoadConfig(t *testing.T) {
 						Enabled: true,
 					},
 					IsSignupEnabled: true,
+				},
+				Billing: BillingConfiguration{
+					UsageSource: BillingUsageSourcePostgres,
 				},
 				Analytics: AnalyticsConfiguration{
 					IsEnabled: true,
