@@ -201,7 +201,7 @@
             }
           </div>
           @if (shouldShowBorder < configurations.length) {
-            <div class="flex gap-24px items-center">
+            <div class="flex flex-wrap gap-24px gap-y-12px items-center">
               @for (config of configurations; track $index; let i = $index) {
                 @if (!config.show) {
                   @if (i < 3 || this.projectForm.controls['type'].value === 'outgoing') {
