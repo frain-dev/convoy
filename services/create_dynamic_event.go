@@ -46,9 +46,12 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) (err error) {
 	e.DynamicEvent.ProjectID = e.Project.UID
 	e.DynamicEvent.AcknowledgedAt = time.Now()
 
-	if len(e.DynamicEvent.EventTypes) == 0 {
-		e.DynamicEvent.EventTypes = []string{"*"}
-	}
+	// Do not default EventTypes to ["*"] here. An empty list must reach the worker as
+	// empty so it can distinguish "caller did not specify a filter" (leave an existing
+	// subscription's filter untouched, and default only a brand-new subscription to
+	// catch-all) from "caller explicitly set a filter" (sync it onto the subscription).
+	// Defaulting here would make every dynamic event that omits event_types silently
+	// overwrite the matched subscription's filter with ["*"].
 
 	taskName := convoy.CreateDynamicEventProcessor
 

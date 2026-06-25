@@ -185,6 +185,55 @@ func TestFindDynamicSubscription_UsesAtomicDynamicFindOrCreate(t *testing.T) {
 	require.Equal(t, existing.UID, got.UID)
 }
 
+func TestFindDynamicSubscription_PreservesExistingFilterWhenNoEventTypes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	project := &datastore.Project{UID: "project-id-1"}
+	endpoint := &datastore.Endpoint{UID: "endpoint-id-1"}
+	existing := datastore.Subscription{
+		UID:          "subscription-id-1",
+		ProjectID:    project.UID,
+		EndpointID:   endpoint.UID,
+		Name:         "dynamic-subscription-endpoint-id-1",
+		FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"invoice.paid"}},
+	}
+
+	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
+	subRepo.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), project.UID, endpoint.UID).
+		Return([]datastore.Subscription{existing}, nil)
+	// No UpdateSubscription expected: an event with no event_types must not overwrite
+	// the existing subscription filter (e.g. dashboard "Send test event").
+
+	got, err := findDynamicSubscription(context.Background(), &models.DynamicEvent{}, subRepo, project, endpoint)
+	require.NoError(t, err)
+	require.Equal(t, existing.UID, got.UID)
+	require.ElementsMatch(t, []string{"invoice.paid"}, got.FilterConfig.EventTypes)
+}
+
+func TestFindDynamicSubscription_NewSubscriptionDefaultsToCatchAllWhenNoEventTypes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	project := &datastore.Project{UID: "project-id-1"}
+	endpoint := &datastore.Endpoint{UID: "endpoint-id-1"}
+
+	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
+	subRepo.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), project.UID, endpoint.UID).
+		Return([]datastore.Subscription{}, nil)
+	subRepo.EXPECT().FindOrCreateDynamicSubscription(gomock.Any(), project.UID, gomock.Any()).
+		DoAndReturn(func(_ context.Context, _ string, sub *datastore.Subscription) (*datastore.Subscription, error) {
+			require.ElementsMatch(t, []string{"*"}, sub.FilterConfig.EventTypes)
+			return sub, nil
+		})
+	// No UpdateSubscription expected: sync is a no-op for empty event_types, the
+	// catch-all default is applied at creation time only.
+
+	got, err := findDynamicSubscription(context.Background(), &models.DynamicEvent{}, subRepo, project, endpoint)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{"*"}, got.FilterConfig.EventTypes)
+}
+
 func TestFindEndpoint_TemplateMatching(t *testing.T) {
 	tests := []struct {
 		name string
