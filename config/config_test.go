@@ -822,6 +822,13 @@ func TestBillingUsageSource(t *testing.T) {
 		require.NoError(t, cfg.Billing.Validate(), "usage source %q should be valid", src)
 	}
 
+	// Whitespace is trimmed in place so a padded config value still selects the
+	// intended source via the handler's exact-match check.
+	padded := DefaultConfiguration
+	padded.Billing.UsageSource = "  billing_service  "
+	require.NoError(t, padded.Billing.Validate())
+	require.Equal(t, BillingUsageSourceBillingService, padded.Billing.UsageSource)
+
 	invalid := DefaultConfiguration
 	invalid.Billing.UsageSource = "clickhouse"
 	require.Error(t, invalid.Billing.Validate())

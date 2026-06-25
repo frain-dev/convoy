@@ -682,7 +682,11 @@ func (b *BillingConfiguration) Validate() error {
 		return fmt.Errorf("billing URL is required when billing API key is configured")
 	}
 
-	switch strings.TrimSpace(b.UsageSource) {
+	// Normalize in place so every reader comparing UsageSource with == sees the
+	// canonical value. Without this, a config like " billing_service" passes
+	// validation here but silently fails the exact-match check in the handler.
+	b.UsageSource = strings.TrimSpace(b.UsageSource)
+	switch b.UsageSource {
 	case "", BillingUsageSourcePostgres, BillingUsageSourceBillingService:
 	default:
 		return fmt.Errorf("invalid billing usage source %q: must be %q or %q", b.UsageSource, BillingUsageSourcePostgres, BillingUsageSourceBillingService)

@@ -15,7 +15,6 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/util"
 )
@@ -309,8 +308,7 @@ func (h *BillingHandler) releaseUsageLock(lockKey, token string) {
 // fills with populated rows. Only the Postgres source uses this background path,
 // the billing-service source is served synchronously by GetUsage.
 func (h *BillingHandler) computeUsage(ctx context.Context, orgID, period string, startTime, endTime time.Time) (*billing.Usage, error) {
-	orgSvc := organisations.New(h.A.Logger, h.A.DB)
-	usage, err := orgSvc.CalculateUsage(ctx, orgID, startTime, endTime)
+	usage, err := h.orgRepo().CalculateUsage(ctx, orgID, startTime, endTime)
 	if err != nil {
 		return nil, err
 	}
