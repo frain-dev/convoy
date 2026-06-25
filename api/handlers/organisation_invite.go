@@ -61,6 +61,7 @@ func (h *Handler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Reques
 		Role:         newIV.Role,
 		User:         user,
 		Organisation: org,
+		Logger:       h.A.Logger,
 	}
 
 	iv, err := inviteService.Run(r.Context())
@@ -141,6 +142,7 @@ func (h *Handler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) 
 		OrgRepo:    organisations.New(h.A.Logger, h.A.DB),
 		UserRepo:   users.New(h.A.Logger, h.A.DB),
 		Token:      token,
+		Logger:     h.A.Logger,
 	}
 
 	user, iv, err := fub.Run(r.Context())
@@ -186,6 +188,7 @@ func (h *Handler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Reques
 		InviteID:     chi.URLParam(r, "inviteID"),
 		User:         user,
 		Organisation: org,
+		Logger:       h.A.Logger,
 	}
 
 	_, err = rom.Run(r.Context())
@@ -214,6 +217,7 @@ func (h *Handler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Reques
 		Queue:      h.A.Queue,
 		InviteRepo: organisation_invites.New(h.A.Logger, h.A.DB),
 		InviteID:   chi.URLParam(r, "inviteID"),
+		Logger:     h.A.Logger,
 	}
 
 	iv, err := cancelInvite.Run(r.Context())

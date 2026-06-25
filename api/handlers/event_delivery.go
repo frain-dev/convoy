@@ -88,6 +88,7 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 		Queue:             h.A.Queue,
 		EventDelivery:     eventDelivery,
 		Project:           project,
+		Logger:            h.A.Logger,
 	}
 
 	err = fr.Run(r.Context())
@@ -168,6 +169,7 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 		Queue:             h.A.Queue,
 		Filter:            data.Filter,
 		ProjectID:         project.UID,
+		Logger:            h.A.Logger,
 	}
 
 	err = br.Run(r.Context())
@@ -248,6 +250,7 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 		Queue:             h.A.Queue,
 		IDs:               eventDeliveryIDs.IDs,
 		Project:           project,
+		Logger:            h.A.Logger,
 	}
 
 	successes, failures, err := fr.Run(r.Context())

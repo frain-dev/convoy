@@ -149,6 +149,7 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
 		Org:           org,
 		Update:        &orgUpdate,
+		Logger:        h.A.Logger,
 	}
 
 	org, err = us.Run(r.Context())

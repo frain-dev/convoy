@@ -55,6 +55,7 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		SourceRepo: sources.New(h.A.Logger, h.A.DB),
 		NewSource:  &newSource,
 		Project:    project,
+		Logger:     h.A.Logger,
 	}
 
 	source, err := cs.Run(r.Context())
@@ -183,6 +184,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		Project:      project,
 		SourceUpdate: &sourceUpdate,
 		Source:       source,
+		Logger:       h.A.Logger,
 	}
 
 	source, err = us.Run(r.Context())

@@ -282,6 +282,7 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		UserRepo: users.New(h.A.Logger, h.A.DB),
 		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Data:     &refreshToken,
+		Logger:   h.A.Logger,
 	}
 
 	token, err := rf.Run(r.Context())
@@ -313,6 +314,7 @@ func (h *Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 		UserRepo: users.New(h.A.Logger, h.A.DB),
 		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Token:    auth.Token,
+		Logger:   h.A.Logger,
 	}
 
 	err = lg.Run(r.Context())

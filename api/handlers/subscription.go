@@ -386,6 +386,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 		ProjectId:      project.UID,
 		SubscriptionId: chi.URLParam(r, "subscriptionID"),
 		Update:         &update,
+		Logger:         h.A.Logger,
 	}
 
 	sub, err := us.Run(r.Context())

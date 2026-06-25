@@ -148,6 +148,7 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		Queue:          h.A.Queue,
 		BroadcastEvent: &newMessage,
 		Project:        project,
+		Logger:         h.A.Logger,
 	}
 
 	err = cbe.Run(r.Context())
@@ -287,6 +288,7 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 		Queue:        h.A.Queue,
 		DynamicEvent: &newMessage,
 		Project:      project,
+		Logger:       h.A.Logger,
 	}
 
 	err = cde.Run(r.Context())

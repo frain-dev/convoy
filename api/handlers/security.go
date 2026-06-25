@@ -38,6 +38,7 @@ func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		User:        user,
 		NewApiKey:   &newApiKey,
+		Logger:      h.A.Logger,
 	}
 
 	apiKey, keyString, err := cpk.Run(r.Context())
@@ -79,6 +80,7 @@ func (h *Handler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		UID:         chi.URLParam(r, "keyID"),
 		User:        user,
+		Logger:      h.A.Logger,
 	}
 
 	err := rvk.Run(r.Context())
@@ -114,6 +116,7 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		Project:     project,
 		Member:      member,
+		Logger:      h.A.Logger,
 	}
 
 	apiKey, keyString, err := rgp.Run(r.Context())

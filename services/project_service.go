@@ -122,6 +122,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		APIKeyRepo:  ps.ApiKeyRepo,
 		Member:      member,
 		NewApiKey:   newAPIKey,
+		Logger:      ps.Logger,
 	}
 
 	apiKey, keyString, err := cak.Run(ctx)

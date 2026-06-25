@@ -527,6 +527,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 		S:            e,
 		Endpoint:     endpoint,
 		Project:      project,
+		Logger:       h.A.Logger,
 	}
 
 	endpoint, err = xs.Run(r.Context())
@@ -579,6 +580,7 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectID:    project.UID,
 		EndpointId:   endpointID,
+		Logger:       h.A.Logger,
 	}
 
 	endpoint, err := ps.Run(r.Context())
@@ -642,6 +644,7 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
+		Logger:       h.A.Logger,
 	}
 
 	endpoint, err := aes.Run(r.Context())
