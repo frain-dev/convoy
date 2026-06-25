@@ -144,11 +144,17 @@ const (
 	usageRecomputeLockTTL = 2 * time.Minute
 )
 
-// GetUsage returns the current month's usage for the org without blocking the
-// caller on the aggregation. It serves the last computed value from Redis and
-// refreshes it in the background (stale-while-revalidate, like dashboard stats).
-// On a cold cache it returns a pending response so the dashboard renders a
-// placeholder instead of a misleading zero until the real figure is known.
+// GetUsage returns the org's usage. Behaviour depends on the configured source:
+//
+//   - billing-service: the provider owns the figure and the billing period, so
+//     serve it synchronously and surface provider failures as 503. Caching or a
+//     pending placeholder would hide an outage behind a state the caller could
+//     never escape.
+//   - postgres (default): aggregate from this instance's persisted byte columns
+//     without blocking the caller. Serve the last computed value from Redis and
+//     refresh it in the background (stale-while-revalidate, like dashboard
+//     stats). On a cold cache return a pending response so the dashboard renders
+//     a placeholder instead of a misleading zero until the real figure is known.
 func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	orgID, ok := h.orgGuard(w, r)
 	if !ok {
@@ -158,6 +164,20 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch config", http.StatusInternalServerError))
+		return
+	}
+
+	// Billing-service source: synchronous, no cache. A provider failure must
+	// reach the caller as 503 rather than an indefinite pending placeholder.
+	if cfg.Billing.UsageSource == config.BillingUsageSourceBillingService {
+		resp, gErr := h.BillingClient.GetUsage(r.Context(), orgID)
+		if gErr != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(gErr.Error(), http.StatusServiceUnavailable))
+			return
+		}
+		usage := resp.Data
+		usage.Pending = false
+		_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", &usage, http.StatusOK))
 		return
 	}
 
@@ -182,18 +202,9 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	}
 	period := startTime.Format("2006-01")
 
-	// Cache key. The billing-service source returns figures scoped to the
-	// provider's own billing period and ignores the caller-supplied window
-	// (GetUsage takes only the org id), so key it per org/source to avoid
-	// caching the same provider totals under many range keys and mislabeling
-	// them as the requested window. The Postgres source aggregates over the
-	// requested window, so its key varies by range.
-	var cacheKey string
-	if cfg.Billing.UsageSource == config.BillingUsageSourceBillingService {
-		cacheKey = fmt.Sprintf("billing:usage:%s:service", orgID)
-	} else {
-		cacheKey = fmt.Sprintf("billing:usage:%s:%d-%d", orgID, startTime.UnixNano(), endTime.UnixNano())
-	}
+	// The Postgres source aggregates over the requested window, so the cache key
+	// varies by range.
+	cacheKey := fmt.Sprintf("billing:usage:%s:%d-%d", orgID, startTime.UnixNano(), endTime.UnixNano())
 
 	// Fail soft: a cache read error (Redis unavailable) is treated like a miss
 	// so the caller is never blocked. The background recompute is itself gated
@@ -205,12 +216,12 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if cached != nil {
-		h.recomputeUsageInBackground(orgID, period, cacheKey, startTime, endTime, cfg.Billing.UsageSource)
+		h.recomputeUsageInBackground(orgID, period, cacheKey, startTime, endTime)
 		_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", cached, http.StatusOK))
 		return
 	}
 
-	h.recomputeUsageInBackground(orgID, period, cacheKey, startTime, endTime, cfg.Billing.UsageSource)
+	h.recomputeUsageInBackground(orgID, period, cacheKey, startTime, endTime)
 
 	pending := &billing.Usage{
 		OrganisationID: orgID,
@@ -224,7 +235,7 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 // recomputeUsageInBackground refreshes the cached usage figure off the request
 // path. An atomic Redis lock dedupes concurrent recomputes per org so a burst of
 // requests cannot stampede Postgres.
-func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey string, startTime, endTime time.Time, source string) {
+func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey string, startTime, endTime time.Time) {
 	// Fail closed: without Redis we cannot dedupe, so skip the recompute rather
 	// than risk concurrent heavy aggregations. The caller still gets a pending
 	// response and the figure resolves once Redis is available again.
@@ -263,7 +274,7 @@ func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey stri
 		// pending sentinel. The dashboard polls a bounded number of times and
 		// then renders a placeholder. The figure resolves on a later recompute as
 		// more rows carry the persisted byte columns and the read goes index-only.
-		usage, err := h.computeUsage(ctx, orgID, period, startTime, endTime, source)
+		usage, err := h.computeUsage(ctx, orgID, period, startTime, endTime)
 		if err != nil {
 			h.A.Logger.Error("failed to compute usage", "error", err)
 			return
@@ -293,20 +304,11 @@ func (h *BillingHandler) releaseUsageLock(lockKey, token string) {
 	}
 }
 
-// computeUsage resolves usage from the configured cloud source. Default
-// ("postgres") computes from this instance's persisted byte columns; the column
-// reads converge to index-only as the window fills with populated rows.
-func (h *BillingHandler) computeUsage(ctx context.Context, orgID, period string, startTime, endTime time.Time, source string) (*billing.Usage, error) {
-	if source == config.BillingUsageSourceBillingService {
-		resp, err := h.BillingClient.GetUsage(ctx, orgID)
-		if err != nil {
-			return nil, err
-		}
-		usage := resp.Data
-		usage.Pending = false
-		return &usage, nil
-	}
-
+// computeUsage aggregates usage from this instance's persisted byte columns for
+// the requested window; the column reads converge to index-only as the window
+// fills with populated rows. Only the Postgres source uses this background path,
+// the billing-service source is served synchronously by GetUsage.
+func (h *BillingHandler) computeUsage(ctx context.Context, orgID, period string, startTime, endTime time.Time) (*billing.Usage, error) {
 	orgSvc := organisations.New(h.A.Logger, h.A.DB)
 	usage, err := orgSvc.CalculateUsage(ctx, orgID, startTime, endTime)
 	if err != nil {
