@@ -210,11 +210,29 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Rate = rateLimiter
 
+		// Load the instance configuration UID before building the license client
+		// so validation requests can include the deployment_id. If configuration
+		// is unavailable (or this command skips config load) we proceed with an
+		// empty value rather than blocking startup.
+		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
+			configRepo := configuration.New(app.Logger, app.DB)
+			instCfg, cfgErr := configRepo.LoadConfiguration(cmd.Context())
+			if cfgErr != nil {
+				lo.Error("Failed to load configuration", "error", cfgErr)
+			} else {
+				cfg.InstanceId = instCfg.UID
+				if err := config.Override(&cfg); err != nil {
+					return err
+				}
+			}
+		}
+
 		licenseClient := service.NewClient(service.Config{
 			Host:         cfg.LicenseService.Host,
 			ValidatePath: cfg.LicenseService.ValidatePath,
 			Timeout:      cfg.LicenseService.Timeout,
 			RetryCount:   cfg.LicenseService.RetryCount,
+			DeploymentID: cfg.InstanceId,
 			Logger:       lo,
 		})
 
@@ -242,20 +260,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if db.ReplicaSize() > 0 && !app.Licenser.ReadReplica() {
 			lo.Error("your instance does not have access to use read replicas, upgrade to access this feature")
 			db.UnsetReplicas()
-		}
-
-		// update config singleton with the instance id
-		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
-			configRepo := configuration.New(app.Logger, app.DB)
-			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
-			if err != nil {
-				lo.Error("Failed to load configuration", "error", err)
-			} else {
-				cfg.InstanceId = instCfg.UID
-				if err := config.Override(&cfg); err != nil {
-					return err
-				}
-			}
 		}
 
 		app.TracerBackend, err = tracer.Init(cfg.Tracer, cmd.Name(), app.Licenser)
