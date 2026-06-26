@@ -401,7 +401,11 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		tracer.AddEvent(ctx, tracer.EventEventDeliveryInfo, attributes)
 
-		attempt := parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
+		respondedAt := time.Time{}
+		if resp != nil && resp.StatusCode >= 100 {
+			respondedAt = httpDispatchStart.Add(duration)
+		}
+		attempt := parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus, httpDispatchStart, respondedAt)
 		eventDelivery.Metadata.NumTrials++
 
 		if eventDelivery.Metadata.NumTrials >= eventDelivery.Metadata.RetryLimit {

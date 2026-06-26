@@ -9,6 +9,7 @@ import (
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -83,6 +84,133 @@ func TestCreateDeliveryAttempt_ValidRequest(t *testing.T) {
 	require.Equal(t, attempt.URL, fetched.URL)
 	require.Equal(t, attempt.Method, fetched.Method)
 	require.Equal(t, attempt.Status, fetched.Status)
+}
+
+func TestCreateDeliveryAttempt_PersistsRequestedAndRespondedAt(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db, ctx)
+	endpoint := seedEndpoint(t, db, ctx, project)
+	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
+
+	service := New(log.New("convoy", log.LevelError), db)
+
+	requestedAt := time.Now().UTC().Truncate(time.Millisecond)
+	respondedAt := requestedAt.Add(75 * time.Millisecond)
+
+	attempt := &datastore.DeliveryAttempt{
+		UID:              ulid.Make().String(),
+		URL:              "https://example.com/webhook",
+		Method:           "POST",
+		APIVersion:       "2023.12.25",
+		EndpointID:       endpoint.UID,
+		EventDeliveryId:  eventDelivery.UID,
+		ProjectId:        project.UID,
+		HttpResponseCode: "200",
+		Status:           true,
+		RequestedAt:      null.TimeFrom(requestedAt),
+		RespondedAt:      null.TimeFrom(respondedAt),
+	}
+
+	err := service.CreateDeliveryAttempt(ctx, attempt)
+	require.NoError(t, err)
+
+	fetched, err := service.FindDeliveryAttemptById(ctx, eventDelivery.UID, attempt.UID)
+	require.NoError(t, err)
+	require.True(t, fetched.RequestedAt.Valid)
+	require.True(t, fetched.RespondedAt.Valid)
+	require.True(t, fetched.RequestedAt.Time.Equal(requestedAt))
+	require.True(t, fetched.RespondedAt.Time.Equal(respondedAt))
+
+	// And via the list path used by the meta-event listener.
+	attempts, err := service.FindDeliveryAttempts(ctx, eventDelivery.UID)
+	require.NoError(t, err)
+	require.Len(t, attempts, 1)
+	require.True(t, attempts[0].RequestedAt.Valid)
+	require.True(t, attempts[0].RespondedAt.Valid)
+}
+
+func TestCreateDeliveryAttempt_NoResponseLeavesRespondedAtNull(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db, ctx)
+	endpoint := seedEndpoint(t, db, ctx, project)
+	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
+
+	service := New(log.New("convoy", log.LevelError), db)
+
+	attempt := &datastore.DeliveryAttempt{
+		UID:             ulid.Make().String(),
+		URL:             "https://example.com/webhook",
+		Method:          "POST",
+		APIVersion:      "2023.12.25",
+		EndpointID:      endpoint.UID,
+		EventDeliveryId: eventDelivery.UID,
+		ProjectId:       project.UID,
+		Error:           "connection refused",
+		Status:          false,
+		RequestedAt:     null.TimeFrom(time.Now().UTC()),
+		// RespondedAt intentionally left zero (no HTTP response).
+	}
+
+	err := service.CreateDeliveryAttempt(ctx, attempt)
+	require.NoError(t, err)
+
+	fetched, err := service.FindDeliveryAttemptById(ctx, eventDelivery.UID, attempt.UID)
+	require.NoError(t, err)
+	require.True(t, fetched.RequestedAt.Valid)
+	require.False(t, fetched.RespondedAt.Valid)
+}
+
+func TestPartitionRoundTrip_PreservesRequestedAndRespondedAt(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db, ctx)
+	endpoint := seedEndpoint(t, db, ctx, project)
+	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
+
+	service := New(log.New("convoy", log.LevelError), db)
+
+	requestedAt := time.Now().UTC().Truncate(time.Millisecond)
+	respondedAt := requestedAt.Add(60 * time.Millisecond)
+
+	attempt := &datastore.DeliveryAttempt{
+		UID:              ulid.Make().String(),
+		URL:              "https://example.com/webhook",
+		Method:           "POST",
+		APIVersion:       "2023.12.25",
+		EndpointID:       endpoint.UID,
+		EventDeliveryId:  eventDelivery.UID,
+		ProjectId:        project.UID,
+		HttpResponseCode: "200",
+		Status:           true,
+		RequestedAt:      null.TimeFrom(requestedAt),
+		RespondedAt:      null.TimeFrom(respondedAt),
+	}
+	require.NoError(t, service.CreateDeliveryAttempt(ctx, attempt))
+
+	// Partition rebuild must carry the new columns over.
+	require.NoError(t, service.PartitionDeliveryAttemptsTable(ctx))
+
+	fetched, err := service.FindDeliveryAttemptById(ctx, eventDelivery.UID, attempt.UID)
+	require.NoError(t, err)
+	require.True(t, fetched.RequestedAt.Valid)
+	require.True(t, fetched.RespondedAt.Valid)
+	require.True(t, fetched.RequestedAt.Time.Equal(requestedAt))
+	require.True(t, fetched.RespondedAt.Time.Equal(respondedAt))
+
+	// Un-partition rebuild must also carry them over.
+	require.NoError(t, service.UnPartitionDeliveryAttemptsTable(ctx))
+
+	fetched, err = service.FindDeliveryAttemptById(ctx, eventDelivery.UID, attempt.UID)
+	require.NoError(t, err)
+	require.True(t, fetched.RequestedAt.Valid)
+	require.True(t, fetched.RespondedAt.Valid)
+	require.True(t, fetched.RequestedAt.Time.Equal(requestedAt))
+	require.True(t, fetched.RespondedAt.Time.Equal(respondedAt))
 }
 
 func TestCreateDeliveryAttempt_WithHeaders(t *testing.T) {

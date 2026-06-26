@@ -7696,6 +7696,12 @@
         "request_http_header": {
           "$ref": "#/definitions/datastore.HttpHeader"
         },
+        "requested_at": {
+          "type": "string"
+        },
+        "responded_at": {
+          "type": "string"
+        },
         "response_data": {
           "type": "string"
         },

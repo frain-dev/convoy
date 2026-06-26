@@ -16,10 +16,12 @@ const createDeliveryAttempt = `-- name: CreateDeliveryAttempt :exec
 
 INSERT INTO convoy.delivery_attempts (
     id, url, method, api_version, endpoint_id, event_delivery_id, project_id,
-    ip_address, request_http_header, response_http_header, http_status, response_data, error, status
+    ip_address, request_http_header, response_http_header, http_status, response_data, error, status,
+    requested_at, responded_at
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7,
-        $8, $9, $10, $11, $12, $13, $14)
+        $8, $9, $10, $11, $12, $13, $14,
+        $15, $16)
 `
 
 type CreateDeliveryAttemptParams struct {
@@ -37,6 +39,8 @@ type CreateDeliveryAttemptParams struct {
 	ResponseData       []byte
 	Error              pgtype.Text
 	Status             pgtype.Bool
+	RequestedAt        pgtype.Timestamptz
+	RespondedAt        pgtype.Timestamptz
 }
 
 // Delivery Attempts Queries
@@ -56,6 +60,8 @@ func (q *Queries) CreateDeliveryAttempt(ctx context.Context, arg CreateDeliveryA
 		arg.ResponseData,
 		arg.Error,
 		arg.Status,
+		arg.RequestedAt,
+		arg.RespondedAt,
 	)
 	return err
 }
@@ -76,6 +82,8 @@ SELECT
     response_data,
     error,
     status,
+    requested_at,
+    responded_at,
     created_at,
     updated_at,
     deleted_at
@@ -103,6 +111,8 @@ type FindDeliveryAttemptByIdRow struct {
 	ResponseData       []byte
 	Error              pgtype.Text
 	Status             pgtype.Bool
+	RequestedAt        pgtype.Timestamptz
+	RespondedAt        pgtype.Timestamptz
 	CreatedAt          pgtype.Timestamptz
 	UpdatedAt          pgtype.Timestamptz
 	DeletedAt          pgtype.Timestamptz
@@ -126,6 +136,8 @@ func (q *Queries) FindDeliveryAttemptById(ctx context.Context, arg FindDeliveryA
 		&i.ResponseData,
 		&i.Error,
 		&i.Status,
+		&i.RequestedAt,
+		&i.RespondedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -150,6 +162,8 @@ WITH att AS (
         response_data,
         error,
         status,
+        requested_at,
+        responded_at,
         created_at,
         updated_at,
         deleted_at
@@ -161,7 +175,7 @@ WITH att AS (
 SELECT
     id, url, method, api_version, endpoint_id, event_delivery_id, project_id,
     ip_address, request_http_header, response_http_header, http_status,
-    response_data, error, status, created_at, updated_at, deleted_at
+    response_data, error, status, requested_at, responded_at, created_at, updated_at, deleted_at
 FROM att ORDER BY created_at ASC
 `
 
@@ -180,6 +194,8 @@ type FindDeliveryAttemptsRow struct {
 	ResponseData       []byte
 	Error              pgtype.Text
 	Status             pgtype.Bool
+	RequestedAt        pgtype.Timestamptz
+	RespondedAt        pgtype.Timestamptz
 	CreatedAt          pgtype.Timestamptz
 	UpdatedAt          pgtype.Timestamptz
 	DeletedAt          pgtype.Timestamptz
@@ -210,6 +226,8 @@ func (q *Queries) FindDeliveryAttempts(ctx context.Context, eventDeliveryID pgty
 			&i.ResponseData,
 			&i.Error,
 			&i.Status,
+			&i.RequestedAt,
+			&i.RespondedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,

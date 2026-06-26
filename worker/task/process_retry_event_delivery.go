@@ -10,6 +10,7 @@ import (
 
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -351,7 +352,11 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			tracer.AddEvent(ctx, tracer.EventEventRetryDeliverySuccess, attributes)
 		}
 
-		attempt = parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
+		respondedAt := time.Time{}
+		if resp != nil && resp.StatusCode >= 100 {
+			respondedAt = httpDispatchStart.Add(duration)
+		}
+		attempt = parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus, httpDispatchStart, respondedAt)
 
 		eventDelivery.Metadata.NumTrials++
 
@@ -438,11 +443,15 @@ func newSignature(endpoint *datastore.Endpoint, g *datastore.Project, data json.
 	return s
 }
 
-func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {
+// parseAttemptFromResponse builds a delivery attempt record. requestedAt is the instant the
+// HTTP request was dispatched; respondedAt is the instant a response was received. respondedAt
+// is left null when no HTTP response came back (network error / timeout), so consumers can tell
+// a real response apart from a no-response failure.
+func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint, resp *net.Response, attemptStatus bool, requestedAt, respondedAt time.Time) datastore.DeliveryAttempt {
 	responseHeader := datastore.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
 	requestHeader := datastore.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
-	return datastore.DeliveryAttempt{
+	attempt := datastore.DeliveryAttempt{
 		UID:             ulid.Make().String(),
 		URL:             resp.URL.String(),
 		Method:          resp.Method,
@@ -462,4 +471,13 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
+
+	if !requestedAt.IsZero() {
+		attempt.RequestedAt = null.TimeFrom(requestedAt)
+	}
+	if !respondedAt.IsZero() {
+		attempt.RespondedAt = null.TimeFrom(respondedAt)
+	}
+
+	return attempt
 }

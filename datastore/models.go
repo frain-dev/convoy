@@ -1021,6 +1021,9 @@ type DeliveryAttempt struct {
 	Error  string `json:"error,omitempty" db:"error"`
 	Status bool   `json:"status,omitempty" db:"status"`
 
+	RequestedAt null.Time `json:"requested_at,omitempty" db:"requested_at" swaggertype:"string"`
+	RespondedAt null.Time `json:"responded_at,omitempty" db:"responded_at" swaggertype:"string"`
+
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
