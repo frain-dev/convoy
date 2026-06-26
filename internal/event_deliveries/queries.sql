@@ -21,7 +21,7 @@ VALUES (@id, @project_id, @event_id, @endpoint_id, @device_id, @subscription_id,
 
 -- name: UpdateEventDeliveryMetadata :exec
 UPDATE convoy.event_deliveries
-SET status = @status, metadata = @metadata, latency_seconds = @latency_seconds, updated_at = NOW()
+SET status = @status, metadata = @metadata, latency_seconds = @latency_seconds, description = @description, updated_at = NOW()
 WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL;
 
 -- name: UpdateStatusOfEventDeliveries :exec
@@ -72,11 +72,13 @@ LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ed.deleted_at IS NULL
   AND ed.id = @id AND ed.project_id = @project_id;
 
--- Slim variant: omits description and does not JOIN endpoint/event/source/device tables.
+-- Slim variant: does not JOIN endpoint/event/source/device tables. It still loads
+-- description so the worker's write-back via UpdateEventDeliveryMetadata stays
+-- faithful and does not clobber a stored description with an empty value.
 -- name: FindEventDeliveryByIDSlim :one
 SELECT
     id, project_id, event_id, subscription_id,
-    headers, attempts, status, metadata, cli_metadata,
+    headers, attempts, status, metadata, cli_metadata, description,
 	COALESCE(target_url, '') AS target_url,
     COALESCE(url_query_params, '') AS url_query_params,
     COALESCE(idempotency_key, '') AS idempotency_key,

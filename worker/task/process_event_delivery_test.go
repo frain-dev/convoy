@@ -1201,6 +1201,143 @@ func TestProcessEventDelivery(t *testing.T) {
 	}
 }
 
+func TestProcessEventDelivery_SyncsAsynqMaxRetryToRetryLimit(t *testing.T) {
+	cases := []struct {
+		name         string
+		retryLimit   uint64
+		wantMaxRetry int
+	}{
+		{
+			// Above asynq's default of 25: the configured value must win so the
+			// delivery is not silently capped at 25.
+			name:         "retry limit above asynq default is honored",
+			retryLimit:   30,
+			wantMaxRetry: 30,
+		},
+		{
+			// At or below the default: the budget is floored at 25 to preserve
+			// headroom for transient pre-dispatch errors. The configured count is
+			// still enforced by the NumTrials check.
+			name:         "retry limit below asynq default is floored",
+			retryLimit:   5,
+			wantMaxRetry: defaultAsynqMaxRetries,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			endpointRepo := mocks.NewMockEndpointRepository(ctrl)
+			projectRepo := mocks.NewMockProjectRepository(ctrl)
+			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+			q := mocks.NewMockQueuer(ctrl)
+			rateLimiter := mocks.NewMockRateLimiter(ctrl)
+			attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
+			licenser := mocks.NewMockLicenser(ctrl)
+			licenser.EXPECT().ProjectEnabled(gomock.Any()).Return(true).AnyTimes()
+			licenser.EXPECT().UseForwardProxy().Return(true).AnyTimes()
+			licenser.EXPECT().IpRules().Return(true).AnyTimes()
+			licenser.EXPECT().AdvancedEndpointMgmt().Return(false).AnyTimes()
+			licenser.EXPECT().CircuitBreaking().Return(false).AnyTimes()
+
+			require.NoError(t, config.LoadConfig("./testdata/Config/basic-convoy.json"))
+
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+			httpmock.RegisterResponder("POST", "https://google.com", httpmock.NewStringResponder(400, ``))
+
+			endpointRepo.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(&datastore.Endpoint{
+					UID:               "endpoint-id-1",
+					ProjectID:         "123",
+					Url:               "https://google.com",
+					RateLimit:         10,
+					RateLimitDuration: 60,
+					Secrets:           []datastore.Secret{{Value: "secret"}},
+					Status:            datastore.ActiveEndpointStatus,
+				}, nil)
+
+			rateLimiter.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+			msgRepo.EXPECT().FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(&datastore.EventDelivery{
+					UID:            "evt-del-1",
+					EndpointID:     "endpoint-id-1",
+					SubscriptionID: "sub-id-1",
+					ProjectID:      "123",
+					Metadata: &datastore.Metadata{
+						Data:            []byte(`{"event":"x"}`),
+						Raw:             `{"event":"x"}`,
+						NumTrials:       0,
+						RetryLimit:      tc.retryLimit,
+						IntervalSeconds: 20,
+					},
+					Status:       datastore.ScheduledEventStatus,
+					DeliveryMode: datastore.AtLeastOnceDeliveryMode,
+				}, nil)
+
+			projectRepo.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+				Return(&datastore.Project{
+					UID: "123",
+					Config: &datastore.ProjectConfig{
+						Signature: &datastore.SignatureConfiguration{
+							Header:   "X-Convoy-Signature",
+							Versions: []datastore.SignatureVersion{{UID: "abc", Hash: "SHA256", Encoding: datastore.HexEncoding}},
+						},
+						SSL:       &datastore.DefaultSSLConfig,
+						Strategy:  &datastore.StrategyConfiguration{Type: datastore.LinearStrategyProvider, Duration: 60, RetryCount: tc.retryLimit},
+						RateLimit: &datastore.DefaultRateLimitConfig,
+					},
+				}, nil)
+
+			msgRepo.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			attemptsRepo.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			msgRepo.EXPECT().UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+			var captured *queue.Job
+			q.EXPECT().Write(gomock.Any(), convoy.RetryEventProcessor, convoy.RetryEventQueue, gomock.Any()).
+				DoAndReturn(func(_ context.Context, _ convoy.TaskName, _ convoy.QueueName, job *queue.Job) error {
+					captured = job
+					return nil
+				}).Times(1)
+
+			dispatcher, err := net.NewDispatcher(
+				licenser,
+				fflag.NewFFlag([]string{string(fflag.IpRules)}),
+				net.LoggerOption(log.New("convoy", log.LevelInfo)),
+				net.BlockListOption([]string{"10.0.0.0/8"}),
+				net.ProxyOption("nil"),
+			)
+			require.NoError(t, err)
+
+			deps := EventDeliveryProcessorDeps{
+				EndpointRepo:      endpointRepo,
+				EventDeliveryRepo: msgRepo,
+				Licenser:          licenser,
+				ProjectRepo:       projectRepo,
+				Queue:             q,
+				RateLimiter:       rateLimiter,
+				Dispatcher:        dispatcher,
+				AttemptsRepo:      attemptsRepo,
+				FeatureFlag:       fflag.NewFFlag([]string{}),
+				Logger:            log.New("convoy", log.LevelInfo),
+			}
+
+			payload, err := json.Marshal(EventDelivery{EventDeliveryID: "evt-del-1", ProjectID: "123"})
+			require.NoError(t, err)
+			task := asynq.NewTask(string(convoy.EventProcessor), payload, asynq.Queue(string(convoy.EventQueue)))
+
+			require.NoError(t, ProcessEventDelivery(deps)(context.Background(), task))
+
+			require.NotNil(t, captured, "expected a retry job to be enqueued")
+			require.NotNil(t, captured.MaxRetry, "retry job should carry a synced asynq max retry")
+			assert.Equal(t, tc.wantMaxRetry, *captured.MaxRetry)
+		})
+	}
+}
+
 func TestProcessEventDeliveryConfig(t *testing.T) {
 	tt := []struct {
 		name                string

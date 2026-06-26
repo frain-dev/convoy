@@ -63,8 +63,11 @@ func (q *RedisQueue) Write(ctx context.Context, taskName convoy.TaskName, queueN
 	// span on the consumer side becomes a child of the producer's. No-op
 	// when ctx has no active span, so untraced callers stay zero-cost.
 	tracectx.InjectIntoJob(ctx, job)
-	t := asynq.NewTaskWithHeaders(string(taskName), job.Payload, job.Headers,
-		asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
+	opts := []asynq.Option{asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay)}
+	if job.MaxRetry != nil {
+		opts = append(opts, asynq.MaxRetry(*job.MaxRetry))
+	}
+	t := asynq.NewTaskWithHeaders(string(taskName), job.Payload, job.Headers, opts...)
 
 	// Optimization: Try to enqueue directly first (optimistic path)
 	// This reduces from 3 Redis calls to 1 in the common case (no duplicate)
@@ -96,8 +99,11 @@ func (q *RedisQueue) WriteWithoutTimeout(ctx context.Context, taskName convoy.Ta
 	}
 
 	tracectx.InjectIntoJob(ctx, job)
-	t := asynq.NewTaskWithHeaders(string(taskName), job.Payload, job.Headers,
-		asynq.Queue(s), asynq.TaskID(job.ID), asynq.Timeout(0), asynq.ProcessIn(job.Delay))
+	opts := []asynq.Option{asynq.Queue(s), asynq.TaskID(job.ID), asynq.Timeout(0), asynq.ProcessIn(job.Delay)}
+	if job.MaxRetry != nil {
+		opts = append(opts, asynq.MaxRetry(*job.MaxRetry))
+	}
+	t := asynq.NewTaskWithHeaders(string(taskName), job.Payload, job.Headers, opts...)
 
 	// Optimization: Try to enqueue directly first (optimistic path)
 	// This reduces from 3 Redis calls to 1 in the common case (no duplicate)
