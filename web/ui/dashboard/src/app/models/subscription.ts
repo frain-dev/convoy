@@ -18,6 +18,7 @@ export interface SUBSCRIPTION {
 	retry_config?: { type: string; retry_count: number; duration: number };
 	source_metadata?: SOURCE | null;
 	filter_config?: { event_types: string[]; filter: { headers: string; body: string } } | null;
+	delivery_mode?: 'at_least_once' | 'at_most_once';
 	active_menu?: boolean;
 	device_metadata: DEVICE;
 }

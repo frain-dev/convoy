@@ -8730,6 +8730,12 @@
           "request_http_header": {
             "$ref": "#/components/schemas/datastore.HttpHeader"
           },
+          "requested_at": {
+            "type": "string"
+          },
+          "responded_at": {
+            "type": "string"
+          },
           "response_data": {
             "type": "string"
           },

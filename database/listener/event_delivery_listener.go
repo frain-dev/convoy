@@ -40,6 +40,7 @@ type MetaEventDelivery struct {
 	Metadata        *datastore.Metadata           `json:"metadata"`
 	CLIMetadata     *datastore.CLIMetadata        `json:"cli_metadata"`
 	Description     string                        `json:"description,omitempty"`
+	AcknowledgedAt  null.Time                     `json:"acknowledged_at,omitempty"`
 	CreatedAt       time.Time                     `json:"created_at,omitempty"`
 	UpdatedAt       time.Time                     `json:"updated_at,omitempty"`
 	DeletedAt       null.Time                     `json:"deleted_at,omitempty"`
@@ -101,6 +102,7 @@ func getMetaEventDelivery(eventDelivery *datastore.EventDelivery) *MetaEventDeli
 		Metadata:       eventDelivery.Metadata,
 		CLIMetadata:    eventDelivery.CLIMetadata,
 		Description:    eventDelivery.Description,
+		AcknowledgedAt: eventDelivery.AcknowledgedAt,
 		CreatedAt:      eventDelivery.CreatedAt,
 		UpdatedAt:      eventDelivery.UpdatedAt,
 	}

@@ -197,6 +197,39 @@
       </div>
     }
 
+    @if (showConfig('delivery_mode')) {
+      <div class="border-l-2 border-neutral-3 pl-16px mb-40px">
+        <div class="flex justify-between items-start">
+          <div>
+            <h4 class="text-neutral-10 font-medium text-12 flex items-center">
+              Delivery Mode
+              <convoy-tooltip size="sm" position="top-right" class="ml-4px">
+                <p><span class="font-medium">At least once:</span> Convoy retries failed deliveries until the endpoint responds successfully or retries are exhausted.</p>
+                <p class="mt-8px"><span class="font-medium">At most once:</span> any HTTP response from the endpoint is final, so there is a single attempt. Convoy only retries when there is no HTTP response (for example a network error).</p>
+              </convoy-tooltip>
+            </h4>
+            <p class="text-12 text-neutral-8 mt-4px">Controls retry behaviour for this subscription.</p>
+          </div>
+          @if (action !== 'view') {
+            <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('delivery_mode')">
+              <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+                <use xlink:href="#delete-icon2"></use>
+              </svg>
+            </button>
+          }
+        </div>
+        <convoy-select
+          className="mb-0 mt-16px"
+          [options]="deliveryModeTypes"
+          name="delivery_mode"
+          formControlName="delivery_mode"
+          [value]="subscriptionForm.get('delivery_mode')?.value"
+          placeholder="Select delivery mode"
+          (selectedOption)="subscriptionForm.patchValue({ delivery_mode: $event })"
+        ></convoy-select>
+      </div>
+    }
+
     @if (shouldShowBorder < configurations.length) {
       <div class="flex flex-wrap items-center gap-24px">
         @for (config of configurations; track $index) {

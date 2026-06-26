@@ -3,10 +3,12 @@
 -- name: CreateDeliveryAttempt :exec
 INSERT INTO convoy.delivery_attempts (
     id, url, method, api_version, endpoint_id, event_delivery_id, project_id,
-    ip_address, request_http_header, response_http_header, http_status, response_data, error, status
+    ip_address, request_http_header, response_http_header, http_status, response_data, error, status,
+    requested_at, responded_at
 )
 VALUES (@id, @url, @method, @api_version, @endpoint_id, @event_delivery_id, @project_id,
-        @ip_address, @request_http_header, @response_http_header, @http_status, @response_data, @error, @status);
+        @ip_address, @request_http_header, @response_http_header, @http_status, @response_data, @error, @status,
+        @requested_at, @responded_at);
 
 -- name: FindDeliveryAttemptById :one
 SELECT
@@ -24,6 +26,8 @@ SELECT
     response_data,
     error,
     status,
+    requested_at,
+    responded_at,
     created_at,
     updated_at,
     deleted_at
@@ -48,6 +52,8 @@ WITH att AS (
         response_data,
         error,
         status,
+        requested_at,
+        responded_at,
         created_at,
         updated_at,
         deleted_at
@@ -59,7 +65,7 @@ WITH att AS (
 SELECT
     id, url, method, api_version, endpoint_id, event_delivery_id, project_id,
     ip_address, request_http_header, response_http_header, http_status,
-    response_data, error, status, created_at, updated_at, deleted_at
+    response_data, error, status, requested_at, responded_at, created_at, updated_at, deleted_at
 FROM att ORDER BY created_at ASC;
 
 -- name: SoftDeleteProjectDeliveryAttempts :execresult
