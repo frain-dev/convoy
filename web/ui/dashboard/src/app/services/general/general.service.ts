@@ -147,6 +147,21 @@ export class GeneralService {
 				break;
 		}
 
+		// Response bodies and error text arrive as raw strings (already
+		// JSON-encoded by the endpoint, or a plain message). Running
+		// JSON.stringify on a string double-encodes it (wraps in quotes, escapes
+		// inner quotes), so parse it first and only pretty-print when it is valid
+		// JSON; otherwise show the raw string as-is.
+		if ((type === 'res_body' || type === 'error') && typeof data === 'string') {
+			const raw = data.trim();
+			if (!raw) return displayMessage;
+			try {
+				return JSON.stringify(JSON.parse(raw), null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			} catch {
+				return data;
+			}
+		}
+
 		if (data) return JSON.stringify(data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		return displayMessage;
 	}
