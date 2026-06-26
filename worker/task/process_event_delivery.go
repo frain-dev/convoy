@@ -34,6 +34,11 @@ const (
 	errMutualTLSFeatureUnavailable = "mutual TLS feature unavailable, please upgrade your license"
 )
 
+// defaultAsynqMaxRetries mirrors asynq's built-in default max retry count
+// (asynq.DefaultMaxRetry, which the library does not export). The retry-queue
+// task's asynq retry budget is never set below this value.
+const defaultAsynqMaxRetries = 25
+
 var errEndpointURLTemplateTargetMissing = errors.New("endpoint URL template requires a concrete target URL")
 
 func resolveEventDeliveryTargetURL(endpoint *datastore.Endpoint, eventDelivery *datastore.EventDelivery) (string, error) {
@@ -83,6 +88,10 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		var data EventDelivery
 		var delayDuration time.Duration
+		// retryLimit caps how many times asynq retries the retry-queue task. It
+		// stays nil until the event delivery is loaded; early failures fall back
+		// to asynq's default budget.
+		var retryLimit *int
 
 		defer func() {
 			// retrieve the value of err
@@ -98,9 +107,10 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			}
 
 			job := &queue.Job{
-				Payload: t.Payload(),
-				Delay:   delayDuration,
-				ID:      data.EventDeliveryID,
+				Payload:  t.Payload(),
+				Delay:    delayDuration,
+				ID:       data.EventDeliveryID,
+				MaxRetry: retryLimit,
 			}
 
 			// write it to the retry queue.
@@ -134,6 +144,21 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			return &DeliveryError{Err: err}
 		}
 		eventDelivery.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
+
+		// Sync the retry-queue task's asynq retry budget with the configured retry
+		// limit so large limits are not silently capped at asynq's default of 25.
+		// We only ever raise the budget, never lower it: limits at or below the
+		// default are already enforced by the NumTrials check below, and keeping
+		// the default budget preserves headroom for transient pre-dispatch errors.
+		// Those return an EndpointError that consumes an asynq retry without
+		// advancing NumTrials, so a tighter budget could archive the task before
+		// the configured attempts run. Rate-limit and circuit-breaker errors are
+		// excluded from this budget by the consumer's IsFailure policy.
+		rl := int(eventDelivery.Metadata.RetryLimit)
+		if rl < defaultAsynqMaxRetries {
+			rl = defaultAsynqMaxRetries
+		}
+		retryLimit = &rl
 
 		delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
