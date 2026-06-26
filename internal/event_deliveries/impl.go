@@ -280,6 +280,7 @@ func (s *Service) UpdateEventDeliveryMetadata(ctx context.Context, projectID str
 		Status:         common.StringToPgText(string(delivery.Status)),
 		Metadata:       metadataToJSONB(delivery.Metadata),
 		LatencySeconds: float64ToNumeric(delivery.LatencySeconds),
+		Description:    common.StringToPgText(delivery.Description),
 		ID:             common.StringToPgTextNullable(delivery.UID),
 		ProjectID:      common.StringToPgTextNullable(projectID),
 	}

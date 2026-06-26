@@ -448,6 +448,9 @@ func TestFindEventDeliveryByIDSlim(t *testing.T) {
 		require.Equal(t, delivery.ProjectID, found.ProjectID)
 		require.Equal(t, delivery.EventID, found.EventID)
 
+		// Slim still loads description so write-backs do not clobber it.
+		require.Equal(t, delivery.Description, found.Description)
+
 		// Slim should NOT have JOINed metadata
 		require.Nil(t, found.Endpoint)
 		require.Nil(t, found.Event)
@@ -704,6 +707,22 @@ func TestUpdateEventDeliveryMetadata(t *testing.T) {
 		require.Equal(t, uint64(5), found.Metadata.RetryLimit)
 		require.Equal(t, uint64(120), found.Metadata.IntervalSeconds)
 		require.InDelta(t, 1.5, found.LatencySeconds, 0.01)
+	})
+
+	t.Run("PersistsDescription", func(t *testing.T) {
+		delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+
+		delivery.Status = datastore.FailureEventStatus
+		delivery.Description = "Retry limit exceeded"
+		delivery.Metadata = &datastore.Metadata{NumTrials: 5, RetryLimit: 5, IntervalSeconds: 1}
+
+		require.NoError(t, service.UpdateEventDeliveryMetadata(ctx, project.UID, delivery))
+
+		found, err := service.FindEventDeliveryByID(ctx, project.UID, delivery.UID)
+		require.NoError(t, err)
+		require.Equal(t, datastore.FailureEventStatus, found.Status)
+		require.Equal(t, "Retry limit exceeded", found.Description)
 	})
 }
 

@@ -143,7 +143,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
 			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
-			EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
+			Description: r.Description, EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
 			DeliveryMode: r.DeliveryMode,
 			CreatedAt:    r.CreatedAt, UpdatedAt: r.UpdatedAt, AcknowledgedAt: r.AcknowledgedAt,
 		}), nil
