@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
@@ -32,6 +33,8 @@ type Client struct {
 	validatePath string
 	timeout      time.Duration
 	retryCount   int
+	version      string
+	deploymentID string
 	httpClient   *http.Client
 	logger       log.Logger
 }
@@ -42,6 +45,11 @@ type Config struct {
 	ValidatePath string
 	Timeout      time.Duration
 	RetryCount   int
+	// Version is sent with validation requests; defaults to convoy.GetVersion() when empty.
+	Version string
+	// DeploymentID is the instance configuration UID sent with validation
+	// requests; empty when configuration is unavailable.
+	DeploymentID string
 	Logger       log.Logger
 }
 
@@ -72,12 +80,17 @@ func NewClient(cfg Config) *Client {
 	if cfg.RetryCount == 0 {
 		cfg.RetryCount = DefaultRetryCount
 	}
+	if cfg.Version == "" {
+		cfg.Version = convoy.GetVersion()
+	}
 
 	return &Client{
 		host:         cfg.Host,
 		validatePath: cfg.ValidatePath,
 		timeout:      cfg.Timeout,
 		retryCount:   cfg.RetryCount,
+		version:      cfg.Version,
+		deploymentID: cfg.DeploymentID,
 		httpClient: &http.Client{
 			Timeout:   cfg.Timeout,
 			Transport: otelhttp.NewTransport(http.DefaultTransport),
@@ -93,7 +106,9 @@ func (c *Client) ValidateLicense(ctx context.Context, licenseKey string) (*Licen
 	}
 
 	reqBody := ValidateLicenseRequest{
-		LicenseKey: licenseKey,
+		LicenseKey:   licenseKey,
+		Version:      c.version,
+		DeploymentID: c.deploymentID,
 	}
 
 	jsonData, err := json.Marshal(reqBody)

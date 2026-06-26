@@ -6,9 +6,12 @@ import (
 	"time"
 )
 
-// ValidateLicenseRequest represents the request to validate a license
+// ValidateLicenseRequest represents the request to validate a license.
+// Version and DeploymentID are optional request metadata and are omitted when empty.
 type ValidateLicenseRequest struct {
-	LicenseKey string `json:"license_key"`
+	LicenseKey   string `json:"license_key"`
+	Version      string `json:"version,omitempty"`
+	DeploymentID string `json:"deployment_id,omitempty"`
 }
 
 // LicenseValidationResponse represents the response from the license service
