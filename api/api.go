@@ -870,7 +870,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 			rq := a.A.Queue.(*redisqueue.RedisQueue)
 			asynqRouter.Group(func(embedRouter chi.Router) {
-				embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.Cache)))
+				embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.Redis, handler.A.Cache)))
 				embedRouter.Handle("/monitoring/embed/*", rq.MonitorWithRootPath("/queue/monitoring/embed"))
 			})
 			asynqRouter.Group(func(monitorRouter chi.Router) {

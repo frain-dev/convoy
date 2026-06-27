@@ -350,11 +350,11 @@ func RequireAuth(logger log.Logger) func(next http.Handler) http.Handler {
 }
 
 // RequireQueueSessionCookie allows only a valid convoy_queue_session cookie (dashboard iframe at /queue/monitoring/embed).
-func RequireQueueSessionCookie(validateCookie func(string) bool) func(next http.Handler) http.Handler {
+func RequireQueueSessionCookie(validateCookie func(context.Context, string) bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("convoy_queue_monitoring_session")
-			if err != nil || !validateCookie(cookie.Value) {
+			if err != nil || !validateCookie(r.Context(), cookie.Value) {
 				_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
 				return
 			}
