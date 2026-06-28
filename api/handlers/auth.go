@@ -234,6 +234,8 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 			default:
 				errMsg = "Invalid credentials"
 			}
+		} else {
+			errMsg = "Authentication failed"
 		}
 
 		_ = render.Render(w, r, util.NewErrorResponse(errMsg, http.StatusForbidden))
