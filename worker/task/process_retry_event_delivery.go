@@ -115,7 +115,11 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
-		if deps.FeatureFlag.CanAccessFeature(fflag.CircuitBreaker) && deps.Licenser.CircuitBreaking() {
+		// Same enablement gate as the primary delivery path: license + live per-org
+		// enablement via the shared resolver. The manager is always constructed now;
+		// the nil-guard is defensive and && short-circuits the cached lookup.
+		if deps.Licenser.CircuitBreaking() && deps.CircuitBreakerManager != nil &&
+			deps.CBEnablement != nil && deps.CBEnablement.EnabledForOrg(ctx, project.OrganisationID) {
 			breakerErr := deps.CircuitBreakerManager.CanExecute(ctx, endpoint.UID)
 			if breakerErr != nil {
 				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryCircuitBreaker, attributes)

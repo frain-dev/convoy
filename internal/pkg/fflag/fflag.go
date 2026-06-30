@@ -181,6 +181,10 @@ type FeatureFlagOverrideInfo struct {
 type FeatureFlagFetcher interface {
 	FetchFeatureFlag(ctx context.Context, key string) (*FeatureFlagInfo, error)
 	FetchFeatureFlagOverride(ctx context.Context, ownerType, ownerID, featureFlagID string) (*FeatureFlagOverrideInfo, error)
+	// AnyEnabledOverride reports whether any owner has an enabled override for the
+	// given feature flag id. Used to decide whether instance-wide background work
+	// (e.g. the circuit breaker sampler) must run even when the instance default is off.
+	AnyEnabledOverride(ctx context.Context, featureFlagID string) (bool, error)
 }
 
 // EarlyAdopterFeatureInfo contains early adopter feature information from the database

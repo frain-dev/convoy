@@ -189,6 +189,10 @@ definitions:
       events:
         type: integer
       failure_rate:
+        description: |-
+          FailureRate is the circuit breaker's rolling failure rate for this endpoint.
+          It is a pointer so the API can return null when no rate was computed (circuit
+          breaker feature off, or sampler not running), distinct from a genuine 0%.
         type: number
       http_timeout:
         type: integer
@@ -1286,6 +1290,10 @@ definitions:
       events:
         type: integer
       failure_rate:
+        description: |-
+          FailureRate is the circuit breaker's rolling failure rate for this endpoint.
+          It is a pointer so the API can return null when no rate was computed (circuit
+          breaker feature off, or sampler not running), distinct from a genuine 0%.
         type: number
       http_timeout:
         type: integer

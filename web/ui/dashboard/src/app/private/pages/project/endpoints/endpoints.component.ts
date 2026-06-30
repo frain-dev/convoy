@@ -68,6 +68,10 @@ export class EndpointsComponent implements OnInit {
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
 	endpointsTableHead = ['Name', 'Status', 'Url', 'ID', '', '', ''];
+	// Failure Rate is the circuit breaker's rolling rate over the project's
+	// observability window (minutes), not an all-time rate. Default mirrors the
+	// server default when a project has no explicit circuit_breaker config.
+	failureRateWindow = 5;
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
@@ -80,6 +84,10 @@ export class EndpointsComponent implements OnInit {
 	action: 'create' | 'update' = 'create';
 	userSearch = false;
 	endpointURLTemplatesFeatureEnabled = false;
+	// Mirrors the backend's org-scoped circuit-breaker feature flag. The Failure Rate
+	// column is only meaningful when this is enabled (and licensed); otherwise the
+	// backend never computes a rate and the column would show a misleading 0%.
+	circuitBreakerFeatureEnabled = false;
 	private featureFlagReady?: Promise<void>;
 
 	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute, public licenseService: LicensesService, private settingsService: SettingsService) {}
@@ -90,10 +98,34 @@ export class EndpointsComponent implements OnInit {
 			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
 			this.endpointDialog.nativeElement.showModal();
 		}
-		this.endpointsTableHead[4] = this.licenseService.hasLicense('CircuitBreaking') ? 'Failure Rate' : '';
+		this.failureRateWindow = this.privateService.getProjectDetails?.config?.circuit_breaker?.observability_window || 5;
+		this.updateFailureRateColumnHeader();
 
 		this.featureFlagReady = this.checkEndpointURLTemplatesFeatureFlag();
+		this.checkCircuitBreakerFeatureFlag();
 		this.getEndpoints();
+	}
+
+	async checkCircuitBreakerFeatureFlag() {
+		// The Failure Rate column requires the org-scoped circuit-breaker flag, mirroring
+		// the backend read gate (CanAccessOrgFeature). Without it the backend returns a
+		// null rate, so showing the column would surface a misleading 0%. Fail closed
+		// (hide the column) on any error.
+		const org = localStorage.getItem('CONVOY_ORG');
+		if (!org) return;
+		try {
+			const response = await this.settingsService.getOrganisationFeatureFlags({ org_id: JSON.parse(org).uid });
+			const featureFlags = response.data || {};
+			this.circuitBreakerFeatureEnabled = featureFlags['circuit-breaker'] || false;
+		} catch {
+			this.circuitBreakerFeatureEnabled = false;
+		}
+		this.updateFailureRateColumnHeader();
+	}
+
+	private updateFailureRateColumnHeader() {
+		const show = this.licenseService.hasLicense('CircuitBreaking') && this.circuitBreakerFeatureEnabled;
+		this.endpointsTableHead[4] = show ? `Failure Rate (last ${this.failureRateWindow}m)` : '';
 	}
 
 	async checkEndpointURLTemplatesFeatureFlag() {

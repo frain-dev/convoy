@@ -7,6 +7,10 @@ interface FeatureFlag {
 	uid: string;
 	feature_key: string;
 	enabled: boolean;
+	// env_enabled is true when the flag is forced on instance-wide via
+	// CONVOY_ENABLE_FEATURE_FLAG. When true, this page's toggle is not the
+	// authoritative instance default.
+	env_enabled?: boolean;
 	created_at?: string;
 	updated_at?: string;
 }
@@ -100,6 +104,14 @@ export class FeatureFlagsComponent implements OnInit {
 
 	getCircuitBreakerFlag(): FeatureFlag | undefined {
 		return this.featureFlags.find(flag => flag.feature_key === 'circuit-breaker');
+	}
+
+	// Tells the admin which source is authoritative for the instance default.
+	getFeatureFlagSourceHint(featureFlag: FeatureFlag): string {
+		if (featureFlag.env_enabled) {
+			return 'Enabled instance-wide via CONVOY_ENABLE_FEATURE_FLAG (the default for all orgs). Per-org overrides still apply. Remove it from the environment to manage the instance default here.';
+		}
+		return 'Controlled here (live); org overrides apply.';
 	}
 
 	getOtherFeatureFlags(): FeatureFlag[] {

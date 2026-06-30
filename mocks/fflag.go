@@ -17,6 +17,7 @@ var (
 type MockFeatureFlagFetcher struct {
 	FetchFeatureFlagFunc         func(ctx context.Context, key string) (*fflag.FeatureFlagInfo, error)
 	FetchFeatureFlagOverrideFunc func(ctx context.Context, ownerType, ownerID, featureFlagID string) (*fflag.FeatureFlagOverrideInfo, error)
+	AnyEnabledOverrideFunc       func(ctx context.Context, featureFlagID string) (bool, error)
 }
 
 // FetchFeatureFlag calls the mock function if set, otherwise returns an error
@@ -33,6 +34,14 @@ func (m *MockFeatureFlagFetcher) FetchFeatureFlagOverride(ctx context.Context, o
 		return m.FetchFeatureFlagOverrideFunc(ctx, ownerType, ownerID, featureFlagID)
 	}
 	return nil, ErrOverrideNotFound
+}
+
+// AnyEnabledOverride calls the mock function if set, otherwise reports no enabled override
+func (m *MockFeatureFlagFetcher) AnyEnabledOverride(ctx context.Context, featureFlagID string) (bool, error) {
+	if m.AnyEnabledOverrideFunc != nil {
+		return m.AnyEnabledOverrideFunc(ctx, featureFlagID)
+	}
+	return false, nil
 }
 
 // NewMockFeatureFlagFetcher returns a simple mock fetcher that returns "not found" for everything

@@ -94,8 +94,12 @@
                   </div>
                 </td>
                 <td convoy-table-cell>
-                  @if (licenseService.hasLicense('CircuitBreaking')) {
-                    <span>{{ endpoint.failure_rate | number }}%</span>
+                  @if (licenseService.hasLicense('CircuitBreaking') && circuitBreakerFeatureEnabled) {
+                    @if (endpoint.failure_rate === null || endpoint.failure_rate === undefined) {
+                      <span title="No failure rate computed yet. Circuit breaking must be enabled on your workers and recent deliveries must exist.">—</span>
+                    } @else {
+                      <span [title]="'Failure rate over the last ' + failureRateWindow + ' minutes, used for circuit breaking. This is the recent rate, not the all-time failure rate.'">{{ endpoint.failure_rate | number }}%</span>
+                    }
                   }
                 </td>
                 <td convoy-table-cell></td>

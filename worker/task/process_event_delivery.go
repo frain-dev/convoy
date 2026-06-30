@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/notifications"
+	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -72,6 +73,7 @@ type EventDeliveryProcessorDeps struct {
 	Dispatcher                 *net.Dispatcher
 	AttemptsRepo               datastore.DeliveryAttemptsRepository
 	CircuitBreakerManager      *circuit_breaker.CircuitBreakerManager
+	CBEnablement               *cbenablement.Resolver
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
@@ -208,7 +210,13 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
-		if deps.FeatureFlag.CanAccessFeature(fflag.CircuitBreaker) && deps.Licenser.CircuitBreaking() {
+		// Enforcement is gated by the same resolver as the sampler and display:
+		// license + live enablement for this org (env folded into the instance base,
+		// per-org override wins). The manager is always constructed now, so the
+		// nil-guard is defensive (e.g. tests that omit it). && short-circuits so the
+		// cached resolver lookup only runs when the license is present.
+		if deps.Licenser.CircuitBreaking() && deps.CircuitBreakerManager != nil &&
+			deps.CBEnablement != nil && deps.CBEnablement.EnabledForOrg(ctx, project.OrganisationID) {
 			breakerErr := deps.CircuitBreakerManager.CanExecute(ctx, endpoint.UID)
 			if breakerErr != nil {
 				tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)

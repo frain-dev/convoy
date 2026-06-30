@@ -14,7 +14,7 @@ export interface ENDPOINT {
 	uid: string;
 	title: string;
 	advanced_signatures: boolean;
-	failure_rate: number;
+	failure_rate: number | null;
 	authentication: {
 		type?: 'api_key' | 'oauth2' | 'basic_auth';
 		api_key?: { header_value: string; header_name: string };

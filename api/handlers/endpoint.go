@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	endpointsvc "github.com/frain-dev/convoy/internal/endpoints"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
 	convoynet "github.com/frain-dev/convoy/net"
@@ -264,8 +264,11 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	circuitBreakerEnabled := h.A.FFlag.CanAccessOrgFeature(
-		r.Context(), fflag.CircuitBreaker, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, project.OrganisationID)
+	// Display gate routes through the same resolver semantics as the sampler and
+	// enforcement (env folded into the instance base, per-org override wins), so the
+	// failure_rate column never disagrees with whether rates are actually computed.
+	circuitBreakerEnabled := cbenablement.EnabledForOrg(
+		r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, project.OrganisationID)
 	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 {
 		// fetch keys from redis and mutate endpoints slice
 		keys := make([]string, len(endpoints))
@@ -289,7 +292,8 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 					if innerErr != nil {
 						continue
 					}
-					endpoints[i].FailureRate = c.FailureRate
+					rate := c.FailureRate
+					endpoints[i].FailureRate = &rate
 				}
 			}
 		}

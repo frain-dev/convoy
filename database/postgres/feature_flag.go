@@ -48,6 +48,13 @@ const (
 	SELECT * FROM convoy.feature_flag_overrides
 	WHERE feature_flag_id = $1;
 	`
+
+	anyEnabledOverrideByFeatureFlag = `
+	SELECT EXISTS(
+		SELECT 1 FROM convoy.feature_flag_overrides
+		WHERE feature_flag_id = $1 AND enabled = true
+	);
+	`
 )
 
 // FetchFeatureFlagByKey fetches a feature flag by its key
@@ -123,6 +130,17 @@ func LoadFeatureFlagOverridesByFeatureFlag(ctx context.Context, db database.Data
 	}
 
 	return overrides, nil
+}
+
+// AnyEnabledOverride reports whether any owner has an enabled override for the feature flag.
+func AnyEnabledOverride(ctx context.Context, db database.Database, featureFlagID string) (bool, error) {
+	var exists bool
+	err := db.GetDB().QueryRowxContext(ctx, anyEnabledOverrideByFeatureFlag, featureFlagID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
 
 const (

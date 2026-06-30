@@ -448,10 +448,13 @@ type Endpoint struct {
 	Events         int64                   `json:"events,omitempty" db:"event_count"`
 	Authentication *EndpointAuthentication `json:"authentication" db:"authentication"`
 
-	RateLimit         int     `json:"rate_limit" db:"rate_limit"`
-	RateLimitDuration uint64  `json:"rate_limit_duration" db:"rate_limit_duration"`
-	ContentType       string  `json:"content_type" db:"content_type"`
-	FailureRate       float64 `json:"failure_rate" db:"-"`
+	RateLimit         int    `json:"rate_limit" db:"rate_limit"`
+	RateLimitDuration uint64 `json:"rate_limit_duration" db:"rate_limit_duration"`
+	ContentType       string `json:"content_type" db:"content_type"`
+	// FailureRate is the circuit breaker's rolling failure rate for this endpoint.
+	// It is a pointer so the API can return null when no rate was computed (circuit
+	// breaker feature off, or sampler not running), distinct from a genuine 0%.
+	FailureRate *float64 `json:"failure_rate" db:"-"`
 
 	// mTLS client certificate configuration
 	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty" db:"mtls_client_cert"`
@@ -1671,6 +1674,10 @@ type FeatureFlag struct {
 	Enabled    bool      `json:"enabled" db:"enabled"`
 	CreatedAt  time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt  time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	// EnvEnabled is transient (not persisted): whether this flag is forced on
+	// instance-wide via CONVOY_ENABLE_FEATURE_FLAG. Surfaced to the admin UI so it
+	// can show which source is authoritative for the instance default.
+	EnvEnabled bool `json:"env_enabled" db:"-"`
 }
 
 type FeatureFlagOverride struct {
