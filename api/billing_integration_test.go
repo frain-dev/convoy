@@ -149,7 +149,7 @@ func (s *BillingIntegrationTestSuite) Test_GetBillingConfigHidesActiveCheckoutFo
 	require.NotContains(s.T(), selfHosted, "external_id")
 }
 
-func (s *BillingIntegrationTestSuite) Test_GetBillingConfigHidesActiveCheckoutForSelfHostedOrganisationAdmin() {
+func (s *BillingIntegrationTestSuite) Test_GetBillingConfigIncludesActiveCheckoutForSelfHostedOrganisationAdmin() {
 	originalCfg := s.ConvoyApp.A.Cfg
 	cfg := s.ConvoyApp.A.Cfg
 	cfg.Billing.APIKey = ""
@@ -178,12 +178,16 @@ func (s *BillingIntegrationTestSuite) Test_GetBillingConfigHidesActiveCheckoutFo
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(s.T(), err)
 
+	// Self-hosted is single-tenant, so an org admin manages instance billing and must
+	// see the active checkout to resume or replace it (same as an instance admin).
 	data := response["data"].(map[string]interface{})
 	selfHosted := data["self_hosted"].(map[string]interface{})
-	require.NotContains(s.T(), selfHosted, "active_checkout")
-	require.NotContains(s.T(), selfHosted, "active_checkout_attempt_id")
-	require.NotContains(s.T(), selfHosted, "checkout_id")
-	require.NotContains(s.T(), selfHosted, "external_id")
+	activeCheckout := selfHosted["active_checkout"].(map[string]interface{})
+	require.Equal(s.T(), "attempt-active", activeCheckout["attempt_id"])
+	require.Equal(s.T(), "checkout-active", activeCheckout["checkout_id"])
+	require.Equal(s.T(), "https://checkout.example.test/session", activeCheckout["checkout_url"])
+	require.Equal(s.T(), "checkout-active", selfHosted["checkout_id"])
+	require.Equal(s.T(), "external-active", selfHosted["external_id"])
 }
 
 func (s *BillingIntegrationTestSuite) Test_GetBillingConfigIncludesActiveCheckoutForInstanceAdmin() {
