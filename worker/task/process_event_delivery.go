@@ -213,10 +213,10 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		// Enforcement is gated by the same resolver as the sampler and display:
 		// license + live enablement for this org (env folded into the instance base,
 		// per-org override wins). The manager is always constructed now, so the
-		// nil-guard is defensive (e.g. tests that omit it). && short-circuits so the
-		// cached resolver lookup only runs when the license is present.
-		if deps.Licenser.CircuitBreaking() && deps.CircuitBreakerManager != nil &&
-			deps.CBEnablement != nil && deps.CBEnablement.EnabledForOrg(ctx, project.OrganisationID) {
+		// nil-guards are defensive (e.g. tests that omit them). They run first so the
+		// licenser and cached resolver lookups only happen when CB wiring is present.
+		if deps.CircuitBreakerManager != nil && deps.CBEnablement != nil &&
+			deps.Licenser.CircuitBreaking() && deps.CBEnablement.EnabledForOrg(ctx, project.OrganisationID) {
 			breakerErr := deps.CircuitBreakerManager.CanExecute(ctx, endpoint.UID)
 			if breakerErr != nil {
 				tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)

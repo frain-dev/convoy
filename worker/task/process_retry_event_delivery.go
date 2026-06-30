@@ -117,9 +117,10 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 
 		// Same enablement gate as the primary delivery path: license + live per-org
 		// enablement via the shared resolver. The manager is always constructed now;
-		// the nil-guard is defensive and && short-circuits the cached lookup.
-		if deps.Licenser.CircuitBreaking() && deps.CircuitBreakerManager != nil &&
-			deps.CBEnablement != nil && deps.CBEnablement.EnabledForOrg(ctx, project.OrganisationID) {
+		// the nil-guards are defensive and run first so the licenser and cached
+		// resolver lookups only happen when CB wiring is present.
+		if deps.CircuitBreakerManager != nil && deps.CBEnablement != nil &&
+			deps.Licenser.CircuitBreaking() && deps.CBEnablement.EnabledForOrg(ctx, project.OrganisationID) {
 			breakerErr := deps.CircuitBreakerManager.CanExecute(ctx, endpoint.UID)
 			if breakerErr != nil {
 				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryCircuitBreaker, attributes)
