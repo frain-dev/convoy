@@ -12,11 +12,12 @@
       <div class="flex items-start justify-between">
         <div class="flex-1 mr-24px">
           <label convoy-label>{{ getFeatureFlagDisplayName(getCircuitBreakerFlag()!.feature_key) }}</label>
+          <p class="text-10 text-neutral-11 mt-4px">{{ getFeatureFlagSourceHint(getCircuitBreakerFlag()!) }}</p>
         </div>
         <convoy-toggle
-          [isChecked]="getCircuitBreakerFlag()!.enabled"
+          [isChecked]="getCircuitBreakerFlag()!.enabled || !!getCircuitBreakerFlag()!.env_enabled"
           [name]="'feature-flag-enabled-circuit-breaker'"
-          [className]="isUpdatingFeatureFlag ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+          [className]="(isUpdatingFeatureFlag || getCircuitBreakerFlag()!.env_enabled) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
           (onChange)="toggleFeatureFlag(getCircuitBreakerFlag()!, $event)"
         ></convoy-toggle>
       </div>

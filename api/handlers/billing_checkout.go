@@ -69,7 +69,11 @@ func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request
 		// Same resolver the start handler uses, so the UI's Resubscribe label cannot
 		// disagree with whether a license_key is actually sent to Overwatch.
 		selfHosted["resubscribe"] = config.ResolveCheckoutLicenseKey(instanceBilling.CheckoutLicenseKey, instanceBilling.LicenseKey, instanceBilling.LicenseKeySource) != ""
-		if h.isInstanceAdmin(r) {
+		// Expose active checkout details to whoever may manage self-hosted billing
+		// (instance admin, or an org admin in self-hosted mode) so they can resume or
+		// replace it. canManageSelfHostedBilling returns false for non-instance-admins
+		// in cloud, so cloud visibility is unchanged.
+		if h.canManageSelfHostedBilling(r) {
 			activeAttempt, hasActiveAttempt := instanceBilling.CheckoutAttempts[instanceBilling.ActiveCheckoutAttemptID]
 			selfHosted["active_checkout_attempt_id"] = instanceBilling.ActiveCheckoutAttemptID
 			selfHosted["checkout_id"] = instanceBilling.CheckoutID

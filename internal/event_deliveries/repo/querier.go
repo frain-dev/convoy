@@ -11,6 +11,11 @@ import (
 )
 
 type Querier interface {
+	// CountDeliveriesByEndpointAndStatus returns per-endpoint counts for the given
+	// statuses over a date range. Used to compute the period (history) failure rate
+	// for the endpoints list and the per-endpoint reliability view. Restricted to the
+	// caller's status set so it stays index-friendly.
+	CountDeliveriesByEndpointAndStatus(ctx context.Context, arg CountDeliveriesByEndpointAndStatusParams) ([]CountDeliveriesByEndpointAndStatusRow, error)
 	// ============================================================================
 	// Group 3: Count Operations
 	// ============================================================================

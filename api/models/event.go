@@ -239,6 +239,13 @@ func getSourceIDs(r *http.Request) []string {
 	return sources
 }
 
+// GetSearchParams parses startDate/endDate query params into SearchParams, defaulting
+// to the last 7 days when absent. Exported so handlers that need range-scoped reads
+// (e.g. the endpoint period failure rate) share one date-handling path.
+func GetSearchParams(r *http.Request) (datastore.SearchParams, error) {
+	return getSearchParams(r)
+}
+
 func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 	var searchParams datastore.SearchParams
 	format := "2006-01-02T15:04:05"

@@ -321,6 +321,41 @@ func (s *Service) CountEventDeliveries(ctx context.Context, projectID string, en
 	return common.PgInt8ToInt64(count), nil
 }
 
+func (s *Service) CountDeliveriesByEndpointAndStatus(ctx context.Context, projectID string, endpointIDs []string,
+	statuses []datastore.EventDeliveryStatus, params datastore.SearchParams) ([]datastore.EndpointStatusDeliveryCount, error) {
+	if len(endpointIDs) == 0 || len(statuses) == 0 {
+		return nil, nil
+	}
+
+	start, end := getCreatedDateFilter(params.CreatedAtStart, params.CreatedAtEnd)
+
+	statusStrings := make([]string, len(statuses))
+	for i, st := range statuses {
+		statusStrings[i] = string(st)
+	}
+
+	rows, err := s.repo.CountDeliveriesByEndpointAndStatus(ctx, repo.CountDeliveriesByEndpointAndStatusParams{
+		ProjectID:   common.StringToPgText(projectID),
+		EndpointIds: endpointIDs,
+		Statuses:    statusStrings,
+		StartDate:   common.TimeToPgTimestamptz(start),
+		EndDate:     common.TimeToPgTimestamptz(end),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]datastore.EndpointStatusDeliveryCount, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, datastore.EndpointStatusDeliveryCount{
+			EndpointID: common.PgTextToString(row.EndpointID),
+			Status:     datastore.EventDeliveryStatus(row.Status),
+			Count:      common.PgInt8ToInt64(row.Count),
+		})
+	}
+	return out, nil
+}
+
 func (s *Service) DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
 	start, end := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
 

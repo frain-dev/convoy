@@ -83,7 +83,7 @@ func (h *BillingHandler) requireSelfHostedBillingAdmin(w http.ResponseWriter, r 
 		return true
 	}
 
-	_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required to manage self-hosted billing", http.StatusForbidden))
+	_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: organisation admin or instance admin access required to manage self-hosted billing", http.StatusForbidden))
 	return false
 }
 
@@ -101,34 +101,12 @@ func (h *BillingHandler) canManageSelfHostedBilling(r *http.Request) bool {
 		return false
 	}
 
-	// Self-hosted billing is instance-global, so it is instance-admin only.
-	// Bootstrap policy (fail closed once configured): before any instance admin
-	// exists, allow an organisation admin so a fresh instance can buy its first
-	// license without a separate promotion step. In single-user mode the caller
-	// is already an instance admin (org members are auto-promoted), so this path
-	// only applies to multi-user instances that have not yet promoted one. Once
-	// an instance admin is provisioned, org admins can no longer manage instance
-	// billing.
-	count, err := memberRepo.CountInstanceAdminUsers(r.Context())
-	if err != nil {
-		return false
-	}
-	if count > 0 {
-		return false
-	}
-
+	// Self-hosted is a single-tenant, cooperative deployment, not Convoy Cloud's
+	// adversarial multi-tenant model. Orgs here are teams inside one company that
+	// runs the instance, so an organisation admin may manage the instance-global
+	// license. This guard is only reached in self-hosted mode; cloud org billing
+	// uses checkBillingAccess (PermissionBillingManage) instead.
 	_, err = memberRepo.FetchAnyOrganisationAdminByUserID(r.Context(), user.UID)
-	return err == nil
-}
-
-func (h *BillingHandler) isInstanceAdmin(r *http.Request) bool {
-	user, err := h.retrieveUser(r)
-	if err != nil {
-		return false
-	}
-
-	memberRepo := h.orgMemberRepo()
-	_, err = memberRepo.FetchInstanceAdminByUserID(r.Context(), user.UID)
 	return err == nil
 }
 

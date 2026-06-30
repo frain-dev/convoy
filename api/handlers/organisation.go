@@ -22,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -358,8 +359,15 @@ func (h *Handler) GetOrganisationFeatureFlags(w http.ResponseWriter, r *http.Req
 	featureFlags := make(map[string]bool)
 
 	for featureKey := range fflag.DefaultFeaturesState {
-		enabled := h.A.FFlag.CanAccessOrgFeature(
-			r.Context(), featureKey, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, org.UID)
+		var enabled bool
+		if featureKey == fflag.CircuitBreaker {
+			// Fold env into the instance base (per-org override still wins) so the
+			// dashboard column-visibility check matches actual display and enforcement.
+			enabled = cbenablement.EnabledForOrg(r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, org.UID)
+		} else {
+			enabled = h.A.FFlag.CanAccessOrgFeature(
+				r.Context(), featureKey, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, org.UID)
+		}
 		featureFlags[string(featureKey)] = enabled
 	}
 
@@ -441,6 +449,12 @@ func (h *Handler) GetAllFeatureFlags(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	// Mark which flags are forced on instance-wide via the environment so the admin
+	// UI can show whether the env or this page is the authoritative instance default.
+	for i := range flags {
+		flags[i].EnvEnabled = h.A.FFlag.CanAccessFeature(fflag.FeatureFlagKey(flags[i].FeatureKey))
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Feature flags fetched successfully", flags, http.StatusOK))

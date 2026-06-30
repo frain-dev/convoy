@@ -25,6 +25,7 @@ type EventDeliveryRepository interface {
 	FindStuckEventDeliveriesByStatus(ctx context.Context, status EventDeliveryStatus) ([]EventDelivery, error)
 	UpdateEventDeliveryMetadata(ctx context.Context, projectID string, eventDelivery *EventDelivery) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
+	CountDeliveriesByEndpointAndStatus(ctx context.Context, projectID string, endpointIDs []string, statuses []EventDeliveryStatus, params SearchParams) ([]EndpointStatusDeliveryCount, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(
 		ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string,

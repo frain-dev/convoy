@@ -11,6 +11,62 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countDeliveriesByEndpointAndStatus = `-- name: CountDeliveriesByEndpointAndStatus :many
+SELECT endpoint_id, status, COUNT(*) AS count
+FROM convoy.event_deliveries
+WHERE project_id = $1
+  AND endpoint_id = ANY($2::TEXT[])
+  AND status = ANY($3::TEXT[])
+  AND created_at >= $4
+  AND created_at <= $5
+  AND deleted_at IS NULL
+GROUP BY endpoint_id, status
+`
+
+type CountDeliveriesByEndpointAndStatusParams struct {
+	ProjectID   pgtype.Text
+	EndpointIds []string
+	Statuses    []string
+	StartDate   pgtype.Timestamptz
+	EndDate     pgtype.Timestamptz
+}
+
+type CountDeliveriesByEndpointAndStatusRow struct {
+	EndpointID pgtype.Text
+	Status     string
+	Count      pgtype.Int8
+}
+
+// CountDeliveriesByEndpointAndStatus returns per-endpoint counts for the given
+// statuses over a date range. Used to compute the period (history) failure rate
+// for the endpoints list and the per-endpoint reliability view. Restricted to the
+// caller's status set so it stays index-friendly.
+func (q *Queries) CountDeliveriesByEndpointAndStatus(ctx context.Context, arg CountDeliveriesByEndpointAndStatusParams) ([]CountDeliveriesByEndpointAndStatusRow, error) {
+	rows, err := q.db.Query(ctx, countDeliveriesByEndpointAndStatus,
+		arg.ProjectID,
+		arg.EndpointIds,
+		arg.Statuses,
+		arg.StartDate,
+		arg.EndDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountDeliveriesByEndpointAndStatusRow
+	for rows.Next() {
+		var i CountDeliveriesByEndpointAndStatusRow
+		if err := rows.Scan(&i.EndpointID, &i.Status, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countDeliveriesByStatus = `-- name: CountDeliveriesByStatus :one
 
 SELECT COUNT(id) AS count

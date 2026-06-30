@@ -342,6 +342,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 							e.Get("/", handler.GetEndpoint)
+							e.Get("/stats", handler.GetEndpointStats)
 
 							e.With(handler.RequireEnabledProject()).Use(handler.RequireEnabledProject())
 
@@ -584,6 +585,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 								e.Get("/", handler.GetEndpoint)
+								e.Get("/stats", handler.GetEndpointStats)
 
 								e.With(handler.RequireEnabledProject()).Use(handler.RequireEnabledProject())
 
@@ -788,6 +790,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
 			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
 			endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
+			endpointRouter.Get("/{endpointID}/stats", handler.GetEndpointStats)
 			endpointRouter.With(handler.CanManageEndpoint()).Post("/", handler.CreateEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}", handler.UpdateEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Delete("/{endpointID}", handler.DeleteEndpoint)
