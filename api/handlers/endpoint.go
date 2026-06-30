@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	endpointsvc "github.com/frain-dev/convoy/internal/endpoints"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -202,6 +203,96 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	util.WriteResponse(w, r, finalBytes, http.StatusOK)
 }
 
+// GetEndpointStats
+//
+//	@Summary		Get endpoint reliability stats
+//	@Description	This endpoint returns the period (history) failure rate for an endpoint over a date range, plus the circuit breaker recent rate when available
+//	@Tags			Endpoints
+//	@Id				GetEndpointStats
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			endpointID	path		string	true	"Endpoint ID"
+//	@Param			startDate	query		string	false	"start date"
+//	@Param			endDate		query		string	false	"end date"
+//	@Success		200			{object}	util.ServerResponse{data=models.EndpointStatsResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/stats [get]
+func (h *Handler) GetEndpointStats(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		h.A.Logger.Errorf("Failed to retrieve project: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
+		return
+	}
+
+	endpointID := chi.URLParam(r, "endpointID")
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, endpointID) {
+		return
+	}
+
+	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
+	if err != nil {
+		h.A.Logger.Errorf("Failed to retrieve endpoint: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
+		return
+	}
+
+	searchParams, err := models.GetSearchParams(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	statuses := []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.FailureEventStatus}
+	counts, err := event_deliveries.New(h.A.Logger, h.A.DB).
+		CountDeliveriesByEndpointAndStatus(r.Context(), project.UID, []string{endpoint.UID}, statuses, searchParams)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	var resp models.EndpointStatsResponse
+	for _, c := range counts {
+		switch c.Status {
+		case datastore.SuccessEventStatus:
+			resp.SuccessCount = c.Count
+		case datastore.FailureEventStatus:
+			resp.FailureCount = c.Count
+		}
+	}
+	// Failure policy: null rate (em dash) when there were no terminal deliveries in the
+	// range, distinct from a genuine 0%.
+	if total := resp.SuccessCount + resp.FailureCount; total > 0 {
+		rate := float64(resp.FailureCount) / float64(total)
+		resp.FailureRate = &rate
+	}
+
+	// Recent (circuit breaker) rate, license + flag gated, read live from redis. Left
+	// nil when CB is off/unlicensed or there is no recent sample, so the UI can decide
+	// whether to show a "currently failing" signal.
+	if h.A.Licenser.CircuitBreaking() &&
+		cbenablement.EnabledForOrg(r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, project.OrganisationID) {
+		cbs, cbErr := h.A.Redis.Get(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID)).Result()
+		if cbErr == nil && len(cbs) > 0 {
+			var c circuit_breaker.CircuitBreaker
+			if decErr := msgpack.DecodeMsgPack([]byte(cbs), &c); decErr == nil {
+				rate := c.FailureRate
+				resp.RecentFailureRate = &rate
+				success := int64(c.TotalSuccesses)
+				failure := int64(c.TotalFailures)
+				resp.RecentSuccessCount = &success
+				resp.RecentFailureCount = &failure
+			}
+		}
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint stats fetched successfully", resp, http.StatusOK))
+}
+
 // GetEndpoints
 //
 //	@Summary		List all endpoints
@@ -299,6 +390,19 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Period (history) failure rate: independent of the circuit breaker (no license or
+	// flag gate). Computed from event_deliveries over the requested range (default last
+	// 7d), counting only terminal deliveries (Success+Failure). Attached as transient
+	// fields for the list UI.
+	if len(endpoints) > 0 {
+		searchParams, perr := models.GetSearchParams(r)
+		if perr != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(perr.Error(), http.StatusBadRequest))
+			return
+		}
+		h.enrichEndpointsWithPeriodFailureRate(r.Context(), project.UID, endpoints, searchParams)
+	}
+
 	resp := models.NewListResponse(endpoints, func(endpoint datastore.Endpoint) models.EndpointResponse {
 		return models.EndpointResponse{Endpoint: &endpoint}
 	})
@@ -324,6 +428,59 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	}
 
 	util.WriteResponse(w, r, finalBytes, http.StatusOK)
+}
+
+// enrichEndpointsWithPeriodFailureRate attaches the history failure rate
+// (Failure/(Success+Failure)) and the underlying counts to each endpoint over the
+// given range. It mutates the slice in place, mirroring the circuit breaker enrichment.
+//
+// Failure policy: this is a display-only enrichment, so it fails open. A query error is
+// logged and the endpoints keep nil rate/counts (rendered as an em dash), rather than
+// failing the whole list response.
+func (h *Handler) enrichEndpointsWithPeriodFailureRate(ctx context.Context, projectID string,
+	endpoints []datastore.Endpoint, params datastore.SearchParams) {
+	endpointIDs := make([]string, len(endpoints))
+	for i := range endpoints {
+		endpointIDs[i] = endpoints[i].UID
+	}
+
+	statuses := []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.FailureEventStatus}
+	counts, err := event_deliveries.New(h.A.Logger, h.A.DB).
+		CountDeliveriesByEndpointAndStatus(ctx, projectID, endpointIDs, statuses, params)
+	if err != nil {
+		h.A.Logger.Error("failed to load period failure rate for endpoints", "error", err)
+		return
+	}
+
+	type tally struct{ success, failure int64 }
+	byEndpoint := make(map[string]*tally, len(endpoints))
+	for _, c := range counts {
+		t := byEndpoint[c.EndpointID]
+		if t == nil {
+			t = &tally{}
+			byEndpoint[c.EndpointID] = t
+		}
+		switch c.Status {
+		case datastore.SuccessEventStatus:
+			t.success = c.Count
+		case datastore.FailureEventStatus:
+			t.failure = c.Count
+		}
+	}
+
+	for i := range endpoints {
+		t := byEndpoint[endpoints[i].UID]
+		if t == nil {
+			continue
+		}
+		success, failure := t.success, t.failure
+		endpoints[i].SuccessCount = &success
+		endpoints[i].FailureCount = &failure
+		if total := success + failure; total > 0 {
+			rate := float64(failure) / float64(total)
+			endpoints[i].PeriodFailureRate = &rate
+		}
+	}
 }
 
 // UpdateEndpoint

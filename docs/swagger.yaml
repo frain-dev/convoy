@@ -188,6 +188,8 @@ definitions:
         type: string
       events:
         type: integer
+      failure_count:
+        type: integer
       failure_rate:
         description: |-
           FailureRate is the circuit breaker's rolling failure rate for this endpoint.
@@ -204,6 +206,14 @@ definitions:
         type: string
       owner_id:
         type: string
+      period_failure_rate:
+        description: |-
+          PeriodFailureRate is the history (period-scoped) failure rate computed from
+          event_deliveries over a date range: Failure/(Success+Failure). It is independent
+          of the circuit breaker (no license/flag needed). Nil when there were no terminal
+          (Success+Failure) deliveries in the range, distinct from a genuine 0%. SuccessCount
+          and FailureCount back the tooltip. All three are transient (not persisted).
+        type: number
       project_id:
         type: string
       rate_limit:
@@ -218,6 +228,8 @@ definitions:
         type: string
       status:
         $ref: '#/definitions/datastore.EndpointStatus'
+      success_count:
+        type: integer
       support_email:
         type: string
       uid:
@@ -1289,6 +1301,8 @@ definitions:
         type: string
       events:
         type: integer
+      failure_count:
+        type: integer
       failure_rate:
         description: |-
           FailureRate is the circuit breaker's rolling failure rate for this endpoint.
@@ -1305,6 +1319,14 @@ definitions:
         type: string
       owner_id:
         type: string
+      period_failure_rate:
+        description: |-
+          PeriodFailureRate is the history (period-scoped) failure rate computed from
+          event_deliveries over a date range: Failure/(Success+Failure). It is independent
+          of the circuit breaker (no license/flag needed). Nil when there were no terminal
+          (Success+Failure) deliveries in the range, distinct from a genuine 0%. SuccessCount
+          and FailureCount back the tooltip. All three are transient (not persisted).
+        type: number
       project_id:
         type: string
       rate_limit:
@@ -1319,6 +1341,8 @@ definitions:
         type: string
       status:
         $ref: '#/definitions/datastore.EndpointStatus'
+      success_count:
+        type: integer
       support_email:
         type: string
       uid:
@@ -1327,6 +1351,29 @@ definitions:
         type: string
       url:
         type: string
+    type: object
+  models.EndpointStatsResponse:
+    properties:
+      failure_count:
+        type: integer
+      failure_rate:
+        type: number
+        x-nullable: true
+      recent_failure_count:
+        type: integer
+        x-nullable: true
+      recent_failure_rate:
+        type: number
+        x-nullable: true
+      recent_success_count:
+        description: |-
+          Recent (circuit breaker) counts over the rolling observability window, read from
+          the breaker state in redis. Backed by the same sample as RecentFailureRate, so all
+          three are nil/zero together when CB is off/unlicensed or has no recent sample.
+        type: integer
+        x-nullable: true
+      success_count:
+        type: integer
     type: object
   models.EventDeliveryResponse:
     properties:
@@ -2764,6 +2811,75 @@ paths:
       security:
         - ApiKeyAuth: []
       summary: Pause endpoint
+      tags:
+        - Endpoints
+  /v1/projects/{projectID}/endpoints/{endpointID}/stats:
+    get:
+      consumes:
+        - application/json
+      description: This endpoint returns the period (history) failure rate for an endpoint over a date range, plus the circuit breaker recent rate when available
+      operationId: GetEndpointStats
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+        - description: Endpoint ID
+          in: path
+          name: endpointID
+          required: true
+          type: string
+        - description: start date
+          in: query
+          name: startDate
+          type: string
+        - description: end date
+          in: query
+          name: endDate
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/models.EndpointStatsResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Get endpoint reliability stats
       tags:
         - Endpoints
   /v1/projects/{projectID}/endpoints/oauth2/test:

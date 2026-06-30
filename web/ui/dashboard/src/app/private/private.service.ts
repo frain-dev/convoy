@@ -429,10 +429,11 @@ export class PrivateService {
 		});
 	}
 
-	getEndpoints(requestDetails?: CURSOR & { q?: string }): Promise<HTTP_RESPONSE> {
+	getEndpoints(requestDetails?: CURSOR & { q?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next', q: requestDetails?.q };
+				const dateRange = { startDate: requestDetails?.startDate, endDate: requestDetails?.endDate };
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next', q: requestDetails?.q, ...dateRange };
 
 				const response = await this.http.request({
 					url: `/endpoints`,

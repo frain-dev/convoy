@@ -456,6 +456,15 @@ type Endpoint struct {
 	// breaker feature off, or sampler not running), distinct from a genuine 0%.
 	FailureRate *float64 `json:"failure_rate" db:"-"`
 
+	// PeriodFailureRate is the history (period-scoped) failure rate computed from
+	// event_deliveries over a date range: Failure/(Success+Failure). It is independent
+	// of the circuit breaker (no license/flag needed). Nil when there were no terminal
+	// (Success+Failure) deliveries in the range, distinct from a genuine 0%. SuccessCount
+	// and FailureCount back the tooltip. All three are transient (not persisted).
+	PeriodFailureRate *float64 `json:"period_failure_rate" db:"-"`
+	SuccessCount      *int64   `json:"success_count" db:"-"`
+	FailureCount      *int64   `json:"failure_count" db:"-"`
+
 	// mTLS client certificate configuration
 	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty" db:"mtls_client_cert"`
 
@@ -938,6 +947,15 @@ func (e EventDeliveryStatus) IsValid() bool {
 	default:
 		return false
 	}
+}
+
+// EndpointStatusDeliveryCount is a per-endpoint, per-status delivery count over a
+// time range. It powers the history (period) failure rate, which is distinct from
+// the circuit breaker's rolling rate.
+type EndpointStatusDeliveryCount struct {
+	EndpointID string
+	Status     EventDeliveryStatus
+	Count      int64
 }
 
 const (

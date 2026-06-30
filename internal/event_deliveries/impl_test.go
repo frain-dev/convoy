@@ -794,6 +794,75 @@ func TestCountEventDeliveries(t *testing.T) {
 	})
 }
 
+func TestCountDeliveriesByEndpointAndStatus(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	endpoint2 := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	sub2 := seedSubscription(t, db, project.UID, endpoint2.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	seed := func(endpointID, subID string, status datastore.EventDeliveryStatus, n int) {
+		for i := 0; i < n; i++ {
+			d := createTestEventDelivery(t, project.UID, event.UID, endpointID, subID)
+			d.Status = status
+			require.NoError(t, service.CreateEventDelivery(ctx, d))
+		}
+	}
+
+	// endpoint1: 3 Success, 2 Failure, 1 Discarded (Discarded must be excluded).
+	seed(endpoint.UID, sub.UID, datastore.SuccessEventStatus, 3)
+	seed(endpoint.UID, sub.UID, datastore.FailureEventStatus, 2)
+	seed(endpoint.UID, sub.UID, datastore.DiscardedEventStatus, 1)
+	// endpoint2: 1 Success only.
+	seed(endpoint2.UID, sub2.UID, datastore.SuccessEventStatus, 1)
+
+	statuses := []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.FailureEventStatus}
+
+	t.Run("CountsPerEndpointAndStatus", func(t *testing.T) {
+		rows, err := service.CountDeliveriesByEndpointAndStatus(ctx, project.UID,
+			[]string{endpoint.UID, endpoint2.UID}, statuses, defaultSearchParams())
+		require.NoError(t, err)
+
+		counts := map[string]map[datastore.EventDeliveryStatus]int64{}
+		for _, r := range rows {
+			if counts[r.EndpointID] == nil {
+				counts[r.EndpointID] = map[datastore.EventDeliveryStatus]int64{}
+			}
+			counts[r.EndpointID][r.Status] = r.Count
+		}
+
+		require.Equal(t, int64(3), counts[endpoint.UID][datastore.SuccessEventStatus])
+		require.Equal(t, int64(2), counts[endpoint.UID][datastore.FailureEventStatus])
+		// Discarded is not in the requested status set, so it must not appear.
+		require.Zero(t, counts[endpoint.UID][datastore.DiscardedEventStatus])
+		require.Equal(t, int64(1), counts[endpoint2.UID][datastore.SuccessEventStatus])
+		require.Zero(t, counts[endpoint2.UID][datastore.FailureEventStatus])
+	})
+
+	t.Run("EmptyEndpointIDs", func(t *testing.T) {
+		rows, err := service.CountDeliveriesByEndpointAndStatus(ctx, project.UID, nil, statuses, defaultSearchParams())
+		require.NoError(t, err)
+		require.Empty(t, rows)
+	})
+
+	t.Run("RangeExcludesOlderDeliveries", func(t *testing.T) {
+		// A window entirely in the past returns nothing for these just-created rows.
+		past := datastore.SearchParams{
+			CreatedAtStart: time.Now().Add(-48 * time.Hour).Unix(),
+			CreatedAtEnd:   time.Now().Add(-24 * time.Hour).Unix(),
+		}
+		rows, err := service.CountDeliveriesByEndpointAndStatus(ctx, project.UID,
+			[]string{endpoint.UID}, statuses, past)
+		require.NoError(t, err)
+		require.Empty(t, rows)
+	})
+}
+
 func TestDeleteProjectEventDeliveries(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()

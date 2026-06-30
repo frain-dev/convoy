@@ -15,6 +15,9 @@ export interface ENDPOINT {
 	title: string;
 	advanced_signatures: boolean;
 	failure_rate: number | null;
+	period_failure_rate: number | null;
+	success_count?: number | null;
+	failure_count?: number | null;
 	authentication: {
 		type?: 'api_key' | 'oauth2' | 'basic_auth';
 		api_key?: { header_value: string; header_name: string };
@@ -75,6 +78,19 @@ export interface ENDPOINT {
 		client_cert?: string;
 		client_key?: string;
 	};
+}
+
+export interface ENDPOINT_STATS {
+	success_count: number;
+	failure_count: number;
+	// failure_rate is the history rate Failure/(Success+Failure) as a fraction (0..1),
+	// null when there were no terminal deliveries in the range. recent_failure_rate is
+	// the circuit breaker rolling rate (percent), null when unavailable.
+	failure_rate: number | null;
+	recent_failure_rate: number | null;
+	// Recent (circuit breaker) counts over the rolling window, null when CB has no sample.
+	recent_success_count: number | null;
+	recent_failure_count: number | null;
 }
 
 export interface DEVICE {

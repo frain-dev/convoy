@@ -58,7 +58,27 @@
       <table convoy-table>
         <thead convoy-table-head class="border-b border-b-new.primary-25">
           @for (head of endpointsTableHead; track $index; let i = $index) {
-            <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
+            @if (i === 4) {
+              <th convoy-table-head-cell>
+                <div convoy-dropdown position="center" size="sm">
+                  <button dropdownTrigger type="button" class="inline-flex items-center gap-6px uppercase font-medium text-12 hover:text-neutral-12 transition-colors" title="Pick the period this failure rate covers">
+                    <span>Failure rate{{ failureRateHeaderSuffix }}</span>
+                    <svg width="10" height="10" class="fill-neutral-10"><use xlink:href="#sort-icon"></use></svg>
+                  </button>
+                  <ul dropdownOptions class="p-8px w-[176px]">
+                    @for (p of availableFailureRatePeriods; track p.uid) {
+                      <li class="mb-2px rounded-8px hover:bg-new.primary-25 duration-300 transition-all">
+                        <button convoy-dropdown-option convoy-button color="neutral" fill="text" class="w-full !justify-start" (click)="selectFailureRatePeriod(p.uid)" [class]="effectiveFailureRatePeriod === p.uid ? 'text-new.primary-400 font-medium' : ''">
+                          {{ failureRatePeriodLabel(p.uid) }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              </th>
+            } @else {
+              <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
+            }
           }
         </thead>
         <tbody>
@@ -72,38 +92,49 @@
               <td convoy-table-cell [forDate]="true"></td>
             </tr>
             @for (endpoint of endpointGroup.content; track $index; let index = $index) {
-              <tr convoy-table-row [id]="'endpoint' + i" class="border-b border-b-new.primary-25" (click)="selectedEndpoint = endpoint">
+              <tr convoy-table-row [id]="'endpoint' + i" class="border-b border-b-new.primary-25 cursor-pointer" (click)="toggleEndpointDetails(endpoint)">
                 <td convoy-table-cell class="w-[300px]">
-                  <div class="truncate max-w-[290px] pl-16px">{{ endpoint.name || endpoint.title }}</div>
+                  <div class="flex items-center pl-16px">
+                    <svg width="14" height="14" class="mr-8px transition-transform duration-200 stroke-neutral-10 fill-none" [class.rotate-90]="expandedEndpointId === endpoint.uid">
+                      <use xlink:href="#arrow-right-icon"></use>
+                    </svg>
+                    <span class="truncate max-w-[260px]">{{ endpoint.name || endpoint.title }}</span>
+                  </div>
                 </td>
                 <td convoy-table-cell class="w-100px">
                   @if (endpoint.status) {
                     <convoy-tag [color]="endpoint.status | statuscolor" className="ml-4px">{{ endpoint.status }}</convoy-tag>
                   }
                 </td>
-                <td convoy-table-cell class="relative">
+                <td convoy-table-cell class="relative" (click)="$event.stopPropagation()">
                   <div convoy-tag class="!gap-10px flex items-center">
                     <span class="w-[200px] overflow-x-auto whitespace-nowrap">@if (endpointURLTemplatesFeatureEnabled) {@for (part of ((endpoint.url || endpoint.target_url) | urlTemplateParts); track $index) {<span [class]="part.token ? 'text-new.primary-400 font-medium bg-new.primary-25 rounded-[3px] px-[3px]' : ''">{{ part.text }}</span>}} @else {{{ endpoint.url || endpoint.target_url }}}</span>
                     <convoy-copy-button size="sm" [notificationText]="endpoint.name || endpoint.title + ' Url has been copied to clipboard'" [text]="endpoint.url || endpoint.target_url"></convoy-copy-button>
                   </div>
                 </td>
-                <td convoy-table-cell class="relative">
+                <td convoy-table-cell class="relative" (click)="$event.stopPropagation()">
                   <div convoy-tag class="!gap-10px flex items-center">
                     <span class="w-[150px] truncate">{{ endpoint.uid }}</span>
                     <convoy-copy-button size="sm" [notificationText]="endpoint.name || endpoint.title + ' ID has been copied to clipboard'" [text]="endpoint.uid"></convoy-copy-button>
                   </div>
                 </td>
                 <td convoy-table-cell>
-                  @if (licenseService.hasLicense('CircuitBreaking') && circuitBreakerFeatureEnabled) {
+                  @if (effectiveFailureRatePeriod === 'live') {
                     @if (endpoint.failure_rate === null || endpoint.failure_rate === undefined) {
-                      <span title="No failure rate computed yet. Circuit breaking must be enabled on your workers and recent deliveries must exist.">—</span>
+                      <span title="No live failure rate computed yet. Circuit breaking must be enabled on your workers and recent deliveries must exist.">-</span>
                     } @else {
-                      <span [title]="'Failure rate over the last ' + failureRateWindow + ' minutes, used for circuit breaking. This is the recent rate, not the all-time failure rate.'">{{ endpoint.failure_rate | number }}%</span>
+                      <span [title]="'Live circuit breaker rate over the last ' + failureRateWindow + ' minutes. This is the rolling rate it acts on, not a historical rate.'">{{ endpoint.failure_rate | number }}%</span>
+                    }
+                  } @else {
+                    @if (endpoint.period_failure_rate === null || endpoint.period_failure_rate === undefined) {
+                      <span [title]="periodFailureRateTooltip()">-</span>
+                    } @else {
+                      <span [title]="periodFailureRateTooltip(endpoint)">{{ endpoint.period_failure_rate * 100 | number: '1.0-2' }}%</span>
                     }
                   }
                 </td>
                 <td convoy-table-cell></td>
-                <td convoy-table-cell>
+                <td convoy-table-cell (click)="selectedEndpoint = endpoint; $event.stopPropagation()">
                   <div class="w-full flex items-center justify-end">
                     <button convoy-button size="xs" fill="soft" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ endpointId: endpoint.uid }">
                       <img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
@@ -181,6 +212,75 @@
                   </div>
                 </td>
               </tr>
+              <!-- Inline reliability detail, expanded on row tap. Period failure rate is
+                   the history rate (independent of the circuit breaker); the "Currently
+                   failing" badge is driven by the circuit breaker recent rate when present. -->
+              @if (expandedEndpointId === endpoint.uid) {
+                <tr convoy-table-row class="border-b border-b-new.primary-25 bg-[#FBFCFD]">
+                  <td convoy-table-cell [attr.colspan]="endpointsTableHead.length">
+                    <div class="pl-[38px] pr-20px py-20px">
+                      <div class="flex items-center justify-between mb-16px">
+                        <div class="flex items-center gap-8px">
+                          <p class="text-neutral-10 text-12 font-light tracking-wide">RELIABILITY</p>
+                          @if (expandedStats?.recent_failure_rate !== null && expandedStats?.recent_failure_rate !== undefined && (expandedStats?.recent_failure_rate || 0) > 0) {
+                            <convoy-tag color="error" size="sm" [title]="'Live failure rate ' + (expandedStats?.recent_failure_rate | number) + '% over the circuit breaker window'">Currently failing</convoy-tag>
+                          }
+                        </div>
+                        <p class="text-neutral-10 text-12 font-light">{{ failureRatePeriodLabel(effectiveFailureRatePeriod) }}</p>
+                      </div>
+                      <!-- min height keeps the panel the same size while loading and after data arrives -->
+                      <div class="min-h-[52px]">
+                      @if (isLoadingStats) {
+                        <p class="text-12 font-light text-neutral-10">Loading…</p>
+                      } @else if (effectiveFailureRatePeriod === 'live') {
+                        <!-- Live = circuit breaker (redis) stat over the rolling observability window. -->
+                        @if (expandedStats?.recent_failure_rate === null || expandedStats?.recent_failure_rate === undefined) {
+                          <p class="text-12 font-light text-neutral-10">No circuit breaker activity in the last {{ failureRateWindow }}m.</p>
+                        } @else {
+                          <div class="flex flex-wrap gap-x-40px gap-y-16px">
+                            <div>
+                              <p class="text-neutral-10 text-12 font-light mb-6px">FAILURE RATE</p>
+                              <p class="text-12 font-medium text-neutral-12">{{ expandedStats?.recent_failure_rate | number }}%</p>
+                            </div>
+                            <div>
+                              <p class="text-neutral-10 text-12 font-light mb-6px">SUCCESSFUL</p>
+                              <p class="text-12 font-medium text-neutral-12">{{ (expandedStats?.recent_success_count ?? 0) | number }}</p>
+                            </div>
+                            <div>
+                              <p class="text-neutral-10 text-12 font-light mb-6px">FAILED</p>
+                              <p class="text-12 font-medium text-neutral-12">{{ (expandedStats?.recent_failure_count ?? 0) | number }}</p>
+                            </div>
+                          </div>
+                          <p class="text-neutral-10 text-10 font-light mt-12px">Circuit breaker rolling window (last {{ failureRateWindow }}m). Recomputed by the workers, not the full delivery history.</p>
+                        }
+                      } @else {
+                        <div class="flex flex-wrap gap-x-40px gap-y-16px">
+                          <div>
+                            <p class="text-neutral-10 text-12 font-light mb-6px">FAILURE RATE</p>
+                            <p class="text-12 font-medium text-neutral-12">
+                              @if (expandedStats?.failure_rate === null || expandedStats?.failure_rate === undefined) {
+                                <span title="No delivered events in this period.">-</span>
+                              } @else {
+                                {{ (expandedStats!.failure_rate || 0) * 100 | number: '1.0-2' }}%
+                              }
+                            </p>
+                          </div>
+                          <div>
+                            <p class="text-neutral-10 text-12 font-light mb-6px">SUCCESSFUL</p>
+                            <p class="text-12 font-medium text-neutral-12">{{ (expandedStats?.success_count ?? 0) | number }}</p>
+                          </div>
+                          <div>
+                            <p class="text-neutral-10 text-12 font-light mb-6px">FAILED</p>
+                            <p class="text-12 font-medium text-neutral-12">{{ (expandedStats?.failure_count ?? 0) | number }}</p>
+                          </div>
+                        </div>
+                        <p class="text-neutral-10 text-10 font-light mt-12px">Counts delivered attempts (success + failure) only, excluding discarded and in-flight deliveries.</p>
+                      }
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              }
             }
           }
         </tbody>

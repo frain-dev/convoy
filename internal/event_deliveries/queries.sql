@@ -182,6 +182,21 @@ WHERE (project_id = @project_id OR @project_id = '')
   AND (CASE WHEN @has_endpoint_ids::BOOLEAN THEN endpoint_id = ANY(@endpoint_ids::TEXT[]) ELSE true END)
   AND (CASE WHEN @has_status::BOOLEAN THEN status = ANY(@statuses::TEXT[]) ELSE true END);
 
+-- CountDeliveriesByEndpointAndStatus returns per-endpoint counts for the given
+-- statuses over a date range. Used to compute the period (history) failure rate
+-- for the endpoints list and the per-endpoint reliability view. Restricted to the
+-- caller's status set so it stays index-friendly.
+-- name: CountDeliveriesByEndpointAndStatus :many
+SELECT endpoint_id, status, COUNT(*) AS count
+FROM convoy.event_deliveries
+WHERE project_id = @project_id
+  AND endpoint_id = ANY(@endpoint_ids::TEXT[])
+  AND status = ANY(@statuses::TEXT[])
+  AND created_at >= @start_date
+  AND created_at <= @end_date
+  AND deleted_at IS NULL
+GROUP BY endpoint_id, status;
+
 -- ============================================================================
 -- Group 4: Pagination
 -- ============================================================================
