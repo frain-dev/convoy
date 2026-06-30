@@ -1,4 +1,7 @@
-@if (canShowBillingPanels) {
+@if (!billingConfigLoaded) {
+  <!-- Strategy unknown: render nothing so neither the self-hosted setup panel nor a
+       shimmer placeholder flashes before the resolved (cloud/self-hosted) view paints. -->
+} @else if (canShowBillingPanels) {
   <app-billing-overview
     [overview]="billingOverview"
     [isLoading]="isLoadingBillingData"

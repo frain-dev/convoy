@@ -127,6 +127,10 @@ export class BillingPageComponent implements OnInit {
   usageRows: UsageRow[] = [];
   isLoadingBillingData = true;
   isLoadingUsage = false;
+  // False until the billing config (strategy) resolves. The view defaults billingStrategy
+  // to 'oss', so without this gate the self-hosted setup panel flashes before the real
+  // strategy (e.g. cloud "Manage plan") is known. Render a loader until this is true.
+  billingConfigLoaded = false;
 
   constructor(
     private fb: FormBuilder,
@@ -240,17 +244,14 @@ export class BillingPageComponent implements OnInit {
   }
 
   private async bootstrapOrganisation() {
+    // The subscription fetch inside loadBillingData hits the same create-on-not-found
+    // endpoint (GetSubscription), so it already provisions the billing org on first
+    // load. A separate warm-up GET here would just duplicate the heaviest provider
+    // round trip, which is costly on slow networks.
     try {
-      const orgId = this.getOrganisationId();
-      await this.httpService.request({
-        url: `/billing/organisations/${orgId}/subscription`,
-        method: 'get',
-        hideNotification: true
-      });
       await this.loadBillingData();
     } catch (error) {
       console.error('Failed to bootstrap organisation:', error);
-      await this.loadBillingData();
     }
   }
 
@@ -266,21 +267,46 @@ export class BillingPageComponent implements OnInit {
       const orgId = this.getOrganisationId();
       const subscriptionUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'subscription', orgId);
       const paymentMethodsUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId);
-      const paymentResponse = await this.httpService
-        .request({
-          url: paymentMethodsUrl,
-          method: 'get',
-          hideNotification: true
-        })
-        .catch(() => ({ data: null }));
+      // Run in parallel: in the common case (org already provisioned) they have no
+      // ordering dependency, and serializing them doubles latency on slow networks.
+      // Both stay fail-open so one failing does not block the other.
+      let paymentRequestFailed = false;
+      let [paymentResponse, subscriptionResponse] = await Promise.all([
+        this.httpService
+          .request({
+            url: paymentMethodsUrl,
+            method: 'get',
+            hideNotification: true
+          })
+          .catch(() => {
+            paymentRequestFailed = true;
+            return { data: null };
+          }),
+        this.httpService
+          .request({
+            url: subscriptionUrl,
+            method: 'get',
+            hideNotification: true
+          })
+          .catch(() => ({ data: null }))
+      ]);
 
-      const subscriptionResponse = await this.httpService
-        .request({
-          url: subscriptionUrl,
-          method: 'get',
-          hideNotification: true
-        })
-        .catch(() => ({ data: null }));
+      // First-load race: GetPaymentMethods does not provision the billing org, but the
+      // parallel subscription call (create-on-not-found) does, and provisioning can
+      // happen even when that subscription response itself errors. So whenever payments
+      // failed, retry once after both calls settle rather than leaving an empty payment
+      // section until a manual refresh. The retry only fires on failure, so the common
+      // case (org already provisioned) keeps the parallel path with no extra request.
+      // A genuine outage just fails open again on the retry.
+      if (paymentRequestFailed) {
+        paymentResponse = await this.httpService
+          .request({
+            url: paymentMethodsUrl,
+            method: 'get',
+            hideNotification: true
+          })
+          .catch(() => ({ data: null }));
+      }
 
       const hadSubscription = this.hasActiveSubscription(this.currentSubscription);
       const hasSubscription = this.hasActiveSubscription(subscriptionResponse.data);
@@ -551,6 +577,7 @@ export class BillingPageComponent implements OnInit {
           if (this.billingStrategy === 'cloud') {
             this.loadInternalOrganisationId();
           }
+          this.billingConfigLoaded = true;
           resolve();
         },
         error: (error) => {
@@ -561,6 +588,7 @@ export class BillingPageComponent implements OnInit {
           });
           this.billingStrategy = 'oss';
           this.markBillingDataIdle();
+          this.billingConfigLoaded = true;
           resolve();
         }
       });
