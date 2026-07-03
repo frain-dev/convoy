@@ -658,7 +658,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_SurfacesBillingC
 	require.Equal(s.T(), "failed", attempt.Status)
 }
 
-func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_KeepsPendingAttemptOnTransientBillingError() {
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_LeavesCheckoutUntouchedOnTransientBillingError() {
 	originalCfg := s.ConvoyApp.A.Cfg
 	originalRouter := s.Router
 	originalClient := s.ConvoyApp.A.BillingClient
@@ -705,10 +705,81 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_KeepsPendingAtte
 	require.Equal(s.T(), http.StatusServiceUnavailable, w.Code, w.Body.String())
 	stored, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), client.lastTrial.AttemptID, stored.ActiveCheckoutAttemptID)
-	attempt, ok := stored.CheckoutAttempts[client.lastTrial.AttemptID]
+	require.Equal(s.T(), savedBillingCfg.ActiveCheckoutAttemptID, stored.ActiveCheckoutAttemptID)
+	_, ok := stored.CheckoutAttempts[client.lastTrial.AttemptID]
+	require.False(s.T(), ok, "transient billing errors must not write checkout attempt state")
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_PreservesActiveCheckoutOnDefinitiveFailure() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	activeAttemptID := "01ACTIVECHECKOUT000000000000"
+	savedBillingCfg.CheckoutAttempts = map[string]datastore.SelfHostedCheckoutAttempt{
+		activeAttemptID: {
+			AttemptID:   activeAttemptID,
+			Status:      "pending",
+			CheckoutID:  "cs_test_active",
+			CheckoutURL: "https://checkout.example/active",
+			PlanID:      "plan-active",
+			Interval:    "monthly",
+		},
+	}
+	savedBillingCfg.ActiveCheckoutAttemptID = activeAttemptID
+	savedBillingCfg.CheckoutID = "cs_test_active"
+	require.NoError(s.T(), cfgSvc.UpdateCheckoutAttempts(context.Background(), savedBillingCfg))
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	client := &countingBillingClient{
+		MockBillingClient: &billing.MockBillingClient{},
+		trialErr:          &billing.Error{StatusCode: http.StatusConflict, Message: "Organisation already has an active subscription"},
+	}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{
+		"email": "buyer@example.com",
+		"host":  "https://customer.example.com",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusConflict, w.Code, w.Body.String())
+	stored, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), activeAttemptID, stored.ActiveCheckoutAttemptID)
+	activeAttempt, ok := stored.CheckoutAttempts[activeAttemptID]
 	require.True(s.T(), ok)
-	require.Equal(s.T(), "pending", attempt.Status)
+	require.Equal(s.T(), "pending", activeAttempt.Status)
+	require.Equal(s.T(), "cs_test_active", stored.CheckoutID)
+	trialAttempt, ok := stored.CheckoutAttempts[client.lastTrial.AttemptID]
+	require.True(s.T(), ok)
+	require.Equal(s.T(), "failed", trialAttempt.Status)
 }
 
 func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_MarksAttemptFailedWhenLicenseKeyMissing() {

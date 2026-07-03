@@ -13,17 +13,34 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func failActiveCheckoutAttempt(cfg *datastore.Configuration, attemptID string, now time.Time) {
-	attempt, ok := cfg.CheckoutAttempts[attemptID]
-	if !ok {
-		return
+func recordFailedTrialAttempt(cfg *datastore.Configuration, attemptID string, now time.Time) {
+	ensureCheckoutAttemptsMap(cfg)
+	cfg.CheckoutAttempts[attemptID] = datastore.SelfHostedCheckoutAttempt{
+		AttemptID: attemptID,
+		Status:    checkoutStatusFailed,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
-	attempt.Status = checkoutStatusFailed
-	attempt.UpdatedAt = now
-	cfg.CheckoutAttempts[attemptID] = attempt
-	if cfg.ActiveCheckoutAttemptID == attemptID {
-		cfg.ActiveCheckoutAttemptID = ""
+}
+
+func (h *BillingHandler) persistFailedTrialAttempt(
+	w http.ResponseWriter,
+	r *http.Request,
+	cfgSvc *configuration.Service,
+	attemptID string,
+	now time.Time,
+) bool {
+	cfg, err := cfgSvc.LoadInstanceBillingConfig(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return false
 	}
+	recordFailedTrialAttempt(cfg, attemptID, now)
+	if err := cfgSvc.UpdateCheckoutAttempts(r.Context(), cfg); err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return false
+	}
+	return true
 }
 
 func supersedeActiveCheckoutAttempt(cfg *datastore.Configuration, now time.Time) {
@@ -78,8 +95,9 @@ func (h *BillingHandler) finalizePurchasedLicense(
 	}
 
 	if err := h.refreshInstanceLicenser(effectiveKey); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))
-		return false
+		// Failure policy: license columns are already persisted; in-process refresh is
+		// best-effort so callers are not told to retry mint after a successful write.
+		h.A.Logger.Warn("failed to refresh license entitlements after checkout; license persisted", "error", err)
 	}
 	return true
 }
