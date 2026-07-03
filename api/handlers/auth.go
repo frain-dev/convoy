@@ -43,6 +43,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 				BillingClient: h.A.BillingClient,
 				Logger:        h.A.Logger,
 				Cfg:           configuration,
+				Cache:         h.A.Cache,
 			},
 		})
 		if err != nil {
@@ -128,6 +129,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		BillingClient: h.A.BillingClient,
 		Logger:        h.A.Logger,
 		Cfg:           h.A.Cfg,
+		Cache:         h.A.Cache,
 	})
 
 	u := &models.LoginUserResponse{
@@ -247,6 +249,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		BillingClient: h.A.BillingClient,
 		Logger:        h.A.Logger,
 		Cfg:           h.A.Cfg,
+		Cache:         h.A.Cache,
 	})
 
 	u := &models.LoginUserResponse{

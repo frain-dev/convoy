@@ -6,7 +6,8 @@
     "types": [
       "jasmine"
     ],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {}
   },
   "files": [
     "src/test.ts",

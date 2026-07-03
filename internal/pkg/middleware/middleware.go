@@ -349,6 +349,42 @@ func RequireAuth(logger log.Logger) func(next http.Handler) http.Handler {
 	}
 }
 
+// OptionalAuth authenticates the request when credentials are present but never
+// rejects: requests without (or with invalid) credentials pass through as guests
+// with no auth user in context. Use it on guest-listed routes whose handlers serve
+// richer data for signed-in callers, e.g. /ui/license/features resolving the
+// caller's org count so the UI can gate the add-organisation action.
+// Failure policy: fail open (guest). This middleware only enriches display data;
+// hard enforcement stays with the authenticated create/update endpoints.
+func OptionalAuth(logger log.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			creds, err := GetAuthFromRequest(r)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			rc, err := realm_chain.Get()
+			if err != nil {
+				logger.ErrorContext(r.Context(), "optional auth: failed to get realm chain", "error", err)
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			authUser, err := rc.Authenticate(r.Context(), creds)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			authCtx := context.WithValue(r.Context(), convoy.AuthUserCtx, authUser)
+			r = r.WithContext(setAuthUserInContext(authCtx, authUser))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // RequireQueueSessionCookie allows only a valid convoy_queue_session cookie (dashboard iframe at /queue/monitoring/embed).
 func RequireQueueSessionCookie(validateCookie func(context.Context, string) bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -722,6 +758,30 @@ func RequireValidPortalLinksLicense(l license.Licenser, logger log.Logger) func(
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.PortalLinks() {
 				logger.WarnContext(r.Context(), "Portal links access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// RequireAsynqMonitoring gates queue monitoring at request time so a runtime
+// licenser refresh (e.g. after self-hosted trial start) can unlock routes without
+// a process restart. The licenser is resolved per request via the getter because
+// a self-hosted trial swaps the shared APIOptions.Licenser in place; capturing the
+// boot-time value would keep serving the pre-trial (community) gate and return 401
+// even after the license reports AsynqMonitoring=true. Fail closed when the getter
+// is nil, returns nil, or the deployment license lacks the feature.
+func RequireAsynqMonitoring(licenser func() license.Licenser, logger log.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var l license.Licenser
+			if licenser != nil {
+				l = licenser()
+			}
+			if l == nil || !l.AsynqMonitoring() {
+				logger.WarnContext(r.Context(), "Asynq monitoring access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}

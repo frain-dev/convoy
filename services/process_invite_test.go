@@ -701,6 +701,99 @@ func TestProcessInviteService_Run(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "failed to update accepted organisation invite",
 		},
+		{
+			name: "should_reject_accept_when_trial_org_at_user_cap",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(pis *ProcessInviteService) {
+				oir, _ := pis.InviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:    auth.RoleProjectAdmin,
+							Project: "ref",
+						},
+					},
+					nil,
+				)
+
+				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{UID: "user-123"}, nil,
+				)
+
+				o, _ := pis.OrgRepo.(*mocks.MockOrganisationRepository)
+				o.EXPECT().FetchOrganisationByID(gomock.Any(), "123ab").Times(1).Return(
+					&datastore.Organisation{UID: "org-123", LicenseData: encryptTrialLicense(t, "org-123", map[string]interface{}{"user_limit": int64(1)})},
+					nil,
+				)
+
+				om, _ := pis.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				om.EXPECT().CountOrganisationMembers(gomock.Any(), "org-123").Times(1).Return(int64(1), nil)
+				// CreateOrganisationMember must not be called once the org is at cap.
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: ErrOrgUserLimit.Error(),
+		},
+		{
+			name: "should_accept_when_trial_org_under_user_cap",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(pis *ProcessInviteService) {
+				oir, _ := pis.InviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:    auth.RoleProjectAdmin,
+							Project: "ref",
+						},
+					},
+					nil,
+				)
+				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{UID: "user-123"}, nil,
+				)
+
+				o, _ := pis.OrgRepo.(*mocks.MockOrganisationRepository)
+				o.EXPECT().FetchOrganisationByID(gomock.Any(), "123ab").Times(1).Return(
+					&datastore.Organisation{UID: "org-123", LicenseData: encryptTrialLicense(t, "org-123", map[string]interface{}{"user_limit": int64(2)})},
+					nil,
+				)
+
+				om, _ := pis.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				om.EXPECT().CountOrganisationMembers(gomock.Any(), "org-123").Times(1).Return(int64(1), nil)
+				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

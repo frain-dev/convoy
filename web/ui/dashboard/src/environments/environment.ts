@@ -5,7 +5,11 @@
 export const environment = {
 	production: false,
 	posthog: 'phc_lPJnjN5hrM8Dh7kgujIccs2xnGL2lmRv6UdOmOTCqEc',
-	enterprise: false
+	enterprise: false,
+	// Dev backend origin. Absolute by default so a plain `ng serve` talks to a
+	// local convoy on :5005 with no proxy. The `proxy` build config swaps this
+	// for '' (same-origin) so `npm run start:proxy` routes through proxy.conf.js.
+	apiOrigin: 'http://localhost:5005'
 };
 
 /*

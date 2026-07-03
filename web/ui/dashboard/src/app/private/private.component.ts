@@ -9,8 +9,9 @@ import { differenceInSeconds } from 'date-fns';
 import { Subscription } from 'rxjs';
 import { LicensesService } from '../services/licenses/licenses.service';
 import { RbacService } from '../services/rbac/rbac.service';
+import { TrialStatusService } from '../services/trial-status/trial-status.service';
 import axios from 'axios';
-import { environment } from 'src/environments/environment';
+import { apiOrigin } from 'src/app/services/api-origin';
 
 @Component({
     selector: 'app-private',
@@ -66,7 +67,7 @@ export class PrivateComponent implements OnInit {
 	private jwtHelper: JwtHelperService = new JwtHelperService();
 	private shouldShowOrgSubscription: Subscription | undefined;
 
-	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService, private rbacService: RbacService) {}
+	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService, private rbacService: RbacService, public trialStatusService: TrialStatusService) {}
 
 	async ngOnInit() {
 		this.shouldShowOrgModal();
@@ -86,6 +87,8 @@ export class PrivateComponent implements OnInit {
 		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
 		await this.licenseService.loadAllLicenses();
 		await this.checkInstanceAdminAccess();
+		// Fire-and-forget: the trial pill should not block the shell from rendering.
+		void this.trialStatusService.refresh();
 	}
 
 	ngOnDestroy() {
@@ -126,7 +129,7 @@ export class PrivateComponent implements OnInit {
 		// Revoke queue iframe session while dashboard auth token is still valid.
 		try {
 			if (token) {
-				const apiBase = environment.production ? location.origin : 'http://localhost:5005';
+				const apiBase = apiOrigin();
 				await axios.delete(`${apiBase}/queue/monitoring/session`, {
 					headers: { Authorization: `Bearer ${token}`, 'X-Convoy-Version': '2024-04-01' },
 					withCredentials: true
@@ -145,6 +148,7 @@ export class PrivateComponent implements OnInit {
 
 		this.privateService.clearCache();
 		this.licenseService.clearLicenses();
+		this.trialStatusService.clear();
 
 		localStorage.removeItem('CONVOY_AUTH');
 		localStorage.removeItem('CONVOY_AUTH_TOKENS');
@@ -269,6 +273,8 @@ export class PrivateComponent implements OnInit {
 		await this.licenseService.setLicenses();
 		await this.privateService.getProjects({ refresh: true });
 		await this.checkInstanceAdminAccess();
+		// Trial state is per-org; refresh the pill for the newly selected org.
+		void this.trialStatusService.refresh();
 		this.showOrgDropdown = false;
 
 		try {

@@ -91,6 +91,21 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
+	// Authoritative per-org user_limit enforcement: a trial org capping user_limit=1 must
+	// never end up with a second member. Pending invites are not counted here because the
+	// invite being accepted is still pending and would double-count itself. No-op for
+	// self-hosted orgs (no per-org license_data).
+	ok, err = CheckOrganisationUserLimit(ctx, org, false, OrgUserLimitDeps{
+		OrgMemberRepo: pis.OrgMemberRepo,
+		Logger:        pis.Logger,
+	})
+	if err != nil {
+		return &ServiceError{ErrMsg: err.Error()}
+	}
+	if !ok {
+		return &ServiceError{ErrMsg: ErrOrgUserLimit.Error(), Err: ErrOrgUserLimit}
+	}
+
 	_, err = NewOrganisationMemberService(pis.OrgMemberRepo, pis.Licenser, pis.Logger).CreateOrganisationMember(ctx, org, user, &iv.Role)
 	if err != nil {
 		return err

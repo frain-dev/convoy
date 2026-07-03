@@ -117,6 +117,12 @@ WHERE o.user_id = @user_id
     AND o.deleted_at IS NULL
 LIMIT 1;
 
+-- name: CountOrganisationMembers :one
+SELECT COUNT(DISTINCT o.id) AS count
+FROM convoy.organisation_members o
+WHERE o.organisation_id = @organisation_id
+    AND o.deleted_at IS NULL;
+
 -- name: CountInstanceAdminUsers :one
 SELECT COUNT(*)
 FROM convoy.organisation_members o

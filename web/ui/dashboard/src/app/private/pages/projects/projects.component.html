@@ -66,22 +66,46 @@
   <div class="mt-50px">
     <div convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" heading="Create a project to get started" description="Your incoming and outgoing projects appear here." id="subscriptions-empty-state">
       <div emptyStateCTA class="mt-24px flex flex-col items-center gap-24px">
-        <button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" [routerLink]="shouldBlockProjectCreation ? null : './new'" [disabled]="shouldBlockProjectCreation" class="!py-12px" [class.opacity-50]="shouldBlockProjectCreation" [class.cursor-not-allowed]="shouldBlockProjectCreation">
-          <img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
-          Create a Project
-        </button>
-        @if (shouldBlockProjectCreation) {
+        @if (trialProvisioning) {
           <div class="flex flex-col items-center gap-8px text-center">
-            @if (getProjectLimitMessageForEmptyState()) {
-              <p class="text-12 text-new.primary-400 font-medium">{{ getProjectLimitMessageForEmptyState() }}</p>
-            }
-            @if (isDisabled) {
-              <p class="text-12 text-neutral-11">{{ disabledOrganisationMessage }}</p>
-            }
-            @if (canOpenBillingForProjectLimit) {
-              <a routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="text-12 font-medium text-neutral-11 hover:text-primary-100 underline hover:no-underline">Go to Billing</a>
+            @if (isStartingTrial) {
+              <button convoy-button size="sm" [disabled]="true" class="!py-12px">Setting up your trial...</button>
+              <p class="text-12 text-neutral-11">Activating your trial. Projects unlock automatically in a moment.</p>
+            } @else {
+              <p class="text-12 text-neutral-11">Your trial is active and finishing setup.</p>
+              <button convoy-button size="sm" class="!py-12px" (click)="retryTrialUnlock()">Refresh</button>
             }
           </div>
+        } @else if (!ctaResolved) {
+          <convoy-loader position="relative"></convoy-loader>
+        } @else {
+          <button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" [routerLink]="emptyStateCreateDisabled ? null : './new'" [disabled]="emptyStateCreateDisabled" [class.opacity-50]="emptyStateCreateDisabled" [class.cursor-not-allowed]="emptyStateCreateDisabled" class="!py-12px">
+            <img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
+            Create a Project
+          </button>
+          @if (canStartCloudTrial) {
+            <p class="text-12 text-neutral-11 text-center">
+              {{ cloudTrialUpsellLead }}
+              <button type="button" convoy-permission="Billing|MANAGE" class="text-12 font-medium text-primary-100 hover:underline bg-transparent border-0 p-0 cursor-pointer inline" (click)="openTrialModal()">Start a free trial</button>
+            </p>
+          } @else if (canShowSelfHostedTrialUpsell) {
+            <p class="text-12 text-neutral-11 text-center">
+              {{ selfHostedTrialUpsellLead }}
+              <button type="button" convoy-permission="Billing|MANAGE" class="text-12 font-medium text-primary-100 hover:underline bg-transparent border-0 p-0 cursor-pointer inline" (click)="openTrialModal()">Start a free trial</button>
+            </p>
+          } @else if (shouldBlockProjectCreation) {
+            <div class="flex flex-col items-center gap-8px text-center">
+              @if (getProjectLimitMessageForEmptyState()) {
+                <p class="text-12 text-new.primary-400 font-medium">{{ getProjectLimitMessageForEmptyState() }}</p>
+              }
+              @if (isDisabled) {
+                <p class="text-12 text-neutral-11">{{ disabledOrganisationMessage }}</p>
+              }
+              @if (canOpenBillingForProjectLimit) {
+                <a routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="text-12 font-medium text-neutral-11 hover:text-primary-100 underline hover:no-underline">Go to Billing</a>
+              }
+            </div>
+          }
         }
       </div>
     </div>
@@ -91,4 +115,5 @@
 @if (isLoadingProject) {
   <convoy-loader position="fixed"></convoy-loader>
 }
+<convoy-trial-modal #trialModal [mode]="trialModalMode" [selfHostedOffer]="selfHostedTrialOffer" (trialStarted)="onTrialStarted()" (subscribeNow)="onSubscribeInsteadOfTrial()"></convoy-trial-modal>
 </div>

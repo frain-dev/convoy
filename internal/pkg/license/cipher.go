@@ -18,6 +18,14 @@ const gcmNonceSize = 12
 type LicenseDataPayload struct {
 	Key          string                 `json:"key"`
 	Entitlements map[string]interface{} `json:"entitlements,omitempty"`
+	// Provisional marks the payload as the trial-start seed written before the
+	// billing service exposes the trial's real entitlements (see provisional.go for
+	// the lifecycle invariant). Authoritative refresh writes never set it, so its
+	// presence is the definitive provisional-vs-authoritative signal. Parse-safe by
+	// construction: every reader decodes into this struct (unknown fields in old
+	// payloads are impossible, absent field decodes to false) and consumers only
+	// read Key/Entitlements, so the marker never leaks into feature lists or caps.
+	Provisional bool `json:"provisional,omitempty"`
 }
 
 // EncryptLicenseData encrypts a LicenseDataPayload for the given org and returns a base64 string.

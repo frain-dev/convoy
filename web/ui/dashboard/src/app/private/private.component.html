@@ -8,6 +8,11 @@
       </div>
 
       <div class="flex items-center">
+        @if (trialStatusService.status$ | async; as trial) {
+          <a class="flex items-center mr-24px px-10px py-4px rounded-8px border border-primary-300 bg-primary-500" routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" title="You are on a free trial">
+            <span class="font-medium text-12 text-primary-100">{{ trial.label }}</span>
+          </a>
+        }
         <a class="flex items-center mr-24px" target="_blank" href="https://docs.getconvoy.io" rel="noreferrer">
           <img src="/assets/img/doc-icon-primary.svg" class="w-14px" alt="doc icon" />
           <span class="hidden md:inline font-medium text-12 text-primary-100 md:ml-2">Go to docs</span>

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,7 +18,7 @@ import (
 )
 
 const (
-	// DefaultOverwatchHost is the hardcoded Overwatch URL
+	// DefaultOverwatchHost is the default billing service URL
 	DefaultOverwatchHost = "https://overwatch.getconvoy.cloud"
 	// DefaultValidatePath is the default validation endpoint
 	DefaultValidatePath = "/licenses/validate"
@@ -156,6 +157,16 @@ func (c *Client) ValidateLicense(ctx context.Context, licenseKey string) (*Licen
 
 		// Check HTTP status code
 		if resp.StatusCode != http.StatusOK {
+			// An expired self-hosted trial is a definitive negative the billing service
+			// returns as HTTP 400 with {"status":false,"message":"Trial has
+			// expired"}. Detect it here and return the sentinel immediately (no
+			// retry) so the licenser can degrade to the community/OSS floor. Every
+			// other non-200 keeps the existing retry-then-transient-error behaviour,
+			// so paid suspended/revoked/expired signalling is byte-for-byte
+			// unchanged (it never fired on this branch before and still does not).
+			if c.isTrialExpiredBody(body) {
+				return nil, ErrLicenseTrialExpired
+			}
 			lastErr = fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 			if c.logger != nil {
 				c.logger.Warnf("License validation attempt %d returned status %d, retrying...", attempt+1, resp.StatusCode)
@@ -189,6 +200,21 @@ func (c *Client) ValidateLicense(ctx context.Context, licenseKey string) (*Licen
 	return nil, fmt.Errorf("license validation failed after %d attempts: %w", c.retryCount+1, lastErr)
 }
 
+// isTrialExpiredBody reports whether a non-200 validation response body carries
+// the distinct expired-trial signal. It reuses parseError as the single message
+// -> sentinel mapping, so only "Trial has expired" matches; any other failure
+// message returns false and is left to the caller's existing retry handling.
+func (c *Client) isTrialExpiredBody(body []byte) bool {
+	var resp LicenseValidationResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return false
+	}
+	if resp.Status {
+		return false
+	}
+	return errors.Is(c.parseError(resp.Message), ErrLicenseTrialExpired)
+}
+
 // parseError parses error message and returns appropriate error type
 func (c *Client) parseError(message string) error {
 	switch message {
@@ -198,6 +224,12 @@ func (c *Client) parseError(message string) error {
 		return ErrLicenseSuspended
 	case "License has expired":
 		return ErrLicenseExpired
+	case "Trial has expired":
+		// Distinct from a paid "License has expired": an expired self-hosted trial
+		// degrades the instance to the community/OSS floor (see licenser.go), it does
+		// not fail closed or boot-error. The billing service emits this message only for an
+		// expired license-native trial.
+		return ErrLicenseTrialExpired
 	case "License has been revoked":
 		return ErrLicenseRevoked
 	default:

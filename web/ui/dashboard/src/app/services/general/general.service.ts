@@ -4,7 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { NOTIFICATION_STATUS } from 'src/app/models/global.model';
-import { environment } from 'src/environments/environment';
+import { apiOrigin } from 'src/app/services/api-origin';
 
 @Injectable({
 	providedIn: 'root'
@@ -29,7 +29,7 @@ export class GeneralService {
 	}
 
 	apiURL(): string {
-		return `${environment.production ? location.origin : 'http://localhost:5005'}`;
+		return apiOrigin();
 	}
 
 	getSelectedDate(dateOption: string) {

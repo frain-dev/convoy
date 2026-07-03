@@ -11,7 +11,11 @@ export class RbacService {
 	permissions = {
 		PROJECT_VIEWER: ['Event Deliveries|VIEW', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations|VIEW', 'Organisations|ADD'],
 		PROJECT_ADMIN: ['Event Deliveries|MANAGE', 'Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Events|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE', 'Event Types|MANAGE', 'Project Setup|MANAGE', 'Organisations|ADD'],
-		ORGANISATION_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE', 'Project Setup|MANAGE', 'Organisations|ADD'],
+		// Organisation admins manage the whole org, which the backend BillingPolicy
+		// treats as billing-capable (isBillingAdmin allows organisation_admin). Keep
+		// Billing|MANAGE here so billing-gated UI (e.g. the trial CTA) matches what
+		// the server will actually authorize for an org owner.
+		ORGANISATION_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE', 'Billing|MANAGE', 'Project Setup|MANAGE', 'Organisations|ADD'],
 		BILLING_ADMIN: ['Billing|MANAGE', 'Organisations|ADD'],
 		INSTANCE_ADMIN: ['Instance|MANAGE', 'Project Setup|MANAGE', 'Organisations|ADD']
 	};

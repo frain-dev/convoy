@@ -105,6 +105,25 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Cloud org-billing only: enforce the per-org org_limit against the user's existing
+	// orgs' plans (the service short-circuits to fail-open for anything without a finite
+	// per-org cap). Self-hosted/instance limits stay handled by the instance CheckOrgLimit
+	// inside CreateOrganisationService.Run.
+	if h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil {
+		ok, err := services.CheckUserOrgCreationAllowed(r.Context(), user, services.UserOrgLimitDeps{
+			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+			Logger:        h.A.Logger,
+		})
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+		if !ok {
+			_ = render.Render(w, r, util.NewErrorResponse(services.ErrOrgOrganisationLimit.Error(), http.StatusPaymentRequired))
+			return
+		}
+	}
+
 	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	co := services.CreateOrganisationService{
 		OrgRepo:       orgRepo,

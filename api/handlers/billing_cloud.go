@@ -15,7 +15,12 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	licensesvc "github.com/frain-dev/convoy/internal/pkg/license/service"
+	"github.com/frain-dev/convoy/pkg/cachedrepo"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -531,13 +536,8 @@ func (h *BillingHandler) OnboardSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if requestData.PlanID == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("plan_id is required and must be a valid UUID", http.StatusBadRequest))
-		return
-	}
-
-	if requestData.Host == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("host is required", http.StatusBadRequest))
+	if err := validatePlanAndHostRequired(requestData.PlanID, requestData.Host); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -548,6 +548,150 @@ func (h *BillingHandler) OnboardSubscription(w http.ResponseWriter, r *http.Requ
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Checkout session created successfully", resp.Data, http.StatusOK))
+}
+
+func (h *BillingHandler) StartTrial(w http.ResponseWriter, r *http.Request) {
+	// Same access gate as OnboardSubscription; trial eligibility is enforced by billing.
+	orgID, ok := h.orgGuard(w, r)
+	if !ok {
+		return
+	}
+
+	var requestData billing.StartTrialRequest
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil && err != io.EOF {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.StartTrial(r.Context(), orgID, requestData)
+	if err != nil {
+		renderBillingError(w, r, err)
+		return
+	}
+
+	h.provisionTrialCap(r.Context(), orgID)
+	h.activateTrialCap(orgID)
+
+	_ = render.Render(w, r, util.NewServerResponse("Trial started successfully", resp.Data, http.StatusOK))
+}
+
+const (
+	provisionalTrialDailyEventLimit = 100
+	provisionalTrialOrgLimit        = 1
+	provisionalTrialUserLimit       = 1
+	provisionalTrialProjectLimit    = 1
+)
+
+func provisionalTrialEntitlements() map[string]interface{} {
+	return map[string]interface{}{
+		"daily_event_limit": provisionalTrialDailyEventLimit,
+		"org_limit":         provisionalTrialOrgLimit,
+		"user_limit":        provisionalTrialUserLimit,
+		"project_limit":     provisionalTrialProjectLimit,
+	}
+}
+
+func (h *BillingHandler) provisionTrialCap(ctx context.Context, orgID string) {
+	if !h.A.Cfg.UsesOrgBilling() {
+		return
+	}
+
+	payload := &license.LicenseDataPayload{
+		Provisional:  true,
+		Entitlements: provisionalTrialEntitlements(),
+	}
+
+	enc, err := license.EncryptLicenseData(orgID, payload)
+	if err != nil {
+		h.A.Logger.Warn("start trial: encrypt provisional trial seed failed", "error", err, "org_id", orgID)
+		return
+	}
+
+	if err := h.orgRepo().UpdateOrganisationLicenseData(ctx, orgID, enc); err != nil {
+		h.A.Logger.Warn("start trial: write provisional trial seed failed", "error", err, "org_id", orgID)
+		return
+	}
+
+	if h.A.Cache != nil {
+		cachedrepo.Invalidate(ctx, h.A.Cache, h.A.Logger, cached.OrganisationCacheKey(orgID))
+	}
+}
+
+// trial cap activation polling budget: attempts and initial backoff (doubling, capped).
+const (
+	trialCapActivateAttempts = 6
+	trialCapActivateBackoff  = time.Second
+)
+
+func (h *BillingHandler) reconcileTrialCapOnce(ctx context.Context, orgID string, useOrgBilling bool, deps services.RefreshLicenseDataDeps, licClient *licensesvc.Client) bool {
+	org, err := h.orgRepo().FetchOrganisationByID(ctx, orgID)
+	if err != nil || org == nil {
+		h.A.Logger.Warn("start trial: fetch org for cap activation failed; retrying", "error", err, "org_id", orgID)
+		return false
+	}
+
+	wasProvisional := license.IsProvisional(org.UID, org.LicenseData)
+
+	services.RefreshLicenseDataForOrg(ctx, *org, h.A.Cfg.LicenseKey, useOrgBilling, deps, licClient)
+
+	refreshed, rerr := h.orgRepo().FetchOrganisationByID(ctx, orgID)
+	if rerr != nil || refreshed == nil {
+		return false
+	}
+
+	if license.HasAuthoritativeEntitlements(refreshed.UID, refreshed.LicenseData) {
+		if license.HasDailyEventLimitEntitlement(refreshed.UID, refreshed.LicenseData) {
+			h.A.Logger.Info("start trial: authoritative entitlements active", "org_id", orgID, "daily_event_limit", license.DailyEventLimit(refreshed.UID, refreshed.LicenseData))
+			return true
+		}
+		if wasProvisional {
+			// Trial activation: a non-provisional refresh without daily_event_limit is
+			// billing fail-open or stale; keep polling and re-seed provisional caps.
+			h.A.Logger.Warn("start trial: rejected authoritative payload without daily_event_limit (billing fail-open or stale); re-seeding provisional caps", "org_id", orgID)
+		} else {
+			// Paid or other final authoritative payloads often omit daily_event_limit.
+			return true
+		}
+	}
+
+	if !license.IsProvisional(refreshed.UID, refreshed.LicenseData) {
+		h.provisionTrialCap(ctx, orgID)
+	}
+	return false
+}
+
+func (h *BillingHandler) activateTrialCap(orgID string) {
+	useOrgBilling := h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil
+	if !useOrgBilling {
+		return
+	}
+
+	go func() {
+		licClient := licensesvc.NewClientFromConfig(h.A.Cfg.LicenseService, h.A.Logger)
+		deps := services.RefreshLicenseDataDeps{
+			OrgRepo:       h.orgRepo(),
+			BillingClient: h.A.BillingClient,
+			Logger:        h.A.Logger,
+			Cfg:           h.A.Cfg,
+			Cache:         h.A.Cache,
+		}
+
+		backoff := trialCapActivateBackoff
+		for attempt := 0; attempt < trialCapActivateAttempts; attempt++ {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			done := h.reconcileTrialCapOnce(ctx, orgID, useOrgBilling, deps, licClient)
+			cancel()
+			if done {
+				return
+			}
+
+			time.Sleep(backoff)
+			if backoff < 8*time.Second {
+				backoff *= 2
+			}
+		}
+		h.A.Logger.Warn("start trial: authoritative entitlements not active after polling; provisional cap remains, relying on async license refresh", "org_id", orgID)
+	}()
 }
 
 func (h *BillingHandler) UpgradeSubscription(w http.ResponseWriter, r *http.Request) {
@@ -568,13 +712,8 @@ func (h *BillingHandler) UpgradeSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if requestData.PlanID == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("plan_id is required and must be a valid UUID", http.StatusBadRequest))
-		return
-	}
-
-	if requestData.Host == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("host is required", http.StatusBadRequest))
+	if err := validatePlanAndHostRequired(requestData.PlanID, requestData.Host); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 

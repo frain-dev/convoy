@@ -38,10 +38,6 @@ func (h *BillingHandler) selfHostedLicenseKey(w http.ResponseWriter, r *http.Req
 		return "", false
 	}
 
-	// The mode gate uses the effective license (env/file wins, else purchased),
-	// resolved and persisted at boot. Floor with the in-memory env/file key so a
-	// not-yet-persisted or absent row stays consistent with the config/auth
-	// surfaces, which apply the same floor, instead of 403-ing a licensed instance.
 	effectiveKey := strings.TrimSpace(instanceBilling.LicenseKey)
 	if effectiveKey == "" {
 		effectiveKey = strings.TrimSpace(h.A.Cfg.LicenseKey)
@@ -57,27 +53,16 @@ func (h *BillingHandler) selfHostedLicenseKey(w http.ResponseWriter, r *http.Req
 		return "", false
 	}
 
-	// The billing view follows the effective license: an env/file override (e.g. a
-	// payment-link license) is Overwatch-issued, so address Overwatch with it.
-	// Otherwise use the purchased checkout key Overwatch issued at guest checkout,
-	// falling back to the effective key for legacy rows that predate the column.
 	billingKey := config.ResolveBillingLicenseKey(effectiveKey, instanceBilling.CheckoutLicenseKey, instanceBilling.LicenseKeySource)
 
 	return billingKey, true
 }
 
-// effectiveInstanceLicenseKey returns the instance's effective license key, the
-// one precedence selects (env/file over the db checkout key), persisted at boot.
-// It drives the local licenser, unlike selfHostedLicenseKey which returns the db
-// checkout key Overwatch issued and is addressed by.
 func (h *BillingHandler) effectiveInstanceLicenseKey(ctx context.Context) (string, error) {
 	instanceBilling, err := configuration.New(h.A.Logger, h.A.DB).LoadInstanceBillingConfig(ctx)
 	if err != nil {
 		return "", err
 	}
-	// Floor with the in-memory env/file key so the licenser rebuilds around the
-	// same effective license the config/auth surfaces report when the persisted
-	// row is blank.
 	key := strings.TrimSpace(instanceBilling.LicenseKey)
 	if key == "" {
 		key = strings.TrimSpace(h.A.Cfg.LicenseKey)
@@ -111,6 +96,26 @@ func (h *BillingHandler) GetSelfHostedSubscription(w http.ResponseWriter, r *htt
 	serveSelfHosted(h, w, r, "", h.BillingClient.GetSelfHostedSubscription)
 }
 
+func (h *BillingHandler) UpgradeSelfHostedSubscription(w http.ResponseWriter, r *http.Request) {
+	licenseKey, ok := h.selfHostedLicenseKey(w, r)
+	if !ok {
+		return
+	}
+
+	requestData, ok := decodeUpgradeSubscriptionRequest(w, r, true)
+	if !ok {
+		return
+	}
+
+	resp, err := h.BillingClient.UpgradeSelfHostedSubscription(r.Context(), licenseKey, requestData)
+	if err != nil {
+		renderBillingError(w, r, err)
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Checkout created successfully", resp.Data, http.StatusOK))
+}
+
 func (h *BillingHandler) DeleteSelfHostedSubscription(w http.ResponseWriter, r *http.Request) {
 	licenseKey, ok := h.selfHostedLicenseKey(w, r)
 	if !ok {
@@ -123,22 +128,12 @@ func (h *BillingHandler) DeleteSelfHostedSubscription(w http.ResponseWriter, r *
 		return
 	}
 
-	// Rebuild the local licenser around the effective key. The env/file key and the
-	// db checkout key are both purchased keys; they differ only by source, and
-	// precedence makes the env/file key effective when set. The cancel above and the
-	// local entitlements both follow that effective key (selfHostedLicenseKey returns
-	// the env key when its source is env, else the db checkout key).
 	effectiveKey, err := h.effectiveInstanceLicenseKey(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))
 		return
 	}
 
-	// Fail closed on a self-hosted instance: the cancel succeeded upstream, but if
-	// the local licenser cannot rebuild around the effective license key we surface
-	// the error so it is retried. Do not fall back to an org-billing licenser,
-	// which would wrongly flip a licensed self-hosted instance into org billing
-	// with no key.
 	if err := h.refreshInstanceLicenser(effectiveKey); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to refresh license entitlements", http.StatusInternalServerError))
 		return
