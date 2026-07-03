@@ -19,6 +19,7 @@ export interface ApiResponse<T> {
 
 export interface SubscriptionPlan {
 	id?: string;
+	key?: string;
 	name?: string;
 	price?: number;
 	currency?: string;

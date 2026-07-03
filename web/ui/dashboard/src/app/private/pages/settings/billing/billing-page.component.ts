@@ -1579,9 +1579,12 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
       const selectedUiPlan = this.selectedPlan ? this.plans.find(p => p.id === this.selectedPlan) : undefined;
       const subscriptionPlan = this.currentSubscription?.plan;
       const subscriptionPlanId = subscriptionPlan?.id;
+      const subscriptionPlanMatch = subscriptionPlan
+        ? { id: subscriptionPlan.id ?? '', key: subscriptionPlan.key ?? '', name: subscriptionPlan.name ?? '' }
+        : undefined;
       const uiPlan =
         selectedUiPlan ||
-        (subscriptionPlan ? this.plans.find(p => plansMatch(p, subscriptionPlan)) : undefined) ||
+        (subscriptionPlanMatch ? this.plans.find(p => plansMatch(p, subscriptionPlanMatch)) : undefined) ||
         (subscriptionPlanId ? this.findPlanForSubscriptionPlanId(subscriptionPlanId) : undefined);
 
       if (!uiPlan) {
