@@ -448,8 +448,14 @@ func NewCachedOrganisationRepository(inner datastore.OrganisationRepository, c c
 	return &CachedOrganisationRepository{inner: inner, cache: c, ttl: ttl, logger: logger}
 }
 
+// OrganisationCacheKey is the cache key for a single organisation fetched by id. Exported
+// so writers of organisation fields outside this package (notably the license_data
+// refreshers, which use raw repos) can invalidate the same entry the cached reads and the
+// trial event cap depend on.
+func OrganisationCacheKey(orgID string) string { return "organisations:" + orgID }
+
 func (r *CachedOrganisationRepository) FetchOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
-	return cachedrepo.FetchOne(ctx, r.cache, r.logger, "organisations:"+id, r.ttl,
+	return cachedrepo.FetchOne(ctx, r.cache, r.logger, OrganisationCacheKey(id), r.ttl,
 		func(o *datastore.Organisation) bool { return o.UID != "" },
 		func() (*datastore.Organisation, error) { return r.inner.FetchOrganisationByID(ctx, id) })
 }
@@ -457,7 +463,7 @@ func (r *CachedOrganisationRepository) FetchOrganisationByID(ctx context.Context
 func (r *CachedOrganisationRepository) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {
 	err := r.inner.UpdateOrganisation(ctx, org)
 	if err == nil {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "organisations:"+org.UID)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, OrganisationCacheKey(org.UID))
 	}
 	return err
 }
@@ -465,7 +471,7 @@ func (r *CachedOrganisationRepository) UpdateOrganisation(ctx context.Context, o
 func (r *CachedOrganisationRepository) UpdateOrganisationLicenseData(ctx context.Context, orgID, licenseData string) error {
 	err := r.inner.UpdateOrganisationLicenseData(ctx, orgID, licenseData)
 	if err == nil {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "organisations:"+orgID)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, OrganisationCacheKey(orgID))
 	}
 	return err
 }
@@ -473,7 +479,7 @@ func (r *CachedOrganisationRepository) UpdateOrganisationLicenseData(ctx context
 func (r *CachedOrganisationRepository) DeleteOrganisation(ctx context.Context, id string) error {
 	err := r.inner.DeleteOrganisation(ctx, id)
 	if err == nil {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "organisations:"+id)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, OrganisationCacheKey(id))
 	}
 	return err
 }

@@ -21,7 +21,8 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 		orgID = r.Header.Get(headerOrganisationID)
 	}
 
-	if h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil && !util.IsStringEmpty(orgID) {
+	// Org-scoped features require membership; guests get instance-level features.
+	if h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil && !util.IsStringEmpty(orgID) && h.isOrgMember(r, orgID) {
 		h.serveOrgLicenseFeatures(w, r, orgID)
 		return
 	}
@@ -36,12 +37,16 @@ func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
 }
 
-// GetPortalLicenseFeatures serves license features for the organisation that owns
-// the portal link. In cloud org-billing mode the org is derived from the portal
-// token only (via the resolved project), never from a client-supplied orgID, so a
-// portal token can only ever read its own org's plan. This is what lets a portal
-// session gate features on the customer's actual entitlements (e.g. a Pro org sees
-// AdvancedSubscriptions enabled) instead of the deployment/operator license.
+func (h *Handler) isOrgMember(r *http.Request, orgID string) bool {
+	user, err := h.retrieveUser(r)
+	if err != nil || user == nil || user.UID == "" {
+		return false
+	}
+
+	member, err := h.orgMemberRepo().FetchOrganisationMemberByUserID(r.Context(), user.UID, orgID)
+	return err == nil && member != nil
+}
+
 func (h *Handler) GetPortalLicenseFeatures(w http.ResponseWriter, r *http.Request) {
 	if h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil {
 		project, err := h.retrieveProject(r)
@@ -55,7 +60,7 @@ func (h *Handler) GetPortalLicenseFeatures(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Self-hosted / non-org-billing: the deployment licenser holds the plan.
+	// Self-hosted / non-org-billing: use the deployment licenser.
 	v, err := h.A.Licenser.FeatureListJSON(r.Context())
 	if err != nil {
 		h.A.Logger.Error("failed to get license features", "error", err)
@@ -66,9 +71,6 @@ func (h *Handler) GetPortalLicenseFeatures(w http.ResponseWriter, r *http.Reques
 	_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
 }
 
-// serveOrgLicenseFeatures resolves license features for a specific organisation in cloud
-// org-billing mode: it tries the billing service license first, falls back to the
-// org's stored license_data only on billing errors, and finally to the billing-required feature list.
 func (h *Handler) serveOrgLicenseFeatures(w http.ResponseWriter, r *http.Request, orgID string) {
 	org, err := h.orgRepo().FetchOrganisationByID(r.Context(), orgID)
 	if err != nil || org == nil {
@@ -92,6 +94,18 @@ func (h *Handler) serveOrgLicenseFeatures(w http.ResponseWriter, r *http.Request
 		projectCount = int64(len(projs))
 	}
 
+	memberCount := int64(-1)
+	if c, err := h.orgMemberRepo().CountOrganisationMembers(r.Context(), org.UID); err == nil {
+		memberCount = c
+	}
+
+	orgCount := int64(-1)
+	if user, err := h.retrieveUser(r); err == nil && user != nil && user.UID != "" {
+		if c, err := h.orgMemberRepo().CountUserOrganisations(r.Context(), user.UID, ""); err == nil {
+			orgCount = c
+		}
+	}
+
 	licClient := licensesvc.NewClientFromConfig(h.A.Cfg.LicenseService, h.A.Logger)
 	defaultKey := h.A.Cfg.LicenseKey
 	useOrgBilling := h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil
@@ -101,16 +115,17 @@ func (h *Handler) serveOrgLicenseFeatures(w http.ResponseWriter, r *http.Request
 		BillingClient: h.A.BillingClient,
 		Logger:        h.A.Logger,
 		Cfg:           h.A.Cfg,
+		Cache:         h.A.Cache,
 	}
 
-	// In cloud org billing mode, try billing first for fresh license data.
+	// Try billing first for fresh license data.
 	if resp, err := h.A.BillingClient.GetOrganisationLicense(r.Context(), org.UID); err == nil && resp != nil && resp.Data.Organisation != nil && resp.Data.Organisation.LicenseKey != "" {
 		licenseKey := resp.Data.Organisation.LicenseKey
 		data, err := licClient.ValidateLicense(r.Context(), licenseKey)
 		if err == nil {
 			entitlements, err := data.GetEntitlementsMap()
 			if err == nil && len(entitlements) > 0 {
-				v, encErr := license.FeatureListFromEntitlementsWithOrgProjectCount(entitlements, projectCount)
+				v, encErr := license.FeatureListFromEntitlementsWithUsage(entitlements, orgCount, memberCount, projectCount)
 				if encErr == nil {
 					go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, useOrgBilling, deps, licClient)
 					_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
@@ -143,19 +158,28 @@ func (h *Handler) serveOrgLicenseFeatures(w http.ResponseWriter, r *http.Request
 	if billingReturnedNoLicense && org.LicenseData != "" {
 		clearCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		org.LicenseData = ""
-		if err := h.orgRepo().UpdateOrganisationLicenseData(clearCtx, org.UID, ""); err != nil {
+		if err := services.ClearOrgLicenseData(clearCtx, deps, org.UID); err != nil {
 			h.A.Logger.Warn("get license features: clear stale license_data failed", "error", err, "org_id", org.UID)
 			billingRequiredReason = fmt.Sprintf("clear stale license_data failed after billing returned no license key: %v", err)
 		}
+
+		if license.IsProvisional(org.UID, org.LicenseData) {
+			payload, decErr := license.DecryptLicenseData(org.UID, org.LicenseData)
+			if decErr == nil && payload != nil && len(payload.Entitlements) > 0 {
+				v, encErr := license.FeatureListFromEntitlementsWithUsage(payload.Entitlements, orgCount, memberCount, projectCount)
+				if encErr == nil {
+					_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
+					return
+				}
+				logReason(fmt.Sprintf("FeatureListFromEntitlements (provisional seed) failed: %v", encErr))
+			}
+		}
 	}
 
-	// Stored license_data is a cache only. When billing answers definitively with
-	// no license key, fail closed instead of letting stale entitlements grant access.
 	if allowStoredLicenseFallback && org.LicenseData != "" {
 		payload, decErr := license.DecryptLicenseData(org.UID, org.LicenseData)
 		if decErr == nil && payload != nil && len(payload.Entitlements) > 0 {
-			v, encErr := license.FeatureListFromEntitlementsWithOrgProjectCount(payload.Entitlements, projectCount)
+			v, encErr := license.FeatureListFromEntitlementsWithUsage(payload.Entitlements, orgCount, memberCount, projectCount)
 			if encErr == nil {
 				_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", v, http.StatusOK))
 				return
@@ -166,7 +190,6 @@ func (h *Handler) serveOrgLicenseFeatures(w http.ResponseWriter, r *http.Request
 	if billingRequiredReason == "" {
 		billingRequiredReason = "no license data"
 	}
-	// Trigger refresh on uncertain local/license-service failures so license_data can be repopulated (e.g. after subscription activated).
 	h.A.Logger.Info("get license features: returning billing-required, triggering license refresh", "org_id", org.UID)
 	if !billingReturnedNoLicense {
 		go services.RefreshLicenseDataForOrg(context.Background(), *org, defaultKey, useOrgBilling, deps, licClient)

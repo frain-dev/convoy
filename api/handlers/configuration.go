@@ -145,6 +145,7 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 				BillingClient: h.A.BillingClient,
 				Logger:        h.A.Logger,
 				Cfg:           cfg,
+				Cache:         h.A.Cache,
 			},
 		})
 		if err == nil {

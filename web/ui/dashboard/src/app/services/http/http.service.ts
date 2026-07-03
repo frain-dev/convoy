@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {environment} from 'src/environments/environment';
+import {apiOrigin} from 'src/app/services/api-origin';
 import axios from 'axios';
 import {ActivatedRoute, Router} from '@angular/router';
 import {GeneralService} from '../general/general.service';
@@ -10,8 +10,8 @@ import {HTTP_RESPONSE} from 'src/app/models/global.model';
 	providedIn: 'root'
 })
 export class HttpService {
-	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
-	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
+	APIURL = `${apiOrigin()}/ui`;
+	APP_PORTAL_APIURL = `${apiOrigin()}/portal-api`;
 	token: string | undefined;
 	ownerId: string | undefined;
 

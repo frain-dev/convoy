@@ -267,6 +267,17 @@ func (s *Service) FetchAnyOrganisationAdminByUserID(ctx context.Context, userID 
 	return member, nil
 }
 
+// CountOrganisationMembers counts the number of active (non-deleted) members in an organisation
+func (s *Service) CountOrganisationMembers(ctx context.Context, organisationID string) (int64, error) {
+	count, err := s.repo.CountOrganisationMembers(ctx, common.StringToPgText(organisationID))
+	if err != nil {
+		s.logger.Error("failed to count organisation members", "error", err)
+		return 0, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	return count.Int64, nil
+}
+
 // CountInstanceAdminUsers counts the number of instance admin users
 func (s *Service) CountInstanceAdminUsers(ctx context.Context) (int64, error) {
 	count, err := s.repo.CountInstanceAdminUsers(ctx)

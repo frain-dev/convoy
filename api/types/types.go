@@ -39,6 +39,11 @@ type APIOptions struct {
 	OrgRepo                    datastore.OrganisationRepository
 	OrgMemberRepo              datastore.OrganisationMemberRepository
 	ProjectRepo                datastore.ProjectRepository
+	EventRepo                  datastore.EventRepository
+	// TrialEvents enforces the cloud-trial daily event cap at ingestion. It is
+	// wired at boot in NewApplicationHandler; a nil value (e.g. in tests) makes
+	// the cap a no-op.
+	TrialEvents *license.TrialEventLimiter
 }
 
 // TracerProvider returns the trace.TracerProvider used to mint span tracers.

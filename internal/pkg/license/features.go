@@ -37,7 +37,15 @@ var featureKeys = []struct {
 	{"agent_execution_mode", "AgentExecutionMode"},
 }
 
-func buildFeatureListFromEntitlements(parsed map[string]service.EntitlementValue, orgProjectCount int64) map[string]interface{} {
+// entitlementUsage carries resolved usage counts for the org-scoped feature list.
+// A -1 count means "unknown": don't gate (current stays 0, limit_reached stays false).
+type entitlementUsage struct {
+	orgCount     int64
+	memberCount  int64
+	projectCount int64
+}
+
+func buildFeatureListFromEntitlements(parsed map[string]service.EntitlementValue, usage entitlementUsage) map[string]interface{} {
 	out := make(map[string]interface{})
 	for _, key := range []string{"org_limit", "user_limit", "project_limit"} {
 		limit, exists := service.GetNumberEntitlement(parsed, key)
@@ -45,9 +53,22 @@ func buildFeatureListFromEntitlements(parsed map[string]service.EntitlementValue
 			available := limit > 0 || limit == -1
 			current := int64(0)
 			limitReached := false
-			if key == "project_limit" && orgProjectCount >= 0 {
-				current = orgProjectCount
-				limitReached = available && limit >= 0 && orgProjectCount >= limit
+			switch key {
+			case "project_limit":
+				if usage.projectCount >= 0 {
+					current = usage.projectCount
+					limitReached = available && limit >= 0 && usage.projectCount >= limit
+				}
+			case "org_limit":
+				if usage.orgCount >= 0 {
+					current = usage.orgCount
+					limitReached = available && limit >= 0 && usage.orgCount >= limit
+				}
+			case "user_limit":
+				if usage.memberCount >= 0 {
+					current = usage.memberCount
+					limitReached = available && limit >= 0 && usage.memberCount >= limit
+				}
 			}
 			out[key] = map[string]interface{}{
 				"limit":         limit,
@@ -68,7 +89,7 @@ func FeatureListFromEntitlements(entitlements map[string]interface{}) (json.RawM
 	if len(entitlements) == 0 {
 		return json.Marshal(map[string]interface{}{})
 	}
-	return json.Marshal(buildFeatureListFromEntitlements(service.ParseEntitlements(entitlements), -1))
+	return json.Marshal(buildFeatureListFromEntitlements(service.ParseEntitlements(entitlements), entitlementUsage{orgCount: -1, memberCount: -1, projectCount: -1}))
 }
 
 func BillingRequiredFeatureListJSON() (json.RawMessage, error) {
@@ -84,9 +105,38 @@ func BillingRequiredFeatureListJSON() (json.RawMessage, error) {
 	return json.Marshal(out)
 }
 
-func FeatureListFromEntitlementsWithOrgProjectCount(entitlements map[string]interface{}, projectCount int64) (json.RawMessage, error) {
+// FeatureListFromEntitlementsWithUsage builds the org-scoped feature list with resolved
+// usage counts so the UI can gate the add-org, add-member, and add-project actions. Pass
+// -1 for any count that cannot be resolved (e.g. no authed user for orgCount on portal
+// routes) to keep that limit fail-open (never gated).
+func FeatureListFromEntitlementsWithUsage(entitlements map[string]interface{}, orgCount, memberCount, projectCount int64) (json.RawMessage, error) {
 	if len(entitlements) == 0 {
 		return json.Marshal(map[string]interface{}{})
 	}
-	return json.Marshal(buildFeatureListFromEntitlements(service.ParseEntitlements(entitlements), projectCount))
+	return json.Marshal(buildFeatureListFromEntitlements(service.ParseEntitlements(entitlements), entitlementUsage{orgCount: orgCount, memberCount: memberCount, projectCount: projectCount}))
+}
+
+// OrgEntitlementCap decrypts an organisation's own license_data and returns the finite
+// per-org cap for key and whether that cap must be enforced. It is the single source of
+// truth for cloud per-org limits (org_limit, user_limit), matching the trial event cap
+// and the display builder; it never falls back to the instance/platform license.
+//
+// applies is false (caller must fail OPEN, i.e. not gate) when there is no finite cap:
+// empty or unreadable license_data, an absent entitlement, or an unlimited (-1) / non-
+// positive value. applies is true only for a resolved finite cap (> 0), where the caller
+// fails CLOSED once the current count reaches limit.
+func OrgEntitlementCap(orgID, licenseData, key string) (limit int64, applies bool) {
+	if licenseData == "" {
+		return 0, false
+	}
+	payload, err := DecryptLicenseData(orgID, licenseData)
+	if err != nil || payload == nil {
+		return 0, false
+	}
+	entitlements := service.ParseEntitlements(payload.Entitlements)
+	limit, ok := service.GetNumberEntitlement(entitlements, key)
+	if !ok || limit <= 0 {
+		return 0, false
+	}
+	return limit, true
 }

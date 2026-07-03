@@ -1,32 +1,27 @@
 import {Injectable} from '@angular/core';
 import {Plan} from './plan.service';
 
-// Plan classification. The pure classifiers use backend-guaranteed signals:
-// product_type (Overwatch plans.product_type is not-null: cloud | self_hosted)
-// and the canonical enterprise keys below. The default-to-overwatch merge
-// (findDefaultPlanComparison / resolvePlanForApi / shouldContactForMissingCloudPlan)
-// stays name-keyed by design: it mirrors the backend merge in
-// api/handlers/billing_plans.go (mergePlansWithFeatures), which joins config and
-// service plans by lowercased name.
+// Plan classification uses product_type and canonical enterprise keys.
 const PRODUCT_TYPE_SELF_HOSTED = 'self_hosted';
 const PRODUCT_TYPE_CLOUD = 'cloud';
-// Canonical enterprise plan keys. Backend (Overwatch plans.key) uses the
-// cloud_/self_hosted_ forms; the bundled default comparison plan uses 'enterprise'.
+// Canonical enterprise plan keys.
 const ENTERPRISE_KEYS = ['enterprise', 'cloud_enterprise', 'self_hosted_enterprise'];
 const ENTERPRISE_TOKEN = 'enterprise';
 const PRO_TOKENS = ['premium', 'pro'];
+
+type PlanTier = 'enterprise' | 'pro' | 'exact';
 
 const CADENCE_MONTHLY = 'monthly';
 const CADENCE_ANNUAL = 'annual';
 
 export interface PlanCatalog {
 	plans: Plan[];
-	overwatchPlans: Plan[];
+	billingPlans: Plan[];
 	plansUnavailableMessage: string;
 }
 
 export interface ResolvedPlanForApi {
-	planExistsInOverwatch: boolean;
+	planExistsInCatalog: boolean;
 	planIdForApi: string;
 }
 
@@ -45,9 +40,9 @@ export class PlanCatalogService {
 		return ENTERPRISE_KEYS.includes(key);
 	}
 
-	shouldContactForMissingCloudPlan(plan: Plan, isSelfHostedBilling: boolean, planExistsInOverwatch: boolean): boolean {
+	shouldContactForMissingCloudPlan(plan: Plan, isSelfHostedBilling: boolean, planExistsInCatalog: boolean): boolean {
 		const name = plan.name.toLowerCase();
-		return !isSelfHostedBilling && (name.includes('pro') || name.includes(ENTERPRISE_TOKEN)) && !planExistsInOverwatch;
+		return !isSelfHostedBilling && (name.includes('pro') || name.includes(ENTERPRISE_TOKEN)) && !planExistsInCatalog;
 	}
 
 	resolveCheckoutCadence(plan: Plan): string {
@@ -84,68 +79,87 @@ export class PlanCatalogService {
 		};
 	}
 
-	findDefaultPlanComparison(plan: Plan, defaultPlans: Plan[]): Plan | undefined {
+	// Shared tier matching keeps cloud default-card merge and billing-service feature
+	// merge aligned. Cloud lists default comparison cards then overlays API plans;
+	// self-hosted lists API plans directly but uses the same tier rules for features.
+	private planTier(plan: Plan): PlanTier {
+		if (this.isEnterprisePlan(plan) || plan.name.toLowerCase().includes(ENTERPRISE_TOKEN)) {
+			return 'enterprise';
+		}
+		const key = (plan.key || plan.id || '').toLowerCase();
 		const name = plan.name.toLowerCase();
-		if (name.includes(ENTERPRISE_TOKEN)) {
-			return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes(ENTERPRISE_TOKEN));
+		if (PRO_TOKENS.some(token => name.includes(token) || key.includes(token))) {
+			return 'pro';
 		}
-		if (PRO_TOKENS.some(token => name.includes(token))) {
-			return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes('pro'));
-		}
-		return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase() === name);
+		return 'exact';
 	}
 
-	resolvePlanForApi(selectedPlanData: Plan, overwatchPlans: Plan[]): ResolvedPlanForApi {
+	findDefaultPlanComparison(plan: Plan, defaultPlans: Plan[]): Plan | undefined {
+		const tier = this.planTier(plan);
+		if (tier === 'enterprise') {
+			return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes(ENTERPRISE_TOKEN));
+		}
+		if (tier === 'pro') {
+			return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes('pro'));
+		}
+		return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase() === plan.name.toLowerCase());
+	}
+
+	findBillingPlanForDefault(defaultPlan: Plan, billingPlans: Plan[]): Plan | undefined {
+		const tier = this.planTier(defaultPlan);
+		if (tier === 'enterprise') {
+			return billingPlans.find(plan => this.planTier(plan) === 'enterprise');
+		}
+		if (tier === 'pro') {
+			return billingPlans.find(plan => this.planTier(plan) === 'pro');
+		}
+		return billingPlans.find(plan => plan.name.toLowerCase() === defaultPlan.name.toLowerCase());
+	}
+
+	resolvePlanForApi(selectedPlanData: Plan, billingPlans: Plan[]): ResolvedPlanForApi {
 		const planLower = selectedPlanData.name.toLowerCase();
-		const overwatchPlan = overwatchPlans.find(p => {
+		const billingPlan = billingPlans.find(p => {
 			const pNameLower = p.name.toLowerCase();
 			return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
 		});
 
 		return {
-			planExistsInOverwatch: !!overwatchPlan,
-			planIdForApi: overwatchPlan?.id ?? selectedPlanData.id
+			planExistsInCatalog: !!billingPlan,
+			planIdForApi: billingPlan?.id ?? selectedPlanData.id
 		};
 	}
 
-	// Build the displayed plan catalog from the API response and the default
-	// comparison data. Pure transform; the component owns loading flags and
-	// selection reconciliation.
+	// Build the displayed plan catalog from the API response and default comparison data.
 	buildCatalog(plansFromApi: Plan[], defaultPlans: Plan[], isSelfHostedBilling: boolean): PlanCatalog {
 		if (plansFromApi.length === 0) {
 			return {
 				plans: [],
-				overwatchPlans: [],
+				billingPlans: [],
 				plansUnavailableMessage: 'Plans are not available right now. Please try again later.'
 			};
 		}
 
-		const overwatchPlans = plansFromApi.filter((plan: Plan) => isSelfHostedBilling ? this.isSelfHostedPlan(plan) : this.isCloudPlan(plan));
+		const billingPlans = plansFromApi.filter((plan: Plan) => isSelfHostedBilling ? this.isSelfHostedPlan(plan) : this.isCloudPlan(plan));
 		let plans: Plan[];
 		let plansUnavailableMessage = '';
 
 		if (isSelfHostedBilling) {
-			plans = overwatchPlans.map((plan: Plan) => this.mergePlanWithDefaultComparison(plan, defaultPlans));
+			plans = billingPlans.map((plan: Plan) => this.mergePlanWithDefaultComparison(plan, defaultPlans));
 			if (plans.length === 0) {
 				plansUnavailableMessage = 'Self-hosted plans are not available right now. Please try again later.';
 			}
 		} else {
-			const overwatchPlansMap = new Map<string, Plan>();
-			overwatchPlans.forEach((plan: Plan) => {
-				overwatchPlansMap.set(plan.name.toLowerCase(), plan);
-			});
-
 			plans = defaultPlans.map((defaultPlan: Plan) => {
-				const overwatchPlan = overwatchPlansMap.get(defaultPlan.name.toLowerCase());
+				const billingPlan = this.findBillingPlanForDefault(defaultPlan, billingPlans);
 
-				if (overwatchPlan) {
-					return this.mergePlanWithDefaultComparison(overwatchPlan, [defaultPlan]);
+				if (billingPlan) {
+					return this.mergePlanWithDefaultComparison(billingPlan, [defaultPlan]);
 				}
 
 				return defaultPlan;
 			});
 		}
 
-		return { plans, overwatchPlans, plansUnavailableMessage };
+		return { plans, billingPlans, plansUnavailableMessage };
 	}
 }

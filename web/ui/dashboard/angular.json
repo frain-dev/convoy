@@ -111,6 +111,20 @@
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true
+            },
+            "proxy": {
+              "buildOptimizer": false,
+              "optimization": false,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.proxy.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -123,6 +137,9 @@
             },
             "development": {
               "buildTarget": "convoy-ng:build:development"
+            },
+            "proxy": {
+              "buildTarget": "convoy-ng:build:proxy"
             }
           },
           "defaultConfiguration": "development"

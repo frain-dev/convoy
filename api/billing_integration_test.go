@@ -40,6 +40,28 @@ type countingBillingClient struct {
 	completeCalls int
 	lastStart     billing.StartGuestCheckoutRequest
 	startErr      error
+	trialCalls    int
+	lastTrial     billing.StartSelfHostedTrialRequest
+	trialErr      error
+	trialResp     *billing.Response[billing.GuestCheckoutCompletion]
+	upgradeCalls  int
+	lastUpgrade   struct {
+		licenseKey string
+		req        billing.UpgradeSubscriptionRequest
+	}
+	upgradeErr error
+}
+
+func (c *countingBillingClient) StartSelfHostedTrial(ctx context.Context, req billing.StartSelfHostedTrialRequest) (*billing.Response[billing.GuestCheckoutCompletion], error) {
+	c.trialCalls++
+	c.lastTrial = req
+	if c.trialErr != nil {
+		return nil, c.trialErr
+	}
+	if c.trialResp != nil {
+		return c.trialResp, nil
+	}
+	return c.MockBillingClient.StartSelfHostedTrial(ctx, req)
 }
 
 func (c *countingBillingClient) CompleteGuestCheckout(ctx context.Context, req billing.CompleteGuestCheckoutRequest) (*billing.Response[billing.GuestCheckoutCompletion], error) {
@@ -53,6 +75,16 @@ func (c *countingBillingClient) StartGuestCheckout(ctx context.Context, req bill
 		return nil, c.startErr
 	}
 	return c.MockBillingClient.StartGuestCheckout(ctx, req)
+}
+
+func (c *countingBillingClient) UpgradeSelfHostedSubscription(ctx context.Context, licenseKey string, req billing.UpgradeSubscriptionRequest) (*billing.Response[billing.Checkout], error) {
+	c.upgradeCalls++
+	c.lastUpgrade.licenseKey = licenseKey
+	c.lastUpgrade.req = req
+	if c.upgradeErr != nil {
+		return nil, c.upgradeErr
+	}
+	return c.MockBillingClient.UpgradeSelfHostedSubscription(ctx, licenseKey, req)
 }
 
 func (s *BillingIntegrationTestSuite) SetupSuite() {
@@ -343,6 +375,505 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedCheckout_ResubscribeWi
 	require.Empty(s.T(), client.lastStart.Email)
 }
 
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_OrganisationAdminStartsTrial() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	// refreshInstanceLicenser re-validates the minted key against the configured
+	// billing service host. Point that host at a local server returning an active trial
+	// so the post-mint refresh succeeds (the mock trial key is not valid against
+	// production billing).
+	licSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":true,"data":{"valid":true,"status":"active","trial":true,"entitlements":[{"key":"project_limit","value":-1},{"key":"org_limit","value":-1}]}}`))
+	}))
+	defer licSrv.Close()
+
+	globalCfg, err := config.Get()
+	require.NoError(s.T(), err)
+	originalLicHost := globalCfg.LicenseService.Host
+	originalLicPath := globalCfg.LicenseService.ValidatePath
+	globalCfg.LicenseService.Host = licSrv.URL
+	globalCfg.LicenseService.ValidatePath = "/validate"
+	require.NoError(s.T(), config.Override(&globalCfg))
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	cfg.InstanceId = "deploy-abc-123"
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		restored, _ := config.Get()
+		restored.LicenseService.Host = originalLicHost
+		restored.LicenseService.ValidatePath = originalLicPath
+		_ = config.Override(&restored)
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{
+		"email": "buyer@example.com",
+		"host":  "https://customer.example.com",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+	require.Equal(s.T(), 1, client.trialCalls)
+	require.Equal(s.T(), "buyer@example.com", client.lastTrial.Email)
+	require.NotEmpty(s.T(), client.lastTrial.AttemptID)
+
+	var resp map[string]interface{}
+	require.NoError(s.T(), json.Unmarshal(w.Body.Bytes(), &resp))
+	data := resp["data"].(map[string]interface{})
+	require.Equal(s.T(), true, data["trial"])
+	require.NotEmpty(s.T(), data["license_key"])
+
+	// The trial key must be persisted as the effective license (guest_checkout
+	// provenance), matching how checkout completion stores it.
+	stored, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), data["license_key"], stored.LicenseKey)
+	require.Equal(s.T(), config.LicenseSourceGuestCheckout, stored.LicenseKeySource)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_RejectsNonAdmin() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+
+	// Default user is seeded with RoleBillingAdmin only (not org/instance admin),
+	// which self-hosted billing does not accept, so the trial must be rejected and
+	// the billing service must never be called.
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	cfg.InstanceId = "deploy-abc-123"
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer([]byte("{}")))
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+	require.Equal(s.T(), 0, client.trialCalls)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_RequiresEmailWithoutResubscribeKey() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer([]byte("{}")))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code, w.Body.String())
+	require.Contains(s.T(), w.Body.String(), "email is required")
+	require.Equal(s.T(), 0, client.trialCalls)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_ResubscribeWithoutEmail() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	billingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	billingCfg.CheckoutLicenseKey = "RESUB-TRIAL-KEY"
+	require.NoError(s.T(), cfgSvc.UpdateInstanceBillingConfig(context.Background(), billingCfg))
+
+	licSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":true,"data":{"valid":true,"status":"active","trial":true,"entitlements":[{"key":"project_limit","value":-1}]}}`))
+	}))
+	defer licSrv.Close()
+
+	globalCfg, err := config.Get()
+	require.NoError(s.T(), err)
+	originalLicHost := globalCfg.LicenseService.Host
+	originalLicPath := globalCfg.LicenseService.ValidatePath
+	globalCfg.LicenseService.Host = licSrv.URL
+	globalCfg.LicenseService.ValidatePath = "/validate"
+	require.NoError(s.T(), config.Override(&globalCfg))
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		restored, _ := config.Get()
+		restored.LicenseService.Host = originalLicHost
+		restored.LicenseService.ValidatePath = originalLicPath
+		_ = config.Override(&restored)
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{"host": "https://customer.example.com"})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+	require.Equal(s.T(), 1, client.trialCalls)
+	require.Equal(s.T(), "RESUB-TRIAL-KEY", client.lastTrial.LicenseKey)
+	require.Empty(s.T(), client.lastTrial.Email)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_SurfacesBillingConflict() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	client := &countingBillingClient{
+		MockBillingClient: &billing.MockBillingClient{},
+		trialErr:          &billing.Error{StatusCode: http.StatusConflict, Message: "Organisation already has an active subscription"},
+	}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	body, err := json.Marshal(map[string]string{
+		"email": "buyer@example.com",
+		"host":  "https://customer.example.com",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusConflict, w.Code, w.Body.String())
+	require.Contains(s.T(), w.Body.String(), "active subscription")
+
+	stored, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), stored.ActiveCheckoutAttemptID)
+	require.NotEmpty(s.T(), client.lastTrial.AttemptID)
+	attempt, ok := stored.CheckoutAttempts[client.lastTrial.AttemptID]
+	require.True(s.T(), ok)
+	require.Equal(s.T(), "failed", attempt.Status)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_KeepsPendingAttemptOnTransientBillingError() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	client := &countingBillingClient{
+		MockBillingClient: &billing.MockBillingClient{},
+		trialErr:          &billing.Error{StatusCode: http.StatusBadGateway, Message: "billing is temporarily unavailable"},
+	}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{
+		"email": "buyer@example.com",
+		"host":  "https://customer.example.com",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusServiceUnavailable, w.Code, w.Body.String())
+	stored, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), client.lastTrial.AttemptID, stored.ActiveCheckoutAttemptID)
+	attempt, ok := stored.CheckoutAttempts[client.lastTrial.AttemptID]
+	require.True(s.T(), ok)
+	require.Equal(s.T(), "pending", attempt.Status)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_MarksAttemptFailedWhenLicenseKeyMissing() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	client := &countingBillingClient{
+		MockBillingClient: &billing.MockBillingClient{},
+		trialResp: &billing.Response[billing.GuestCheckoutCompletion]{
+			Data: billing.GuestCheckoutCompletion{Status: "completed", LicenseKey: ""},
+		},
+	}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{
+		"email": "buyer@example.com",
+		"host":  "https://customer.example.com",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadGateway, w.Code, w.Body.String())
+	stored, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), stored.ActiveCheckoutAttemptID)
+	require.NotEmpty(s.T(), client.lastTrial.AttemptID)
+	attempt, ok := stored.CheckoutAttempts[client.lastTrial.AttemptID]
+	require.True(s.T(), ok)
+	require.Equal(s.T(), "failed", attempt.Status)
+}
+
+func (s *BillingIntegrationTestSuite) Test_UpgradeSelfHostedSubscription_ReturnsCheckoutURL() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	billingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	billingCfg.LicenseKey = "TRIAL-LICENSE-KEY"
+	billingCfg.LicenseKeySource = config.LicenseSourceGuestCheckout
+	require.NoError(s.T(), cfgSvc.UpdateInstanceBillingConfig(context.Background(), billingCfg))
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{
+		"plan_id":  "00000000-0000-4000-8000-000000000001",
+		"host":     "https://customer.example.com",
+		"interval": "annual",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPut, "/ui/billing/sh_subscription/upgrade", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+	require.Equal(s.T(), 1, client.upgradeCalls)
+	require.Equal(s.T(), "TRIAL-LICENSE-KEY", client.lastUpgrade.licenseKey)
+	require.Equal(s.T(), "00000000-0000-4000-8000-000000000001", client.lastUpgrade.req.PlanID)
+	require.Equal(s.T(), "https://customer.example.com", client.lastUpgrade.req.Host)
+	require.Equal(s.T(), "annual", client.lastUpgrade.req.Interval)
+
+	var resp map[string]interface{}
+	require.NoError(s.T(), json.Unmarshal(w.Body.Bytes(), &resp))
+	data := resp["data"].(map[string]interface{})
+	require.Contains(s.T(), data, "checkout_url")
+}
+
+func (s *BillingIntegrationTestSuite) Test_UpgradeSelfHostedSubscription_RequiresPlanIDAndHost() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	billingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	billingCfg.LicenseKey = "TRIAL-LICENSE-KEY"
+	require.NoError(s.T(), cfgSvc.UpdateInstanceBillingConfig(context.Background(), billingCfg))
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	req := createRequest(http.MethodPut, "/ui/billing/sh_subscription/upgrade", "", bytes.NewBuffer([]byte(`{"plan_id":"00000000-0000-4000-8000-000000000001"}`)))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusBadRequest, w.Code, w.Body.String())
+	require.Contains(s.T(), w.Body.String(), "host is required")
+	require.Equal(s.T(), 0, client.upgradeCalls)
+}
+
 func (s *BillingIntegrationTestSuite) Test_StartSelfHostedCheckout_SurfacesResubscribeBlock() {
 	originalCfg := s.ConvoyApp.A.Cfg
 	originalRouter := s.Router
@@ -357,7 +888,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedCheckout_SurfacesResub
 	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleInstanceAdmin)
 	require.NoError(s.T(), err)
 
-	// Overwatch returns 409 for a duplicate checkout; the handler must surface it.
+	// Billing service returns 409 for a duplicate checkout; the handler must surface it.
 	client := &countingBillingClient{
 		MockBillingClient: &billing.MockBillingClient{},
 		startErr:          &billing.Error{StatusCode: http.StatusConflict, Message: "an active subscription already exists; cancel it before resubscribing"},

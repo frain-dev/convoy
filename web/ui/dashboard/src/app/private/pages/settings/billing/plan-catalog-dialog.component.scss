@@ -1,0 +1,11 @@
+.plan-catalog-dialog-content {
+  width: 100%;
+  padding: 24px 32px 32px;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  .plan-catalog-title {
+    display: none;
+  }
+}

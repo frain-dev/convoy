@@ -8,11 +8,12 @@ import { PageDirective } from 'src/app/components/page/page.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { PermissionDirective } from '../../components/permission/permission.directive';
+import { TrialModalComponent } from '../settings/billing/trial-modal.component';
 
 const routes: Routes = [{ path: '', component: ProjectsComponent }];
 
 @NgModule({
 	declarations: [ProjectsComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), LoaderModule, ButtonComponent, PageDirective, EmptyStateComponent, CardComponent, PermissionDirective]
+	imports: [CommonModule, RouterModule.forChild(routes), LoaderModule, ButtonComponent, PageDirective, EmptyStateComponent, CardComponent, PermissionDirective, TrialModalComponent]
 })
 export class ProjectsModule {}

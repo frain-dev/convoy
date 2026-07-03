@@ -1,5 +1,9 @@
 export type BillingStrategy = 'oss' | 'cloud' | 'licensed_self_hosted';
 
+import type { TrialOffer } from '../private/pages/settings/billing/trial-offer.util';
+
+export type { TrialOffer, TrialOfferLimit } from '../private/pages/settings/billing/trial-offer.util';
+
 export const CHECKOUT_STATUS = {
 	COMPLETED: 'completed',
 	PENDING: 'pending',
@@ -31,6 +35,8 @@ export interface Subscription {
 	// Next invoice / cycle reset (ISO 8601). The cycle window is only authoritative
 	// when this is a valid future date, matching the billing overview's period label.
 	next_invoice_date?: string;
+	// Trial state from the billing service: true during the trial window.
+	trial?: boolean;
 }
 
 export interface SelfHostedActiveCheckout {
@@ -44,6 +50,8 @@ export interface SelfHostedBillingConfig {
 	// Server-resolved: a prior guest purchase exists, so checkout is a resubscribe.
 	resubscribe?: boolean;
 	active_checkout?: SelfHostedActiveCheckout | null;
+	// Terms/limits for the OSS "Start trial" modal (unlicensed instances only).
+	trial_offer?: TrialOffer;
 }
 
 export interface TaxIdType {

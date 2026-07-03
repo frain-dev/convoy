@@ -9013,7 +9013,7 @@
             "type": "string"
           },
           "period_failure_rate": {
-            "description": "PeriodFailureRate is the history (period-scoped) failure rate computed from\nevent_deliveries over a date range: Failure/(Success+Failure). It is independent\nof the circuit breaker (no license/flag needed). Nil when there were no terminal\n(Success+Failure) deliveries in the range, distinct from a genuine 0%. SuccessCount\nand FailureCount back the tooltip. All three are transient (not persisted).",
+            "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n(Failure/(Success+Failure)), independent of the circuit breaker. Nil when the\nrange has no terminal deliveries. SuccessCount/FailureCount are transient too.",
             "type": "number"
           },
           "project_id": {
@@ -10587,7 +10587,7 @@
             "type": "string"
           },
           "period_failure_rate": {
-            "description": "PeriodFailureRate is the history (period-scoped) failure rate computed from\nevent_deliveries over a date range: Failure/(Success+Failure). It is independent\nof the circuit breaker (no license/flag needed). Nil when there were no terminal\n(Success+Failure) deliveries in the range, distinct from a genuine 0%. SuccessCount\nand FailureCount back the tooltip. All three are transient (not persisted).",
+            "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n(Failure/(Success+Failure)), independent of the circuit breaker. Nil when the\nrange has no terminal deliveries. SuccessCount/FailureCount are transient too.",
             "type": "number"
           },
           "project_id": {

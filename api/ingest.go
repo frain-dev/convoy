@@ -16,6 +16,7 @@ import (
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/events"
@@ -248,6 +249,16 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}
+
+	// Cloud only: enforce the per-org daily event cap for active trials. Placed
+	// here, after signature verification and payload validation and right before
+	// the enqueue, so only events Convoy actually accepts count against the cap.
+	// Skip duplicates: they are deduplicated downstream and never delivered, so an
+	// idempotent retry must not spend quota. A no-cap org (paid, self-hosted) or a
+	// Redis outage passes through.
+	if !isDuplicate && handlers.EnforceTrialEventCap(w, r, a.A, project.OrganisationID) {
+		return
+	}
 
 	jobId := queue.JobId{ProjectID: event.ProjectID, ResourceID: event.UID}.SingleJobId()
 	createEvent := task.CreateEvent{

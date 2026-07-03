@@ -419,7 +419,15 @@ func TestBillingClientPublicSelfHostedCallsDoNotSendBearerToken(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen[r.URL.Path] = r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": true, "message": "ok", "data": []interface{}{}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": true, "message": "ok", "data": []interface{}{},
+			"trial_offer": map[string]interface{}{
+				"duration_count": 1,
+				"duration_unit":  "hour",
+				"plan_name":      "Self-Hosted Premium",
+				"requires_card":  false,
+			},
+		})
 	}))
 	defer server.Close()
 
@@ -427,6 +435,12 @@ func TestBillingClientPublicSelfHostedCallsDoNotSendBearerToken(t *testing.T) {
 
 	_, err := client.GetPlans(context.Background())
 	require.NoError(t, err)
+
+	catalog, err := client.GetSelfHostedCatalog(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, catalog.TrialOffer)
+	require.Equal(t, 1, catalog.TrialOffer.DurationCount)
+	require.Equal(t, "hour", catalog.TrialOffer.DurationUnit)
 
 	require.Equal(t, "", seen["/public/self_hosted/plans"])
 }
@@ -468,4 +482,73 @@ func TestBillingClientSelfHostedBillingUsesLicenseProof(t *testing.T) {
 
 	require.Equal(t, "", authHeader)
 	require.Equal(t, "license-key", licenseHeader)
+}
+
+func TestClient_StartSelfHostedTrial_SendsEmailAndAttemptID(t *testing.T) {
+	client, server := setupTestClientWithHandler(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/public/self_hosted_trials/start", r.URL.Path)
+		assert.Empty(t, r.Header.Get("Authorization"))
+
+		var req StartSelfHostedTrialRequest
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+		assert.Equal(t, "buyer@example.com", req.Email)
+		assert.Equal(t, "attempt_sh_1", req.AttemptID)
+		assert.Equal(t, "https://customer.example.com", req.Host)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		require.NoError(t, json.NewEncoder(w).Encode(Response[GuestCheckoutCompletion]{
+			Status:  true,
+			Message: "Self-hosted trial started",
+			Data: GuestCheckoutCompletion{
+				Status:     "completed",
+				LicenseKey: "trial-license-key",
+				ExternalID: "sh_ck_attempt_sh_1",
+			},
+		}))
+	}))
+	defer server.Close()
+
+	resp, err := client.StartSelfHostedTrial(context.Background(), StartSelfHostedTrialRequest{
+		Email:     "buyer@example.com",
+		AttemptID: "attempt_sh_1",
+		Host:      "https://customer.example.com",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "trial-license-key", resp.Data.LicenseKey)
+}
+
+func TestClient_UpgradeSelfHostedSubscription_Success(t *testing.T) {
+	var licenseHeader string
+	client, server := setupTestClientWithHandler(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "PUT", r.Method)
+		assert.Equal(t, "/public/self_hosted_billing/subscription/upgrade", r.URL.Path)
+		assert.Empty(t, r.Header.Get("Authorization"))
+		licenseHeader = r.Header.Get("X-Convoy-License-Key")
+
+		var req UpgradeSubscriptionRequest
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+		assert.Equal(t, "00000000-0000-4000-8000-000000000001", req.PlanID)
+		assert.Equal(t, "https://customer.example.com", req.Host)
+		assert.Equal(t, "annual", req.Interval)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		require.NoError(t, json.NewEncoder(w).Encode(Response[Checkout]{
+			Status:  true,
+			Message: "Checkout created successfully",
+			Data:    Checkout{CheckoutURL: "https://checkout.example.com/sh-upgrade"},
+		}))
+	}))
+	defer server.Close()
+
+	resp, err := client.UpgradeSelfHostedSubscription(context.Background(), "trial-license-key", UpgradeSubscriptionRequest{
+		PlanID:   "00000000-0000-4000-8000-000000000001",
+		Host:     "https://customer.example.com",
+		Interval: "annual",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "https://checkout.example.com/sh-upgrade", resp.Data.CheckoutURL)
+	assert.Equal(t, "trial-license-key", licenseHeader)
 }

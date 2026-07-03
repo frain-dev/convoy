@@ -1,12 +1,13 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
+import {Subscription} from 'rxjs';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {HttpService} from 'src/app/services/http/http.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {BillingPaymentDetailsService} from './billing/billing-payment-details.service';
 import {CheckoutResolverData} from './billing/checkout.resolver';
-import {pollUntil} from 'src/app/utils/poll.util';
+import {pollUntil, CHECKOUT_POLL_BUDGET_MS} from 'src/app/utils/poll.util';
 import {CHECKOUT_STATUS} from 'src/app/models/billing.model';
 
 export const SETTINGS_PAGE = {
@@ -26,15 +27,16 @@ export type SETTINGS = typeof SETTINGS_PAGE[keyof typeof SETTINGS_PAGE];
     styleUrls: ['./settings.component.scss'],
     standalone: false
 })
-export class SettingsComponent implements OnInit {
+export class SettingsComponent implements OnInit, OnDestroy {
 	activePage: SETTINGS = SETTINGS_PAGE.ORGANISATION;
 	canAccessBilling = false;
 	canAccessEarlyAdopterFeatures = false;
-	isVerifyingSubscription = false;
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: SETTINGS_PAGE.ORGANISATION, icon: 'org', svg: 'fill' },
 		{ name: SETTINGS_PAGE.TEAM, icon: 'team', svg: 'stroke' }
 	];
+
+	private queryParamsSub?: Subscription;
 
 	constructor(
 		private router: Router,
@@ -67,39 +69,51 @@ export class SettingsComponent implements OnInit {
 			const requestedPage = this.route.snapshot.queryParams?.activePage ?? SETTINGS_PAGE.ORGANISATION;
 			this.setActivePageWithLicenseCheck(requestedPage);
 		}
+
+		this.queryParamsSub = this.route.queryParams.subscribe((params) => {
+			const requestedPage = params['activePage'];
+			if (!requestedPage || requestedPage === this.activePage) {
+				return;
+			}
+			this.setActivePageWithLicenseCheck(requestedPage);
+		});
+	}
+
+	ngOnDestroy(): void {
+		this.queryParamsSub?.unsubscribe();
 	}
 
 	private async pollSubscriptionStatus(orgId: string) {
-		this.isVerifyingSubscription = true;
+		this.billingPaymentDetailsService.notifyCheckoutVerificationStarted();
 
 		const verified = await pollUntil({
+			budgetMs: CHECKOUT_POLL_BUDGET_MS,
+			delayFirst: true,
 			request: () => this.httpService.request({
 				url: `/billing/organisations/${orgId}/subscription`,
 				method: 'get',
 				hideNotification: true
 			}),
-			isDone: (response: any) => response.data?.status === CHECKOUT_STATUS.ACTIVE,
-			delayFirst: true
+			isDone: (response: any) => response.data?.status === CHECKOUT_STATUS.ACTIVE
 		});
 
 		if (verified) {
 			await this.licenseService.loadAllLicenses();
 			this.billingPaymentDetailsService.notifyCheckoutSubscriptionVerified();
 			this.generalService.showNotification({ message: 'Subscription activated successfully!', style: 'success' });
-			this.isVerifyingSubscription = false;
 			this.cleanupCheckoutParams();
 			return;
 		}
 
 		this.generalService.showNotification({ message: 'Unable to verify subscription. Please check billing page.', style: 'warning' });
-		this.isVerifyingSubscription = false;
 		this.cleanupCheckoutParams();
 	}
 
 	private async completeSelfHostedCheckout(token: string, attemptId: string) {
-		this.isVerifyingSubscription = true;
+		this.billingPaymentDetailsService.notifyCheckoutVerificationStarted();
 
 		const completed = await pollUntil({
+			budgetMs: CHECKOUT_POLL_BUDGET_MS,
 			request: () => this.httpService.request({
 				url: '/billing/sh_checkout/complete',
 				method: 'post',
@@ -112,14 +126,13 @@ export class SettingsComponent implements OnInit {
 		if (completed) {
 			if (attemptId) localStorage.setItem(`checkout_processed_${attemptId}`, 'true');
 			await this.licenseService.loadAllLicenses();
+			this.billingPaymentDetailsService.notifyCheckoutSubscriptionVerified();
 			this.generalService.showNotification({ message: 'License activated successfully!', style: 'success' });
-			this.isVerifyingSubscription = false;
 			this.cleanupCheckoutParams();
 			return;
 		}
 
 		this.generalService.showNotification({ message: 'Payment is still pending. You can resume checkout from Usage and Billing shortly.', style: 'warning' });
-		this.isVerifyingSubscription = false;
 		this.cleanupCheckoutParams();
 	}
 

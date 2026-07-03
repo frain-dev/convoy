@@ -2,7 +2,7 @@ import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular
 
 import { Router } from '@angular/router';
 import axios from 'axios';
-import { environment } from 'src/environments/environment';
+import { apiOrigin } from 'src/app/services/api-origin';
 import { HttpService } from 'src/app/services/http/http.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
@@ -47,14 +47,16 @@ export class QueueMonitoringComponent implements OnInit {
 
 		this.loadFullscreenPreference();
 
+		await this.licenses.loadAllLicenses();
+
 		if (this.hasAsynqLicense()) {
 			await this.mintSessionAndLoad();
 		}
 	}
 
 	hasAsynqLicense(): boolean {
-		// Queue monitoring is an instance-admin platform tool; no org plan sells it,
-		// so it is gated on the deployment (instance) license only.
+		// Instance license carries asynq_monitoring for self-hosted Premium/Enterprise.
+		// Refreshed after trial start via loadAllLicenses() above.
 		return this.licenses.hasInstanceLicense('AsynqMonitoring');
 	}
 
@@ -122,7 +124,7 @@ export class QueueMonitoringComponent implements OnInit {
 	}
 
 	private apiBase(): string {
-		return environment.production ? location.origin : 'http://localhost:5005';
+		return apiOrigin();
 	}
 
 	private buildEmbedMonitoringUrl(): string {

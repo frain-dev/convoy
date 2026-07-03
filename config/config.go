@@ -555,7 +555,7 @@ func (c Configuration) UsesOrgBilling() bool {
 }
 
 // BillingServiceURL returns the billing service base URL to use. OSS and
-// self-hosted instances (no billing API key) default to prod Overwatch so the
+// self-hosted instances (no billing API key) default to prod billing so the
 // plan catalog, guest checkout, and license management work without operator
 // config, mirroring the SSO/license service defaults. Cloud (API key set) keeps
 // requiring an explicit URL: an empty URL there is a misconfiguration that

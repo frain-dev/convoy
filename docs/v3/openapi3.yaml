@@ -5005,15 +5005,11 @@ components:
           type: string
         period_failure_rate:
           description: >-
-            PeriodFailureRate is the history (period-scoped) failure rate computed from
+            PeriodFailureRate is the period-scoped failure rate from event_deliveries
 
-            event_deliveries over a date range: Failure/(Success+Failure). It is independent
+            (Failure/(Success+Failure)), independent of the circuit breaker. Nil when the
 
-            of the circuit breaker (no license/flag needed). Nil when there were no terminal
-
-            (Success+Failure) deliveries in the range, distinct from a genuine 0%. SuccessCount
-
-            and FailureCount back the tooltip. All three are transient (not persisted).
+            range has no terminal deliveries. SuccessCount/FailureCount are transient too.
           type: number
         project_id:
           type: string
@@ -6147,15 +6143,11 @@ components:
           type: string
         period_failure_rate:
           description: >-
-            PeriodFailureRate is the history (period-scoped) failure rate computed from
+            PeriodFailureRate is the period-scoped failure rate from event_deliveries
 
-            event_deliveries over a date range: Failure/(Success+Failure). It is independent
+            (Failure/(Success+Failure)), independent of the circuit breaker. Nil when the
 
-            of the circuit breaker (no license/flag needed). Nil when there were no terminal
-
-            (Success+Failure) deliveries in the range, distinct from a genuine 0%. SuccessCount
-
-            and FailureCount back the tooltip. All three are transient (not persisted).
+            range has no terminal deliveries. SuccessCount/FailureCount are transient too.
           type: number
         project_id:
           type: string

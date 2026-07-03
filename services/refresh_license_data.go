@@ -6,9 +6,11 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	licensesvc "github.com/frain-dev/convoy/internal/pkg/license/service"
+	"github.com/frain-dev/convoy/pkg/cachedrepo"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
@@ -20,6 +22,16 @@ type RefreshLicenseDataDeps struct {
 	BillingClient billing.Client
 	Logger        log.Logger
 	Cfg           config.Configuration
+	Cache         cachedrepo.Cache
+}
+
+// invalidateOrgCache clears the cached organisation entry after a license_data write, so
+// the raw-repo write path stays in sync with the cached read path. No-op without a cache.
+func invalidateOrgCache(deps RefreshLicenseDataDeps, orgID string) {
+	if deps.Cache == nil || deps.Logger == nil {
+		return
+	}
+	cachedrepo.Invalidate(context.Background(), deps.Cache, deps.Logger, cached.OrganisationCacheKey(orgID))
 }
 
 // RefreshLicenseDataForUser loads the user's organisations and asynchronously refreshes
@@ -58,6 +70,31 @@ func RefreshLicenseDataForUser(userID string, deps RefreshLicenseDataDeps) {
 	}
 }
 
+// ClearOrgLicenseData clears license_data unless the org holds a marked provisional trial seed.
+func ClearOrgLicenseData(ctx context.Context, deps RefreshLicenseDataDeps, orgID string) error {
+	if deps.OrgRepo == nil {
+		return nil
+	}
+	org, err := deps.OrgRepo.FetchOrganisationByID(ctx, orgID)
+	if err != nil {
+		return err
+	}
+	if org == nil || org.LicenseData == "" {
+		return nil
+	}
+	if license.IsProvisional(orgID, org.LicenseData) {
+		if deps.Logger != nil {
+			deps.Logger.Info("license_data clear skipped: preserving provisional trial seed", "org_id", orgID)
+		}
+		return nil
+	}
+	if err := deps.OrgRepo.UpdateOrganisationLicenseData(ctx, orgID, ""); err != nil {
+		return err
+	}
+	invalidateOrgCache(deps, orgID)
+	return nil
+}
+
 // RefreshLicenseDataForOrg resolves key for the org, validates, encrypts, and updates org license_data.
 // Caller must pass a non-nil licClient.
 func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, defaultKey string, useOrgBilling bool, deps RefreshLicenseDataDeps, licClient *licensesvc.Client) {
@@ -67,10 +104,8 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 	key := resolveKey(ctx, org, defaultKey, useOrgBilling, deps.BillingClient)
 	if key == "" {
 		if useOrgBilling {
-			if err := deps.OrgRepo.UpdateOrganisationLicenseData(ctx, org.UID, ""); err != nil {
-				if deps.Logger != nil {
-					deps.Logger.Warn("refresh license data: clear license_data failed", "error", err, "org_id", org.UID)
-				}
+			if err := ClearOrgLicenseData(ctx, deps, org.UID); err != nil && deps.Logger != nil {
+				deps.Logger.Warn("refresh license data: clear license_data failed", "error", err, "org_id", org.UID)
 			}
 		}
 		return
@@ -89,6 +124,16 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 		}
 		return
 	}
+	if !license.EntitlementsHaveDailyEventLimit(entitlements) {
+		if current, ferr := deps.OrgRepo.FetchOrganisationByID(ctx, org.UID); ferr == nil && current != nil &&
+			license.IsProvisional(current.UID, current.LicenseData) {
+			if deps.Logger != nil {
+				deps.Logger.Info("refresh license data: preserving provisional trial cap; refresh payload lacks daily_event_limit", "org_id", org.UID)
+			}
+			return
+		}
+	}
+
 	payload := &license.LicenseDataPayload{Key: key, Entitlements: entitlements}
 	enc, err := license.EncryptLicenseData(org.UID, payload)
 	if err != nil {
@@ -103,6 +148,7 @@ func RefreshLicenseDataForOrg(ctx context.Context, org datastore.Organisation, d
 		}
 		return
 	}
+	invalidateOrgCache(deps, org.UID)
 }
 
 // resolveKey returns the org's license key from cloud org billing when configured, otherwise the default instance key.
@@ -132,8 +178,17 @@ type OrgProjectLimitDeps struct {
 }
 
 // CheckOrganisationProjectLimit returns whether the org is allowed to create another project
-// based on its cloud org billing license or the default instance license.
+// based on its cloud org license_data caps (including provisional trial seeds) or, when no
+// finite org-scoped cap applies, its cloud org billing license or the default instance license.
 func CheckOrganisationProjectLimit(ctx context.Context, org *datastore.Organisation, deps OrgProjectLimitDeps) (bool, error) {
+	if limit, applies := license.OrgEntitlementCap(org.UID, org.LicenseData, "project_limit"); applies {
+		projects, err := deps.ProjectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
+		if err != nil {
+			return false, err
+		}
+		return int64(len(projects)) < limit, nil
+	}
+
 	defaultKey := deps.Cfg.LicenseKey
 	useOrgBilling := deps.Cfg.UsesOrgBilling() && deps.BillingClient != nil
 	key := resolveKey(ctx, *org, defaultKey, useOrgBilling, deps.BillingClient)

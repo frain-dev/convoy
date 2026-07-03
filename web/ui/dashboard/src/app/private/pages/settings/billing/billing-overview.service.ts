@@ -3,19 +3,51 @@ import {HttpService} from 'src/app/services/http/http.service';
 import {BillingStrategy} from 'src/app/models/billing.model';
 import {BillingEndpoints} from './billing-endpoints';
 
+const MS_PER_MINUTE = 60 * 1000;
+const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+const MS_PER_YEAR = 365 * MS_PER_DAY;
+
+/** Human-readable countdown until usage/billing reset with correct singular/plural units. */
+export function formatTimeUntilReset(ms: number): string {
+  if (ms <= 0) {
+    return '1 minute';
+  }
+  if (ms < MS_PER_MINUTE) {
+    return '1 minute';
+  }
+  if (ms < MS_PER_HOUR) {
+    const minutes = Math.ceil(ms / MS_PER_MINUTE);
+    return minutes === 1 ? '1 minute' : `${minutes} minutes`;
+  }
+  if (ms < MS_PER_DAY) {
+    const hours = Math.ceil(ms / MS_PER_HOUR);
+    return hours === 1 ? '1 hour' : `${hours} hours`;
+  }
+  if (ms < MS_PER_YEAR) {
+    const days = Math.ceil(ms / MS_PER_DAY);
+    return days === 1 ? '1 day' : `${days} days`;
+  }
+  const years = Math.ceil(ms / MS_PER_YEAR);
+  return years === 1 ? '1 year' : `${years} years`;
+}
+
 export interface BillingOverview {
   plan: {
     name: string;
     price: string;
+    trial?: boolean;
   };
   usage: {
     period: string;
-    daysUntilReset?: number;
+    resetIn?: string;
   };
   payment: {
     last4: string;
     brand: string;
   } | null;
+  // True when subscription is not in good standing (past due / suspended).
+  pastDue?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -68,8 +100,9 @@ export class BillingOverviewService {
     if (!data) {
       return {
         plan: { name: 'No plan', price: '$0' },
-        usage: { period: 'No data', daysUntilReset: 0 },
-        payment: null
+        usage: { period: 'No data' },
+        payment: null,
+        pastDue: false
       };
     }
 
@@ -80,6 +113,7 @@ export class BillingOverviewService {
     // fields at the root with the plan omitted; treating that as "no cycle" would wrongly
     // render "No active cycle" and skip the usage-month fallback below.
     const hasActiveSubscription = !!(subscription && (subscription.id || subscription.plan?.id || subscription.plan?.name));
+    const isTrial = subscription?.trial === true;
 
     const usage = data.usage || { period: this.getCurrentPeriod() };
     // Resolve the period label and the reset countdown from a single source so the two
@@ -90,39 +124,72 @@ export class BillingOverviewService {
     // never render a wrong fixed "month 01 - next month 01" cycle or a period that resets on
     // an unrelated date. With no subscription there is no cycle, so we show neither.
     const billingPeriod = this.formatBillingCycle(data.subscription?.current_period_start, data.subscription?.current_period_end);
-    const daysFromCycle = this.daysUntilDate(data.subscription?.next_invoice_date);
+    const msFromCycle = this.millisecondsUntilDate(data.subscription?.next_invoice_date);
 
     let usagePeriod: string;
-    let daysUntilReset: number | undefined;
+    let resetIn: string | undefined;
     if (!hasActiveSubscription) {
       usagePeriod = 'No active cycle';
-      daysUntilReset = undefined;
-    } else if (billingPeriod && daysFromCycle !== null) {
+      resetIn = undefined;
+    } else if (isTrial) {
+      const trialUsage = this.formatTrialUsagePeriod(data.subscription);
+      if (trialUsage) {
+        usagePeriod = trialUsage.period;
+        resetIn = trialUsage.resetIn;
+      } else if (billingPeriod && msFromCycle !== null) {
+        usagePeriod = billingPeriod;
+        resetIn = formatTimeUntilReset(msFromCycle);
+      } else {
+        usagePeriod = this.formatUsagePeriod(usage.period);
+        const msFromUsage = this.millisecondsUntilResetFromPeriod(usage.period);
+        resetIn = msFromUsage !== null ? formatTimeUntilReset(msFromUsage) : undefined;
+      }
+    } else if (billingPeriod && msFromCycle !== null) {
       usagePeriod = billingPeriod;
-      daysUntilReset = daysFromCycle;
+      resetIn = formatTimeUntilReset(msFromCycle);
     } else {
       usagePeriod = this.formatUsagePeriod(usage.period);
-      daysUntilReset = this.calculateDaysUntilReset(usage.period);
+      const msFromUsage = this.millisecondsUntilResetFromPeriod(usage.period);
+      resetIn = msFromUsage !== null ? formatTimeUntilReset(msFromUsage) : undefined;
     }
     // Find the default payment method, or fall back to the first one if no default is set
     const payment = data.payment && data.payment.length > 0 
       ? (data.payment.find((pm: any) => pm.defaulted_at !== null && pm.defaulted_at !== undefined) || data.payment[0])
       : null;
 
+    const pastDue = hasActiveSubscription && this.isPastDueStatus(subscription?.status);
+
     return {
       plan: {
         name: currentPlan.name,
-        price: `$${currentPlan.price}`
+        price: `$${currentPlan.price}`,
+        trial: isTrial
       },
       usage: {
         period: usagePeriod,
-        daysUntilReset
+        resetIn
       },
       payment: payment && payment.last4 ? {
         last4: payment.last4,
         brand: payment.card_type || payment.brand || 'unknown'
-      } : null
+      } : null,
+      pastDue
     };
+  }
+
+  // A subscription is "past due" when its status is one of the explicit
+  // not-good-standing values the billing service reports. Fail-soft: an unknown
+  // or missing status is treated as good standing (no banner) so a healthy paid
+  // org is never blocked behind a scary past-due card on a status we don't map.
+  private isPastDueStatus(status?: string): boolean {
+    if (!status) return false;
+    const normalized = status.trim().toLowerCase().replace(/[\s-]+/g, '_');
+    return (
+      normalized === 'paused' ||
+      normalized === 'past_due' ||
+      normalized === 'unpaid' ||
+      normalized === 'suspended'
+    );
   }
 
   // Formats the provider billing cycle as "May 28 - Jun 28". Returns null when either
@@ -144,6 +211,37 @@ export class BillingOverviewService {
     return `${this.formatCycleDay(start, withYear)} - ${this.formatCycleDay(end, withYear)}`;
   }
 
+  // During trial, billing-cycle dates can reflect the paid SKU term (e.g. annual
+  // self-hosted) rather than the trial window. Prefer trial_conversion_date when present.
+  private formatTrialUsagePeriod(subscription: any): { period: string; resetIn?: string } | null {
+    const conversionIso = subscription?.trial_conversion_date;
+    if (!conversionIso) {
+      return null;
+    }
+
+    const end = new Date(conversionIso);
+    if (isNaN(end.getTime())) {
+      return null;
+    }
+
+    let start = subscription?.current_period_start ? new Date(subscription.current_period_start) : new Date();
+    if (isNaN(start.getTime()) || start.getTime() >= end.getTime()) {
+      start = new Date(end);
+    }
+
+    // Annual (or other long) billing cycles must not define the trial window.
+    const maxTrialMs = 31 * 24 * 60 * 60 * 1000;
+    if (end.getTime() - start.getTime() > maxTrialMs) {
+      start = new Date(end.getTime() - 14 * 24 * 60 * 60 * 1000);
+    }
+
+    const period = this.formatBillingCycle(start.toISOString(), end.toISOString())
+      ?? `Through ${this.formatCycleDay(end, true)}`;
+    const msUntilConversion = this.millisecondsUntilDate(conversionIso);
+    const resetIn = msUntilConversion !== null ? formatTimeUntilReset(msUntilConversion) : undefined;
+    return { period, resetIn };
+  }
+
   // Billing-cycle boundaries from the billing service are UTC instants (often midnight UTC
   // on yearly terms). Format them in UTC so a user west of UTC doesn't see the previous
   // calendar day and disagree with the provider invoice date.
@@ -153,9 +251,9 @@ export class BillingOverviewService {
     return withYear ? `${month} ${day}, ${date.getUTCFullYear()}` : `${month} ${day}`;
   }
 
-  // Whole days from now until the next invoice date. Returns null when the date is missing
+  // Milliseconds from now until the next invoice date. Returns null when the date is missing
   // or unparseable so the caller falls back to the usage-month reset calculation.
-  private daysUntilDate(iso?: string): number | null {
+  private millisecondsUntilDate(iso?: string): number | null {
     if (!iso) return null;
 
     const target = new Date(iso);
@@ -163,9 +261,9 @@ export class BillingOverviewService {
 
     const diffMs = target.getTime() - Date.now();
     // A past invoice date means our cached cycle is stale; return null so the caller falls
-    // back to the usage-month reset instead of showing a misleading "Resets in 0 days".
+    // back to the usage-month reset instead of showing a misleading countdown.
     if (diffMs < 0) return null;
-    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    return diffMs;
   }
 
   private formatUsagePeriod(period: string): string {
@@ -188,20 +286,19 @@ export class BillingOverviewService {
     return `${year}-${month}`;
   }
 
-  private calculateDaysUntilReset(period: string): number {
+  private millisecondsUntilResetFromPeriod(period: string): number | null {
     const [year, month] = period.split('-');
     const currentDate = new Date();
     const currentPeriodStart = new Date(parseInt(year), parseInt(month) - 1, 1);
     const nextPeriodStart = new Date(parseInt(year), parseInt(month), 1);
 
-    // If we're in the current period, calculate days until next period
+    // If we're in the current period, calculate ms until next period.
     if (currentDate >= currentPeriodStart && currentDate < nextPeriodStart) {
-      const diffTime = nextPeriodStart.getTime() - currentDate.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return Math.max(0, diffDays);
+      const diffMs = nextPeriodStart.getTime() - currentDate.getTime();
+      return Math.max(0, diffMs);
     }
 
-    // If we're past this period, return 0
+    // If we're past this period, return 0.
     return 0;
   }
 

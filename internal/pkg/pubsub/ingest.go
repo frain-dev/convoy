@@ -41,6 +41,14 @@ type Ingest struct {
 	instanceId   string
 	licenser     license.Licenser
 	endpointRepo datastore.EndpointRepository
+
+	// Cloud-trial daily event cap (optional; wired via EnableTrialEventCap). Left
+	// unset for self-hosted and when org billing is off, in which case broker
+	// ingestion is never capped.
+	projectRepo    datastore.ProjectRepository
+	orgRepo        datastore.OrganisationRepository
+	trialEvents    *license.TrialEventLimiter
+	usesOrgBilling bool
 }
 
 func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.Logger,
@@ -60,6 +68,41 @@ func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer
 	}
 
 	return i, nil
+}
+
+// EnableTrialEventCap wires the cloud-trial daily event cap into the broker ingest
+// path so message-broker sources honour the same per-org daily cap as the HTTP
+// event surfaces. It is optional and kept off the constructor so the test harnesses
+// that build an Ingest do not need the cloud-only dependencies; when it is not
+// called (self-hosted, or org billing off) broker events are never capped.
+func (i *Ingest) EnableTrialEventCap(projectRepo datastore.ProjectRepository, orgRepo datastore.OrganisationRepository, trialEvents *license.TrialEventLimiter, usesOrgBilling bool) {
+	i.projectRepo = projectRepo
+	i.orgRepo = orgRepo
+	i.trialEvents = trialEvents
+	i.usesOrgBilling = usesOrgBilling
+}
+
+// overTrialCap reports whether the cloud-trial daily event cap is reached for the
+// org that owns projectID. Cloud-only and fail-open: any unset dependency, lookup
+// error, missing org, or Redis outage returns false (allow), matching the HTTP
+// EnforceTrialEventCap policy. An over-cap broker message is dropped by the caller
+// (acked, not retried) so a trial cannot spend its quota on infinite redelivery.
+func (i *Ingest) overTrialCap(ctx context.Context, projectID string) bool {
+	if !i.usesOrgBilling || i.trialEvents == nil || i.projectRepo == nil || i.orgRepo == nil {
+		return false
+	}
+
+	project, err := i.projectRepo.FetchProjectByID(ctx, projectID)
+	if err != nil || project == nil {
+		return false
+	}
+
+	org, err := i.orgRepo.FetchOrganisationByID(ctx, project.OrganisationID)
+	if err != nil || org == nil {
+		return false
+	}
+
+	return errors.Is(i.trialEvents.Allow(ctx, org.UID, org.LicenseData), license.ErrDailyEventLimit)
 }
 
 // Run is the core of the ingester. It does the following in an infinite loop:
@@ -300,6 +343,15 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 			Payload: eventByte,
 		}
 
+		// Enforce the cloud-trial daily cap immediately before enqueue, after payload
+		// validation, so only accepted events count (matching the HTTP surfaces) and an
+		// invalid payload's redelivery never spends quota. Over-cap events are dropped
+		// (acked, not retried).
+		if i.overTrialCap(ctx, source.ProjectID) {
+			i.log.Warnf("dropping pub/sub event for source %s: trial daily event cap reached (project %s)", source.UID, source.ProjectID)
+			return nil
+		}
+
 		// write to our queue if it's a normal event
 		i.log.Infof("Writing CreateEvent job to queue for event %s (endpoint: %s, project: %s)", id, ce.Params.EndpointID, ce.Params.ProjectID)
 		err = i.queue.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
@@ -343,6 +395,12 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 			Payload: eventByte,
 		}
 
+		// Trial cap immediately before enqueue (see the single-message branch).
+		if i.overTrialCap(ctx, source.ProjectID) {
+			i.log.Warnf("dropping pub/sub event for source %s: trial daily event cap reached (project %s)", source.UID, source.ProjectID)
+			return nil
+		}
+
 		// write to our queue if it's a normal event
 		i.log.Infof("Writing fanout CreateEvent job to queue for event %s (owner: %s, project: %s)", id, ce.Params.OwnerID, ce.Params.ProjectID)
 		err = i.queue.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
@@ -373,6 +431,12 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		job := &queue.Job{
 			ID:      jobId,
 			Payload: eventByte,
+		}
+
+		// Trial cap immediately before enqueue (see the single-message branch).
+		if i.overTrialCap(ctx, source.ProjectID) {
+			i.log.Warnf("dropping pub/sub event for source %s: trial daily event cap reached (project %s)", source.UID, source.ProjectID)
+			return nil
 		}
 
 		// write to our queue if it's a broadcast event

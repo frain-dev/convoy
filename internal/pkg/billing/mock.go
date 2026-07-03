@@ -78,10 +78,32 @@ func (m *MockBillingClient) GetSubscription(ctx context.Context, orgID string) (
 }
 
 func (m *MockBillingClient) GetPlans(ctx context.Context) (*Response[[]Plan], error) {
+	catalog, err := m.GetSelfHostedCatalog(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return &Response[[]Plan]{
 		Status:  true,
 		Message: "Plans retrieved successfully",
-		Data:    []Plan{},
+		Data:    catalog.Plans,
+	}, nil
+}
+
+func (m *MockBillingClient) GetSelfHostedCatalog(ctx context.Context) (*SelfHostedCatalogResponse, error) {
+	return &SelfHostedCatalogResponse{
+		Plans: []Plan{},
+		TrialOffer: &TrialOffer{
+			DurationCount: 14,
+			DurationUnit:  "day",
+			DurationDays:  14,
+			PlanName:      "Self-Hosted Premium",
+			RequiresCard:  false,
+			Limits: []TrialOfferLimit{
+				{Key: "project_limit", Label: "Projects", Value: 2},
+				{Key: "org_limit", Label: "Organizations", Value: 1},
+				{Key: "user_limit", Label: "Team members", Value: 1},
+			},
+		},
 	}, nil
 }
 
@@ -298,6 +320,20 @@ func (m *MockBillingClient) UpgradeSubscription(ctx context.Context, orgID, subs
 	}, nil
 }
 
+func (m *MockBillingClient) StartTrial(ctx context.Context, orgID string, req StartTrialRequest) (*Response[interface{}], error) {
+	if orgID == "" {
+		return nil, &Error{Message: "organisation ID is required"}
+	}
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[interface{}]{
+		Status:  true,
+		Message: "Trial started successfully",
+		Data:    nil,
+	}, nil
+}
+
 func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error) {
 	if orgID == "" || subscriptionID == "" {
 		return nil, &Error{Message: "organisation ID and subscription ID are required"}
@@ -316,7 +352,7 @@ func (m *MockBillingClient) StartGuestCheckout(ctx context.Context, req StartGue
 	if req.PlanID == "" || req.Host == "" || req.AttemptID == "" || req.CheckoutNonceHash == "" {
 		return nil, &Error{Message: "plan_id, host, attempt_id, and checkout_nonce_hash are required"}
 	}
-	// Mirror Overwatch: email is optional on resubscribe (a license key is present).
+	// Mirror billing service: email is optional on resubscribe (a license key is present).
 	if req.Email == "" && req.LicenseKey == "" {
 		return nil, &Error{Message: "email is required"}
 	}
@@ -349,6 +385,27 @@ func (m *MockBillingClient) CompleteGuestCheckout(ctx context.Context, req Compl
 	}, nil
 }
 
+func (m *MockBillingClient) StartSelfHostedTrial(ctx context.Context, req StartSelfHostedTrialRequest) (*Response[GuestCheckoutCompletion], error) {
+	if req.AttemptID == "" {
+		return nil, &Error{Message: "attempt_id is required"}
+	}
+
+	externalID := "sh_ck_" + req.AttemptID
+	if req.LicenseKey != "" {
+		externalID = "sh_resubscribe"
+	}
+
+	return &Response[GuestCheckoutCompletion]{
+		Status:  true,
+		Message: "Self-hosted trial started",
+		Data: GuestCheckoutCompletion{
+			Status:     "completed",
+			LicenseKey: "mock-trial-license-key",
+			ExternalID: externalID,
+		},
+	}, nil
+}
+
 func (m *MockBillingClient) GetSelfHostedSubscription(ctx context.Context, licenseKey string) (*Response[BillingSubscription], error) {
 	if licenseKey == "" {
 		return nil, &Error{Message: "self-hosted license key is required"}
@@ -357,6 +414,17 @@ func (m *MockBillingClient) GetSelfHostedSubscription(ctx context.Context, licen
 		Status:  true,
 		Message: "Subscription retrieved successfully",
 		Data:    BillingSubscription{ID: "sh_sub_mock", Status: "active", Plan: &Plan{ID: "self_hosted_premium", Name: "Self-Hosted Premium", ProductType: "self_hosted"}},
+	}, nil
+}
+
+func (m *MockBillingClient) UpgradeSelfHostedSubscription(ctx context.Context, licenseKey string, req UpgradeSubscriptionRequest) (*Response[Checkout], error) {
+	if licenseKey == "" {
+		return nil, &Error{Message: "self-hosted license key is required"}
+	}
+	return &Response[Checkout]{
+		Status:  true,
+		Message: "Checkout created successfully",
+		Data:    Checkout{CheckoutURL: "https://checkout.example.com/sh-upgrade"},
 	}, nil
 }
 
