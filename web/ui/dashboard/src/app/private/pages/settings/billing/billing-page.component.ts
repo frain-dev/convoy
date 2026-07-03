@@ -42,6 +42,7 @@ import {
   getFeatureValueType as planFeatureValueType,
   getFeaturesByCategory as planFeaturesByCategory
 } from './plan-comparison.util';
+import {plansMatch} from './plan-identity.util';
 
 // Delay before reading payment details after a save, allowing the provider
 // webhook to be processed by the billing service.
@@ -1492,12 +1493,6 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
     window.location.href = checkoutUrl;
   }
 
-  private async resolveSelfHostedTrialInterval(planId: string): Promise<string | undefined> {
-    await this.ensurePlansLoaded();
-    const uiPlan = this.findPlanForSubscriptionPlanId(planId);
-    return uiPlan ? this.planCatalog.resolveCheckoutCadence(uiPlan) : undefined;
-  }
-
   private async startTrialUpgradeCheckout(planId: string, interval?: string) {
     const subscriptionId = this.currentSubscription?.id;
     if (!subscriptionId) {
@@ -1561,6 +1556,50 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
   async convertTrialToPaid() {
     if (!this.isTrialing) return;
 
+    const subscriptionId = this.currentSubscription?.id;
+    if (!subscriptionId) {
+      this.generalService.showNotification({
+        message: 'No trial subscription to convert',
+        style: 'error'
+      });
+      return;
+    }
+
+    if (this.billingStrategy === 'licensed_self_hosted') {
+      try {
+        await this.ensurePlansLoaded();
+      } catch {
+        this.generalService.showNotification({
+          message: 'Plans could not be loaded. Please try again later.',
+          style: 'error'
+        });
+        return;
+      }
+
+      const selectedUiPlan = this.selectedPlan ? this.plans.find(p => p.id === this.selectedPlan) : undefined;
+      const subscriptionPlan = this.currentSubscription?.plan;
+      const subscriptionPlanId = subscriptionPlan?.id;
+      const uiPlan =
+        selectedUiPlan ||
+        (subscriptionPlan ? this.plans.find(p => plansMatch(p, subscriptionPlan)) : undefined) ||
+        (subscriptionPlanId ? this.findPlanForSubscriptionPlanId(subscriptionPlanId) : undefined);
+
+      if (!uiPlan) {
+        this.generalService.showNotification({
+          message: 'No purchasable plan found for trial conversion',
+          style: 'error'
+        });
+        return;
+      }
+
+      const { planIdForApi } = this.planCatalog.resolvePlanForApi(uiPlan, this.billingPlans);
+      await this.startTrialUpgradeCheckout(
+        planIdForApi,
+        this.planCatalog.resolveCheckoutCadence(uiPlan)
+      );
+      return;
+    }
+
     const planId = this.currentSubscription?.plan?.id;
     if (!planId) {
       this.generalService.showNotification({
@@ -1570,20 +1609,7 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    let interval: string | undefined;
-    if (this.billingStrategy === 'licensed_self_hosted') {
-      try {
-        interval = await this.resolveSelfHostedTrialInterval(planId);
-      } catch {
-        this.generalService.showNotification({
-          message: 'Plans could not be loaded. Please try again later.',
-          style: 'error'
-        });
-        return;
-      }
-    }
-
-    await this.startTrialUpgradeCheckout(planId, interval);
+    await this.startTrialUpgradeCheckout(planId);
   }
 
   isTrialConvertPlan(planId: string): boolean {
