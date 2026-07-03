@@ -1,6 +1,5 @@
 import {
 	canBlockProjectsWithCloudTrial,
-	canOfferProjectTrial,
 	canShowSelfHostedTrialUpsell,
 	canStartSelfHostedTrial,
 	filterPlansToTrialPlan,

@@ -1,5 +1,5 @@
 import {Plan} from './plan.service';
-import {plansMatch, resolvePlanKey, trialPlanKeyForMode} from './plan-identity.util';
+import {resolvePlanKey, trialPlanKeyForMode} from './plan-identity.util';
 
 export interface TrialOfferLimit {
 	key: string;
