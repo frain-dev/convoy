@@ -1,4 +1,5 @@
 import {Plan} from './plan.service';
+import {plansMatch, resolvePlanKey, trialPlanKeyForMode} from './plan-identity.util';
 
 export interface TrialOfferLimit {
 	key: string;
@@ -14,6 +15,8 @@ export interface TrialOffer {
 	duration_unit?: TrialDurationUnit | string;
 	duration_days?: number;
 	plan_name?: string;
+	/** Canonical billing plan key; optional for older billing binaries. */
+	plan_key?: string;
 	requires_card?: boolean;
 	limits?: TrialOfferLimit[];
 }
@@ -151,6 +154,10 @@ export function formatTrialDuration(offer: TrialOffer): string {
 	return count === 1 ? '1 day' : `${count} days`;
 }
 
+export function resolveTrialPlanKey(mode: TrialBillingMode, offer: TrialOffer | null | undefined): string {
+	return (offer?.plan_key || '').trim().toLowerCase() || trialPlanKeyForMode(mode);
+}
+
 export function resolveTrialPlanName(
 	mode: TrialBillingMode,
 	offer: TrialOffer | null,
@@ -160,53 +167,41 @@ export function resolveTrialPlanName(
 		return offer.plan_name;
 	}
 
-	const premiumPlan = catalogPlans.find(plan => {
-		const key = (plan.key || '').toLowerCase();
-		const name = plan.name.toLowerCase();
-		if (mode === 'self_hosted') {
-			return key.includes('premium') || name.includes('premium');
-		}
-		return (name.includes('pro') || key.includes('pro')) && !name.includes('enterprise');
-	});
-
-	if (premiumPlan?.name) {
-		return premiumPlan.name;
+	const trialKey = resolveTrialPlanKey(mode, offer);
+	const fromCatalog = catalogPlans.find(plan => resolvePlanKey(plan) === trialKey);
+	if (fromCatalog?.name) {
+		return fromCatalog.name;
 	}
 
 	return mode === 'self_hosted' ? 'Self-Hosted Premium' : 'Cloud Pro';
 }
 
 /** Trial features dialog: one SKU only (Premium / Cloud Pro), not the full checkout catalog. */
-export function filterPlansToTrialPlan(plans: Plan[], trialPlanName: string): Plan[] {
-	if (!trialPlanName || plans.length === 0) {
+export function filterPlansToTrialPlan(
+	plans: Plan[],
+	trialPlanName: string,
+	trialPlanKey?: string | null
+): Plan[] {
+	if (plans.length === 0) {
 		return plans;
 	}
 
-	const target = trialPlanName.toLowerCase();
-	const exact = plans.find(plan => plan.name === trialPlanName);
-	if (exact) {
-		return [exact];
+	const key = (trialPlanKey || '').trim().toLowerCase() || resolvePlanKey({ key: '', id: '', name: trialPlanName });
+	if (key) {
+		const byKey = plans.find(plan => resolvePlanKey(plan) === key);
+		if (byKey) {
+			return [byKey];
+		}
 	}
 
-	const fuzzy = plans.find(plan => {
-		const name = plan.name.toLowerCase();
-		return name === target || name.includes(target) || target.includes(name);
-	});
-	if (fuzzy) {
-		return [fuzzy];
+	if (trialPlanName) {
+		const exact = plans.find(plan => plan.name === trialPlanName);
+		if (exact) {
+			return [exact];
+		}
 	}
 
-	const proTier = plans.find(plan => {
-		const key = (plan.key || '').toLowerCase();
-		const name = plan.name.toLowerCase();
-		return (
-			name.includes('premium') ||
-			name.includes('pro') ||
-			key.includes('premium') ||
-			key.includes('pro')
-		) && !name.includes('enterprise');
-	});
-	return proTier ? [proTier] : plans.slice(0, 1);
+	return plans.slice(0, 1);
 }
 
 export function resolveTrialOffer(

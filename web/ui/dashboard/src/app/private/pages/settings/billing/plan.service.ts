@@ -74,8 +74,10 @@ export class PlanService {
     return {
       plans: [
         {
-          id: 'pro',
+          id: 'cloud_pro',
+          key: 'cloud_pro',
           name: 'Pro',
+          product_type: 'cloud',
           description: 'Perfect for growing businesses',
           price: 99,
           currency: 'USD',
@@ -100,9 +102,10 @@ export class PlanService {
           ]
         },
         {
-          id: 'enterprise',
-          key: 'enterprise',
+          id: 'cloud_enterprise',
+          key: 'cloud_enterprise',
           name: 'Enterprise',
+          product_type: 'cloud',
           description: 'For large organizations',
           price: 0,
           currency: 'USD',

@@ -1,15 +1,14 @@
 import {Injectable} from '@angular/core';
 import {Plan} from './plan.service';
+import {
+	isCheckoutCatalogPlanKey,
+	isEnterprisePlanKey,
+	plansMatch,
+	resolvePlanKey
+} from './plan-identity.util';
 
-// Plan classification uses product_type and canonical enterprise keys.
 const PRODUCT_TYPE_SELF_HOSTED = 'self_hosted';
 const PRODUCT_TYPE_CLOUD = 'cloud';
-// Canonical enterprise plan keys.
-const ENTERPRISE_KEYS = ['enterprise', 'cloud_enterprise', 'self_hosted_enterprise'];
-const ENTERPRISE_TOKEN = 'enterprise';
-const PRO_TOKENS = ['premium', 'pro'];
-
-type PlanTier = 'enterprise' | 'pro' | 'exact';
 
 const CADENCE_MONTHLY = 'monthly';
 const CADENCE_ANNUAL = 'annual';
@@ -36,13 +35,11 @@ export class PlanCatalogService {
 	}
 
 	isEnterprisePlan(plan: Plan): boolean {
-		const key = (plan.key || plan.id || '').toLowerCase();
-		return ENTERPRISE_KEYS.includes(key);
+		return isEnterprisePlanKey(plan);
 	}
 
 	shouldContactForMissingCloudPlan(plan: Plan, isSelfHostedBilling: boolean, planExistsInCatalog: boolean): boolean {
-		const name = plan.name.toLowerCase();
-		return !isSelfHostedBilling && (name.includes('pro') || name.includes(ENTERPRISE_TOKEN)) && !planExistsInCatalog;
+		return !isSelfHostedBilling && !planExistsInCatalog && isCheckoutCatalogPlanKey(plan);
 	}
 
 	resolveCheckoutCadence(plan: Plan): string {
@@ -79,49 +76,36 @@ export class PlanCatalogService {
 		};
 	}
 
-	// Shared tier matching keeps cloud default-card merge and billing-service feature
-	// merge aligned. Cloud lists default comparison cards then overlays API plans;
-	// self-hosted lists API plans directly but uses the same tier rules for features.
-	private planTier(plan: Plan): PlanTier {
-		if (this.isEnterprisePlan(plan) || plan.name.toLowerCase().includes(ENTERPRISE_TOKEN)) {
-			return 'enterprise';
-		}
-		const key = (plan.key || plan.id || '').toLowerCase();
-		const name = plan.name.toLowerCase();
-		if (PRO_TOKENS.some(token => name.includes(token) || key.includes(token))) {
-			return 'pro';
-		}
-		return 'exact';
-	}
-
 	findDefaultPlanComparison(plan: Plan, defaultPlans: Plan[]): Plan | undefined {
-		const tier = this.planTier(plan);
-		if (tier === 'enterprise') {
-			return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes(ENTERPRISE_TOKEN));
+		const planKey = resolvePlanKey(plan);
+		if (planKey) {
+			const byKey = defaultPlans.find(defaultPlan => resolvePlanKey(defaultPlan) === planKey);
+			if (byKey) {
+				return byKey;
+			}
 		}
-		if (tier === 'pro') {
-			return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes('pro'));
-		}
-		return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase() === plan.name.toLowerCase());
+
+		return defaultPlans.find(
+			defaultPlan => defaultPlan.name.trim().toLowerCase() === plan.name.trim().toLowerCase()
+		);
 	}
 
 	findBillingPlanForDefault(defaultPlan: Plan, billingPlans: Plan[]): Plan | undefined {
-		const tier = this.planTier(defaultPlan);
-		if (tier === 'enterprise') {
-			return billingPlans.find(plan => this.planTier(plan) === 'enterprise');
+		const defaultKey = resolvePlanKey(defaultPlan);
+		if (defaultKey) {
+			const byKey = billingPlans.find(plan => resolvePlanKey(plan) === defaultKey);
+			if (byKey) {
+				return byKey;
+			}
 		}
-		if (tier === 'pro') {
-			return billingPlans.find(plan => this.planTier(plan) === 'pro');
-		}
-		return billingPlans.find(plan => plan.name.toLowerCase() === defaultPlan.name.toLowerCase());
+
+		return billingPlans.find(
+			plan => plan.name.trim().toLowerCase() === defaultPlan.name.trim().toLowerCase()
+		);
 	}
 
 	resolvePlanForApi(selectedPlanData: Plan, billingPlans: Plan[]): ResolvedPlanForApi {
-		const planLower = selectedPlanData.name.toLowerCase();
-		const billingPlan = billingPlans.find(p => {
-			const pNameLower = p.name.toLowerCase();
-			return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
-		});
+		const billingPlan = billingPlans.find(plan => plansMatch(plan, selectedPlanData));
 
 		return {
 			planExistsInCatalog: !!billingPlan,
@@ -129,7 +113,6 @@ export class PlanCatalogService {
 		};
 	}
 
-	// Build the displayed plan catalog from the API response and default comparison data.
 	buildCatalog(plansFromApi: Plan[], defaultPlans: Plan[], isSelfHostedBilling: boolean): PlanCatalog {
 		if (plansFromApi.length === 0) {
 			return {

@@ -47,6 +47,7 @@ type TrialOffer struct {
 	DurationUnit  string            `json:"duration_unit,omitempty"`
 	DurationDays  int               `json:"duration_days,omitempty"`
 	PlanName      string            `json:"plan_name,omitempty"`
+	PlanKey       string            `json:"plan_key,omitempty"`
 	RequiresCard  bool              `json:"requires_card"`
 	Limits        []TrialOfferLimit `json:"limits,omitempty"`
 }

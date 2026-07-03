@@ -21,7 +21,7 @@ import {
 } from './trial-offer.util';
 
 describe('trial-offer.util', () => {
-	const cloudPlan = { id: '1', name: 'Cloud Pro', description: '', price: 0, currency: 'USD', interval: 'month', features: [] };
+	const cloudPlan = { id: '1', key: 'cloud_pro', name: 'Cloud Pro', description: '', price: 0, currency: 'USD', interval: 'month', features: [] };
 	const shPlan = { id: '2', key: 'self_hosted_premium', name: 'Self-Hosted Premium', description: '', price: 0, currency: 'USD', interval: 'month', features: [] };
 
 	it('singularizes countable trial limits at 1', () => {
@@ -46,9 +46,15 @@ describe('trial-offer.util', () => {
 		expect(resolveTrialPlanName('self_hosted', { plan_name: 'Self-Hosted Premium' }, [shPlan])).toBe('Self-Hosted Premium');
 	});
 
-	it('falls back to catalog plan names when billing omits plan_name', () => {
+	it('falls back to catalog plan keys when billing omits plan_name', () => {
 		expect(resolveTrialPlanName('cloud', null, [cloudPlan])).toBe('Cloud Pro');
 		expect(resolveTrialPlanName('self_hosted', null, [shPlan])).toBe('Self-Hosted Premium');
+	});
+
+	it('prefers billing plan_key when present', () => {
+		expect(
+			resolveTrialPlanName('self_hosted', { plan_key: 'self_hosted_premium' }, [shPlan])
+		).toBe('Self-Hosted Premium');
 	});
 
 	it('resolves cloud vs self-hosted trial offers from one helper', () => {
@@ -74,12 +80,16 @@ describe('trial-offer.util', () => {
 	});
 
 	it('filters the catalog to the trial SKU for the features dialog', () => {
-		const plans = [
-			{ id: '1', name: 'Self-Hosted Premium', description: '', price: 0, currency: 'USD', interval: 'month', features: [] },
-			{ id: '2', name: 'Self-Hosted Enterprise', description: '', price: 0, currency: 'USD', interval: 'month', features: [] }
+		const shPlans = [
+			{ id: '1', key: 'self_hosted_premium', name: 'Self-Hosted Premium', description: '', price: 0, currency: 'USD', interval: 'month', features: [] },
+			{ id: '2', key: 'self_hosted_enterprise', name: 'Self-Hosted Enterprise', description: '', price: 0, currency: 'USD', interval: 'month', features: [] }
 		];
-		expect(filterPlansToTrialPlan(plans, 'Self-Hosted Premium')).toEqual([plans[0]]);
-		expect(filterPlansToTrialPlan(plans, 'Cloud Pro')).toEqual([plans[0]]);
+		const cloudPlans = [
+			{ id: '3', key: 'cloud_pro', name: 'Cloud Pro', description: '', price: 0, currency: 'USD', interval: 'month', features: [] },
+			{ id: '4', key: 'cloud_enterprise', name: 'Cloud Enterprise', description: '', price: 0, currency: 'USD', interval: 'month', features: [] }
+		];
+		expect(filterPlansToTrialPlan(shPlans, 'Self-Hosted Premium')).toEqual([shPlans[0]]);
+		expect(filterPlansToTrialPlan(cloudPlans, 'Cloud Pro', 'cloud_pro')).toEqual([cloudPlans[0]]);
 	});
 
 	it('formats a short OSS projects upsell lead without duration copy', () => {
