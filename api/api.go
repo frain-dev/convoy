@@ -875,7 +875,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	})
 
 	router.Route("/queue", func(asynqRouter chi.Router) {
-		asynqRouter.Use(middleware.RequireAsynqMonitoring(a.A.Licenser, handler.A.Logger))
+		asynqRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
 		asynqRouter.Group(func(sessionRouter chi.Router) {
 			sessionRouter.Use(middleware.RequireAuth(handler.A.Logger))
 			sessionRouter.Post("/monitoring/session", handler.CreateQueueMonitoringSession)

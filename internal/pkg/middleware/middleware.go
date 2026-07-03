@@ -768,11 +768,19 @@ func RequireValidPortalLinksLicense(l license.Licenser, logger log.Logger) func(
 
 // RequireAsynqMonitoring gates queue monitoring at request time so a runtime
 // licenser refresh (e.g. after self-hosted trial start) can unlock routes without
-// a process restart. Fail closed when the deployment license lacks the feature.
-func RequireAsynqMonitoring(l license.Licenser, logger log.Logger) func(http.Handler) http.Handler {
+// a process restart. The licenser is resolved per request via the getter because
+// a self-hosted trial swaps the shared APIOptions.Licenser in place; capturing the
+// boot-time value would keep serving the pre-trial (community) gate and return 401
+// even after the license reports AsynqMonitoring=true. Fail closed when the getter
+// is nil, returns nil, or the deployment license lacks the feature.
+func RequireAsynqMonitoring(licenser func() license.Licenser, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !l.AsynqMonitoring() {
+			var l license.Licenser
+			if licenser != nil {
+				l = licenser()
+			}
+			if l == nil || !l.AsynqMonitoring() {
 				logger.WarnContext(r.Context(), "Asynq monitoring access denied - license required")
 				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return

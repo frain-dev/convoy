@@ -1626,6 +1626,12 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
     }
     if (this.selectedPlan === planId) {
       if (plan && (this.isSelfHostedBilling || this.planCatalog.isSelfHostedPlan(plan))) {
+        // During a trial the stored guest-checkout key is the trial license, not a
+        // prior paid purchase, so converting to paid is a first subscribe, not a
+        // resubscribe. Only offer "Resubscribe" to a genuinely lapsed paid customer.
+        if (this.isTrialing) {
+          return 'Subscribe now';
+        }
         return this.isSelfHostedResubscribe ? 'Resubscribe' : 'Start checkout';
       }
       return this.currentSubscription ? 'Upgrade' : 'Subscribe';
