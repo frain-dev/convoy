@@ -254,36 +254,11 @@ func (h *BillingHandler) StartSelfHostedTrial(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	cfg, err = cfgSvc.LoadInstanceBillingConfig(r.Context())
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	now := time.Now()
-	ensureCheckoutAttemptsMap(cfg)
-	supersedeActiveCheckoutAttempt(cfg, now)
-	cfg.CheckoutID = ""
-	cfg.CheckoutAttempts[attemptID] = datastore.SelfHostedCheckoutAttempt{
-		AttemptID: attemptID,
-		Status:    checkoutStatusPending,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-	cfg.ActiveCheckoutAttemptID = attemptID
-	if err := cfgSvc.UpdateCheckoutAttempts(r.Context(), cfg); err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	attempt := cfg.CheckoutAttempts[attemptID]
-	attempt.Status = checkoutStatusCompleted
-	attempt.LastCompletionStatus = resp.Data.Status
-	attempt.ExternalID = resp.Data.ExternalID
-	attempt.CompletedAt = null.NewTime(now, true)
-	attempt.UpdatedAt = now
-	if !h.finalizePurchasedLicense(w, r, cfgSvc, cfg, attemptID, attempt, purchased, func(c *datastore.Configuration, a *datastore.SelfHostedCheckoutAttempt) {
-		c.ExternalID = resp.Data.ExternalID
+	if !h.settleOrRecoverSelfHostedTrial(w, r, cfgSvc, selfHostedTrialMint{
+		attemptID:  attemptID,
+		licenseKey: purchased,
+		externalID: resp.Data.ExternalID,
+		status:     resp.Data.Status,
 	}) {
 		return
 	}
