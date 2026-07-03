@@ -630,6 +630,8 @@ func (h *BillingHandler) reconcileTrialCapOnce(ctx context.Context, orgID string
 		return false
 	}
 
+	wasProvisional := license.IsProvisional(org.UID, org.LicenseData)
+
 	services.RefreshLicenseDataForOrg(ctx, *org, h.A.Cfg.LicenseKey, useOrgBilling, deps, licClient)
 
 	refreshed, rerr := h.orgRepo().FetchOrganisationByID(ctx, orgID)
@@ -642,7 +644,14 @@ func (h *BillingHandler) reconcileTrialCapOnce(ctx context.Context, orgID string
 			h.A.Logger.Info("start trial: authoritative entitlements active", "org_id", orgID, "daily_event_limit", license.DailyEventLimit(refreshed.UID, refreshed.LicenseData))
 			return true
 		}
-		h.A.Logger.Warn("start trial: rejected authoritative payload without daily_event_limit (billing fail-open or stale); re-seeding provisional caps", "org_id", orgID)
+		if wasProvisional {
+			// Trial activation: a non-provisional refresh without daily_event_limit is
+			// billing fail-open or stale; keep polling and re-seed provisional caps.
+			h.A.Logger.Warn("start trial: rejected authoritative payload without daily_event_limit (billing fail-open or stale); re-seeding provisional caps", "org_id", orgID)
+		} else {
+			// Paid or other final authoritative payloads often omit daily_event_limit.
+			return true
+		}
 	}
 
 	if !license.IsProvisional(refreshed.UID, refreshed.LicenseData) {

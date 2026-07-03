@@ -15,7 +15,8 @@ func TestBillingClientErrorStatus(t *testing.T) {
 
 	require.Equal(t, http.StatusServiceUnavailable, billingClientErrorStatus(errors.New("upstream down"), http.StatusServiceUnavailable))
 	require.Equal(t, http.StatusConflict, billingClientErrorStatus(&billing.Error{StatusCode: http.StatusConflict, Message: "conflict"}, http.StatusServiceUnavailable))
-	require.Equal(t, http.StatusInternalServerError, billingClientErrorStatus(&billing.Error{StatusCode: http.StatusBadRequest, Message: "bad"}, http.StatusInternalServerError))
+	require.Equal(t, http.StatusBadRequest, billingClientErrorStatus(&billing.Error{StatusCode: http.StatusBadRequest, Message: "bad"}, http.StatusInternalServerError))
+	require.Equal(t, http.StatusPaymentRequired, billingClientErrorStatus(&billing.Error{StatusCode: http.StatusPaymentRequired, Message: "payment required"}, http.StatusServiceUnavailable))
 	require.True(t, billingClientErrorIsDefinitive(&billing.Error{StatusCode: http.StatusConflict, Message: "conflict"}))
 	require.False(t, billingClientErrorIsDefinitive(&billing.Error{StatusCode: http.StatusBadGateway, Message: "upstream"}))
 	require.False(t, billingClientErrorIsDefinitive(errors.New("dial tcp: timeout")))

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -193,6 +194,31 @@ func TestCheckUserOrgCreationAllowed(t *testing.T) {
 				m.EXPECT().CountUserOrganisations(gomock.Any(), userID, "").Return(int64(0), errors.New("db down"))
 			},
 			wantAllowed: true,
+		},
+		{
+			name: "paginates all org pages before choosing the strictest cap",
+			dbFn: func(m *mocks.MockOrganisationMemberRepository) {
+				firstPage := make([]datastore.Organisation, 0, 100)
+				for i := 0; i < 100; i++ {
+					orgID := fmt.Sprintf("org-page1-%d", i)
+					firstPage = append(firstPage, datastore.Organisation{
+						UID:         orgID,
+						LicenseData: encryptTrialLicense(t, orgID, map[string]interface{}{"org_limit": int64(5)}),
+					})
+				}
+				m.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), userID, gomock.Any()).Return(
+					firstPage,
+					datastore.PaginationData{HasNextPage: true, NextPageCursor: "page-2"},
+					nil,
+				)
+				m.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), userID, gomock.Any()).Return(
+					[]datastore.Organisation{{UID: orgB, LicenseData: encryptTrialLicense(t, orgB, map[string]interface{}{"org_limit": int64(1)})}},
+					datastore.PaginationData{HasNextPage: false},
+					nil,
+				)
+				m.EXPECT().CountUserOrganisations(gomock.Any(), userID, "").Return(int64(101), nil)
+			},
+			wantAllowed: false,
 		},
 	}
 

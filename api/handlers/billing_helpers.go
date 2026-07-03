@@ -13,9 +13,10 @@ import (
 )
 
 func billingClientErrorStatus(err error, defaultStatus int) int {
-	var billErr *billing.Error
-	if errors.As(err, &billErr) && billErr.StatusCode == http.StatusConflict {
-		return http.StatusConflict
+	if billingClientErrorIsDefinitive(err) {
+		var billErr *billing.Error
+		_ = errors.As(err, &billErr)
+		return billErr.StatusCode
 	}
 	return defaultStatus
 }

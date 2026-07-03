@@ -447,6 +447,34 @@ func TestReconcileTrialCapOnce_ExhaustionAfterCaplessPayloadsKeepsCapped(t *test
 	}
 }
 
+func TestReconcileTrialCapOnce_PaidAuthoritativeWithoutDailyEventLimitStopsPolling(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "org-paid-no-event-cap"
+	paidSeed, err := license.EncryptLicenseData(orgID, &license.LicenseDataPayload{
+		Key:          "paid-key",
+		Entitlements: map[string]interface{}{"user_limit": float64(50), "org_limit": float64(5)},
+	})
+	require.NoError(t, err)
+
+	orgRepo, currentData, writes := statefulTrialOrgRepo(ctrl, orgID, paidSeed)
+	bc := &billing.MockBillingClient{GetOrganisationLicenseKey: "paid-license-key"}
+	h, deps := trialReconcileHandler(orgRepo, bc)
+	licSrv, _ := switchableTrialLicenseServer(t, capLessEntitlementsJSON)
+	licClient := licensesvc.NewClient(licensesvc.Config{Host: licSrv.URL, Logger: h.A.Logger})
+
+	done := h.reconcileTrialCapOnce(context.Background(), orgID, true, deps, licClient)
+
+	require.True(t, done, "paid authoritative payloads without daily_event_limit must stop polling")
+	require.False(t, license.IsProvisional(orgID, currentData()), "paid payload must not be replaced with a provisional trial seed")
+	for _, w := range writes() {
+		payload, err := license.DecryptLicenseData(orgID, w)
+		require.NoError(t, err)
+		require.False(t, payload.Provisional, "poll must not re-seed provisional trial caps over paid entitlements")
+	}
+}
+
 func TestIsBillingOrgNotFound(t *testing.T) {
 	tests := []struct {
 		name string

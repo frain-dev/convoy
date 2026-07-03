@@ -101,11 +101,7 @@ type UserOrgLimitDeps struct {
 //   - fail CLOSED (allowed=false) only when a finite cap is resolved and the user's org count
 //     has reached it.
 func CheckUserOrgCreationAllowed(ctx context.Context, user *datastore.User, deps UserOrgLimitDeps) (bool, error) {
-	orgs, _, err := deps.OrgMemberRepo.LoadUserOrganisationsPaged(ctx, user.UID, datastore.Pageable{
-		PerPage:    100,
-		Direction:  datastore.Next,
-		NextCursor: firstPageCursor,
-	})
+	orgs, err := loadAllUserOrganisations(ctx, user.UID, deps.OrgMemberRepo)
 	if err != nil {
 		if deps.Logger != nil {
 			deps.Logger.Warn("org limit: user organisations lookup failed, allowing (fail open)", "error", err, "user_id", user.UID)
@@ -136,4 +132,26 @@ func CheckUserOrgCreationAllowed(ctx context.Context, user *datastore.User, deps
 	}
 
 	return count < limit, nil
+}
+
+func loadAllUserOrganisations(ctx context.Context, userID string, repo datastore.OrganisationMemberRepository) ([]datastore.Organisation, error) {
+	const perPage = 100
+	cursor := firstPageCursor
+	all := make([]datastore.Organisation, 0, perPage)
+
+	for {
+		orgs, page, err := repo.LoadUserOrganisationsPaged(ctx, userID, datastore.Pageable{
+			PerPage:    perPage,
+			Direction:  datastore.Next,
+			NextCursor: cursor,
+		})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, orgs...)
+		if !page.HasNextPage {
+			return all, nil
+		}
+		cursor = page.NextPageCursor
+	}
 }
