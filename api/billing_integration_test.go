@@ -782,6 +782,100 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_PreservesActiveC
 	require.Equal(s.T(), "failed", trialAttempt.Status)
 }
 
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_SupersedesPendingCheckoutOnSuccess() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	activeAttemptID := "01ACTIVECHECKOUT000000000001"
+	savedBillingCfg.CheckoutAttempts = map[string]datastore.SelfHostedCheckoutAttempt{
+		activeAttemptID: {
+			AttemptID:         activeAttemptID,
+			Status:            "pending",
+			CheckoutID:        "cs_test_active",
+			CheckoutURL:       "https://checkout.example/active",
+			CheckoutNonce:     "nonce-active",
+			CheckoutNonceHash: "hash-active",
+			PlanID:            "plan-active",
+			Interval:          "monthly",
+		},
+	}
+	savedBillingCfg.ActiveCheckoutAttemptID = activeAttemptID
+	savedBillingCfg.CheckoutID = "cs_test_active"
+	require.NoError(s.T(), cfgSvc.UpdateCheckoutAttempts(context.Background(), savedBillingCfg))
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
+	require.NoError(s.T(), err)
+
+	licSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":true,"data":{"valid":true,"status":"active","trial":true,"entitlements":[{"key":"project_limit","value":-1},{"key":"org_limit","value":-1}]}}`))
+	}))
+	defer licSrv.Close()
+
+	globalCfg, err := config.Get()
+	require.NoError(s.T(), err)
+	originalLicHost := globalCfg.LicenseService.Host
+	originalLicPath := globalCfg.LicenseService.ValidatePath
+	globalCfg.LicenseService.Host = licSrv.URL
+	globalCfg.LicenseService.ValidatePath = "/validate"
+	require.NoError(s.T(), config.Override(&globalCfg))
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		restored, _ := config.Get()
+		restored.LicenseService.Host = originalLicHost
+		restored.LicenseService.ValidatePath = originalLicPath
+		_ = config.Override(&restored)
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{
+		"email": "buyer@example.com",
+		"host":  "https://customer.example.com",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+	stored, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), stored.ActiveCheckoutAttemptID)
+	require.Empty(s.T(), stored.CheckoutID)
+	require.NotEmpty(s.T(), stored.LicenseKey)
+
+	superseded, ok := stored.CheckoutAttempts[activeAttemptID]
+	require.True(s.T(), ok)
+	require.Equal(s.T(), "superseded", superseded.Status)
+	require.Empty(s.T(), superseded.CheckoutNonce)
+
+	trialAttempt, ok := stored.CheckoutAttempts[client.lastTrial.AttemptID]
+	require.True(s.T(), ok)
+	require.Equal(s.T(), "completed", trialAttempt.Status)
+}
+
 func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_MarksAttemptFailedWhenLicenseKeyMissing() {
 	originalCfg := s.ConvoyApp.A.Cfg
 	originalRouter := s.Router
