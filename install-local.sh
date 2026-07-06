@@ -41,6 +41,10 @@ check_prereqs() {
     die "Git is not installed. Install Git first and run this script again."
   fi
 
+  if ! command_exists curl; then
+    die "curl is not installed. Install curl first and run this script again."
+  fi
+
   if ! command_exists docker; then
     cat <<'EOF'
 [ERROR] Docker is not installed.
@@ -69,7 +73,8 @@ EOF
 }
 
 check_ports() {
-  local required_ports=(80 5005 5008 5433 6432 9090)
+  # These are the host ports published by configs/local/docker-compose.yml.
+  local required_ports=(80 5433 6432)
   local conflicts=()
   local p
 
@@ -108,6 +113,9 @@ prepare_repo() {
       git -C "$INSTALL_DIR" pull --ff-only
     fi
   else
+    if [ -d "$INSTALL_DIR" ] && [ "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
+      die "Install directory '$INSTALL_DIR' exists and is not a git repo. Use an empty path or set CONVOY_INSTALL_DIR to another directory."
+    fi
     git clone "$REPO_URL" "$INSTALL_DIR"
   fi
 }
@@ -175,9 +183,7 @@ wait_for_health() {
 
   until curl -fsS "$health_url" >/dev/null 2>&1; do
     if [ "$elapsed" -ge "$MAX_WAIT_SECONDS" ]; then
-      warn "Timed out waiting for health after ${MAX_WAIT_SECONDS}s."
-      warn "Run: docker compose -f \"$INSTALL_DIR/configs/local/docker-compose.yml\" logs"
-      return
+      die "Timed out waiting for health after ${MAX_WAIT_SECONDS}s. Check logs with: docker compose -f \"$INSTALL_DIR/configs/local/docker-compose.yml\" logs"
     fi
 
     sleep 3
