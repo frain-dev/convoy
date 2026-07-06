@@ -25,24 +25,6 @@ export class EndpointsService {
 		});
 	}
 
-	getEndpointStats(endpointId: string, query?: { startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `/endpoints/${endpointId}/stats`,
-					method: 'get',
-					query,
-					level: 'org_project',
-					hideNotification: true
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
 	deleteEndpoint(endpointId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

@@ -1246,147 +1246,6 @@
         "summary": "Pause endpoint"
       }
     },
-    "/v1/projects/{projectID}/endpoints/{endpointID}/stats": {
-      "get": {
-        "parameters": [
-          {
-            "description": "Project ID",
-            "in": "path",
-            "name": "projectID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "Endpoint ID",
-            "in": "path",
-            "name": "endpointID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "start date",
-            "in": "query",
-            "name": "startDate",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "end date",
-            "in": "query",
-            "name": "endDate",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/util.ServerResponse"
-                    },
-                    {
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/models.EndpointStatsResponse"
-                        }
-                      },
-                      "type": "object"
-                    }
-                  ]
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/util.ServerResponse"
-                    },
-                    {
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
-                        }
-                      },
-                      "type": "object"
-                    }
-                  ]
-                }
-              }
-            },
-            "description": "Bad Request"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/util.ServerResponse"
-                    },
-                    {
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
-                        }
-                      },
-                      "type": "object"
-                    }
-                  ]
-                }
-              }
-            },
-            "description": "Unauthorized"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/util.ServerResponse"
-                    },
-                    {
-                      "properties": {
-                        "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
-                        }
-                      },
-                      "type": "object"
-                    }
-                  ]
-                }
-              }
-            },
-            "description": "Not Found"
-          }
-        },
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "tags": [
-          "Endpoints"
-        ],
-        "description": "This endpoint returns the period (history) failure rate for an endpoint over a date range, plus the circuit breaker recent rate when available",
-        "operationId": "GetEndpointStats",
-        "summary": "Get endpoint reliability stats"
-      }
-    },
     "/v1/projects/{projectID}/event-types": {
       "get": {
         "parameters": [
@@ -8973,6 +8832,10 @@
           "authentication": {
             "$ref": "#/components/schemas/datastore.EndpointAuthentication"
           },
+          "cb_state": {
+            "description": "CBState is the circuit breaker state (\"open\", \"half-open\", \"closed\") so the UI\ncan reflect a tripped breaker on the endpoint status. Nil when CB is\noff/unlicensed or has no sample for this endpoint.",
+            "type": "string"
+          },
           "content_type": {
             "type": "string"
           },
@@ -9013,7 +8876,7 @@
             "type": "string"
           },
           "period_failure_rate": {
-            "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n(Failure/(Success+Failure)), independent of the circuit breaker. Nil when the\nrange has no terminal deliveries. SuccessCount/FailureCount are transient too.",
+            "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n((Failure+Retry)/(Success+Failure+Retry)), independent of the circuit breaker.\nRetry deliveries count as failures-so-far: they have failed at least once and\nmove to the success bucket only when a later attempt succeeds. Nil when the\nrange has no counted deliveries. SuccessCount/FailureCount/RetryCount are\ntransient too; FailureCount holds terminal failures only.",
             "type": "number"
           },
           "project_id": {
@@ -9023,6 +8886,9 @@
             "type": "integer"
           },
           "rate_limit_duration": {
+            "type": "integer"
+          },
+          "retry_count": {
             "type": "integer"
           },
           "secrets": {
@@ -10547,6 +10413,10 @@
           "authentication": {
             "$ref": "#/components/schemas/datastore.EndpointAuthentication"
           },
+          "cb_state": {
+            "description": "CBState is the circuit breaker state (\"open\", \"half-open\", \"closed\") so the UI\ncan reflect a tripped breaker on the endpoint status. Nil when CB is\noff/unlicensed or has no sample for this endpoint.",
+            "type": "string"
+          },
           "content_type": {
             "type": "string"
           },
@@ -10587,7 +10457,7 @@
             "type": "string"
           },
           "period_failure_rate": {
-            "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n(Failure/(Success+Failure)), independent of the circuit breaker. Nil when the\nrange has no terminal deliveries. SuccessCount/FailureCount are transient too.",
+            "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n((Failure+Retry)/(Success+Failure+Retry)), independent of the circuit breaker.\nRetry deliveries count as failures-so-far: they have failed at least once and\nmove to the success bucket only when a later attempt succeeds. Nil when the\nrange has no counted deliveries. SuccessCount/FailureCount/RetryCount are\ntransient too; FailureCount holds terminal failures only.",
             "type": "number"
           },
           "project_id": {
@@ -10597,6 +10467,9 @@
             "type": "integer"
           },
           "rate_limit_duration": {
+            "type": "integer"
+          },
+          "retry_count": {
             "type": "integer"
           },
           "secrets": {
@@ -10625,34 +10498,6 @@
           },
           "url": {
             "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "models.EndpointStatsResponse": {
-        "properties": {
-          "failure_count": {
-            "type": "integer"
-          },
-          "failure_rate": {
-            "nullable": true,
-            "type": "number"
-          },
-          "recent_failure_count": {
-            "nullable": true,
-            "type": "integer"
-          },
-          "recent_failure_rate": {
-            "nullable": true,
-            "type": "number"
-          },
-          "recent_success_count": {
-            "description": "Recent (circuit breaker) counts over the rolling observability window, read from\nthe breaker state in redis. Backed by the same sample as RecentFailureRate, so all\nthree are nil/zero together when CB is off/unlicensed or has no recent sample.",
-            "nullable": true,
-            "type": "integer"
-          },
-          "success_count": {
-            "type": "integer"
           }
         },
         "type": "object"

@@ -405,17 +405,12 @@ export class PrivateComponent implements OnInit {
 	}
 
 	getOrgLimitMessage(): string {
-		if (!this.licenseService.hasLicense('org_limit')) {
-			if (!this.licenseService.isLimitAvailable('org_limit')) {
-				return 'Business';
-			}
-			if (this.licenseService.isLimitAvailable('org_limit') && this.licenseService.isLimitReached('org_limit')) {
-				const limitInfo = this.licenseService.getLimitInfo('org_limit');
-				const current = limitInfo?.current ?? 0;
-				const limit = limitInfo?.limit === -1 ? '∞' : (limitInfo?.limit ?? 0);
-				return `Limit reached (${current}/${limit})`;
-			}
-		}
-		return '';
+		return this.licenseService.limitMessage('org_limit');
+	}
+
+	// Compact pill text for the org-switcher dropdown overlay: "2/2" for a reached
+	// limit, the upsell label unchanged. Full message stays available as the tooltip.
+	getOrgLimitPillText(): string {
+		return this.licenseService.limitPillText('org_limit');
 	}
 }

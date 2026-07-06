@@ -455,13 +455,21 @@ type Endpoint struct {
 	// It is a pointer so the API can return null when no rate was computed (circuit
 	// breaker feature off, or sampler not running), distinct from a genuine 0%.
 	FailureRate *float64 `json:"failure_rate" db:"-"`
+	// CBState is the circuit breaker state ("open", "half-open", "closed") so the UI
+	// can reflect a tripped breaker on the endpoint status. Nil when CB is
+	// off/unlicensed or has no sample for this endpoint.
+	CBState *string `json:"cb_state" db:"-"`
 
 	// PeriodFailureRate is the period-scoped failure rate from event_deliveries
-	// (Failure/(Success+Failure)), independent of the circuit breaker. Nil when the
-	// range has no terminal deliveries. SuccessCount/FailureCount are transient too.
+	// ((Failure+Retry)/(Success+Failure+Retry)), independent of the circuit breaker.
+	// Retry deliveries count as failures-so-far: they have failed at least once and
+	// move to the success bucket only when a later attempt succeeds. Nil when the
+	// range has no counted deliveries. SuccessCount/FailureCount/RetryCount are
+	// transient too; FailureCount holds terminal failures only.
 	PeriodFailureRate *float64 `json:"period_failure_rate" db:"-"`
 	SuccessCount      *int64   `json:"success_count" db:"-"`
 	FailureCount      *int64   `json:"failure_count" db:"-"`
+	RetryCount        *int64   `json:"retry_count" db:"-"`
 
 	// mTLS client certificate configuration
 	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty" db:"mtls_client_cert"`

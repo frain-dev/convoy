@@ -37,7 +37,9 @@
             </button>
             <ul dropdownOptions>
               <li class="flex items-center justify-between px-16px pt-12px pb-8px border-b border-b-neutral-a3" (click)="$event.stopPropagation()">
-                <span class="font-semibold text-12 text-neutral-11">Your organisations @if (orgPagination?.total) {<span>({{ organisations?.length || 0 }}/{{ orgPagination?.total }})</span>}</span>
+                <!-- Plain total normally; "loaded of total" only while more pages exist, so a
+                     one-page (1) can't be misread as the x/y limit pill format. -->
+                <span class="font-semibold text-12 text-neutral-11">Your organisations @if (orgPagination?.total) {<span>({{ orgPagination?.has_next_page ? (organisations?.length || 0) + ' of ' + orgPagination?.total : orgPagination?.total }})</span>}</span>
                 @if (orgSearchEnabled) {
                   <button type="button" class="p-4px rounded-6px transition-colors" [class.bg-neutral-3]="showOrgSearchInput" (click)="$event.stopPropagation(); toggleOrgSearch()" [attr.aria-label]="showOrgSearchInput ? 'Close search' : 'Search organisations'">
                     <img class="w-14px" src="/assets/img/search-icon.svg" alt="search" />
@@ -98,11 +100,16 @@
                   Add {{ organisations?.length ? 'another' : 'an' }} Organization
                 </button>
                 @if (!licenseService.hasLicense('org_limit') && getOrgLimitMessage()) {
-                  <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full">
-                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                      <use xlink:href="#lock-icon"></use>
-                    </svg>
-                    {{ getOrgLimitMessage() }}
+                  <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center absolute top-0 h-full w-full">
+                    <convoy-tooltip [withIcon]="false" position="top" className="!min-w-fit whitespace-nowrap !left-0 !translate-x-0">
+                      {{ getOrgLimitMessage() }}
+                      <div tooltipToggle class="flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px">
+                        <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                          <use xlink:href="#lock-icon"></use>
+                        </svg>
+                        {{ getOrgLimitPillText() }}
+                      </div>
+                    </convoy-tooltip>
                   </div>
                 }
               </li>

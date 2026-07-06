@@ -45,34 +45,33 @@ export class HttpService {
 		// remove empty data and objects in object
 		const cleanedQuery = Object.fromEntries(Object.entries(safeQuery).filter(([_, q]) => q !== '' && q !== undefined && q !== null && typeof q !== 'object'));
 
-		// convert object to query param
-		let cleanedQueryString: string = '';
+		// convert object to query params; JSON-array strings (e.g. status='["Failure","Retry"]')
+		// expand into repeated keys. Parts are joined at the end so repeated values are
+		// always '&'-separated regardless of key position.
+		const parts: string[] = [];
 
-		Object.keys(cleanedQuery).forEach((q, i) => {
+		Object.keys(cleanedQuery).forEach(q => {
+			const queryValue = safeQuery[q];
+			if (queryValue === undefined) return;
 			try {
-				const queryValue = safeQuery[q];
-				if (queryValue !== undefined) {
-					const queryItem = JSON.parse(queryValue);
-					queryItem.forEach((item: any) => (cleanedQueryString += `${q}=${item}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`));
+				const queryItem = JSON.parse(queryValue);
+				if (Array.isArray(queryItem)) {
+					queryItem.forEach((item: any) => parts.push(`${q}=${item}`));
+					return;
 				}
-			} catch (error) {
-				const queryValue = safeQuery[q];
-				if (queryValue !== undefined) {
-					cleanedQueryString += `${q}=${queryValue}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`;
-				}
-			}
+			} catch (error) {}
+			parts.push(`${q}=${queryValue}`);
 		});
 
-		// for query items with arrays, process them into a string
-		let queryString = '';
+		// query items that are real arrays (filtered out of cleanedQuery above)
 		Object.keys(safeQuery).forEach((key: any) => {
 			const queryValue = safeQuery[key];
-			if (queryValue !== undefined && typeof queryValue === 'object') {
-				queryValue?.forEach((item: any) => (queryString += `&${key}=${item}`));
+			if (queryValue !== undefined && queryValue !== null && typeof queryValue === 'object') {
+				queryValue?.forEach?.((item: any) => parts.push(`${key}=${item}`));
 			}
 		});
 
-		return cleanedQueryString + queryString;
+		return parts.join('&');
 	}
 
 	getOrganisation() {

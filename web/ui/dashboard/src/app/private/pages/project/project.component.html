@@ -69,11 +69,16 @@
               </a>
 
               @if (!licenseService.hasLicense('project_limit') && getProjectLimitMessage()) {
-                <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full">
-                  <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                    <use xlink:href="#lock-icon"></use>
-                  </svg>
-                  {{ getProjectLimitMessage() }}
+                <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center absolute top-0 h-full w-full">
+                  <convoy-tooltip [withIcon]="false" position="top" className="!min-w-fit whitespace-nowrap !left-0 !translate-x-0">
+                    {{ getProjectLimitMessage() }}
+                    <div tooltipToggle class="flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px">
+                      <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                        <use xlink:href="#lock-icon"></use>
+                      </svg>
+                      {{ getProjectLimitPillText() }}
+                    </div>
+                  </convoy-tooltip>
                 </div>
               }
               @if (isDisabled && !getProjectLimitMessage()) {
