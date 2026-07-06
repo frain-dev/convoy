@@ -30,8 +30,29 @@ is_port_in_use() {
     return $?
   fi
 
-  # Fallback when lsof is unavailable: check Docker published ports only.
-  docker ps --format '{{.Ports}}' | grep -E "0\.0\.0\.0:${port}->|\[::\]:${port}->" >/dev/null 2>&1
+  # Fallback when lsof is unavailable: check host binding via Python.
+  if command_exists python3; then
+    python3 - "$port" <<'PY'
+import socket
+import sys
+
+port = int(sys.argv[1])
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    s.bind(("0.0.0.0", port))
+except OSError:
+    sys.exit(0)  # in use
+else:
+    sys.exit(1)  # free
+finally:
+    s.close()
+PY
+    return $?
+  fi
+
+  # Last resort when lsof/python3 are unavailable.
+  warn "Could not reliably check port $port (missing lsof/python3); continuing."
+  return 1
 }
 
 check_prereqs() {
@@ -122,60 +143,34 @@ prepare_repo() {
   fi
 }
 
-set_license_key() {
-  local env_file="$INSTALL_DIR/configs/local/conf/.env"
-  local key
+ensure_local_config() {
+  local config_path="$INSTALL_DIR/configs/local/convoy.json"
 
-  if [ ! -f "$env_file" ]; then
-    warn "Expected env file not found at $env_file; skipping license key setup."
+  if [ -f "$config_path" ]; then
     return
   fi
 
-  printf "Do you want to set CONVOY_LICENSE_KEY now? [y/N]: "
-  if ! read -r use_key; then
-    use_key=""
-  fi
-  use_key="${use_key:-N}"
-  if [[ ! "$use_key" =~ ^[Yy]$ ]]; then
-    return
+  log "Ensuring local Convoy config exists"
+
+  # Recover deleted tracked file from git if available.
+  if [ -d "$INSTALL_DIR/.git" ] && git -C "$INSTALL_DIR" ls-files --error-unmatch "configs/local/convoy.json" >/dev/null 2>&1; then
+    git -C "$INSTALL_DIR" checkout -- "configs/local/convoy.json"
   fi
 
-  printf "Enter your license key: "
-  if ! read -r key; then
-    key=""
+  if [ ! -f "$config_path" ]; then
+    die "Missing $config_path. Restore it from the repository or create it before running installer."
   fi
-
-  if [ -z "${key}" ]; then
-    warn "No key provided; skipping license key setup."
-    return
-  fi
-
-  if grep -q '^CONVOY_LICENSE_KEY=' "$env_file"; then
-    awk -v new_key="$key" '
-      BEGIN { replaced = 0 }
-      /^CONVOY_LICENSE_KEY=/ {
-        print "CONVOY_LICENSE_KEY=" new_key
-        replaced = 1
-        next
-      }
-      { print }
-      END {
-        if (replaced == 0) {
-          print "CONVOY_LICENSE_KEY=" new_key
-        }
-      }
-    ' "$env_file" > "${env_file}.tmp" && mv "${env_file}.tmp" "$env_file"
-  else
-    printf "\nCONVOY_LICENSE_KEY=%s\n" "$key" >> "$env_file"
-  fi
-
-  log "License key saved to configs/local/conf/.env"
 }
 
 start_stack() {
   local compose_dir="$INSTALL_DIR/configs/local"
 
   [ -d "$compose_dir" ] || die "Missing compose directory: $compose_dir"
+
+  if [ "${CONVOY_SKIP_PULL:-0}" != "1" ]; then
+    log "Pulling latest images"
+    docker compose -f "$compose_dir/docker-compose.yml" pull
+  fi
 
   log "Starting Convoy stack"
   docker compose -f "$compose_dir/docker-compose.yml" up -d
@@ -219,7 +214,7 @@ main() {
   check_prereqs
   check_ports
   prepare_repo
-  set_license_key
+  ensure_local_config
   start_stack
   wait_for_health
   print_next_steps
