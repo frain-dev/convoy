@@ -460,12 +460,9 @@ type Endpoint struct {
 	// off/unlicensed or has no sample for this endpoint.
 	CBState *string `json:"cb_state" db:"-"`
 
-	// PeriodFailureRate is the period-scoped failure rate from event_deliveries
-	// ((Failure+Retry)/(Success+Failure+Retry)), independent of the circuit breaker.
-	// Retry deliveries count as failures-so-far: they have failed at least once and
-	// move to the success bucket only when a later attempt succeeds. Nil when the
-	// range has no counted deliveries. SuccessCount/FailureCount/RetryCount are
-	// transient too; FailureCount holds terminal failures only.
+	// PeriodFailureRate is the period failure rate from event_deliveries,
+	// (Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.
+	// Nil when the range has no counted deliveries; sibling counts are transient.
 	PeriodFailureRate *float64 `json:"period_failure_rate" db:"-"`
 	SuccessCount      *int64   `json:"success_count" db:"-"`
 	FailureCount      *int64   `json:"failure_count" db:"-"`

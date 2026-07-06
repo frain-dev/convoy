@@ -7842,7 +7842,7 @@
           "type": "string"
         },
         "period_failure_rate": {
-          "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n((Failure+Retry)/(Success+Failure+Retry)), independent of the circuit breaker.\nRetry deliveries count as failures-so-far: they have failed at least once and\nmove to the success bucket only when a later attempt succeeds. Nil when the\nrange has no counted deliveries. SuccessCount/FailureCount/RetryCount are\ntransient too; FailureCount holds terminal failures only.",
+          "description": "PeriodFailureRate is the period failure rate from event_deliveries,\n(Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.\nNil when the range has no counted deliveries; sibling counts are transient.",
           "type": "number"
         },
         "project_id": {
@@ -9423,7 +9423,7 @@
           "type": "string"
         },
         "period_failure_rate": {
-          "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n((Failure+Retry)/(Success+Failure+Retry)), independent of the circuit breaker.\nRetry deliveries count as failures-so-far: they have failed at least once and\nmove to the success bucket only when a later attempt succeeds. Nil when the\nrange has no counted deliveries. SuccessCount/FailureCount/RetryCount are\ntransient too; FailureCount holds terminal failures only.",
+          "description": "PeriodFailureRate is the period failure rate from event_deliveries,\n(Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.\nNil when the range has no counted deliveries; sibling counts are transient.",
           "type": "number"
         },
         "project_id": {
