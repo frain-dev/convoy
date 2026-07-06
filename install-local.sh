@@ -107,7 +107,9 @@ prepare_repo() {
 
   if [ -d "$INSTALL_DIR/.git" ]; then
     printf "Found existing repo at %s. Pull latest changes? [Y/n]: " "$INSTALL_DIR"
-    read -r pull_choice
+    if ! read -r pull_choice; then
+      pull_choice=""
+    fi
     pull_choice="${pull_choice:-Y}"
     if [[ "$pull_choice" =~ ^[Yy]$ ]]; then
       git -C "$INSTALL_DIR" pull --ff-only
@@ -130,14 +132,18 @@ set_license_key() {
   fi
 
   printf "Do you want to set CONVOY_LICENSE_KEY now? [y/N]: "
-  read -r use_key
+  if ! read -r use_key; then
+    use_key=""
+  fi
   use_key="${use_key:-N}"
   if [[ ! "$use_key" =~ ^[Yy]$ ]]; then
     return
   fi
 
   printf "Enter your license key: "
-  read -r key
+  if ! read -r key; then
+    key=""
+  fi
 
   if [ -z "${key}" ]; then
     warn "No key provided; skipping license key setup."
