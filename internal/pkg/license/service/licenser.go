@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -30,6 +31,15 @@ const (
 	// delivery asks about a project not yet in the cached set.
 	communityProjectCacheTTL = 1 * time.Minute
 	communityProjectMissTTL  = 5 * time.Second
+
+	// License statuses that are definitively negative. A license in one of these
+	// states must not serve entitlements (fail closed on the read gates).
+	licenseStatusSuspended = "suspended"
+	licenseStatusRevoked   = "revoked"
+	licenseStatusExpired   = "expired"
+	licenseStatusNotFound  = "not_found"
+
+	licenseStatusTrialExpired = "trial_expired"
 )
 
 // Licenser implements the license.Licenser interface using the license service
@@ -43,6 +53,12 @@ type Licenser struct {
 	expiresAt      *time.Time
 	status         string
 
+	// refreshCancel stops the background refresh goroutine; refreshDone is
+	// closed when that goroutine returns. Both are nil for community and
+	// billing-only licensers, which have no background refresh.
+	refreshCancel context.CancelFunc
+	refreshDone   chan struct{}
+
 	orgRepo     datastore.OrganisationRepository
 	userRepo    datastore.UserRepository
 	projectRepo datastore.ProjectRepository
@@ -52,8 +68,13 @@ type Licenser struct {
 	enabledProjects       map[string]bool
 	projectsFetchedAt     time.Time
 	lastProjectMutationAt time.Time
-	isCommunity           bool
-	denyLimits            bool
+	// isCommunity is atomic because a self-hosted trial can flip it from false to
+	// true at runtime when the trial expires (degradeToCommunity), while request
+	// goroutines read it locklessly on the feature/limit gates. A licensed
+	// licenser starts false; a community licenser (empty key, or a degraded
+	// expired trial) is true.
+	isCommunity atomic.Bool
+	denyLimits  bool
 
 	logger log.Logger
 }
@@ -110,8 +131,27 @@ func NewLicenser(cfg LicenserConfig) (*Licenser, error) {
 	defer cancel()
 
 	if err := licenser.validateAndCache(ctx); err != nil {
+		// Boot policy per validation outcome:
+		//   - Expired self-hosted TRIAL: do NOT fail startup. validateAndCache has
+		//     already degraded this licenser to the community/OSS floor in place
+		//     (isCommunity set, community projects loaded), so return it as a
+		//     community licenser and skip the background refresh (a community
+		//     licenser has none). This is the "lapsed trial boots to free tier,
+		//     not bricked" requirement.
+		//   - Any other error (transport, suspended, revoked, paid-expired): keep
+		//     the existing loud failure. A paid key that cannot validate must not
+		//     silently boot.
+		if errors.Is(err, ErrLicenseTrialExpired) {
+			return licenser, nil
+		}
 		return nil, fmt.Errorf("failed to validate license: %w", err)
 	}
+
+	// The synchronous feature gates only read cached state, so a live process
+	// would keep serving premium entitlements after a suspension until it
+	// restarted. The background refresh re-validates on the cache TTL so a
+	// suspension or revocation takes effect within one TTL without a restart.
+	licenser.startBackgroundRefresh()
 
 	return licenser, nil
 }
@@ -126,8 +166,7 @@ func newCommunityLicenser(cfg LicenserConfig) (*Licenser, error) {
 		return nil, err
 	}
 
-	return &Licenser{
-		isCommunity:       true,
+	l := &Licenser{
 		enabledProjects:   enabledProjects,
 		projectsFetchedAt: time.Now(),
 		orgRepo:           cfg.OrgRepo,
@@ -135,7 +174,9 @@ func newCommunityLicenser(cfg LicenserConfig) (*Licenser, error) {
 		projectRepo:       cfg.ProjectRepo,
 		entitlements:      make(map[string]EntitlementValue),
 		logger:            cfg.Logger,
-	}, nil
+	}
+	l.isCommunity.Store(true)
+	return l, nil
 }
 
 func newBillingOnlyLicenser(cfg LicenserConfig) (*Licenser, error) {
@@ -169,10 +210,34 @@ func enforceProjectLimit(ctx context.Context, projectRepo datastore.ProjectRepos
 	return m, nil
 }
 
-// validateAndCache validates the license and caches entitlements
+// validateAndCache validates the license and caches entitlements.
+//
+// Failure policy (entitlements follow money):
+//   - Definitive-negative result (suspended, revoked, expired, not found): fail
+//     closed. Record the status, drop the cached entitlements, and advance
+//     lastFetch so the authoritative "no access" is cached for the TTL. The read
+//     gates then stop serving premium features on this live process.
+//   - Transient / transport error (network failure, non-200, unmarshal error):
+//     fail open. Keep the last-good entitlements and do NOT advance lastFetch, so
+//     a network blip cannot revoke a paying customer's access.
+//   - Expired self-hosted TRIAL (ErrLicenseTrialExpired): degrade to the
+//     community/OSS floor in place (isCommunity, community project set), NOT fail
+//     closed. This is deliberately distinct from the definitive-negative statuses
+//     below so an expired trial lands on the free tier instead of denying access.
 func (l *Licenser) validateAndCache(ctx context.Context) error {
 	data, err := l.client.ValidateLicense(ctx, l.licenseKey)
 	if err != nil {
+		if errors.Is(err, ErrLicenseTrialExpired) {
+			l.degradeToCommunity(ctx)
+			return err
+		}
+		if status, ok := definitiveNegativeStatus(err); ok {
+			l.entitlementsMu.Lock()
+			l.status = status
+			l.entitlements = make(map[string]EntitlementValue)
+			l.lastFetch = time.Now()
+			l.entitlementsMu.Unlock()
+		}
 		return err
 	}
 
@@ -192,9 +257,40 @@ func (l *Licenser) validateAndCache(ctx context.Context) error {
 	return nil
 }
 
+func (l *Licenser) degradeToCommunity(ctx context.Context) {
+	if l.isCommunity.Load() {
+		return
+	}
+
+	enabled, err := enforceProjectLimit(ctx, l.projectRepo)
+	if err != nil {
+		if l.logger != nil {
+			l.logger.Warnf("trial expired but failed to load community projects, will retry on next refresh: %v", err)
+		}
+		return
+	}
+
+	l.mu.Lock()
+	l.enabledProjects = enabled
+	l.projectsFetchedAt = time.Now()
+	l.mu.Unlock()
+
+	l.entitlementsMu.Lock()
+	l.entitlements = make(map[string]EntitlementValue)
+	l.status = licenseStatusTrialExpired
+	l.lastFetch = time.Now()
+	l.entitlementsMu.Unlock()
+
+	l.isCommunity.Store(true)
+
+	if l.logger != nil {
+		l.logger.Warn("self-hosted trial expired; instance degraded to community/OSS floor")
+	}
+}
+
 // ensureValidCache ensures entitlements are fresh (within TTL)
 func (l *Licenser) ensureValidCache(ctx context.Context) error {
-	if l.isCommunity || l.denyLimits {
+	if l.isCommunity.Load() || l.denyLimits {
 		return nil
 	}
 
@@ -211,7 +307,7 @@ func (l *Licenser) ensureValidCache(ctx context.Context) error {
 
 // checkExpiry checks if the license has expired
 func (l *Licenser) checkExpiry() error {
-	if l.isCommunity || l.denyLimits {
+	if l.isCommunity.Load() || l.denyLimits {
 		return nil
 	}
 
@@ -243,9 +339,42 @@ func (l *Licenser) checkExpiry() error {
 	return nil
 }
 
+// definitiveNegativeStatus maps a client validation error to the license status
+// it represents, reporting whether the error is a definitive-negative result
+// (as opposed to a transient/transport error). The typed errors returned by the
+// client for these statuses are compared with errors.Is.
+func definitiveNegativeStatus(err error) (string, bool) {
+	switch {
+	case errors.Is(err, ErrLicenseSuspended):
+		return licenseStatusSuspended, true
+	case errors.Is(err, ErrLicenseRevoked):
+		return licenseStatusRevoked, true
+	case errors.Is(err, ErrLicenseExpired):
+		return licenseStatusExpired, true
+	case errors.Is(err, ErrLicenseNotFound):
+		return licenseStatusNotFound, true
+	default:
+		return "", false
+	}
+}
+
+// isLicenseUsable reports whether the last authoritative validation left the
+// license in a usable state. A suspended or revoked license fails closed on
+// every read gate, mirroring validateAndCache which drops entitlements for the
+// same statuses. Guarded by entitlementsMu; callers must not already hold it.
+func (l *Licenser) isLicenseUsable() bool {
+	l.entitlementsMu.RLock()
+	defer l.entitlementsMu.RUnlock()
+	return l.status != licenseStatusSuspended && l.status != licenseStatusRevoked
+}
+
 // getEntitlement retrieves an entitlement value
 func (l *Licenser) getEntitlement(key string) EntitlementValue {
-	if l.isCommunity || l.denyLimits {
+	if l.isCommunity.Load() || l.denyLimits {
+		return false
+	}
+
+	if !l.isLicenseUsable() {
 		return false
 	}
 
@@ -257,7 +386,11 @@ func (l *Licenser) getEntitlement(key string) EntitlementValue {
 
 // hasFeature checks if a feature is enabled
 func (l *Licenser) hasFeature(key string) bool {
-	if l.isCommunity || l.denyLimits {
+	if l.isCommunity.Load() || l.denyLimits {
+		return false
+	}
+
+	if !l.isLicenseUsable() {
 		return false
 	}
 
@@ -275,7 +408,7 @@ func (l *Licenser) checkLimit(ctx context.Context, countFunc func(context.Contex
 	if l.denyLimits {
 		return false, nil
 	}
-	if l.isCommunity {
+	if l.isCommunity.Load() {
 		count, err := countFunc(ctx)
 		if err != nil {
 			return false, err
@@ -285,6 +418,11 @@ func (l *Licenser) checkLimit(ctx context.Context, countFunc func(context.Contex
 
 	if err := l.ensureValidCache(ctx); err != nil {
 		return false, err
+	}
+
+	// Fail closed: a suspended or revoked license grants no limit headroom.
+	if !l.isLicenseUsable() {
+		return false, nil
 	}
 
 	if err := l.checkExpiry(); err != nil {
@@ -332,12 +470,17 @@ func (l *Licenser) CheckProjectLimit(ctx context.Context) (bool, error) {
 }
 
 func (l *Licenser) IsMultiUserMode(ctx context.Context) (bool, error) {
-	if l.isCommunity || l.denyLimits {
+	if l.isCommunity.Load() || l.denyLimits {
 		return false, nil
 	}
 
 	if err := l.ensureValidCache(ctx); err != nil {
 		return false, err
+	}
+
+	// Fail closed: a suspended or revoked license is not multi-user.
+	if !l.isLicenseUsable() {
+		return false, nil
 	}
 
 	l.entitlementsMu.RLock()
@@ -411,7 +554,7 @@ func (l *Licenser) CircuitBreaking() bool {
 }
 
 func (l *Licenser) IngestRate() bool {
-	if l.isCommunity {
+	if l.isCommunity.Load() {
 		return false
 	}
 	return l.hasFeature("ingest_rate_limit")
@@ -507,7 +650,7 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 	userLimit, userLimitExists := GetNumberEntitlement(l.entitlements, "user_limit")
 	projectLimit, projectLimitExists := GetNumberEntitlement(l.entitlements, "project_limit")
 	l.entitlementsMu.RUnlock()
-	if l.isCommunity {
+	if l.isCommunity.Load() {
 		orgLimit, orgLimitExists = communityOrgLimit, true
 		userLimit, userLimitExists = communityUserLimit, true
 		projectLimit, projectLimitExists = communityProjectLimit, true
@@ -586,7 +729,7 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 }
 
 func (l *Licenser) ProjectEnabled(projectID string) bool {
-	if !l.isCommunity {
+	if !l.isCommunity.Load() {
 		return true
 	}
 
@@ -650,7 +793,7 @@ func (l *Licenser) refreshEnabledProjectsIfStale(projectID string) {
 }
 
 func (l *Licenser) AddEnabledProject(projectID string) {
-	if !l.isCommunity {
+	if !l.isCommunity.Load() {
 		return
 	}
 
@@ -668,7 +811,7 @@ func (l *Licenser) AddEnabledProject(projectID string) {
 }
 
 func (l *Licenser) RemoveEnabledProject(projectID string) {
-	if !l.isCommunity {
+	if !l.isCommunity.Load() {
 		return
 	}
 
@@ -681,4 +824,52 @@ func (l *Licenser) RemoveEnabledProject(projectID string) {
 	l.lastProjectMutationAt = time.Now()
 }
 
+// startBackgroundRefresh launches a ticker that re-validates the license every
+// cacheTTL. Each tick runs validateAndCache, which applies the fail-closed /
+// fail-open policy documented there. This is what makes a live process reflect a
+// suspension or revocation without a restart: the read gates read the cached
+// status and entitlements the ticker maintains.
+func (l *Licenser) startBackgroundRefresh() {
+	ctx, cancel := context.WithCancel(context.Background())
+	l.refreshCancel = cancel
+	l.refreshDone = make(chan struct{})
+
+	go func() {
+		defer close(l.refreshDone)
+
+		ticker := time.NewTicker(l.cacheTTL)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				rctx, rcancel := context.WithTimeout(ctx, 10*time.Second)
+				if err := l.validateAndCache(rctx); err != nil && l.logger != nil {
+					l.logger.Warnf("background license refresh failed: %v", err)
+				}
+				rcancel()
+			}
+		}
+	}()
+}
+
+// Close stops the background refresh goroutine and waits for it to return. It is
+// safe to call on any licenser (community and billing-only have no goroutine) and
+// more than once (cancel is idempotent and the done channel stays closed).
+func (l *Licenser) Close() {
+	if l.refreshCancel == nil {
+		return
+	}
+	l.refreshCancel()
+	<-l.refreshDone
+}
+
 var ErrLicenseExpired = errors.New("license expired")
+
+// ErrLicenseTrialExpired is the sentinel for an expired self-hosted trial. It is
+// deliberately separate from ErrLicenseExpired (paid): the client maps the
+// distinct billing-service "Trial has expired" message to it, and the licenser routes
+// it to community-floor degradation instead of the paid fail-closed/grace paths.
+var ErrLicenseTrialExpired = errors.New("trial expired")

@@ -31,7 +31,7 @@ func TestEnqueueCircuitBreakerEmails(t *testing.T) {
 	lo := log.New("convoy", log.LevelError)
 
 	project := &datastore.Project{Name: "P1", LogoURL: "http://logo"}
-	endpoint := &datastore.Endpoint{Name: "E1", Url: "http://e1", SupportEmail: "ep@x.y", FailureRate: 42}
+	endpoint := &datastore.Endpoint{Name: "E1", Url: "http://e1", SupportEmail: "ep@x.y"}
 
 	err := EnqueueCircuitBreakerEmails(context.Background(), q, lo, project, endpoint, "owner@x.y", 42.0)
 	require.NoError(t, err)

@@ -47,6 +47,10 @@
     cursor: pointer;
   }
 
+  .billing-card-link-primary {
+    font-weight: 600;
+  }
+
   .billing-card-subtext {
     color: var(--Primary, #0084FF);
     font-family: 'Open Sauce Sans', Arial, sans-serif;
@@ -62,6 +66,19 @@
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+}
+
+.billing-card-past-due {
+  border-color: #FCA5A5;
+  background: #FEF2F2;
+
+  .billing-card-past-due-text {
+    color: #B91C1C;
+    font-family: 'Open Sauce Sans', Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
   }
 }
 

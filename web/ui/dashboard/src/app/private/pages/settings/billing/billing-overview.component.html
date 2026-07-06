@@ -1,6 +1,21 @@
 <div class="billing-overview">
   <h2 class="billing-section-title">Billing overview</h2>
   <div class="billing-overview-cards flex gap-12px">
+    @if (isPastDue) {
+      <!-- Past due is a paid-customer state only: an expired no-card trial is
+           cancelled at the provider, never suspended, so this banner always
+           belongs to a real plan whose payment failed. -->
+      <div class="billing-card billing-card-past-due">
+        <div class="billing-card-header">
+          <div class="billing-card-label">Your plan</div>
+          <div class="billing-card-value">{{ overview?.plan?.name || 'No plan data' }}</div>
+        </div>
+        <div class="billing-card-past-due-text">Payment past due. Pay your outstanding invoice to restore access.</div>
+        <div class="billing-card-links flex items-center gap-16px">
+          <a class="billing-card-link billing-card-link-primary" href="#" (click)="onPayPastDue($event)">Pay now</a>
+        </div>
+      </div>
+    } @else {
     <div class="billing-card">
       <div class="billing-card-header">
         <div class="billing-card-label">Your plan</div>
@@ -10,11 +25,22 @@
           }
           @if (!isLoading) {
             <span>{{ overview?.plan?.name || 'No plan data' }}</span>
+            @if (overview?.plan?.trial) {
+              <span class="ml-8px text-10 px-6px py-2px bg-primary-100 text-white-100 rounded-4px font-medium align-middle">Trial</span>
+            }
           }
         </div>
       </div>
-      <a class="billing-card-link" href="#" (click)="onManagePlan($event)">Manage plan</a>
+      <div class="billing-card-links flex items-center gap-16px">
+        @if (!isLoading && overview?.plan?.trial) {
+          <a class="billing-card-link billing-card-link-primary" href="#" (click)="onStartTrialConversion($event)">
+            {{ isConverting ? 'Starting checkout...' : 'Subscribe now' }}
+          </a>
+        }
+        <a class="billing-card-link" href="#" (click)="onManagePlan($event)">Manage plan</a>
+      </div>
     </div>
+    }
 
     <div class="billing-card">
       <div class="billing-card-header">
@@ -28,9 +54,14 @@
           }
         </div>
       </div>
-      @if (overview?.usage?.daysUntilReset !== undefined) {
+      @if (isLoading) {
         <div class="billing-card-subtext billing-card-reset-text">
-          Resets in {{ overview?.usage?.daysUntilReset }} days
+          <convoy-skeleton-loader className="w-24 h-12px"></convoy-skeleton-loader>
+        </div>
+      }
+      @if (!isLoading && overview?.usage?.resetIn) {
+        <div class="billing-card-subtext billing-card-reset-text">
+          Resets in {{ overview?.usage?.resetIn }}
         </div>
       }
     </div>
@@ -55,6 +86,8 @@
           </div>
         }
       </div>
+      <!-- During trial, card-on-file enables auto-convert at trial end; Subscribe now
+           remains the immediate paid path. -->
       @if (overview?.plan?.name && overview?.plan?.name !== 'No plan') {
         <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">
           {{ isLoading ? 'Loading...' : (overview?.payment ? 'Manage' : 'Add payment method') }}

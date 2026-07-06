@@ -40,7 +40,7 @@ import {loadStripe, Stripe, StripeCardElement, StripeCardElementChangeEvent, Str
       margin-top: 8px;
     }
   `],
-    standalone: false
+    standalone: true
 })
 export class StripeElementsComponent implements OnInit, OnDestroy {
   @Input() publishableKey: string = '';

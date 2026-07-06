@@ -1,4 +1,5 @@
 import {Injectable} from '@angular/core';
+import {Router} from '@angular/router';
 import {from, Observable, of, Subject} from 'rxjs';
 import {catchError, map, mergeMap} from 'rxjs/operators';
 import {HttpService} from 'src/app/services/http/http.service';
@@ -61,13 +62,43 @@ export interface VatInfoDetails {
 export class BillingPaymentDetailsService {
   private billingStrategy: BillingStrategy = 'cloud';
 
+  // Emitted when settings begins polling after checkout return so the billing
+  // page can show the same activation overlay as trial start.
+  private checkoutVerificationStartedSource = new Subject<void>();
+  checkoutVerificationStarted$ = this.checkoutVerificationStartedSource.asObservable();
+
   // Emitted when a post-checkout subscription poll confirms the new subscription
   // is active. The billing page reloads its data so the plan card, Manage plan,
   // and payment details reflect the activated subscription without a full refresh.
   private checkoutSubscriptionVerifiedSource = new Subject<void>();
   checkoutSubscriptionVerified$ = this.checkoutSubscriptionVerifiedSource.asObservable();
 
+  // One-shot flag: projects "or subscribe now" sets this before navigating to billing.
+  private openManagePlanOnEntry = false;
+
   constructor(private httpService: HttpService) {}
+
+  requestOpenManagePlanOnEntry(): void {
+    this.openManagePlanOnEntry = true;
+  }
+
+  consumeOpenManagePlanOnEntry(): boolean {
+    if (!this.openManagePlanOnEntry) {
+      return false;
+    }
+    this.openManagePlanOnEntry = false;
+    return true;
+  }
+
+  /** Projects trial modal "or subscribe now": open Manage plan after billing tab loads. */
+  navigateToBillingWithManagePlan(router: Router): void {
+    this.requestOpenManagePlanOnEntry();
+    void router.navigate(['/settings'], { queryParams: { activePage: 'usage and billing' } });
+  }
+
+  notifyCheckoutVerificationStarted(): void {
+    this.checkoutVerificationStartedSource.next();
+  }
 
   notifyCheckoutSubscriptionVerified(): void {
     this.checkoutSubscriptionVerifiedSource.next();

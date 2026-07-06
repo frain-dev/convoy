@@ -56,6 +56,7 @@ export interface EVENT_DELIVERY {
 	endpoint_id: string;
 	latency_seconds?: number;
 	target_url?: string;
+	delivery_mode?: 'at_least_once' | 'at_most_once';
 }
 
 export interface EVENT_DELIVERY_ATTEMPT {
@@ -64,6 +65,8 @@ export interface EVENT_DELIVERY_ATTEMPT {
 	api_version: string;
 	updated_at: string;
 	created_at: string;
+	requested_at?: string;
+	responded_at?: string;
 	deleted_at?: number;
 	status?: boolean;
 	response_data?: string;

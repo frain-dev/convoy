@@ -11,6 +11,11 @@ import (
 )
 
 type Querier interface {
+	// CountDeliveriesByEndpointAndStatus returns per-endpoint counts for the given
+	// statuses over a date range. Used to compute the period (history) failure rate
+	// for the endpoints list and the per-endpoint reliability view. Restricted to the
+	// caller's status set so it stays index-friendly.
+	CountDeliveriesByEndpointAndStatus(ctx context.Context, arg CountDeliveriesByEndpointAndStatusParams) ([]CountDeliveriesByEndpointAndStatusRow, error)
 	// ============================================================================
 	// Group 3: Count Operations
 	// ============================================================================
@@ -39,7 +44,9 @@ type Querier interface {
 	// Group 2: Find Operations
 	// ============================================================================
 	FindEventDeliveryByID(ctx context.Context, arg FindEventDeliveryByIDParams) (FindEventDeliveryByIDRow, error)
-	// Slim variant: omits description and does not JOIN endpoint/event/source/device tables.
+	// Slim variant: does not JOIN endpoint/event/source/device tables. It still loads
+	// description so the worker's write-back via UpdateEventDeliveryMetadata stays
+	// faithful and does not clobber a stored description with an empty value.
 	FindEventDeliveryByIDSlim(ctx context.Context, arg FindEventDeliveryByIDSlimParams) (FindEventDeliveryByIDSlimRow, error)
 	FindStuckEventDeliveriesByStatus(ctx context.Context, status pgtype.Text) ([]FindStuckEventDeliveriesByStatusRow, error)
 	HardDeleteProjectEventDeliveries(ctx context.Context, arg HardDeleteProjectEventDeliveriesParams) error

@@ -188,6 +188,20 @@ func (s *Service) FetchOrganisationInviteByToken(ctx context.Context, token stri
 	return &invite, nil
 }
 
+// CountOrganisationInvites counts active (non-deleted) invites for an organisation in the given status
+func (s *Service) CountOrganisationInvites(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus) (int64, error) {
+	count, err := s.repo.CountOrganisationInvites(ctx, repo.CountOrganisationInvitesParams{
+		OrganisationID: common.StringToPgText(orgID),
+		Status:         common.StringToPgText(string(inviteStatus)),
+	})
+	if err != nil {
+		s.logger.Error("failed to count organisation invites", "error", err)
+		return 0, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	return count.Int64, nil
+}
+
 // LoadOrganisationsInvitesPaged retrieves organisation invites with pagination
 func (s *Service) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
 	// Determine direction for query

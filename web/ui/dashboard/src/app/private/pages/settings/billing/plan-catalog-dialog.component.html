@@ -1,0 +1,9 @@
+<dialog #dialog convoy-dialog position="center" size="lg" class="plan-catalog-dialog">
+  <div convoy-dialog-header (closeDialog)="close()">
+    <h2 class="font-semibold text-14">{{ trialPlanName || 'Plans' }}</h2>
+  </div>
+
+  <div class="plan-catalog-dialog-content">
+    <convoy-plan-catalog-preview [mode]="mode" [trialPlanName]="trialPlanName"></convoy-plan-catalog-preview>
+  </div>
+</dialog>

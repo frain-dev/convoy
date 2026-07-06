@@ -1,0 +1,57 @@
+<dialog #dialog convoy-dialog position="center" size="md" class="trial-dialog">
+  <div convoy-dialog-header (closeDialog)="close()">
+    <h2 class="font-semibold text-14">Start your free trial</h2>
+  </div>
+
+  <div class="px-32px py-24px">
+    <p class="text-14 text-neutral-11 mb-16px">{{ trialIntro }}</p>
+
+    @if (hasTrialLimits) {
+      <p class="text-12 font-medium text-neutral-12 mb-8px">Your trial includes:</p>
+      <ul class="mb-16px flex flex-col gap-6px">
+        @for (limit of limits; track limit.key) {
+          <li class="flex items-center text-12 text-neutral-11">
+            <span class="mr-8px text-primary-100 shrink-0">&#10003;</span>
+            {{ formatTrialLimitLine(limit) }}
+          </li>
+        }
+      </ul>
+    }
+
+    <p class="text-12 text-neutral-11 mb-24px">
+      {{ trialFeaturesLead(resolvedPlanName, effectiveOffer) }}
+      <button
+        type="button"
+        class="text-12 text-primary-100 underline underline-offset-2 bg-transparent border-0 p-0 cursor-pointer inline"
+        [disabled]="starting"
+        (click)="onViewPlanFeatures()">
+        features
+      </button>
+      are included.
+    </p>
+
+    @if (mode === 'self_hosted') {
+      <convoy-input-field>
+        <label for="trialBillingEmail" convoy-label required="true">Billing email</label>
+        <input
+          id="trialBillingEmail"
+          type="email"
+          convoy-input
+          placeholder="billing@example.com"
+          [formControl]="billingEmail" />
+        @if (billingEmail.touched && billingEmail.invalid) {
+          <convoy-input-error>Please enter a valid billing email</convoy-input-error>
+        }
+      </convoy-input-field>
+    }
+
+    <div class="flex items-center justify-end gap-16px">
+      <button convoy-button size="sm" [disabled]="startTrialDisabled" (click)="onStartFreeTrial()">
+        {{ starting ? 'Starting trial...' : 'Start free trial' }}
+      </button>
+      <button type="button" class="text-12 text-primary-100 underline underline-offset-2" [disabled]="starting" (click)="onSubscribeNow()">or subscribe now</button>
+    </div>
+  </div>
+</dialog>
+
+<convoy-plan-catalog-dialog #planCatalogDialog [mode]="mode" [trialPlanName]="resolvedPlanName"></convoy-plan-catalog-dialog>

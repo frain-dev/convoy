@@ -25,6 +25,12 @@ type Job struct {
 	Payload []byte        `json:"payload"`
 	Delay   time.Duration `json:"delay"`
 
+	// MaxRetry, when set, caps how many times asynq will retry this task
+	// before archiving it. It is used to sync asynq's per-task retry budget
+	// with Convoy's configured retry limit so deliveries are not silently
+	// retried up to asynq's default (25). Nil leaves the asynq default.
+	MaxRetry *int `json:"-"`
+
 	// Headers carries the W3C trace context. The Queuer driver fills this
 	// from the active OTel span on the producer's ctx and feeds it into
 	// asynq.NewTaskWithHeaders so it rides alongside the payload. Callers

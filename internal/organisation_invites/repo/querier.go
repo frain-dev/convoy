@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	CountOrganisationInvites(ctx context.Context, arg CountOrganisationInvitesParams) (pgtype.Int8, error)
 	CountPrevOrganisationInvites(ctx context.Context, arg CountPrevOrganisationInvitesParams) (pgtype.Int8, error)
 	CreateOrganisationInvite(ctx context.Context, arg CreateOrganisationInviteParams) error
 	DeleteOrganisationInvite(ctx context.Context, id pgtype.Text) error

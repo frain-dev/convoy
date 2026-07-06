@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -1077,6 +1078,92 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorIs(t, err, netjail.ErrDenied)
 	require.Contains(t, err.Error(), "127.0.0.1: address not allowed")
+}
+
+// TestDispatcherPopulatesRemoteIP verifies the dispatcher records the resolved
+// remote address of the endpoint connection into Response.IP when no proxy applies.
+func TestDispatcherPopulatesRemoteIP(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status": "success"}`))
+	}))
+	defer server.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{}),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
+	)
+	require.NoError(t, err)
+
+	resp, err := dispatcher.SendWebhook(
+		context.Background(),
+		server.URL,
+		json.RawMessage(`{"key": "value"}`),
+		"X-Signature",
+		"test-hmac",
+		1024,
+		nil,
+		"",
+		5*time.Second,
+		constants.ContentTypeJSON,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.NotEmpty(t, resp.IP, "expected remote IP to be populated")
+	parsed := net.ParseIP(resp.IP)
+	require.NotNil(t, parsed, "expected resp.IP to be a valid IP, got %q", resp.IP)
+	require.True(t, parsed.IsLoopback(), "expected loopback IP from httptest server, got %q", resp.IP)
+}
+
+// TestDispatcherSkipsRemoteIPWhenProxyApplies verifies that when a forward proxy
+// applies to the request, Response.IP is left empty rather than recording the
+// proxy's address (which is not the endpoint).
+func TestDispatcherSkipsRemoteIPWhenProxyApplies(t *testing.T) {
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status": "via-proxy"}`))
+	}))
+	defer proxy.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Return(true)
+
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{}),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
+		ProxyOption(proxy.URL),
+	)
+	require.NoError(t, err)
+
+	// http target so the configured HTTP proxy applies and the request is routed
+	// through the proxy server above instead of dialing the endpoint directly.
+	resp, err := dispatcher.SendWebhook(
+		context.Background(),
+		"http://example.com/webhook",
+		json.RawMessage(`{"key": "value"}`),
+		"X-Signature",
+		"test-hmac",
+		1024,
+		nil,
+		"",
+		5*time.Second,
+		constants.ContentTypeJSON,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Empty(t, resp.IP, "expected IP to be empty when a forward proxy applies")
 }
 
 // TestDispatcherWithMTLSRespectsIPRules ensures that when an mTLS certificate is provided,

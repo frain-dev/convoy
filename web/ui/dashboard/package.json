@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --hmr",
+    "start:proxy": "ng serve --hmr --configuration proxy --proxy-config proxy.conf.js",
     "build": "ng build",
     "postbuild": "mkdir -p ./source-maps && mv `pwd`/dist/*.map ./source-maps",
     "watch": "ng build --watch --configuration development",

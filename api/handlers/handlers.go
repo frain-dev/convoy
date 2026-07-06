@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/cached"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -55,6 +56,15 @@ func (h *Handler) orgMemberRepo() datastore.OrganisationMemberRepository {
 		return h.A.OrgMemberRepo
 	}
 	return organisation_members.New(h.A.Logger, h.A.DB)
+}
+
+// eventRepo returns the injected event repository, falling back to a freshly
+// constructed one when none was wired (e.g. in tests).
+func (h *Handler) eventRepo() datastore.EventRepository {
+	if h.A.EventRepo != nil {
+		return h.A.EventRepo
+	}
+	return events.New(h.A.Logger, h.A.DB)
 }
 
 func (h *Handler) IsReqWithProjectAPIKey(authUser *auth.AuthenticatedUser) bool {
@@ -227,7 +237,14 @@ func (h *Handler) retrieveMembership(r *http.Request) (*datastore.OrganisationMe
 }
 
 func (h *Handler) retrieveUser(r *http.Request) (*datastore.User, error) {
-	authUser := middleware.GetAuthUserFromContext(r.Context())
+	// Comma-ok on the context value directly (middleware.GetAuthUserFromContext does an
+	// unchecked assertion that panics on unauthenticated routes). Callers that need a user
+	// already handle this error; the license display path relies on it to fail open (no
+	// user => orgCount stays -1, never gated) on portal/no-user routes.
+	authUser, ok := r.Context().Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
+	if !ok || authUser == nil {
+		return &datastore.User{}, errors.New("user not found")
+	}
 	user, ok := authUser.User.(*datastore.User)
 	if !ok {
 		return &datastore.User{}, errors.New("user not found")

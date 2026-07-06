@@ -4,7 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { NOTIFICATION_STATUS } from 'src/app/models/global.model';
-import { environment } from 'src/environments/environment';
+import { apiOrigin } from 'src/app/services/api-origin';
 
 @Injectable({
 	providedIn: 'root'
@@ -29,7 +29,7 @@ export class GeneralService {
 	}
 
 	apiURL(): string {
-		return `${environment.production ? location.origin : 'http://localhost:5005'}`;
+		return apiOrigin();
 	}
 
 	getSelectedDate(dateOption: string) {
@@ -145,6 +145,21 @@ export class GeneralService {
 			default:
 				displayMessage = '';
 				break;
+		}
+
+		// Response bodies and error text arrive as raw strings (already
+		// JSON-encoded by the endpoint, or a plain message). Running
+		// JSON.stringify on a string double-encodes it (wraps in quotes, escapes
+		// inner quotes), so parse it first and only pretty-print when it is valid
+		// JSON; otherwise show the raw string as-is.
+		if ((type === 'res_body' || type === 'error') && typeof data === 'string') {
+			const raw = data.trim();
+			if (!raw) return displayMessage;
+			try {
+				return JSON.stringify(JSON.parse(raw), null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+			} catch {
+				return data;
+			}
 		}
 
 		if (data) return JSON.stringify(data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');

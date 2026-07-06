@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/notifications"
+	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -33,6 +34,11 @@ import (
 const (
 	errMutualTLSFeatureUnavailable = "mutual TLS feature unavailable, please upgrade your license"
 )
+
+// defaultAsynqMaxRetries mirrors asynq's built-in default max retry count
+// (asynq.DefaultMaxRetry, which the library does not export). The retry-queue
+// task's asynq retry budget is never set below this value.
+const defaultAsynqMaxRetries = 25
 
 var errEndpointURLTemplateTargetMissing = errors.New("endpoint URL template requires a concrete target URL")
 
@@ -67,6 +73,7 @@ type EventDeliveryProcessorDeps struct {
 	Dispatcher                 *net.Dispatcher
 	AttemptsRepo               datastore.DeliveryAttemptsRepository
 	CircuitBreakerManager      *circuit_breaker.CircuitBreakerManager
+	CBEnablement               *cbenablement.Resolver
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
@@ -83,6 +90,10 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		var data EventDelivery
 		var delayDuration time.Duration
+		// retryLimit caps how many times asynq retries the retry-queue task. It
+		// stays nil until the event delivery is loaded; early failures fall back
+		// to asynq's default budget.
+		var retryLimit *int
 
 		defer func() {
 			// retrieve the value of err
@@ -98,9 +109,10 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			}
 
 			job := &queue.Job{
-				Payload: t.Payload(),
-				Delay:   delayDuration,
-				ID:      data.EventDeliveryID,
+				Payload:  t.Payload(),
+				Delay:    delayDuration,
+				ID:       data.EventDeliveryID,
+				MaxRetry: retryLimit,
 			}
 
 			// write it to the retry queue.
@@ -134,6 +146,21 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			return &DeliveryError{Err: err}
 		}
 		eventDelivery.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
+
+		// Sync the retry-queue task's asynq retry budget with the configured retry
+		// limit so large limits are not silently capped at asynq's default of 25.
+		// We only ever raise the budget, never lower it: limits at or below the
+		// default are already enforced by the NumTrials check below, and keeping
+		// the default budget preserves headroom for transient pre-dispatch errors.
+		// Those return an EndpointError that consumes an asynq retry without
+		// advancing NumTrials, so a tighter budget could archive the task before
+		// the configured attempts run. Rate-limit and circuit-breaker errors are
+		// excluded from this budget by the consumer's IsFailure policy.
+		rl := int(eventDelivery.Metadata.RetryLimit)
+		if rl < defaultAsynqMaxRetries {
+			rl = defaultAsynqMaxRetries
+		}
+		retryLimit = &rl
 
 		delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
@@ -183,7 +210,13 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
-		if deps.FeatureFlag.CanAccessFeature(fflag.CircuitBreaker) && deps.Licenser.CircuitBreaking() {
+		// Enforcement is gated by the same resolver as the sampler and display:
+		// license + live enablement for this org (env folded into the instance base,
+		// per-org override wins). The manager is always constructed now, so the
+		// nil-guards are defensive (e.g. tests that omit them). They run first so the
+		// licenser and cached resolver lookups only happen when CB wiring is present.
+		if deps.CircuitBreakerManager != nil && deps.CBEnablement != nil &&
+			deps.Licenser.CircuitBreaking() && deps.CBEnablement.EnabledForOrg(ctx, project.OrganisationID) {
 			breakerErr := deps.CircuitBreakerManager.CanExecute(ctx, endpoint.UID)
 			if breakerErr != nil {
 				tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
@@ -401,7 +434,11 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		tracer.AddEvent(ctx, tracer.EventEventDeliveryInfo, attributes)
 
-		attempt := parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
+		respondedAt := time.Time{}
+		if resp != nil && resp.StatusCode >= 100 {
+			respondedAt = httpDispatchStart.Add(duration)
+		}
+		attempt := parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus, httpDispatchStart, respondedAt)
 		eventDelivery.Metadata.NumTrials++
 
 		if eventDelivery.Metadata.NumTrials >= eventDelivery.Metadata.RetryLimit {

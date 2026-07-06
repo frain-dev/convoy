@@ -25,6 +25,7 @@ type EventDeliveryRepository interface {
 	FindStuckEventDeliveriesByStatus(ctx context.Context, status EventDeliveryStatus) ([]EventDelivery, error)
 	UpdateEventDeliveryMetadata(ctx context.Context, projectID string, eventDelivery *EventDelivery) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
+	CountDeliveriesByEndpointAndStatus(ctx context.Context, projectID string, endpointIDs []string, statuses []EventDeliveryStatus, params SearchParams) ([]EndpointStatusDeliveryCount, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(
 		ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string,
@@ -76,7 +77,11 @@ type OrganisationRepository interface {
 	// UpdateOrganisation updates an existing organisation
 	UpdateOrganisation(ctx context.Context, org *Organisation) error
 
-	// UpdateOrganisationLicenseData updates only the license_data field for an organisation
+	// UpdateOrganisationLicenseData updates only the license_data field for an organisation.
+	// Lifecycle invariant: license_data may move empty -> provisional -> authoritative;
+	// no writer may move it provisional -> empty. Never call this with an empty value
+	// directly; route clears through services.ClearOrgLicenseData, which preserves a
+	// payload carrying the explicit provisional marker (license.LicenseDataPayload.Provisional).
 	UpdateOrganisationLicenseData(ctx context.Context, orgID, licenseData string) error
 
 	// DeleteOrganisation soft deletes an organisation by ID
@@ -166,6 +171,7 @@ type PortalLinkRepository interface {
 
 type OrganisationInviteRepository interface {
 	LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus InviteStatus, pageable Pageable) ([]OrganisationInvite, PaginationData, error)
+	CountOrganisationInvites(ctx context.Context, orgID string, inviteStatus InviteStatus) (int64, error)
 	CreateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error
 	UpdateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error
 	DeleteOrganisationInvite(ctx context.Context, uid string) error
@@ -175,6 +181,7 @@ type OrganisationInviteRepository interface {
 
 type OrganisationMemberRepository interface {
 	LoadOrganisationMembersPaged(ctx context.Context, organisationID, userID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
+	CountOrganisationMembers(ctx context.Context, organisationID string) (int64, error)
 	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
 	CountUserOrganisations(ctx context.Context, userID string, search string) (int64, error)
 	FindUserProjects(ctx context.Context, userID string) ([]Project, error)

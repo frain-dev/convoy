@@ -45,3 +45,8 @@ func (f *FeatureFlagFetcherImpl) FetchFeatureFlagOverride(ctx context.Context, o
 		Enabled: override.Enabled,
 	}, nil
 }
+
+// AnyEnabledOverride reports whether any owner has an enabled override for the feature flag
+func (f *FeatureFlagFetcherImpl) AnyEnabledOverride(ctx context.Context, featureFlagID string) (bool, error) {
+	return AnyEnabledOverride(ctx, f.db, featureFlagID)
+}

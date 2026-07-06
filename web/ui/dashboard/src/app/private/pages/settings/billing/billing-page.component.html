@@ -1,10 +1,44 @@
-@if (canShowBillingPanels) {
+<div class="relative min-h-[200px]">
+  @if (billingProvisioning) {
+    <div class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white bg-opacity-80 rounded-8px">
+      @if (isActivatingBilling) {
+        <convoy-loader [isTransparent]="true"></convoy-loader>
+        <p class="text-14 text-neutral-11 mt-8px text-center max-w-[320px]">{{ billingProvisioningMessage }}</p>
+      } @else {
+        <p class="text-12 text-neutral-11 text-center max-w-[320px]">Your subscription is active and finishing setup.</p>
+        <button type="button" convoy-button size="sm" class="mt-12px" (click)="retryBillingActivation()">Refresh</button>
+      }
+    </div>
+  }
+
+@if (!billingConfigLoaded) {
+  <!-- Strategy unknown: render nothing so neither the self-hosted setup panel nor a
+       shimmer placeholder flashes before the resolved (cloud/self-hosted) view paints. -->
+} @else if (canShowBillingPanels) {
+  @if (canStartTrial) {
+    <div convoy-card class="p-24px mb-24px">
+      <div class="flex items-start justify-between gap-24px">
+        <div class="flex-1 min-w-0">
+          <h4 class="text-14 font-semibold mb-6px">Start your free trial</h4>
+          <p class="text-12 text-neutral-10 mt-4px max-w-[640px]">{{ trialIntro }}</p>
+        </div>
+        <div class="flex shrink-0 items-center gap-8px">
+          <button type="button" convoy-button size="sm" (click)="openTrialModal()">
+            Start free trial
+          </button>
+        </div>
+      </div>
+    </div>
+  }
   <app-billing-overview
     [overview]="billingOverview"
     [isLoading]="isLoadingBillingData"
+    [isConverting]="isLoadingCheckout"
     [refreshTrigger]="refreshOverviewTrigger"
     (openPaymentDetails)="openPaymentDetails()"
-    (openManagePlan)="openManagePlan()">
+    (openManagePlan)="openManagePlan()"
+    (startTrialConversion)="convertTrialToPaid()"
+    (payPastDue)="payPastDueInvoice()">
   </app-billing-overview>
   <app-billing-usage
     [usageRows]="usageRows"
@@ -30,8 +64,16 @@
         @if (selfHostedBillingConfig?.license_configured) {
           <p class="text-12 text-neutral-10 mt-8px">Instance license is configured.</p>
         }
+        @if (canStartSelfHostedTrial) {
+          <p class="text-12 text-neutral-10 mt-8px max-w-[640px]">{{ trialIntro }}</p>
+        }
       </div>
       <div class="flex shrink-0 items-center gap-8px">
+        @if (canStartSelfHostedTrial) {
+          <button type="button" convoy-button size="sm" (click)="openTrialModal()">
+            Start free trial
+          </button>
+        }
         @if (hasActiveSelfHostedCheckout) {
           <button type="button" convoy-button size="sm" [disabled]="isLoadingCheckout" (click)="resumeSelfHostedCheckout()">
             Continue payment
@@ -49,6 +91,14 @@
     <p class="text-12 text-neutral-10 mt-4px">Subscription, usage, payment, and invoice data will appear after checkout is confirmed.</p>
   </div>
 }
+
+<convoy-trial-modal
+  #trialModal
+  [mode]="trialModalMode"
+  [selfHostedOffer]="selfHostedTrialOffer"
+  (trialStarted)="onTrialStarted()"
+  (subscribeNow)="onSubscribeInsteadOfTrial()">
+</convoy-trial-modal>
 
 <dialog #paymentDetailsDialog convoy-dialog>
   <div convoy-dialog-header (closeDialog)="closePaymentDetails()">
@@ -584,7 +634,7 @@
                     convoy-button
                     [fill]="selectedPlan === plan.id ? 'solid' : 'outline'"
                     [color]="selectedPlan === plan.id ? 'primary' : 'neutral'"
-                    [disabled]="isCurrentPlan(plan.id) || !canUsePlan(plan) || (selectedPlan === plan.id && isLoadingCheckout)"
+                    [disabled]="(isCurrentPlan(plan.id) && !isTrialConvertPlan(plan.id)) || !canUsePlan(plan) || (selectedPlan === plan.id && isLoadingCheckout)"
                     class="plan-card-button"
                     (click)="onPlanCardButtonClick(plan.id); $event.stopPropagation()">
                     {{ getButtonText(plan.id) }}
@@ -737,3 +787,4 @@
           </div>
         </div>
       </dialog>
+</div>

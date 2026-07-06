@@ -1,32 +1,26 @@
 import {Injectable} from '@angular/core';
 import {Plan} from './plan.service';
+import {
+	isCheckoutCatalogPlanKey,
+	isEnterprisePlanKey,
+	plansMatch,
+	resolvePlanKey
+} from './plan-identity.util';
 
-// Plan classification. The pure classifiers use backend-guaranteed signals:
-// product_type (Overwatch plans.product_type is not-null: cloud | self_hosted)
-// and the canonical enterprise keys below. The default-to-overwatch merge
-// (findDefaultPlanComparison / resolvePlanForApi / shouldContactForMissingCloudPlan)
-// stays name-keyed by design: it mirrors the backend merge in
-// api/handlers/billing_plans.go (mergePlansWithFeatures), which joins config and
-// service plans by lowercased name.
 const PRODUCT_TYPE_SELF_HOSTED = 'self_hosted';
 const PRODUCT_TYPE_CLOUD = 'cloud';
-// Canonical enterprise plan keys. Backend (Overwatch plans.key) uses the
-// cloud_/self_hosted_ forms; the bundled default comparison plan uses 'enterprise'.
-const ENTERPRISE_KEYS = ['enterprise', 'cloud_enterprise', 'self_hosted_enterprise'];
-const ENTERPRISE_TOKEN = 'enterprise';
-const PRO_TOKENS = ['premium', 'pro'];
 
 const CADENCE_MONTHLY = 'monthly';
 const CADENCE_ANNUAL = 'annual';
 
 export interface PlanCatalog {
 	plans: Plan[];
-	overwatchPlans: Plan[];
+	billingPlans: Plan[];
 	plansUnavailableMessage: string;
 }
 
 export interface ResolvedPlanForApi {
-	planExistsInOverwatch: boolean;
+	planExistsInCatalog: boolean;
 	planIdForApi: string;
 }
 
@@ -41,13 +35,11 @@ export class PlanCatalogService {
 	}
 
 	isEnterprisePlan(plan: Plan): boolean {
-		const key = (plan.key || plan.id || '').toLowerCase();
-		return ENTERPRISE_KEYS.includes(key);
+		return isEnterprisePlanKey(plan);
 	}
 
-	shouldContactForMissingCloudPlan(plan: Plan, isSelfHostedBilling: boolean, planExistsInOverwatch: boolean): boolean {
-		const name = plan.name.toLowerCase();
-		return !isSelfHostedBilling && (name.includes('pro') || name.includes(ENTERPRISE_TOKEN)) && !planExistsInOverwatch;
+	shouldContactForMissingCloudPlan(plan: Plan, isSelfHostedBilling: boolean, planExistsInCatalog: boolean): boolean {
+		return !isSelfHostedBilling && !planExistsInCatalog && isCheckoutCatalogPlanKey(plan);
 	}
 
 	resolveCheckoutCadence(plan: Plan): string {
@@ -85,67 +77,72 @@ export class PlanCatalogService {
 	}
 
 	findDefaultPlanComparison(plan: Plan, defaultPlans: Plan[]): Plan | undefined {
-		const name = plan.name.toLowerCase();
-		if (name.includes(ENTERPRISE_TOKEN)) {
-			return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes(ENTERPRISE_TOKEN));
+		const planKey = resolvePlanKey(plan);
+		if (planKey) {
+			const byKey = defaultPlans.find(defaultPlan => resolvePlanKey(defaultPlan) === planKey);
+			if (byKey) {
+				return byKey;
+			}
 		}
-		if (PRO_TOKENS.some(token => name.includes(token))) {
-			return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase().includes('pro'));
-		}
-		return defaultPlans.find(defaultPlan => defaultPlan.name.toLowerCase() === name);
+
+		return defaultPlans.find(
+			defaultPlan => defaultPlan.name.trim().toLowerCase() === plan.name.trim().toLowerCase()
+		);
 	}
 
-	resolvePlanForApi(selectedPlanData: Plan, overwatchPlans: Plan[]): ResolvedPlanForApi {
-		const planLower = selectedPlanData.name.toLowerCase();
-		const overwatchPlan = overwatchPlans.find(p => {
-			const pNameLower = p.name.toLowerCase();
-			return (planLower.includes(pNameLower) || pNameLower.includes(planLower)) || p.id === selectedPlanData.id;
-		});
+	findBillingPlanForDefault(defaultPlan: Plan, billingPlans: Plan[]): Plan | undefined {
+		const defaultKey = resolvePlanKey(defaultPlan);
+		if (defaultKey) {
+			const byKey = billingPlans.find(plan => resolvePlanKey(plan) === defaultKey);
+			if (byKey) {
+				return byKey;
+			}
+		}
+
+		return billingPlans.find(
+			plan => plan.name.trim().toLowerCase() === defaultPlan.name.trim().toLowerCase()
+		);
+	}
+
+	resolvePlanForApi(selectedPlanData: Plan, billingPlans: Plan[]): ResolvedPlanForApi {
+		const billingPlan = billingPlans.find(plan => plansMatch(plan, selectedPlanData));
 
 		return {
-			planExistsInOverwatch: !!overwatchPlan,
-			planIdForApi: overwatchPlan?.id ?? selectedPlanData.id
+			planExistsInCatalog: !!billingPlan,
+			planIdForApi: billingPlan?.id ?? selectedPlanData.id
 		};
 	}
 
-	// Build the displayed plan catalog from the API response and the default
-	// comparison data. Pure transform; the component owns loading flags and
-	// selection reconciliation.
 	buildCatalog(plansFromApi: Plan[], defaultPlans: Plan[], isSelfHostedBilling: boolean): PlanCatalog {
 		if (plansFromApi.length === 0) {
 			return {
 				plans: [],
-				overwatchPlans: [],
+				billingPlans: [],
 				plansUnavailableMessage: 'Plans are not available right now. Please try again later.'
 			};
 		}
 
-		const overwatchPlans = plansFromApi.filter((plan: Plan) => isSelfHostedBilling ? this.isSelfHostedPlan(plan) : this.isCloudPlan(plan));
+		const billingPlans = plansFromApi.filter((plan: Plan) => isSelfHostedBilling ? this.isSelfHostedPlan(plan) : this.isCloudPlan(plan));
 		let plans: Plan[];
 		let plansUnavailableMessage = '';
 
 		if (isSelfHostedBilling) {
-			plans = overwatchPlans.map((plan: Plan) => this.mergePlanWithDefaultComparison(plan, defaultPlans));
+			plans = billingPlans.map((plan: Plan) => this.mergePlanWithDefaultComparison(plan, defaultPlans));
 			if (plans.length === 0) {
 				plansUnavailableMessage = 'Self-hosted plans are not available right now. Please try again later.';
 			}
 		} else {
-			const overwatchPlansMap = new Map<string, Plan>();
-			overwatchPlans.forEach((plan: Plan) => {
-				overwatchPlansMap.set(plan.name.toLowerCase(), plan);
-			});
-
 			plans = defaultPlans.map((defaultPlan: Plan) => {
-				const overwatchPlan = overwatchPlansMap.get(defaultPlan.name.toLowerCase());
+				const billingPlan = this.findBillingPlanForDefault(defaultPlan, billingPlans);
 
-				if (overwatchPlan) {
-					return this.mergePlanWithDefaultComparison(overwatchPlan, [defaultPlan]);
+				if (billingPlan) {
+					return this.mergePlanWithDefaultComparison(billingPlan, [defaultPlan]);
 				}
 
 				return defaultPlan;
 			});
 		}
 
-		return { plans, overwatchPlans, plansUnavailableMessage };
+		return { plans, billingPlans, plansUnavailableMessage };
 	}
 }

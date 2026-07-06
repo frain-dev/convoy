@@ -11,6 +11,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countOrganisationMembers = `-- name: CountOrganisationMembers :one
+SELECT COUNT(DISTINCT o.id) AS count
+FROM convoy.organisation_members o
+WHERE o.organisation_id = $1
+    AND o.deleted_at IS NULL
+`
+
+func (q *Queries) CountOrganisationMembers(ctx context.Context, organisationID pgtype.Text) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, countOrganisationMembers, organisationID)
+	var count pgtype.Int8
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countInstanceAdminUsers = `-- name: CountInstanceAdminUsers :one
 SELECT COUNT(*)
 FROM convoy.organisation_members o

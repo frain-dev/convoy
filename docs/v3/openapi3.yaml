@@ -682,6 +682,84 @@ paths:
       description: Toggles an endpoint's status between active and paused states
       operationId: PauseEndpoint
       summary: Pause endpoint
+  '/v1/projects/{projectID}/endpoints/{endpointID}/stats':
+    get:
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          schema:
+            type: string
+        - description: Endpoint ID
+          in: path
+          name: endpointID
+          required: true
+          schema:
+            type: string
+        - description: start date
+          in: query
+          name: startDate
+          schema:
+            type: string
+        - description: end date
+          in: query
+          name: endDate
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/models.EndpointStatsResponse'
+                    type: object
+          description: OK
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Unauthorized
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Endpoints
+      description: >-
+        This endpoint returns the period (history) failure rate for an endpoint over a date range, plus the circuit breaker recent rate when available
+      operationId: GetEndpointStats
+      summary: Get endpoint reliability stats
   '/v1/projects/{projectID}/event-types':
     get:
       parameters:
@@ -4825,6 +4903,10 @@ components:
           type: string
         request_http_header:
           $ref: '#/components/schemas/datastore.HttpHeader'
+        requested_at:
+          type: string
+        responded_at:
+          type: string
         response_data:
           type: string
         response_http_header:
@@ -4901,7 +4983,15 @@ components:
           type: string
         events:
           type: integer
+        failure_count:
+          type: integer
         failure_rate:
+          description: >-
+            FailureRate is the circuit breaker's rolling failure rate for this endpoint.
+
+            It is a pointer so the API can return null when no rate was computed (circuit
+
+            breaker feature off, or sampler not running), distinct from a genuine 0%.
           type: number
         http_timeout:
           type: integer
@@ -4913,6 +5003,14 @@ components:
           type: string
         owner_id:
           type: string
+        period_failure_rate:
+          description: >-
+            PeriodFailureRate is the period-scoped failure rate from event_deliveries
+
+            (Failure/(Success+Failure)), independent of the circuit breaker. Nil when the
+
+            range has no terminal deliveries. SuccessCount/FailureCount are transient too.
+          type: number
         project_id:
           type: string
         rate_limit:
@@ -4927,6 +5025,8 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/datastore.EndpointStatus'
+        success_count:
+          type: integer
         support_email:
           type: string
         uid:
@@ -6021,7 +6121,15 @@ components:
           type: string
         events:
           type: integer
+        failure_count:
+          type: integer
         failure_rate:
+          description: >-
+            FailureRate is the circuit breaker's rolling failure rate for this endpoint.
+
+            It is a pointer so the API can return null when no rate was computed (circuit
+
+            breaker feature off, or sampler not running), distinct from a genuine 0%.
           type: number
         http_timeout:
           type: integer
@@ -6033,6 +6141,14 @@ components:
           type: string
         owner_id:
           type: string
+        period_failure_rate:
+          description: >-
+            PeriodFailureRate is the period-scoped failure rate from event_deliveries
+
+            (Failure/(Success+Failure)), independent of the circuit breaker. Nil when the
+
+            range has no terminal deliveries. SuccessCount/FailureCount are transient too.
+          type: number
         project_id:
           type: string
         rate_limit:
@@ -6047,6 +6163,8 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/datastore.EndpointStatus'
+        success_count:
+          type: integer
         support_email:
           type: string
         uid:
@@ -6055,6 +6173,31 @@ components:
           type: string
         url:
           type: string
+      type: object
+    models.EndpointStatsResponse:
+      properties:
+        failure_count:
+          type: integer
+        failure_rate:
+          nullable: true
+          type: number
+        recent_failure_count:
+          nullable: true
+          type: integer
+        recent_failure_rate:
+          nullable: true
+          type: number
+        recent_success_count:
+          description: >-
+            Recent (circuit breaker) counts over the rolling observability window, read from
+
+            the breaker state in redis. Backed by the same sample as RecentFailureRate, so all
+
+            three are nil/zero together when CB is off/unlicensed or has no recent sample.
+          nullable: true
+          type: integer
+        success_count:
+          type: integer
       type: object
     models.EventDeliveryResponse:
       properties:

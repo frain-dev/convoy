@@ -54,14 +54,15 @@ func (h *Handler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Reques
 	}
 
 	inviteService := &services.InviteUserService{
-		Queue:        h.A.Queue,
-		InviteRepo:   organisation_invites.New(h.A.Logger, h.A.DB),
-		InviteeEmail: newIV.InviteeEmail,
-		Licenser:     h.A.Licenser,
-		Role:         newIV.Role,
-		User:         user,
-		Organisation: org,
-		Logger:       h.A.Logger,
+		Queue:         h.A.Queue,
+		InviteRepo:    organisation_invites.New(h.A.Logger, h.A.DB),
+		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+		InviteeEmail:  newIV.InviteeEmail,
+		Licenser:      h.A.Licenser,
+		Role:          newIV.Role,
+		User:          user,
+		Organisation:  org,
+		Logger:        h.A.Logger,
 	}
 
 	iv, err := inviteService.Run(r.Context())

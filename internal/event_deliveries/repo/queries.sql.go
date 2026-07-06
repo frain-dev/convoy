@@ -11,6 +11,62 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countDeliveriesByEndpointAndStatus = `-- name: CountDeliveriesByEndpointAndStatus :many
+SELECT endpoint_id, status, COUNT(*) AS count
+FROM convoy.event_deliveries
+WHERE project_id = $1
+  AND endpoint_id = ANY($2::TEXT[])
+  AND status = ANY($3::TEXT[])
+  AND created_at >= $4
+  AND created_at <= $5
+  AND deleted_at IS NULL
+GROUP BY endpoint_id, status
+`
+
+type CountDeliveriesByEndpointAndStatusParams struct {
+	ProjectID   pgtype.Text
+	EndpointIds []string
+	Statuses    []string
+	StartDate   pgtype.Timestamptz
+	EndDate     pgtype.Timestamptz
+}
+
+type CountDeliveriesByEndpointAndStatusRow struct {
+	EndpointID pgtype.Text
+	Status     string
+	Count      pgtype.Int8
+}
+
+// CountDeliveriesByEndpointAndStatus returns per-endpoint counts for the given
+// statuses over a date range. Used to compute the period (history) failure rate
+// for the endpoints list and the per-endpoint reliability view. Restricted to the
+// caller's status set so it stays index-friendly.
+func (q *Queries) CountDeliveriesByEndpointAndStatus(ctx context.Context, arg CountDeliveriesByEndpointAndStatusParams) ([]CountDeliveriesByEndpointAndStatusRow, error) {
+	rows, err := q.db.Query(ctx, countDeliveriesByEndpointAndStatus,
+		arg.ProjectID,
+		arg.EndpointIds,
+		arg.Statuses,
+		arg.StartDate,
+		arg.EndDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountDeliveriesByEndpointAndStatusRow
+	for rows.Next() {
+		var i CountDeliveriesByEndpointAndStatusRow
+		if err := rows.Scan(&i.EndpointID, &i.Status, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countDeliveriesByStatus = `-- name: CountDeliveriesByStatus :one
 
 SELECT COUNT(id) AS count
@@ -651,7 +707,7 @@ func (q *Queries) FindEventDeliveryByID(ctx context.Context, arg FindEventDelive
 const findEventDeliveryByIDSlim = `-- name: FindEventDeliveryByIDSlim :one
 SELECT
     id, project_id, event_id, subscription_id,
-    headers, attempts, status, metadata, cli_metadata,
+    headers, attempts, status, metadata, cli_metadata, description,
 	COALESCE(target_url, '') AS target_url,
     COALESCE(url_query_params, '') AS url_query_params,
     COALESCE(idempotency_key, '') AS idempotency_key,
@@ -681,6 +737,7 @@ type FindEventDeliveryByIDSlimRow struct {
 	Status         string
 	Metadata       []byte
 	CliMetadata    []byte
+	Description    string
 	TargetUrl      pgtype.Text
 	UrlQueryParams pgtype.Text
 	IdempotencyKey pgtype.Text
@@ -693,7 +750,9 @@ type FindEventDeliveryByIDSlimRow struct {
 	AcknowledgedAt pgtype.Timestamptz
 }
 
-// Slim variant: omits description and does not JOIN endpoint/event/source/device tables.
+// Slim variant: does not JOIN endpoint/event/source/device tables. It still loads
+// description so the worker's write-back via UpdateEventDeliveryMetadata stays
+// faithful and does not clobber a stored description with an empty value.
 func (q *Queries) FindEventDeliveryByIDSlim(ctx context.Context, arg FindEventDeliveryByIDSlimParams) (FindEventDeliveryByIDSlimRow, error) {
 	row := q.db.QueryRow(ctx, findEventDeliveryByIDSlim, arg.ProjectID, arg.ID)
 	var i FindEventDeliveryByIDSlimRow
@@ -707,6 +766,7 @@ func (q *Queries) FindEventDeliveryByIDSlim(ctx context.Context, arg FindEventDe
 		&i.Status,
 		&i.Metadata,
 		&i.CliMetadata,
+		&i.Description,
 		&i.TargetUrl,
 		&i.UrlQueryParams,
 		&i.IdempotencyKey,
@@ -1284,14 +1344,15 @@ func (q *Queries) SoftDeleteProjectEventDeliveries(ctx context.Context, arg Soft
 
 const updateEventDeliveryMetadata = `-- name: UpdateEventDeliveryMetadata :exec
 UPDATE convoy.event_deliveries
-SET status = $1, metadata = $2, latency_seconds = $3, updated_at = NOW()
-WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL
+SET status = $1, metadata = $2, latency_seconds = $3, description = $4, updated_at = NOW()
+WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL
 `
 
 type UpdateEventDeliveryMetadataParams struct {
 	Status         pgtype.Text
 	Metadata       []byte
 	LatencySeconds pgtype.Numeric
+	Description    pgtype.Text
 	ID             pgtype.Text
 	ProjectID      pgtype.Text
 }
@@ -1301,6 +1362,7 @@ func (q *Queries) UpdateEventDeliveryMetadata(ctx context.Context, arg UpdateEve
 		arg.Status,
 		arg.Metadata,
 		arg.LatencySeconds,
+		arg.Description,
 		arg.ID,
 		arg.ProjectID,
 	)

@@ -25,12 +25,13 @@
 @if (type === 'headers') {
   <div class="border border-new.primary-25 rounded-8px mb-26px">
     @for (header of getHeaders()?.headers; track $index; let i = $index) {
-      <div class="flex border-b border-new.primary-25 last-of-type:border-none p-12px text-12 text-neutral-12">
+      <div class="group flex border-b border-new.primary-25 last-of-type:border-none p-12px text-12 text-neutral-12">
         <div class="w-2/5 font-medium uppercase text-neutral-11">
           {{ header.header }}
         </div>
-        <div class="w-3/5 whitespace-nowrap overflow-hidden text-ellipsis">
-          {{ header.value }}
+        <div class="w-3/5 min-w-0 flex items-center gap-4px">
+          <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap" [title]="header.value">{{ header.value }}</span>
+          <convoy-copy-button [text]="header.value" size="sm" [notificationText]="header.header + ' value copied to clipboard'" class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"></convoy-copy-button>
         </div>
       </div>
     }

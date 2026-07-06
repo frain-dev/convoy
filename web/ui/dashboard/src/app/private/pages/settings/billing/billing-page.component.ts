@@ -1,8 +1,9 @@
-import {ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnInit, ViewChild, inject} from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnInit, ViewChild, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {finalize} from 'rxjs/operators';
 import {ActivatedRoute, Router} from '@angular/router';
 import {StripeElementsComponent} from './stripe-elements.component';
+import {TrialModalComponent} from './trial-modal.component';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {
     BillingAddressDetails,
@@ -24,8 +25,24 @@ import {BillingStrategy, Subscription, SelfHostedBillingConfig, TaxIdType, CHECK
 import {BillingEndpoints} from './billing-endpoints';
 import {PlanCatalogService} from './plan-catalog.service';
 import {BillingLocationService} from './billing-location.service';
+import {TrialStatusService} from 'src/app/services/trial-status/trial-status.service';
+import {
+  formatTrialIntro,
+  TrialOffer,
+  canStartSelfHostedTrial as evaluateSelfHostedTrialEligibility,
+  hasActiveSelfHostedCheckout as selfHostedCheckoutIsActive,
+  resolveSelfHostedTrialOffer,
+  resolveTrialModalMode
+} from './trial-offer.util';
 import {vatNumberValidator} from './vat-number.validator';
 import {zipCodeValidator} from './zip-code.validator';
+import {pollUntil, POLL_BUDGET_MS} from 'src/app/utils/poll.util';
+import {
+  getFeatureValue as planFeatureValue,
+  getFeatureValueType as planFeatureValueType,
+  getFeaturesByCategory as planFeaturesByCategory
+} from './plan-comparison.util';
+import {plansMatch} from './plan-identity.util';
 
 // Delay before reading payment details after a save, allowing the provider
 // webhook to be processed by the billing service.
@@ -52,10 +69,11 @@ const USAGE_PENDING_POLL_DELAY_MS = 5000;
     styleUrls: ['./billing-page.component.scss'],
     standalone: false
 })
-export class BillingPageComponent implements OnInit {
+export class BillingPageComponent implements OnInit, AfterViewInit {
   @ViewChild('paymentDetailsDialog') paymentDetailsDialog!: ElementRef<HTMLDialogElement>;
   @ViewChild('managePlanDialog') managePlanDialog!: ElementRef<HTMLDialogElement>;
   @ViewChild('cancelConfirmDialog') cancelConfirmDialog!: ElementRef<HTMLDialogElement>;
+  @ViewChild('trialModal') trialModal!: TrialModalComponent;
 
   isCancelConfirmOpen = false;
   refreshOverviewTrigger = 0;
@@ -68,8 +86,9 @@ export class BillingPageComponent implements OnInit {
   hasAttemptedPlansLoad = false;
   hasLoadedPlans = false;
   plansUnavailableMessage = '';
+  private plansLoadPromise: Promise<void> | null = null;
   currentSubscription: Subscription | null = null;
-  overwatchPlans: Plan[] = [];
+  billingPlans: Plan[] = [];
 
   // Existing data
   paymentMethodDetails: PaymentMethodDetails | null = null;
@@ -127,6 +146,10 @@ export class BillingPageComponent implements OnInit {
   usageRows: UsageRow[] = [];
   isLoadingBillingData = true;
   isLoadingUsage = false;
+  // False until the billing config (strategy) resolves. The view defaults billingStrategy
+  // to 'oss', so without this gate the self-hosted setup panel flashes before the real
+  // strategy (e.g. cloud "Manage plan") is known. Render a loader until this is true.
+  billingConfigLoaded = false;
 
   constructor(
     private fb: FormBuilder,
@@ -144,7 +167,8 @@ export class BillingPageComponent implements OnInit {
     private planCatalog: PlanCatalogService,
     private billingLocationService: BillingLocationService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private trialStatusService: TrialStatusService
   ) {
     this.initializeForms();
   }
@@ -157,34 +181,76 @@ export class BillingPageComponent implements OnInit {
   private cityLoadingRequestToken: number | null = null;
   private usagePollHandle: ReturnType<typeof setTimeout> | null = null;
   private usageRequestToken = 0;
+  private billingActivationPollToken = 0;
+
+  billingProvisioning = false;
+  isActivatingBilling = false;
+  billingProvisioningMessage = 'Activating your subscription. This may take a moment.';
 
   async ngOnInit() {
-    this.destroyRef.onDestroy(() => this.clearUsagePoll());
+    this.isLoadingCheckout = false;
 
-    // When the post-checkout poll confirms the subscription is active, reload
-    // billing data so the plan card and Manage plan reflect it immediately.
+    this.destroyRef.onDestroy(() => {
+      this.clearUsagePoll();
+      this.billingActivationPollToken++;
+      window.removeEventListener('pageshow', this.onCheckoutPageShow);
+    });
+    window.addEventListener('pageshow', this.onCheckoutPageShow);
+
+    // Trial eligibility (from the billing service) so we stop offering a trial to
+    // an org that already used it. The app shell refreshes it on org resolve.
+    this.trialStatusService.eligible$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(eligible => (this.trialEligible = eligible));
+
+    this.trialStatusService.offer$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(offer => (this.cloudTrialOffer = offer));
+
+    // Post-checkout: settings runs the provider poll; billing shows the same
+    // activation overlay and polls until the overview shows the active plan.
+    this.billingPaymentDetailsService.checkoutVerificationStarted$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        // Abandoned or in-flight checkout must not leave the Subscribe CTA stuck.
+        this.isLoadingCheckout = false;
+        this.billingProvisioningMessage = 'Verifying subscription status...';
+        this.billingProvisioning = true;
+        this.isActivatingBilling = true;
+      });
+
     this.billingPaymentDetailsService.checkoutSubscriptionVerified$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        if (this.canShowBillingPanels) {
-          this.loadBillingData();
-        }
+        void this.pollUntilBillingActive({
+          message: 'Verifying subscription status...',
+          reloadBillingConfig: true
+        });
       });
 
     this.validateOrganisation();
     this.loadCountries();
     await this.loadBillingConfiguration();
+    if (this.billingStrategy === 'cloud' || this.billingStrategy === 'oss') {
+      this.loadPlans();
+    }
     if (this.billingStrategy === 'oss' && this.hasActiveSelfHostedCheckout) {
       await this.checkActiveSelfHostedCheckout(false);
     }
 
     if (this.billingStrategy === 'cloud') {
+      // Refresh trial eligibility on entry so the trial banner reflects this org
+      // now, instead of a stale value cached from a previous page (which only
+      // corrected after navigating away and back). The banner is gated on
+      // !isLoadingBillingData, so this quick org fetch resolves before it shows.
+      void this.trialStatusService.refresh();
       // Start bootstrap in background - code that needs it will await the promise
       this.bootstrapSubscriptionPromise = this.bootstrapOrganisation();
       this.overviewService.setBootstrapPromise(this.bootstrapSubscriptionPromise);
     } else if (this.billingStrategy === 'licensed_self_hosted') {
       this.bootstrapSubscriptionPromise = null;
       this.overviewService.setBootstrapPromise(null);
+      void this.trialStatusService.refresh();
       await this.loadBillingData();
     } else {
       this.bootstrapSubscriptionPromise = null;
@@ -208,7 +274,12 @@ export class BillingPageComponent implements OnInit {
       .subscribe(countryCode => {
         this.onVatCountryChange(countryCode);
       });
+  }
 
+  ngAfterViewInit(): void {
+    if (this.billingPaymentDetailsService.consumeOpenManagePlanOnEntry()) {
+      this.openManagePlan();
+    }
   }
 
   get isSelfHostedBilling(): boolean {
@@ -231,7 +302,7 @@ export class BillingPageComponent implements OnInit {
   }
 
   get hasActiveSelfHostedCheckout(): boolean {
-    return !!this.selfHostedBillingConfig?.active_checkout?.attempt_id;
+    return selfHostedCheckoutIsActive(this.selfHostedBillingConfig);
   }
 
   // Server-resolved flag, so the label matches whether checkout actually resubscribes.
@@ -240,17 +311,14 @@ export class BillingPageComponent implements OnInit {
   }
 
   private async bootstrapOrganisation() {
+    // The subscription fetch inside loadBillingData hits the same create-on-not-found
+    // endpoint (GetSubscription), so it already provisions the billing org on first
+    // load. A separate warm-up GET here would just duplicate the heaviest provider
+    // round trip, which is costly on slow networks.
     try {
-      const orgId = this.getOrganisationId();
-      await this.httpService.request({
-        url: `/billing/organisations/${orgId}/subscription`,
-        method: 'get',
-        hideNotification: true
-      });
       await this.loadBillingData();
     } catch (error) {
       console.error('Failed to bootstrap organisation:', error);
-      await this.loadBillingData();
     }
   }
 
@@ -266,21 +334,46 @@ export class BillingPageComponent implements OnInit {
       const orgId = this.getOrganisationId();
       const subscriptionUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'subscription', orgId);
       const paymentMethodsUrl = BillingEndpoints.billingUrl(this.billingStrategy, 'payment_methods', orgId);
-      const paymentResponse = await this.httpService
-        .request({
-          url: paymentMethodsUrl,
-          method: 'get',
-          hideNotification: true
-        })
-        .catch(() => ({ data: null }));
+      // Run in parallel: in the common case (org already provisioned) they have no
+      // ordering dependency, and serializing them doubles latency on slow networks.
+      // Both stay fail-open so one failing does not block the other.
+      let paymentRequestFailed = false;
+      let [paymentResponse, subscriptionResponse] = await Promise.all([
+        this.httpService
+          .request({
+            url: paymentMethodsUrl,
+            method: 'get',
+            hideNotification: true
+          })
+          .catch(() => {
+            paymentRequestFailed = true;
+            return { data: null };
+          }),
+        this.httpService
+          .request({
+            url: subscriptionUrl,
+            method: 'get',
+            hideNotification: true
+          })
+          .catch(() => ({ data: null }))
+      ]);
 
-      const subscriptionResponse = await this.httpService
-        .request({
-          url: subscriptionUrl,
-          method: 'get',
-          hideNotification: true
-        })
-        .catch(() => ({ data: null }));
+      // First-load race: GetPaymentMethods does not provision the billing org, but the
+      // parallel subscription call (create-on-not-found) does, and provisioning can
+      // happen even when that subscription response itself errors. So whenever payments
+      // failed, retry once after both calls settle rather than leaving an empty payment
+      // section until a manual refresh. The retry only fires on failure, so the common
+      // case (org already provisioned) keeps the parallel path with no extra request.
+      // A genuine outage just fails open again on the retry.
+      if (paymentRequestFailed) {
+        paymentResponse = await this.httpService
+          .request({
+            url: paymentMethodsUrl,
+            method: 'get',
+            hideNotification: true
+          })
+          .catch(() => ({ data: null }));
+      }
 
       const hadSubscription = this.hasActiveSubscription(this.currentSubscription);
       const hasSubscription = this.hasActiveSubscription(subscriptionResponse.data);
@@ -461,9 +554,10 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    if (this.bootstrapSubscriptionPromise) {
-      await this.bootstrapSubscriptionPromise;
-    }
+    // Subscription is fetched in loadBillingData() immediately before this call,
+    // which already provisions the billing org on first load. Awaiting
+    // bootstrapSubscriptionPromise here deadlocked: that promise IS
+    // bootstrapOrganisation() -> loadBillingData(), so we waited on ourselves.
 
     this.isLoadingBillingAddress = true;
     this.isLoadingVat = true;
@@ -551,6 +645,7 @@ export class BillingPageComponent implements OnInit {
           if (this.billingStrategy === 'cloud') {
             this.loadInternalOrganisationId();
           }
+          this.billingConfigLoaded = true;
           resolve();
         },
         error: (error) => {
@@ -561,6 +656,7 @@ export class BillingPageComponent implements OnInit {
           });
           this.billingStrategy = 'oss';
           this.markBillingDataIdle();
+          this.billingConfigLoaded = true;
           resolve();
         }
       });
@@ -901,6 +997,32 @@ export class BillingPageComponent implements OnInit {
     this.managePlanDialog.nativeElement.showModal();
   }
 
+  payPastDueInvoice() {
+    this.invoicesService.getInvoices()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (invoices) => {
+          const payable = invoices
+            .filter(inv => !!inv.hostedLink && inv.status?.toLowerCase() !== 'paid')
+            .sort((a, b) => new Date(b.issuedAtRaw || 0).getTime() - new Date(a.issuedAtRaw || 0).getTime())[0];
+          if (payable?.hostedLink) {
+            window.open(payable.hostedLink, '_blank', 'noopener');
+            return;
+          }
+          this.generalService.showNotification({
+            message: 'No outstanding invoice to pay right now. Please refresh or contact support if this persists.',
+            style: 'warning'
+          });
+        },
+        error: () => {
+          this.generalService.showNotification({
+            message: 'Could not load your invoice. Please try again.',
+            style: 'error'
+          });
+        }
+      });
+  }
+
   async resumeSelfHostedCheckout() {
     await this.checkActiveSelfHostedCheckout(true);
   }
@@ -927,14 +1049,16 @@ export class BillingPageComponent implements OnInit {
       });
 
       if (response.data?.status === CHECKOUT_STATUS.COMPLETED) {
-        await this.licensesService.loadAllLicenses();
         this.generalService.showNotification({ message: 'License activated successfully!', style: 'success' });
-        await this.loadBillingConfiguration();
+        await this.pollUntilBillingActive({
+          reloadBillingConfig: true,
+          message: 'Activating your subscription. This may take a moment.'
+        });
         return;
       }
 
       if (redirectOnPending && response.data?.status === CHECKOUT_STATUS.PENDING && activeCheckout.checkout_url) {
-        window.location.href = activeCheckout.checkout_url;
+        this.redirectToCheckout(activeCheckout.checkout_url);
         return;
       }
 
@@ -957,35 +1081,98 @@ export class BillingPageComponent implements OnInit {
   }
 
   private loadPlans() {
+    this.ensurePlansLoaded().catch(() => {});
+  }
+
+  private applyPlansFromApi(response: { data?: Plan[] }) {
+    const defaultData = this.planService.getDefaultPlanComparison(this.isSelfHostedBilling);
+    const plansFromApi = Array.isArray(response.data) ? response.data : [];
+
+    const catalog = this.planCatalog.buildCatalog(plansFromApi, defaultData.plans, this.isSelfHostedBilling);
+    this.plans = catalog.plans;
+    this.billingPlans = catalog.billingPlans;
+    this.plansUnavailableMessage = catalog.plansUnavailableMessage;
+    this.hasLoadedPlans = this.plans.length > 0;
+    if (this.selectedPlan && !this.plans.some(plan => plan.id === this.selectedPlan)) {
+      this.selectedPlan = null;
+    }
+    this.isLoadingPlans = false;
+  }
+
+  // Plans load on demand when Manage plan opens; trial conversion also needs the
+  // catalog before delegating to onUpgradePlan.
+  private ensurePlansLoaded(): Promise<void> {
+    if (this.hasLoadedPlans && this.plans.length > 0) {
+      return Promise.resolve();
+    }
+    if (this.plansLoadPromise) {
+      return this.plansLoadPromise;
+    }
+
     this.isLoadingPlans = true;
     this.hasAttemptedPlansLoad = true;
     this.hasLoadedPlans = false;
     this.plansUnavailableMessage = '';
 
-    this.planService.getPlans().subscribe({
-      next: (response) => {
-        const defaultData = this.planService.getDefaultPlanComparison();
-        const plansFromApi = Array.isArray(response.data) ? response.data : [];
-
-        const catalog = this.planCatalog.buildCatalog(plansFromApi, defaultData.plans, this.isSelfHostedBilling);
-        this.plans = catalog.plans;
-        this.overwatchPlans = catalog.overwatchPlans;
-        this.plansUnavailableMessage = catalog.plansUnavailableMessage;
-        this.hasLoadedPlans = this.plans.length > 0;
-        if (this.selectedPlan && !this.plans.some(plan => plan.id === this.selectedPlan)) {
+    this.plansLoadPromise = new Promise((resolve, reject) => {
+      this.planService.getPlans().subscribe({
+        next: (response) => {
+          this.applyPlansFromApi(response);
+          resolve();
+        },
+        error: (error) => {
+          console.warn('Failed to load plans from backend:', error);
+          this.plans = [];
+          this.billingPlans = [];
           this.selectedPlan = null;
+          this.plansUnavailableMessage = 'Plans could not be loaded. Please try again later.';
+          this.isLoadingPlans = false;
+          reject(error);
+        },
+        complete: () => {
+          this.plansLoadPromise = null;
         }
-        this.isLoadingPlans = false;
-      },
-      error: (error) => {
-        console.warn('Failed to load plans from backend:', error);
-        this.plans = [];
-        this.overwatchPlans = [];
-        this.selectedPlan = null;
-        this.plansUnavailableMessage = 'Plans could not be loaded. Please try again later.';
-        this.isLoadingPlans = false;
-      }
+      });
     });
+
+    return this.plansLoadPromise;
+  }
+
+  private findPlanForSubscriptionPlanId(planId: string): Plan | undefined {
+    return (
+      this.plans.find(p => p.id === planId) ||
+      this.plans.find(p => this.planCatalog.resolvePlanForApi(p, this.billingPlans).planIdForApi === planId)
+    );
+  }
+
+  // Shared self-hosted checkout redirect used by onUpgradePlan and trial conversion.
+  private async startSelfHostedCheckout(planIdForApi: string, interval: string): Promise<boolean> {
+    if (!this.isSelfHostedResubscribe && !this.selfHostedCheckoutForm.valid) {
+      this.selfHostedCheckoutForm.markAllAsTouched();
+      return false;
+    }
+
+    const body: { plan_id: string; interval: string; host: string; email?: string } = {
+      plan_id: planIdForApi,
+      interval,
+      host: window.location.origin
+    };
+    if (!this.isSelfHostedResubscribe) {
+      body.email = this.selfHostedCheckoutForm.value.email;
+    }
+
+    const response = await this.httpService.request({
+      url: '/billing/sh_checkout/start',
+      method: 'post',
+      body
+    });
+
+    if (response.data?.checkout_url) {
+      window.location.href = response.data.checkout_url;
+      return true;
+    }
+
+    throw new Error('Checkout URL not found in response');
   }
 
   closeManagePlan() {
@@ -993,6 +1180,153 @@ export class BillingPageComponent implements OnInit {
   }
 
   isCancellingSubscription = false;
+  // Whether this org may still start a trial (from the billing service). Defaults
+  // false so the banner never offers a trial before eligibility is confirmed or
+  // to an org that already trialed.
+  trialEligible = false;
+  cloudTrialOffer: TrialOffer | null = null;
+  trialModalMode: 'cloud' | 'self_hosted' = 'cloud';
+
+  // A trial is only offered on cloud when the org has no subscription yet. The
+  // one-trial-per-org rule is enforced server-side; this only hides the button
+  // from orgs that already have a subscription.
+  get canStartSelfHostedTrial(): boolean {
+    return evaluateSelfHostedTrialEligibility({
+      billingStrategy: this.billingStrategy,
+      billingConfigLoaded: this.billingConfigLoaded,
+      selfHostedConfig: this.selfHostedBillingConfig,
+      billingProvisioning: this.billingProvisioning
+    });
+  }
+
+  get selfHostedTrialOffer(): TrialOffer | null {
+    return resolveSelfHostedTrialOffer(this.selfHostedBillingConfig);
+  }
+
+  get activeTrialMode(): 'cloud' | 'self_hosted' {
+    return resolveTrialModalMode(this.canStartSelfHostedTrial);
+  }
+
+  get trialIntro(): string {
+    const catalogPlans = this.plans.length > 0 ? this.plans : this.billingPlans;
+    return formatTrialIntro(this.activeTrialMode, this.cloudTrialOffer, this.selfHostedTrialOffer, catalogPlans);
+  }
+
+  retryBillingActivation() {
+    if (this.isActivatingBilling) return;
+    void this.pollUntilBillingActive();
+  }
+
+  private onCheckoutPageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) {
+      this.isLoadingCheckout = false;
+    }
+  };
+
+  // Poll with backoff until the overview resolves an active subscription so the
+  // plan card never flashes "No plan" after trial start or checkout return.
+  private async pollUntilBillingActive(options: {
+    reloadBillingConfig?: boolean;
+    message?: string;
+  } = {}): Promise<void> {
+    const token = ++this.billingActivationPollToken;
+    if (options.message) {
+      this.billingProvisioningMessage = options.message;
+    }
+    this.billingProvisioning = true;
+    this.isActivatingBilling = true;
+
+    if (options.reloadBillingConfig) {
+      await this.loadBillingConfiguration();
+      if (token !== this.billingActivationPollToken) return;
+    }
+
+    const activated = await pollUntil({
+      budgetMs: POLL_BUDGET_MS,
+      initialDelayMs: 500,
+      maxDelayMs: 5000,
+      request: async () => {
+        await this.licensesService.loadAllLicenses();
+        if (this.canShowBillingPanels) {
+          await this.loadBillingData();
+        }
+        return this.currentSubscription;
+      },
+      isDone: (sub) => this.canShowBillingPanels && this.hasActiveSubscription(sub)
+    });
+
+    if (token !== this.billingActivationPollToken) return;
+
+    this.isActivatingBilling = false;
+    this.isLoadingCheckout = false;
+    if (activated || this.hasActiveSubscription(this.currentSubscription)) {
+      this.billingProvisioning = false;
+      void this.trialStatusService.refresh();
+      return;
+    }
+
+    this.billingProvisioning = false;
+    this.generalService.showNotification({
+      message: 'Subscription is still activating. Use Refresh if billing does not update.',
+      style: 'info'
+    });
+  }
+
+  // Post-trial refresh shared by cloud and self-hosted trial modals.
+  private async refreshAfterTrialStarted(options: { reloadBillingConfig?: boolean } = {}): Promise<void> {
+    if (options.reloadBillingConfig) {
+      await this.licensesService.loadAllLicenses();
+    }
+    await this.pollUntilBillingActive({
+      reloadBillingConfig: options.reloadBillingConfig,
+      message: 'Activating your trial. Your billing overview will update automatically.'
+    });
+  }
+
+  get canStartTrial(): boolean {
+    return (
+      this.billingStrategy === 'cloud' &&
+      !this.isLoadingBillingData &&
+      !this.hasActiveSubscription(this.currentSubscription) &&
+      this.trialEligible
+    );
+  }
+
+  get isTrialing(): boolean {
+    return (
+      (this.billingStrategy === 'cloud' || this.billingStrategy === 'licensed_self_hosted') &&
+      !!this.currentSubscription?.trial
+    );
+  }
+
+  openTrialModal() {
+    if (this.canStartSelfHostedTrial) {
+      this.trialModalMode = 'self_hosted';
+      this.trialModal?.open();
+      return;
+    }
+    if (!this.canStartTrial) return;
+    this.trialModalMode = 'cloud';
+    this.trialModal?.open();
+  }
+
+  onSubscribeInsteadOfTrial() {
+    this.openManagePlan();
+  }
+
+  async onTrialStarted() {
+    const reloadBillingConfig = this.trialModalMode === 'self_hosted';
+    try {
+      this.closeManagePlan();
+      this.generalService.showNotification({
+        message: 'Your free trial has started.',
+        style: 'success'
+      });
+      await this.refreshAfterTrialStarted({ reloadBillingConfig });
+    } catch {
+      await this.refreshAfterTrialStarted({ reloadBillingConfig });
+    }
+  }
 
   onCancelPlan() {
     if (!this.currentSubscription || !this.currentSubscription.id) {
@@ -1078,7 +1412,7 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    const { planExistsInOverwatch, planIdForApi } = this.planCatalog.resolvePlanForApi(selectedPlanData, this.overwatchPlans);
+    const { planExistsInCatalog, planIdForApi } = this.planCatalog.resolvePlanForApi(selectedPlanData, this.billingPlans);
     if (!this.canUsePlan(selectedPlanData)) {
       this.generalService.showNotification({
         message: 'This plan is not available for checkout right now',
@@ -1087,7 +1421,7 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    if (this.isCurrentSubscriptionPlan(planIdForApi, selectedPlanData.name)) {
+    if (!this.isTrialing && this.isCurrentSubscriptionPlan(planIdForApi, selectedPlanData.name)) {
       this.generalService.showNotification({
         message: 'You are already on this plan',
         style: 'success'
@@ -1095,7 +1429,7 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    if (this.planRequiresContact(selectedPlanData) || this.planCatalog.shouldContactForMissingCloudPlan(selectedPlanData, this.isSelfHostedBilling, planExistsInOverwatch)) {
+    if (this.planRequiresContact(selectedPlanData) || this.planCatalog.shouldContactForMissingCloudPlan(selectedPlanData, this.isSelfHostedBilling, planExistsInCatalog)) {
       this.openPlanContact(selectedPlanData);
       return;
     }
@@ -1108,51 +1442,24 @@ export class BillingPageComponent implements OnInit {
       let checkoutUrl: string;
 
       if (this.isSelfHostedBilling || this.planCatalog.isSelfHostedPlan(selectedPlanData)) {
-        // Resubscribe reuses the known org/customer by license key, so email is omitted.
-        if (!this.isSelfHostedResubscribe && !this.selfHostedCheckoutForm.valid) {
-          this.selfHostedCheckoutForm.markAllAsTouched();
+        if (this.isTrialing && this.currentSubscription?.id) {
+          await this.startTrialUpgradeCheckout(planIdForApi, this.planCatalog.resolveCheckoutCadence(selectedPlanData));
+          return;
+        }
+
+        const started = await this.startSelfHostedCheckout(
+          planIdForApi,
+          this.planCatalog.resolveCheckoutCadence(selectedPlanData)
+        );
+        if (!started) {
           this.isLoadingCheckout = false;
           return;
         }
-
-        const body: { plan_id: string; interval: string; host: string; email?: string } = {
-          plan_id: planIdForApi,
-          interval: this.planCatalog.resolveCheckoutCadence(selectedPlanData),
-          host: host
-        };
-        if (!this.isSelfHostedResubscribe) {
-          body.email = this.selfHostedCheckoutForm.value.email;
-        }
-
-        const response = await this.httpService.request({
-          url: '/billing/sh_checkout/start',
-          method: 'post',
-          body
-        });
-
-        if (response.data && response.data.checkout_url) {
-          window.location.href = response.data.checkout_url;
-          return;
-        }
-
-        throw new Error('Checkout URL not found in response');
+        return;
       }
 
       if (this.currentSubscription && this.currentSubscription.id) {
-        const response = await this.httpService.request({
-          url: `/billing/organisations/${orgId}/subscriptions/${this.currentSubscription.id}/upgrade`,
-          method: 'put',
-          body: {
-            plan_id: planIdForApi,
-            host: host
-          }
-        });
-
-        if (response.data && response.data.checkout_url) {
-          checkoutUrl = response.data.checkout_url;
-        } else {
-          throw new Error('Checkout URL not found in response');
-        }
+        checkoutUrl = await this.requestUpgradeCheckoutUrl(this.currentSubscription.id, planIdForApi, host);
       } else {
         const response = await this.httpService.request({
           url: `/billing/organisations/${orgId}/subscriptions/onboard`,
@@ -1171,7 +1478,7 @@ export class BillingPageComponent implements OnInit {
       }
 
       // Open in same window since callback will redirect back
-      window.location.href = checkoutUrl;
+      this.redirectToCheckout(checkoutUrl);
     } catch (error: any) {
       this.isLoadingCheckout = false;
       console.error('Failed to create checkout session:', error);
@@ -1182,6 +1489,136 @@ export class BillingPageComponent implements OnInit {
     }
   }
 
+  private redirectToCheckout(checkoutUrl: string) {
+    window.location.href = checkoutUrl;
+  }
+
+  private async startTrialUpgradeCheckout(planId: string, interval?: string) {
+    const subscriptionId = this.currentSubscription?.id;
+    if (!subscriptionId) {
+      this.generalService.showNotification({
+        message: 'No trial subscription to convert',
+        style: 'error'
+      });
+      return;
+    }
+
+    this.isLoadingCheckout = true;
+    try {
+      const checkoutUrl = await this.requestUpgradeCheckoutUrl(
+        subscriptionId,
+        planId,
+        window.location.origin,
+        interval
+      );
+      this.redirectToCheckout(checkoutUrl);
+    } catch (error: any) {
+      this.isLoadingCheckout = false;
+      console.error('Failed to start trial conversion checkout:', error);
+      this.generalService.showNotification({
+        message: error?.error?.message || 'Failed to start checkout. Please try again.',
+        style: 'error'
+      });
+    }
+  }
+
+  private async requestUpgradeCheckoutUrl(
+    subscriptionId: string,
+    planId: string,
+    host: string,
+    interval?: string
+  ): Promise<string> {
+    const body: { plan_id: string; host: string; interval?: string } = {
+      plan_id: planId,
+      host: host
+    };
+    if (interval) {
+      body.interval = interval;
+    }
+
+    const url =
+      this.billingStrategy === 'licensed_self_hosted'
+        ? '/billing/sh_subscription/upgrade'
+        : `/billing/organisations/${this.getOrganisationId()}/subscriptions/${subscriptionId}/upgrade`;
+
+    const response = await this.httpService.request({
+      url,
+      method: 'put',
+      body
+    });
+
+    if (response.data && response.data.checkout_url) {
+      return response.data.checkout_url;
+    }
+    throw new Error('Checkout URL not found in response');
+  }
+
+  async convertTrialToPaid() {
+    if (!this.isTrialing) return;
+
+    const subscriptionId = this.currentSubscription?.id;
+    if (!subscriptionId) {
+      this.generalService.showNotification({
+        message: 'No trial subscription to convert',
+        style: 'error'
+      });
+      return;
+    }
+
+    if (this.billingStrategy === 'licensed_self_hosted') {
+      try {
+        await this.ensurePlansLoaded();
+      } catch {
+        this.generalService.showNotification({
+          message: 'Plans could not be loaded. Please try again later.',
+          style: 'error'
+        });
+        return;
+      }
+
+      const selectedUiPlan = this.selectedPlan ? this.plans.find(p => p.id === this.selectedPlan) : undefined;
+      const subscriptionPlan = this.currentSubscription?.plan;
+      const subscriptionPlanId = subscriptionPlan?.id;
+      const subscriptionPlanMatch = subscriptionPlan
+        ? { id: subscriptionPlan.id ?? '', key: subscriptionPlan.key ?? '', name: subscriptionPlan.name ?? '' }
+        : undefined;
+      const uiPlan =
+        selectedUiPlan ||
+        (subscriptionPlanMatch ? this.plans.find(p => plansMatch(p, subscriptionPlanMatch)) : undefined) ||
+        (subscriptionPlanId ? this.findPlanForSubscriptionPlanId(subscriptionPlanId) : undefined);
+
+      if (!uiPlan) {
+        this.generalService.showNotification({
+          message: 'No purchasable plan found for trial conversion',
+          style: 'error'
+        });
+        return;
+      }
+
+      const { planIdForApi } = this.planCatalog.resolvePlanForApi(uiPlan, this.billingPlans);
+      await this.startTrialUpgradeCheckout(
+        planIdForApi,
+        this.planCatalog.resolveCheckoutCadence(uiPlan)
+      );
+      return;
+    }
+
+    const planId = this.currentSubscription?.plan?.id;
+    if (!planId) {
+      this.generalService.showNotification({
+        message: 'No trial subscription to convert',
+        style: 'error'
+      });
+      return;
+    }
+
+    await this.startTrialUpgradeCheckout(planId);
+  }
+
+  isTrialConvertPlan(planId: string): boolean {
+    return this.isTrialing && this.isCurrentPlan(planId);
+  }
+
   isCurrentPlan(planId: string): boolean {
     if (!this.currentSubscription || !this.currentSubscription.plan) {
       return false;
@@ -1190,7 +1627,7 @@ export class BillingPageComponent implements OnInit {
     const plan = this.plans.find(p => p.id === planId);
     if (!plan) return false;
 
-    const { planIdForApi } = this.planCatalog.resolvePlanForApi(plan, this.overwatchPlans);
+    const { planIdForApi } = this.planCatalog.resolvePlanForApi(plan, this.billingPlans);
     return this.isCurrentSubscriptionPlan(planIdForApi, plan.name);
   }
 
@@ -1204,6 +1641,9 @@ export class BillingPageComponent implements OnInit {
     if (this.isLoadingCheckout && this.selectedPlan === planId) {
       return 'Loading...';
     }
+    if (this.isTrialConvertPlan(planId)) {
+      return this.selectedPlan === planId ? 'Subscribe now' : 'Select';
+    }
     if (this.isCurrentPlan(planId)) {
       return 'Current Plan';
     }
@@ -1215,6 +1655,12 @@ export class BillingPageComponent implements OnInit {
     }
     if (this.selectedPlan === planId) {
       if (plan && (this.isSelfHostedBilling || this.planCatalog.isSelfHostedPlan(plan))) {
+        // During a trial the stored guest-checkout key is the trial license, not a
+        // prior paid purchase, so converting to paid is a first subscribe, not a
+        // resubscribe. Only offer "Resubscribe" to a genuinely lapsed paid customer.
+        if (this.isTrialing) {
+          return 'Subscribe now';
+        }
         return this.isSelfHostedResubscribe ? 'Resubscribe' : 'Start checkout';
       }
       return this.currentSubscription ? 'Upgrade' : 'Subscribe';
@@ -1271,7 +1717,9 @@ export class BillingPageComponent implements OnInit {
 
   /** Handle plan card button: Select selects the plan; Upgrade/Subscribe triggers checkout. */
   onPlanCardButtonClick(planId: string): void {
-    if (this.isCurrentPlan(planId)) return;
+    // The trial's current plan stays actionable so a trial can convert to paid;
+    // any other current plan is a no-op.
+    if (this.isCurrentPlan(planId) && !this.isTrialConvertPlan(planId)) return;
     const plan = this.plans.find(p => p.id === planId);
     if (!plan || !this.canUsePlan(plan)) return;
     if (plan && this.planRequiresContact(plan)) {
@@ -1280,24 +1728,18 @@ export class BillingPageComponent implements OnInit {
       return;
     }
     if (this.selectedPlan === planId) {
-      this.onUpgradePlan();
+      if (this.isTrialConvertPlan(planId)) {
+        this.convertTrialToPaid();
+      } else {
+        this.onUpgradePlan();
+      }
     } else {
       this.selectPlan(planId);
     }
   }
 
   getFeaturesByCategory(category: 'core' | 'security' | 'support'): PlanFeature[] {
-    if (this.plans.length === 0) return [];
-
-    const allFeatures = this.plans.flatMap(plan =>
-      plan.features.filter(feature => feature.category === category)
-    );
-
-    const uniqueFeatures = allFeatures.filter((feature, index, self) =>
-      index === self.findIndex(f => f.name === feature.name)
-    );
-
-    return uniqueFeatures;
+    return planFeaturesByCategory(this.plans, category);
   }
 
   get hasPlanLoadingState(): boolean {
@@ -1317,28 +1759,20 @@ export class BillingPageComponent implements OnInit {
       return true;
     }
 
-    const { planExistsInOverwatch } = this.planCatalog.resolvePlanForApi(plan, this.overwatchPlans);
+    const { planExistsInCatalog } = this.planCatalog.resolvePlanForApi(plan, this.billingPlans);
     if (this.isSelfHostedBilling || this.planCatalog.isSelfHostedPlan(plan)) {
-      return planExistsInOverwatch;
+      return planExistsInCatalog;
     }
 
     return true;
   }
 
   getFeatureValue(planId: string, featureName: string): string {
-    const plan = this.plans.find(p => p.id === planId);
-    if (!plan) return 'Unsupported';
-
-    const feature = plan.features.find(f => f.name === featureName);
-    return feature ? feature.value : 'Unsupported';
+    return planFeatureValue(this.plans, planId, featureName);
   }
 
   getFeatureValueType(planId: string, featureName: string): 'supported' | 'unsupported' | 'plain' {
-    const value = this.getFeatureValue(planId, featureName);
-
-    if (value === 'Supported') return 'supported';
-    if (value === 'Unsupported') return 'unsupported';
-    return 'plain';
+    return planFeatureValueType(this.plans, planId, featureName);
   }
 
   private loadExistingData() {

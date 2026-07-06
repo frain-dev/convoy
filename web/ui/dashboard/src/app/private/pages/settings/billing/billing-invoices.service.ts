@@ -3,7 +3,7 @@ import {from, Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {HttpService} from 'src/app/services/http/http.service';
 import axios from 'axios';
-import {environment} from 'src/environments/environment';
+import {apiOrigin} from 'src/app/services/api-origin';
 import {BillingStrategy} from 'src/app/models/billing.model';
 import {BillingEndpoints} from './billing-endpoints';
 
@@ -15,6 +15,10 @@ export interface InvoiceRow {
   status: string;
   dueDate: string;
   pdfLink?: string;
+  hostedLink?: string;
+  // Raw ISO invoice date, kept for deterministic sorting (the formatted
+  // `issuedOn` is locale display only and not safe to parse back).
+  issuedAtRaw?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -66,7 +70,7 @@ export class BillingInvoicesService {
       const baseElement = document.querySelector('base');
       const baseHref = baseElement?.getAttribute('href') || '/';
       const rootPath = baseHref.replace(/\/$/, '');
-      const apiURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
+      const apiURL = `${apiOrigin()}/ui`;
       const url = `${rootPath === '/' ? '' : rootPath}${apiURL}${path}`;
 
       // Make request with blob response type
@@ -139,7 +143,9 @@ export class BillingInvoicesService {
         amount: `$${amountInDollars}`,
         status: invoice.status ? (invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1).toLowerCase()) : 'Unknown',
         dueDate,
-        pdfLink: invoice.pdf_link
+        pdfLink: invoice.pdf_link,
+        hostedLink: invoice.hosted_link,
+        issuedAtRaw: invoice.invoice_date
       };
     });
   }

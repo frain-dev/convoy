@@ -74,6 +74,10 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if h.enforceTrialEventCapForNewEvent(w, r, project.OrganisationID, projectID, newMessage.IdempotencyKey, h.duplicateByAnyEvent) {
+		return
+	}
+
 	id := ulid.Make().String()
 	jobId := queue.JobId{ProjectID: projectID, ResourceID: id}.SingleJobId()
 	e := task.CreateEvent{
@@ -144,6 +148,10 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.enforceTrialEventCapForNewEvent(w, r, project.OrganisationID, project.UID, newMessage.IdempotencyKey, h.duplicateByAnyEvent) {
+		return
+	}
+
 	cbe := services.CreateBroadcastEventService{
 		Queue:          h.A.Queue,
 		BroadcastEvent: &newMessage,
@@ -209,6 +217,12 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	h.A.Logger.Info("processing fanout event", "project_id", project.UID, "owner_id", newMessage.OwnerID, "event_type", newMessage.EventType, "body_size_bytes", bodySize)
+
+	// Fanout decides novelty with FindFirstEventWithIdempotencyKey (non-duplicate rows
+	// only), so the gate must use the same predicate; see trialCapDuplicateVerdict.
+	if h.enforceTrialEventCapForNewEvent(w, r, project.OrganisationID, project.UID, newMessage.IdempotencyKey, h.duplicateByFirstNonDuplicateEvent) {
+		return
+	}
 
 	cf := services.CreateFanoutEventService{
 		EndpointRepo:   endpoints.New(h.A.Logger, h.A.DB),
@@ -281,6 +295,10 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 	err = newMessage.Validate()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if h.enforceTrialEventCapForNewEvent(w, r, project.OrganisationID, project.UID, newMessage.IdempotencyKey, h.duplicateByAnyEvent) {
 		return
 	}
 

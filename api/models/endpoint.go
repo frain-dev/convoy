@@ -308,6 +308,22 @@ type EndpointResponse struct {
 	*datastore.Endpoint
 }
 
+// EndpointStatsResponse is the per-endpoint reliability payload over a date range.
+// FailureRate is the history rate Failure/(Success+Failure) and is null when there
+// were no terminal deliveries in the range (distinct from a genuine 0%). RecentFailureRate
+// is the circuit breaker's rolling rate (license + flag gated); null when unavailable.
+type EndpointStatsResponse struct {
+	SuccessCount      int64    `json:"success_count"`
+	FailureCount      int64    `json:"failure_count"`
+	FailureRate       *float64 `json:"failure_rate" extensions:"x-nullable"`
+	RecentFailureRate *float64 `json:"recent_failure_rate" extensions:"x-nullable"`
+	// Recent (circuit breaker) counts over the rolling observability window, read from
+	// the breaker state in redis. Backed by the same sample as RecentFailureRate, so all
+	// three are nil/zero together when CB is off/unlicensed or has no recent sample.
+	RecentSuccessCount *int64 `json:"recent_success_count" extensions:"x-nullable"`
+	RecentFailureCount *int64 `json:"recent_failure_count" extensions:"x-nullable"`
+}
+
 // MarshalJSON redacts sensitive fields before serializing the endpoint response.
 // Specifically, it removes the mTLS client private key from the JSON output.
 func (er EndpointResponse) MarshalJSON() ([]byte, error) {

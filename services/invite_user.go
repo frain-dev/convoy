@@ -21,8 +21,9 @@ import (
 )
 
 type InviteUserService struct {
-	Queue      queue.Queuer
-	InviteRepo datastore.OrganisationInviteRepository
+	Queue         queue.Queuer
+	InviteRepo    datastore.OrganisationInviteRepository
+	OrgMemberRepo datastore.OrganisationMemberRepository
 
 	InviteeEmail string
 	Role         auth.Role
@@ -52,6 +53,21 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 
 	if !isMultiUser {
 		return nil, &ServiceError{ErrMsg: "invites are only available in multi-user mode"}
+	}
+
+	// Enforce the cloud per-org user_limit against the org's own plan. Pending invites
+	// count here so a trial org already at its member cap cannot accumulate dangling
+	// over-cap invites. No-op for self-hosted orgs (no per-org license_data).
+	ok, err = CheckOrganisationUserLimit(ctx, iu.Organisation, true, OrgUserLimitDeps{
+		OrgMemberRepo: iu.OrgMemberRepo,
+		InviteRepo:    iu.InviteRepo,
+		Logger:        iu.Logger,
+	})
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error()}
+	}
+	if !ok {
+		return nil, &ServiceError{ErrMsg: ErrOrgUserLimit.Error(), Err: ErrOrgUserLimit}
 	}
 
 	iv := &datastore.OrganisationInvite{

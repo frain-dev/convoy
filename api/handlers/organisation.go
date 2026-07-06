@@ -22,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -102,6 +103,25 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationAdd), user); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
+	}
+
+	// Cloud org-billing only: enforce the per-org org_limit against the user's existing
+	// orgs' plans (the service short-circuits to fail-open for anything without a finite
+	// per-org cap). Self-hosted/instance limits stay handled by the instance CheckOrgLimit
+	// inside CreateOrganisationService.Run.
+	if h.A.Cfg.UsesOrgBilling() && h.A.BillingClient != nil {
+		ok, err := services.CheckUserOrgCreationAllowed(r.Context(), user, services.UserOrgLimitDeps{
+			OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
+			Logger:        h.A.Logger,
+		})
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+		if !ok {
+			_ = render.Render(w, r, util.NewErrorResponse(services.ErrOrgOrganisationLimit.Error(), http.StatusPaymentRequired))
+			return
+		}
 	}
 
 	orgRepo := organisations.New(h.A.Logger, h.A.DB)
@@ -358,8 +378,15 @@ func (h *Handler) GetOrganisationFeatureFlags(w http.ResponseWriter, r *http.Req
 	featureFlags := make(map[string]bool)
 
 	for featureKey := range fflag.DefaultFeaturesState {
-		enabled := h.A.FFlag.CanAccessOrgFeature(
-			r.Context(), featureKey, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, org.UID)
+		var enabled bool
+		if featureKey == fflag.CircuitBreaker {
+			// Fold env into the instance base (per-org override still wins) so the
+			// dashboard column-visibility check matches actual display and enforcement.
+			enabled = cbenablement.EnabledForOrg(r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, org.UID)
+		} else {
+			enabled = h.A.FFlag.CanAccessOrgFeature(
+				r.Context(), featureKey, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, org.UID)
+		}
 		featureFlags[string(featureKey)] = enabled
 	}
 
@@ -441,6 +468,12 @@ func (h *Handler) GetAllFeatureFlags(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	// Mark which flags are forced on instance-wide via the environment so the admin
+	// UI can show whether the env or this page is the authoritative instance default.
+	for i := range flags {
+		flags[i].EnvEnabled = h.A.FFlag.CanAccessFeature(fflag.FeatureFlagKey(flags[i].FeatureKey))
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Feature flags fetched successfully", flags, http.StatusOK))

@@ -87,6 +87,10 @@ type CircuitBreakerManager struct {
 	configProvider func(projectID string) *CircuitBreakerConfig
 	masterConfig   CircuitBreakerConfig
 	skipSleep      bool
+	// enabledFunc gates each sampling tick. The manager is always constructed and
+	// started; this lets enablement (instance flag + per-org overrides, env folded
+	// into the base) be honored live without restarting the worker. Nil means always on.
+	enabledFunc func(ctx context.Context) bool
 }
 
 func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerManager, error) {
@@ -182,6 +186,13 @@ func MasterConfigOption(config CircuitBreakerConfig) CircuitBreakerOption {
 func SkipSleepOption(skipSleep bool) CircuitBreakerOption {
 	return func(cb *CircuitBreakerManager) error {
 		cb.skipSleep = skipSleep
+		return nil
+	}
+}
+
+func EnabledFuncOption(fn func(ctx context.Context) bool) CircuitBreakerOption {
+	return func(cb *CircuitBreakerManager) error {
+		cb.enabledFunc = fn
 		return nil
 	}
 }
@@ -411,6 +422,13 @@ func (cb *CircuitBreakerManager) GetCircuitBreakerWithError(ctx context.Context,
 }
 
 func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc PollFunc) error {
+	// Skip the tick (before acquiring the lock or mutating any state) when circuit
+	// breaking is disabled everywhere. This is read live each tick so toggling the
+	// instance flag or an org override takes effect without restarting the worker.
+	if cb.enabledFunc != nil && !cb.enabledFunc(ctx) {
+		return nil
+	}
+
 	start := time.Now()
 	masterConfig := cb.GetMasterConfig()
 	stopTime := time.Now().Add(time.Duration(masterConfig.SampleRate-2) * time.Second)

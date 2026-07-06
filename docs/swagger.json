@@ -1099,6 +1099,129 @@
         }
       }
     },
+    "/v1/projects/{projectID}/endpoints/{endpointID}/stats": {
+      "get": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "This endpoint returns the period (history) failure rate for an endpoint over a date range, plus the circuit breaker recent rate when available",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Endpoints"
+        ],
+        "summary": "Get endpoint reliability stats",
+        "operationId": "GetEndpointStats",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Project ID",
+            "name": "projectID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Endpoint ID",
+            "name": "endpointID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "start date",
+            "name": "startDate",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "end date",
+            "name": "endDate",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/models.EndpointStatsResponse"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/handlers.Stub"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/handlers.Stub"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/handlers.Stub"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
     "/v1/projects/{projectID}/event-types": {
       "get": {
         "security": [
@@ -7696,6 +7819,12 @@
         "request_http_header": {
           "$ref": "#/definitions/datastore.HttpHeader"
         },
+        "requested_at": {
+          "type": "string"
+        },
+        "responded_at": {
+          "type": "string"
+        },
         "response_data": {
           "type": "string"
         },
@@ -7807,7 +7936,11 @@
         "events": {
           "type": "integer"
         },
+        "failure_count": {
+          "type": "integer"
+        },
         "failure_rate": {
+          "description": "FailureRate is the circuit breaker's rolling failure rate for this endpoint.\nIt is a pointer so the API can return null when no rate was computed (circuit\nbreaker feature off, or sampler not running), distinct from a genuine 0%.",
           "type": "number"
         },
         "http_timeout": {
@@ -7826,6 +7959,10 @@
         },
         "owner_id": {
           "type": "string"
+        },
+        "period_failure_rate": {
+          "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n(Failure/(Success+Failure)), independent of the circuit breaker. Nil when the\nrange has no terminal deliveries. SuccessCount/FailureCount are transient too.",
+          "type": "number"
         },
         "project_id": {
           "type": "string"
@@ -7847,6 +7984,9 @@
         },
         "status": {
           "$ref": "#/definitions/datastore.EndpointStatus"
+        },
+        "success_count": {
+          "type": "integer"
         },
         "support_email": {
           "type": "string"
@@ -9370,7 +9510,11 @@
         "events": {
           "type": "integer"
         },
+        "failure_count": {
+          "type": "integer"
+        },
         "failure_rate": {
+          "description": "FailureRate is the circuit breaker's rolling failure rate for this endpoint.\nIt is a pointer so the API can return null when no rate was computed (circuit\nbreaker feature off, or sampler not running), distinct from a genuine 0%.",
           "type": "number"
         },
         "http_timeout": {
@@ -9389,6 +9533,10 @@
         },
         "owner_id": {
           "type": "string"
+        },
+        "period_failure_rate": {
+          "description": "PeriodFailureRate is the period-scoped failure rate from event_deliveries\n(Failure/(Success+Failure)), independent of the circuit breaker. Nil when the\nrange has no terminal deliveries. SuccessCount/FailureCount are transient too.",
+          "type": "number"
         },
         "project_id": {
           "type": "string"
@@ -9411,6 +9559,9 @@
         "status": {
           "$ref": "#/definitions/datastore.EndpointStatus"
         },
+        "success_count": {
+          "type": "integer"
+        },
         "support_email": {
           "type": "string"
         },
@@ -9422,6 +9573,34 @@
         },
         "url": {
           "type": "string"
+        }
+      }
+    },
+    "models.EndpointStatsResponse": {
+      "type": "object",
+      "properties": {
+        "failure_count": {
+          "type": "integer"
+        },
+        "failure_rate": {
+          "type": "number",
+          "x-nullable": true
+        },
+        "recent_failure_count": {
+          "type": "integer",
+          "x-nullable": true
+        },
+        "recent_failure_rate": {
+          "type": "number",
+          "x-nullable": true
+        },
+        "recent_success_count": {
+          "description": "Recent (circuit breaker) counts over the rolling observability window, read from\nthe breaker state in redis. Backed by the same sample as RecentFailureRate, so all\nthree are nil/zero together when CB is off/unlicensed or has no recent sample.",
+          "type": "integer",
+          "x-nullable": true
+        },
+        "success_count": {
+          "type": "integer"
         }
       }
     },

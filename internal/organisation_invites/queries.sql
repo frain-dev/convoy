@@ -117,3 +117,10 @@ FROM convoy.organisation_invites
 WHERE organisation_id = @org_id
     AND deleted_at IS NULL
     AND id > @cursor;
+
+-- name: CountOrganisationInvites :one
+SELECT COALESCE(COUNT(DISTINCT id), 0) AS count
+FROM convoy.organisation_invites
+WHERE organisation_id = @organisation_id
+    AND status = @status
+    AND deleted_at IS NULL;

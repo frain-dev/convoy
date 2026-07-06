@@ -23,6 +23,7 @@ type Client interface {
 	GetPaymentMethods(ctx context.Context, orgID string) (*Response[[]PaymentMethod], error)
 	GetSubscription(ctx context.Context, orgID string) (*Response[BillingSubscription], error)
 	GetPlans(ctx context.Context) (*Response[[]Plan], error)
+	GetSelfHostedCatalog(ctx context.Context) (*SelfHostedCatalogResponse, error)
 	GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType], error)
 	CreateOrganisation(ctx context.Context, orgData BillingOrganisation) (*Response[BillingOrganisation], error)
 	GetOrganisationLicense(ctx context.Context, orgID string) (*Response[OrganisationLicense], error)
@@ -34,10 +35,13 @@ type Client interface {
 	GetSubscriptions(ctx context.Context, orgID string) (*Response[[]BillingSubscription], error)
 	OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error)
 	UpgradeSubscription(ctx context.Context, orgID, subscriptionID string, req UpgradeSubscriptionRequest) (*Response[Checkout], error)
+	StartTrial(ctx context.Context, orgID string, req StartTrialRequest) (*Response[interface{}], error)
 	DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error)
 	StartGuestCheckout(ctx context.Context, req StartGuestCheckoutRequest) (*Response[Checkout], error)
 	CompleteGuestCheckout(ctx context.Context, req CompleteGuestCheckoutRequest) (*Response[GuestCheckoutCompletion], error)
+	StartSelfHostedTrial(ctx context.Context, req StartSelfHostedTrialRequest) (*Response[GuestCheckoutCompletion], error)
 	GetSelfHostedSubscription(ctx context.Context, licenseKey string) (*Response[BillingSubscription], error)
+	UpgradeSelfHostedSubscription(ctx context.Context, licenseKey string, req UpgradeSubscriptionRequest) (*Response[Checkout], error)
 	DeleteSelfHostedSubscription(ctx context.Context, licenseKey string) (*Response[interface{}], error)
 	GetSelfHostedOrganisation(ctx context.Context, licenseKey string) (*Response[BillingOrganisation], error)
 	UpdateSelfHostedOrganisationTaxID(ctx context.Context, licenseKey string, taxData UpdateOrganisationTaxIDRequest) (*Response[BillingOrganisation], error)
@@ -133,9 +137,74 @@ func (c *HTTPClient) GetSubscription(ctx context.Context, orgID string) (*Respon
 
 func (c *HTTPClient) GetPlans(ctx context.Context) (*Response[[]Plan], error) {
 	if strings.TrimSpace(c.config.APIKey) == "" {
-		return makeRequest[[]Plan](ctx, c.httpClient, c.config, "GET", "/public/self_hosted/plans", nil)
+		catalog, err := c.GetSelfHostedCatalog(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &Response[[]Plan]{
+			Status:  true,
+			Message: "Plans retrieved successfully",
+			Data:    catalog.Plans,
+		}, nil
 	}
 	return makeRequest[[]Plan](ctx, c.httpClient, c.config, "GET", "/plans", nil)
+}
+
+func (c *HTTPClient) GetSelfHostedCatalog(ctx context.Context) (*SelfHostedCatalogResponse, error) {
+	if strings.TrimSpace(c.config.URL) == "" {
+		return nil, fmt.Errorf("billing service URL is not configured")
+	}
+
+	url := fmt.Sprintf("%s/public/self_hosted/plans", c.config.URL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request to billing service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	rawResp, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return nil, fmt.Errorf("failed to read billing response body: %w", readErr)
+	}
+
+	var envelope struct {
+		Status     bool            `json:"status"`
+		Message    string          `json:"message"`
+		Data       json.RawMessage `json:"data,omitempty"`
+		TrialOffer json.RawMessage `json:"trial_offer,omitempty"`
+	}
+	if err := json.Unmarshal(rawResp, &envelope); err != nil {
+		return nil, fmt.Errorf("failed to read billing response: %w", err)
+	}
+	if !envelope.Status {
+		msg := envelope.Message
+		if msg == "" {
+			msg = fmt.Sprintf("billing service returned error status: %d", resp.StatusCode)
+		}
+		return nil, &Error{StatusCode: resp.StatusCode, Message: msg}
+	}
+
+	catalog := &SelfHostedCatalogResponse{}
+	if len(envelope.Data) > 0 {
+		if err := json.Unmarshal(envelope.Data, &catalog.Plans); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal self-hosted plans: %w", err)
+		}
+	}
+	if len(envelope.TrialOffer) > 0 {
+		var offer TrialOffer
+		if err := json.Unmarshal(envelope.TrialOffer, &offer); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal self-hosted trial_offer: %w", err)
+		}
+		catalog.TrialOffer = &offer
+	}
+
+	return catalog, nil
 }
 
 func (c *HTTPClient) GetTaxIDTypes(ctx context.Context) (*Response[[]TaxIDType], error) {
@@ -213,6 +282,10 @@ func (c *HTTPClient) UpgradeSubscription(ctx context.Context, orgID, subscriptio
 	return makeRequest[Checkout](ctx, c.httpClient, c.config, "PUT", fmt.Sprintf("/organisations/%s/subscriptions/%s/upgrade", orgID, subscriptionID), req)
 }
 
+func (c *HTTPClient) StartTrial(ctx context.Context, orgID string, req StartTrialRequest) (*Response[interface{}], error) {
+	return makeRequest[interface{}](ctx, c.httpClient, c.config, "POST", fmt.Sprintf("/organisations/%s/subscriptions/trial", orgID), req)
+}
+
 func (c *HTTPClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error) {
 	return makeRequest[interface{}](ctx, c.httpClient, c.config, "DELETE", fmt.Sprintf("/organisations/%s/subscriptions/%s", orgID, subscriptionID), nil)
 }
@@ -225,8 +298,19 @@ func (c *HTTPClient) CompleteGuestCheckout(ctx context.Context, req CompleteGues
 	return makeRequest[GuestCheckoutCompletion](ctx, c.httpClient, c.config, "POST", "/public/self_hosted_checkouts/complete", req)
 }
 
+// StartSelfHostedTrial mints a self-hosted trial and returns the license key.
+// Uses the public billing endpoint (same auth model as guest checkout); Convoy gates
+// the UI path with org-admin checks before calling the billing service.
+func (c *HTTPClient) StartSelfHostedTrial(ctx context.Context, req StartSelfHostedTrialRequest) (*Response[GuestCheckoutCompletion], error) {
+	return makeRequest[GuestCheckoutCompletion](ctx, c.httpClient, c.config, "POST", "/public/self_hosted_trials/start", req)
+}
+
 func (c *HTTPClient) GetSelfHostedSubscription(ctx context.Context, licenseKey string) (*Response[BillingSubscription], error) {
 	return makeLicenseRequest[BillingSubscription](ctx, c.httpClient, c.config, "GET", "/public/self_hosted_billing/subscription", licenseKey)
+}
+
+func (c *HTTPClient) UpgradeSelfHostedSubscription(ctx context.Context, licenseKey string, req UpgradeSubscriptionRequest) (*Response[Checkout], error) {
+	return makeLicenseRequestWithBody[Checkout](ctx, c.httpClient, c.config, "PUT", "/public/self_hosted_billing/subscription/upgrade", req, licenseKey)
 }
 
 func (c *HTTPClient) DeleteSelfHostedSubscription(ctx context.Context, licenseKey string) (*Response[interface{}], error) {

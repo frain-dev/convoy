@@ -23,9 +23,46 @@ type BillingOrganisation struct {
 	BillingState   string `json:"billing_state,omitempty"`
 	BillingZip     string `json:"billing_zip,omitempty"`
 	BillingCountry string `json:"billing_country,omitempty"`
-	CreatedAt      string `json:"created_at,omitempty"`
-	UpdatedAt      string `json:"updated_at,omitempty"`
-	DeletedAt      string `json:"deleted_at,omitempty"`
+	// TrialEligible is true when the org may still start a cloud trial (no prior
+	// trial, no existing subscription). Sent without omitempty so the dashboard
+	// can distinguish "not eligible" (false) from an older billing service that
+	// omits the field entirely. Used to stop offering a trial to an org that
+	// already trialed (e.g. after a cancelled trial).
+	TrialEligible bool `json:"trial_eligible"`
+	// TrialOffer carries the trial terms and pre-pay limits the billing service
+	// owns (duration, whether a card is required, community-tier caps). Passed
+	// through so the dashboard renders the real offer in the "Start trial" CTA
+	// instead of hardcoding copy. Nil when an older billing service omits it.
+	TrialOffer *TrialOffer `json:"trial_offer,omitempty"`
+	CreatedAt  string      `json:"created_at,omitempty"`
+	UpdatedAt  string      `json:"updated_at,omitempty"`
+	DeletedAt  string      `json:"deleted_at,omitempty"`
+}
+
+// TrialOffer mirrors the billing service's trial_offer payload. Value is sent
+// without omitempty so a real limit of 0 is preserved distinctly from an absent
+// field.
+type TrialOffer struct {
+	DurationCount int               `json:"duration_count,omitempty"`
+	DurationUnit  string            `json:"duration_unit,omitempty"`
+	DurationDays  int               `json:"duration_days,omitempty"`
+	PlanName      string            `json:"plan_name,omitempty"`
+	PlanKey       string            `json:"plan_key,omitempty"`
+	RequiresCard  bool              `json:"requires_card"`
+	Limits        []TrialOfferLimit `json:"limits,omitempty"`
+}
+
+type TrialOfferLimit struct {
+	Key   string `json:"key,omitempty"`
+	Label string `json:"label,omitempty"`
+	Value int    `json:"value"`
+}
+
+// SelfHostedCatalogResponse is the /public/self_hosted/plans envelope: plan rows
+// plus trial_offer terms the billing service owns (mirrors cloud org trial_offer).
+type SelfHostedCatalogResponse struct {
+	Plans      []Plan
+	TrialOffer *TrialOffer
 }
 
 type OrganisationLicense struct {
@@ -61,8 +98,18 @@ type OnboardSubscriptionRequest struct {
 }
 
 type UpgradeSubscriptionRequest struct {
-	PlanID string `json:"plan_id,omitempty"`
-	Host   string `json:"host,omitempty"`
+	PlanID   string `json:"plan_id,omitempty"`
+	Host     string `json:"host,omitempty"`
+	Interval string `json:"interval,omitempty"`
+}
+
+// StartTrialRequest starts a time-limited trial. All fields are optional; the
+// billing service defaults the plan (cloud_pro), interval (monthly), and trial
+// length when they are empty.
+type StartTrialRequest struct {
+	PlanID    string `json:"plan_id,omitempty"`
+	Interval  string `json:"interval,omitempty"`
+	TrialDays int    `json:"trial_days,omitempty"`
 }
 
 type Plan struct {
@@ -95,8 +142,12 @@ type BillingSubscription struct {
 	CurrentPeriodStart string `json:"current_period_start,omitempty"`
 	CurrentPeriodEnd   string `json:"current_period_end,omitempty"`
 	NextInvoiceDate    string `json:"next_invoice_date,omitempty"`
-	CreatedAt          string `json:"created_at,omitempty"`
-	UpdatedAt          string `json:"updated_at,omitempty"`
+	// Trial state from the billing service. Trial is true while the subscription is
+	// in its trial window; TrialConversionDate (ISO8601) is when it converts to paid.
+	Trial               bool   `json:"trial,omitempty"`
+	TrialConversionDate string `json:"trial_conversion_date,omitempty"`
+	CreatedAt           string `json:"created_at,omitempty"`
+	UpdatedAt           string `json:"updated_at,omitempty"`
 }
 
 type Invoice struct {
@@ -155,6 +206,18 @@ type GuestCheckoutCompletion struct {
 	LicenseKey string `json:"license_key,omitempty"`
 	CheckoutID string `json:"checkout_id,omitempty"`
 	ExternalID string `json:"external_id,omitempty"`
+}
+
+// StartSelfHostedTrialRequest asks the billing service to mint a self-hosted
+// trial. Identity follows the guest-checkout model (attempt-scoped org + billing
+// email, or license key for resubscribe). Public billing endpoint; Convoy
+// org-admin gate on /ui/billing/sh_trial/start.
+type StartSelfHostedTrialRequest struct {
+	Email            string `json:"email,omitempty"`
+	LicenseKey       string `json:"license_key,omitempty"`
+	Host             string `json:"host,omitempty"`
+	OrganisationName string `json:"organisation_name,omitempty"`
+	AttemptID        string `json:"attempt_id"`
 }
 
 type TaxIDType struct {

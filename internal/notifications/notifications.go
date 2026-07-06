@@ -23,6 +23,14 @@ const (
 	EmailNotificationType NotificationType = "email"
 )
 
+// failureRateValue returns the failure rate or 0 when it was not computed (nil).
+func failureRateValue(rate *float64) float64 {
+	if rate == nil {
+		return 0
+	}
+	return *rate
+}
+
 type Notification struct {
 	// Defines the type of notification either slack or email.
 	NotificationType NotificationType `json:"notification_type,omitempty"`
@@ -74,7 +82,7 @@ func SendEndpointNotification(
 					"target_url":      endpoint.Url,
 					"failure_msg":     failureMsg,
 					"response_body":   responseBody,
-					"failure_rate":    fmt.Sprintf("%.2f", endpoint.FailureRate),
+					"failure_rate":    fmt.Sprintf("%.2f", failureRateValue(endpoint.FailureRate)),
 					"status_code":     strconv.Itoa(statusCode),
 					"endpoint_status": string(status),
 				},

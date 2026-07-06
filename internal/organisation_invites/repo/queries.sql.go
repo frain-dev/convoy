@@ -31,6 +31,26 @@ func (q *Queries) CountPrevOrganisationInvites(ctx context.Context, arg CountPre
 	return count, err
 }
 
+const countOrganisationInvites = `-- name: CountOrganisationInvites :one
+SELECT COALESCE(COUNT(DISTINCT id), 0) AS count
+FROM convoy.organisation_invites
+WHERE organisation_id = $1
+    AND status = $2
+    AND deleted_at IS NULL
+`
+
+type CountOrganisationInvitesParams struct {
+	OrganisationID pgtype.Text
+	Status         pgtype.Text
+}
+
+func (q *Queries) CountOrganisationInvites(ctx context.Context, arg CountOrganisationInvitesParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, countOrganisationInvites, arg.OrganisationID, arg.Status)
+	var count pgtype.Int8
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createOrganisationInvite = `-- name: CreateOrganisationInvite :exec
 INSERT INTO convoy.organisation_invites (
     id,

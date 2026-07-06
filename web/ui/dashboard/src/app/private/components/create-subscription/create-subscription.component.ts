@@ -58,7 +58,8 @@ export class CreateSubscriptionComponent implements OnInit {
 				path: [null]
 			})
 		}),
-		eventTypes: this.formBuilder.group({})
+		eventTypes: this.formBuilder.group({}),
+		delivery_mode: ['at_least_once']
 	});
 
 	endpoints!: ENDPOINT[];
@@ -73,6 +74,10 @@ export class CreateSubscriptionComponent implements OnInit {
 	retryLogicTypes = [
 		{ uid: 'linear', name: 'Linear time retry' },
 		{ uid: 'exponential', name: 'Exponential time backoff' }
+	];
+	deliveryModeTypes = [
+		{ uid: 'at_least_once', name: 'At least once' },
+		{ uid: 'at_most_once', name: 'At most once' }
 	];
 	isCreatingSubscription = false;
 
@@ -168,6 +173,10 @@ export class CreateSubscriptionComponent implements OnInit {
 		} else {
 			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 		}
+		this.configurations.push({ uid: 'delivery_mode', name: 'Delivery Mode', show: false });
+
+		const deliveryMode = this.subscriptionForm.get('delivery_mode')?.value;
+		if (deliveryMode && deliveryMode !== 'at_least_once') this.toggleConfigForm('delivery_mode', true);
 
 		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
 		if (!(await this.rbacService.userCanAccess('Subscriptions|MANAGE'))) this.subscriptionForm.disable();
@@ -296,9 +305,9 @@ export class CreateSubscriptionComponent implements OnInit {
 
 			if (this.token) this.projectType = 'outgoing';
 
-			if (response.data?.function) this.toggleConfigForm('tranform_config');
+		if (response.data?.function) this.toggleConfigForm('tranform_config');
 
-			// Manually trigger change detection
+		// Manually trigger change detection
 			this.cdr.detectChanges();
 
 			return;

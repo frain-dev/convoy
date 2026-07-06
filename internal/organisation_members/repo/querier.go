@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	CountInstanceAdminUsers(ctx context.Context) (pgtype.Int8, error)
 	CountOrganisationAdminUsers(ctx context.Context) (pgtype.Int8, error)
+	CountOrganisationMembers(ctx context.Context, organisationID pgtype.Text) (pgtype.Int8, error)
 	CountPrevOrganisationMembers(ctx context.Context, arg CountPrevOrganisationMembersParams) (pgtype.Int8, error)
 	CountPrevUserOrganisations(ctx context.Context, arg CountPrevUserOrganisationsParams) (pgtype.Int8, error)
 	CountUserOrganisations(ctx context.Context, arg CountUserOrganisationsParams) (pgtype.Int8, error)

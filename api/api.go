@@ -27,6 +27,7 @@ import (
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -194,6 +195,10 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 	}
 	ensureAPIRepositories(a)
 
+	if a.TrialEvents == nil {
+		a.TrialEvents = license.NewTrialEventLimiter(a.Redis, a.Logger)
+	}
+
 	appHandler := &ApplicationHandler{A: a}
 
 	cfg, err := config.Get()
@@ -203,7 +208,7 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 	appHandler.cfg = cfg
 
-	// Resolve the billing service URL: OSS/self-hosted default to prod Overwatch
+	// Resolve the billing service URL: OSS/self-hosted default to prod billing
 	// so catalog/checkout/license management work out of the box, while cloud
 	// (API key set) keeps requiring an explicit URL (Billing.Validate fails closed
 	// otherwise). The API key, not the URL, remains the cloud/org-billing signal
@@ -342,6 +347,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 							e.Get("/", handler.GetEndpoint)
+							e.Get("/stats", handler.GetEndpointStats)
 
 							e.With(handler.RequireEnabledProject()).Use(handler.RequireEnabledProject())
 
@@ -474,7 +480,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		uiRouter.Use(middleware.JsonResponse)
 		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(handler.A.Logger), shouldAuthRoute))
 
-		uiRouter.Get("/license/features", handler.GetLicenseFeatures)
+		// Guest-listed (login/signup fetch instance features pre-auth), but a signed-in
+		// dashboard call carries a bearer token; resolve it so the handler can count the
+		// caller's orgs and gate org_limit. Without this the org gate always fails open.
+		uiRouter.With(middleware.OptionalAuth(handler.A.Logger)).Get("/license/features", handler.GetLicenseFeatures)
 
 		uiRouter.Post("/users/forgot-password", handler.ForgotPassword)
 		uiRouter.Post("/users/reset-password", handler.ResetPassword)
@@ -584,6 +593,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 								e.Get("/", handler.GetEndpoint)
+								e.Get("/stats", handler.GetEndpointStats)
 
 								e.With(handler.RequireEnabledProject()).Use(handler.RequireEnabledProject())
 
@@ -719,7 +729,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
 			billingRouter.Post("/sh_checkout/start", billingHandler.StartSelfHostedCheckout)
 			billingRouter.Post("/sh_checkout/complete", billingHandler.CompleteSelfHostedCheckout)
+			billingRouter.Post("/sh_trial/start", billingHandler.StartSelfHostedTrial)
 			billingRouter.Get("/sh_subscription", billingHandler.GetSelfHostedSubscription)
+			billingRouter.Put("/sh_subscription/upgrade", billingHandler.UpgradeSelfHostedSubscription)
 			billingRouter.Delete("/sh_subscription", billingHandler.DeleteSelfHostedSubscription)
 			billingRouter.Get("/sh_organisation", billingHandler.GetSelfHostedOrganisation)
 			billingRouter.Put("/sh_tax_id", billingHandler.UpdateSelfHostedOrganisationTaxID)
@@ -749,6 +761,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
 					billingSubRouter.Get("/", billingHandler.GetSubscriptions)
 					billingSubRouter.Post("/onboard", billingHandler.OnboardSubscription)
+					billingSubRouter.Post("/trial", billingHandler.StartTrial)
 					billingSubRouter.Put("/{subscriptionID}/upgrade", billingHandler.UpgradeSubscription)
 					billingSubRouter.Delete("/{subscriptionID}", billingHandler.DeleteSubscription)
 				})
@@ -788,6 +801,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
 			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
 			endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
+			endpointRouter.Get("/{endpointID}/stats", handler.GetEndpointStats)
 			endpointRouter.With(handler.CanManageEndpoint()).Post("/", handler.CreateEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}", handler.UpdateEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Delete("/{endpointID}", handler.DeleteEndpoint)
@@ -860,25 +874,27 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		})
 	})
 
-	if a.A.Licenser.AsynqMonitoring() {
-		router.Route("/queue", func(asynqRouter chi.Router) {
-			asynqRouter.Group(func(sessionRouter chi.Router) {
-				sessionRouter.Use(middleware.RequireAuth(handler.A.Logger))
-				sessionRouter.Post("/monitoring/session", handler.CreateQueueMonitoringSession)
-				sessionRouter.Delete("/monitoring/session", handler.RevokeQueueMonitoringSession)
-			})
-
-			rq := a.A.Queue.(*redisqueue.RedisQueue)
-			asynqRouter.Group(func(embedRouter chi.Router) {
-				embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.Cache)))
-				embedRouter.Handle("/monitoring/embed/*", rq.MonitorWithRootPath("/queue/monitoring/embed"))
-			})
-			asynqRouter.Group(func(monitorRouter chi.Router) {
-				monitorRouter.Use(middleware.RequireAuth(handler.A.Logger))
-				monitorRouter.Handle("/monitoring/*", rq.Monitor())
-			})
+	router.Route("/queue", func(asynqRouter chi.Router) {
+		asynqRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
+		asynqRouter.Group(func(sessionRouter chi.Router) {
+			sessionRouter.Use(middleware.RequireAuth(handler.A.Logger))
+			sessionRouter.Post("/monitoring/session", handler.CreateQueueMonitoringSession)
+			sessionRouter.Delete("/monitoring/session", handler.RevokeQueueMonitoringSession)
 		})
-	}
+
+		rq, ok := a.A.Queue.(*redisqueue.RedisQueue)
+		if !ok {
+			return
+		}
+		asynqRouter.Group(func(embedRouter chi.Router) {
+			embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.Redis, handler.A.Cache)))
+			embedRouter.Handle("/monitoring/embed/*", rq.MonitorWithRootPath("/queue/monitoring/embed"))
+		})
+		asynqRouter.Group(func(monitorRouter chi.Router) {
+			monitorRouter.Use(middleware.RequireAuth(handler.A.Logger))
+			monitorRouter.Handle("/monitoring/*", rq.Monitor())
+		})
+	})
 
 	router.HandleFunc("/metrics", a.metricsHandler())
 }

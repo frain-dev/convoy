@@ -57,6 +57,8 @@ func (s *Service) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.
 		HttpStatus:      pgtype.Text{String: attempt.HttpResponseCode, Valid: attempt.HttpResponseCode != ""},
 		Error:           pgtype.Text{String: attempt.Error, Valid: attempt.Error != ""},
 		Status:          pgtype.Bool{Bool: attempt.Status, Valid: true},
+		RequestedAt:     common.NullTimeToPgTimestamptz(attempt.RequestedAt),
+		RespondedAt:     common.NullTimeToPgTimestamptz(attempt.RespondedAt),
 	}
 
 	// Marshal headers to JSON bytes
@@ -337,6 +339,8 @@ BEGIN
         response_data        BYTEA,
         error                TEXT,
         status               BOOLEAN,
+        requested_at         TIMESTAMP WITH TIME ZONE,
+        responded_at         TIMESTAMP WITH TIME ZONE,
         created_at           TIMESTAMP WITH TIME ZONE default now() not null,
         updated_at           TIMESTAMP WITH TIME ZONE default now() not null,
         deleted_at           TIMESTAMP WITH TIME ZONE,
@@ -367,12 +371,12 @@ BEGIN
     INSERT INTO convoy.delivery_attempts_new (
         id, url, method, api_version, project_id, endpoint_id,
         event_delivery_id, ip_address, request_http_header, response_http_header,
-        http_status, response_data, error, status, created_at,
+        http_status, response_data, error, status, requested_at, responded_at, created_at,
         updated_at, deleted_at
     )
     SELECT id, url, method, api_version, project_id, endpoint_id,
         event_delivery_id, ip_address, request_http_header, response_http_header,
-        http_status, response_data, error, status, created_at,
+        http_status, response_data, error, status, requested_at, responded_at, created_at,
         updated_at, deleted_at
     FROM convoy.delivery_attempts;
 
@@ -435,6 +439,8 @@ begin
         response_data        BYTEA,
         error                TEXT,
         status               BOOLEAN,
+        requested_at         TIMESTAMP WITH TIME ZONE,
+        responded_at         TIMESTAMP WITH TIME ZONE,
         created_at           TIMESTAMP WITH TIME ZONE default now() not null,
         updated_at           TIMESTAMP WITH TIME ZONE default now() not null,
         deleted_at           TIMESTAMP WITH TIME ZONE
@@ -444,12 +450,12 @@ begin
     INSERT INTO convoy.delivery_attempts_new (
         id, url, method, api_version, project_id, endpoint_id,
         event_delivery_id, ip_address, request_http_header, response_http_header,
-        http_status, response_data, error, status, created_at,
+        http_status, response_data, error, status, requested_at, responded_at, created_at,
         updated_at, deleted_at
     )
     SELECT id, url, method, api_version, project_id, endpoint_id,
            event_delivery_id, ip_address, request_http_header, response_http_header,
-           http_status, response_data::bytea, error, status, created_at,
+           http_status, response_data::bytea, error, status, requested_at, responded_at, created_at,
            updated_at, deleted_at
     FROM convoy.delivery_attempts;
 
@@ -490,6 +496,7 @@ func rowToDeliveryAttempt(row interface{}) (*datastore.DeliveryAttempt, error) {
 		ipAddress, httpStatus, errorMsg                                     pgtype.Text
 		requestHeader, responseHeader, responseData                         []byte
 		status                                                              pgtype.Bool
+		requestedAt, respondedAt                                            pgtype.Timestamptz
 		createdAt, updatedAt                                                pgtype.Timestamptz
 		deletedAt                                                           pgtype.Timestamptz
 	)
@@ -511,6 +518,8 @@ func rowToDeliveryAttempt(row interface{}) (*datastore.DeliveryAttempt, error) {
 		responseData = r.ResponseData
 		errorMsg = r.Error
 		status = r.Status
+		requestedAt = r.RequestedAt
+		respondedAt = r.RespondedAt
 		createdAt = r.CreatedAt
 		updatedAt = r.UpdatedAt
 		deletedAt = r.DeletedAt
@@ -529,6 +538,8 @@ func rowToDeliveryAttempt(row interface{}) (*datastore.DeliveryAttempt, error) {
 		responseData = r.ResponseData
 		errorMsg = r.Error
 		status = r.Status
+		requestedAt = r.RequestedAt
+		respondedAt = r.RespondedAt
 		createdAt = r.CreatedAt
 		updatedAt = r.UpdatedAt
 		deletedAt = r.DeletedAt
@@ -565,6 +576,8 @@ func rowToDeliveryAttempt(row interface{}) (*datastore.DeliveryAttempt, error) {
 		ResponseDataString: string(responseData),
 		Error:              errorMsg.String,
 		Status:             status.Bool,
+		RequestedAt:        common.PgTimestamptzToNullTime(requestedAt),
+		RespondedAt:        common.PgTimestamptzToNullTime(respondedAt),
 		CreatedAt:          createdAt.Time,
 		UpdatedAt:          updatedAt.Time,
 	}

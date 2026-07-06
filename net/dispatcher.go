@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/netip"
@@ -587,7 +588,40 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64,
 	// time — see dispatcherOtelOpts in this file. Registering them here from
 	// the dispatcher's outer ctx would attach the events to the caller's
 	// (worker.task.*) span instead of the otelhttp child span where they
-	// belong, so we deliberately do not call httptrace.WithClientTrace here.
+	// belong, so we deliberately do not record span events here.
+	//
+	// The one hook we do attach captures the resolved remote address into
+	// res.IP. GotConn's RemoteAddr is the address the transport actually dialed,
+	// which is the forward proxy (not the endpoint) when one applies to this
+	// request. res.IP is meant to be the endpoint's address, so we skip
+	// recording it when a proxy applies and let it stay empty rather than
+	// persist a misleading proxy IP. GotConn also does not fire when no
+	// connection is established (DNS failure, connection refused, timeout), so
+	// res.IP stays empty on those no-response paths too. It records data only
+	// (no span events), so the span-attribution concern above does not apply.
+	recordIP := true
+	if d.transport != nil && d.transport.Proxy != nil {
+		if proxyURL, proxyErr := d.transport.Proxy(req); proxyErr == nil && proxyURL != nil {
+			recordIP = false
+		}
+	}
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &httptrace.ClientTrace{
+		GotConn: func(info httptrace.GotConnInfo) {
+			if !recordIP || info.Conn == nil {
+				return
+			}
+			addr := info.Conn.RemoteAddr()
+			if addr == nil {
+				return
+			}
+			if host, _, splitErr := net.SplitHostPort(addr.String()); splitErr == nil {
+				res.IP = host
+			} else {
+				res.IP = addr.String()
+			}
+		},
+	}))
+
 	response, err := client.Do(req)
 	if err != nil {
 		d.logger.Error("error sending request to API endpoint", "error", err)

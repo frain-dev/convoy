@@ -7,6 +7,7 @@ import {BillingOverviewComponent} from './billing-overview.component';
 import {BillingUsageComponent} from './billing-usage.component';
 import {BillingInvoicesComponent} from './billing-invoices.component';
 import {StripeElementsComponent} from './stripe-elements.component';
+import {TrialModalComponent} from './trial-modal.component';
 import {CountriesService} from 'src/app/services/countries/countries.service';
 import {CardComponent} from "../../../../components/card/card.component";
 import {
@@ -17,6 +18,7 @@ import {
     TableRowComponent
 } from "../../../../components/table/table.component";
 import {TableLoaderModule} from "../../../components/table-loader/table-loader.module";
+import {LoaderModule} from "../../../components/loader/loader.module";
 import {SkeletonLoaderComponent} from "../../../../components/skeleton-loader/skeleton-loader.component";
 import {BadgeComponent} from "../../../../components/badge/badge.component";
 import {ButtonComponent} from "../../../../components/button/button.component";
@@ -36,13 +38,12 @@ import {DialogDirective, DialogHeaderComponent} from "../../../../components/dia
         BillingPageComponent,
         BillingOverviewComponent,
         BillingUsageComponent,
-        BillingInvoicesComponent,
-        StripeElementsComponent
+        BillingInvoicesComponent
     ],
     exports: [
         BillingPageComponent,
         BillingOverviewComponent,
         BillingUsageComponent,
         BillingInvoicesComponent
-    ], imports: [CommonModule, ReactiveFormsModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent], providers: [CountriesService, provideHttpClient(withInterceptorsFromDi())] })
+    ], imports: [CommonModule, ReactiveFormsModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, LoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent, StripeElementsComponent, TrialModalComponent], providers: [CountriesService, provideHttpClient(withInterceptorsFromDi())] })
 export class BillingModule {}
