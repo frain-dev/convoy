@@ -40,7 +40,11 @@ port = int(sys.argv[1])
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     s.bind(("0.0.0.0", port))
-except OSError:
+except OSError as e:
+    # Permission denied on privileged ports (e.g. 80) is not proof that
+    # another process is listening; treat as unknown.
+    if getattr(e, "errno", None) == 13:
+        sys.exit(2)  # unknown
     sys.exit(0)  # in use
 else:
     sys.exit(1)  # free
@@ -97,13 +101,19 @@ check_ports() {
   # These are the host ports published by configs/local/docker-compose.yml.
   local required_ports=(80 5433 6432)
   local conflicts=()
+  local unknown=()
   local p
+  local rc
 
   log "Checking required ports"
 
   for p in "${required_ports[@]}"; do
-    if is_port_in_use "$p"; then
+    is_port_in_use "$p"
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
       conflicts+=("$p")
+    elif [ "$rc" -eq 2 ]; then
+      unknown+=("$p")
     fi
   done
 
@@ -120,6 +130,10 @@ If you previously started Convoy local stack:
   docker compose -f "$INSTALL_DIR/configs/local/docker-compose.yml" down
 EOF
     exit 1
+  fi
+
+  if [ "${#unknown[@]}" -gt 0 ]; then
+    warn "Could not reliably check privileged ports: ${unknown[*]} (permission denied without lsof)."
   fi
 }
 
