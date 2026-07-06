@@ -108,8 +108,11 @@ check_ports() {
   log "Checking required ports"
 
   for p in "${required_ports[@]}"; do
-    is_port_in_use "$p"
-    rc=$?
+    if is_port_in_use "$p"; then
+      rc=0
+    else
+      rc=$?
+    fi
     if [ "$rc" -eq 0 ]; then
       conflicts+=("$p")
     elif [ "$rc" -eq 2 ]; then
