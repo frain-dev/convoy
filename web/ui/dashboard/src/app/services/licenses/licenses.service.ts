@@ -254,6 +254,24 @@ export class LicensesService {
 		return `Limit reached (${current}/${this.formatLimit(limitInfo?.limit)})`;
 	}
 
+	// Compact "current/limit" for tight surfaces (e.g. sidebar pills); pair it with
+	// limitReachedMessage as the tooltip so the full copy is still reachable.
+	limitReachedCompact(limitKey: string): string {
+		const limitInfo = this.getLimitInfo(limitKey);
+		return `${limitInfo?.current ?? 0}/${this.formatLimit(limitInfo?.limit)}`;
+	}
+
+	// Pill text for tight surfaces: compact "current/limit" when the limit is reached,
+	// the upsell label ("Business") unchanged, '' when nothing to show. Pair with
+	// limitMessage as the tooltip so the full copy is still reachable.
+	limitPillText(limitKey: string): string {
+		const message = this.limitMessage(limitKey);
+		if (message && message !== 'Business') {
+			return this.limitReachedCompact(limitKey);
+		}
+		return message;
+	}
+
 	// Shared project/user limit gating copy: upsell label when the plan does not
 	// include the limit, the reached message when it is included and exhausted.
 	limitMessage(limitKey: string): string {

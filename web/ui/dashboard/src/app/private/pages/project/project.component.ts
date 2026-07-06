@@ -158,4 +158,10 @@ export class ProjectComponent implements OnInit, AfterViewInit {
 	getProjectLimitMessage(): string {
 		return this.licenseService.limitMessage('project_limit');
 	}
+
+	// Compact pill text for the project-switcher dropdown overlay: "2/2" for a reached
+	// limit, the upsell label unchanged. Full message stays available as the tooltip.
+	getProjectLimitPillText(): string {
+		return this.licenseService.limitPillText('project_limit');
+	}
 }

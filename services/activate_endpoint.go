@@ -32,5 +32,9 @@ func (s *ActivateEndpointService) Run(ctx context.Context) (*datastore.Endpoint,
 		return nil, &ServiceError{ErrMsg: "failed to activate endpoint", Err: err}
 	}
 
+	// Reflect the persisted status; returning the pre-update snapshot makes
+	// clients that trust the response render a stale "inactive".
+	endpoint.Status = datastore.ActiveEndpointStatus
+
 	return endpoint, nil
 }
