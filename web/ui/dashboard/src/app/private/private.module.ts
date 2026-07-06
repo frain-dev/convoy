@@ -19,6 +19,7 @@ import {
 import {DialogDirective} from '../components/dialog/dialog.directive';
 import {EmptyStateComponent} from '../components/empty-state/empty-state.component';
 import {PermissionDirective} from './components/permission/permission.directive';
+import {TooltipComponent} from '../components/tooltip/tooltip.component';
 
 @NgModule({
 	declarations: [PrivateComponent],
@@ -40,7 +41,8 @@ import {PermissionDirective} from './components/permission/permission.directive'
 		LabelComponent,
 		DialogDirective,
 		EmptyStateComponent,
-		PermissionDirective
+		PermissionDirective,
+		TooltipComponent
 	]
 })
 export class PrivateModule {}

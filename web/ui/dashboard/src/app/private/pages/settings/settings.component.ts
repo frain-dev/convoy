@@ -209,4 +209,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
 	getUserLimitMessage(): string {
 		return this.licenseService.limitMessage('user_limit');
 	}
+
+	// Compact pill text so the tag fits the 200px sidebar: "1/1" for a reached limit,
+	// the upsell label unchanged. Full message stays available as the tooltip.
+	getUserLimitPillText(): string {
+		return this.licenseService.limitPillText('user_limit');
+	}
 }
