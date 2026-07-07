@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/events"
-	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -21,7 +20,10 @@ const errBillingRequired = "complete billing setup to create projects: add a sub
 
 func createProjectService(h *Handler) *services.ProjectService {
 	apiKeyRepo := api_keys.New(h.A.Logger, h.A.DB)
-	projectRepo := projects.New(h.A.Logger, h.A.DB)
+	// Must be the cache-invalidating repository: ProjectService.UpdateProject
+	// persists config changes (meta events URL, signature versions, etc.) that
+	// the API and dataplane read through the "projects:<id>" cache.
+	projectRepo := h.projectRepo()
 	eventRepo := events.New(h.A.Logger, h.A.DB)
 	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 	eventTypesRepo := event_types.New(h.A.Logger, h.A.DB)
@@ -57,7 +59,7 @@ func (h *Handler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = projects.New(h.A.Logger, h.A.DB).FillProjectsStatistics(r.Context(), project)
+	err = h.projectRepo().FillProjectsStatistics(r.Context(), project)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to count project statistics", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to count project statistics", http.StatusBadRequest))
@@ -79,7 +81,7 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = projects.New(h.A.Logger, h.A.DB).DeleteProject(r.Context(), project.UID)
+	err = h.projectRepo().DeleteProject(r.Context(), project.UID)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to delete project", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete project", http.StatusBadRequest))
@@ -137,7 +139,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		}
 		limitDeps := services.OrgProjectLimitDeps{
 			BillingClient: h.A.BillingClient,
-			ProjectRepo:   projects.New(h.A.Logger, h.A.DB),
+			ProjectRepo:   h.projectRepo(),
 			Cfg:           h.A.Cfg,
 			Logger:        h.A.Logger,
 		}
@@ -215,7 +217,7 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
-	projectsList, err := projects.New(h.A.Logger, h.A.DB).LoadProjects(r.Context(), filter)
+	projectsList, err := h.projectRepo().LoadProjects(r.Context(), filter)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to load projects", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching projects", http.StatusBadRequest))

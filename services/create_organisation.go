@@ -35,6 +35,12 @@ type CreateOrganisationService struct {
 var ErrOrgLimit = errors.New("your instance has reached it's organisation limit, upgrade to create new organisations")
 
 func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organisation, error) {
+	// Fail closed with a clear error instead of a nil-pointer panic when a
+	// caller (e.g. a CLI command) forgets to wire the licenser.
+	if co.Licenser == nil {
+		return nil, &ServiceError{ErrMsg: "licenser is required to create an organisation"}
+	}
+
 	ok, err := co.Licenser.CheckOrgLimit(ctx)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}

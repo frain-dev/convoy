@@ -15,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
@@ -41,7 +40,10 @@ func (h *Handler) orgRepo() datastore.OrganisationRepository {
 }
 
 // projectRepo returns the injected project repository, falling back to a freshly
-// constructed one when none was wired (e.g. in tests).
+// constructed one when none was wired (e.g. in tests). In production wiring
+// (ensureAPIRepositories) this is the cached repository, so all project reads
+// share the "projects:<id>" cache and all writes invalidate it. Handlers must
+// use this accessor instead of constructing their own project repository.
 func (h *Handler) projectRepo() datastore.ProjectRepository {
 	if h.A.ProjectRepo != nil {
 		return h.A.ProjectRepo
@@ -95,7 +97,7 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	var project *datastore.Project
 	var err error
 
-	projectRepo := cached.NewCachedProjectRepository(projects.New(h.A.Logger, h.A.DB), h.A.Cache, 5*time.Minute, h.A.Logger)
+	projectRepo := h.projectRepo()
 
 	switch {
 	case h.IsReqWithJWT(authUser), h.IsReqWithPersonalAccessToken(authUser):
@@ -205,7 +207,7 @@ func (h *Handler) retrieveOrganisation(r *http.Request) (*datastore.Organisation
 		orgRepo := organisations.New(h.A.Logger, h.A.DB)
 		org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 	} else if projectID := chi.URLParam(r, "projectID"); projectID != "" {
-		projectRepo := projects.New(h.A.Logger, h.A.DB)
+		projectRepo := h.projectRepo()
 		var project *datastore.Project
 		project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
 		if err == nil {

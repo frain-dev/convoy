@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -33,7 +32,7 @@ func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cpk := &services.CreatePersonalAPIKeyService{
-		ProjectRepo: projects.New(h.A.Logger, h.A.DB),
+		ProjectRepo: h.projectRepo(),
 		UserRepo:    users.New(h.A.Logger, h.A.DB),
 		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		User:        user,
@@ -75,7 +74,7 @@ func (h *Handler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rvk := &services.RevokePersonalAPIKeyService{
-		ProjectRepo: projects.New(h.A.Logger, h.A.DB),
+		ProjectRepo: h.projectRepo(),
 		UserRepo:    users.New(h.A.Logger, h.A.DB),
 		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		UID:         chi.URLParam(r, "keyID"),
@@ -111,7 +110,7 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	rgp := &services.RegenerateProjectAPIKeyService{
-		ProjectRepo: projects.New(h.A.Logger, h.A.DB),
+		ProjectRepo: h.projectRepo(),
 		UserRepo:    users.New(h.A.Logger, h.A.DB),
 		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		Project:     project,

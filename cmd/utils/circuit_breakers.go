@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/projects"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -141,8 +142,14 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 				}
 			}
 
-			// Get current project configuration
-			projectRepo := projects.New(a.Logger, a.DB)
+			// Get current project configuration. The cached wrapper makes the
+			// update below invalidate "projects:<id>" so running API/worker
+			// nodes pick up the new config instead of serving the stale cache
+			// entry until the TTL expires.
+			projectRepo := datastore.ProjectRepository(projects.New(a.Logger, a.DB))
+			if a.Cache != nil {
+				projectRepo = cached.NewCachedProjectRepository(projectRepo, a.Cache, cached.DefaultProjectTTL, a.Logger)
+			}
 			project, err := projectRepo.FetchProjectByID(context.Background(), projectID)
 			if err != nil {
 				return fmt.Errorf("failed to fetch project: %v", err)

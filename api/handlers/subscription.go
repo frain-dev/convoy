@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/transform"
@@ -380,7 +379,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	us := services.UpdateSubscriptionService{
 		SubRepo:        subscriptions.New(h.A.Logger, h.A.DB),
 		EndpointRepo:   endpoints.New(h.A.Logger, h.A.DB),
-		ProjectRepo:    projects.New(h.A.Logger, h.A.DB),
+		ProjectRepo:    h.projectRepo(),
 		SourceRepo:     sources.New(h.A.Logger, h.A.DB),
 		Licenser:       h.A.Licenser,
 		ProjectId:      project.UID,

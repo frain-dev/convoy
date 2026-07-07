@@ -175,6 +175,21 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 	}
 }
 
+// Regression: the bootstrap CLI built this service without a licenser and
+// Run panicked at CheckOrgLimit. A missing licenser must be a clear error.
+func TestCreateOrganisationService_Run_NilLicenserErrors(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	os := provideCreateOrganisationService(ctrl, &datastore.OrganisationRequest{Name: "new_org"}, &datastore.User{UID: "1234"})
+	os.Licenser = nil
+
+	org, err := os.Run(context.Background())
+	require.Nil(t, org)
+	require.NotNil(t, err)
+	require.Equal(t, "licenser is required to create an organisation", err.(*ServiceError).Error())
+}
+
 func TestRunBillingOrganisationSync(t *testing.T) {
 	ctx := context.Background()
 	org := datastore.Organisation{
