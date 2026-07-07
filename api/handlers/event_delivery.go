@@ -45,7 +45,7 @@ func (h *Handler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &models.EventDeliveryResponse{EventDelivery: eventDelivery}
+	resp := models.NewEventDeliveryResponse(eventDelivery, h.canViewRawHeaders(authUser))
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
 		resp, http.StatusOK))
 }
@@ -97,7 +97,7 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &models.EventDeliveryResponse{EventDelivery: eventDelivery}
+	resp := models.NewEventDeliveryResponse(eventDelivery, h.canViewRawHeaders(authUser))
 	_ = render.Render(w, r, util.NewServerResponse("App event processed for retry successfully",
 		resp, http.StatusOK))
 }
@@ -333,8 +333,9 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	showRawHeaders := h.canViewRawHeaders(authUser)
 	resp := models.NewListResponse(ed, func(ed datastore.EventDelivery) models.EventDeliveryResponse {
-		return models.EventDeliveryResponse{EventDelivery: &ed}
+		return models.NewEventDeliveryResponse(&ed, showRawHeaders)
 	})
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries fetched successfully",

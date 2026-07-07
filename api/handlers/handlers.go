@@ -91,6 +91,18 @@ func (h *Handler) IsReqWithPortalLinkToken(authUser *auth.AuthenticatedUser) boo
 	return authUser.Credential.Type == auth.CredentialTypeToken
 }
 
+// canViewRawHeaders reports whether the caller may see unredacted request and
+// response headers on event deliveries and delivery attempts. Portal-link
+// holders are external, weakest-trust callers, so their headers stay redacted;
+// API-key and authenticated dashboard (JWT) callers see the real values.
+// Fails closed: an unknown/nil caller gets redacted headers.
+func (h *Handler) canViewRawHeaders(authUser *auth.AuthenticatedUser) bool {
+	if authUser == nil {
+		return false
+	}
+	return !h.IsReqWithPortalLinkToken(authUser)
+}
+
 func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 

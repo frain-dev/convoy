@@ -11,20 +11,35 @@ import (
 
 type EventDeliveryResponse struct {
 	*datastore.EventDelivery
+
+	// showRawHeaders, when false (the zero value), masks sensitive header values
+	// on serialization. It is only set true for higher-trust callers via
+	// NewEventDeliveryResponse, so a bare literal fails closed to redaction.
+	showRawHeaders bool
+}
+
+// NewEventDeliveryResponse wraps an event delivery for API serialization.
+// Pass showRawHeaders=true only for callers allowed to see unredacted headers
+// (API-key and authenticated dashboard callers); portal-link callers pass false.
+func NewEventDeliveryResponse(ed *datastore.EventDelivery, showRawHeaders bool) EventDeliveryResponse {
+	return EventDeliveryResponse{EventDelivery: ed, showRawHeaders: showRawHeaders}
 }
 
 // MarshalJSON redacts sensitive request header values (auth tokens, API keys,
-// cookies, signatures) before serializing an event delivery to an API client.
-// It operates on a shallow copy with a fresh redacted Headers map, so the
-// stored delivery and the headers reinjected at dispatch time keep their real
-// values; only the response view is masked.
+// cookies) before serializing an event delivery, unless the caller is allowed
+// to see raw headers. It operates on a shallow copy with a fresh Headers map,
+// so the stored delivery and the headers reinjected at dispatch time keep their
+// real values; only the response view is masked. Webhook signatures stay
+// visible either way.
 func (e EventDeliveryResponse) MarshalJSON() ([]byte, error) {
 	if e.EventDelivery == nil {
 		return []byte("null"), nil
 	}
 
 	clone := *e.EventDelivery
-	clone.Headers = m.RedactSensitiveMultiHeaders(clone.Headers)
+	if !e.showRawHeaders {
+		clone.Headers = m.RedactSensitiveMultiHeaders(clone.Headers)
+	}
 
 	return json.Marshal(&clone)
 }

@@ -41,6 +41,8 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	showRawHeaders := h.canViewRawHeaders(authUser)
+
 	if len(eventDelivery.DeliveryAttempts) > 0 {
 		deliveryAttempt, deliveryErr := findDeliveryAttempt(eventDelivery.DeliveryAttempts, deliveryAttemptID)
 		if deliveryErr != nil {
@@ -48,7 +50,7 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", models.DeliveryAttemptResponse{DeliveryAttempt: deliveryAttempt}, http.StatusOK))
+		_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", models.NewDeliveryAttemptResponse(deliveryAttempt, showRawHeaders), http.StatusOK))
 		return
 	}
 
@@ -59,7 +61,7 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", models.DeliveryAttemptResponse{DeliveryAttempt: deliveryAttempt}, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", models.NewDeliveryAttemptResponse(deliveryAttempt, showRawHeaders), http.StatusOK))
 }
 
 // GetDeliveryAttempts
@@ -97,7 +99,7 @@ func (h *Handler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 
 	eventDelivery.DeliveryAttempts = append(eventDelivery.DeliveryAttempts, attempts...)
 
-	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempts fetched successfully", models.NewDeliveryAttemptResponses(eventDelivery.DeliveryAttempts), http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempts fetched successfully", models.NewDeliveryAttemptResponses(eventDelivery.DeliveryAttempts, h.canViewRawHeaders(authUser)), http.StatusOK))
 }
 
 func findDeliveryAttempt(attempts []datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
