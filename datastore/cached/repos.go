@@ -13,6 +13,11 @@ import (
 // ProjectRepository
 // ============================================================================
 
+// DefaultProjectTTL is the shared read-through TTL for project cache entries.
+// Writers must go through CachedProjectRepository so updates and deletes
+// invalidate the "projects:<id>" key instead of waiting out this TTL.
+const DefaultProjectTTL = 5 * time.Minute
+
 type CachedProjectRepository struct {
 	inner  datastore.ProjectRepository
 	cache  cachedrepo.Cache

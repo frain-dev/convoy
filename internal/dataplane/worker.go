@@ -119,7 +119,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		}
 	}
 
-	projectRepo := cached.NewCachedProjectRepository(projects.New(opts.Logger, opts.DB), opts.Cache, 5*time.Minute, lo)
+	projectRepo := cached.NewCachedProjectRepository(projects.New(opts.Logger, opts.DB), opts.Cache, cached.DefaultProjectTTL, lo)
 	metaEventRepo := meta_events.New(opts.Logger, opts.DB)
 	endpointRepo := cached.NewCachedEndpointRepository(endpoints.New(opts.Logger, opts.DB), opts.Cache, 2*time.Minute, lo)
 	eventRepo := events.New(opts.Logger, opts.DB)

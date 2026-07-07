@@ -23,7 +23,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -51,8 +50,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 2. Retrieve source using mask ID.
-	projectRepo := projects.New(a.A.Logger, a.A.DB)
-	project, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
+	// ProjectRepo is the cached repository wired by ensureAPIRepositories.
+	project, err := a.A.ProjectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
