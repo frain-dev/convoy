@@ -289,7 +289,9 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			}
 		}
 
+		requestSentAt := time.Now()
 		resp, err := deps.Dispatcher.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)
+		responseReceivedAt := time.Now()
 
 		status := "-"
 		statusCode := 0
@@ -359,9 +361,9 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 
 		respondedAt := time.Time{}
 		if resp != nil && resp.StatusCode >= 100 {
-			respondedAt = httpDispatchStart.Add(duration)
+			respondedAt = responseReceivedAt
 		}
-		attempt = parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus, httpDispatchStart, respondedAt)
+		attempt = parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus, requestSentAt, respondedAt)
 
 		eventDelivery.Metadata.NumTrials++
 
