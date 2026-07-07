@@ -119,12 +119,13 @@ func ProcessNotifications(sc smtp.SmtpClient, dispatcher *net.Dispatcher) func(c
 				Attachments: []slack.Attachment{attachment},
 			}
 
-			// Send through the netjail-backed dispatcher client so a
-			// user-controlled slack_webhook_url cannot reach internal/private
-			// addresses (SSRF). Default slack.PostWebhookContext uses
-			// http.DefaultClient, which bypasses netjail entirely.
-			ctx = dispatcher.ContextWithRules(ctx)
-			err = slack.PostWebhookCustomHTTPContext(ctx, np.WebhookURL, dispatcher.HTTPClient(), msg)
+			// Send through the notification client, which carries an
+			// unconditional connect-time SSRF guard, so a user-controlled
+			// slack_webhook_url cannot reach internal/private addresses even on
+			// deployments without the IpRules license. Default
+			// slack.PostWebhookContext uses http.DefaultClient, which has no
+			// egress protection at all.
+			err = slack.PostWebhookCustomHTTPContext(ctx, np.WebhookURL, dispatcher.NotificationHTTPClient(), msg)
 			if err != nil {
 				return err
 			}

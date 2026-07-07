@@ -1395,3 +1395,55 @@ func TestNewDispatcherWithNoProxy(t *testing.T) {
 		require.NotNil(t, netJailTransport.New().Proxy)
 	})
 }
+
+func TestBlockPrivateNetworks(t *testing.T) {
+	tests := []struct {
+		name    string
+		address string
+		blocked bool
+	}{
+		{name: "public ipv4", address: "1.1.1.1:443", blocked: false},
+		{name: "public ipv6", address: "[2606:4700:4700::1111]:443", blocked: false},
+		{name: "loopback", address: "127.0.0.1:80", blocked: true},
+		{name: "loopback ipv6", address: "[::1]:80", blocked: true},
+		{name: "private 10/8", address: "10.0.0.5:80", blocked: true},
+		{name: "private 192.168", address: "192.168.1.10:8080", blocked: true},
+		{name: "private 172.16", address: "172.16.0.1:80", blocked: true},
+		{name: "link-local", address: "169.254.169.254:80", blocked: true},
+		{name: "unspecified", address: "0.0.0.0:80", blocked: true},
+		{name: "ipv6 ula", address: "[fd00::1]:80", blocked: true},
+		{name: "ipv4-mapped loopback", address: "[::ffff:127.0.0.1]:80", blocked: true},
+		{name: "unparseable", address: "not-an-ip:80", blocked: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := blockPrivateNetworks("tcp", tc.address, nil)
+			if tc.blocked {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestNotificationHTTPClient_HasSSRFGuard(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().IpRules().AnyTimes().Return(false)
+
+	d, err := NewDispatcher(licenser, fflag.NewFFlag(nil))
+	require.NoError(t, err)
+
+	client := d.NotificationHTTPClient()
+	require.NotNil(t, client)
+
+	// A user-controlled notification URL resolving to a private/loopback host is
+	// refused at dial time regardless of the IpRules license.
+	_, err = client.Get("http://127.0.0.1:80")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "ssrf guard")
+}

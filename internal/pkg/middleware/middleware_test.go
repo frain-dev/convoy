@@ -191,9 +191,8 @@ func TestRedactSensitiveHeaders(t *testing.T) {
 
 		result := RedactSensitiveHeaders(input)
 
-		// Long credential: only the trailing characters are revealed for debugging.
-		assert.Equal(t, "***9999", result["Authorization"])
-		// Short credentials are fully masked (nothing safe to reveal).
+		// Credentials are fully masked (fail-closed, no trailing bytes leaked).
+		assert.Equal(t, "***", result["Authorization"])
 		assert.Equal(t, "***", result["X-My-Api-Key"])
 		assert.Equal(t, "application/json", result["Content-Type"])
 		// Non-allowlisted custom header is masked (allowlist behaviour).
@@ -224,10 +223,10 @@ func TestRedactSensitiveMultiHeaders(t *testing.T) {
 
 		result := RedactSensitiveMultiHeaders(input)
 
-		assert.Equal(t, []string{"***9999"}, result["Authorization"])
+		assert.Equal(t, []string{"***"}, result["Authorization"])
 		assert.Equal(t, []string{"application/json"}, result["Content-Type"])
-		// Each value masked independently: long reveals last 4, short fully masks.
-		assert.Equal(t, []string{"***1234", "***"}, result["X-Custom"])
+		// Each value is fully masked; the value count is preserved.
+		assert.Equal(t, []string{"***", "***"}, result["X-Custom"])
 		// Signature stays visible for dashboard debugging.
 		assert.Equal(t, []string{"t=1,v1=abc"}, result["X-Convoy-Signature"])
 

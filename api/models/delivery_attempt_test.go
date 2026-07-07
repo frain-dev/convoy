@@ -34,15 +34,15 @@ func TestDeliveryAttemptResponse_MarshalJSON_RedactsRequestHeaders(t *testing.T)
 	}
 	require.NoError(t, json.Unmarshal(b, &out))
 
-	// Long credential reveals only its trailing characters; short one fully masks.
-	require.Equal(t, "***9999", out.RequestHeader["Authorization"])
+	// Sensitive credentials are fully masked (no trailing bytes leaked).
+	require.Equal(t, "***", out.RequestHeader["Authorization"])
 	require.Equal(t, "***", out.RequestHeader["X-My-Api-Key"])
 	require.Equal(t, "application/json", out.RequestHeader["Content-Type"])
 	// Signature is not a credential and stays visible for debugging.
 	require.Equal(t, "t=1,v1=abc", out.RequestHeader["X-Convoy-Signature"])
 
 	// Response headers from the endpoint are redacted too (e.g. Set-Cookie).
-	require.Equal(t, "***8888", out.ResponseHeader["Set-Cookie"])
+	require.Equal(t, "***", out.ResponseHeader["Set-Cookie"])
 	require.Equal(t, "application/json", out.ResponseHeader["Content-Type"])
 
 	// Underlying attempt is untouched so DB / dispatch values survive.
@@ -84,7 +84,7 @@ func TestNewDeliveryAttemptResponses_RedactsByPortalTrust(t *testing.T) {
 
 	redacted, err := json.Marshal(NewDeliveryAttemptResponses(attempts, false))
 	require.NoError(t, err)
-	require.Contains(t, string(redacted), "***9999")
+	require.Contains(t, string(redacted), "***")
 	require.NotContains(t, string(redacted), "Bearer live-secret-9999")
 
 	raw, err := json.Marshal(NewDeliveryAttemptResponses(attempts, true))
@@ -116,7 +116,7 @@ func TestEventDeliveryResponse_MarshalJSON_RedactsHeaders(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(b, &out))
 
-	require.Equal(t, []string{"***9999"}, out.Headers["Authorization"])
+	require.Equal(t, []string{"***"}, out.Headers["Authorization"])
 	require.Equal(t, []string{"application/json"}, out.Headers["Content-Type"])
 	require.Equal(t, []string{"t=1,v1=abc"}, out.Headers["X-Convoy-Signature"])
 

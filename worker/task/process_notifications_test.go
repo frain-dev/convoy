@@ -101,8 +101,9 @@ func TestProcessNotifications(t *testing.T) {
 				}
 			`,
 			nFn: func(client *http.Client) func() {
-				// Patch the dispatcher's client (not http.DefaultClient) since the
-				// slack POST now goes through the netjail-backed dispatcher.
+				// Patch the dispatcher's notification client (not
+				// http.DefaultClient) since the slack POST now goes through the
+				// SSRF-guarded notification client.
 				httpmock.ActivateNonDefault(client)
 
 				url := "https://hooks.slack.com/services/T00/B00/X"
@@ -186,7 +187,7 @@ func TestProcessNotifications(t *testing.T) {
 			require.NoError(t, err)
 
 			if tc.nFn != nil {
-				deferFn := tc.nFn(dispatcher.HTTPClient())
+				deferFn := tc.nFn(dispatcher.NotificationHTTPClient())
 				defer deferFn()
 			}
 

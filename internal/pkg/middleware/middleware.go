@@ -687,31 +687,20 @@ func isSensitiveResponseHeaderKey(lowerKey string) bool {
 	return isSensitiveHeaderKey(lowerKey)
 }
 
-// responseMaskRevealed is how many trailing characters of a sensitive value are
-// left visible in API responses so operators can recognize which credential was
-// used when debugging deliveries.
-const responseMaskRevealed = 4
-
-// maskSensitiveCredential partially masks a credential value for API responses:
-// it keeps the last responseMaskRevealed characters and hides the rest. Values
-// too short to reveal safely are fully masked, so short or low-entropy secrets
-// never expose a meaningful fraction of themselves. The rule is fail-closed on
-// length: the hidden portion must be at least twice the revealed portion, else
-// nothing is revealed. This is response-only; logs still fully redact via
-// headerFields.
-func maskSensitiveCredential(v string) string {
-	if len(v) < responseMaskRevealed*3 {
-		return "***"
-	}
-
-	return "***" + v[len(v)-responseMaskRevealed:]
-}
+// redactedHeaderValue fully masks a sensitive header value in API responses.
+// The value is redacted entirely (fail-closed) so a customer-injected header
+// name that holds a secret cannot leak any bytes to lower-trust portal viewers,
+// the only callers this redaction path serves (API-key and authenticated
+// dashboard callers receive raw headers). Webhook signatures are exempted
+// upstream by isSensitiveResponseHeaderKey and stay visible.
+const redactedHeaderValue = "***"
 
 // RedactSensitiveHeaders returns a copy of a single-valued header map with
-// sensitive values partially masked for API responses (auth credentials show
-// only their last few characters, webhook signatures preserved). The input map
-// is not mutated, so callers can safely redact a response view while the
-// stored/dispatched headers keep their real values. A nil input returns nil.
+// sensitive values fully masked for API responses. Redaction is allowlist
+// based: only headers on the safe allowlist (and webhook signatures) survive,
+// everything else is masked, so unknown/injected header names fail closed. The
+// input map is not mutated, so callers can safely redact a response view while
+// the stored/dispatched headers keep their real values. A nil input returns nil.
 func RedactSensitiveHeaders(header map[string]string) map[string]string {
 	if header == nil {
 		return nil
@@ -720,7 +709,7 @@ func RedactSensitiveHeaders(header map[string]string) map[string]string {
 	redacted := make(map[string]string, len(header))
 	for k, v := range header {
 		if isSensitiveResponseHeaderKey(strings.ToLower(k)) {
-			redacted[k] = maskSensitiveCredential(v)
+			redacted[k] = redactedHeaderValue
 			continue
 		}
 		redacted[k] = v
@@ -730,8 +719,8 @@ func RedactSensitiveHeaders(header map[string]string) map[string]string {
 }
 
 // RedactSensitiveMultiHeaders is the multi-valued (map[string][]string) variant
-// of RedactSensitiveHeaders. Each value is masked independently so the value
-// count is preserved. The input map is not mutated. A nil input returns nil.
+// of RedactSensitiveHeaders. Each sensitive value is fully masked while the
+// value count is preserved. The input map is not mutated. A nil input returns nil.
 func RedactSensitiveMultiHeaders(header map[string][]string) map[string][]string {
 	if header == nil {
 		return nil
@@ -741,8 +730,8 @@ func RedactSensitiveMultiHeaders(header map[string][]string) map[string][]string
 	for k, v := range header {
 		if isSensitiveResponseHeaderKey(strings.ToLower(k)) {
 			masked := make([]string, len(v))
-			for i, val := range v {
-				masked[i] = maskSensitiveCredential(val)
+			for i := range v {
+				masked[i] = redactedHeaderValue
 			}
 			redacted[k] = masked
 			continue
