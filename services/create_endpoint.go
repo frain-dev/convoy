@@ -85,6 +85,32 @@ type CreateEndpointService struct {
 	ProjectID                  string
 }
 
+func NewCreateEndpointService(
+	endpointRepo datastore.EndpointRepository,
+	projectRepo datastore.ProjectRepository,
+	licenser license.Licenser,
+	featureFlag *fflag.FFlag,
+	featureFlagFetcher fflag.FeatureFlagFetcher,
+	earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher,
+	db database.Database,
+	logger log.Logger,
+	e models.CreateEndpoint,
+	projectID string,
+) *CreateEndpointService {
+	return &CreateEndpointService{
+		EndpointRepo:               endpointRepo,
+		ProjectRepo:                projectRepo,
+		Licenser:                   licenser,
+		FeatureFlag:                featureFlag,
+		FeatureFlagFetcher:         featureFlagFetcher,
+		EarlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
+		DB:                         db,
+		Logger:                     logger,
+		E:                          e,
+		ProjectID:                  projectID,
+	}
+}
+
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
 	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
 	if err != nil {

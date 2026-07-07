@@ -27,15 +27,15 @@ func provideProjectService(ctrl *gomock.Controller) *ProjectService {
 
 	l := mocks.NewMockLicenser(ctrl)
 
-	return &ProjectService{
-		ApiKeyRepo:        apiKeyRepo,
-		ProjectRepo:       projectRepo,
-		EventRepo:         eventRepo,
-		EventDeliveryRepo: eventDeliveryRepo,
-		Licenser:          l,
-		EventTypesRepo:    eventTypesRepo,
-		Logger:            mockLogger,
-	}
+	return NewProjectService(
+		apiKeyRepo,
+		projectRepo,
+		eventRepo,
+		eventDeliveryRepo,
+		eventTypesRepo,
+		l,
+		mockLogger,
+	)
 }
 
 func TestProjectService_CreateProject(t *testing.T) {

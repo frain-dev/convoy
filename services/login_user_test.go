@@ -19,13 +19,14 @@ func provideLoginUserService(ctrl *gomock.Controller, t *testing.T, loginUser *m
 	require.NoError(t, err)
 
 	c := mocks.NewMockCache(ctrl)
-	return &LoginUserService{
-		UserRepo: mocks.NewMockUserRepository(ctrl),
-		Cache:    c,
-		JWT:      jwt.NewJwt(&config.Auth.Jwt, c),
-		Data:     loginUser,
-		Licenser: mocks.NewMockLicenser(ctrl),
-	}
+	return NewLoginUserService(
+		mocks.NewMockUserRepository(ctrl),
+		nil,
+		c,
+		jwt.NewJwt(&config.Auth.Jwt, c),
+		loginUser,
+		mocks.NewMockLicenser(ctrl),
+	)
 }
 
 func TestLoginUserService_Run(t *testing.T) {

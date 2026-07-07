@@ -35,6 +35,32 @@ type LoginUserSSOService struct {
 	Host       string
 }
 
+func NewLoginUserSSOService(
+	userRepo datastore.UserRepository,
+	orgRepo datastore.OrganisationRepository,
+	orgMemberRepo datastore.OrganisationMemberRepository,
+	jwt *jwt.Jwt,
+	configRepo datastore.ConfigurationRepository,
+	licenser license.Licenser,
+	ssoClient *service.Client,
+	logger log.Logger,
+	licenseKey string,
+	host string,
+) *LoginUserSSOService {
+	return &LoginUserSSOService{
+		UserRepo:      userRepo,
+		OrgRepo:       orgRepo,
+		OrgMemberRepo: orgMemberRepo,
+		JWT:           jwt,
+		ConfigRepo:    configRepo,
+		Licenser:      licenser,
+		SSOClient:     ssoClient,
+		Logger:        logger,
+		LicenseKey:    licenseKey,
+		Host:          host,
+	}
+}
+
 func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
 	if u.LicenseKey == "" {
 		return nil, errors.New("missing license key")
@@ -243,14 +269,15 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 		return nil, nil, &ServiceError{ErrMsg: "failed to create user", Err: err}
 	}
 
-	co := CreateOrganisationService{
-		OrgRepo:       u.OrgRepo,
-		OrgMemberRepo: u.OrgMemberRepo,
-		Licenser:      u.Licenser,
-		Logger:        u.Logger,
-		NewOrg:        &datastore.OrganisationRequest{Name: t.Data.Payload.OrganizationExternalID},
-		User:          user,
-	}
+	co := NewCreateOrganisationService(
+		u.OrgRepo,
+		u.OrgMemberRepo,
+		&datastore.OrganisationRequest{Name: t.Data.Payload.OrganizationExternalID},
+		user,
+		u.Licenser,
+		"",
+		u.Logger,
+	)
 
 	_, err = co.Run(ctx)
 	if err != nil {

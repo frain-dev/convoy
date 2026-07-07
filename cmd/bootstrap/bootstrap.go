@@ -82,14 +82,15 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			co := services.CreateOrganisationService{
-				OrgRepo:       organisations.New(a.Logger, a.DB),
-				OrgMemberRepo: organisation_members.New(a.Logger, a.DB),
-				Licenser:      a.Licenser,
-				Logger:        a.Logger,
-				NewOrg:        &datastore.OrganisationRequest{Name: "Default Organisation"},
-				User:          user,
-			}
+			co := services.NewCreateOrganisationService(
+				organisations.New(a.Logger, a.DB),
+				organisation_members.New(a.Logger, a.DB),
+				&datastore.OrganisationRequest{Name: "Default Organisation"},
+				user,
+				a.Licenser,
+				"",
+				a.Logger,
+			)
 
 			_, err = co.Run(context.Background())
 			if err != nil {

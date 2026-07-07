@@ -35,6 +35,36 @@ type UpdateEndpointService struct {
 	Project                    *datastore.Project
 }
 
+func NewUpdateEndpointService(
+	cache cache.Cache,
+	endpointRepo datastore.EndpointRepository,
+	projectRepo datastore.ProjectRepository,
+	licenser license.Licenser,
+	featureFlag *fflag.FFlag,
+	featureFlagFetcher fflag.FeatureFlagFetcher,
+	earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher,
+	db database.Database,
+	logger log.Logger,
+	e models.UpdateEndpoint,
+	endpoint *datastore.Endpoint,
+	project *datastore.Project,
+) *UpdateEndpointService {
+	return &UpdateEndpointService{
+		Cache:                      cache,
+		EndpointRepo:               endpointRepo,
+		ProjectRepo:                projectRepo,
+		Licenser:                   licenser,
+		FeatureFlag:                featureFlag,
+		FeatureFlagFetcher:         featureFlagFetcher,
+		EarlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
+		DB:                         db,
+		Logger:                     logger,
+		E:                          e,
+		Endpoint:                   endpoint,
+		Project:                    project,
+	}
+}
+
 func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
 	// Fetch the current endpoint from database first to get decrypted mTLS cert
 	endpoint, err := a.EndpointRepo.FindEndpointByID(ctx, a.Endpoint.UID, a.Project.UID)

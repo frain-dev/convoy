@@ -34,6 +34,30 @@ type UpdateSubscriptionService struct {
 	Update         *models.UpdateSubscription
 }
 
+func NewUpdateSubscriptionService(
+	subRepo datastore.SubscriptionRepository,
+	endpointRepo datastore.EndpointRepository,
+	projectRepo datastore.ProjectRepository,
+	sourceRepo datastore.SourceRepository,
+	licenser license.Licenser,
+	logger log.Logger,
+	projectId string,
+	subscriptionId string,
+	update *models.UpdateSubscription,
+) *UpdateSubscriptionService {
+	return &UpdateSubscriptionService{
+		SubRepo:        subRepo,
+		EndpointRepo:   endpointRepo,
+		ProjectRepo:    projectRepo,
+		SourceRepo:     sourceRepo,
+		Licenser:       licenser,
+		Logger:         logger,
+		ProjectId:      projectId,
+		SubscriptionId: subscriptionId,
+		Update:         update,
+	}
+}
+
 func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscription, error) {
 	subscription, err := s.SubRepo.FindSubscriptionByID(ctx, s.ProjectId, s.SubscriptionId)
 	if err != nil {

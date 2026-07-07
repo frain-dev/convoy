@@ -31,6 +31,32 @@ type ProcessInviteService struct {
 	Logger   log.Logger
 }
 
+func NewProcessInviteService(
+	queue queue.Queuer,
+	inviteRepo datastore.OrganisationInviteRepository,
+	userRepo datastore.UserRepository,
+	orgRepo datastore.OrganisationRepository,
+	orgMemberRepo datastore.OrganisationMemberRepository,
+	licenser license.Licenser,
+	token string,
+	accepted bool,
+	newUser *models.User,
+	logger log.Logger,
+) *ProcessInviteService {
+	return &ProcessInviteService{
+		Queue:         queue,
+		InviteRepo:    inviteRepo,
+		UserRepo:      userRepo,
+		OrgRepo:       orgRepo,
+		OrgMemberRepo: orgMemberRepo,
+		Licenser:      licenser,
+		Token:         token,
+		Accepted:      accepted,
+		NewUser:       newUser,
+		Logger:        logger,
+	}
+}
+
 var ErrUserLimit = errors.New("your instance has reached it's user limit, upgrade to add new users")
 var ErrUserAlreadyExist = errors.New("user already exist")
 

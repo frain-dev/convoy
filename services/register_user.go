@@ -33,6 +33,32 @@ type RegisterUserService struct {
 	Logger  log.Logger
 }
 
+func NewRegisterUserService(
+	userRepo datastore.UserRepository,
+	orgRepo datastore.OrganisationRepository,
+	orgMemberRepo datastore.OrganisationMemberRepository,
+	queue queue.Queuer,
+	jwt *jwt.Jwt,
+	configRepo datastore.ConfigurationRepository,
+	licenser license.Licenser,
+	baseURL string,
+	data *models.RegisterUser,
+	logger log.Logger,
+) *RegisterUserService {
+	return &RegisterUserService{
+		UserRepo:      userRepo,
+		OrgRepo:       orgRepo,
+		OrgMemberRepo: orgMemberRepo,
+		Queue:         queue,
+		JWT:           jwt,
+		ConfigRepo:    configRepo,
+		Licenser:      licenser,
+		BaseURL:       baseURL,
+		Data:          data,
+		Logger:        logger,
+	}
+}
+
 func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
 	ok, err := u.Licenser.CheckUserLimit(ctx)
 	if err != nil {
@@ -85,14 +111,15 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 		return nil, nil, &ServiceError{ErrMsg: "failed to create user", Err: err}
 	}
 
-	co := CreateOrganisationService{
-		OrgRepo:       u.OrgRepo,
-		OrgMemberRepo: u.OrgMemberRepo,
-		Licenser:      u.Licenser,
-		NewOrg:        &datastore.OrganisationRequest{Name: u.Data.OrganisationName},
-		User:          user,
-		Logger:        u.Logger,
-	}
+	co := NewCreateOrganisationService(
+		u.OrgRepo,
+		u.OrgMemberRepo,
+		&datastore.OrganisationRequest{Name: u.Data.OrganisationName},
+		user,
+		u.Licenser,
+		"",
+		u.Logger,
+	)
 
 	_, err = co.Run(ctx)
 	if err != nil {

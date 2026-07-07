@@ -168,17 +168,17 @@ func TestInviteUserService(t *testing.T) {
 				tt.mockDep(args, ml)
 			}
 
-			inviteService := &InviteUserService{
-				Queue:         args.queue,
-				InviteRepo:    args.inviteRepo,
-				OrgMemberRepo: args.orgMemberRepo,
-				InviteeEmail:  tt.inviteeEmail,
-				User:          tt.user,
-				Organisation:  tt.organisation,
-				Licenser:      args.Licenser,
-				Logger:        ml,
-				Role:          tt.role,
-			}
+			inviteService := NewInviteUserService(
+				args.queue,
+				args.inviteRepo,
+				args.orgMemberRepo,
+				tt.inviteeEmail,
+				tt.role,
+				tt.user,
+				tt.organisation,
+				args.Licenser,
+				ml,
+			)
 
 			// Act.
 			iv, err := inviteService.Run(context.Background())

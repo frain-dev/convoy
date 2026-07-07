@@ -31,6 +31,26 @@ type CreateSubscriptionService struct {
 	Logger          log.Logger
 }
 
+func NewCreateSubscriptionService(
+	subRepo datastore.SubscriptionRepository,
+	endpointRepo datastore.EndpointRepository,
+	sourceRepo datastore.SourceRepository,
+	project *datastore.Project,
+	newSubscription *models.CreateSubscription,
+	licenser license.Licenser,
+	logger log.Logger,
+) *CreateSubscriptionService {
+	return &CreateSubscriptionService{
+		SubRepo:         subRepo,
+		EndpointRepo:    endpointRepo,
+		SourceRepo:      sourceRepo,
+		Project:         project,
+		NewSubscription: newSubscription,
+		Licenser:        licenser,
+		Logger:          logger,
+	}
+}
+
 func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscription, error) {
 	endpoint, err := s.findEndpoint(ctx, s.NewSubscription.AppID, s.NewSubscription.EndpointID)
 	if err != nil {

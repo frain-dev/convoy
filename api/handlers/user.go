@@ -45,19 +45,18 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rs := services.RegisterUserService{
-		UserRepo:      users.New(h.A.Logger, h.A.DB),
-		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-		Queue:         h.A.Queue,
-		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
-		ConfigRepo:    h.A.ConfigRepo,
-		Licenser:      h.A.Licenser,
-		Logger:        h.A.Logger,
-
-		BaseURL: baseUrl,
-		Data:    &newUser,
-	}
+	rs := services.NewRegisterUserService(
+		users.New(h.A.Logger, h.A.DB),
+		organisations.New(h.A.Logger, h.A.DB),
+		organisation_members.New(h.A.Logger, h.A.DB),
+		h.A.Queue,
+		jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
+		h.A.ConfigRepo,
+		h.A.Licenser,
+		baseUrl,
+		&newUser,
+		h.A.Logger,
+	)
 
 	user, token, err := rs.Run(r.Context())
 	if err != nil {

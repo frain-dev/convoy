@@ -21,6 +21,24 @@ type LoginUserService struct {
 	Licenser      license.Licenser
 }
 
+func NewLoginUserService(
+	userRepo datastore.UserRepository,
+	orgMemberRepo datastore.OrganisationMemberRepository,
+	cache cache.Cache,
+	jwt *jwt.Jwt,
+	data *models.LoginUser,
+	licenser license.Licenser,
+) *LoginUserService {
+	return &LoginUserService{
+		UserRepo:      userRepo,
+		OrgMemberRepo: orgMemberRepo,
+		Cache:         cache,
+		JWT:           jwt,
+		Data:          data,
+		Licenser:      licenser,
+	}
+}
+
 func (u *LoginUserService) isPrimaryInstanceAdmin(ctx context.Context, userID string) (bool, error) {
 	// Check if multi-user mode is enabled (user_limit > 1)
 	// MultiPlayerMode is redundant - user limits handle this

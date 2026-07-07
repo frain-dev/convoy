@@ -124,14 +124,15 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orgRepo := organisations.New(h.A.Logger, h.A.DB)
-	co := services.CreateOrganisationService{
-		OrgRepo:       orgRepo,
-		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-		NewOrg:        &newOrg,
-		User:          user,
-		Licenser:      h.A.Licenser,
-		Logger:        h.A.Logger,
-	}
+	co := services.NewCreateOrganisationService(
+		orgRepo,
+		organisation_members.New(h.A.Logger, h.A.DB),
+		&newOrg,
+		user,
+		h.A.Licenser,
+		"",
+		h.A.Logger,
+	)
 
 	organisation, err := co.Run(r.Context())
 	if err != nil {

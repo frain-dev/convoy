@@ -18,19 +18,18 @@ import (
 )
 
 func provideProcessInviteService(ctrl *gomock.Controller, token string, accepted bool, newUser *models.User) *ProcessInviteService {
-	return &ProcessInviteService{
-		Queue:         mocks.NewMockQueuer(ctrl),
-		InviteRepo:    mocks.NewMockOrganisationInviteRepository(ctrl),
-		UserRepo:      mocks.NewMockUserRepository(ctrl),
-		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
-		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
-		Licenser:      mocks.NewMockLicenser(ctrl),
-		Logger:        mocks.NewMockLogger(ctrl),
-
-		Token:    token,
-		Accepted: accepted,
-		NewUser:  newUser,
-	}
+	return NewProcessInviteService(
+		mocks.NewMockQueuer(ctrl),
+		mocks.NewMockOrganisationInviteRepository(ctrl),
+		mocks.NewMockUserRepository(ctrl),
+		mocks.NewMockOrganisationRepository(ctrl),
+		mocks.NewMockOrganisationMemberRepository(ctrl),
+		mocks.NewMockLicenser(ctrl),
+		token,
+		accepted,
+		newUser,
+		mocks.NewMockLogger(ctrl),
+	)
 }
 
 func TestProcessInviteService_Run(t *testing.T) {

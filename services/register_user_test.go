@@ -20,17 +20,18 @@ func provideRegisterUserService(ctrl *gomock.Controller, t *testing.T, baseUrl s
 	require.NoError(t, err)
 
 	c := mocks.NewMockCache(ctrl)
-	return &RegisterUserService{
-		UserRepo:      mocks.NewMockUserRepository(ctrl),
-		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
-		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
-		Queue:         mocks.NewMockQueuer(ctrl),
-		Licenser:      mocks.NewMockLicenser(ctrl),
-		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, c),
-		ConfigRepo:    mocks.NewMockConfigurationRepository(ctrl),
-		BaseURL:       baseUrl,
-		Data:          loginUser,
-	}
+	return NewRegisterUserService(
+		mocks.NewMockUserRepository(ctrl),
+		mocks.NewMockOrganisationRepository(ctrl),
+		mocks.NewMockOrganisationMemberRepository(ctrl),
+		mocks.NewMockQueuer(ctrl),
+		jwt.NewJwt(&configuration.Auth.Jwt, c),
+		mocks.NewMockConfigurationRepository(ctrl),
+		mocks.NewMockLicenser(ctrl),
+		baseUrl,
+		loginUser,
+		nil,
+	)
 }
 
 func TestRegisterUserService_Run(t *testing.T) {

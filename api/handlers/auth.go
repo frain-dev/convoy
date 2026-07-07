@@ -63,17 +63,18 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	if host == "" {
 		host = configuration.Host
 	}
-	lu := services.LoginUserSSOService{
-		UserRepo:      users.New(h.A.Logger, h.A.DB),
-		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		ConfigRepo:    h.A.ConfigRepo,
-		LicenseKey:    licenseKey,
-		Host:          host,
-		Licenser:      h.A.Licenser,
-		Logger:        h.A.Logger,
-	}
+	lu := services.NewLoginUserSSOService(
+		users.New(h.A.Logger, h.A.DB),
+		organisations.New(h.A.Logger, h.A.DB),
+		organisation_members.New(h.A.Logger, h.A.DB),
+		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		h.A.ConfigRepo,
+		h.A.Licenser,
+		nil,
+		h.A.Logger,
+		licenseKey,
+		host,
+	)
 
 	resp, err := lu.Run()
 	if err != nil {
@@ -87,16 +88,18 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
-	lu := services.LoginUserSSOService{
-		UserRepo:      users.New(h.A.Logger, h.A.DB),
-		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		ConfigRepo:    h.A.ConfigRepo,
-		LicenseKey:    configuration.LicenseKey,
-		Licenser:      h.A.Licenser,
-		Logger:        h.A.Logger,
-	}
+	lu := services.NewLoginUserSSOService(
+		users.New(h.A.Logger, h.A.DB),
+		organisations.New(h.A.Logger, h.A.DB),
+		organisation_members.New(h.A.Logger, h.A.DB),
+		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		h.A.ConfigRepo,
+		h.A.Licenser,
+		nil,
+		h.A.Logger,
+		configuration.LicenseKey,
+		"",
+	)
 
 	tokenResp, err := lu.RedeemToken(r.URL.Query())
 	if err != nil {
@@ -214,14 +217,14 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lu := services.LoginUserService{
-		UserRepo:      users.New(h.A.Logger, h.A.DB),
-		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-		Cache:         h.A.Cache,
-		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		Data:          &newUser,
-		Licenser:      h.A.Licenser,
-	}
+	lu := services.NewLoginUserService(
+		users.New(h.A.Logger, h.A.DB),
+		organisation_members.New(h.A.Logger, h.A.DB),
+		h.A.Cache,
+		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		&newUser,
+		h.A.Licenser,
+	)
 
 	user, token, err := lu.Run(r.Context())
 	if err != nil {

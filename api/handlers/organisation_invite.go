@@ -53,17 +53,17 @@ func (h *Handler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	inviteService := &services.InviteUserService{
-		Queue:         h.A.Queue,
-		InviteRepo:    organisation_invites.New(h.A.Logger, h.A.DB),
-		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-		InviteeEmail:  newIV.InviteeEmail,
-		Licenser:      h.A.Licenser,
-		Role:          newIV.Role,
-		User:          user,
-		Organisation:  org,
-		Logger:        h.A.Logger,
-	}
+	inviteService := services.NewInviteUserService(
+		h.A.Queue,
+		organisation_invites.New(h.A.Logger, h.A.DB),
+		organisation_members.New(h.A.Logger, h.A.DB),
+		newIV.InviteeEmail,
+		newIV.Role,
+		user,
+		org,
+		h.A.Licenser,
+		h.A.Logger,
+	)
 
 	iv, err := inviteService.Run(r.Context())
 	if err != nil {
@@ -111,18 +111,18 @@ func (h *Handler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http
 		return
 	}
 
-	prc := services.ProcessInviteService{
-		Queue:         h.A.Queue,
-		InviteRepo:    organisation_invites.New(h.A.Logger, h.A.DB),
-		UserRepo:      users.New(h.A.Logger, h.A.DB),
-		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
-		OrgMemberRepo: organisation_members.New(h.A.Logger, h.A.DB),
-		Licenser:      h.A.Licenser,
-		Token:         token,
-		Accepted:      accepted,
-		NewUser:       newUser,
-		Logger:        h.A.Logger,
-	}
+	prc := services.NewProcessInviteService(
+		h.A.Queue,
+		organisation_invites.New(h.A.Logger, h.A.DB),
+		users.New(h.A.Logger, h.A.DB),
+		organisations.New(h.A.Logger, h.A.DB),
+		organisation_members.New(h.A.Logger, h.A.DB),
+		h.A.Licenser,
+		token,
+		accepted,
+		newUser,
+		h.A.Logger,
+	)
 
 	err = prc.Run(r.Context())
 	if err != nil {
