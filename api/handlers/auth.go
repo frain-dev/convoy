@@ -230,18 +230,20 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.A.Logger.Errorf("User login failed: %v", err)
 
-		var errMsg string
-
 		if se, ok := err.(*services.ServiceError); ok {
 			switch se.Code {
 			case services.ErrCodeLicenseExpired:
-				errMsg = se.ErrMsg
-			default:
-				errMsg = "Invalid credentials"
+				_ = render.Render(w, r, util.NewErrorResponse(se.ErrMsg, http.StatusForbidden))
+				return
+			case services.ErrCodeInternal:
+				// Server-side failures (DB, license lookup) return 5xx so a
+				// transient outage is not reported as invalid credentials.
+				_ = render.Render(w, r, util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError))
+				return
 			}
 		}
 
-		_ = render.Render(w, r, util.NewErrorResponse(errMsg, http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid credentials", http.StatusForbidden))
 
 		return
 	}
@@ -300,10 +302,18 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		// Mirror login: surface a lapsed license as 403 with the license message
 		// so the client shows the same "first admin only" screen it shows on
 		// login, instead of a generic 401 that loops back to a login which then
-		// reveals the same reason anyway. Token-validation failures stay 401.
-		if se, ok := err.(*services.ServiceError); ok && se.Code == services.ErrCodeLicenseExpired {
-			_ = render.Render(w, r, util.NewErrorResponse(se.ErrMsg, http.StatusForbidden))
-			return
+		// reveals the same reason anyway. Server-side failures (DB, token
+		// generation) return 5xx so a transient outage is not mistaken for a bad
+		// token. Token-validation failures stay 401.
+		if se, ok := err.(*services.ServiceError); ok {
+			switch se.Code {
+			case services.ErrCodeLicenseExpired:
+				_ = render.Render(w, r, util.NewErrorResponse(se.ErrMsg, http.StatusForbidden))
+				return
+			case services.ErrCodeInternal:
+				_ = render.Render(w, r, util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError))
+				return
+			}
 		}
 
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid or expired token", http.StatusUnauthorized))

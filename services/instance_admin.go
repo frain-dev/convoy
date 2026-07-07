@@ -21,7 +21,14 @@ func IsPrimaryInstanceAdmin(ctx context.Context, licenser license.Licenser, orgM
 	// Check if multi-user mode is enabled (user_limit > 1)
 	// MultiPlayerMode is redundant - user limits handle this
 	isMultiUser, err := licenser.IsMultiUserMode(ctx)
-	if err == nil && isMultiUser {
+	if err != nil {
+		// Propagate the evaluation error instead of falling through to the
+		// single-user admin checks. Swallowing it would let a transient
+		// license/cache failure be reported to the caller as a definitive
+		// "license expired" denial rather than a retryable server error.
+		return false, err
+	}
+	if isMultiUser {
 		// If multi-user mode, all users can access
 		return true, nil
 	}

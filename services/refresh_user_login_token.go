@@ -74,7 +74,7 @@ func (u *RefreshTokenService) Run(ctx context.Context) (*jwt.Token, error) {
 		}
 
 		u.Logger.ErrorContext(ctx, "failed to find user by id", "error", err)
-		return nil, &ServiceError{ErrMsg: "failed to find user by id", Err: err}
+		return nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: "failed to find user by id", Err: err}
 	}
 
 	// Enforce the same single-user-mode license gate as login. Without this a
@@ -84,7 +84,7 @@ func (u *RefreshTokenService) Run(ctx context.Context) (*jwt.Token, error) {
 	canAccess, err := IsPrimaryInstanceAdmin(ctx, u.Licenser, u.OrgMemberRepo, u.UserRepo, user.UID)
 	if err != nil {
 		u.Logger.ErrorContext(ctx, "failed to evaluate license access on refresh", "error", err)
-		return nil, &ServiceError{ErrMsg: err.Error()}
+		return nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: "failed to evaluate license access", Err: err}
 	}
 	if !canAccess {
 		return nil, &ServiceError{
@@ -95,13 +95,13 @@ func (u *RefreshTokenService) Run(ctx context.Context) (*jwt.Token, error) {
 	token, err := u.JWT.GenerateToken(user)
 	if err != nil {
 		u.Logger.ErrorContext(ctx, "failed to generate token", "error", err)
-		return nil, &ServiceError{ErrMsg: "failed to generate token", Err: err}
+		return nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: "failed to generate token", Err: err}
 	}
 
 	err = u.JWT.BlacklistToken(verified, u.Data.RefreshToken)
 	if err != nil {
 		u.Logger.ErrorContext(ctx, "failed to blacklist token", "error", err)
-		return nil, &ServiceError{ErrMsg: "failed to blacklist token", Err: err}
+		return nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: "failed to blacklist token", Err: err}
 	}
 
 	return &token, nil

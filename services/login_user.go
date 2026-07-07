@@ -45,13 +45,14 @@ func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token
 			return nil, nil, &ServiceError{ErrMsg: "invalid username or password", Err: err}
 		}
 
-		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+		// A lookup failure is server-side, not an auth denial.
+		return nil, nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: "failed to find user", Err: err}
 	}
 
 	p := datastore.Password{Plaintext: u.Data.Password, Hash: []byte(user.Password)}
 	match, err := p.Matches()
 	if err != nil {
-		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+		return nil, nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: "failed to verify password", Err: err}
 	}
 	if !match {
 		return nil, nil, &ServiceError{ErrMsg: "invalid username or password"}
@@ -60,7 +61,9 @@ func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token
 	// Check if user can access based on license status and get instance admin count
 	canAccess, err := IsPrimaryInstanceAdmin(ctx, u.Licenser, u.OrgMemberRepo, u.UserRepo, user.UID)
 	if err != nil {
-		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+		// A license-evaluation failure is server-side, not an auth denial. Code
+		// it so the handler returns 5xx instead of "invalid credentials".
+		return nil, nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: "failed to evaluate license access", Err: err}
 	}
 
 	if !canAccess {
@@ -71,7 +74,7 @@ func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token
 
 	token, err := u.JWT.GenerateToken(user)
 	if err != nil {
-		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+		return nil, nil, &ServiceError{Code: ErrCodeInternal, ErrMsg: "failed to generate token", Err: err}
 	}
 
 	return user, &token, nil

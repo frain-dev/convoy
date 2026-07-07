@@ -1431,39 +1431,55 @@ func TestBlockPrivateNetworks(t *testing.T) {
 }
 
 func TestNotificationTransport_SSRFGuardBlocksPrivate(t *testing.T) {
-	// applyControl=true (direct egress, no proxy): a user-controlled notification
+	// No proxy configured, so egress is direct: a user-controlled notification
 	// URL resolving to a private/loopback host is refused at dial time.
-	client := &http.Client{Transport: newNotificationTransport(&http.Transport{}, false, true)}
+	client := &http.Client{Transport: newNotificationTransport(&http.Transport{}, false)}
 
 	_, err := client.Get("http://127.0.0.1:9")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "ssrf guard")
 }
 
-func TestNotificationTransport_ForcesTLSVerify(t *testing.T) {
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer srv.Close()
+func TestHardenNotificationTLS(t *testing.T) {
+	// The webhook insecure_skip_verify flag must not carry into notifications.
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	hardenNotificationTLS(tr)
+	require.False(t, tr.TLSClientConfig.InsecureSkipVerify)
+	require.Equal(t, uint16(tls.VersionTLS12), tr.TLSClientConfig.MinVersion)
 
-	// Base transport carries the webhook insecure_skip_verify compat flag; the
-	// notification transport must still reject the server's self-signed cert.
-	// applyControl=false so the loopback test server is reachable.
-	base := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	client := &http.Client{Transport: newNotificationTransport(base, false, false)}
-
-	_, err := client.Get(srv.URL)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "certificate")
+	// A nil base TLS config gets a secure default.
+	tr2 := &http.Transport{}
+	hardenNotificationTLS(tr2)
+	require.NotNil(t, tr2.TLSClientConfig)
+	require.False(t, tr2.TLSClientConfig.InsecureSkipVerify)
+	require.Equal(t, uint16(tls.VersionTLS12), tr2.TLSClientConfig.MinVersion)
 }
 
-func TestTransportUsesProxy(t *testing.T) {
-	require.False(t, transportUsesProxy(&http.Transport{}))
+type ssrfRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f ssrfRoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestNotificationRoundTripper_BypassesGuardForProxyHopOnly(t *testing.T) {
+	var bypass bool
+	inner := ssrfRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		bypass, _ = req.Context().Value(ssrfBypassKey{}).(bool)
+		return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}, nil
+	})
 
 	proxyURL, _ := url.Parse("http://proxy.internal:3128")
-	withProxy := &http.Transport{Proxy: func(*http.Request) (*url.URL, error) { return proxyURL, nil }}
-	require.True(t, transportUsesProxy(withProxy))
 
-	noProxy := &http.Transport{Proxy: func(*http.Request) (*url.URL, error) { return nil, nil }}
-	require.False(t, transportUsesProxy(noProxy))
+	// Proxied request: the dial hits the trusted proxy, so the guard is bypassed.
+	proxied := &notificationRoundTripper{base: inner, proxy: func(*http.Request) (*url.URL, error) { return proxyURL, nil }}
+	req, _ := http.NewRequest(http.MethodGet, "http://hooks.slack.com", nil)
+	_, err := proxied.RoundTrip(req)
+	require.NoError(t, err)
+	require.True(t, bypass)
+
+	// Direct request (proxy returns nil, e.g. NO_PROXY): the guard stays active.
+	bypass = false
+	direct := &notificationRoundTripper{base: inner, proxy: func(*http.Request) (*url.URL, error) { return nil, nil }}
+	req2, _ := http.NewRequest(http.MethodGet, "http://internal.host", nil)
+	_, err = direct.RoundTrip(req2)
+	require.NoError(t, err)
+	require.False(t, bypass)
 }
