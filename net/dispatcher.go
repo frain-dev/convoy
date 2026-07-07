@@ -283,25 +283,62 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		d.client.Transport = NewVanillaTransport(d.transport, d.detailedTrace.Enabled)
 	}
 
-	d.notifClient = &http.Client{Transport: newNotificationTransport(d.transport, d.detailedTrace.Enabled)}
+	// Notifications dial user-controlled URLs (e.g. slack_webhook_url). Apply the
+	// connect-time SSRF guard only when egress is direct; when a forward proxy is
+	// configured, egress control is the proxy's job (as for webhook delivery) and
+	// a dial-time IP check would wrongly reject the private proxy hop.
+	d.notifClient = &http.Client{
+		Transport: newNotificationTransport(d.transport, d.detailedTrace.Enabled, !transportUsesProxy(d.transport)),
+	}
 
 	return d, nil
 }
 
-// newNotificationTransport clones the dispatcher transport and installs a
-// connect-time SSRF guard that blocks private/reserved destinations. It is used
-// for internal notification POSTs (e.g. Slack) whose target URL is
-// user-controlled. Unlike webhook delivery, notification targets must never
-// reach private/internal hosts, and this guard is unconditional: the
-// netjail-based egress filter only runs under the IpRules license, so relying on
-// it would leave a DNS->private SSRF path open on unlicensed deployments.
-func newNotificationTransport(base *http.Transport, detailedTrace bool) http.RoundTripper {
+// transportUsesProxy reports whether the transport routes a representative
+// public HTTPS request through a forward proxy (configured via ProxyOption or
+// the environment). Used to decide whether the notification client can safely
+// apply a dial-time SSRF guard, which is incompatible with a private proxy hop.
+func transportUsesProxy(t *http.Transport) bool {
+	if t.Proxy == nil {
+		return false
+	}
+	probe, err := url.Parse("https://hooks.slack.com")
+	if err != nil {
+		return false
+	}
+	proxyURL, err := t.Proxy(&http.Request{URL: probe})
+	return err == nil && proxyURL != nil
+}
+
+// newNotificationTransport clones the dispatcher transport for internal
+// notification POSTs (e.g. Slack) whose target URL is user-controlled. It always
+// enforces TLS verification regardless of the webhook insecure_skip_verify
+// compatibility flag, so notification trust cannot be weakened by that flag.
+// When applyControl is true it also installs a connect-time SSRF guard blocking
+// private/reserved destinations; on unlicensed deployments this is the only
+// egress protection, since the netjail-based filter only runs under the IpRules
+// license.
+func newNotificationTransport(base *http.Transport, detailedTrace, applyControl bool) http.RoundTripper {
 	t := base.Clone()
-	t.DialContext = (&net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-		Control:   blockPrivateNetworks,
-	}).DialContext
+
+	tlsCfg := &tls.Config{MinVersion: tls.VersionTLS12}
+	if t.TLSClientConfig != nil {
+		tlsCfg = t.TLSClientConfig.Clone()
+		tlsCfg.InsecureSkipVerify = false
+		if tlsCfg.MinVersion == 0 {
+			tlsCfg.MinVersion = tls.VersionTLS12
+		}
+	}
+	t.TLSClientConfig = tlsCfg
+
+	if applyControl {
+		t.DialContext = (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			Control:   blockPrivateNetworks,
+		}).DialContext
+	}
+
 	return otelhttp.NewTransport(t, dispatcherOtelOpts(detailedTrace)...)
 }
 

@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -1428,22 +1430,40 @@ func TestBlockPrivateNetworks(t *testing.T) {
 	}
 }
 
-func TestNotificationHTTPClient_HasSSRFGuard(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func TestNotificationTransport_SSRFGuardBlocksPrivate(t *testing.T) {
+	// applyControl=true (direct egress, no proxy): a user-controlled notification
+	// URL resolving to a private/loopback host is refused at dial time.
+	client := &http.Client{Transport: newNotificationTransport(&http.Transport{}, false, true)}
 
-	licenser := mocks.NewMockLicenser(ctrl)
-	licenser.EXPECT().IpRules().AnyTimes().Return(false)
-
-	d, err := NewDispatcher(licenser, fflag.NewFFlag(nil))
-	require.NoError(t, err)
-
-	client := d.NotificationHTTPClient()
-	require.NotNil(t, client)
-
-	// A user-controlled notification URL resolving to a private/loopback host is
-	// refused at dial time regardless of the IpRules license.
-	_, err = client.Get("http://127.0.0.1:80")
+	_, err := client.Get("http://127.0.0.1:9")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "ssrf guard")
+}
+
+func TestNotificationTransport_ForcesTLSVerify(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	// Base transport carries the webhook insecure_skip_verify compat flag; the
+	// notification transport must still reject the server's self-signed cert.
+	// applyControl=false so the loopback test server is reachable.
+	base := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	client := &http.Client{Transport: newNotificationTransport(base, false, false)}
+
+	_, err := client.Get(srv.URL)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "certificate")
+}
+
+func TestTransportUsesProxy(t *testing.T) {
+	require.False(t, transportUsesProxy(&http.Transport{}))
+
+	proxyURL, _ := url.Parse("http://proxy.internal:3128")
+	withProxy := &http.Transport{Proxy: func(*http.Request) (*url.URL, error) { return proxyURL, nil }}
+	require.True(t, transportUsesProxy(withProxy))
+
+	noProxy := &http.Transport{Proxy: func(*http.Request) (*url.URL, error) { return nil, nil }}
+	require.False(t, transportUsesProxy(noProxy))
 }
