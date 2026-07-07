@@ -1304,3 +1304,124 @@ func TestProcessRetryEventDeliveryConfig(t *testing.T) {
 		})
 	}
 }
+
+// TestProcessRetryEventDelivery_AttemptTimingReflectsWireDelay mirrors the
+// primary-path timing test for the retry worker: the recorded attempt's
+// requested_at/responded_at must bracket the real dispatch call.
+func TestProcessRetryEventDelivery_AttemptTimingReflectsWireDelay(t *testing.T) {
+	const wireDelay = 60 * time.Millisecond
+	slowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(wireDelay)
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer slowServer.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
+	msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	q := mocks.NewMockQueuer(ctrl)
+	rateLimiter := mocks.NewMockRateLimiter(ctrl)
+	attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().ProjectEnabled(gomock.Any()).Return(true).AnyTimes()
+	licenser.EXPECT().UseForwardProxy().Return(true).AnyTimes()
+	licenser.EXPECT().IpRules().Return(true).AnyTimes()
+	licenser.EXPECT().AdvancedEndpointMgmt().Return(false).AnyTimes()
+	licenser.EXPECT().CircuitBreaking().Return(false).AnyTimes()
+
+	require.NoError(t, config.LoadConfig("./testdata/Config/basic-convoy.json"))
+
+	endpointRepo.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&datastore.Endpoint{
+			UID:               "endpoint-id-1",
+			ProjectID:         "123",
+			Url:               slowServer.URL,
+			RateLimit:         10,
+			RateLimitDuration: 60,
+			Secrets:           []datastore.Secret{{Value: "secret"}},
+			Status:            datastore.ActiveEndpointStatus,
+		}, nil)
+
+	rateLimiter.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+	msgRepo.EXPECT().FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&datastore.EventDelivery{
+			UID:            "evt-del-1",
+			EndpointID:     "endpoint-id-1",
+			SubscriptionID: "sub-id-1",
+			ProjectID:      "123",
+			Metadata: &datastore.Metadata{
+				Data:            []byte(`{"event":"x"}`),
+				Raw:             `{"event":"x"}`,
+				NumTrials:       0,
+				RetryLimit:      3,
+				IntervalSeconds: 20,
+			},
+			Status:       datastore.ScheduledEventStatus,
+			DeliveryMode: datastore.AtMostOnceDeliveryMode,
+		}, nil)
+
+	projectRepo.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+		Return(&datastore.Project{
+			UID: "123",
+			Config: &datastore.ProjectConfig{
+				Signature: &datastore.SignatureConfiguration{
+					Header:   "X-Convoy-Signature",
+					Versions: []datastore.SignatureVersion{{UID: "abc", Hash: "SHA256", Encoding: datastore.HexEncoding}},
+				},
+				SSL:       &datastore.DefaultSSLConfig,
+				Strategy:  &datastore.StrategyConfiguration{Type: datastore.LinearStrategyProvider, Duration: 60, RetryCount: 3},
+				RateLimit: &datastore.DefaultRateLimitConfig,
+			},
+		}, nil)
+
+	msgRepo.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+	var captured *datastore.DeliveryAttempt
+	attemptsRepo.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, a *datastore.DeliveryAttempt) error {
+			captured = a
+			return nil
+		}).Times(1)
+
+	msgRepo.EXPECT().UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+	// Plain dispatcher: no IpRules flag, blocklist, or proxy, so the delivery
+	// reaches the loopback test server for a real, measurable round trip.
+	dispatcher, err := net.NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{}),
+		net.LoggerOption(log.New("convoy", log.LevelInfo)),
+	)
+	require.NoError(t, err)
+
+	deps := EventDeliveryProcessorDeps{
+		EndpointRepo:      endpointRepo,
+		EventDeliveryRepo: msgRepo,
+		Licenser:          licenser,
+		ProjectRepo:       projectRepo,
+		Queue:             q,
+		RateLimiter:       rateLimiter,
+		Dispatcher:        dispatcher,
+		AttemptsRepo:      attemptsRepo,
+		FeatureFlag:       fflag.NewFFlag([]string{}),
+		Logger:            log.New("convoy", log.LevelInfo),
+	}
+
+	payload, err := json.Marshal(EventDelivery{EventDeliveryID: "evt-del-1", ProjectID: "123"})
+	require.NoError(t, err)
+	task := asynq.NewTask(string(convoy.EventProcessor), payload, asynq.Queue(string(convoy.EventQueue)))
+
+	require.NoError(t, ProcessRetryEventDelivery(deps)(context.Background(), task))
+
+	require.NotNil(t, captured, "expected a delivery attempt to be created")
+	require.True(t, captured.RequestedAt.Valid, "requested_at should be set")
+	require.True(t, captured.RespondedAt.Valid, "responded_at should be set on a completed round trip")
+	require.False(t, captured.RespondedAt.Time.Before(captured.RequestedAt.Time), "responded_at must not precede requested_at")
+
+	gap := captured.RespondedAt.Time.Sub(captured.RequestedAt.Time)
+	require.GreaterOrEqual(t, gap, wireDelay/2, "responded_at - requested_at should reflect the real round trip, got %s", gap)
+}
