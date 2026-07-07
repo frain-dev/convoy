@@ -221,6 +221,13 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 	}
 
 	if e.SlackWebhookURL != nil && a.Licenser.AdvancedEndpointMgmt() {
+		// Reject a slack_webhook_url that targets loopback/private/reserved
+		// addresses (SSRF); the worker POSTs to it outside request scope.
+		if !util.IsStringEmpty(*e.SlackWebhookURL) {
+			if _, err := util.ValidateOutboundURL(*e.SlackWebhookURL, false); err != nil {
+				return nil, &ServiceError{ErrMsg: "invalid slack webhook url", Err: err}
+			}
+		}
 		endpoint.SlackWebhookURL = *e.SlackWebhookURL
 	}
 

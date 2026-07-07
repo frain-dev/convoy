@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -47,7 +48,7 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", deliveryAttempt, http.StatusOK))
+		_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", models.DeliveryAttemptResponse{DeliveryAttempt: deliveryAttempt}, http.StatusOK))
 		return
 	}
 
@@ -58,7 +59,7 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", deliveryAttempt, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", models.DeliveryAttemptResponse{DeliveryAttempt: deliveryAttempt}, http.StatusOK))
 }
 
 // GetDeliveryAttempts
@@ -96,7 +97,7 @@ func (h *Handler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 
 	eventDelivery.DeliveryAttempts = append(eventDelivery.DeliveryAttempts, attempts...)
 
-	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempts fetched successfully", eventDelivery.DeliveryAttempts, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempts fetched successfully", models.NewDeliveryAttemptResponses(eventDelivery.DeliveryAttempts), http.StatusOK))
 }
 
 func findDeliveryAttempt(attempts []datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {

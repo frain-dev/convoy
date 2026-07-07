@@ -284,16 +284,28 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rf := services.RefreshTokenService{
-		UserRepo: users.New(h.A.Logger, h.A.DB),
-		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		Data:     &refreshToken,
-		Logger:   h.A.Logger,
-	}
+	rf := services.NewRefreshTokenService(
+		users.New(h.A.Logger, h.A.DB),
+		organisation_members.New(h.A.Logger, h.A.DB),
+		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		h.A.Licenser,
+		&refreshToken,
+		h.A.Logger,
+	)
 
 	token, err := rf.Run(r.Context())
 	if err != nil {
 		h.A.Logger.Errorf("Token refresh failed: %v", err)
+
+		// Mirror login: surface a lapsed license as 403 with the license message
+		// so the client shows the same "first admin only" screen it shows on
+		// login, instead of a generic 401 that loops back to a login which then
+		// reveals the same reason anyway. Token-validation failures stay 401.
+		if se, ok := err.(*services.ServiceError); ok && se.Code == services.ErrCodeLicenseExpired {
+			_ = render.Render(w, r, util.NewErrorResponse(se.ErrMsg, http.StatusForbidden))
+			return
+		}
+
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid or expired token", http.StatusUnauthorized))
 		return
 	}

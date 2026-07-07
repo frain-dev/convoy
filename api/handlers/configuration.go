@@ -33,6 +33,8 @@ func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 			configuration.StoragePolicy.S3 = policy
 		}
 
+		redactConfigurationSecrets(configuration)
+
 		c := &models.ConfigurationResponse{
 			Configuration: configuration,
 			ApiVersion:    convoy.GetVersion(),
@@ -42,6 +44,27 @@ func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Configuration fetched successfully", configResponse, http.StatusOK))
+}
+
+// redactConfigurationSecrets strips commercial-license and checkout secrets from
+// the instance configuration before it leaves GetConfiguration. That handler is
+// served on the UI and portal-api routes to any authenticated user or portal-link
+// holder, none of which need these fields (the config UI reads only
+// analytics/signup/retention/storage). Billing management surfaces read these via
+// their own gated endpoints, so redacting here removes a license-key and
+// checkout-nonce leak without breaking any current caller.
+func redactConfigurationSecrets(c *datastore.Configuration) {
+	if c == nil {
+		return
+	}
+
+	c.LicenseKey = ""
+	c.CheckoutLicenseKey = ""
+	c.LicenseKeySource = ""
+	c.CheckoutAttempts = nil
+	c.ActiveCheckoutAttemptID = ""
+	c.CheckoutID = ""
+	c.ExternalID = ""
 }
 
 func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {

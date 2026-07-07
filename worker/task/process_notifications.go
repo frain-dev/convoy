@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/internal/email"
 	notification "github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
@@ -22,7 +23,7 @@ var ErrInvalidSlackPayload = errors.New("invalid slack payload")
 var ErrInvalidNotificationPayload = errors.New("invalid notification payload")
 var ErrInvalidNotificationType = errors.New("invalid notification type")
 
-func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *asynq.Task) error {
+func ProcessNotifications(sc smtp.SmtpClient, dispatcher *net.Dispatcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		n := &notification.Notification{}
 		err := msgpack.DecodeMsgPack(t.Payload(), &n)
@@ -118,7 +119,12 @@ func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *asynq.Task)
 				Attachments: []slack.Attachment{attachment},
 			}
 
-			err = slack.PostWebhookContext(ctx, np.WebhookURL, msg)
+			// Send through the netjail-backed dispatcher client so a
+			// user-controlled slack_webhook_url cannot reach internal/private
+			// addresses (SSRF). Default slack.PostWebhookContext uses
+			// http.DefaultClient, which bypasses netjail entirely.
+			ctx = dispatcher.ContextWithRules(ctx)
+			err = slack.PostWebhookCustomHTTPContext(ctx, np.WebhookURL, dispatcher.HTTPClient(), msg)
 			if err != nil {
 				return err
 			}

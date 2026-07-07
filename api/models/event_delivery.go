@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -10,6 +11,22 @@ import (
 
 type EventDeliveryResponse struct {
 	*datastore.EventDelivery
+}
+
+// MarshalJSON redacts sensitive request header values (auth tokens, API keys,
+// cookies, signatures) before serializing an event delivery to an API client.
+// It operates on a shallow copy with a fresh redacted Headers map, so the
+// stored delivery and the headers reinjected at dispatch time keep their real
+// values; only the response view is masked.
+func (e EventDeliveryResponse) MarshalJSON() ([]byte, error) {
+	if e.EventDelivery == nil {
+		return []byte("null"), nil
+	}
+
+	clone := *e.EventDelivery
+	clone.Headers = m.RedactSensitiveMultiHeaders(clone.Headers)
+
+	return json.Marshal(&clone)
 }
 
 var defaultPageable datastore.Pageable = datastore.Pageable{

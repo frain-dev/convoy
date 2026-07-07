@@ -10,10 +10,13 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -21,7 +24,7 @@ func TestProcessNotifications(t *testing.T) {
 	tests := []struct {
 		name          string
 		payload       string
-		nFn           func() func()
+		nFn           func(client *http.Client) func()
 		clientFn      func(sc *mocks.MockSmtpClient)
 		expectedError error
 	}{
@@ -97,8 +100,10 @@ func TestProcessNotifications(t *testing.T) {
 					}
 				}
 			`,
-			nFn: func() func() {
-				httpmock.Activate()
+			nFn: func(client *http.Client) func() {
+				// Patch the dispatcher's client (not http.DefaultClient) since the
+				// slack POST now goes through the netjail-backed dispatcher.
+				httpmock.ActivateNonDefault(client)
 
 				url := "https://hooks.slack.com/services/T00/B00/X"
 
@@ -174,8 +179,14 @@ func TestProcessNotifications(t *testing.T) {
 				tc.clientFn(sc)
 			}
 
+			// Build a dispatcher with IpRules off (vanilla transport); the slack
+			// path routes through its client so httpmock patches that client.
+			licenser := mocks.NewMockLicenser(ctrl)
+			dispatcher, err := net.NewDispatcher(licenser, fflag.NewFFlag([]string{}))
+			require.NoError(t, err)
+
 			if tc.nFn != nil {
-				deferFn := tc.nFn()
+				deferFn := tc.nFn(dispatcher.HTTPClient())
 				defer deferFn()
 			}
 
@@ -191,10 +202,10 @@ func TestProcessNotifications(t *testing.T) {
 				asynq.Queue(string(convoy.DefaultQueue)),
 				asynq.ProcessIn(job.Delay))
 
-			processFn := ProcessNotifications(sc)
+			processFn := ProcessNotifications(sc, dispatcher)
 
 			// Act.
-			err := processFn(context.Background(), task)
+			err = processFn(context.Background(), task)
 
 			// Assert.
 			assert.Equal(t, tc.expectedError, err)

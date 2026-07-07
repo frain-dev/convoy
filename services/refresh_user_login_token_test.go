@@ -24,11 +24,14 @@ func provideRefreshTokenService(ctrl *gomock.Controller, t *testing.T, data *mod
 	require.NoError(t, err)
 
 	c := mocks.NewMockCache(ctrl)
-	return &RefreshTokenService{
-		UserRepo: mocks.NewMockUserRepository(ctrl),
-		JWT:      jwt.NewJwt(&config.Auth.Jwt, c),
-		Data:     data,
-	}, c
+	return NewRefreshTokenService(
+		mocks.NewMockUserRepository(ctrl),
+		mocks.NewMockOrganisationMemberRepository(ctrl),
+		jwt.NewJwt(&config.Auth.Jwt, c),
+		mocks.NewMockLicenser(ctrl),
+		data,
+		nil,
+	), c
 }
 
 func TestRefreshTokenService_Run(t *testing.T) {
@@ -65,13 +68,41 @@ func TestRefreshTokenService_Run(t *testing.T) {
 			dbFn: func(u *RefreshTokenService, cache cache.Cache) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
 				ca, _ := cache.(*mocks.MockCache)
+				lc, _ := u.Licenser.(*mocks.MockLicenser)
 
 				us.EXPECT().FindUserByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.User{UID: "123456"}, nil)
+				lc.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
 				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
 				ca.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantConfig: true,
 			wantToken:  token{generate: true, accessToken: true, refreshToken: true},
+		},
+
+		{
+			name: "should_fail_to_refresh_when_license_expired_for_non_admin",
+			args: args{
+				ctx:   ctx,
+				user:  &datastore.User{UID: "123456"},
+				token: &models.Token{},
+			},
+			dbFn: func(u *RefreshTokenService, cache cache.Cache) {
+				us, _ := u.UserRepo.(*mocks.MockUserRepository)
+				om, _ := u.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				ca, _ := cache.(*mocks.MockCache)
+				lc, _ := u.Licenser.(*mocks.MockLicenser)
+
+				us.EXPECT().FindUserByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.User{UID: "123456"}, nil)
+				// Single-user mode: not multi-user, an instance admin exists, and
+				// this user is not it, so refresh must be denied.
+				lc.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(false, nil)
+				om.EXPECT().CountInstanceAdminUsers(gomock.Any()).Times(1).Return(int64(1), nil)
+				om.EXPECT().IsFirstInstanceAdmin(gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+				ca.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil)
+			},
+			wantToken:  token{generate: true, accessToken: true, refreshToken: true},
+			wantErr:    true,
+			wantErrMsg: "License expired",
 		},
 
 		{

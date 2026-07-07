@@ -234,8 +234,24 @@ func validateMetaEvent(c *datastore.ProjectConfig, licenser license.Licenser) er
 		return nil
 	}
 
+	// An empty type defaults to HTTP. The worker dispatches every enabled meta
+	// event as an HTTP POST to metaEvent.URL regardless of type, so the URL must
+	// be validated here (SSRF/private-IP rejection). Gating validation on
+	// type == "http" let an empty type skip it while the worker still fired the
+	// request, so normalize first, then validate.
+	if util.IsStringEmpty(string(metaEvent.Type)) {
+		metaEvent.Type = datastore.HTTPMetaEvent
+	}
+
 	if metaEvent.Type == datastore.HTTPMetaEvent {
-		url, err := util.ValidateEndpoint(metaEvent.URL, c.SSL.EnforceSecureEndpoints, licenser.CustomCertificateAuthority())
+		// SSL may be nil on the update path (create defaults it, update does not),
+		// so read enforce-secure defensively before dereferencing.
+		enforceSecure := false
+		if c.SSL != nil {
+			enforceSecure = c.SSL.EnforceSecureEndpoints
+		}
+
+		url, err := util.ValidateEndpoint(metaEvent.URL, enforceSecure, licenser.CustomCertificateAuthority())
 		if err != nil {
 			return err
 		}
