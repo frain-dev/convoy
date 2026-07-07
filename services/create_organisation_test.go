@@ -26,14 +26,15 @@ func (panicOnCreateBillingClient) CreateOrganisation(context.Context, billing.Bi
 }
 
 func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *datastore.OrganisationRequest, user *datastore.User) *CreateOrganisationService {
-	return &CreateOrganisationService{
-		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
-		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
-		Licenser:      mocks.NewMockLicenser(ctrl),
-		Logger:        log.New("convoy", log.LevelInfo),
-		NewOrg:        newOrg,
-		User:          user,
-	}
+	return NewCreateOrganisationService(
+		mocks.NewMockOrganisationRepository(ctrl),
+		mocks.NewMockOrganisationMemberRepository(ctrl),
+		newOrg,
+		user,
+		mocks.NewMockLicenser(ctrl),
+		"",
+		log.New("convoy", log.LevelInfo),
+	)
 }
 
 func TestCreateOrganisationService_Run(t *testing.T) {

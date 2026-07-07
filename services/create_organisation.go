@@ -32,6 +32,26 @@ type CreateOrganisationService struct {
 	Logger log.Logger
 }
 
+func NewCreateOrganisationService(
+	orgRepo datastore.OrganisationRepository,
+	orgMemberRepo datastore.OrganisationMemberRepository,
+	newOrg *datastore.OrganisationRequest,
+	user *datastore.User,
+	licenser license.Licenser,
+	roleType auth.RoleType,
+	logger log.Logger,
+) *CreateOrganisationService {
+	return &CreateOrganisationService{
+		OrgRepo:       orgRepo,
+		OrgMemberRepo: orgMemberRepo,
+		NewOrg:        newOrg,
+		User:          user,
+		Licenser:      licenser,
+		RoleType:      roleType,
+		Logger:        logger,
+	}
+}
+
 var ErrOrgLimit = errors.New("your instance has reached it's organisation limit, upgrade to create new organisations")
 
 func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organisation, error) {

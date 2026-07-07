@@ -30,17 +30,18 @@ func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoi
 	licenser := mocks.NewMockLicenser(ctrl)
 	licenser.EXPECT().EndpointURLTemplates().Return(false).AnyTimes()
 
-	return &CreateEndpointService{
-		EndpointRepo:               mocks.NewMockEndpointRepository(ctrl),
-		ProjectRepo:                mocks.NewMockProjectRepository(ctrl),
-		Licenser:                   licenser,
-		Logger:                     log.New("convoy", log.LevelInfo),
-		FeatureFlag:                fflag.NoopFflag(),
-		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),
-		EarlyAdopterFeatureFetcher: mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),
-		E:                          e,
-		ProjectID:                  projectID,
-	}
+	return NewCreateEndpointService(
+		mocks.NewMockEndpointRepository(ctrl),
+		mocks.NewMockProjectRepository(ctrl),
+		licenser,
+		fflag.NoopFflag(),
+		mocks.NewMockFeatureFlagFetcher(),
+		mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),
+		nil,
+		log.New("convoy", log.LevelInfo),
+		e,
+		projectID,
+	)
 }
 
 // generateTestCertificate generates a valid self-signed certificate and private key for testing

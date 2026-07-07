@@ -22,19 +22,20 @@ func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoi
 	licenser := mocks.NewMockLicenser(ctrl)
 	licenser.EXPECT().EndpointURLTemplates().Return(false).AnyTimes()
 
-	return &UpdateEndpointService{
-		Cache:                      mocks.NewMockCache(ctrl),
-		EndpointRepo:               mocks.NewMockEndpointRepository(ctrl),
-		ProjectRepo:                mocks.NewMockProjectRepository(ctrl),
-		Licenser:                   licenser,
-		FeatureFlag:                fflag.NoopFflag(),
-		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),
-		EarlyAdopterFeatureFetcher: mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),
-		Logger:                     log.New("convoy", log.LevelInfo),
-		E:                          e,
-		Endpoint:                   Endpoint,
-		Project:                    Project,
-	}
+	return NewUpdateEndpointService(
+		mocks.NewMockCache(ctrl),
+		mocks.NewMockEndpointRepository(ctrl),
+		mocks.NewMockProjectRepository(ctrl),
+		licenser,
+		fflag.NoopFflag(),
+		mocks.NewMockFeatureFlagFetcher(),
+		mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),
+		nil,
+		log.New("convoy", log.LevelInfo),
+		e,
+		Endpoint,
+		Project,
+	)
 }
 
 func TestUpdateEndpointService_Run(t *testing.T) {

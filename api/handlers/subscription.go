@@ -225,15 +225,15 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	cs := services.CreateSubscriptionService{
-		SubRepo:         subscriptions.New(h.A.Logger, h.A.DB),
-		EndpointRepo:    endpoints.New(h.A.Logger, h.A.DB),
-		SourceRepo:      sources.New(h.A.Logger, h.A.DB),
-		Licenser:        h.A.Licenser,
-		Project:         project,
-		NewSubscription: &sub,
-		Logger:          h.A.Logger,
-	}
+	cs := services.NewCreateSubscriptionService(
+		subscriptions.New(h.A.Logger, h.A.DB),
+		endpoints.New(h.A.Logger, h.A.DB),
+		sources.New(h.A.Logger, h.A.DB),
+		project,
+		&sub,
+		h.A.Licenser,
+		h.A.Logger,
+	)
 
 	subscription, err := cs.Run(r.Context())
 	if err != nil {
@@ -376,17 +376,17 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	us := services.UpdateSubscriptionService{
-		SubRepo:        subscriptions.New(h.A.Logger, h.A.DB),
-		EndpointRepo:   endpoints.New(h.A.Logger, h.A.DB),
-		ProjectRepo:    h.projectRepo(),
-		SourceRepo:     sources.New(h.A.Logger, h.A.DB),
-		Licenser:       h.A.Licenser,
-		ProjectId:      project.UID,
-		SubscriptionId: chi.URLParam(r, "subscriptionID"),
-		Update:         &update,
-		Logger:         h.A.Logger,
-	}
+	us := services.NewUpdateSubscriptionService(
+		subscriptions.New(h.A.Logger, h.A.DB),
+		endpoints.New(h.A.Logger, h.A.DB),
+		h.projectRepo(),
+		sources.New(h.A.Logger, h.A.DB),
+		h.A.Licenser,
+		h.A.Logger,
+		project.UID,
+		chi.URLParam(r, "subscriptionID"),
+		&update,
+	)
 
 	sub, err := us.Run(r.Context())
 	if err != nil {

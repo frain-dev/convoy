@@ -15,17 +15,17 @@ import (
 )
 
 func provideUpdateSubscriptionService(ctrl *gomock.Controller, projectID string, subID string, update *models.UpdateSubscription) *UpdateSubscriptionService {
-	return &UpdateSubscriptionService{
-		SubRepo:        mocks.NewMockSubscriptionRepository(ctrl),
-		EndpointRepo:   mocks.NewMockEndpointRepository(ctrl),
-		ProjectRepo:    mocks.NewMockProjectRepository(ctrl),
-		SourceRepo:     mocks.NewMockSourceRepository(ctrl),
-		Licenser:       mocks.NewMockLicenser(ctrl),
-		ProjectId:      projectID,
-		SubscriptionId: subID,
-		Update:         update,
-		Logger:         mocks.NewMockLogger(ctrl),
-	}
+	return NewUpdateSubscriptionService(
+		mocks.NewMockSubscriptionRepository(ctrl),
+		mocks.NewMockEndpointRepository(ctrl),
+		mocks.NewMockProjectRepository(ctrl),
+		mocks.NewMockSourceRepository(ctrl),
+		mocks.NewMockLicenser(ctrl),
+		mocks.NewMockLogger(ctrl),
+		projectID,
+		subID,
+		update,
+	)
 }
 
 func TestUpdateSubscriptionService_Run(t *testing.T) {

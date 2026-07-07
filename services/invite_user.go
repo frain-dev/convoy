@@ -33,6 +33,30 @@ type InviteUserService struct {
 	Logger       log.Logger
 }
 
+func NewInviteUserService(
+	queue queue.Queuer,
+	inviteRepo datastore.OrganisationInviteRepository,
+	orgMemberRepo datastore.OrganisationMemberRepository,
+	inviteeEmail string,
+	role auth.Role,
+	user *datastore.User,
+	organisation *datastore.Organisation,
+	licenser license.Licenser,
+	logger log.Logger,
+) *InviteUserService {
+	return &InviteUserService{
+		Queue:         queue,
+		InviteRepo:    inviteRepo,
+		OrgMemberRepo: orgMemberRepo,
+		InviteeEmail:  inviteeEmail,
+		Role:          role,
+		User:          user,
+		Organisation:  organisation,
+		Licenser:      licenser,
+		Logger:        logger,
+	}
+}
+
 func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationInvite, error) {
 	ok, err := iu.Licenser.CheckUserLimit(ctx)
 	if err != nil {

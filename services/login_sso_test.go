@@ -72,18 +72,18 @@ func provideLoginUserSSOService(ctrl *gomock.Controller, t *testing.T) (*LoginUs
 	ml.EXPECT().Error(gomock.Any()).AnyTimes()
 	ml.EXPECT().ErrorContext(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-	return &LoginUserSSOService{
-		UserRepo:      mocks.NewMockUserRepository(ctrl),
-		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
-		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
-		JWT:           jwtInstance,
-		ConfigRepo:    mocks.NewMockConfigurationRepository(ctrl),
-		Licenser:      mocks.NewMockLicenser(ctrl),
-		Logger:        ml,
-		SSOClient:     ssoClient,
-		LicenseKey:    "test-license-key",
-		Host:          "https://convoy.example.com",
-	}, ssoServer
+	return NewLoginUserSSOService(
+		mocks.NewMockUserRepository(ctrl),
+		mocks.NewMockOrganisationRepository(ctrl),
+		mocks.NewMockOrganisationMemberRepository(ctrl),
+		jwtInstance,
+		mocks.NewMockConfigurationRepository(ctrl),
+		mocks.NewMockLicenser(ctrl),
+		ssoClient,
+		ml,
+		"test-license-key",
+		"https://convoy.example.com",
+	), ssoServer
 }
 
 func TestLoginUserSSOService_Run(t *testing.T) {

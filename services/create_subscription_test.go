@@ -17,15 +17,15 @@ import (
 )
 
 func provideCreateSubscriptionService(ctrl *gomock.Controller, project *datastore.Project, newSub *models.CreateSubscription) *CreateSubscriptionService {
-	return &CreateSubscriptionService{
-		SubRepo:         mocks.NewMockSubscriptionRepository(ctrl),
-		EndpointRepo:    mocks.NewMockEndpointRepository(ctrl),
-		SourceRepo:      mocks.NewMockSourceRepository(ctrl),
-		Licenser:        mocks.NewMockLicenser(ctrl),
-		Logger:          mocks.NewMockLogger(ctrl),
-		Project:         project,
-		NewSubscription: newSub,
-	}
+	return NewCreateSubscriptionService(
+		mocks.NewMockSubscriptionRepository(ctrl),
+		mocks.NewMockEndpointRepository(ctrl),
+		mocks.NewMockSourceRepository(ctrl),
+		project,
+		newSub,
+		mocks.NewMockLicenser(ctrl),
+		mocks.NewMockLogger(ctrl),
+	)
 }
 
 func TestCreateSubscriptionService_Run(t *testing.T) {

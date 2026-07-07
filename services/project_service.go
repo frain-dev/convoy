@@ -27,6 +27,26 @@ type ProjectService struct {
 	Logger            log.Logger
 }
 
+func NewProjectService(
+	apiKeyRepo datastore.APIKeyRepository,
+	projectRepo datastore.ProjectRepository,
+	eventRepo datastore.EventRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	eventTypesRepo datastore.EventTypesRepository,
+	licenser license.Licenser,
+	logger log.Logger,
+) *ProjectService {
+	return &ProjectService{
+		ApiKeyRepo:        apiKeyRepo,
+		ProjectRepo:       projectRepo,
+		EventRepo:         eventRepo,
+		EventDeliveryRepo: eventDeliveryRepo,
+		EventTypesRepo:    eventTypesRepo,
+		Licenser:          licenser,
+		Logger:            logger,
+	}
+}
+
 var ErrProjectLimit = errors.New("your instance has reached it's project limit, upgrade to create more projects")
 
 func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember, skipLimitCheck bool) (*datastore.Project, *datastore.APIKeyResponse, error) {

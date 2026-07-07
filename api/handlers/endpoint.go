@@ -94,18 +94,18 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		e.OwnerID = pLink.OwnerID
 	}
 
-	ce := services.CreateEndpointService{
-		EndpointRepo:               endpointsvc.New(h.A.Logger, h.A.DB),
-		ProjectRepo:                h.projectRepo(),
-		Licenser:                   h.A.Licenser,
-		E:                          e,
-		ProjectID:                  project.UID,
-		FeatureFlag:                h.A.FFlag,
-		FeatureFlagFetcher:         h.A.FeatureFlagFetcher,
-		EarlyAdopterFeatureFetcher: h.A.EarlyAdopterFeatureFetcher,
-		DB:                         h.A.DB,
-		Logger:                     h.A.Logger,
-	}
+	ce := services.NewCreateEndpointService(
+		endpointsvc.New(h.A.Logger, h.A.DB),
+		h.projectRepo(),
+		h.A.Licenser,
+		h.A.FFlag,
+		h.A.FeatureFlagFetcher,
+		h.A.EarlyAdopterFeatureFetcher,
+		h.A.DB,
+		h.A.Logger,
+		e,
+		project.UID,
+	)
 
 	endpoint, err := ce.Run(r.Context())
 	if err != nil {
@@ -477,20 +477,20 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ce := services.UpdateEndpointService{
-		Cache:                      h.A.Cache,
-		EndpointRepo:               endpointsvc.New(h.A.Logger, h.A.DB),
-		ProjectRepo:                h.projectRepo(),
-		Licenser:                   h.A.Licenser,
-		FeatureFlag:                h.A.FFlag,
-		FeatureFlagFetcher:         h.A.FeatureFlagFetcher,
-		EarlyAdopterFeatureFetcher: h.A.EarlyAdopterFeatureFetcher,
-		DB:                         h.A.DB,
-		Logger:                     h.A.Logger,
-		E:                          e,
-		Endpoint:                   endpoint,
-		Project:                    project,
-	}
+	ce := services.NewUpdateEndpointService(
+		h.A.Cache,
+		endpointsvc.New(h.A.Logger, h.A.DB),
+		h.projectRepo(),
+		h.A.Licenser,
+		h.A.FFlag,
+		h.A.FeatureFlagFetcher,
+		h.A.EarlyAdopterFeatureFetcher,
+		h.A.DB,
+		h.A.Logger,
+		e,
+		endpoint,
+		project,
+	)
 
 	endpoint, err = ce.Run(r.Context())
 	if err != nil {

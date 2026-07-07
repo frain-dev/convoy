@@ -28,17 +28,15 @@ func createProjectService(h *Handler) *services.ProjectService {
 	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
 	eventTypesRepo := event_types.New(h.A.Logger, h.A.DB)
 
-	projectService := services.ProjectService{
-		ApiKeyRepo:        apiKeyRepo,
-		ProjectRepo:       projectRepo,
-		EventRepo:         eventRepo,
-		EventDeliveryRepo: eventDeliveryRepo,
-		EventTypesRepo:    eventTypesRepo,
-		Licenser:          h.A.Licenser,
-		Logger:            h.A.Logger,
-	}
-
-	return &projectService
+	return services.NewProjectService(
+		apiKeyRepo,
+		projectRepo,
+		eventRepo,
+		eventDeliveryRepo,
+		eventTypesRepo,
+		h.A.Licenser,
+		h.A.Logger,
+	)
 }
 
 func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {

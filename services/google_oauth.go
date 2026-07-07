@@ -164,14 +164,15 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 	}
 
 	// Create organization for the user
-	co := CreateOrganisationService{
-		OrgRepo:       g.OrgRepo,
-		OrgMemberRepo: g.OrgMemberRepo,
-		Licenser:      g.Licenser,
-		Logger:        g.Logger,
-		NewOrg:        &datastore.OrganisationRequest{Name: businessName},
-		User:          user,
-	}
+	co := NewCreateOrganisationService(
+		g.OrgRepo,
+		g.OrgMemberRepo,
+		&datastore.OrganisationRequest{Name: businessName},
+		user,
+		g.Licenser,
+		"",
+		g.Logger,
+	)
 
 	_, err = co.Run(ctx)
 	if err != nil && !errors.Is(err, ErrOrgLimit) && !errors.Is(err, ErrUserLimit) {
