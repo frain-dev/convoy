@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -38,13 +39,14 @@ func TestLoginUserService_Run(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		args       args
-		wantUser   *datastore.User
-		dbFn       func(u *LoginUserService)
-		wantConfig bool
-		wantErr    bool
-		wantErrMsg string
+		name        string
+		args        args
+		wantUser    *datastore.User
+		dbFn        func(u *LoginUserService)
+		wantConfig  bool
+		wantErr     bool
+		wantErrMsg  string
+		wantErrCode string
 	}{
 		{
 			name: "should_login_user_with_valid_credentials",
@@ -118,6 +120,35 @@ func TestLoginUserService_Run(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "invalid username or password",
 		},
+
+		{
+			name: "should_return_internal_error_when_license_eval_fails",
+			args: args{
+				ctx:  ctx,
+				user: &models.LoginUser{Username: "test@test.com", Password: "123456"},
+			},
+			dbFn: func(u *LoginUserService) {
+				us, _ := u.UserRepo.(*mocks.MockUserRepository)
+				p := &datastore.Password{Plaintext: "123456"}
+				err := p.GenerateHash()
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				us.EXPECT().FindUserByEmail(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.User{
+					UID:      "12345",
+					Email:    "test@test.com",
+					Password: string(p.Hash),
+				}, nil)
+				// License evaluation hits a transient failure; login must return a
+				// retryable server error, not "invalid credentials".
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(false, errors.New("license cache unavailable"))
+			},
+			wantErr:     true,
+			wantErrMsg:  "failed to evaluate license access",
+			wantErrCode: ErrCodeInternal,
+		},
 	}
 
 	for _, tc := range tests {
@@ -140,6 +171,9 @@ func TestLoginUserService_Run(t *testing.T) {
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				if tc.wantErrCode != "" {
+					require.Equal(t, tc.wantErrCode, err.(*ServiceError).Code)
+				}
 				return
 			}
 

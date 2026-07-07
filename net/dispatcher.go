@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/stealthrocket/netjail"
@@ -237,6 +238,7 @@ type Dispatcher struct {
 	logger        log.Logger
 	transport     *http.Transport
 	client        *http.Client
+	notifClient   *http.Client
 	rules         *netjail.Rules
 	detailedTrace DetailedTraceConfig
 }
@@ -281,7 +283,104 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		d.client.Transport = NewVanillaTransport(d.transport, d.detailedTrace.Enabled)
 	}
 
+	// Notifications dial user-controlled URLs (e.g. slack_webhook_url), so the
+	// client blocks private/reserved targets at connect time. The guard is
+	// bypassed only for the hop to a configured forward proxy (egress control is
+	// then the proxy's job, as with webhook delivery); every direct request,
+	// including NO_PROXY and hostname-only targets, is always guarded.
+	d.notifClient = &http.Client{Transport: newNotificationTransport(d.transport, d.detailedTrace.Enabled)}
+
 	return d, nil
+}
+
+// ssrfBypassKey marks a request context whose dial targets a trusted forward
+// proxy hop and should therefore skip the notification SSRF guard.
+type ssrfBypassKey struct{}
+
+// notificationRoundTripper marks requests that will traverse a forward proxy so
+// the dial-time SSRF guard skips the (trusted) proxy hop. Requests that dial the
+// target directly, including NO_PROXY and hostname-only targets, are left
+// unmarked and remain guarded. The proxy decision is per-request, so a global
+// proxy setting cannot silently disable the guard for direct-dialed targets.
+type notificationRoundTripper struct {
+	base  http.RoundTripper
+	proxy func(*http.Request) (*url.URL, error)
+}
+
+func (n *notificationRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if n.proxy != nil {
+		if proxyURL, err := n.proxy(req); err == nil && proxyURL != nil {
+			req = req.Clone(context.WithValue(req.Context(), ssrfBypassKey{}, true))
+		}
+	}
+	return n.base.RoundTrip(req)
+}
+
+// hardenNotificationTLS forces TLS verification on the notification transport
+// regardless of the webhook insecure_skip_verify compatibility flag, preserving
+// any custom-CA RootCAs. Notification targets are user-controlled and must not
+// inherit weakened transport trust.
+func hardenNotificationTLS(t *http.Transport) {
+	tlsCfg := &tls.Config{MinVersion: tls.VersionTLS12}
+	if t.TLSClientConfig != nil {
+		tlsCfg = t.TLSClientConfig.Clone()
+		tlsCfg.InsecureSkipVerify = false
+		if tlsCfg.MinVersion == 0 {
+			tlsCfg.MinVersion = tls.VersionTLS12
+		}
+	}
+	t.TLSClientConfig = tlsCfg
+}
+
+// newNotificationTransport clones the dispatcher transport for internal
+// notification POSTs (e.g. Slack) whose target URL is user-controlled. It forces
+// TLS verification and installs a connect-time SSRF guard blocking
+// private/reserved destinations; on unlicensed deployments this is the only
+// egress protection, since the netjail-based filter only runs under the IpRules
+// license. The guard is bypassed only for the proxy hop (see
+// notificationRoundTripper).
+func newNotificationTransport(base *http.Transport, detailedTrace bool) http.RoundTripper {
+	t := base.Clone()
+	hardenNotificationTLS(t)
+
+	t.DialContext = (&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+		ControlContext: func(ctx context.Context, network, address string, c syscall.RawConn) error {
+			if bypass, _ := ctx.Value(ssrfBypassKey{}).(bool); bypass {
+				return nil
+			}
+			return blockPrivateNetworks(network, address, c)
+		},
+	}).DialContext
+
+	otelTransport := otelhttp.NewTransport(t, dispatcherOtelOpts(detailedTrace)...)
+	return &notificationRoundTripper{base: otelTransport, proxy: t.Proxy}
+}
+
+// blockPrivateNetworks is a net.Dialer.Control hook that rejects connections to
+// loopback, private, link-local, unspecified, or otherwise non-global-unicast
+// addresses. It runs after DNS resolution with the concrete IP the socket is
+// about to dial, so it closes the DNS-rebinding window a write-time URL check
+// cannot. Fail-closed: an address that cannot be parsed is rejected.
+func blockPrivateNetworks(_, address string, _ syscall.RawConn) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return fmt.Errorf("ssrf guard: cannot parse dial address %q: %w", address, err)
+	}
+
+	ip, err := netip.ParseAddr(host)
+	if err != nil {
+		return fmt.Errorf("ssrf guard: cannot parse dial ip %q: %w", host, err)
+	}
+	ip = ip.Unmap()
+
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() ||
+		ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
+		return fmt.Errorf("ssrf guard: blocked connection to non-public address %s", ip)
+	}
+
+	return nil
 }
 
 // NewOAuth2Dispatcher builds a dispatcher for OAuth2 token exchange. It mirrors
@@ -304,6 +403,13 @@ func NewOAuth2Dispatcher(l license.Licenser, ff *fflag.FFlag, logger log.Logger,
 
 func (d *Dispatcher) HTTPClient() *http.Client {
 	return d.client
+}
+
+// NotificationHTTPClient returns the client used for internal notification POSTs
+// (e.g. Slack). It carries an unconditional connect-time SSRF guard, so it must
+// be used instead of HTTPClient for user-controlled notification targets.
+func (d *Dispatcher) NotificationHTTPClient() *http.Client {
+	return d.notifClient
 }
 
 func (d *Dispatcher) ContextWithRules(ctx context.Context) context.Context {

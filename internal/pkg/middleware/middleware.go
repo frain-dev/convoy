@@ -632,27 +632,9 @@ func headerFields(header http.Header) map[string]string {
 			continue
 		}
 
-		// Always redact explicitly sensitive headers, regardless of the allowlist.
-		if _, isSensitive := sensitiveHeaders[k]; isSensitive {
-			headerField[k] = "***"
-			continue
-		}
-
-		matched := false
-		for _, suffix := range sensitivePatterns {
-			if strings.HasSuffix(k, suffix) {
-				headerField[k] = "***"
-				matched = true
-				break
-			}
-		}
-
-		if matched {
-			continue
-		}
-
-		// Only log clear-text values for explicitly safe headers; redact all others.
-		if _, safe := safeHeaders[k]; !safe {
+		// Redact anything not on the safe allowlist (this also covers the
+		// explicit sensitive set and the sensitive suffix patterns).
+		if isSensitiveHeaderKey(k) {
 			headerField[k] = "***"
 			continue
 		}
@@ -665,6 +647,99 @@ func headerFields(header http.Header) map[string]string {
 	}
 
 	return headerField
+}
+
+// isSensitiveHeaderKey reports whether a header value must be redacted. It uses
+// the same allowlist as request logging: a header is redacted unless it is on
+// the explicit safe list, and any header on the sensitive list or matching a
+// sensitive suffix pattern is always redacted. The key must be lowercase.
+func isSensitiveHeaderKey(lowerKey string) bool {
+	if _, isSensitive := sensitiveHeaders[lowerKey]; isSensitive {
+		return true
+	}
+
+	for _, suffix := range sensitivePatterns {
+		if strings.HasSuffix(lowerKey, suffix) {
+			return true
+		}
+	}
+
+	if _, safe := safeHeaders[lowerKey]; !safe {
+		return true
+	}
+
+	return false
+}
+
+// isSensitiveResponseHeaderKey reports whether a header must be redacted from a
+// delivery-attempt/event-delivery API response. It mirrors isSensitiveHeaderKey
+// (used for logs) but keeps webhook signatures visible: a signature is an HMAC
+// the receiver verifies and is already sent to the endpoint on the wire, and the
+// dashboard surfaces it so users can debug signature verification. Signatures are
+// not credentials, so unlike the log path they are not masked here. Auth
+// credentials (Authorization, cookies, api keys, secrets, tokens) stay redacted.
+// The key must be lowercase.
+func isSensitiveResponseHeaderKey(lowerKey string) bool {
+	if lowerKey == "x-convoy-signature" || strings.HasSuffix(lowerKey, "-signature") {
+		return false
+	}
+
+	return isSensitiveHeaderKey(lowerKey)
+}
+
+// redactedHeaderValue fully masks a sensitive header value in API responses.
+// The value is redacted entirely (fail-closed) so a customer-injected header
+// name that holds a secret cannot leak any bytes to lower-trust portal viewers,
+// the only callers this redaction path serves (API-key and authenticated
+// dashboard callers receive raw headers). Webhook signatures are exempted
+// upstream by isSensitiveResponseHeaderKey and stay visible.
+const redactedHeaderValue = "***"
+
+// RedactSensitiveHeaders returns a copy of a single-valued header map with
+// sensitive values fully masked for API responses. Redaction is allowlist
+// based: only headers on the safe allowlist (and webhook signatures) survive,
+// everything else is masked, so unknown/injected header names fail closed. The
+// input map is not mutated, so callers can safely redact a response view while
+// the stored/dispatched headers keep their real values. A nil input returns nil.
+func RedactSensitiveHeaders(header map[string]string) map[string]string {
+	if header == nil {
+		return nil
+	}
+
+	redacted := make(map[string]string, len(header))
+	for k, v := range header {
+		if isSensitiveResponseHeaderKey(strings.ToLower(k)) {
+			redacted[k] = redactedHeaderValue
+			continue
+		}
+		redacted[k] = v
+	}
+
+	return redacted
+}
+
+// RedactSensitiveMultiHeaders is the multi-valued (map[string][]string) variant
+// of RedactSensitiveHeaders. Each sensitive value is fully masked while the
+// value count is preserved. The input map is not mutated. A nil input returns nil.
+func RedactSensitiveMultiHeaders(header map[string][]string) map[string][]string {
+	if header == nil {
+		return nil
+	}
+
+	redacted := make(map[string][]string, len(header))
+	for k, v := range header {
+		if isSensitiveResponseHeaderKey(strings.ToLower(k)) {
+			masked := make([]string, len(v))
+			for i := range v {
+				masked[i] = redactedHeaderValue
+			}
+			redacted[k] = masked
+			continue
+		}
+		redacted[k] = v
+	}
+
+	return redacted
 }
 
 func EnsurePeriod(start, end time.Time) error {

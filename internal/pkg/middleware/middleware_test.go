@@ -178,6 +178,66 @@ func TestProjectIDForInstrumentationFallsBackToURLProject(t *testing.T) {
 	assert.Equal(t, "url-project", projectIDForInstrumentation(req.WithContext(ctx)))
 }
 
+func TestRedactSensitiveHeaders(t *testing.T) {
+	t.Run("masks sensitive values and preserves safe ones without mutating input", func(t *testing.T) {
+		input := map[string]string{
+			"Authorization":      "Bearer live-secret-9999",
+			"X-My-Api-Key":       "abc",
+			"Content-Type":       "application/json",
+			"X-Custom":           "cv",
+			"X-Convoy-Signature": "t=1,v1=abc",
+			"X-Hub-Signature":    "sha1=def",
+		}
+
+		result := RedactSensitiveHeaders(input)
+
+		// Credentials are fully masked (fail-closed, no trailing bytes leaked).
+		assert.Equal(t, "***", result["Authorization"])
+		assert.Equal(t, "***", result["X-My-Api-Key"])
+		assert.Equal(t, "application/json", result["Content-Type"])
+		// Non-allowlisted custom header is masked (allowlist behaviour).
+		assert.Equal(t, "***", result["X-Custom"])
+		// Signatures are HMACs the receiver verifies (not credentials) and are
+		// surfaced in the dashboard for debugging, so they stay visible.
+		assert.Equal(t, "t=1,v1=abc", result["X-Convoy-Signature"])
+		assert.Equal(t, "sha1=def", result["X-Hub-Signature"])
+
+		// Input map must be untouched so the stored/dispatched values survive.
+		assert.Equal(t, "Bearer live-secret-9999", input["Authorization"])
+		assert.Equal(t, "abc", input["X-My-Api-Key"])
+	})
+
+	t.Run("nil input returns nil", func(t *testing.T) {
+		assert.Nil(t, RedactSensitiveHeaders(nil))
+	})
+}
+
+func TestRedactSensitiveMultiHeaders(t *testing.T) {
+	t.Run("masks sensitive values and preserves safe ones without mutating input", func(t *testing.T) {
+		input := map[string][]string{
+			"Authorization":      {"Bearer live-secret-9999"},
+			"Content-Type":       {"application/json"},
+			"X-Custom":           {"aaaaaaaa1234", "bb"},
+			"X-Convoy-Signature": {"t=1,v1=abc"},
+		}
+
+		result := RedactSensitiveMultiHeaders(input)
+
+		assert.Equal(t, []string{"***"}, result["Authorization"])
+		assert.Equal(t, []string{"application/json"}, result["Content-Type"])
+		// Each value is fully masked; the value count is preserved.
+		assert.Equal(t, []string{"***", "***"}, result["X-Custom"])
+		// Signature stays visible for dashboard debugging.
+		assert.Equal(t, []string{"t=1,v1=abc"}, result["X-Convoy-Signature"])
+
+		assert.Equal(t, []string{"Bearer live-secret-9999"}, input["Authorization"])
+	})
+
+	t.Run("nil input returns nil", func(t *testing.T) {
+		assert.Nil(t, RedactSensitiveMultiHeaders(nil))
+	})
+}
+
 func TestSensitiveHeaderValuesNeverLogged(t *testing.T) {
 	rawValue := "super-secret-value-that-must-not-be-logged"
 

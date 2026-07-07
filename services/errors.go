@@ -5,6 +5,10 @@ import "errors"
 const (
 	ErrCodeAuthInvalid    = "auth.invalid"
 	ErrCodeLicenseExpired = "license.expired"
+	// ErrCodeInternal marks a server-side failure (DB/repository, token
+	// generation, etc.) so handlers can distinguish it from an auth failure and
+	// return 5xx instead of a misleading 401.
+	ErrCodeInternal = "internal"
 )
 
 const (

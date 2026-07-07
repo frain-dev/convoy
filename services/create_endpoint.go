@@ -164,6 +164,15 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		endpoint.SlackWebhookURL = ""
 	}
 
+	// Reject a slack_webhook_url that targets loopback/private/reserved
+	// addresses (SSRF). The worker POSTs failure notifications to this URL, so it
+	// must pass the same outbound-URL guard as delivery endpoints.
+	if !util.IsStringEmpty(endpoint.SlackWebhookURL) {
+		if _, err := util.ValidateOutboundURL(endpoint.SlackWebhookURL, false); err != nil {
+			return nil, &ServiceError{ErrMsg: "invalid slack webhook url", Err: err}
+		}
+	}
+
 	if util.IsStringEmpty(endpoint.AppID) {
 		endpoint.AppID = endpoint.UID
 	}

@@ -17,7 +17,14 @@ import (
 	"github.com/frain-dev/convoy/config"
 )
 
-func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
+// ValidateOutboundURL validates that a user-supplied outbound URL is well formed
+// and does not target loopback, private, or link-local addresses. It performs no
+// network I/O, so it is safe for URLs that only accept POST (e.g. Slack webhooks)
+// and cannot be pinged. It returns the normalized URL.
+//
+// Note: this rejects IP-literal SSRF targets at write time. DNS names that
+// resolve to private IPs are caught at dispatch time by the netjail dispatcher.
+func ValidateOutboundURL(s string, enforceSecure bool) (string, error) {
 	if IsStringEmpty(s) {
 		return "", errors.New("please provide the endpoint url")
 	}
@@ -48,6 +55,27 @@ func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
 			return "", errors.New("only https endpoints allowed")
 		}
 	case "https":
+	default:
+		return "", errors.New("invalid endpoint scheme")
+	}
+
+	return u.String(), nil
+}
+
+func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
+	normalized, err := ValidateOutboundURL(s, enforceSecure)
+	if err != nil {
+		return "", err
+	}
+
+	u, err := url.Parse(normalized)
+	if err != nil {
+		return "", err
+	}
+
+	// Scheme, host, and IP-literal checks were done by ValidateOutboundURL. For
+	// https, additionally ping to verify the TLS endpoint is reachable/valid.
+	if u.Scheme == "https" {
 		var tlsConfig *tls.Config
 		if customCA {
 			tlsConfig, err = config.GetCaCert()
@@ -84,8 +112,6 @@ func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
 				fmt.Println("failed to close response body")
 			}
 		}(resp.Body)
-	default:
-		return "", errors.New("invalid endpoint scheme")
 	}
 
 	return u.String(), nil

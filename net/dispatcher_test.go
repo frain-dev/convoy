@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -1394,4 +1396,90 @@ func TestNewDispatcherWithNoProxy(t *testing.T) {
 		require.NotNil(t, netJailTransport)
 		require.NotNil(t, netJailTransport.New().Proxy)
 	})
+}
+
+func TestBlockPrivateNetworks(t *testing.T) {
+	tests := []struct {
+		name    string
+		address string
+		blocked bool
+	}{
+		{name: "public ipv4", address: "1.1.1.1:443", blocked: false},
+		{name: "public ipv6", address: "[2606:4700:4700::1111]:443", blocked: false},
+		{name: "loopback", address: "127.0.0.1:80", blocked: true},
+		{name: "loopback ipv6", address: "[::1]:80", blocked: true},
+		{name: "private 10/8", address: "10.0.0.5:80", blocked: true},
+		{name: "private 192.168", address: "192.168.1.10:8080", blocked: true},
+		{name: "private 172.16", address: "172.16.0.1:80", blocked: true},
+		{name: "link-local", address: "169.254.169.254:80", blocked: true},
+		{name: "unspecified", address: "0.0.0.0:80", blocked: true},
+		{name: "ipv6 ula", address: "[fd00::1]:80", blocked: true},
+		{name: "ipv4-mapped loopback", address: "[::ffff:127.0.0.1]:80", blocked: true},
+		{name: "unparseable", address: "not-an-ip:80", blocked: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := blockPrivateNetworks("tcp", tc.address, nil)
+			if tc.blocked {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestNotificationTransport_SSRFGuardBlocksPrivate(t *testing.T) {
+	// No proxy configured, so egress is direct: a user-controlled notification
+	// URL resolving to a private/loopback host is refused at dial time.
+	client := &http.Client{Transport: newNotificationTransport(&http.Transport{}, false)}
+
+	_, err := client.Get("http://127.0.0.1:9")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "ssrf guard")
+}
+
+func TestHardenNotificationTLS(t *testing.T) {
+	// The webhook insecure_skip_verify flag must not carry into notifications.
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	hardenNotificationTLS(tr)
+	require.False(t, tr.TLSClientConfig.InsecureSkipVerify)
+	require.Equal(t, uint16(tls.VersionTLS12), tr.TLSClientConfig.MinVersion)
+
+	// A nil base TLS config gets a secure default.
+	tr2 := &http.Transport{}
+	hardenNotificationTLS(tr2)
+	require.NotNil(t, tr2.TLSClientConfig)
+	require.False(t, tr2.TLSClientConfig.InsecureSkipVerify)
+	require.Equal(t, uint16(tls.VersionTLS12), tr2.TLSClientConfig.MinVersion)
+}
+
+type ssrfRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f ssrfRoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestNotificationRoundTripper_BypassesGuardForProxyHopOnly(t *testing.T) {
+	var bypass bool
+	inner := ssrfRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		bypass, _ = req.Context().Value(ssrfBypassKey{}).(bool)
+		return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}, nil
+	})
+
+	proxyURL, _ := url.Parse("http://proxy.internal:3128")
+
+	// Proxied request: the dial hits the trusted proxy, so the guard is bypassed.
+	proxied := &notificationRoundTripper{base: inner, proxy: func(*http.Request) (*url.URL, error) { return proxyURL, nil }}
+	req, _ := http.NewRequest(http.MethodGet, "http://hooks.slack.com", nil)
+	_, err := proxied.RoundTrip(req)
+	require.NoError(t, err)
+	require.True(t, bypass)
+
+	// Direct request (proxy returns nil, e.g. NO_PROXY): the guard stays active.
+	bypass = false
+	direct := &notificationRoundTripper{base: inner, proxy: func(*http.Request) (*url.URL, error) { return nil, nil }}
+	req2, _ := http.NewRequest(http.MethodGet, "http://internal.host", nil)
+	_, err = direct.RoundTrip(req2)
+	require.NoError(t, err)
+	require.False(t, bypass)
 }
