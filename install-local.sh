@@ -17,6 +17,7 @@ SELECTED_PGBOUNCER_PORT=""
 SELECTED_HOST_URL=""
 COMPOSE_BASE_FILE=""
 COMPOSE_RENDERED_FILE=""
+USED_HOST_PORTS=()
 
 log() {
   printf "\n==> %s\n" "$1"
@@ -116,6 +117,12 @@ find_available_port() {
   local i=0
 
   while [ "$i" -lt "$max_tries" ]; do
+    if is_reserved_port "$candidate"; then
+      candidate=$((candidate + 1))
+      i=$((i + 1))
+      continue
+    fi
+
     if is_port_in_use "$candidate"; then
       : # occupied
     else
@@ -136,17 +143,36 @@ find_available_port() {
   return 1
 }
 
+is_reserved_port() {
+  local port="$1"
+  local used
+  for used in "${USED_HOST_PORTS[@]-}"; do
+    if [ "$used" = "$port" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+reserve_port() {
+  local port="$1"
+  USED_HOST_PORTS+=("$port")
+}
+
 resolve_host_port() {
   local label="$1"
   local requested="$2"
   local fallback_start="$3"
   local rc
 
-  if is_port_in_use "$requested"; then
+  if is_reserved_port "$requested"; then
+    rc=0
+  elif is_port_in_use "$requested"; then
     rc=0
   else
     rc=$?
   fi
+
 
   case "$rc" in
     1)
@@ -170,16 +196,22 @@ resolve_host_port() {
 
 resolve_ports() {
   log "Resolving host ports"
+  USED_HOST_PORTS=()
 
   if ! SELECTED_HTTP_PORT="$(resolve_host_port "HTTP" "$REQUESTED_HTTP_PORT" 8080)"; then
     die "Unable to find a free HTTP port."
   fi
+  reserve_port "$SELECTED_HTTP_PORT"
+
   if ! SELECTED_POSTGRES_PORT="$(resolve_host_port "Postgres" "$REQUESTED_POSTGRES_PORT" 5434)"; then
     die "Unable to find a free Postgres port."
   fi
+  reserve_port "$SELECTED_POSTGRES_PORT"
+
   if ! SELECTED_PGBOUNCER_PORT="$(resolve_host_port "PgBouncer" "$REQUESTED_PGBOUNCER_PORT" 6433)"; then
     die "Unable to find a free PgBouncer port."
   fi
+  reserve_port "$SELECTED_PGBOUNCER_PORT"
 
   if [ "$SELECTED_HTTP_PORT" = "80" ]; then
     SELECTED_HOST_URL="http://localhost"

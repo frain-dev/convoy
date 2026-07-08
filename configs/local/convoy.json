@@ -1,5 +1,5 @@
 {
-    "host": "http://localhost",
+    "host": "http://localhost:8080",
     "database": {
         "host": "pgbouncer",
         "username": "convoy",
