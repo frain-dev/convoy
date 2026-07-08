@@ -42,6 +42,8 @@ convoy
 convoy.json
 convoy.sentinel.json
 docker-compose.yml
+configs/local/docker-compose.install.generated.yml
+configs/local/docker-compose.install.override.yml
 compose.yml
 typesense_data
 postgres_data**
