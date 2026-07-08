@@ -62,13 +62,21 @@ export class PlanCatalogService {
 
 	mergePlanWithDefaultComparison(plan: Plan, defaultPlans: Plan[]): Plan {
 		const defaultPlan = this.findDefaultPlanComparison(plan, defaultPlans);
-		if (!defaultPlan || (plan.features && plan.features.length > 0)) {
+		if (!defaultPlan) {
 			return plan;
+		}
+
+		// Marketing card bullets never come from the billing API, so always take
+		// them from the default (unless the plan already carries its own).
+		const highlights = plan.highlights ?? defaultPlan.highlights;
+		if (plan.features && plan.features.length > 0) {
+			return { ...plan, highlights };
 		}
 
 		return {
 			...plan,
 			features: defaultPlan.features,
+			highlights,
 			description: plan.description || defaultPlan.description,
 			price: plan.price || defaultPlan.price,
 			currency: plan.currency || defaultPlan.currency,
@@ -87,20 +95,6 @@ export class PlanCatalogService {
 
 		return defaultPlans.find(
 			defaultPlan => defaultPlan.name.trim().toLowerCase() === plan.name.trim().toLowerCase()
-		);
-	}
-
-	findBillingPlanForDefault(defaultPlan: Plan, billingPlans: Plan[]): Plan | undefined {
-		const defaultKey = resolvePlanKey(defaultPlan);
-		if (defaultKey) {
-			const byKey = billingPlans.find(plan => resolvePlanKey(plan) === defaultKey);
-			if (byKey) {
-				return byKey;
-			}
-		}
-
-		return billingPlans.find(
-			plan => plan.name.trim().toLowerCase() === defaultPlan.name.trim().toLowerCase()
 		);
 	}
 
@@ -132,17 +126,55 @@ export class PlanCatalogService {
 				plansUnavailableMessage = 'Self-hosted plans are not available right now. Please try again later.';
 			}
 		} else {
-			plans = defaultPlans.map((defaultPlan: Plan) => {
-				const billingPlan = this.findBillingPlanForDefault(defaultPlan, billingPlans);
-
-				if (billingPlan) {
-					return this.mergePlanWithDefaultComparison(billingPlan, [defaultPlan]);
-				}
-
-				return defaultPlan;
-			});
+			// Cloud renders dynamically from the billing catalog (same as self-hosted):
+			// the plan list is whatever the billing service returns for cloud, enriched
+			// with default comparison copy/pricing since the API does not carry marketing
+			// feature rows. Sorted deterministically (checkout plans by price ascending,
+			// contact-only plans last) because the catalog endpoint returns no guaranteed order.
+			plans = billingPlans
+				.map((plan: Plan) => this.mergePlanWithDefaultComparison(plan, defaultPlans))
+				.sort((a, b) => this.compareCloudPlans(a, b));
+			if (plans.length === 0) {
+				plansUnavailableMessage = 'Cloud plans are not available right now. Please try again later.';
+			}
 		}
 
 		return { plans, billingPlans, plansUnavailableMessage };
+	}
+
+	// Single source of truth for "this plan cannot self-serve checkout" (contact
+	// sales). Sort ordering and checkout gating must agree, so both go through
+	// here: explicit requires_contact wins, then the checkout_enabled flag, then
+	// enterprise-key fallback. A contact-only plan sorts last regardless of price.
+	planRequiresContact(plan: Plan): boolean {
+		if (plan.requires_contact !== undefined) {
+			return plan.requires_contact;
+		}
+		if (plan.checkout_enabled !== undefined) {
+			return !plan.checkout_enabled;
+		}
+		return this.isEnterprisePlan(plan);
+	}
+
+	private compareCloudPlans(a: Plan, b: Plan): number {
+		const aContact = this.planRequiresContact(a);
+		const bContact = this.planRequiresContact(b);
+		if (aContact !== bContact) {
+			return aContact ? 1 : -1;
+		}
+		return this.planAmountCents(a) - this.planAmountCents(b);
+	}
+
+	private planAmountCents(plan: Plan): number {
+		const amounts = (plan.pricing_options || [])
+			.map(option => option?.amount_cents)
+			.filter((cents): cents is number => typeof cents === 'number');
+		if (amounts.length > 0) {
+			return Math.min(...amounts);
+		}
+		// `pricing_options` carries cents; `plan.price` is dollars. Convert so the
+		// fallback compares in the same unit as the primary path (otherwise a
+		// dollars value like 499 sorts below a cents value like 9900).
+		return typeof plan.price === 'number' ? Math.round(plan.price * 100) : Number.MAX_SAFE_INTEGER;
 	}
 }

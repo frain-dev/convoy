@@ -38,9 +38,13 @@ import {vatNumberValidator} from './vat-number.validator';
 import {zipCodeValidator} from './zip-code.validator';
 import {pollUntil, POLL_BUDGET_MS} from 'src/app/utils/poll.util';
 import {
+  CardHighlights,
+  comparisonTableGridColumns,
   getFeatureValue as planFeatureValue,
   getFeatureValueType as planFeatureValueType,
-  getFeaturesByCategory as planFeaturesByCategory
+  getFeaturesByCategory as planFeaturesByCategory,
+  hasCollapsedHighlights,
+  planCardHighlights
 } from './plan-comparison.util';
 import {plansMatch} from './plan-identity.util';
 
@@ -993,6 +997,7 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
 
   openManagePlan() {
     this.selectedPlan = null; // Reset selection when opening dialog
+    this.highlightsExpanded = false; // Cards start collapsed each time the dialog opens
     this.loadPlans();
     this.managePlanDialog.nativeElement.showModal();
   }
@@ -1700,13 +1705,7 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
   }
 
   planRequiresContact(plan: Plan): boolean {
-    if (plan.requires_contact !== undefined) {
-      return plan.requires_contact;
-    }
-    if (plan.checkout_enabled !== undefined) {
-      return !plan.checkout_enabled;
-    }
-    return this.planCatalog.isEnterprisePlan(plan);
+    return this.planCatalog.planRequiresContact(plan);
   }
 
   private openPlanContact(plan: Plan): void {
@@ -1740,6 +1739,28 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
 
   getFeaturesByCategory(category: 'core' | 'security' | 'support'): PlanFeature[] {
     return planFeaturesByCategory(this.plans, category);
+  }
+
+  planCardHighlights(plan: Plan): CardHighlights {
+    return planCardHighlights(plan);
+  }
+
+  // Cards collapse to a fixed, faded height by default. The chevron expands
+  // every card at once (shared flag) so none are left partially faded.
+  highlightsExpanded = false;
+
+  hasCollapsedHighlights(highlights: CardHighlights): boolean {
+    return hasCollapsedHighlights(highlights);
+  }
+
+  toggleHighlights(): void {
+    this.highlightsExpanded = !this.highlightsExpanded;
+  }
+
+  // Comparison table columns must track the plan count (label + one per plan);
+  // hardcoding two plan columns wraps a third plan onto a new grid row.
+  get comparisonGridColumns(): string {
+    return comparisonTableGridColumns(this.plans.length);
   }
 
   get hasPlanLoadingState(): boolean {

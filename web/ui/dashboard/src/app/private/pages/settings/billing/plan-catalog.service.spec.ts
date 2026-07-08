@@ -30,7 +30,7 @@ describe('PlanCatalogService', () => {
 		planService = new PlanService({} as any);
 	});
 
-	it('ignores self-hosted API plans with matching cloud default names in cloud mode', () => {
+	it('ignores self-hosted API plans in cloud mode and reports no cloud plans', () => {
 		const catalog = service.buildCatalog([
 			plan({
 				id: 'self-hosted-enterprise',
@@ -43,12 +43,72 @@ describe('PlanCatalogService', () => {
 			})
 		], defaultPlans, false);
 
-		const enterprise = catalog.plans.find(plan => plan.name === 'Enterprise');
-
-		expect(enterprise?.id).toBe('cloud_enterprise');
-		expect(enterprise?.requires_contact).toBeTrue();
-		expect(enterprise?.checkout_enabled).toBeFalse();
+		expect(catalog.plans).toEqual([]);
 		expect(catalog.billingPlans).toEqual([]);
+		expect(catalog.plansUnavailableMessage).toBe('Cloud plans are not available right now. Please try again later.');
+	});
+
+	it('renders cloud plans dynamically from the billing catalog, ordered pro then premium then enterprise', () => {
+		const cloudDefaults = planService.getDefaultPlanComparison(false).plans;
+		const catalog = service.buildCatalog([
+			plan({
+				id: 'cloud-enterprise',
+				key: 'cloud_enterprise',
+				name: 'Cloud Enterprise',
+				product_type: 'cloud',
+				checkout_enabled: false,
+				requires_contact: true,
+				features: []
+			}),
+			plan({
+				id: 'cloud-premium',
+				key: 'cloud_premium',
+				name: 'Cloud Premium',
+				product_type: 'cloud',
+				pricing_options: [{ interval: 'monthly', amount_cents: 49900 }],
+				features: []
+			}),
+			plan({
+				id: 'cloud-pro',
+				key: 'cloud_pro',
+				name: 'Cloud Pro',
+				product_type: 'cloud',
+				pricing_options: [{ interval: 'monthly', amount_cents: 9900 }],
+				features: []
+			})
+		], cloudDefaults, false);
+
+		expect(catalog.plans.map(plan => plan.key)).toEqual(['cloud_pro', 'cloud_premium', 'cloud_enterprise']);
+
+		const premium = catalog.plans.find(plan => plan.key === 'cloud_premium');
+		expect(premium?.price).toBe(499);
+		expect(premium?.features.length).toBeGreaterThan(0);
+		expect(service.resolvePlanForApi(premium as Plan, catalog.billingPlans).planExistsInCatalog).toBeTrue();
+	});
+
+	it('sorts a contact-only enterprise plan last even when only checkout_enabled is false', () => {
+		const cloudDefaults = planService.getDefaultPlanComparison(false).plans;
+		const catalog = service.buildCatalog([
+			plan({
+				id: 'cloud-enterprise',
+				key: 'cloud_enterprise',
+				name: 'Cloud Enterprise',
+				product_type: 'cloud',
+				checkout_enabled: false,
+				pricing_options: [{ interval: 'monthly', amount_cents: 0 }],
+				features: []
+			}),
+			plan({
+				id: 'cloud-pro',
+				key: 'cloud_pro',
+				name: 'Cloud Pro',
+				product_type: 'cloud',
+				pricing_options: [{ interval: 'monthly', amount_cents: 9900 }],
+				features: []
+			})
+		], cloudDefaults, false);
+
+		expect(catalog.plans.map(plan => plan.key)).toEqual(['cloud_pro', 'cloud_enterprise']);
 	});
 
 	it('merges cloud API plans into matching default cards in cloud mode', () => {
@@ -177,23 +237,11 @@ describe('PlanCatalogService', () => {
 		expect(catalog.plans[0].features).toEqual(defaultPlans[0].features);
 	});
 
-	it('keeps Enterprise contact-only when no cloud Enterprise API plan is eligible', () => {
-		const catalog = service.buildCatalog([
-			plan({
-				id: 'self-hosted-enterprise',
-				key: 'self_hosted_enterprise',
-				name: 'Enterprise',
-				product_type: 'self_hosted',
-				requires_contact: true,
-				checkout_enabled: false
-			})
-		], defaultPlans, false);
+	it('flags a known cloud checkout plan missing from the catalog as contact-only', () => {
+		const premium = plan({ id: 'cloud_premium', key: 'cloud_premium', name: 'Premium', product_type: 'cloud' });
 
-		const enterprise = catalog.plans.find(plan => plan.name === 'Enterprise');
-
-		expect(enterprise?.requires_contact).toBeTrue();
-		expect(enterprise?.checkout_enabled).toBeFalse();
-		expect(service.shouldContactForMissingCloudPlan(enterprise as Plan, false, false)).toBeTrue();
+		expect(service.shouldContactForMissingCloudPlan(premium, false, false)).toBeTrue();
+		expect(service.shouldContactForMissingCloudPlan(premium, false, true)).toBeFalse();
 	});
 });
 

@@ -609,36 +609,61 @@
                   (click)="selectPlan(plan.id)"
                   >
                   <div class="plan-card-header">
-                    <h4 class="plan-card-title">{{ plan.name }}</h4>
-                    @if (selectedPlan === plan.id) {
+                    <div class="flex items-center gap-8px">
+                      <h4 class="plan-card-title">{{ plan.name }}</h4>
+                      @if (isTrialConvertPlan(plan.id)) {
+                        <span class="text-10 px-6px py-2px bg-primary-100 text-white-100 rounded-4px font-medium">On trial</span>
+                      } @else if (isCurrentPlan(plan.id)) {
+                        <span class="text-10 px-6px py-2px bg-neutral-1 border border-neutral-4 text-neutral-11 rounded-4px font-medium">Current plan</span>
+                      }
+                    </div>
+                    @if (isCurrentPlan(plan.id)) {
                       <svg class="plan-card-check" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="10" cy="10" r="10" fill="#2780F1"/>
                         <path d="M14 7L8.5 12.5L6 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                     }
                   </div>
-                  @if (plan.features && plan.features.length > 0) {
-                    <ul class="plan-card-features">
-                      @for (feature of plan.features.slice(0, 3); track $index) {
-                        <li>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M13.3332 4L5.99984 11.3333L2.6665 8" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                          </svg>
-                          <span>{{ feature.name }}</span>
-                        </li>
-                      }
-                    </ul>
+                  @if (planCardHighlights(plan); as highlights) {
+                    @if (highlights.items.length > 0) {
+                      <ul class="plan-card-features" [class.plan-card-features-collapsed]="hasCollapsedHighlights(highlights) && !highlightsExpanded">
+                        @if (highlights.heading) {
+                          <li class="plan-card-features-heading">{{ highlights.heading }}</li>
+                        }
+                        @for (item of highlights.items; track item) {
+                          <li>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M13.3332 4L5.99984 11.3333L2.6665 8" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>{{ item }}</span>
+                          </li>
+                        }
+                      </ul>
+                    }
                   }
-                  <button
-                    type="button"
-                    convoy-button
-                    [fill]="selectedPlan === plan.id ? 'solid' : 'outline'"
-                    [color]="selectedPlan === plan.id ? 'primary' : 'neutral'"
-                    [disabled]="(isCurrentPlan(plan.id) && !isTrialConvertPlan(plan.id)) || !canUsePlan(plan) || (selectedPlan === plan.id && isLoadingCheckout)"
-                    class="plan-card-button"
-                    (click)="onPlanCardButtonClick(plan.id); $event.stopPropagation()">
-                    {{ getButtonText(plan.id) }}
-                  </button>
+                  <div class="plan-card-footer">
+                    @if (planCardHighlights(plan); as highlights) {
+                      @if (hasCollapsedHighlights(highlights)) {
+                        <button type="button" class="plan-card-more" [class.plan-card-more-open]="highlightsExpanded"
+                          [attr.aria-label]="highlightsExpanded ? 'Show fewer features' : 'Show more features'"
+                          (click)="toggleHighlights(); $event.stopPropagation()">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        </button>
+                      }
+                    }
+                    <button
+                      type="button"
+                      convoy-button
+                      [fill]="selectedPlan === plan.id ? 'solid' : 'outline'"
+                      [color]="selectedPlan === plan.id ? 'primary' : 'neutral'"
+                      [disabled]="(isCurrentPlan(plan.id) && !isTrialConvertPlan(plan.id)) || !canUsePlan(plan) || (selectedPlan === plan.id && isLoadingCheckout)"
+                      class="plan-card-button"
+                      (click)="onPlanCardButtonClick(plan.id); $event.stopPropagation()">
+                      {{ getButtonText(plan.id) }}
+                    </button>
+                  </div>
                 </div>
               }
             </div>
@@ -670,7 +695,7 @@
               <!-- Comparison Table -->
               <div class="comparison-table">
                 <!-- Table Header -->
-                <div class="comparison-table-header">
+                <div class="comparison-table-header" [style.grid-template-columns]="comparisonGridColumns">
                   <div class="comparison-table-cell header-category"></div>
                   @for (plan of plans; track plan.id) {
                     <div class="comparison-table-cell header-plan">{{ plan.name }}</div>
@@ -681,7 +706,7 @@
                   <div class="comparison-section">
                     <div class="comparison-section-title">Core Capabilities</div>
                     @for (feature of getFeaturesByCategory('core'); track $index) {
-                      <div class="comparison-table-row">
+                      <div class="comparison-table-row" [style.grid-template-columns]="comparisonGridColumns">
                         <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
                         @for (plan of plans; track plan.id) {
                           <div class="comparison-table-cell feature-value">
@@ -702,7 +727,7 @@
                   <div class="comparison-section">
                     <div class="comparison-section-title">Security & Compliance</div>
                     @for (feature of getFeaturesByCategory('security'); track $index) {
-                      <div class="comparison-table-row">
+                      <div class="comparison-table-row" [style.grid-template-columns]="comparisonGridColumns">
                         <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
                         @for (plan of plans; track plan.id) {
                           <div class="comparison-table-cell feature-value">
@@ -723,7 +748,7 @@
                   <div class="comparison-section">
                     <div class="comparison-section-title">Support</div>
                     @for (feature of getFeaturesByCategory('support'); track $index) {
-                      <div class="comparison-table-row">
+                      <div class="comparison-table-row" [style.grid-template-columns]="comparisonGridColumns">
                         <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
                         @for (plan of plans; track plan.id) {
                           <div class="comparison-table-cell feature-value">

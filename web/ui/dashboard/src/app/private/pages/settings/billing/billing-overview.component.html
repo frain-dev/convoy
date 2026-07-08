@@ -45,7 +45,7 @@
     <div class="billing-card">
       <div class="billing-card-header">
         <div class="billing-card-label">Usage period</div>
-        <div class="billing-card-value">
+        <div class="billing-card-value" [class.billing-card-value-period]="isUsagePeriodCompact">
           @if (isLoading) {
             <convoy-skeleton-loader className="w-20 h-16px"></convoy-skeleton-loader>
           }
