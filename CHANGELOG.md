@@ -1,5 +1,126 @@
 # Convoy Changes
 
+## 26.6.2
+
+
+### Improvements
+
+- refactor(controlplane): require licenser via service constructors (#2705)
+
+### Bug Fixes
+
+- fix(controlplane): redact secrets and close SSRF gaps across config, delivery, and notifications (#2706)
+- fix(dataplane): capture delivery attempt timestamps around the dispatch call (#2707)
+
+## 26.6.1
+
+### Features
+
+- feat(dataplane): unify circuit breaker enablement and add endpoint failure metrics (#2700)
+- feat(controlplane): cloud and self-hosted billing trials with dashboard UX (#2701)
+- feat(dashboard): reflect circuit breaker state on endpoint status and fix batch retry count (#2703)
+- feat(build): Add local Docker installer script  (#2702)
+
+
+### Bug Fixes
+
+- fix(controlplane): enforce cache-invalidating project repo and wire bootstrap licenser (#2704)
+
+## 26.6.0
+
+### Features
+
+- feat(dashboard): add org switcher search, count, and pagination (#2666)
+- feat(controlplane): self-hosted guest checkout and cloud org billing (#2672)
+- feat(dashboard): add google oauth signup (#2674)
+- feat(controlplane): support endpoint URL templates (#2675)
+- feat(dashboard): show real billing cycle and consolidate event delivery details (#2677)
+- feat(dashboard): mobile responsiveness pass + UI-only CI gating (#2684)
+- feat(controlplane): postgres-backed cloud usage with forward byte columns (#2690)
+- feat(dataplane): record delivery attempt request/response timestamps (#2694)
+- feat(dataplane): retry budget sync, delivery description, and attempt IP (#2696)
+- feat(controlplane): send version and instance id on validate (#2697)
+
+### Improvements
+
+- chore(deps): bump slack-go and testcontainers for OSV HIGH/MEDIUM (#2670)
+- refactor(portal): load license cache via shared bootstrap, add tests (#2683)
+- ci(infra): skip pubsub, e2e, and go codeql on ui-only changes (#2688)
+- ci(infra): speed up integration tests with tmpfs postgres and build cache (#2691)
+
+### Bug Fixes
+
+- fix(dataplane,dashboard): deliver meta events with populated payload and fix meta-events config UI (#2664)
+- fix(controlplane): route oauth2 token exchange through netjail dispatcher (#2668)
+- fix(controlplane): limit public invite token lookup response (#2671)
+- fix(billing): address overwatch with env license for self-hosted billing view (#2673)
+- fix(controlplane): show accurate event delivery metadata (#2676)
+- fix(controlplane): resolve portal license features from portal token (#2678)
+- fix(billing): default self-hosted billing service to prod overwatch (#2679)
+- fix(dashboard): revalidate the html shell so deploys aren't masked by stale cache (#2680)
+- fix(api): scope portal-link access to owned endpoints (#2681)
+- fix(api): require org membership on dashboard org reads (#2682)
+- fix(dashboard): stop portal link crash from undefined portalDetails (#2685)
+- fix(license): resolve community enabled projects from db (#2686)
+- fix(dashboard): correct latest attempt and timeline order on event delivery details (#2687)
+- fix(dashboard): allow instance admins to manage early adopter features (#2689)
+- fix(dashboard): mobile responsiveness across pages, plus service nil-logger panic fix (#2692)
+- fix(dashboard): route templated endpoint test events through dynamic api (#2693)
+- fix(infra): define Configuration type before its methods (#2695)
+- fix(controlplane): share queue monitoring cookie signing key across replicas (#2698)
+
+## 26.3.7
+
+### Features
+
+- feat(controlplane): add logger lint rules (#2628)
+- feat(controlplane): add queue monitoring to admin dashboard (#2623)
+- feat(controlplane): refactor object storage (#2613)
+- feat(controlplane): add inbound event filtering (#2661)
+
+### Improvements
+
+- chore(deps): upgrade to request migration v2 (#2534)
+- refactor(dataplane): move agent runtime into internal package (#2615)
+- chore(release): cut monthly binaries from prior cutoff (#2617)
+- refactor(ci): extract inline workflow scripts into scripts/ci/ (#2618)
+- refactor(docs): update doc generation (#2626)
+- chore(ci): add nighly CVE scans (#2630)
+- chore(deps): fix CVEs from scan (#2631)
+- chore(deps): fix package.lock path (#2633)
+- chore(deps): added workflow to bump staging tag on successful merge to main (#2632)
+- chore(deps): fix workflow file for cloud image bump (#2634)
+- chore(release): prepare v26.3.6 (#2635)
+- refactor(controlplane,dataplane): refactor tracing (#2637)
+- chore(deps): fix user tags mentions in slack payload (#2639)
+- chore(build): bump actions/checkout in docs and load-test workflows (#2640)
+- chore(deps): added path filter to build image workflow (#2641)
+- chore(deps): bump posthog-js in dashboard (#2642)
+- chore(deps): bump karma-jasmine in dashboard (#2643)
+- chore(deps): bump monaco-editor in dashboard (#2644)
+- chore(deps): bump stdlib to v1.26.2 (#2646)
+- ci(build): add dashboard build workflow for PR and main (#2647)
+- chore(dashboard): upgrade to Angular 15 and Node 24 (#2649)
+- chore(dashboard): Angular 21, ESLint flat config, CI lint, control-flow templates (#2651)
+
+### Bug Fixes
+
+- fix(dataplane): assert non-nil configurations for HmacOptions (#2619)
+- fix(controlplane): harden SSO login and retry deactivation paths (#2621)
+- fix(controlplane): prevent password reset token replay (PDE-733) (#2629)
+- fix(dashboard): harden billing address flows and plan upgrade guard (#2638)
+- fix(dashboard): avoid /users/undefined/profile when uid is missing (#2650)
+- fix(controlplane): guard against empty billing owner emails (#2624)
+- fix(dashboard): keep settings shell for team tab (#2652)
+- fix(api-keys): remove invalid group by from paged security query (#2655)
+- fix(controlplane): harden vulnerable auth and outbound paths (#2659)
+- fix(dataplane): allow idempotency header overrides (#2660)
+
+### Others
+
+- Escape special characters in AMQP connection credentials and add unit/integration tests for connection string builder (#2625)
+- add slack notification to image bump (#2636)
+
 ## 26.3.6
 
 
