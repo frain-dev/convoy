@@ -563,6 +563,14 @@ func (h *BillingHandler) StartTrial(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Attach the org owner's email so the billing service can back-fill a legacy org
+	// that has no billing email yet (created before billing email was synced) and would
+	// otherwise fail customer creation during the mint. This overwrites any client-sent
+	// value. The billing service is the single authority on whether an email is required
+	// and fails closed only when its own record is blank, so a best-effort lookup here
+	// (empty on miss) is not fatal.
+	requestData.BillingEmail = h.getOwnerEmail(r.Context(), orgID)
+
 	resp, err := h.BillingClient.StartTrial(r.Context(), orgID, requestData)
 	if err != nil {
 		renderBillingError(w, r, err)
