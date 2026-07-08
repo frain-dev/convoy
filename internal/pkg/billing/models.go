@@ -103,13 +103,16 @@ type UpgradeSubscriptionRequest struct {
 	Interval string `json:"interval,omitempty"`
 }
 
-// StartTrialRequest starts a time-limited trial. All fields are optional; the
-// billing service defaults the plan (cloud_pro), interval (monthly), and trial
-// length when they are empty.
+// StartTrialRequest starts a time-limited trial. PlanID, Interval, and TrialDays
+// are optional; the billing service defaults the plan (cloud_pro), interval
+// (monthly), and trial length when they are empty. BillingEmail is the org owner's
+// email, sent so the billing service can back-fill a legacy org that was created
+// before billing email was synced and would otherwise fail customer creation.
 type StartTrialRequest struct {
-	PlanID    string `json:"plan_id,omitempty"`
-	Interval  string `json:"interval,omitempty"`
-	TrialDays int    `json:"trial_days,omitempty"`
+	PlanID       string `json:"plan_id,omitempty"`
+	Interval     string `json:"interval,omitempty"`
+	TrialDays    int    `json:"trial_days,omitempty"`
+	BillingEmail string `json:"billing_email,omitempty"`
 }
 
 type Plan struct {
