@@ -14,6 +14,10 @@
   align-items: flex-start;
   gap: 12px;
   outline-offset: -1px;
+  // Fail-safe containment: the compact year-spanning usage period fits (~206px in
+  // ~214px of content), but clip any value to the fixed card box so a wider
+  // fallback-font render can never spill into the adjacent overview card.
+  overflow: hidden;
 
   .billing-card-header {
     display: flex;
@@ -34,6 +38,17 @@
     font-size: 18px;
     font-weight: 500;
     line-height: 28px;
+  }
+
+  // A year-spanning range (e.g. "Jun 19, 2026 - Jun 19, 2027") overflows the
+  // fixed-width card at the normal 18px and wraps to two lines. Nudge just this
+  // value down to 16px (still ~200px, inside the ~216px content width) and pin
+  // to one line. 16px reads as normal size, unlike the earlier 14px which looked
+  // tiny next to the sibling cards. Only applied for the year-spanning case;
+  // short labels keep the 18px value size.
+  .billing-card-value-period {
+    font-size: 16px;
+    white-space: nowrap;
   }
 
   .billing-card-link {

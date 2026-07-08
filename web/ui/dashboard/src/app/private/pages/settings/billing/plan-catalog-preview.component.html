@@ -12,17 +12,31 @@
             <div class="plan-card-header">
               <h4 class="plan-card-title">{{ plan.name }}</h4>
             </div>
-            @if (cardHighlightFeatures(plan).length > 0) {
-              <ul class="plan-card-features">
-                @for (feature of cardHighlightFeatures(plan); track feature.name) {
-                  <li>
+            @if (planCardHighlights(plan); as highlights) {
+              @if (highlights.items.length > 0) {
+                <ul class="plan-card-features" [class.plan-card-features-collapsed]="hasCollapsedHighlights(highlights) && !highlightsExpanded">
+                  @if (highlights.heading) {
+                    <li class="plan-card-features-heading">{{ highlights.heading }}</li>
+                  }
+                  @for (item of highlights.items; track item) {
+                    <li>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13.3332 4L5.99984 11.3333L2.6665 8" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      <span>{{ item }}</span>
+                    </li>
+                  }
+                </ul>
+                @if (hasCollapsedHighlights(highlights)) {
+                  <button type="button" class="plan-card-more" [class.plan-card-more-open]="highlightsExpanded"
+                    [attr.aria-label]="highlightsExpanded ? 'Show fewer features' : 'Show more features'"
+                    (click)="toggleHighlights()">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M13.3332 4L5.99984 11.3333L2.6665 8" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <span>{{ feature.name }}</span>
-                  </li>
+                  </button>
                 }
-              </ul>
+              }
             }
           </div>
         }

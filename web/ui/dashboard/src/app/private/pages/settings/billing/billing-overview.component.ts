@@ -29,6 +29,15 @@ export class BillingOverviewComponent implements OnInit, OnChanges {
     return !this.isLoading && !!this.overview?.pastDue;
   }
 
+  // Only a range that spans years ("MMM DD, YYYY - MMM DD, YYYY", e.g. annual
+  // terms) overflows the fixed-width card at the normal value size, so shrink
+  // just that case. Short labels ("May 28 - Jun 28", "No active cycle") keep the
+  // normal 18px size.
+  get isUsagePeriodCompact(): boolean {
+    const period = this.overview?.usage?.period || '';
+    return (period.match(/\d{4}/g) || []).length >= 2;
+  }
+
   ngOnInit() {
   }
 

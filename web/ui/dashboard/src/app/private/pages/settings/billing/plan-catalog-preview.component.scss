@@ -74,6 +74,16 @@
   margin: 0;
   list-style: none;
 
+  // Collapsed: clip the list to a fixed height and fade the overflow instead of
+  // hard-truncating, so it reads as "there is more" without hiding a hard cut.
+  // The chevron below expands to the full list.
+  &.plan-card-features-collapsed {
+    max-height: 148px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+  }
+
   li {
     display: flex;
     flex-direction: row;
@@ -89,6 +99,38 @@
     svg {
       flex-shrink: 0;
     }
+  }
+
+  li.plan-card-features-heading {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+}
+
+.plan-card-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #71717A;
+  // Pin to the bottom so the chevron sits at the same position across cards
+  // regardless of bullet count or wrapped lines.
+  margin-top: auto;
+
+  svg {
+    transition: transform 0.15s ease;
+  }
+
+  &:hover {
+    color: #2780F1;
+  }
+
+  &.plan-card-more-open svg {
+    transform: rotate(180deg);
   }
 }
 

@@ -3,6 +3,7 @@ import {Plan} from './plan.service';
 /** Canonical plan keys from the billing service catalog. */
 export const PLAN_KEYS = {
 	CLOUD_PRO: 'cloud_pro',
+	CLOUD_PREMIUM: 'cloud_premium',
 	CLOUD_ENTERPRISE: 'cloud_enterprise',
 	SELF_HOSTED_PREMIUM: 'self_hosted_premium',
 	SELF_HOSTED_ENTERPRISE: 'self_hosted_enterprise'
@@ -23,6 +24,7 @@ const LEGACY_ID_TO_KEY: Record<string, string> = {
 const LEGACY_NAME_TO_KEY: Record<string, string> = {
 	pro: PLAN_KEYS.CLOUD_PRO,
 	'cloud pro': PLAN_KEYS.CLOUD_PRO,
+	'cloud premium': PLAN_KEYS.CLOUD_PREMIUM,
 	enterprise: PLAN_KEYS.CLOUD_ENTERPRISE,
 	'cloud enterprise': PLAN_KEYS.CLOUD_ENTERPRISE,
 	premium: PLAN_KEYS.SELF_HOSTED_PREMIUM,
@@ -76,7 +78,7 @@ export function isEnterprisePlanKey(plan: Pick<Plan, 'key' | 'id' | 'name'>): bo
 
 export function isCheckoutCatalogPlanKey(plan: Pick<Plan, 'key' | 'id' | 'name'>): boolean {
 	const key = resolvePlanKey(plan);
-	return key === PLAN_KEYS.CLOUD_PRO || key === PLAN_KEYS.CLOUD_ENTERPRISE;
+	return key === PLAN_KEYS.CLOUD_PRO || key === PLAN_KEYS.CLOUD_PREMIUM || key === PLAN_KEYS.CLOUD_ENTERPRISE;
 }
 
 /** Match API rows to default cards or checkout selections without substring name logic. */

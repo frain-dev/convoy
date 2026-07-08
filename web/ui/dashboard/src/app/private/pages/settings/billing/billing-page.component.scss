@@ -178,6 +178,16 @@ button.text-primary-600 {
   margin: 0;
   list-style: none;
 
+  // Collapsed: clip the list to a fixed height and fade the overflow instead of
+  // hard-truncating, so it reads as "there is more" without hiding a hard cut.
+  // The chevron below expands to the full list.
+  &.plan-card-features-collapsed {
+    max-height: 148px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+  }
+
   li {
     display: flex;
     flex-direction: row;
@@ -193,6 +203,45 @@ button.text-primary-600 {
     svg {
       flex-shrink: 0;
     }
+  }
+
+  li.plan-card-features-heading {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+}
+
+// Chevron + CTA are pinned to the bottom of the card together, so the chevron
+// sits at the same position across cards regardless of how many bullets a card
+// shows or whether any bullet wraps onto a second line.
+.plan-card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.plan-card-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #71717A;
+
+  svg {
+    transition: transform 0.15s ease;
+  }
+
+  &:hover {
+    color: #2780F1;
+  }
+
+  &.plan-card-more-open svg {
+    transform: rotate(180deg);
   }
 }
 
@@ -226,13 +275,20 @@ button.text-primary-600 {
   border: 1px solid #E7E7E7;
   border-radius: 8px;
   overflow: hidden;
+  // With three cloud plans the row (384px label + N plan columns via fit-content)
+  // can exceed the modal width; scroll horizontally instead of clipping columns,
+  // matching the plan-catalog-preview table. .manage-plan-content keeps overflow-x
+  // hidden, so the scroll must live on the table itself.
+  overflow-x: auto;
 }
 
 .comparison-table-header {
   display: grid;
-  grid-template-columns: 384px 1fr 1fr;
+  // grid-template-columns is bound inline from the plan count; do not hardcode
+  // a two-plan track list here or a third plan wraps onto a new row.
   background: #F3F4F6;
   border-bottom: 1px solid #E7E7E7;
+  min-width: fit-content;
 }
 
 .comparison-table-cell {
@@ -293,8 +349,9 @@ button.text-primary-600 {
 
 .comparison-table-row {
   display: grid;
-  grid-template-columns: 384px 1fr 1fr;
+  // grid-template-columns is bound inline from the plan count (see header note).
   border-bottom: 1px solid #E5E7EB;
+  min-width: fit-content;
   
   &:last-child {
     border-bottom: none;

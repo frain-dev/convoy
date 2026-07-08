@@ -3,10 +3,13 @@ import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/cor
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { PlanCatalogService } from './plan-catalog.service';
 import {
+	CardHighlights,
 	comparisonTableGridColumns,
 	getFeatureValue,
 	getFeatureValueType,
-	getFeaturesByCategory
+	getFeaturesByCategory,
+	hasCollapsedHighlights,
+	planCardHighlights
 } from './plan-comparison.util';
 import { Plan, PlanFeature, PlanService } from './plan.service';
 import { filterPlansToTrialPlan } from './trial-offer.util';
@@ -133,11 +136,21 @@ export class PlanCatalogPreviewComponent implements OnInit, OnChanges {
 		return getFeatureValueType(this.displayPlans, planId, featureName);
 	}
 
-	/** Plan card highlights: supported (or non-Unsupported) features only. */
-	cardHighlightFeatures(plan: Plan, limit = 3): PlanFeature[] {
-		return plan.features
-			.filter(feature => (feature.value || '').toLowerCase() !== 'unsupported')
-			.slice(0, limit);
+	/** Plan card bullets: curated marketing highlights with a supported-feature fallback. */
+	planCardHighlights(plan: Plan): CardHighlights {
+		return planCardHighlights(plan);
+	}
+
+	// Cards collapse to a fixed, faded height by default. The chevron expands
+	// every card at once (shared flag) so none are left partially faded.
+	highlightsExpanded = false;
+
+	hasCollapsedHighlights(highlights: CardHighlights): boolean {
+		return hasCollapsedHighlights(highlights);
+	}
+
+	toggleHighlights(): void {
+		this.highlightsExpanded = !this.highlightsExpanded;
 	}
 
 	private async loadPlans(): Promise<void> {
