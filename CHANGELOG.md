@@ -1,5 +1,17 @@
 # Convoy Changes
 
+## 26.6.3
+
+### Features
+
+- feat(billing): render cloud plans dynamically for three-tier pricing (#2710)
+- feat(controlplane): print user/org ids and optionally mint an api key on bootstrap (#2712)
+
+
+### Bug Fixes
+
+- fix(billing): send org owner email on cloud trial start to backfill legacy billing email (#2709)
+
 ## 26.6.2
 
 
