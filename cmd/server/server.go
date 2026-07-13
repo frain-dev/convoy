@@ -188,6 +188,9 @@ func StartConvoyServer(a *cli.App) error {
 		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
 
+	// Nightly anonymized usage snapshot for license-validate pings (licensed only).
+	s.RegisterTask("15 2 * * *", convoy.ScheduleQueue, convoy.SnapshotUsage)
+
 	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 	if err != nil {
 		return fmt.Errorf("failed to register queue metrics: %w", err)
