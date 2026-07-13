@@ -399,6 +399,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(opts.DB, opts.Queue, rd, lo), nil)
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, opts.DB, rd), nil)
+	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, rd), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
 	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && opts.Licenser.AdvancedWebhookFiltering() {
