@@ -18,6 +18,370 @@ servers:
   - url: https://eu.getconvoy.cloud/api
     description: EU Region
 paths:
+  /v1/projects:
+    get:
+      parameters:
+        - description: Organisation ID
+          in: query
+          name: orgID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        items:
+                          $ref: '#/components/schemas/models.ProjectResponse'
+                        type: array
+                    type: object
+          description: OK
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Unauthorized
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: >-
+        This endpoint fetches projects for an organisation. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter.
+      operationId: GetProjects
+      summary: List all projects
+    post:
+      parameters:
+        - description: Organisation ID
+          in: query
+          name: orgID
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/models.CreateProjectResponse'
+                    type: object
+          description: Created
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Unauthorized
+        '402':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Payment Required
+        '403':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: >-
+        This endpoint creates a project. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter. The response includes the project and a one-time project API key.
+      operationId: CreateProject
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.CreateProject'
+        description: Project Details
+        required: true
+      summary: Create a project
+  '/v1/projects/{projectID}':
+    delete:
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: OK
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: This endpoint deletes a project
+      operationId: DeleteProject
+      summary: Delete a project
+    get:
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/models.ProjectResponse'
+                    type: object
+          description: OK
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Unauthorized
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: This endpoint fetches a project by its id
+      operationId: GetProject
+      summary: Retrieve a project
+    put:
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/models.ProjectResponse'
+                    type: object
+          description: Accepted
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Projects
+      description: 'This endpoint updates a project''s name, logo, and config'
+      operationId: UpdateProject
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.UpdateProject'
+        description: Project Details
+        required: true
+      summary: Update a project
   '/v1/projects/{projectID}/endpoints':
     get:
       parameters:
@@ -4715,6 +5079,60 @@ components:
       description: Function Details
       required: true
   schemas:
+    auth.RoleType:
+      enum:
+        - instance_admin
+        - organisation_admin
+        - billing_admin
+        - project_admin
+        - project_viewer
+        - api
+      type: string
+      x-enum-comments:
+        RoleBillingAdmin: 'Organisation level - can manage billing only TODO:'
+        RoleInstanceAdmin: Instance level - can manage all orgs and projects
+        RoleOrganisationAdmin: Organisation level - can manage org and all projects
+        RoleProjectAdmin: Project level - can manage project settings and users
+        RoleProjectViewer: Project level - can view project data only
+      x-enum-descriptions:
+        - Instance level - can manage all orgs and projects
+        - Organisation level - can manage org and all projects
+        - 'Organisation level - can manage billing only TODO:'
+        - Project level - can manage project settings and users
+        - Project level - can view project data only
+        - ''
+      x-enum-varnames:
+        - RoleInstanceAdmin
+        - RoleOrganisationAdmin
+        - RoleBillingAdmin
+        - RoleProjectAdmin
+        - RoleProjectViewer
+        - RoleAPI
+    config.SignatureHeaderProvider:
+      enum:
+        - X-Convoy-Signature
+      type: string
+      x-enum-varnames:
+        - DefaultSignatureHeader
+    datastore.APIKeyResponse:
+      properties:
+        created_at:
+          type: string
+        expires_at:
+          type: string
+        key:
+          type: string
+        key_type:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/datastore.Role'
+        uid:
+          type: string
+        user_id:
+          type: string
+      type: object
     datastore.AlertConfiguration:
       properties:
         count:
@@ -4770,6 +5188,23 @@ components:
           type: string
         source_id:
           type: string
+      type: object
+    datastore.CircuitBreakerConfiguration:
+      properties:
+        consecutive_failure_threshold:
+          type: integer
+        error_timeout:
+          type: integer
+        failure_threshold:
+          type: integer
+        minimum_request_count:
+          type: integer
+        observability_window:
+          type: integer
+        sample_rate:
+          type: integer
+        success_threshold:
+          type: integer
       type: object
     datastore.CreatePortalLinkRequest:
       properties:
@@ -5170,6 +5605,31 @@ components:
         response_http_header:
           $ref: '#/components/schemas/datastore.HttpHeader'
       type: object
+    datastore.MetaEventConfiguration:
+      properties:
+        event_type:
+          items:
+            type: string
+          type: array
+        is_enabled:
+          type: boolean
+        pub_sub:
+          $ref: '#/components/schemas/datastore.PubSubConfig'
+        secret:
+          type: string
+        type:
+          $ref: '#/components/schemas/datastore.MetaEventType'
+        url:
+          type: string
+      type: object
+    datastore.MetaEventType:
+      enum:
+        - http
+        - pub_sub
+      type: string
+      x-enum-varnames:
+        - HTTPMetaEvent
+        - PubSubMetaEvent
     datastore.Metadata:
       properties:
         data:
@@ -5384,6 +5844,52 @@ components:
         url:
           type: string
       type: object
+    datastore.ProjectConfig:
+      properties:
+        add_event_id_trace_headers:
+          type: boolean
+        circuit_breaker:
+          $ref: '#/components/schemas/datastore.CircuitBreakerConfiguration'
+        disable_endpoint:
+          type: boolean
+        max_payload_read_size:
+          type: integer
+        meta_event:
+          $ref: '#/components/schemas/datastore.MetaEventConfiguration'
+        multiple_endpoint_subscriptions:
+          type: boolean
+        ratelimit:
+          $ref: '#/components/schemas/datastore.RateLimitConfiguration'
+        replay_attacks_prevention_enabled:
+          type: boolean
+        search_policy:
+          type: string
+        signature:
+          $ref: '#/components/schemas/datastore.SignatureConfiguration'
+        ssl:
+          $ref: '#/components/schemas/datastore.SSLConfiguration'
+        strategy:
+          $ref: '#/components/schemas/datastore.StrategyConfiguration'
+      type: object
+    datastore.ProjectStatistics:
+      properties:
+        endpoints_exist:
+          type: boolean
+        events_exist:
+          type: boolean
+        sources_exist:
+          type: boolean
+        subscriptions_exist:
+          type: boolean
+      type: object
+    datastore.ProjectType:
+      enum:
+        - outgoing
+        - incoming
+      type: string
+      x-enum-varnames:
+        - OutgoingProject
+        - IncomingProject
     datastore.ProviderConfig:
       properties:
         twitter:
@@ -5432,6 +5938,15 @@ components:
         type:
           $ref: '#/components/schemas/datastore.StrategyProvider'
       type: object
+    datastore.Role:
+      properties:
+        app:
+          type: string
+        project:
+          type: string
+        type:
+          $ref: '#/components/schemas/auth.RoleType'
+      type: object
     datastore.SQSPubSubConfig:
       properties:
         access_key_id:
@@ -5446,6 +5961,11 @@ components:
         secret_key:
           type: string
       type: object
+    datastore.SSLConfiguration:
+      properties:
+        enforce_secure_endpoints:
+          type: boolean
+      type: object
     datastore.Secret:
       properties:
         created_at:
@@ -5459,6 +5979,26 @@ components:
         updated_at:
           type: string
         value:
+          type: string
+      type: object
+    datastore.SignatureConfiguration:
+      properties:
+        header:
+          $ref: '#/components/schemas/config.SignatureHeaderProvider'
+        versions:
+          items:
+            $ref: '#/components/schemas/datastore.SignatureVersion'
+          type: array
+      type: object
+    datastore.SignatureVersion:
+      properties:
+        created_at:
+          type: string
+        encoding:
+          $ref: '#/components/schemas/datastore.EncodingType'
+        hash:
+          type: string
+        uid:
           type: string
       type: object
     datastore.Source:
@@ -5530,6 +6070,15 @@ components:
         - RestApiSource
         - PubSubSource
         - DBChangeStream
+    datastore.StrategyConfiguration:
+      properties:
+        duration:
+          type: integer
+        retry_count:
+          type: integer
+        type:
+          $ref: '#/components/schemas/datastore.StrategyProvider'
+      type: object
     datastore.StrategyProvider:
       enum:
         - linear
@@ -5889,6 +6438,32 @@ components:
           description: Query matching criteria (optional)
       required:
         - event_type
+      type: object
+    models.CreateProject:
+      properties:
+        config:
+          allOf:
+            - $ref: '#/components/schemas/models.ProjectConfig'
+          description: Project Config
+        logo_url:
+          type: string
+        name:
+          description: Project Name
+          type: string
+        type:
+          description: 'Project Type, supported values are `outgoing`, `incoming`'
+          type: string
+      type: object
+    models.CreateProjectResponse:
+      properties:
+        api_key:
+          allOf:
+            - $ref: '#/components/schemas/datastore.APIKeyResponse'
+          nullable: true
+        project:
+          allOf:
+            - $ref: '#/components/schemas/models.ProjectResponse'
+          nullable: true
       type: object
     models.CreateSource:
       properties:
@@ -6423,6 +6998,21 @@ components:
         topic_name:
           type: string
       type: object
+    models.MetaEventConfiguration:
+      properties:
+        event_type:
+          items:
+            type: string
+          type: array
+        is_enabled:
+          type: boolean
+        secret:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+      type: object
     models.MetaEventResponse:
       properties:
         attempt:
@@ -6578,6 +7168,90 @@ components:
             - $ref: '#/components/schemas/datastore.PaginationData'
           nullable: true
       type: object
+    models.ProjectConfig:
+      properties:
+        add_event_id_trace_headers:
+          description: >-
+            Controls of the Event ID and Event Delivery ID Headers are added to the request when events are dispatched to endpoints
+          type: boolean
+        circuit_breaker:
+          allOf:
+            - $ref: '#/components/schemas/datastore.CircuitBreakerConfiguration'
+          description: >-
+            CircuitBreaker is used to configure the project's circuit breaker settings
+        disable_endpoint:
+          description: >-
+            Controls if the project will disable and endpoint after the retry threshold for an event is reached
+          type: boolean
+        max_payload_read_size:
+          description: >-
+            Specifies how many bytes and incoming project should read from the ingest request, and how many bytes an outgoing project should from the response of your endpoints
+
+            Defaults to 50KB.
+          type: integer
+        meta_event:
+          allOf:
+            - $ref: '#/components/schemas/models.MetaEventConfiguration'
+          description: MetaEvent is used to configure the project's meta events
+        multiple_endpoint_subscriptions:
+          description: >-
+            MultipleEndpointSubscriptions is used to configure if multiple subscriptions
+
+            can be created for the endpoint in a project
+          type: boolean
+        ratelimit:
+          allOf:
+            - $ref: '#/components/schemas/models.RateLimitConfiguration'
+          description: >-
+            RateLimit is used to configure the projects rate limiting config values
+        replay_attacks_prevention_enabled:
+          description: >-
+            Controls if your project will add a timestamp to it's webhook signature header to prevent a replay attack, See this blog post[https://getconvoy.io/blog/generating-stripe-like-webhook-signatures] for more]
+          type: boolean
+        search_policy:
+          description: Specify the interval in hours for which the event tokenizer runs
+          type: string
+        signature:
+          allOf:
+            - $ref: '#/components/schemas/models.SignatureConfiguration'
+          description: >-
+            Signature is used to configure the project's signature header versions
+        ssl:
+          allOf:
+            - $ref: '#/components/schemas/models.SSLConfiguration'
+          description: >-
+            SSL is used to configure the project's endpoint ssl enforcement rules
+        strategy:
+          allOf:
+            - $ref: '#/components/schemas/models.StrategyConfiguration'
+          description: >-
+            Strategy is used to configure the project's retry strategies for failing events.
+      type: object
+    models.ProjectResponse:
+      properties:
+        config:
+          $ref: '#/components/schemas/datastore.ProjectConfig'
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        logo_url:
+          type: string
+        name:
+          type: string
+        organisation_id:
+          type: string
+        retained_events:
+          type: integer
+        statistics:
+          $ref: '#/components/schemas/datastore.ProjectStatistics'
+        type:
+          $ref: '#/components/schemas/datastore.ProjectType'
+        uid:
+          type: string
+        updated_at:
+          type: string
+      type: object
     models.PubSubConfig:
       properties:
         amqp:
@@ -6629,6 +7303,31 @@ components:
         secret_key:
           type: string
       type: object
+    models.SSLConfiguration:
+      properties:
+        enforce_secure_endpoints:
+          type: boolean
+      type: object
+    models.SignatureConfiguration:
+      properties:
+        header:
+          $ref: '#/components/schemas/config.SignatureHeaderProvider'
+        versions:
+          items:
+            $ref: '#/components/schemas/models.SignatureVersion'
+          type: array
+      type: object
+    models.SignatureVersion:
+      properties:
+        created_at:
+          type: string
+        encoding:
+          type: string
+        hash:
+          type: string
+        uid:
+          type: string
+      type: object
     models.SourceResponse:
       properties:
         body_function:
@@ -6675,6 +7374,15 @@ components:
           type: string
         verifier:
           $ref: '#/components/schemas/datastore.VerifierConfig'
+      type: object
+    models.StrategyConfiguration:
+      properties:
+        duration:
+          type: integer
+        retry_count:
+          type: integer
+        type:
+          type: string
       type: object
     models.SubscriptionResponse:
       properties:
@@ -6902,6 +7610,18 @@ components:
           allOf:
             - $ref: '#/components/schemas/datastore.M'
           description: Query matching criteria (optional)
+      type: object
+    models.UpdateProject:
+      properties:
+        config:
+          allOf:
+            - $ref: '#/components/schemas/models.ProjectConfig'
+          description: Project Config
+        logo_url:
+          type: string
+        name:
+          description: Project Name
+          type: string
       type: object
     models.UpdateSource:
       properties:
