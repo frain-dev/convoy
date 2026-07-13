@@ -19,6 +19,8 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	licenseservice "github.com/frain-dev/convoy/internal/pkg/license/service"
+	licenseusage "github.com/frain-dev/convoy/internal/pkg/license/usage"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/util"
 )
@@ -357,6 +359,20 @@ func (h *BillingHandler) refreshInstanceLicenser(licenseKey string) error {
 	}
 	cfg.LicenseKey = licenseKey
 
+	// Match boot wiring: attach UsageLoader + deployment_id so guest-checkout
+	// rebuild does not drop usage from subsequent license validates.
+	clientCfg := licenseservice.Config{
+		Host:         cfg.LicenseService.Host,
+		ValidatePath: cfg.LicenseService.ValidatePath,
+		Timeout:      cfg.LicenseService.Timeout,
+		RetryCount:   cfg.LicenseService.RetryCount,
+		DeploymentID: cfg.InstanceId,
+		Logger:       h.A.Logger,
+	}
+	if h.A.Redis != nil {
+		clientCfg.UsageLoader = licenseusage.NewStore(h.A.DB, rdb.FromClient(h.A.Redis))
+	}
+
 	lc := licenseservice.LicenserConfig{
 		OrgRepo:       h.orgRepo(),
 		UserRepo:      users.New(h.A.Logger, h.A.DB),
@@ -364,7 +380,7 @@ func (h *BillingHandler) refreshInstanceLicenser(licenseKey string) error {
 		Logger:        h.A.Logger,
 		LicenseKey:    cfg.LicenseKey,
 		UseOrgBilling: cfg.UsesOrgBilling(),
-		Client:        licenseservice.NewClientFromConfig(cfg.LicenseService, h.A.Logger),
+		Client:        licenseservice.NewClient(clientCfg),
 	}
 
 	licenser, err := license.NewLicenser(&license.Config{LicenseService: lc})

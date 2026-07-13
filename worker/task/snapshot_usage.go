@@ -38,7 +38,9 @@ func SnapshotUsage(lo log.Logger, db database.Database, rd *rdb.Redis) func(cont
 		}
 
 		const mutexName = "convoy:usage:mutex"
-		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Minute), redsync.WithTries(1))
+		// 30m matches other nightly schedule locks (retention, org status). COUNT(*)
+		// on large events tables can exceed 1m; expired lock allows overlapping refreshes.
+		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(30*time.Minute), redsync.WithTries(1))
 		tctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 		if err := mutex.LockContext(tctx); err != nil {
@@ -52,7 +54,9 @@ func SnapshotUsage(lo log.Logger, db database.Database, rd *rdb.Redis) func(cont
 			}
 		}()
 
-		snap, err := store.Refresh(ctx)
+		rctx, rcancel := context.WithTimeout(ctx, 25*time.Minute)
+		defer rcancel()
+		snap, err := store.Refresh(rctx)
 		if err != nil {
 			return err
 		}
