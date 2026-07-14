@@ -39,6 +39,19 @@ func createProjectService(h *Handler) *services.ProjectService {
 	)
 }
 
+// GetProject
+//
+//	@Summary		Retrieve a project
+//	@Description	This endpoint fetches a project by its id
+//	@Tags			Projects
+//	@Id				GetProject
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Success		200			{object}	util.ServerResponse{data=models.ProjectResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID} [get]
 func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
@@ -67,6 +80,19 @@ func (h *Handler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Project Stats fetched successfully", project.Statistics, http.StatusOK))
 }
 
+// DeleteProject
+//
+//	@Summary		Delete a project
+//	@Description	This endpoint deletes a project
+//	@Tags			Projects
+//	@Id				DeleteProject
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID		path		string	true	"Project ID"
+//	@Success		200				{object}	util.ServerResponse{data=Stub}
+//	@Failure		400,401,403,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID} [delete]
 func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
@@ -92,6 +118,20 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		nil, http.StatusOK))
 }
 
+// CreateProject
+//
+//	@Summary		Create a project
+//	@Description	This endpoint creates a project. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter. The response includes the project and a one-time project API key.
+//	@Tags			Projects
+//	@Id				CreateProject
+//	@Accept			json
+//	@Produce		json
+//	@Param			orgID				query		string					true	"Organisation ID"
+//	@Param			project				body		models.CreateProject	true	"Project Details"
+//	@Success		201					{object}	util.ServerResponse{data=models.CreateProjectResponse}
+//	@Failure		400,401,402,403,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects [post]
 func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var newProject models.CreateProject
 	err := util.ReadJSON(r, &newProject)
@@ -169,6 +209,20 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Project created successfully", resp, http.StatusCreated))
 }
 
+// UpdateProject
+//
+//	@Summary		Update a project
+//	@Description	This endpoint updates a project's name, logo, and config
+//	@Tags			Projects
+//	@Id				UpdateProject
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID		path		string					true	"Project ID"
+//	@Param			project			body		models.UpdateProject	true	"Project Details"
+//	@Success		202				{object}	util.ServerResponse{data=models.ProjectResponse}
+//	@Failure		400,401,403,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID} [put]
 func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateProject
 	err := util.ReadJSON(r, &update)
@@ -207,6 +261,19 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", resp, http.StatusAccepted))
 }
 
+// GetProjects
+//
+//	@Summary		List all projects
+//	@Description	This endpoint fetches projects for an organisation. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter.
+//	@Tags			Projects
+//	@Id				GetProjects
+//	@Accept			json
+//	@Produce		json
+//	@Param			orgID		query		string	true	"Organisation ID"
+//	@Success		200			{object}	util.ServerResponse{data=[]models.ProjectResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects [get]
 func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	org, err := h.retrieveOrganisation(r)
 	if err != nil {

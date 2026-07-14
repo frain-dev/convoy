@@ -1,5 +1,59 @@
 basePath: /api
 definitions:
+  auth.RoleType:
+    enum:
+      - instance_admin
+      - organisation_admin
+      - billing_admin
+      - project_admin
+      - project_viewer
+      - api
+    type: string
+    x-enum-comments:
+      RoleBillingAdmin: 'Organisation level - can manage billing only TODO:'
+      RoleInstanceAdmin: Instance level - can manage all orgs and projects
+      RoleOrganisationAdmin: Organisation level - can manage org and all projects
+      RoleProjectAdmin: Project level - can manage project settings and users
+      RoleProjectViewer: Project level - can view project data only
+    x-enum-descriptions:
+      - Instance level - can manage all orgs and projects
+      - Organisation level - can manage org and all projects
+      - 'Organisation level - can manage billing only TODO:'
+      - Project level - can manage project settings and users
+      - Project level - can view project data only
+      - ""
+    x-enum-varnames:
+      - RoleInstanceAdmin
+      - RoleOrganisationAdmin
+      - RoleBillingAdmin
+      - RoleProjectAdmin
+      - RoleProjectViewer
+      - RoleAPI
+  config.SignatureHeaderProvider:
+    enum:
+      - X-Convoy-Signature
+    type: string
+    x-enum-varnames:
+      - DefaultSignatureHeader
+  datastore.APIKeyResponse:
+    properties:
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      key:
+        type: string
+      key_type:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/datastore.Role'
+      uid:
+        type: string
+      user_id:
+        type: string
+    type: object
   datastore.AlertConfiguration:
     properties:
       count:
@@ -55,6 +109,23 @@ definitions:
         type: string
       source_id:
         type: string
+    type: object
+  datastore.CircuitBreakerConfiguration:
+    properties:
+      consecutive_failure_threshold:
+        type: integer
+      error_timeout:
+        type: integer
+      failure_threshold:
+        type: integer
+      minimum_request_count:
+        type: integer
+      observability_window:
+        type: integer
+      sample_rate:
+        type: integer
+      success_threshold:
+        type: integer
     type: object
   datastore.CreatePortalLinkRequest:
     properties:
@@ -447,6 +518,31 @@ definitions:
       response_http_header:
         $ref: '#/definitions/datastore.HttpHeader'
     type: object
+  datastore.MetaEventConfiguration:
+    properties:
+      event_type:
+        items:
+          type: string
+        type: array
+      is_enabled:
+        type: boolean
+      pub_sub:
+        $ref: '#/definitions/datastore.PubSubConfig'
+      secret:
+        type: string
+      type:
+        $ref: '#/definitions/datastore.MetaEventType'
+      url:
+        type: string
+    type: object
+  datastore.MetaEventType:
+    enum:
+      - http
+      - pub_sub
+    type: string
+    x-enum-varnames:
+      - HTTPMetaEvent
+      - PubSubMetaEvent
   datastore.Metadata:
     properties:
       data:
@@ -659,6 +755,52 @@ definitions:
       url:
         type: string
     type: object
+  datastore.ProjectConfig:
+    properties:
+      add_event_id_trace_headers:
+        type: boolean
+      circuit_breaker:
+        $ref: '#/definitions/datastore.CircuitBreakerConfiguration'
+      disable_endpoint:
+        type: boolean
+      max_payload_read_size:
+        type: integer
+      meta_event:
+        $ref: '#/definitions/datastore.MetaEventConfiguration'
+      multiple_endpoint_subscriptions:
+        type: boolean
+      ratelimit:
+        $ref: '#/definitions/datastore.RateLimitConfiguration'
+      replay_attacks_prevention_enabled:
+        type: boolean
+      search_policy:
+        type: string
+      signature:
+        $ref: '#/definitions/datastore.SignatureConfiguration'
+      ssl:
+        $ref: '#/definitions/datastore.SSLConfiguration'
+      strategy:
+        $ref: '#/definitions/datastore.StrategyConfiguration'
+    type: object
+  datastore.ProjectStatistics:
+    properties:
+      endpoints_exist:
+        type: boolean
+      events_exist:
+        type: boolean
+      sources_exist:
+        type: boolean
+      subscriptions_exist:
+        type: boolean
+    type: object
+  datastore.ProjectType:
+    enum:
+      - outgoing
+      - incoming
+    type: string
+    x-enum-varnames:
+      - OutgoingProject
+      - IncomingProject
   datastore.ProviderConfig:
     properties:
       twitter:
@@ -707,6 +849,15 @@ definitions:
       type:
         $ref: '#/definitions/datastore.StrategyProvider'
     type: object
+  datastore.Role:
+    properties:
+      app:
+        type: string
+      project:
+        type: string
+      type:
+        $ref: '#/definitions/auth.RoleType'
+    type: object
   datastore.SQSPubSubConfig:
     properties:
       access_key_id:
@@ -721,6 +872,11 @@ definitions:
       secret_key:
         type: string
     type: object
+  datastore.SSLConfiguration:
+    properties:
+      enforce_secure_endpoints:
+        type: boolean
+    type: object
   datastore.Secret:
     properties:
       created_at:
@@ -734,6 +890,26 @@ definitions:
       updated_at:
         type: string
       value:
+        type: string
+    type: object
+  datastore.SignatureConfiguration:
+    properties:
+      header:
+        $ref: '#/definitions/config.SignatureHeaderProvider'
+      versions:
+        items:
+          $ref: '#/definitions/datastore.SignatureVersion'
+        type: array
+    type: object
+  datastore.SignatureVersion:
+    properties:
+      created_at:
+        type: string
+      encoding:
+        $ref: '#/definitions/datastore.EncodingType'
+      hash:
+        type: string
+      uid:
         type: string
     type: object
   datastore.Source:
@@ -805,6 +981,15 @@ definitions:
       - RestApiSource
       - PubSubSource
       - DBChangeStream
+  datastore.StrategyConfiguration:
+    properties:
+      duration:
+        type: integer
+      retry_count:
+        type: integer
+      type:
+        $ref: '#/definitions/datastore.StrategyProvider'
+    type: object
   datastore.StrategyProvider:
     enum:
       - linear
@@ -1149,6 +1334,32 @@ definitions:
         description: Query matching criteria (optional)
     required:
       - event_type
+    type: object
+  models.CreateProject:
+    properties:
+      config:
+        allOf:
+          - $ref: '#/definitions/models.ProjectConfig'
+        description: Project Config
+      logo_url:
+        type: string
+      name:
+        description: Project Name
+        type: string
+      type:
+        description: Project Type, supported values are `outgoing`, `incoming`
+        type: string
+    type: object
+  models.CreateProjectResponse:
+    properties:
+      api_key:
+        allOf:
+          - $ref: '#/definitions/datastore.APIKeyResponse'
+        x-nullable: true
+      project:
+        allOf:
+          - $ref: '#/definitions/models.ProjectResponse'
+        x-nullable: true
     type: object
   models.CreateSource:
     properties:
@@ -1667,6 +1878,21 @@ definitions:
       topic_name:
         type: string
     type: object
+  models.MetaEventConfiguration:
+    properties:
+      event_type:
+        items:
+          type: string
+        type: array
+      is_enabled:
+        type: boolean
+      secret:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
   models.MetaEventResponse:
     properties:
       attempt:
@@ -1820,6 +2046,80 @@ definitions:
           - $ref: '#/definitions/datastore.PaginationData'
         x-nullable: true
     type: object
+  models.ProjectConfig:
+    properties:
+      add_event_id_trace_headers:
+        description: Controls of the Event ID and Event Delivery ID Headers are added to the request when events are dispatched to endpoints
+        type: boolean
+      circuit_breaker:
+        allOf:
+          - $ref: '#/definitions/datastore.CircuitBreakerConfiguration'
+        description: CircuitBreaker is used to configure the project's circuit breaker settings
+      disable_endpoint:
+        description: Controls if the project will disable and endpoint after the retry threshold for an event is reached
+        type: boolean
+      max_payload_read_size:
+        description: |-
+          Specifies how many bytes and incoming project should read from the ingest request, and how many bytes an outgoing project should from the response of your endpoints
+          Defaults to 50KB.
+        type: integer
+      meta_event:
+        allOf:
+          - $ref: '#/definitions/models.MetaEventConfiguration'
+        description: MetaEvent is used to configure the project's meta events
+      multiple_endpoint_subscriptions:
+        description: |-
+          MultipleEndpointSubscriptions is used to configure if multiple subscriptions
+          can be created for the endpoint in a project
+        type: boolean
+      ratelimit:
+        allOf:
+          - $ref: '#/definitions/models.RateLimitConfiguration'
+        description: RateLimit is used to configure the projects rate limiting config values
+      replay_attacks_prevention_enabled:
+        description: Controls if your project will add a timestamp to it's webhook signature header to prevent a replay attack, See this blog post[https://getconvoy.io/blog/generating-stripe-like-webhook-signatures] for more]
+        type: boolean
+      search_policy:
+        description: Specify the interval in hours for which the event tokenizer runs
+        type: string
+      signature:
+        allOf:
+          - $ref: '#/definitions/models.SignatureConfiguration'
+        description: Signature is used to configure the project's signature header versions
+      ssl:
+        allOf:
+          - $ref: '#/definitions/models.SSLConfiguration'
+        description: SSL is used to configure the project's endpoint ssl enforcement rules
+      strategy:
+        allOf:
+          - $ref: '#/definitions/models.StrategyConfiguration'
+        description: Strategy is used to configure the project's retry strategies for failing events.
+    type: object
+  models.ProjectResponse:
+    properties:
+      config:
+        $ref: '#/definitions/datastore.ProjectConfig'
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      organisation_id:
+        type: string
+      retained_events:
+        type: integer
+      statistics:
+        $ref: '#/definitions/datastore.ProjectStatistics'
+      type:
+        $ref: '#/definitions/datastore.ProjectType'
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.PubSubConfig:
     properties:
       amqp:
@@ -1869,6 +2169,31 @@ definitions:
       secret_key:
         type: string
     type: object
+  models.SSLConfiguration:
+    properties:
+      enforce_secure_endpoints:
+        type: boolean
+    type: object
+  models.SignatureConfiguration:
+    properties:
+      header:
+        $ref: '#/definitions/config.SignatureHeaderProvider'
+      versions:
+        items:
+          $ref: '#/definitions/models.SignatureVersion'
+        type: array
+    type: object
+  models.SignatureVersion:
+    properties:
+      created_at:
+        type: string
+      encoding:
+        type: string
+      hash:
+        type: string
+      uid:
+        type: string
+    type: object
   models.SourceResponse:
     properties:
       body_function:
@@ -1915,6 +2240,15 @@ definitions:
         type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
+    type: object
+  models.StrategyConfiguration:
+    properties:
+      duration:
+        type: integer
+      retry_count:
+        type: integer
+      type:
+        type: string
     type: object
   models.SubscriptionResponse:
     properties:
@@ -2130,6 +2464,18 @@ definitions:
           - $ref: '#/definitions/datastore.M'
         description: Query matching criteria (optional)
     type: object
+  models.UpdateProject:
+    properties:
+      config:
+        allOf:
+          - $ref: '#/definitions/models.ProjectConfig'
+        description: Project Config
+      logo_url:
+        type: string
+      name:
+        description: Project Name
+        type: string
+    type: object
   models.UpdateSource:
     properties:
       body_function:
@@ -2263,6 +2609,333 @@ info:
   title: Convoy API Reference
   version: 26.3.5
 paths:
+  /v1/projects:
+    get:
+      consumes:
+        - application/json
+      description: This endpoint fetches projects for an organisation. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter.
+      operationId: GetProjects
+      parameters:
+        - description: Organisation ID
+          in: query
+          name: orgID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    items:
+                      $ref: '#/definitions/models.ProjectResponse'
+                    type: array
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: List all projects
+      tags:
+        - Projects
+    post:
+      consumes:
+        - application/json
+      description: This endpoint creates a project. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter. The response includes the project and a one-time project API key.
+      operationId: CreateProject
+      parameters:
+        - description: Organisation ID
+          in: query
+          name: orgID
+          required: true
+          type: string
+        - description: Project Details
+          in: body
+          name: project
+          required: true
+          schema:
+            $ref: '#/definitions/models.CreateProject'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/models.CreateProjectResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "402":
+          description: Payment Required
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Create a project
+      tags:
+        - Projects
+  /v1/projects/{projectID}:
+    delete:
+      consumes:
+        - application/json
+      description: This endpoint deletes a project
+      operationId: DeleteProject
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Delete a project
+      tags:
+        - Projects
+    get:
+      consumes:
+        - application/json
+      description: This endpoint fetches a project by its id
+      operationId: GetProject
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/models.ProjectResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Retrieve a project
+      tags:
+        - Projects
+    put:
+      consumes:
+        - application/json
+      description: This endpoint updates a project's name, logo, and config
+      operationId: UpdateProject
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+        - description: Project Details
+          in: body
+          name: project
+          required: true
+          schema:
+            $ref: '#/definitions/models.UpdateProject'
+      produces:
+        - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/models.ProjectResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Update a project
+      tags:
+        - Projects
   /v1/projects/{projectID}/endpoints:
     get:
       consumes:

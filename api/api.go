@@ -354,6 +354,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 							e.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteEndpoint)
 							e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/expire_secret", handler.ExpireSecret)
 							e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/pause", handler.PauseEndpoint)
+							e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/activate", handler.ActivateEndpoint)
 						})
 					})
 
@@ -599,7 +600,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 								e.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteEndpoint)
 								e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/expire_secret", handler.ExpireSecret)
 								e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/pause", handler.PauseEndpoint)
-								e.With(handler.RequireEnabledProject()).Post("/activate", handler.ActivateEndpoint)
+								e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/activate", handler.ActivateEndpoint)
 							})
 						})
 

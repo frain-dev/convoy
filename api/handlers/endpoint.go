@@ -728,10 +728,17 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	endpointID := chi.URLParam(r, "endpointID")
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, endpointID) {
+		return
+	}
+
 	aes := services.ActivateEndpointService{
 		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectID:    project.UID,
-		EndpointId:   chi.URLParam(r, "endpointID"),
+		EndpointId:   endpointID,
 		Logger:       h.A.Logger,
 	}
 
