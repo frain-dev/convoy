@@ -1,5 +1,12 @@
 # Convoy Changes
 
+## 26.6.4
+
+### Features
+
+- feat(controlplane): attach anonymized usage on license validate (#2715)
+- feat(controlplane): document projects CRUD and harden endpoint activate (#2716)
+
 ## 26.6.3
 
 ### Features
