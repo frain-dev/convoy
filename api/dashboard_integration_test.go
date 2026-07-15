@@ -322,6 +322,50 @@ func (u *AuthIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
+func (u *AuthIntegrationTestSuite) Test_SSOAdminPortal_Unauthenticated_Rejected() {
+	for _, url := range []string{"/sso/admin-portal", "/ui/saml/admin-portal"} {
+		req := httptest.NewRequest(http.MethodPost, url, serialize(`{"return_url":"https://example.com/settings"}`))
+		req.Header.Add("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		u.Router.ServeHTTP(w, req)
+
+		require.Equal(u.T(), http.StatusUnauthorized, w.Code, "url=%s", url)
+	}
+}
+
+func (u *AuthIntegrationTestSuite) Test_SSOAdminPortal_NonAdmin_Rejected() {
+	password := "123456"
+	user, err := testdb.SeedUser(u.ConvoyApp.A.DB, "", password)
+	require.NoError(u.T(), err)
+
+	owner, err := testdb.SeedDefaultUser(u.ConvoyApp.A.DB)
+	require.NoError(u.T(), err)
+	org, err := testdb.SeedDefaultOrganisation(u.ConvoyApp.A.DB, owner)
+	require.NoError(u.T(), err)
+	project, err := testdb.SeedDefaultProject(u.ConvoyApp.A.DB, org.UID)
+	require.NoError(u.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(u.ConvoyApp.A.DB, org, user, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: project.UID,
+	})
+	require.NoError(u.T(), err)
+
+	authFn := authenticateRequest(&models.LoginUser{Username: user.Email, Password: password})
+
+	for _, url := range []string{"/sso/admin-portal", "/ui/saml/admin-portal"} {
+		req := createRequest(http.MethodPost, url, "", serialize(`{"return_url":"https://example.com/settings"}`))
+		req.Header.Set("X-Organisation-Id", org.UID)
+		require.NoError(u.T(), authFn(req, u.Router))
+
+		w := httptest.NewRecorder()
+		u.Router.ServeHTTP(w, req)
+
+		require.Equal(u.T(), http.StatusForbidden, w.Code, "url=%s body=%s", url, w.Body.String())
+	}
+}
+
 func TestAuthIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(AuthIntegrationTestSuite))
 }

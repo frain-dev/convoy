@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -148,6 +149,14 @@ type adminPortalRequest struct {
 }
 
 func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
+	// Failure policy: fail closed. Unauthenticated callers are rejected by
+	// RequireAuth on /sso/admin-portal and /ui/saml/admin-portal; non-admins
+	// are rejected here so an SSO admin portal link that can rewrite SAML IdP
+	// metadata is never minted for a low-privilege session.
+	if !h.requireSSOAdminPortalAccess(w, r) {
+		return
+	}
+
 	configuration := h.A.Cfg
 	if configuration.LicenseKey == "" {
 		h.A.Logger.Error("SSO admin portal: missing license key")
@@ -181,7 +190,7 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 	if configuration.UsesOrgBilling() {
 		sc.APIKey = configuration.Billing.APIKey
 		sc.LicenseKey = configuration.LicenseKey
-		sc.OrgID = r.Header.Get("X-Organisation-Id")
+		sc.OrgID = r.Header.Get(headerOrganisationID)
 	}
 	ssoClient := service.NewClient(sc)
 
@@ -200,6 +209,47 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 		"expires_in": resp.Data.ExpiresIn,
 	}
 	_ = render.Render(w, r, util.NewServerResponse("Admin portal URL generated", data, http.StatusOK))
+}
+
+// requireSSOAdminPortalAccess allows instance admins and organisation admins only.
+// Matches the dashboard Configure SSO button (Organisations|MANAGE). The UI call
+// often omits X-Organisation-Id, so any organisation-admin membership is accepted
+// when no org header is present (same cooperative self-hosted model as billing).
+func (h *Handler) requireSSOAdminPortalAccess(w http.ResponseWriter, r *http.Request) bool {
+	user, err := h.retrieveUser(r)
+	if err != nil || user == nil || user.UID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
+		return false
+	}
+
+	memberRepo := organisation_members.New(h.A.Logger, h.A.DB)
+	if _, err = memberRepo.FetchInstanceAdminByUserID(r.Context(), user.UID); err == nil {
+		return true
+	}
+
+	orgID := strings.TrimSpace(r.Header.Get(headerOrganisationID))
+	if orgID == "" {
+		orgID = strings.TrimSpace(r.URL.Query().Get("orgID"))
+	}
+	if orgID != "" {
+		org, fetchErr := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), orgID)
+		if fetchErr != nil || org == nil {
+			_ = render.Render(w, r, util.NewErrorResponse("organisation not found", http.StatusNotFound))
+			return false
+		}
+		if authErr := h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); authErr != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: organisation admin access required to manage SSO", http.StatusForbidden))
+			return false
+		}
+		return true
+	}
+
+	if _, err = memberRepo.FetchAnyOrganisationAdminByUserID(r.Context(), user.UID); err == nil {
+		return true
+	}
+
+	_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: organisation admin access required to manage SSO", http.StatusForbidden))
+	return false
 }
 
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
