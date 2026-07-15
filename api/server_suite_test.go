@@ -216,6 +216,7 @@ func createRequest(method, url, auth string, body io.Reader) *http.Request {
 }
 
 func serialize(r string, args ...interface{}) io.Reader {
-	v := fmt.Sprintf(r, args...)
+	format := r
+	v := fmt.Sprintf(format, args...)
 	return strings.NewReader(v)
 }
