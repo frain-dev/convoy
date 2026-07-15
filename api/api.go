@@ -313,7 +313,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		ssoRouter.Use(middleware.JsonResponse)
 		ssoRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger))
 		ssoRouter.Get("/callback", handler.RedeemSSOCallback)
-		ssoRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
+		// Admin portal mints an SSO config link that can rewrite SAML IdP metadata.
+		// RequireAuth here; handler also enforces organisation/instance admin.
+		ssoRouter.With(middleware.RequireAuth(handler.A.Logger)).Post("/admin-portal", handler.GetSSOAdminPortal)
 	})
 
 	// Ingestion API.
