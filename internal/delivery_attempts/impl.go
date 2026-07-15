@@ -140,6 +140,8 @@ func (s *Service) DeleteProjectDeliveriesAttempts(ctx context.Context, projectID
 	var result pgconn.CommandTag
 	var err error
 
+	// Hard delete: filter dates apply to event_deliveries.created_at (see SQL comment).
+	// Soft delete: filter dates apply to delivery_attempts.created_at.
 	if hardDelete {
 		result, err = s.repo.HardDeleteProjectDeliveryAttempts(ctx, repo.HardDeleteProjectDeliveryAttemptsParams{
 			ProjectID:      common.StringToPgText(projectID),
