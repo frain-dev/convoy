@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -306,4 +307,63 @@ func TestDeleteProjectDeliveriesAttempts_MultipleProjects(t *testing.T) {
 	attempts2, err := service.FindDeliveryAttempts(ctx, eventDelivery2.UID)
 	require.NoError(t, err)
 	require.Len(t, attempts2, 3, "Project2 attempts should remain")
+}
+
+// Old delivery + newer retry attempt: hard-delete attempts by delivery created_at,
+// then hard-delete deliveries. Must succeed without
+// delivery_attempts_event_delivery_id_fkey.
+func TestDeleteProjectDeliveriesAttempts_HardDeleteByDeliveryCutoffClearsRetryAttempts(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db, ctx)
+	endpoint := seedEndpoint(t, db, ctx, project)
+	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+	edService := event_deliveries.New(log.New("convoy", log.LevelInfo), db)
+
+	attemptUID := ulid.Make().String()
+	require.NoError(t, service.CreateDeliveryAttempt(ctx, &datastore.DeliveryAttempt{
+		UID:              attemptUID,
+		EventDeliveryId:  eventDelivery.UID,
+		URL:              "https://example.com",
+		Method:           "POST",
+		ProjectId:        project.UID,
+		EndpointID:       endpoint.UID,
+		APIVersion:       "2024-01-01",
+		IPAddress:        "192.0.0.1",
+		RequestHeader:    map[string]string{"Content-Type": "application/json"},
+		ResponseHeader:   map[string]string{"Content-Type": "application/json"},
+		HttpResponseCode: "500",
+		ResponseData:     []byte(`{"status":"error"}`),
+		Status:           false,
+	}))
+
+	policy := 7 * 24 * time.Hour
+	cutoff := time.Now().Add(-policy)
+	_, err := db.GetDB().ExecContext(ctx,
+		`UPDATE convoy.event_deliveries SET created_at = $1 WHERE id = $2 AND project_id = $3`,
+		time.Now().Add(-10*24*time.Hour), eventDelivery.UID, project.UID)
+	require.NoError(t, err)
+	_, err = db.GetDB().ExecContext(ctx,
+		`UPDATE convoy.delivery_attempts SET created_at = $1 WHERE id = $2 AND project_id = $3`,
+		time.Now().Add(-24*time.Hour), attemptUID, project.UID)
+	require.NoError(t, err)
+
+	filter := &datastore.DeliveryAttemptsFilter{
+		CreatedAtStart: 0,
+		CreatedAtEnd:   cutoff.Unix(),
+	}
+	err = service.DeleteProjectDeliveriesAttempts(ctx, project.UID, filter, true)
+	require.NoError(t, err)
+
+	err = edService.DeleteProjectEventDeliveries(ctx, project.UID, &datastore.EventDeliveryFilter{
+		CreatedAtStart: 0,
+		CreatedAtEnd:   cutoff.Unix(),
+	}, true)
+	require.NoError(t, err)
+
+	_, err = service.FindDeliveryAttemptById(ctx, eventDelivery.UID, attemptUID)
+	require.ErrorIs(t, err, datastore.ErrDeliveryAttemptNotFound)
 }

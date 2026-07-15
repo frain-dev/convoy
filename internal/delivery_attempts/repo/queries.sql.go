@@ -328,10 +328,13 @@ func (q *Queries) GetFailureAndSuccessCountsWithResetTime(ctx context.Context, a
 }
 
 const hardDeleteProjectDeliveryAttempts = `-- name: HardDeleteProjectDeliveryAttempts :execresult
-DELETE FROM convoy.delivery_attempts
-WHERE project_id = $1
-    AND created_at >= $2
-    AND created_at <= $3
+DELETE FROM convoy.delivery_attempts AS da
+USING convoy.event_deliveries AS ed
+WHERE da.event_delivery_id = ed.id
+  AND da.project_id = $1
+  AND ed.project_id = $1
+  AND ed.created_at >= $2
+  AND ed.created_at <= $3
 `
 
 type HardDeleteProjectDeliveryAttemptsParams struct {
@@ -340,6 +343,12 @@ type HardDeleteProjectDeliveryAttemptsParams struct {
 	CreatedAtEnd   pgtype.Timestamptz
 }
 
+// Hard delete keys off the parent event_delivery.created_at (not attempt.created_at).
+// Retention deletes deliveries by delivery age next; retry attempts can be newer than
+// the cutoff while their delivery is older. Deleting by attempt age leaves those rows
+// and trips delivery_attempts_event_delivery_id_fkey (NO ACTION). Fail closed: remove
+// every attempt for deliveries in the cutoff window before the delivery delete runs.
+// Soft delete still filters on attempt.created_at; only hard delete uses this join.
 func (q *Queries) HardDeleteProjectDeliveryAttempts(ctx context.Context, arg HardDeleteProjectDeliveryAttemptsParams) (pgconn.CommandTag, error) {
 	return q.db.Exec(ctx, hardDeleteProjectDeliveryAttempts, arg.ProjectID, arg.CreatedAtStart, arg.CreatedAtEnd)
 }
