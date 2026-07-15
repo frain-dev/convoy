@@ -203,29 +203,37 @@ func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
 	}
 
 	for _, p := range projects {
+		cutoff := time.Now().Add(-policy).Unix()
+
+		// Hard-delete attempts for deliveries in [0, cutoff] (keyed by delivery
+		// created_at). See hardDeleteProjectDeliveryAttempts.
 		deliveryFilter := &datastore.DeliveryAttemptsFilter{
 			CreatedAtStart: 0,
-			CreatedAtEnd:   time.Now().Add(-policy).Unix(),
+			CreatedAtEnd:   cutoff,
 		}
 
 		err = deliveryAttemptsRepo.DeleteProjectDeliveriesAttempts(ctx, p.UID, deliveryFilter, true)
-		if err != nil {
+		// Fail closed: do not delete deliveries if attempt cleanup hit a real error.
+		// ErrDeliveryAttemptsNotDeleted means nothing matched (no attempts to remove).
+		if err != nil && !errors.Is(err, datastore.ErrDeliveryAttemptsNotDeleted) {
 			d.logger.WithError(err).Error("failed to delete project delivery attempts")
+			continue
 		}
 
 		eventDeliveryFilter := &datastore.EventDeliveryFilter{
 			CreatedAtStart: 0,
-			CreatedAtEnd:   time.Now().Add(-policy).Unix(),
+			CreatedAtEnd:   cutoff,
 		}
 
 		err = eventDeliveryRepo.DeleteProjectEventDeliveries(ctx, p.UID, eventDeliveryFilter, true)
-		if err != nil {
+		if err != nil && !errors.Is(err, postgres.ErrEventDeliveriesNotDeleted) {
 			d.logger.WithError(err).Error("failed to delete project event deliveries")
+			continue
 		}
 
 		eventFilter := &datastore.EventFilter{
 			CreatedAtStart: 0,
-			CreatedAtEnd:   time.Now().Add(-policy).Unix(),
+			CreatedAtEnd:   cutoff,
 		}
 		err = eventRepo.DeleteProjectEvents(ctx, p.UID, eventFilter, true)
 		if err != nil {

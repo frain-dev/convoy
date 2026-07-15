@@ -34,8 +34,20 @@ const (
     UPDATE convoy.delivery_attempts SET deleted_at = NOW() WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
     `
 
+	// Hard delete keys off the parent event_delivery.created_at (not attempt.created_at).
+	// Retention deletes deliveries by delivery age next; retry attempts can be newer than
+	// the cutoff while their delivery is older. Deleting by attempt age leaves those rows
+	// and trips delivery_attempts_event_delivery_id_fkey (NO ACTION). Fail closed: remove
+	// every attempt for deliveries in the cutoff window before the delivery delete runs.
+	// Soft delete still filters on attempt.created_at; only hard delete uses this join.
 	hardDeleteProjectDeliveryAttempts = `
-    DELETE FROM convoy.delivery_attempts WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3;
+    DELETE FROM convoy.delivery_attempts AS da
+    USING convoy.event_deliveries AS ed
+    WHERE da.event_delivery_id = ed.id
+      AND da.project_id = $1
+      AND ed.project_id = $1
+      AND ed.created_at >= $2
+      AND ed.created_at <= $3;
     `
 
 	findDeliveryAttempts = `with att as (SELECT * FROM convoy.delivery_attempts WHERE event_delivery_id = $1 order by created_at desc limit 10) select * from att order by created_at;`
@@ -109,6 +121,8 @@ func (d *deliveryAttemptRepo) DeleteProjectDeliveriesAttempts(ctx context.Contex
 	start := time.Unix(filter.CreatedAtStart, 0)
 	end := time.Unix(filter.CreatedAtEnd, 0)
 
+	// Hard delete: filter dates apply to event_deliveries.created_at (see SQL comment).
+	// Soft delete: filter dates apply to delivery_attempts.created_at.
 	if hardDelete {
 		result, err = d.db.GetDB().ExecContext(ctx, hardDeleteProjectDeliveryAttempts, projectID, start, end)
 	} else {
