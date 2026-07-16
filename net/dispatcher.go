@@ -676,7 +676,8 @@ func hasHeader(header httpheader.HTTPHeader, key string) bool {
 }
 
 func isCustomRequestIDHeader(requestIDHeader string) bool {
-	return !util.IsStringEmpty(requestIDHeader) && requestIDHeader != config.DefaultRequestIDHeader.String()
+	header := strings.TrimSpace(requestIDHeader)
+	return header != "" && header != config.DefaultRequestIDHeader.String()
 }
 
 type Response struct {

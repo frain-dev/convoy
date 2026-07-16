@@ -306,6 +306,19 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		)
 		responseReceivedAt := time.Now()
 
+		// Missing idempotency key for a custom request ID header is deterministic; fail
+		// closed and do not schedule retries.
+		if errors.Is(err, datastore.ErrMissingIdempotencyKeyForCustomRequestIDHeader) {
+			deps.Logger.ErrorContext(ctx, "event delivery missing idempotency key for custom request id header", "error", err, "event_delivery_uid", eventDelivery.UID)
+			eventDelivery.Status = datastore.FailureEventStatus
+			eventDelivery.Description = err.Error()
+			if updateErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus); updateErr != nil {
+				deps.Logger.ErrorContext(ctx, "failed to update event delivery status to failed", "error", updateErr)
+			}
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
+			return nil
+		}
+
 		status := "-"
 		statusCode := 0
 		if resp != nil {

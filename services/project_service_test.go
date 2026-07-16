@@ -266,9 +266,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 							},
 						},
 					},
-					SSL:           &datastore.DefaultSSLConfig,
-					Strategy:      &datastore.DefaultStrategyConfig,
-					RateLimit:     &datastore.DefaultRateLimitConfig,
+					SSL:             &datastore.DefaultSSLConfig,
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
 					ReplayAttacks:   false,
 					MetaEvent:       &datastore.MetaEventConfiguration{IsEnabled: false},
 					RequestIDHeader: config.DefaultRequestIDHeader,
@@ -329,9 +329,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 							},
 						},
 					},
-					SSL:           &datastore.DefaultSSLConfig,
-					Strategy:      &datastore.DefaultStrategyConfig,
-					RateLimit:     &datastore.DefaultRateLimitConfig,
+					SSL:             &datastore.DefaultSSLConfig,
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
 					ReplayAttacks:   false,
 					MetaEvent:       &datastore.MetaEventConfiguration{IsEnabled: false},
 					RequestIDHeader: config.DefaultRequestIDHeader,
@@ -609,15 +609,40 @@ func TestProjectService_CreateProject(t *testing.T) {
 				LogoURL:        "",
 				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
-					Signature:     &datastore.SignatureConfiguration{Header: "X-Convoy-Signature"},
-					SSL:           &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
-					Strategy:      &datastore.StrategyConfiguration{Type: "linear", Duration: 20, RetryCount: 4},
+					Signature:       &datastore.SignatureConfiguration{Header: "X-Convoy-Signature"},
+					SSL:             &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
+					Strategy:        &datastore.StrategyConfiguration{Type: "linear", Duration: 20, RetryCount: 4},
 					RateLimit:       &datastore.RateLimitConfiguration{Count: 1000, Duration: 60},
 					ReplayAttacks:   true,
 					RequestIDHeader: config.DefaultRequestIDHeader,
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name:           "should_reject_custom_request_id_header_on_incoming_project",
+			skipLimitCheck: true,
+			args: args{
+				ctx: ctx,
+				newProject: &models.CreateProject{
+					Name: "incoming_custom_header",
+					Type: "incoming",
+					Config: &models.ProjectConfig{
+						Signature:       &models.SignatureConfiguration{Header: "X-Convoy-Signature"},
+						Strategy:        &models.StrategyConfiguration{Type: "linear", Duration: 20, RetryCount: 4},
+						RequestIDHeader: "Split-Request-ID",
+					},
+				},
+				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
+				},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  ErrCustomRequestIDHeaderOutgoingOnly.Error(),
 		},
 	}
 	for _, tc := range tests {
@@ -785,6 +810,32 @@ func TestProjectService_UpdateProject(t *testing.T) {
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed",
+		},
+		{
+			name: "should_reject_custom_request_id_header_on_incoming_update",
+			args: args{
+				ctx: ctx,
+				project: &datastore.Project{
+					UID:  "12345",
+					Name: "test_project",
+					Type: datastore.IncomingProject,
+					Config: &datastore.ProjectConfig{
+						Signature: &datastore.SignatureConfiguration{Header: "X-Convoy-Signature"},
+						Strategy:  &datastore.StrategyConfiguration{Type: "linear", Duration: 20, RetryCount: 4},
+					},
+				},
+				update: &models.UpdateProject{
+					Name: "test_project",
+					Config: &models.ProjectConfig{
+						Signature:       &models.SignatureConfiguration{Header: "X-Convoy-Signature"},
+						Strategy:        &models.StrategyConfiguration{Type: "linear", Duration: 20, RetryCount: 4},
+						RequestIDHeader: "Split-Request-ID",
+					},
+				},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  ErrCustomRequestIDHeaderOutgoingOnly.Error(),
 		},
 	}
 	for _, tc := range tests {

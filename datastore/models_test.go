@@ -114,6 +114,20 @@ func TestProject_ValidateOutgoingEventIdempotencyKey(t *testing.T) {
 	}
 }
 
+func TestProjectConfig_GetRequestIDHeader(t *testing.T) {
+	t.Run("trims_whitespace", func(t *testing.T) {
+		cfg := &ProjectConfig{RequestIDHeader: "  Split-Request-ID  "}
+		require.Equal(t, config.RequestIDHeaderProvider("Split-Request-ID"), cfg.GetRequestIDHeader())
+		require.True(t, cfg.UsesCustomRequestIDHeader())
+	})
+
+	t.Run("whitespace_only_falls_back_to_default", func(t *testing.T) {
+		cfg := &ProjectConfig{RequestIDHeader: "   "}
+		require.Equal(t, config.DefaultRequestIDHeader, cfg.GetRequestIDHeader())
+		require.False(t, cfg.UsesCustomRequestIDHeader())
+	})
+}
+
 func TestProject_IsOwner(t *testing.T) {
 	tt := []struct {
 		name     string

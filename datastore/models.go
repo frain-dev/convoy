@@ -632,19 +632,19 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize                 uint64                       `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks                 bool                         `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	AddEventIDTraceHeaders        bool                         `json:"add_event_id_trace_headers"`
-	DisableEndpoint               bool                         `json:"disable_endpoint" db:"disable_endpoint"`
-	MultipleEndpointSubscriptions bool                         `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
-	SearchPolicy                  string                       `json:"search_policy" db:"search_policy"`
-	SSL                           *SSLConfiguration            `json:"ssl" db:"ssl"`
-	RateLimit                     *RateLimitConfiguration      `json:"ratelimit" db:"ratelimit"`
-	Strategy                      *StrategyConfiguration       `json:"strategy" db:"strategy"`
-	Signature                     *SignatureConfiguration      `json:"signature" db:"signature"`
+	MaxIngestSize                 uint64                         `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                           `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	AddEventIDTraceHeaders        bool                           `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                           `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                           `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	SearchPolicy                  string                         `json:"search_policy" db:"search_policy"`
+	SSL                           *SSLConfiguration              `json:"ssl" db:"ssl"`
+	RateLimit                     *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration         `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration        `json:"signature" db:"signature"`
 	RequestIDHeader               config.RequestIDHeaderProvider `json:"request_id_header"`
-	MetaEvent                     *MetaEventConfiguration      `json:"meta_event" db:"meta_event"`
-	CircuitBreaker                *CircuitBreakerConfiguration `json:"circuit_breaker" db:"circuit_breaker"`
+	MetaEvent                     *MetaEventConfiguration        `json:"meta_event" db:"meta_event"`
+	CircuitBreaker                *CircuitBreakerConfiguration   `json:"circuit_breaker" db:"circuit_breaker"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -669,8 +669,11 @@ func (p *ProjectConfig) GetSignatureConfig() SignatureConfiguration {
 }
 
 func (p *ProjectConfig) GetRequestIDHeader() config.RequestIDHeaderProvider {
-	if p != nil && strings.TrimSpace(string(p.RequestIDHeader)) != "" {
-		return p.RequestIDHeader
+	if p != nil {
+		header := strings.TrimSpace(string(p.RequestIDHeader))
+		if header != "" {
+			return config.RequestIDHeaderProvider(header)
+		}
 	}
 	return config.DefaultRequestIDHeader
 }
@@ -809,24 +812,24 @@ func (p *Project) ValidateOutgoingEventIdempotencyKey(idempotencyKey string) err
 }
 
 var (
-	ErrSignupDisabled                = errors.New("user registration is disabled")
-	ErrUserNotFound                  = errors.New("user not found")
-	ErrSourceNotFound                = errors.New("source not found")
-	ErrEventNotFound                 = errors.New("event not found")
-	ErrProjectNotFound               = errors.New("project not found")
-	ErrEndpointNotFound              = errors.New("endpoint not found")
-	ErrSubscriptionNotFound          = errors.New("subscription not found")
-	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
-	ErrDeliveryAttemptNotFound       = errors.New("event delivery attempt not found")
-	ErrDeliveryAttemptsNotDeleted    = errors.New("event delivery attempts not deleted")
-	ErrPortalLinkNotFound            = errors.New("portal link not found")
-	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
-	ErrConfigNotFound                = errors.New("config not found")
-	ErrDuplicateProjectName          = errors.New("a project with this name already exists")
-	ErrDuplicateEmail                = errors.New("a user with this email already exists")
-	ErrNoActiveSecret                = errors.New("no active secret found")
-	ErrSecretNotFound                = errors.New("secret not found")
-	ErrMetaEventNotFound             = errors.New("meta event not found")
+	ErrSignupDisabled                                = errors.New("user registration is disabled")
+	ErrUserNotFound                                  = errors.New("user not found")
+	ErrSourceNotFound                                = errors.New("source not found")
+	ErrEventNotFound                                 = errors.New("event not found")
+	ErrProjectNotFound                               = errors.New("project not found")
+	ErrEndpointNotFound                              = errors.New("endpoint not found")
+	ErrSubscriptionNotFound                          = errors.New("subscription not found")
+	ErrEventDeliveryNotFound                         = errors.New("event delivery not found")
+	ErrDeliveryAttemptNotFound                       = errors.New("event delivery attempt not found")
+	ErrDeliveryAttemptsNotDeleted                    = errors.New("event delivery attempts not deleted")
+	ErrPortalLinkNotFound                            = errors.New("portal link not found")
+	ErrNotAuthorisedToAccessDocument                 = errors.New("your credentials cannot access or modify this resource")
+	ErrConfigNotFound                                = errors.New("config not found")
+	ErrDuplicateProjectName                          = errors.New("a project with this name already exists")
+	ErrDuplicateEmail                                = errors.New("a user with this email already exists")
+	ErrNoActiveSecret                                = errors.New("no active secret found")
+	ErrSecretNotFound                                = errors.New("secret not found")
+	ErrMetaEventNotFound                             = errors.New("meta event not found")
 	ErrMissingIdempotencyKeyForCustomRequestIDHeader = errors.New("idempotency_key is required when a custom request_id_header is configured")
 )
 

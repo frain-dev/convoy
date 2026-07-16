@@ -168,6 +168,19 @@ func TestUpdateProject(t *testing.T) {
 			},
 		},
 		{
+			name: "should_trim_request_id_header_on_read",
+			setup: func() *datastore.Project {
+				return seedProject(t, db, org)
+			},
+			update: func(p *datastore.Project) {
+				p.Config.RequestIDHeader = config.RequestIDHeaderProvider("  Split-Request-ID  ")
+			},
+			wantErr: false,
+			verify: func(t *testing.T, original, updated *datastore.Project) {
+				require.Equal(t, config.RequestIDHeaderProvider("Split-Request-ID"), updated.Config.GetRequestIDHeader())
+			},
+		},
+		{
 			name: "should_update_ssl_config",
 			setup: func() *datastore.Project {
 				return seedProject(t, db, org)

@@ -355,8 +355,9 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			}
 		}
 
-		// When a project configures a custom request ID header, producers must supply a UUID
-		// as idempotency_key at publish time; that value is sent on the outbound header below.
+		// When a project configures a custom request ID header, producers must supply
+		// idempotency_key at publish time (any stable value); that value is sent on the
+		// outbound header below.
 		requestSentAt := time.Now()
 		resp, err := deps.Dispatcher.SendWebhookWithMTLS(
 			ctx,
@@ -373,6 +374,19 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			mtlsCert,
 		)
 		responseReceivedAt := time.Now()
+
+		// Missing idempotency key for a custom request ID header is deterministic; fail
+		// closed and do not schedule retries.
+		if errors.Is(err, datastore.ErrMissingIdempotencyKeyForCustomRequestIDHeader) {
+			deps.Logger.ErrorContext(ctx, "event delivery missing idempotency key for custom request id header", "error", err, "event_delivery_uid", eventDelivery.UID)
+			eventDelivery.Status = datastore.FailureEventStatus
+			eventDelivery.Description = err.Error()
+			if updateErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus); updateErr != nil {
+				deps.Logger.ErrorContext(ctx, "failed to update event delivery status to failed", "error", updateErr)
+			}
+			tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
+			return nil
+		}
 
 		status := "-"
 		statusCode := 0

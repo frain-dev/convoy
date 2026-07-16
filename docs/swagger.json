@@ -8176,6 +8176,15 @@
         "RoleAPI"
       ]
     },
+    "config.RequestIDHeaderProvider": {
+      "type": "string",
+      "enum": [
+        "X-Convoy-Idempotency-Key"
+      ],
+      "x-enum-varnames": [
+        "DefaultRequestIDHeader"
+      ]
+    },
     "config.SignatureHeaderProvider": {
       "type": "string",
       "enum": [
@@ -9252,6 +9261,9 @@
         },
         "replay_attacks_prevention_enabled": {
           "type": "boolean"
+        },
+        "request_id_header": {
+          "$ref": "#/definitions/config.RequestIDHeaderProvider"
         },
         "search_policy": {
           "type": "string"
@@ -11131,6 +11143,14 @@
         "replay_attacks_prevention_enabled": {
           "description": "Controls if your project will add a timestamp to it's webhook signature header to prevent a replay attack, See this blog post[https://getconvoy.io/blog/generating-stripe-like-webhook-signatures] for more]",
           "type": "boolean"
+        },
+        "request_id_header": {
+          "description": "RequestIDHeader is the outbound header name for the stable request id sent on webhook deliveries.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/config.RequestIDHeaderProvider"
+            }
+          ]
         },
         "search_policy": {
           "description": "Specify the interval in hours for which the event tokenizer runs",
