@@ -36,7 +36,7 @@ func TestApplyProjectConfigPatch_PreservesUnsetFields(t *testing.T) {
 	patch := &models.ProjectConfig{
 		RequestIDHeader: config.RequestIDHeaderProvider("Split-Request-ID"),
 	}
-	merged := applyProjectConfigPatch(existing, patch)
+	merged := applyProjectConfigPatch(existing, patch, nil)
 	require.True(t, merged.ReplayAttacks)
 	require.Equal(t, 1000, merged.RateLimit.Count)
 	require.Equal(t, config.RequestIDHeaderProvider("Split-Request-ID"), merged.RequestIDHeader)
@@ -59,11 +59,25 @@ func TestApplyProjectConfigPatch_PreservesBooleansOnRateLimitOnlyPatch(t *testin
 			Duration: 30,
 		},
 	}
-	merged := applyProjectConfigPatch(existing, patch)
+	merged := applyProjectConfigPatch(existing, patch, nil)
 	require.True(t, merged.ReplayAttacks)
 	require.True(t, merged.DisableEndpoint)
 	require.True(t, merged.AddEventIDTraceHeaders)
 	require.True(t, merged.MultipleEndpointSubscriptions)
 	require.Equal(t, 500, merged.RateLimit.Count)
 	require.Equal(t, uint64(30), merged.RateLimit.Duration)
+}
+
+func TestApplyProjectConfigPatch_AppliesExplicitBooleanToggles(t *testing.T) {
+	existing := &datastore.ProjectConfig{
+		ReplayAttacks: true,
+	}
+	patch := &models.ProjectConfig{
+		ReplayAttacks: false,
+	}
+	present := map[string]struct{}{
+		"replay_attacks_prevention_enabled": {},
+	}
+	merged := applyProjectConfigPatch(existing, patch, present)
+	require.False(t, merged.ReplayAttacks)
 }

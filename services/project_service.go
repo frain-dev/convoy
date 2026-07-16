@@ -193,7 +193,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 			}
 		}
 
-		project.Config = applyProjectConfigPatch(project.Config, update.Config)
+		project.Config = applyProjectConfigPatch(project.Config, update.Config, update.ConfigPresentKeys())
 		normalizeRequestIDHeader(project.Config)
 		if err := validateRequestIDHeaderForProject(project.Type, project.Config); err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -238,7 +238,7 @@ func normalizeRequestIDHeader(cfg *datastore.ProjectConfig) {
 	cfg.RequestIDHeader = config.RequestIDHeaderProvider(header)
 }
 
-func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.ProjectConfig) *datastore.ProjectConfig {
+func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.ProjectConfig, present map[string]struct{}) *datastore.ProjectConfig {
 	if patch == nil {
 		return existing
 	}
@@ -274,6 +274,20 @@ func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.Pr
 	}
 	if patch.MaxIngestSize > 0 {
 		merged.MaxIngestSize = incoming.MaxIngestSize
+	}
+	if present != nil {
+		if _, ok := present["replay_attacks_prevention_enabled"]; ok {
+			merged.ReplayAttacks = incoming.ReplayAttacks
+		}
+		if _, ok := present["disable_endpoint"]; ok {
+			merged.DisableEndpoint = incoming.DisableEndpoint
+		}
+		if _, ok := present["add_event_id_trace_headers"]; ok {
+			merged.AddEventIDTraceHeaders = incoming.AddEventIDTraceHeaders
+		}
+		if _, ok := present["multiple_endpoint_subscriptions"]; ok {
+			merged.MultipleEndpointSubscriptions = incoming.MultipleEndpointSubscriptions
+		}
 	}
 	return &merged
 }

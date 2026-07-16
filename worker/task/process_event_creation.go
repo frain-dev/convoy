@@ -271,6 +271,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 	for _, s := range opts.Subscriptions {
 		ec.subscription = &s
 		headers := opts.Event.Headers
+		authUnavailable := false
 
 		if s.Type == datastore.SubscriptionTypeAPI {
 			endpoint, err := opts.EndpointRepo.FindEndpointByID(ctx, s.EndpointID, opts.Project.UID)
@@ -300,9 +301,10 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			})
 			if err != nil {
 				opts.Logger.ErrorContext(ctx, "endpoint authentication unavailable", "endpoint.id", endpoint.UID, "error", err)
-				continue
+				authUnavailable = true
+			} else {
+				headers = resolvedHeaders
 			}
-			headers = resolvedHeaders
 
 			s.Endpoint = endpoint
 		}
@@ -347,6 +349,11 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			RetryLimit:      rc.RetryCount,
 		}
 
+		deliveryStatus := getEventDeliveryStatus(ctx, &s, s.Endpoint, opts.Logger)
+		if authUnavailable {
+			deliveryStatus = datastore.DiscardedEventStatus
+		}
+
 		eventDelivery := &datastore.EventDelivery{
 			UID:            ulid.Make().String(),
 			SubscriptionID: s.UID,
@@ -360,7 +367,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			TargetURL:      opts.TargetURL,
 			IdempotencyKey: opts.Event.IdempotencyKey,
 			URLQueryParams: opts.Event.URLQueryParams,
-			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, opts.Logger),
+			Status:         deliveryStatus,
 			AcknowledgedAt: null.TimeFrom(time.Now()),
 			DeliveryMode:   s.DeliveryMode,
 		}
