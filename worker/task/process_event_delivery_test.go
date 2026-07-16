@@ -130,6 +130,37 @@ func TestProcessEventDelivery(t *testing.T) {
 			},
 		},
 		{
+			name:          "Project not found discards delivery",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
+			expectedError: nil,
+			msg: &datastore.EventDelivery{
+				UID:       "delivery-missing-project",
+				ProjectID: "project-missing",
+			},
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+				m.EXPECT().
+					FindEventDeliveryByIDSlim(gomock.Any(), "project-missing", "delivery-missing-project").
+					Return(&datastore.EventDelivery{
+						UID:       "delivery-missing-project",
+						ProjectID: "project-missing",
+						Metadata: &datastore.Metadata{
+							Data:            []byte(`{}`),
+							NumTrials:       0,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						Status:       datastore.ScheduledEventStatus,
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
+					}, nil).Times(1)
+
+				o.EXPECT().FetchProjectByID(gomock.Any(), "project-missing").Return(nil, datastore.ErrProjectNotFound)
+				m.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), "project-missing", gomock.Any(), datastore.DiscardedEventStatus).Return(nil)
+
+				l.EXPECT().UseForwardProxy().Times(1).Return(true)
+				l.EXPECT().IpRules().Times(2).Return(true)
+			},
+		},
+		{
 			name:          "Endpoint is inactive",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,

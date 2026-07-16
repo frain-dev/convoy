@@ -166,6 +166,15 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		project, err := deps.ProjectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
+			// Deleted org JOIN miss is terminal: do not retry forever.
+			if errors.Is(err, datastore.ErrProjectNotFound) {
+				eventDelivery.Description = datastore.ErrProjectNotFound.Error()
+				if updErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, eventDelivery.ProjectID, *eventDelivery, datastore.DiscardedEventStatus); updErr != nil {
+					deps.Logger.ErrorContext(ctx, "failed to update event delivery status to discarded", "error", updErr)
+				}
+				tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
+				return nil
+			}
 			tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
 			return &DeliveryError{Err: err}
 		}

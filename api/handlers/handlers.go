@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -89,6 +90,25 @@ func (h *Handler) IsReqWithJWT(authUser *auth.AuthenticatedUser) bool {
 
 func (h *Handler) IsReqWithPortalLinkToken(authUser *auth.AuthenticatedUser) bool {
 	return authUser.Credential.Type == auth.CredentialTypeToken
+}
+
+// requireJWTProjectManage enforces PermissionProjectManage for JWT and PAT
+// callers on endpoint mutations. Portal tokens keep CanManageEndpoint /
+// ownership checks; project API keys stay project-scoped and are skipped.
+// Failure policy: fail closed with 403 when Authorize rejects.
+func (h *Handler) requireJWTProjectManage(w http.ResponseWriter, r *http.Request, project *datastore.Project) bool {
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if authUser == nil {
+		return true
+	}
+	if !h.IsReqWithJWT(authUser) && !h.IsReqWithPersonalAccessToken(authUser) {
+		return true
+	}
+	if err := h.A.Authz.Authorize(r.Context(), string(policies.PermissionProjectManage), project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return false
+	}
+	return true
 }
 
 // canViewRawHeaders reports whether the caller may see unredacted request and
@@ -203,6 +223,9 @@ func (h *Handler) retrieveOrganisation(r *http.Request) (*datastore.Organisation
 	orgID := chi.URLParam(r, "orgID")
 	if util.IsStringEmpty(orgID) {
 		orgID = r.URL.Query().Get("orgID")
+	}
+	if util.IsStringEmpty(orgID) {
+		orgID = strings.TrimSpace(r.Header.Get(headerOrganisationID))
 	}
 	if !util.IsStringEmpty(orgID) {
 		orgRepo := organisations.New(h.A.Logger, h.A.DB)

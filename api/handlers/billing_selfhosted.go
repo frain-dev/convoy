@@ -261,6 +261,9 @@ func (h *BillingHandler) GetSelfHostedUsage(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// SH instance gate is already enforced via selfHostedLicenseKey. Still require
+	// billing manage on the requested org so a sole-org admin cannot read another
+	// organisation's usage by UID.
 	if err := h.A.Authz.Authorize(r.Context(), string(policies.PermissionBillingManage), org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing access requires billing admin or organisation admin role", http.StatusForbidden))
 		return
