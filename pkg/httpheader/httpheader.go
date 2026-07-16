@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // HTTPHeader is our custom  header type that can merge fields.
@@ -11,15 +12,29 @@ type HTTPHeader map[string][]string
 
 // MergeHeaders is used to merge two headers together as one.
 // It takes all the incoming header values and merges them to HTTPHeader
-// without replacing the previous value
+// without replacing the previous value. Existing keys win case-insensitively
+// so protected headers such as Authorization cannot be duplicated under a
+// different casing by attacker-controlled event headers.
 func (h HTTPHeader) MergeHeaders(nh HTTPHeader) {
 	for k, v := range nh {
-		if _, ok := h[k]; ok {
+		if headerKeyExists(h, k) {
 			continue
 		}
 
 		h[k] = v
 	}
+}
+
+func headerKeyExists(h HTTPHeader, key string) bool {
+	if _, ok := h[key]; ok {
+		return true
+	}
+	for existing := range h {
+		if strings.EqualFold(existing, key) {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *HTTPHeader) Scan(value interface{}) error {

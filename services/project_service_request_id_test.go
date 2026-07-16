@@ -81,3 +81,19 @@ func TestApplyProjectConfigPatch_AppliesExplicitBooleanToggles(t *testing.T) {
 	merged := applyProjectConfigPatch(existing, patch, present)
 	require.False(t, merged.ReplayAttacks)
 }
+
+func TestApplyProjectConfigPatch_ClearsRequestIDHeaderWhenPresent(t *testing.T) {
+	existing := &datastore.ProjectConfig{
+		RequestIDHeader: config.RequestIDHeaderProvider("Split-Request-ID"),
+	}
+	patch := &models.ProjectConfig{
+		RequestIDHeader: "",
+	}
+	present := map[string]struct{}{
+		"request_id_header": {},
+	}
+	merged := applyProjectConfigPatch(existing, patch, present)
+	require.Equal(t, config.RequestIDHeaderProvider(""), merged.RequestIDHeader)
+	normalizeRequestIDHeader(merged)
+	require.Equal(t, datastore.DefaultProjectConfig.RequestIDHeader, merged.RequestIDHeader)
+}

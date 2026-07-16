@@ -266,9 +266,6 @@ func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.Pr
 	if patch.CircuitBreaker != nil {
 		merged.CircuitBreaker = incoming.CircuitBreaker
 	}
-	if patch.RequestIDHeader != "" {
-		merged.RequestIDHeader = incoming.RequestIDHeader
-	}
 	if !util.IsStringEmpty(patch.SearchPolicy) {
 		merged.SearchPolicy = incoming.SearchPolicy
 	}
@@ -276,6 +273,9 @@ func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.Pr
 		merged.MaxIngestSize = incoming.MaxIngestSize
 	}
 	if present != nil {
+		if _, ok := present["request_id_header"]; ok {
+			merged.RequestIDHeader = incoming.RequestIDHeader
+		}
 		if _, ok := present["replay_attacks_prevention_enabled"]; ok {
 			merged.ReplayAttacks = incoming.ReplayAttacks
 		}
@@ -288,6 +288,9 @@ func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.Pr
 		if _, ok := present["multiple_endpoint_subscriptions"]; ok {
 			merged.MultipleEndpointSubscriptions = incoming.MultipleEndpointSubscriptions
 		}
+	} else if patch.RequestIDHeader != "" {
+		// Legacy callers without present-key tracking still apply non-empty values.
+		merged.RequestIDHeader = incoming.RequestIDHeader
 	}
 	return &merged
 }

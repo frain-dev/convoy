@@ -20,7 +20,8 @@ const (
 )
 
 // WorkspaceSlugProbeRateLimit throttles unauthenticated workspace slug lookups on guest routes.
-// Failure policy: fail closed when over limit (429). Applies only when slug query param is set.
+// Failure policy: fail closed. Over-limit returns 429; limiter/transport errors return 503
+// (still blocked, never fail-open). Applies only when slug query param is set.
 func WorkspaceSlugProbeRateLimit(rateLimiter limiter.RateLimiter) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +36,11 @@ func WorkspaceSlugProbeRateLimit(rateLimiter limiter.RateLimiter) func(next http
 			err := rateLimiter.AllowWithDuration(r.Context(), key, workspaceSlugProbeLimit, workspaceSlugProbeDuration)
 			if err == nil {
 				next.ServeHTTP(w, r)
+				return
+			}
+
+			if rlimiter.GetRawError(err) != rlimiter.ErrRateLimitExceeded {
+				_ = render.Render(w, r, util.NewErrorResponse("rate limiter unavailable", http.StatusServiceUnavailable))
 				return
 			}
 

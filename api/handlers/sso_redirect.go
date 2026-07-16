@@ -11,9 +11,10 @@ import (
 var errSSORedirectHostNotApproved = errors.New("redirect URL host is not approved")
 
 // validateSSOAdminPortalRedirectURL validates return_url/success_url before forwarding to Overwatch.
-// Failure policy: fail closed. Cloud org-billing accepts only the configured instance host;
-// licensed self-hosted accepts any canonical customer origin.
-func validateSSOAdminPortalRedirectURL(raw string, cfg config.Configuration, _ string) (string, error) {
+// Failure policy: fail closed. Cloud org-billing accepts only the configured instance host
+// (cfg.Host), with the same https:// defaulting used for bare host values elsewhere.
+// Licensed self-hosted accepts any canonical customer origin.
+func validateSSOAdminPortalRedirectURL(raw string, cfg config.Configuration) (string, error) {
 	canonical, err := billing.CanonicalOrigin(raw)
 	if err != nil {
 		return "", err
@@ -22,10 +23,16 @@ func validateSSOAdminPortalRedirectURL(raw string, cfg config.Configuration, _ s
 		return canonical, nil
 	}
 
-	if host := strings.TrimSpace(cfg.Host); host != "" {
-		if allowed, err := billing.CanonicalOrigin(host); err == nil && canonical == allowed {
-			return canonical, nil
-		}
+	host := strings.TrimSpace(cfg.Host)
+	if host == "" {
+		return "", errSSORedirectHostNotApproved
 	}
-	return "", errSSORedirectHostNotApproved
+	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
+		host = "https://" + host
+	}
+	allowed, err := billing.CanonicalOrigin(host)
+	if err != nil || canonical != allowed {
+		return "", errSSORedirectHostNotApproved
+	}
+	return canonical, nil
 }

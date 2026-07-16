@@ -30,8 +30,12 @@ type ResolveWorkspaceBySlugResult struct {
 	Org          *datastore.Organisation
 }
 
+// ErrWorkspaceNotFound is returned only for definitive negative workspace slug lookups.
+var ErrWorkspaceNotFound = errors.New("workspace not found")
+
 // LookupWorkspaceBySlug resolves a workspace by slug without license refresh side effects.
 // Failure policy: fail closed. Guest routes must not trigger billing/license writes on read.
+// Definitive negatives return ErrWorkspaceNotFound; transport/lookup failures wrap the cause.
 func LookupWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorkspaceBySlugDeps) (*ResolveWorkspaceBySlugResult, error) {
 	if slug == "" {
 		return nil, errors.New("slug is required")
@@ -51,10 +55,10 @@ func LookupWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorkspa
 		if deps.Logger != nil {
 			deps.Logger.Debug("workspace_config by slug failed", "error", err, "slug", slug)
 		}
-		return nil, fmt.Errorf("workspace not found: %w", err)
+		return nil, fmt.Errorf("workspace lookup failed: %w", err)
 	}
 	if !resp.Status {
-		return nil, errors.New("workspace not found")
+		return nil, ErrWorkspaceNotFound
 	}
 	if resp.Data.ExternalID == "" {
 		return nil, errors.New("workspace config missing external_id")
@@ -62,7 +66,10 @@ func LookupWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorkspa
 
 	org, err := deps.OrgRepo.FetchOrganisationByID(ctx, resp.Data.ExternalID)
 	if err != nil {
-		return nil, fmt.Errorf("organisation not found for workspace: %w", err)
+		if errors.Is(err, datastore.ErrOrgNotFound) {
+			return nil, ErrWorkspaceNotFound
+		}
+		return nil, fmt.Errorf("organisation lookup failed for workspace: %w", err)
 	}
 
 	return &ResolveWorkspaceBySlugResult{

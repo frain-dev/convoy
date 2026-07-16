@@ -39,8 +39,12 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 			Cfg:           configuration,
 		})
 		if err != nil {
-			h.A.Logger.Debug("InitSSO: workspace resolve failed", "error", err, "slug", slug)
-			_ = render.Render(w, r, util.NewErrorResponse("Workspace not found", http.StatusBadRequest))
+			if errors.Is(err, services.ErrWorkspaceNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse("Workspace not found", http.StatusBadRequest))
+				return
+			}
+			h.A.Logger.ErrorContext(r.Context(), "InitSSO: workspace resolve failed", "error", err, "slug", slug)
+			_ = render.Render(w, r, util.NewErrorResponse("failed to resolve workspace", http.StatusServiceUnavailable))
 			return
 		}
 		if !result.SSOAvailable {
@@ -170,13 +174,13 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnURL, err := validateSSOAdminPortalRedirectURL(returnURL, configuration, util.RequestOrigin(r))
+	returnURL, err := validateSSOAdminPortalRedirectURL(returnURL, configuration)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 	if successURL != "" {
-		successURL, err = validateSSOAdminPortalRedirectURL(successURL, configuration, util.RequestOrigin(r))
+		successURL, err = validateSSOAdminPortalRedirectURL(successURL, configuration)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return

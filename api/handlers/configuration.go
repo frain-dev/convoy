@@ -164,7 +164,12 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 			Cfg:           cfg,
 		})
 		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("workspace not found", http.StatusBadRequest))
+			if errors.Is(err, services.ErrWorkspaceNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse("workspace not found", http.StatusBadRequest))
+				return
+			}
+			h.A.Logger.ErrorContext(r.Context(), "failed to resolve workspace slug", "error", err, "slug", slug)
+			_ = render.Render(w, r, util.NewErrorResponse("failed to resolve workspace", http.StatusServiceUnavailable))
 			return
 		}
 		ssoEnabled = result.SSOAvailable
