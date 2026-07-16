@@ -381,8 +381,16 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 		return &EndpointError{Err: fmt.Errorf("CODE: 1008, err: %s", err.Error()), delay: defaultDelay}
 	}
 
-	for i, eventDelivery := range eventDeliveries {
-		s := opts.Subscriptions[i]
+	subscriptionByID := make(map[string]datastore.Subscription, len(opts.Subscriptions))
+	for _, subscription := range opts.Subscriptions {
+		subscriptionByID[subscription.UID] = subscription
+	}
+
+	for _, eventDelivery := range eventDeliveries {
+		s, ok := subscriptionByID[eventDelivery.SubscriptionID]
+		if !ok {
+			continue
+		}
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
 			payload := EventDelivery{
 				EventDeliveryID: eventDelivery.UID,

@@ -41,3 +41,29 @@ func TestApplyProjectConfigPatch_PreservesUnsetFields(t *testing.T) {
 	require.Equal(t, 1000, merged.RateLimit.Count)
 	require.Equal(t, config.RequestIDHeaderProvider("Split-Request-ID"), merged.RequestIDHeader)
 }
+
+func TestApplyProjectConfigPatch_PreservesBooleansOnRateLimitOnlyPatch(t *testing.T) {
+	existing := &datastore.ProjectConfig{
+		ReplayAttacks:                 true,
+		DisableEndpoint:               true,
+		AddEventIDTraceHeaders:        true,
+		MultipleEndpointSubscriptions: true,
+		RateLimit: &datastore.RateLimitConfiguration{
+			Count:    1000,
+			Duration: 60,
+		},
+	}
+	patch := &models.ProjectConfig{
+		RateLimit: &models.RateLimitConfiguration{
+			Count:    500,
+			Duration: 30,
+		},
+	}
+	merged := applyProjectConfigPatch(existing, patch)
+	require.True(t, merged.ReplayAttacks)
+	require.True(t, merged.DisableEndpoint)
+	require.True(t, merged.AddEventIDTraceHeaders)
+	require.True(t, merged.MultipleEndpointSubscriptions)
+	require.Equal(t, 500, merged.RateLimit.Count)
+	require.Equal(t, uint64(30), merged.RateLimit.Duration)
+}

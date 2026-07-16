@@ -275,12 +275,6 @@ func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.Pr
 	if patch.MaxIngestSize > 0 {
 		merged.MaxIngestSize = incoming.MaxIngestSize
 	}
-	if patch.RateLimit != nil || patch.Strategy != nil || patch.Signature != nil {
-		merged.ReplayAttacks = incoming.ReplayAttacks
-		merged.DisableEndpoint = incoming.DisableEndpoint
-		merged.AddEventIDTraceHeaders = incoming.AddEventIDTraceHeaders
-		merged.MultipleEndpointSubscriptions = incoming.MultipleEndpointSubscriptions
-	}
 	return &merged
 }
 

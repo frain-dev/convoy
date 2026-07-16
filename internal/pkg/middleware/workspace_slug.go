@@ -47,12 +47,8 @@ func WorkspaceSlugProbeRateLimit(rateLimiter limiter.RateLimiter) func(next http
 }
 
 func clientIPFromRequest(r *http.Request) string {
-	if forwarded := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); forwarded != "" {
-		parts := strings.Split(forwarded, ",")
-		if ip := strings.TrimSpace(parts[0]); ip != "" {
-			return ip
-		}
-	}
+	// Failure policy: never trust client-controlled X-Forwarded-For on unauthenticated
+	// guest routes; rate-limit by the direct peer address only.
 	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
 	if err == nil && host != "" {
 		return host
