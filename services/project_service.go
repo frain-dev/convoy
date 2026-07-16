@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -72,6 +74,11 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			checkSignatureVersions(projectConfig.Signature.Versions)
 		} else {
 			projectConfig.Signature = datastore.DefaultProjectConfig.Signature
+		}
+
+		normalizeRequestIDHeader(projectConfig)
+		if err := validateRequestIDHeaderForProject(datastore.ProjectType(newProject.Type), projectConfig); err != nil {
+			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
 		if projectConfig.RateLimit == nil {
@@ -187,6 +194,10 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 		}
 
 		project.Config = update.Config.Transform()
+		normalizeRequestIDHeader(project.Config)
+		if err := validateRequestIDHeaderForProject(project.Type, project.Config); err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
 		checkSignatureVersions(project.Config.Signature.Versions)
 		err := validateMetaEvent(project.Config, ps.Licenser)
 		if err != nil {
@@ -209,6 +220,34 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	}
 
 	return project, nil
+}
+
+var ErrCustomRequestIDHeaderOutgoingOnly = errors.New("request_id_header can only be customized on outgoing projects")
+
+func normalizeRequestIDHeader(cfg *datastore.ProjectConfig) {
+	if cfg == nil {
+		return
+	}
+
+	header := strings.TrimSpace(string(cfg.RequestIDHeader))
+	if header == "" {
+		cfg.RequestIDHeader = datastore.DefaultProjectConfig.RequestIDHeader
+		return
+	}
+	cfg.RequestIDHeader = config.RequestIDHeaderProvider(header)
+}
+
+// validateRequestIDHeaderForProject rejects a non-default request_id_header on
+// non-outgoing projects. Failure policy: fail closed at write time so delivery
+// never sees a custom header without a matching publish-time idempotency gate.
+func validateRequestIDHeaderForProject(projectType datastore.ProjectType, cfg *datastore.ProjectConfig) error {
+	if cfg == nil || !cfg.UsesCustomRequestIDHeader() {
+		return nil
+	}
+	if projectType != datastore.OutgoingProject {
+		return ErrCustomRequestIDHeaderOutgoingOnly
+	}
+	return nil
 }
 
 func checkSignatureVersions(versions []datastore.SignatureVersion) {

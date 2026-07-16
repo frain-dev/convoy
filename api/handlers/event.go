@@ -66,6 +66,11 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := project.ValidateOutgoingEventIdempotencyKey(newMessage.IdempotencyKey); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	if !util.IsStringEmpty(newMessage.EndpointID) {
 		_, err = h.retrieveEndpoint(r.Context(), newMessage.EndpointID, projectID)
 		if err != nil {
@@ -148,6 +153,11 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := project.ValidateOutgoingEventIdempotencyKey(newMessage.IdempotencyKey); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	if h.enforceTrialEventCapForNewEvent(w, r, project.OrganisationID, project.UID, newMessage.IdempotencyKey, h.duplicateByAnyEvent) {
 		return
 	}
@@ -217,6 +227,11 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	h.A.Logger.Info("processing fanout event", "project_id", project.UID, "owner_id", newMessage.OwnerID, "event_type", newMessage.EventType, "body_size_bytes", bodySize)
+
+	if err := project.ValidateOutgoingEventIdempotencyKey(newMessage.IdempotencyKey); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 
 	// Fanout decides novelty with FindFirstEventWithIdempotencyKey (non-duplicate rows
 	// only), so the gate must use the same predicate; see trialCapDuplicateVerdict.
@@ -294,6 +309,11 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 
 	err = newMessage.Validate()
 	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := project.ValidateOutgoingEventIdempotencyKey(newMessage.IdempotencyKey); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}

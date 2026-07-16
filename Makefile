@@ -15,6 +15,13 @@ ui_install:
 build:
 	scripts/build.sh
 
+.PHONY: ui-build ui-build-fresh
+ui-build:
+	scripts/build-ui.sh
+
+ui-build-fresh:
+	INSTALL_DEPS=1 scripts/build-ui.sh
+
 .PHONY: test
 test:
 	@go test -race -p 1 $(shell go list ./... | grep -v '/e2e') -v -timeout 30m

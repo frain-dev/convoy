@@ -1,4 +1,4 @@
-<dialog #projectDialog convoy-dialog id="projectForm" position="full">
+<dialog #projectDialog convoy-dialog id="projectForm" position="full" escapeAction="delegate" (escaped)="cancel()">
 	<div convoy-dialog-header fullscreen="true" (closeDialog)="cancel()">
 		<h2 class="font-semibold text-14 capitalize">Create Project</h2>
 	</div>

@@ -146,6 +146,7 @@ func getDefaultProjectConfig() *datastore.ProjectConfig {
 			Duration:   10,
 			RetryCount: 3,
 		},
+		RequestIDHeader: config.DefaultRequestIDHeader,
 		Signature: &datastore.SignatureConfiguration{
 			Header:   config.DefaultSignatureHeader,
 			Versions: datastore.SignatureVersions{},

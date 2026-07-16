@@ -135,6 +135,52 @@ func TestUpdateProject(t *testing.T) {
 			},
 		},
 		{
+			name: "should_update_request_id_header",
+			setup: func() *datastore.Project {
+				return seedProject(t, db, org)
+			},
+			update: func(p *datastore.Project) {
+				p.Config.RequestIDHeader = config.RequestIDHeaderProvider("Split-Request-ID")
+			},
+			wantErr: false,
+			verify: func(t *testing.T, original, updated *datastore.Project) {
+				require.Equal(t, config.RequestIDHeaderProvider("Split-Request-ID"), updated.Config.GetRequestIDHeader())
+			},
+		},
+		{
+			name: "should_clear_request_id_header_to_default",
+			setup: func() *datastore.Project {
+				p := seedProject(t, db, org)
+				p.Config.RequestIDHeader = config.RequestIDHeaderProvider("Split-Request-ID")
+				err := service.UpdateProject(ctx, p)
+				require.NoError(t, err)
+				updated, err := service.FetchProjectByID(ctx, p.UID)
+				require.NoError(t, err)
+				return updated
+			},
+			update: func(p *datastore.Project) {
+				p.Config.RequestIDHeader = ""
+			},
+			wantErr: false,
+			verify: func(t *testing.T, original, updated *datastore.Project) {
+				require.Equal(t, config.DefaultRequestIDHeader, updated.Config.RequestIDHeader)
+				require.False(t, updated.Config.UsesCustomRequestIDHeader())
+			},
+		},
+		{
+			name: "should_trim_request_id_header_on_read",
+			setup: func() *datastore.Project {
+				return seedProject(t, db, org)
+			},
+			update: func(p *datastore.Project) {
+				p.Config.RequestIDHeader = config.RequestIDHeaderProvider("  Split-Request-ID  ")
+			},
+			wantErr: false,
+			verify: func(t *testing.T, original, updated *datastore.Project) {
+				require.Equal(t, config.RequestIDHeaderProvider("Split-Request-ID"), updated.Config.GetRequestIDHeader())
+			},
+		},
+		{
 			name: "should_update_ssl_config",
 			setup: func() *datastore.Project {
 				return seedProject(t, db, org)

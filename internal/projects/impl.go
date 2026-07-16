@@ -128,6 +128,8 @@ func projectConfigToCreateParams(id string, config *datastore.ProjectConfig) rep
 	cb := config.GetCircuitBreakerConfig()
 	ssl := config.GetSSLConfig()
 
+	requestIDHeader := string(config.GetRequestIDHeader())
+
 	return repo.CreateProjectConfigurationParams{
 		ID:                             common.StringToPgTextNullable(id),
 		SearchPolicy:                   common.StringToPgTextNullable(config.SearchPolicy),
@@ -140,6 +142,7 @@ func projectConfigToCreateParams(id string, config *datastore.ProjectConfig) rep
 		StrategyRetryCount:             pgtype.Int4{Int32: int32(sc.RetryCount), Valid: true},
 		SignatureHeader:                common.StringToPgTextNullable(string(sgc.Header)),
 		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
+		RequestIDHeader:                common.StringToPgTextNullable(requestIDHeader),
 		DisableEndpoint:                pgtype.Bool{Bool: config.DisableEndpoint, Valid: true},
 		MetaEventsEnabled:              pgtype.Bool{Bool: me.IsEnabled, Valid: true},
 		MetaEventsType:                 common.StringToPgTextNullable(string(me.Type)),
@@ -163,6 +166,7 @@ func projectConfigToUpdateParams(id string, config *datastore.ProjectConfig) rep
 	rlc := config.GetRateLimitConfig()
 	sc := config.GetStrategyConfig()
 	sgc := config.GetSignatureConfig()
+	requestIDHeader := string(config.GetRequestIDHeader())
 	me := config.GetMetaEventConfig()
 	cb := config.GetCircuitBreakerConfig()
 	ssl := config.GetSSLConfig()
@@ -178,6 +182,7 @@ func projectConfigToUpdateParams(id string, config *datastore.ProjectConfig) rep
 		StrategyRetryCount:             pgtype.Int4{Int32: int32(sc.RetryCount), Valid: true},
 		SignatureHeader:                common.StringToPgTextNullable(string(sgc.Header)),
 		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
+		RequestIDHeader:                common.StringToPgTextNullable(requestIDHeader),
 		DisableEndpoint:                pgtype.Bool{Bool: config.DisableEndpoint, Valid: true},
 		MetaEventsEnabled:              pgtype.Bool{Bool: me.IsEnabled, Valid: true},
 		MetaEventsType:                 common.StringToPgTextNullable(string(me.Type)),
@@ -205,29 +210,29 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		retainedEvents                         pgtype.Int4
 		createdAt, updatedAt, deletedAt        pgtype.Timestamptz
 		// Config fields
-		searchPolicy                        pgtype.Text
-		strategyType, signatureHeader       string
-		signatureVersions                   []byte
-		maxPayloadReadSize                  int32
-		multipleEndpointSubscriptions       bool
-		replayAttacks                       bool
-		ratelimitCount                      int32
-		ratelimitDuration                   int32
-		strategyDuration                    int32
-		strategyRetryCount                  int32
-		disableEndpoint                     bool
-		sslEnforceSecureEndpoints           pgtype.Bool
-		metaEventsEnabled                   bool
-		metaEventsType, metaEventsEventType pgtype.Text
-		metaEventsUrl, metaEventsSecret     pgtype.Text
-		metaEventsPubSub                    []byte
-		cbSampleRate                        int32
-		cbErrorTimeout                      int32
-		cbFailureThreshold                  int32
-		cbSuccessThreshold                  int32
-		cbObservabilityWindow               int32
-		cbMinimumRequestCount               int32
-		cbConsecutiveFailureThreshold       int32
+		searchPolicy                                   pgtype.Text
+		strategyType, signatureHeader, requestIDHeader string
+		signatureVersions                              []byte
+		maxPayloadReadSize                             int32
+		multipleEndpointSubscriptions                  bool
+		replayAttacks                                  bool
+		ratelimitCount                                 int32
+		ratelimitDuration                              int32
+		strategyDuration                               int32
+		strategyRetryCount                             int32
+		disableEndpoint                                bool
+		sslEnforceSecureEndpoints                      pgtype.Bool
+		metaEventsEnabled                              bool
+		metaEventsType, metaEventsEventType            pgtype.Text
+		metaEventsUrl, metaEventsSecret                pgtype.Text
+		metaEventsPubSub                               []byte
+		cbSampleRate                                   int32
+		cbErrorTimeout                                 int32
+		cbFailureThreshold                             int32
+		cbSuccessThreshold                             int32
+		cbObservabilityWindow                          int32
+		cbMinimumRequestCount                          int32
+		cbConsecutiveFailureThreshold                  int32
 	)
 
 	switch r := row.(type) {
@@ -248,6 +253,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		strategyRetryCount = r.ConfigStrategyRetryCount
 		signatureHeader = r.ConfigSignatureHeader
 		signatureVersions = r.ConfigSignatureVersions
+		requestIDHeader = r.ConfigRequestIDHeader
 		disableEndpoint = r.ConfigDisableEndpoint
 		sslEnforceSecureEndpoints = r.ConfigSslEnforceSecureEndpoints
 		metaEventsEnabled = r.ConfigMetaEventsEnabled
@@ -280,6 +286,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		strategyRetryCount = r.ConfigStrategyRetryCount
 		signatureHeader = r.ConfigSignatureHeader
 		signatureVersions = r.ConfigSignatureVersions
+		requestIDHeader = r.ConfigRequestIDHeader
 		disableEndpoint = r.ConfigDisableEndpoint
 		sslEnforceSecureEndpoints = r.ConfigSslEnforceSecureEndpoints
 		metaEventsEnabled = r.ConfigMetaEventsEnabled
@@ -333,6 +340,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 			Header:   config.SignatureHeaderProvider(signatureHeader),
 			Versions: jsonToSignatureVersions(signatureVersions),
 		},
+		RequestIDHeader: config.RequestIDHeaderProvider(requestIDHeader),
 		SSL: &datastore.SSLConfiguration{
 			EnforceSecureEndpoints: sslEnforceSecureEndpoints.Bool,
 		},
