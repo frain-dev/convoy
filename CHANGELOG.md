@@ -2,6 +2,10 @@
 
 ## 26.6.5
 
+### Features
+
+- feat(dataplane,dashboard): configurable outbound request ID header per project (#2665)
+
 ### Bug Fixes
 
 - fix(dataplane): delete retention attempts by delivery cutoff (#2718)
