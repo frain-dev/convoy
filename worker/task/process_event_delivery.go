@@ -286,16 +286,29 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
 		}
 
-		// Check feature flag for OAuth2 if endpoint uses OAuth2 authentication
-		if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.OAuth2Authentication {
-			oauth2Enabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
-			if !oauth2Enabled {
-				deps.Logger.WarnContext(ctx, "Endpoint has OAuth2 configured but feature flag is disabled, removing OAuth2 authorization header")
-				// Remove OAuth2 authorization header if feature flag is disabled
-				if eventDelivery.Headers != nil {
-					delete(eventDelivery.Headers, "Authorization")
+		// Refresh endpoint auth headers before dispatch. Failure policy: fail closed when
+		// authentication is configured but cannot be applied.
+		if endpoint.Authentication != nil {
+			resolvedHeaders, authErr := resolveEndpointDeliveryHeaders(ctx, endpoint, eventDelivery.Headers, endpointAuthDeps{
+				FeatureFlag:                deps.FeatureFlag,
+				FeatureFlagFetcher:         deps.FeatureFlagFetcher,
+				EarlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
+				OAuth2TokenService:         deps.OAuth2TokenService,
+				OrganisationID:             project.OrganisationID,
+				Logger:                     deps.Logger,
+			})
+			if authErr != nil {
+				deps.Logger.ErrorContext(ctx, "endpoint authentication unavailable", "endpoint.id", endpoint.UID, "error", authErr)
+				eventDelivery.Status = datastore.FailureEventStatus
+				eventDelivery.Description = authErr.Error()
+				err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+				if err != nil {
+					deps.Logger.ErrorContext(ctx, "failed to update event delivery status to failed", "error", err)
 				}
+				tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
+				return nil
 			}
+			eventDelivery.Headers = resolvedHeaders
 		}
 
 		var httpDuration time.Duration

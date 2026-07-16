@@ -495,7 +495,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger)).Get("/sso", handler.InitSSO)
+			authRouter.With(
+				middleware.WorkspaceSlugProbeRateLimit(a.A.Rate),
+				middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger),
+			).Get("/sso", handler.InitSSO)
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
@@ -713,7 +716,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
-			configRouter.Get("/auth", handler.GetAuthConfiguration)
+			configRouter.With(middleware.WorkspaceSlugProbeRateLimit(a.A.Rate)).Get("/auth", handler.GetAuthConfiguration)
 		})
 
 		uiRouter.Route("/backups", func(backupRouter chi.Router) {
@@ -792,7 +795,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		portalLinkRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
-			configRouter.Get("/auth", handler.GetAuthConfiguration)
+			configRouter.With(middleware.WorkspaceSlugProbeRateLimit(a.A.Rate)).Get("/auth", handler.GetAuthConfiguration)
 		})
 
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
@@ -1006,7 +1009,10 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 		// TODO(subomi): added these back for the tests to pass.
 		// What should we do in the future?
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger)).Get("/sso", handler.InitSSO)
+			authRouter.With(
+				middleware.WorkspaceSlugProbeRateLimit(a.A.Rate),
+				middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger),
+			).Get("/sso", handler.InitSSO)
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)

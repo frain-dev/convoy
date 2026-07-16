@@ -193,7 +193,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 			}
 		}
 
-		project.Config = update.Config.Transform()
+		project.Config = applyProjectConfigPatch(project.Config, update.Config)
 		normalizeRequestIDHeader(project.Config)
 		if err := validateRequestIDHeaderForProject(project.Type, project.Config); err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -223,6 +223,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 }
 
 var ErrCustomRequestIDHeaderOutgoingOnly = errors.New("request_id_header can only be customized on outgoing projects")
+var ErrInvalidRequestIDHeaderName = errors.New("request_id_header must be a valid HTTP header token")
 
 func normalizeRequestIDHeader(cfg *datastore.ProjectConfig) {
 	if cfg == nil {
@@ -237,6 +238,52 @@ func normalizeRequestIDHeader(cfg *datastore.ProjectConfig) {
 	cfg.RequestIDHeader = config.RequestIDHeaderProvider(header)
 }
 
+func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.ProjectConfig) *datastore.ProjectConfig {
+	if patch == nil {
+		return existing
+	}
+	if existing == nil {
+		return patch.Transform()
+	}
+
+	merged := *existing
+	incoming := patch.Transform()
+	if patch.RateLimit != nil {
+		merged.RateLimit = incoming.RateLimit
+	}
+	if patch.Strategy != nil {
+		merged.Strategy = incoming.Strategy
+	}
+	if patch.Signature != nil {
+		merged.Signature = incoming.Signature
+	}
+	if patch.SSL != nil {
+		merged.SSL = incoming.SSL
+	}
+	if patch.MetaEvent != nil {
+		merged.MetaEvent = incoming.MetaEvent
+	}
+	if patch.CircuitBreaker != nil {
+		merged.CircuitBreaker = incoming.CircuitBreaker
+	}
+	if patch.RequestIDHeader != "" {
+		merged.RequestIDHeader = incoming.RequestIDHeader
+	}
+	if !util.IsStringEmpty(patch.SearchPolicy) {
+		merged.SearchPolicy = incoming.SearchPolicy
+	}
+	if patch.MaxIngestSize > 0 {
+		merged.MaxIngestSize = incoming.MaxIngestSize
+	}
+	if patch.RateLimit != nil || patch.Strategy != nil || patch.Signature != nil {
+		merged.ReplayAttacks = incoming.ReplayAttacks
+		merged.DisableEndpoint = incoming.DisableEndpoint
+		merged.AddEventIDTraceHeaders = incoming.AddEventIDTraceHeaders
+		merged.MultipleEndpointSubscriptions = incoming.MultipleEndpointSubscriptions
+	}
+	return &merged
+}
+
 // validateRequestIDHeaderForProject rejects a non-default request_id_header on
 // non-outgoing projects. Failure policy: fail closed at write time so delivery
 // never sees a custom header without a matching publish-time idempotency gate.
@@ -247,7 +294,38 @@ func validateRequestIDHeaderForProject(projectType datastore.ProjectType, cfg *d
 	if projectType != datastore.OutgoingProject {
 		return ErrCustomRequestIDHeaderOutgoingOnly
 	}
+	if err := validateHTTPHeaderToken(string(cfg.GetRequestIDHeader())); err != nil {
+		return err
+	}
 	return nil
+}
+
+func validateHTTPHeaderToken(name string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ErrInvalidRequestIDHeaderName
+	}
+	for i, r := range name {
+		if !isHTTPTokenChar(r) {
+			return fmt.Errorf("%w: invalid character at position %d", ErrInvalidRequestIDHeaderName, i)
+		}
+	}
+	return nil
+}
+
+func isHTTPTokenChar(r rune) bool {
+	switch {
+	case r >= 'a' && r <= 'z':
+		return true
+	case r >= 'A' && r <= 'Z':
+		return true
+	case r >= '0' && r <= '9':
+		return true
+	case strings.ContainsRune("!#$%&'*+-.^_`|~", r):
+		return true
+	default:
+		return false
+	}
 }
 
 func checkSignatureVersions(versions []datastore.SignatureVersion) {

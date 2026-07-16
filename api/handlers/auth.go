@@ -32,20 +32,11 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	licenseKey := configuration.LicenseKey
 	if useOrgBilling && slug != "" {
 		orgRepo := organisations.New(h.A.Logger, h.A.DB)
-		orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
-		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
+		result, err := services.LookupWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
 			BillingClient: h.A.BillingClient,
 			OrgRepo:       orgRepo,
 			Logger:        h.A.Logger,
 			Cfg:           configuration,
-			RefreshDeps: services.RefreshLicenseDataDeps{
-				OrgMemberRepo: orgMemberRepo,
-				OrgRepo:       orgRepo,
-				BillingClient: h.A.BillingClient,
-				Logger:        h.A.Logger,
-				Cfg:           configuration,
-				Cache:         h.A.Cache,
-			},
 		})
 		if err != nil {
 			h.A.Logger.Debug("InitSSO: workspace resolve failed", "error", err, "slug", slug)
@@ -177,6 +168,19 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 	if returnURL == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("return_url is required", http.StatusBadRequest))
 		return
+	}
+
+	returnURL, err := validateSSOAdminPortalRedirectURL(returnURL, configuration, util.RequestOrigin(r))
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	if successURL != "" {
+		successURL, err = validateSSOAdminPortalRedirectURL(successURL, configuration, util.RequestOrigin(r))
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
 	}
 
 	sc := service.Config{

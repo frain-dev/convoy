@@ -997,12 +997,11 @@ func requestHeaderValue(header http.Header, key string) string {
 	return ""
 }
 
-func TestDispatcherIdempotencyKeyHeaderCanBeOverriddenByCustomHeaders(t *testing.T) {
+func TestDispatcherIdempotencyKeyHeaderOverridesCustomHeaders(t *testing.T) {
 	const customHeader = "Split-Request-ID"
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "customer-idempotency-key", requestHeaderValue(r.Header, customHeader))
-		require.NotEqual(t, "event-idempotency-key", requestHeaderValue(r.Header, customHeader))
+		require.Equal(t, "event-idempotency-key", requestHeaderValue(r.Header, customHeader))
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status": "success"}`))
@@ -1046,7 +1045,7 @@ func TestDispatcherIdempotencyKeyHeaderCanBeOverriddenByCustomHeaders(t *testing
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	require.Equal(t, "customer-idempotency-key", requestHeaderValue(resp.RequestHeader, customHeader))
+	require.Equal(t, "event-idempotency-key", requestHeaderValue(resp.RequestHeader, customHeader))
 }
 
 func TestDispatcherDoesNotSetIdempotencyKeyHeaderWhenEmpty(t *testing.T) {
