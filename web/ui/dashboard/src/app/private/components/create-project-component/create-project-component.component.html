@@ -222,10 +222,8 @@
           @if (shouldShowBorder < configurations.length) {
             <div class="flex flex-wrap gap-24px gap-y-12px items-center">
               @for (config of configurations; track $index; let i = $index) {
-                @if (!config.show) {
-                  @if (i < 3 || this.projectForm.controls['type'].value === 'outgoing') {
-                    <convoy-config-button (onClick)="toggleConfigForm(config.uid)" convoy-permission="Project Settings|MANAGE">{{ config.name }}</convoy-config-button>
-                  }
+                @if (shouldShowConfigButton(config, i)) {
+                  <convoy-config-button (onClick)="toggleConfigForm(config.uid)" convoy-permission="Project Settings|MANAGE">{{ config.name }}</convoy-config-button>
                 }
               }
             </div>
