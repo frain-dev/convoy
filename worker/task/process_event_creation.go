@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,7 +20,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/frain-dev/convoy/pkg/httpheader"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/transform"
@@ -273,6 +271,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 	for _, s := range opts.Subscriptions {
 		ec.subscription = &s
 		headers := opts.Event.Headers
+		authUnavailable := false
 
 		if s.Type == datastore.SubscriptionTypeAPI {
 			endpoint, err := opts.EndpointRepo.FindEndpointByID(ctx, s.EndpointID, opts.Project.UID)
@@ -292,52 +291,19 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			}
 			opts.Logger.DebugContext(ctx, "Processing endpoint authentication", "endpoint.id", endpoint.UID, "has_authentication", endpoint.Authentication != nil, "auth_type", authType, "has_oauth2", hasOAuth2)
 
-			if endpoint.Authentication != nil {
-				switch endpoint.Authentication.Type {
-				case datastore.APIKeyAuthentication:
-					headers = make(httpheader.HTTPHeader)
-					headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
-					headers.MergeHeaders(opts.Event.Headers)
-				case datastore.OAuth2Authentication:
-					// Check feature flag for OAuth2 using project's organisation ID
-					oauth2Enabled := opts.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, opts.FeatureFlagFetcher, opts.EarlyAdopterFeatureFetcher, opts.Project.OrganisationID)
-					if !oauth2Enabled {
-						opts.Logger.WarnContext(ctx, "Endpoint has OAuth2 configured but feature flag is disabled, skipping OAuth2 authentication")
-						// Continue without OAuth2 authentication if feature flag is disabled
-					} else if opts.OAuth2TokenService == nil {
-						opts.Logger.ErrorContext(ctx, "OAuth2 token service is nil")
-					} else {
-						authHeader, err := opts.OAuth2TokenService.GetAuthorizationHeader(ctx, endpoint)
-						if err != nil {
-							opts.Logger.ErrorContext(ctx, "failed to get OAuth2 authorization header", "error", err)
-						} else {
-							headers = make(httpheader.HTTPHeader)
-							headers["Authorization"] = []string{authHeader}
-							headers.MergeHeaders(opts.Event.Headers)
-							opts.Logger.InfoContext(ctx, "OAuth2 authorization header retrieved and added to headers", "endpoint.id", endpoint.UID)
-						}
-					}
-				case datastore.BasicAuthentication:
-					basicAuthEnabled := opts.FeatureFlag.CanAccessOrgFeature(ctx, fflag.BasicAuthEndpoint, opts.FeatureFlagFetcher, opts.EarlyAdopterFeatureFetcher, opts.Project.OrganisationID)
-					if !basicAuthEnabled {
-						opts.Logger.WarnContext(ctx, "Endpoint has Basic Auth configured but feature flag is disabled, skipping Basic Auth authentication")
-					} else if endpoint.Authentication.BasicAuth == nil {
-						opts.Logger.ErrorContext(ctx, "Basic Auth config is nil")
-					} else if endpoint.Authentication.BasicAuth.UserName == "" && endpoint.Authentication.BasicAuth.Password == "" {
-						opts.Logger.ErrorContext(ctx, "Basic Auth credentials are empty, skipping Basic Auth authentication", "endpoint.id", endpoint.UID)
-					} else {
-						headers = make(httpheader.HTTPHeader)
-						credentials := base64.StdEncoding.EncodeToString(
-							[]byte(endpoint.Authentication.BasicAuth.UserName + ":" + endpoint.Authentication.BasicAuth.Password),
-						)
-						headers["Authorization"] = []string{"Basic " + credentials}
-						headers.MergeHeaders(opts.Event.Headers)
-					}
-				default:
-					opts.Logger.DebugContext(ctx, "Unknown authentication type, skipping", "endpoint.id", endpoint.UID, "auth_type", endpoint.Authentication.Type)
-				}
+			resolvedHeaders, err := resolveEndpointDeliveryHeaders(ctx, endpoint, opts.Event.Headers, endpointAuthDeps{
+				FeatureFlag:                opts.FeatureFlag,
+				FeatureFlagFetcher:         opts.FeatureFlagFetcher,
+				EarlyAdopterFeatureFetcher: opts.EarlyAdopterFeatureFetcher,
+				OAuth2TokenService:         opts.OAuth2TokenService,
+				OrganisationID:             opts.Project.OrganisationID,
+				Logger:                     opts.Logger,
+			})
+			if err != nil {
+				opts.Logger.ErrorContext(ctx, "endpoint authentication unavailable", "endpoint.id", endpoint.UID, "error", err)
+				authUnavailable = true
 			} else {
-				opts.Logger.DebugContext(ctx, "Endpoint has no authentication configured", "endpoint.id", endpoint.UID)
+				headers = resolvedHeaders
 			}
 
 			s.Endpoint = endpoint
@@ -383,6 +349,11 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			RetryLimit:      rc.RetryCount,
 		}
 
+		deliveryStatus := getEventDeliveryStatus(ctx, &s, s.Endpoint, opts.Logger)
+		if authUnavailable {
+			deliveryStatus = datastore.DiscardedEventStatus
+		}
+
 		eventDelivery := &datastore.EventDelivery{
 			UID:            ulid.Make().String(),
 			SubscriptionID: s.UID,
@@ -396,7 +367,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			TargetURL:      opts.TargetURL,
 			IdempotencyKey: opts.Event.IdempotencyKey,
 			URLQueryParams: opts.Event.URLQueryParams,
-			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, opts.Logger),
+			Status:         deliveryStatus,
 			AcknowledgedAt: null.TimeFrom(time.Now()),
 			DeliveryMode:   s.DeliveryMode,
 		}
@@ -417,8 +388,16 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 		return &EndpointError{Err: fmt.Errorf("CODE: 1008, err: %s", err.Error()), delay: defaultDelay}
 	}
 
-	for i, eventDelivery := range eventDeliveries {
-		s := opts.Subscriptions[i]
+	subscriptionByID := make(map[string]datastore.Subscription, len(opts.Subscriptions))
+	for _, subscription := range opts.Subscriptions {
+		subscriptionByID[subscription.UID] = subscription
+	}
+
+	for _, eventDelivery := range eventDeliveries {
+		s, ok := subscriptionByID[eventDelivery.SubscriptionID]
+		if !ok {
+			continue
+		}
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
 			payload := EventDelivery{
 				EventDeliveryID: eventDelivery.UID,

@@ -157,23 +157,22 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 
 	ssoEnabled := h.A.Licenser.EnterpriseSSO()
 	if useOrgBilling && slug != "" {
-		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
+		result, err := services.LookupWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
 			BillingClient: h.A.BillingClient,
 			OrgRepo:       h.A.OrgRepo,
 			Logger:        h.A.Logger,
 			Cfg:           cfg,
-			RefreshDeps: services.RefreshLicenseDataDeps{
-				OrgMemberRepo: h.A.OrgMemberRepo,
-				OrgRepo:       h.A.OrgRepo,
-				BillingClient: h.A.BillingClient,
-				Logger:        h.A.Logger,
-				Cfg:           cfg,
-				Cache:         h.A.Cache,
-			},
 		})
-		if err == nil {
-			ssoEnabled = result.SSOAvailable
+		if err != nil {
+			if errors.Is(err, services.ErrWorkspaceNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse("workspace not found", http.StatusBadRequest))
+				return
+			}
+			h.A.Logger.ErrorContext(r.Context(), "failed to resolve workspace slug", "error", err, "slug", slug)
+			_ = render.Render(w, r, util.NewErrorResponse("failed to resolve workspace", http.StatusServiceUnavailable))
+			return
 		}
+		ssoEnabled = result.SSOAvailable
 	}
 
 	authConfig := map[string]interface{}{

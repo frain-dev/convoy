@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/logger"
 )
 
-// ResolveWorkspaceBySlugDeps holds dependencies for ResolveWorkspaceBySlug.
+// ResolveWorkspaceBySlugDeps holds dependencies for workspace slug resolution.
 type ResolveWorkspaceBySlugDeps struct {
 	BillingClient billing.Client
 	OrgRepo       datastore.OrganisationRepository
@@ -22,7 +22,7 @@ type ResolveWorkspaceBySlugDeps struct {
 	RefreshDeps   RefreshLicenseDataDeps
 }
 
-// ResolveWorkspaceBySlugResult is the result of ResolveWorkspaceBySlug.
+// ResolveWorkspaceBySlugResult is the result of workspace slug resolution.
 type ResolveWorkspaceBySlugResult struct {
 	ExternalID   string
 	LicenseKey   string
@@ -30,8 +30,13 @@ type ResolveWorkspaceBySlugResult struct {
 	Org          *datastore.Organisation
 }
 
-// ResolveWorkspaceBySlug resolves workspace by slug via billing and syncs license data for the org.
-func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorkspaceBySlugDeps) (*ResolveWorkspaceBySlugResult, error) {
+// ErrWorkspaceNotFound is returned only for definitive negative workspace slug lookups.
+var ErrWorkspaceNotFound = errors.New("workspace not found")
+
+// LookupWorkspaceBySlug resolves a workspace by slug without license refresh side effects.
+// Failure policy: fail closed. Guest routes must not trigger billing/license writes on read.
+// Definitive negatives return ErrWorkspaceNotFound; transport/lookup failures wrap the cause.
+func LookupWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorkspaceBySlugDeps) (*ResolveWorkspaceBySlugResult, error) {
 	if slug == "" {
 		return nil, errors.New("slug is required")
 	}
@@ -50,10 +55,10 @@ func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorksp
 		if deps.Logger != nil {
 			deps.Logger.Debug("workspace_config by slug failed", "error", err, "slug", slug)
 		}
-		return nil, fmt.Errorf("workspace not found: %w", err)
+		return nil, fmt.Errorf("workspace lookup failed: %w", err)
 	}
 	if !resp.Status {
-		return nil, errors.New("workspace not found")
+		return nil, ErrWorkspaceNotFound
 	}
 	if resp.Data.ExternalID == "" {
 		return nil, errors.New("workspace config missing external_id")
@@ -61,7 +66,26 @@ func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorksp
 
 	org, err := deps.OrgRepo.FetchOrganisationByID(ctx, resp.Data.ExternalID)
 	if err != nil {
-		return nil, fmt.Errorf("organisation not found for workspace: %w", err)
+		if errors.Is(err, datastore.ErrOrgNotFound) {
+			return nil, ErrWorkspaceNotFound
+		}
+		return nil, fmt.Errorf("organisation lookup failed for workspace: %w", err)
+	}
+
+	return &ResolveWorkspaceBySlugResult{
+		ExternalID:   resp.Data.ExternalID,
+		LicenseKey:   resp.Data.LicenseKey,
+		SSOAvailable: resp.Data.SSOAvailable,
+		Org:          org,
+	}, nil
+}
+
+// ResolveWorkspaceBySlug resolves workspace by slug and syncs license data for the org.
+// Use only on authenticated paths that intentionally refresh license state.
+func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorkspaceBySlugDeps) (*ResolveWorkspaceBySlugResult, error) {
+	result, err := LookupWorkspaceBySlug(ctx, slug, deps)
+	if err != nil {
+		return nil, err
 	}
 
 	defaultKey := deps.Cfg.LicenseKey
@@ -73,17 +97,14 @@ func ResolveWorkspaceBySlug(ctx context.Context, slug string, deps ResolveWorksp
 		RetryCount:   deps.Cfg.LicenseService.RetryCount,
 		Logger:       deps.Logger,
 	})
-	RefreshLicenseDataForOrg(ctx, *org, defaultKey, useOrgBilling, deps.RefreshDeps, licClient)
+	RefreshLicenseDataForOrg(ctx, *result.Org, defaultKey, useOrgBilling, deps.RefreshDeps, licClient)
 
-	org, err = deps.OrgRepo.FetchOrganisationByID(ctx, resp.Data.ExternalID)
+	org, err := deps.OrgRepo.FetchOrganisationByID(ctx, result.ExternalID)
 	if err != nil {
-		org = nil
+		result.Org = nil
+	} else {
+		result.Org = org
 	}
 
-	return &ResolveWorkspaceBySlugResult{
-		ExternalID:   resp.Data.ExternalID,
-		LicenseKey:   resp.Data.LicenseKey,
-		SSOAvailable: resp.Data.SSOAvailable,
-		Org:          org,
-	}, nil
+	return result, nil
 }

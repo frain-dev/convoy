@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/lib/pq"
@@ -34,6 +35,37 @@ type UpdateProject struct {
 
 	// Project Config
 	Config *ProjectConfig `json:"config" valid:"optional"`
+
+	configPresentKeys map[string]struct{} `json:"-"`
+}
+
+func (uP *UpdateProject) UnmarshalJSON(data []byte) error {
+	type plain UpdateProject
+	aux := struct {
+		plain
+		Config json.RawMessage `json:"config"`
+	}{}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	*uP = UpdateProject(aux.plain)
+	if len(aux.Config) == 0 {
+		return nil
+	}
+	var keys map[string]json.RawMessage
+	if err := json.Unmarshal(aux.Config, &keys); err != nil {
+		return err
+	}
+	uP.configPresentKeys = make(map[string]struct{}, len(keys))
+	for key := range keys {
+		uP.configPresentKeys[key] = struct{}{}
+	}
+	uP.Config = &ProjectConfig{}
+	return json.Unmarshal(aux.Config, uP.Config)
+}
+
+func (uP *UpdateProject) ConfigPresentKeys() map[string]struct{} {
+	return uP.configPresentKeys
 }
 
 func (uP *UpdateProject) Validate() error {

@@ -227,6 +227,7 @@ SELECT
 FROM convoy.projects p
 LEFT JOIN convoy.project_configurations c
 ON p.project_configuration_id = c.id
+INNER JOIN convoy.organisations o ON p.organisation_id = o.id AND o.deleted_at IS NULL
 WHERE p.id = $1 AND p.deleted_at IS NULL
 `
 

@@ -647,7 +647,8 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 		r.Error = err.Error()
 		return r, err
 	}
-	if len(idempotencyKey) > 0 && !util.IsStringEmpty(requestIDHeader) && !hasHeader(header, requestIDHeader) {
+	if len(idempotencyKey) > 0 && !util.IsStringEmpty(requestIDHeader) {
+		deleteHeaderCaseInsensitive(header, requestIDHeader)
 		header[requestIDHeader] = []string{idempotencyKey}
 	}
 
@@ -665,14 +666,12 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 	return r, err
 }
 
-func hasHeader(header httpheader.HTTPHeader, key string) bool {
+func deleteHeaderCaseInsensitive(header httpheader.HTTPHeader, key string) {
 	for k := range header {
 		if strings.EqualFold(k, key) {
-			return true
+			delete(header, k)
 		}
 	}
-
-	return false
 }
 
 func isCustomRequestIDHeader(requestIDHeader string) bool {
