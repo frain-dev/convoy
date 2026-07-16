@@ -1,5 +1,12 @@
 # Convoy Changes
 
+## 26.6.5
+
+### Bug Fixes
+
+- fix(dataplane): delete retention attempts by delivery cutoff (#2718)
+- fix(controlplane): require auth for SSO admin portal (#2719)
+
 ## 26.6.4
 
 ### Features
