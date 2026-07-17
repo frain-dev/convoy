@@ -4,16 +4,25 @@
 # Required env:
 #   SDK_REPOS_PAT  — token with contents:write + pull_requests:write on both SDK repos
 # Optional:
-#   BRANCH_NAME    — feature branch name (default: cursor/pde-755-speakeasy-bootstrap-ee6f)
+#   BRANCH_NAME    — feature branch name (default: feat/speakeasy-bootstrap-pde-755)
 #   DRY_RUN        — if "1", write local clones only and do not push/open PRs
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BOOTSTRAP_DIR="${ROOT_DIR}/sdk/bootstrap"
-BRANCH_NAME="${BRANCH_NAME:-cursor/pde-755-speakeasy-bootstrap-ee6f}"
+BRANCH_NAME="${BRANCH_NAME:-feat/speakeasy-bootstrap-pde-755}"
 DRY_RUN="${DRY_RUN:-0}"
 WORK_DIR="${WORK_DIR:-$(mktemp -d)}"
+
+# Bootstrap must land as a reviewable feature branch, never a protected ref;
+# SDK_REPOS_PAT could otherwise force-push straight to main on the SDK repos.
+case "$BRANCH_NAME" in
+  main|master|release/*|-*|*[!a-zA-Z0-9._/-]*)
+    echo "Refusing to bootstrap onto branch '$BRANCH_NAME' (protected or invalid name)" >&2
+    exit 1
+    ;;
+esac
 
 if [[ -z "${SDK_REPOS_PAT:-}" && "$DRY_RUN" != "1" ]]; then
   echo "SDK_REPOS_PAT is required (unless DRY_RUN=1)" >&2
@@ -21,6 +30,13 @@ if [[ -z "${SDK_REPOS_PAT:-}" && "$DRY_RUN" != "1" ]]; then
 fi
 
 export GH_TOKEN="${SDK_REPOS_PAT:-${GH_TOKEN:-}}"
+
+# Authenticate git via gh's credential helper instead of embedding the token
+# in remote URLs (which would persist in .git/config and leak in error output).
+# --force: configure even when the host only has env-token (GH_TOKEN) auth.
+if [[ -n "$GH_TOKEN" ]]; then
+  gh auth setup-git --hostname github.com --force
+fi
 
 ensure_readme_note() {
   local readme="$1"
@@ -102,17 +118,13 @@ clone_and_apply() {
   echo "==> Bootstrapping frain-dev/${repo}"
   rm -rf "$dest"
 
-  if [[ "$DRY_RUN" == "1" && -z "${SDK_REPOS_PAT:-}" ]]; then
-    git clone --depth 1 "https://github.com/frain-dev/${repo}.git" "$dest"
-  else
-    git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/frain-dev/${repo}.git" "$dest"
-  fi
+  git clone --depth 1 "https://github.com/frain-dev/${repo}.git" "$dest"
 
   cd "$dest"
 
   # Re-runs must track the remote feature branch so --force-with-lease has a
   # local expected ref. Shallow clone only fetches the default branch.
-  if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+  if git ls-remote --exit-code --heads origin -- "$BRANCH_NAME" >/dev/null 2>&1; then
     git fetch --depth 1 origin "refs/heads/${BRANCH_NAME}:refs/remotes/origin/${BRANCH_NAME}"
     git checkout -B "$BRANCH_NAME" "origin/${BRANCH_NAME}"
   else

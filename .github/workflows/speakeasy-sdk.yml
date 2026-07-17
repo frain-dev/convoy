@@ -30,10 +30,15 @@ on:
         type: string
         required: false
 
+# Cross-repo dispatch and PR linking use SDK_REPOS_PAT, not GITHUB_TOKEN.
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
+
+# Serialize regenerations so concurrent pushes to main don't race each
+# other's dispatched-run discovery on the SDK repos.
+concurrency:
+  group: speakeasy-sdk
+  cancel-in-progress: false
 
 jobs:
   prepare-spec:
@@ -92,9 +97,20 @@ jobs:
     steps:
       - name: Prepare feature branch
         id: branch
+        env:
+          # Never interpolate free-form dispatch inputs into run: directly.
+          FEATURE_BRANCH_INPUT: ${{ inputs.feature_branch }}
         run: |
-          if [ -n "${{ inputs.feature_branch }}" ]; then
-            echo "name=${{ inputs.feature_branch }}" >> "$GITHUB_OUTPUT"
+          if [ -n "$FEATURE_BRANCH_INPUT" ]; then
+            # SDK PRs must come from a reviewable feature branch, never a
+            # protected ref or an option-looking / metacharacter name.
+            case "$FEATURE_BRANCH_INPUT" in
+              main|master|release/*|-*|*[!a-zA-Z0-9._/-]*)
+                echo "::error::Invalid feature_branch '$FEATURE_BRANCH_INPUT'"
+                exit 1
+                ;;
+            esac
+            echo "name=$FEATURE_BRANCH_INPUT" >> "$GITHUB_OUTPUT"
           else
             echo "name=speakeasy-sdk-regen-$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
           fi
@@ -103,16 +119,20 @@ jobs:
         id: dispatch
         env:
           GH_TOKEN: ${{ secrets.SDK_REPOS_PAT }}
+          REPO: ${{ matrix.repo }}
+          FORCE_INPUT: ${{ inputs.force }}
+          FEATURE_BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           owner="frain-dev"
-          repo="${{ matrix.repo }}"
-          force="${{ inputs.force }}"
+          repo="$REPO"
+          force="$FORCE_INPUT"
           if [ -z "$force" ]; then force="true"; fi
-          feature_branch="${{ steps.branch.outputs.name }}"
+          feature_branch="$FEATURE_BRANCH"
 
           # Capture a lower bound before dispatch so we don't pick up an older
-          # concurrent cron / workflow_dispatch run.
-          dispatched_after=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          # concurrent cron / workflow_dispatch run. Backdate slightly so
+          # runner-vs-GitHub clock skew can't hide our own run.
+          dispatched_after=$(date -u -d '5 seconds ago' +%Y-%m-%dT%H:%M:%SZ)
 
           gh workflow run sdk_generation.yaml \
             --repo "$owner/$repo" \
@@ -123,14 +143,16 @@ jobs:
           run_id=""
           for _ in $(seq 1 30); do
             # gh --jq does not accept jq --arg; pipe JSON to jq instead.
-            run_id=$(gh run list \
+            # `|| true` keeps a transient API failure inside the retry loop
+            # instead of failing the step under `set -e -o pipefail`.
+            runs_json=$(gh run list \
               --repo "$owner/$repo" \
               --workflow sdk_generation.yaml \
               --event workflow_dispatch \
               --limit 20 \
-              --json databaseId,createdAt \
-              | jq -r --arg after "$dispatched_after" \
-                '[.[] | select(.createdAt >= $after)] | sort_by(.createdAt) | reverse | .[0].databaseId // empty')
+              --json databaseId,createdAt || true)
+            run_id=$(echo "${runs_json:-[]}" | jq -r --arg after "$dispatched_after" \
+              '[.[] | select(.createdAt >= $after)] | sort_by(.createdAt) | reverse | .[0].databaseId // empty')
             if [ -n "$run_id" ]; then
               break
             fi
@@ -148,15 +170,18 @@ jobs:
       - name: Wait for SDK workflow
         env:
           GH_TOKEN: ${{ secrets.SDK_REPOS_PAT }}
+          REPO: ${{ matrix.repo }}
+          RUN_ID: ${{ steps.dispatch.outputs.run_id }}
         run: |
           owner="frain-dev"
-          repo="${{ matrix.repo }}"
-          run_id="${{ steps.dispatch.outputs.run_id }}"
+          repo="$REPO"
+          run_id="$RUN_ID"
 
           # ~90 minutes (180 × 30s). Speakeasy generation plus PR creation can
           # exceed a shorter window under load or free-tier limits.
           for _ in $(seq 1 180); do
-            resp=$(gh api "repos/$owner/$repo/actions/runs/$run_id")
+            # Tolerate transient API failures; retry on the next tick.
+            resp=$(gh api "repos/$owner/$repo/actions/runs/$run_id" || true)
             status=$(echo "$resp" | jq -r '.status')
             conclusion=$(echo "$resp" | jq -r '.conclusion')
             if [ "$status" = "completed" ]; then
@@ -176,10 +201,13 @@ jobs:
         if: success()
         env:
           GH_TOKEN: ${{ secrets.SDK_REPOS_PAT }}
+          REPO: ${{ matrix.repo }}
+          BRANCH: ${{ steps.branch.outputs.name }}
+          RUN_URL: ${{ steps.dispatch.outputs.run_url }}
         run: |
           owner="frain-dev"
-          repo="${{ matrix.repo }}"
-          branch="${{ steps.branch.outputs.name }}"
+          repo="$REPO"
+          branch="$BRANCH"
 
           pr_url=$(gh pr list \
             --repo "$owner/$repo" \
@@ -190,5 +218,5 @@ jobs:
           if [ -n "$pr_url" ]; then
             echo "SDK_PR=$pr_url" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Workflow: ${{ steps.dispatch.outputs.run_url }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "Workflow: $RUN_URL" >> "$GITHUB_STEP_SUMMARY"
           fi

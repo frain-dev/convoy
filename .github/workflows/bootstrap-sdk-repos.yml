@@ -15,7 +15,7 @@ on:
       branch_name:
         description: Feature branch name for SDK PRs
         type: string
-        default: cursor/pde-755-speakeasy-bootstrap-ee6f
+        default: feat/speakeasy-bootstrap-pde-755
 
 permissions:
   contents: read
