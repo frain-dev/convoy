@@ -7,6 +7,8 @@ on:
       - "docs/**"
       - "Makefile"
       - ".mise-tasks/gen/docs.sh"
+      # Docs tool pins live here; a pin bump can change generated output.
+      - "mise.toml"
       - ".github/workflows/openapi-docs-check.yml"
   merge_group:
   workflow_dispatch:
