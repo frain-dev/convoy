@@ -79,6 +79,8 @@ jobs:
     name: Trigger ${{ matrix.repo }} generation
     needs: prepare-spec
     runs-on: ubuntu-latest
+    # Speakeasy generation + PR creation can exceed 30m under load / free tier.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -151,7 +153,9 @@ jobs:
           repo="${{ matrix.repo }}"
           run_id="${{ steps.dispatch.outputs.run_id }}"
 
-          for _ in $(seq 1 60); do
+          # ~90 minutes (180 × 30s). Speakeasy generation plus PR creation can
+          # exceed a shorter window under load or free-tier limits.
+          for _ in $(seq 1 180); do
             resp=$(gh api "repos/$owner/$repo/actions/runs/$run_id")
             status=$(echo "$resp" | jq -r '.status')
             conclusion=$(echo "$resp" | jq -r '.conclusion')
