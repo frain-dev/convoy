@@ -120,13 +120,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.SDK_REPOS_PAT }}
           REPO: ${{ matrix.repo }}
-          FORCE_INPUT: ${{ inputs.force }}
+          # Map the boolean explicitly: honor a dispatched force=false and
+          # default pushes (no inputs context) to force=true.
+          FORCE_INPUT: ${{ github.event_name == 'workflow_dispatch' && (inputs.force && 'true' || 'false') || 'true' }}
           FEATURE_BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           owner="frain-dev"
           repo="$REPO"
           force="$FORCE_INPUT"
-          if [ -z "$force" ]; then force="true"; fi
           feature_branch="$FEATURE_BRANCH"
 
           # Capture a lower bound before dispatch so we don't pick up an older
@@ -151,8 +152,11 @@ jobs:
               --event workflow_dispatch \
               --limit 20 \
               --json databaseId,createdAt || true)
+            # `|| true` also on jq: non-JSON output (partial gh failure) must
+            # loop to the next retry, not abort the step under -e -o pipefail.
             run_id=$(echo "${runs_json:-[]}" | jq -r --arg after "$dispatched_after" \
-              '[.[] | select(.createdAt >= $after)] | sort_by(.createdAt) | reverse | .[0].databaseId // empty')
+              '[.[] | select(.createdAt >= $after)] | sort_by(.createdAt) | reverse | .[0].databaseId // empty' \
+              2>/dev/null || true)
             if [ -n "$run_id" ]; then
               break
             fi
@@ -180,10 +184,11 @@ jobs:
           # ~90 minutes (180 × 30s). Speakeasy generation plus PR creation can
           # exceed a shorter window under load or free-tier limits.
           for _ in $(seq 1 180); do
-            # Tolerate transient API failures; retry on the next tick.
+            # Tolerate transient API failures (gh errors or non-JSON output);
+            # retry on the next tick instead of aborting under -e -o pipefail.
             resp=$(gh api "repos/$owner/$repo/actions/runs/$run_id" || true)
-            status=$(echo "$resp" | jq -r '.status')
-            conclusion=$(echo "$resp" | jq -r '.conclusion')
+            status=$(echo "${resp:-{}}" | jq -r '.status // empty' 2>/dev/null || true)
+            conclusion=$(echo "${resp:-{}}" | jq -r '.conclusion // empty' 2>/dev/null || true)
             if [ "$status" = "completed" ]; then
               if [ "$conclusion" != "success" ]; then
                 echo "::error::$repo SDK generation failed: $conclusion"
