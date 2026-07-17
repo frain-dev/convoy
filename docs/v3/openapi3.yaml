@@ -2428,6 +2428,140 @@ paths:
         description: Broadcast Event Details
         required: true
       summary: Create a broadcast event
+  '/v1/projects/{projectID}/events/countbatchreplayevents':
+    get:
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: direction
+          schema:
+            enum:
+              - next
+              - prev
+            type: string
+          x-enum-varnames:
+            - Next
+            - Prev
+        - description: The end date
+          example: '2008-05-02T15:04:05.000Z'
+          in: query
+          name: endDate
+          schema:
+            type: string
+        - description: A list of endpoint ids to filter by
+          in: query
+          name: endpointId
+          schema:
+            items:
+              type: string
+            type: array
+          style: form
+        - description: IdempotencyKey to filter by
+          in: query
+          name: idempotencyKey
+          schema:
+            type: string
+        - description: A pagination cursor to fetch the next page of a list
+          example: 01H0JA5MEES38RRK3HTEJC647K
+          in: query
+          name: next_page_cursor
+          schema:
+            type: string
+        - description: The number of items to return per page
+          example: 20
+          in: query
+          name: perPage
+          schema:
+            type: integer
+        - description: A pagination cursor to fetch the previous page of a list
+          example: 01H0JATTVCXZK8FRDX1M1JN3QY
+          in: query
+          name: prev_page_cursor
+          schema:
+            type: string
+        - description: Any arbitrary value to filter the events payload
+          in: query
+          name: query
+          schema:
+            type: string
+        - description: 'Sort order, values are `ASC` or `DESC`, defaults to `DESC`'
+          example: ASC | DESC
+          in: query
+          name: sort
+          schema:
+            type: string
+        - description: A list of Source IDs to filter the events by.
+          in: query
+          name: sourceId
+          schema:
+            items:
+              type: string
+            type: array
+          style: form
+        - description: The start date
+          example: '2006-01-02T15:04:05.000Z'
+          in: query
+          name: startDate
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: OK
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Unauthorized
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Events
+      description: >-
+        This endpoint returns how many events would be affected by a batch replay with the given filters.
+      operationId: CountAffectedEvents
+      summary: Count events matching batch replay filters
   '/v1/projects/{projectID}/events/dynamic':
     post:
       parameters:
@@ -5069,6 +5203,74 @@ paths:
         description: Updated filter
         required: true
       summary: Update a filter
+  '/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status':
+    put:
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          schema:
+            type: string
+        - description: subscription id
+          in: path
+          name: subscriptionID
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Accepted
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Unauthorized
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Subscriptions
+      description: >-
+        This endpoint toggles a subscription status. Retained for backward compatibility.
+      operationId: ToggleSubscriptionStatus
+      summary: Toggle subscription status
 components:
   requestBodies:
     models.FunctionRequest:
@@ -7766,6 +7968,8 @@ components:
       name: Authorization
       type: apiKey
 tags:
+  - description: Project related APIs
+    name: Projects
   - description: Subscription related APIs
     name: Subscriptions
   - description: Endpoint related APIs

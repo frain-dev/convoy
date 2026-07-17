@@ -4911,6 +4911,123 @@ paths:
       summary: Create a broadcast event
       tags:
         - Events
+  /v1/projects/{projectID}/events/countbatchreplayevents:
+    get:
+      consumes:
+        - application/json
+      description: This endpoint returns how many events would be affected by a batch replay with the given filters.
+      operationId: CountAffectedEvents
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+        - enum:
+            - next
+            - prev
+          in: query
+          name: direction
+          type: string
+          x-enum-varnames:
+            - Next
+            - Prev
+        - description: The end date
+          example: 2008-05-02T15:04:05
+          in: query
+          name: endDate
+          type: string
+        - collectionFormat: csv
+          description: A list of endpoint ids to filter by
+          in: query
+          items:
+            type: string
+          name: endpointId
+          type: array
+        - description: IdempotencyKey to filter by
+          in: query
+          name: idempotencyKey
+          type: string
+        - description: A pagination cursor to fetch the next page of a list
+          example: 01H0JA5MEES38RRK3HTEJC647K
+          in: query
+          name: next_page_cursor
+          type: string
+        - description: The number of items to return per page
+          example: 20
+          in: query
+          name: perPage
+          type: integer
+        - description: A pagination cursor to fetch the previous page of a list
+          example: 01H0JATTVCXZK8FRDX1M1JN3QY
+          in: query
+          name: prev_page_cursor
+          type: string
+        - description: Any arbitrary value to filter the events payload
+          in: query
+          name: query
+          type: string
+        - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+          example: ASC | DESC
+          in: query
+          name: sort
+          type: string
+        - collectionFormat: csv
+          description: A list of Source IDs to filter the events by.
+          in: query
+          items:
+            type: string
+          name: sourceId
+          type: array
+        - description: The start date
+          example: 2006-01-02T15:04:05
+          in: query
+          name: startDate
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Count events matching batch replay filters
+      tags:
+        - Events
   /v1/projects/{projectID}/events/dynamic:
     post:
       consumes:
@@ -7052,6 +7169,67 @@ paths:
       summary: Test a filter
       tags:
         - Filters
+  /v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status:
+    put:
+      consumes:
+        - application/json
+      description: This endpoint toggles a subscription status. Retained for backward compatibility.
+      operationId: ToggleSubscriptionStatus
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+        - description: subscription id
+          in: path
+          name: subscriptionID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/handlers.Stub'
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Toggle subscription status
+      tags:
+        - Subscriptions
   /v1/projects/{projectID}/subscriptions/test_filter:
     post:
       consumes:
@@ -7185,6 +7363,8 @@ securityDefinitions:
     type: apiKey
 swagger: "2.0"
 tags:
+  - description: Project related APIs
+    name: Projects
   - description: Subscription related APIs
     name: Subscriptions
   - description: Endpoint related APIs

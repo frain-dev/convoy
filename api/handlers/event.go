@@ -563,6 +563,20 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
+// CountAffectedEvents
+//
+//	@Summary		Count events matching batch replay filters
+//	@Description	This endpoint returns how many events would be affected by a batch replay with the given filters.
+//	@Id				CountAffectedEvents
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			request		query		models.QueryListEvent	false	"Query Params"
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events/countbatchreplayevents [get]
 func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEvent
 	p, err := h.getProjectFromContext(r)

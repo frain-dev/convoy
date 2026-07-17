@@ -1,0 +1,11 @@
+workflowVersion: 1.0.0
+speakeasyVersion: latest
+sources:
+  convoy:
+    inputs:
+      - location: https://raw.githubusercontent.com/frain-dev/convoy/main/docs/v3/openapi3.yaml
+targets:
+  typescript:
+    target: typescript
+    source: convoy
+    output: .

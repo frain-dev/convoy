@@ -1,0 +1,16 @@
+# Hand-written webhook signature verification — never overwrite with generated code.
+src/webhook.ts
+src/utils/errors/**
+
+# Shared signature contract + verify unit tests (hand-authored).
+tests/signature-vectors.json
+tests/shared-vectors.test.ts
+tests/webhook.test.ts
+
+# Project meta / contributor docs that Speakeasy should not clobber blindly.
+CONTRIBUTING.md
+LICENSE.md
+.editorconfig
+.prettierrc
+tslint.json
+MIGRATION.md

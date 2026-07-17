@@ -1,0 +1,74 @@
+name: OpenAPI docs check
+
+on:
+  pull_request:
+    paths:
+      - "api/**"
+      - "docs/**"
+      - "Makefile"
+      - ".mise-tasks/gen/docs.sh"
+      - ".github/workflows/openapi-docs-check.yml"
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-docs-drift:
+    name: Fail on dirty OpenAPI artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Install mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+        with:
+          # Do not `mise install` the full mise.toml (postgres/local tooling fails in CI).
+          install: false
+          cache: true
+
+      - name: Install docs generation tools
+        run: |
+          # Keep this list aligned with Makefile generate_docs prerequisites.
+          mise install \
+            go \
+            nodejs \
+            yq \
+            "go:github.com/swaggo/swag/cmd/swag" \
+            "npm:api-spec-converter" \
+            "ubi:speakeasy-api/openapi"
+          mise reshim
+          echo "$(dirname "$(mise which swag)")" >> "$GITHUB_PATH"
+          echo "$(dirname "$(mise which api-spec-converter)")" >> "$GITHUB_PATH"
+          echo "$(dirname "$(mise which openapi)")" >> "$GITHUB_PATH"
+          echo "$(dirname "$(mise which yq)")" >> "$GITHUB_PATH"
+          echo "$(dirname "$(mise which go)")" >> "$GITHUB_PATH"
+          command -v swag
+          command -v api-spec-converter
+          command -v openapi
+          command -v yq
+          command -v jq
+          command -v go
+
+      - name: Regenerate OpenAPI docs
+        run: make generate_docs
+
+      - name: Fail if OpenAPI artifacts are dirty
+        run: |
+          # docs/docs.go embeds a swag --generatedTime stamp that changes every run;
+          # Speakeasy / public contract is docs/v3/openapi3.* (+ swagger sources).
+          artifacts=(
+            docs/swagger.json
+            docs/swagger.yaml
+            docs/v3/openapi3.yaml
+            docs/v3/openapi3.json
+          )
+          if ! git diff --quiet -- "${artifacts[@]}"; then
+            echo "::error::OpenAPI artifacts are out of date. Run 'make generate_docs' (or 'mise run gen/docs') and commit the result."
+            git --no-pager diff --stat -- "${artifacts[@]}"
+            git --no-pager diff -- docs/v3/openapi3.yaml | head -n 200
+            exit 1
+          fi
+          echo "OpenAPI artifacts are up to date."

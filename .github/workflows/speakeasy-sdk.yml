@@ -1,0 +1,172 @@
+name: Speakeasy SDK regeneration
+
+# When public OpenAPI artifacts change on main (or via manual dispatch), kick
+# Speakeasy generation in convoy.js / convoy-python. SDK repos pull
+# docs/v3/openapi3.yaml from this repository.
+#
+# Required repository secrets:
+#   SPEAKEASY_API_KEY   — Speakeasy workspace API key (also required on SDK repos)
+#   SDK_REPOS_PAT       — GitHub PAT (or fine-grained token) that can
+#                         workflow_dispatch and open/edit PRs on
+#                         frain-dev/convoy.js and frain-dev/convoy-python
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/v3/openapi3.yaml"
+      - "docs/v3/openapi3.json"
+      - ".speakeasy/workflow.yaml"
+      - ".github/workflows/speakeasy-sdk.yml"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Force SDK regeneration even if Speakeasy detects no changes
+        type: boolean
+        default: true
+      feature_branch:
+        description: Optional feature branch name for downstream SDK PRs
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  prepare-spec:
+    name: Validate OpenAPI source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Ensure required secrets are configured
+        env:
+          SPEAKEASY_API_KEY: ${{ secrets.SPEAKEASY_API_KEY }}
+          SDK_REPOS_PAT: ${{ secrets.SDK_REPOS_PAT }}
+        run: |
+          missing=0
+          if [ -z "$SPEAKEASY_API_KEY" ]; then
+            echo "::error::SPEAKEASY_API_KEY secret is not configured"
+            missing=1
+          fi
+          if [ -z "$SDK_REPOS_PAT" ]; then
+            echo "::error::SDK_REPOS_PAT secret is not configured (token that can open PRs on SDK repos)"
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Install Speakeasy CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/speakeasy-api/speakeasy/main/install.sh | sh
+          echo "$HOME/.speakeasy/bin" >> "$GITHUB_PATH"
+          echo "/usr/local/bin" >> "$GITHUB_PATH"
+
+      - name: Lint OpenAPI document
+        env:
+          SPEAKEASY_API_KEY: ${{ secrets.SPEAKEASY_API_KEY }}
+        run: speakeasy lint openapi -s docs/v3/openapi3.yaml
+
+  trigger-sdk-repos:
+    name: Trigger ${{ matrix.repo }} generation
+    needs: prepare-spec
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: typescript
+            repo: convoy.js
+          - language: python
+            repo: convoy-python
+    steps:
+      - name: Prepare feature branch
+        id: branch
+        run: |
+          if [ -n "${{ inputs.feature_branch }}" ]; then
+            echo "name=${{ inputs.feature_branch }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=speakeasy-sdk-regen-$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dispatch SDK generation workflow
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ secrets.SDK_REPOS_PAT }}
+        run: |
+          owner="frain-dev"
+          repo="${{ matrix.repo }}"
+          force="${{ inputs.force }}"
+          if [ -z "$force" ]; then force="true"; fi
+          feature_branch="${{ steps.branch.outputs.name }}"
+
+          gh workflow run sdk_generation.yaml \
+            --repo "$owner/$repo" \
+            --ref main \
+            --field force="$force" \
+            --field feature_branch="$feature_branch"
+
+          sleep 15
+          run_id=$(gh run list \
+            --repo "$owner/$repo" \
+            --workflow sdk_generation.yaml \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "::error::Failed to locate dispatched workflow run for $owner/$repo"
+            exit 1
+          fi
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "run_url=https://github.com/$owner/$repo/actions/runs/$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for SDK workflow
+        env:
+          GH_TOKEN: ${{ secrets.SDK_REPOS_PAT }}
+        run: |
+          owner="frain-dev"
+          repo="${{ matrix.repo }}"
+          run_id="${{ steps.dispatch.outputs.run_id }}"
+
+          for _ in $(seq 1 60); do
+            resp=$(gh api "repos/$owner/$repo/actions/runs/$run_id")
+            status=$(echo "$resp" | jq -r '.status')
+            conclusion=$(echo "$resp" | jq -r '.conclusion')
+            if [ "$status" = "completed" ]; then
+              if [ "$conclusion" != "success" ]; then
+                echo "::error::$repo SDK generation failed: $conclusion"
+                exit 1
+              fi
+              exit 0
+            fi
+            sleep 30
+          done
+
+          echo "::error::Timed out waiting for $repo SDK generation"
+          exit 1
+
+      - name: Link SDK PR in summary
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.SDK_REPOS_PAT }}
+        run: |
+          owner="frain-dev"
+          repo="${{ matrix.repo }}"
+          branch="${{ steps.branch.outputs.name }}"
+
+          pr_url=$(gh pr list \
+            --repo "$owner/$repo" \
+            --head "$branch" \
+            --json url \
+            --jq '.[0].url // empty')
+
+          if [ -n "$pr_url" ]; then
+            echo "SDK_PR=$pr_url" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Workflow: ${{ steps.dispatch.outputs.run_url }}" >> "$GITHUB_STEP_SUMMARY"
+          fi

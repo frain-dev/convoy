@@ -398,6 +398,20 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", resp, http.StatusAccepted))
 }
 
+// ToggleSubscriptionStatus
+//
+//	@Summary		Toggle subscription status
+//	@Description	This endpoint toggles a subscription status. Retained for backward compatibility.
+//	@Id				ToggleSubscriptionStatus
+//	@Tags			Subscriptions
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID		path		string	true	"Project ID"
+//	@Param			subscriptionID	path		string	true	"subscription id"
+//	@Success		202				{object}	util.ServerResponse{data=Stub}
+//	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (h *Handler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
 	// For backward compatibility
 	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))

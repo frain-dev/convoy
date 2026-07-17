@@ -1,0 +1,47 @@
+name: Bootstrap SDK Speakeasy repos
+
+# One-shot / repeatable workflow that opens Speakeasy bootstrap PRs on
+# frain-dev/convoy.js and frain-dev/convoy-python from sdk/bootstrap/*.
+#
+# Required secret: SDK_REPOS_PAT (contents + pull_requests on both SDK repos)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Prepare local changes only (no push / PR)
+        type: boolean
+        default: false
+      branch_name:
+        description: Feature branch name for SDK PRs
+        type: string
+        default: cursor/pde-755-speakeasy-bootstrap-ee6f
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out convoy
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Ensure SDK_REPOS_PAT is configured
+        if: ${{ !inputs.dry_run }}
+        env:
+          SDK_REPOS_PAT: ${{ secrets.SDK_REPOS_PAT }}
+        run: |
+          if [ -z "$SDK_REPOS_PAT" ]; then
+            echo "::error::SDK_REPOS_PAT secret is required to open PRs on convoy.js / convoy-python"
+            exit 1
+          fi
+
+      - name: Bootstrap SDK repos and open PRs
+        env:
+          SDK_REPOS_PAT: ${{ secrets.SDK_REPOS_PAT }}
+          BRANCH_NAME: ${{ inputs.branch_name }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: |
+          chmod +x scripts/sdk/bootstrap-sdk-repos.sh
+          scripts/sdk/bootstrap-sdk-repos.sh
