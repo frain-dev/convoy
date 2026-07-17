@@ -36,6 +36,7 @@ type Client interface {
 	OnboardSubscription(ctx context.Context, orgID string, req OnboardSubscriptionRequest) (*Response[Checkout], error)
 	UpgradeSubscription(ctx context.Context, orgID, subscriptionID string, req UpgradeSubscriptionRequest) (*Response[Checkout], error)
 	StartTrial(ctx context.Context, orgID string, req StartTrialRequest) (*Response[interface{}], error)
+	EnqueueOnboardingWelcome(ctx context.Context, orgID string, req OnboardingWelcomeRequest) (*Response[interface{}], error)
 	DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error)
 	StartGuestCheckout(ctx context.Context, req StartGuestCheckoutRequest) (*Response[Checkout], error)
 	CompleteGuestCheckout(ctx context.Context, req CompleteGuestCheckoutRequest) (*Response[GuestCheckoutCompletion], error)
@@ -284,6 +285,10 @@ func (c *HTTPClient) UpgradeSubscription(ctx context.Context, orgID, subscriptio
 
 func (c *HTTPClient) StartTrial(ctx context.Context, orgID string, req StartTrialRequest) (*Response[interface{}], error) {
 	return makeRequest[interface{}](ctx, c.httpClient, c.config, "POST", fmt.Sprintf("/organisations/%s/subscriptions/trial", orgID), req)
+}
+
+func (c *HTTPClient) EnqueueOnboardingWelcome(ctx context.Context, orgID string, req OnboardingWelcomeRequest) (*Response[interface{}], error) {
+	return makeRequest[interface{}](ctx, c.httpClient, c.config, "POST", fmt.Sprintf("/organisations/%s/onboarding_emails/welcome", orgID), req)
 }
 
 func (c *HTTPClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error) {

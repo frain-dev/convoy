@@ -45,6 +45,12 @@
       </convoy-input-field>
     }
 
+    @if (mode === 'cloud' && !emailVerified) {
+      <p class="text-12 text-neutral-11 mb-16px">
+        Verify your email before starting a trial. Check your inbox for the verification link.
+      </p>
+    }
+
     <div class="flex items-center justify-end gap-16px">
       <button convoy-button size="sm" [disabled]="startTrialDisabled" (click)="onStartFreeTrial()">
         {{ starting ? 'Starting trial...' : 'Start free trial' }}

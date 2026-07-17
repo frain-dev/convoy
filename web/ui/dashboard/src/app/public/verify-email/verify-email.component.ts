@@ -26,10 +26,25 @@ export class VerifyEmailComponent implements OnInit {
 		this.showError = false;
 		try {
 			await this.verifyEmailService.verifyEmail(this.token);
+			this.patchAuthEmailVerified();
 			this.loading = false;
 		} catch {
 			this.loading = false;
 			this.showError = true;
+		}
+	}
+
+	// Keep CONVOY_AUTH in sync so dashboard surfaces (trial modal, verify chip)
+	// do not keep showing unverified after a successful verify redirect.
+	private patchAuthEmailVerified(): void {
+		try {
+			const raw = localStorage.getItem('CONVOY_AUTH');
+			if (!raw) return;
+			const auth = JSON.parse(raw);
+			auth.email_verified = true;
+			localStorage.setItem('CONVOY_AUTH', JSON.stringify(auth));
+		} catch {
+			// ignore
 		}
 	}
 }
