@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strings"
+	"time"
 
 	"github.com/go-chi/render"
 
@@ -86,26 +86,15 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	go h.enqueueCloudOnboardingWelcome(welcomeCtx, user)
 }
 
-// enqueueCloudOnboardingWelcome ensures the billing org exists and asks Overwatch
-// to send the Motunrayo welcome email. Cloud-only; errors are logged only.
+// enqueueCloudOnboardingWelcome asks Overwatch to send the Motunrayo welcome
+// email. Cloud-only; errors are logged only (fail-open). The billing org is
+// created asynchronously by RunBillingOrganisationSync, which is the single
+// owner of billing-org creation: a second CreateOrganisation here would race
+// it and make the sync skip its license lookup. Instead, retry the enqueue
+// briefly until that sync has created the org. If all attempts fail, the
+// Overwatch welcome backfill sweep delivers it for recent signups.
 func (h *Handler) enqueueCloudOnboardingWelcome(ctx context.Context, user *datastore.User) {
 	if user == nil || !h.A.Cfg.UsesOrgBilling() || h.A.BillingClient == nil {
-		return
-	}
-
-	cfg, err := config.Get()
-	if err != nil {
-		h.A.Logger.Warn("onboarding welcome skipped: config unavailable", "error", err)
-		return
-	}
-	// Same host preference as CreateOrganisationService so welcome ensure matches
-	// the billing org host written during signup (OrganisationHost overrides Host).
-	hostForBilling := strings.TrimSpace(cfg.Host)
-	if strings.TrimSpace(cfg.Billing.OrganisationHost) != "" {
-		hostForBilling = strings.TrimSpace(cfg.Billing.OrganisationHost)
-	}
-	if hostForBilling == "" {
-		h.A.Logger.Warn("onboarding welcome skipped: host unavailable")
 		return
 	}
 
@@ -121,24 +110,23 @@ func (h *Handler) enqueueCloudOnboardingWelcome(ctx context.Context, user *datas
 	}
 	org := orgs[0]
 
-	_, createErr := h.A.BillingClient.CreateOrganisation(ctx, billing.BillingOrganisation{
-		Name:         org.Name,
-		ExternalID:   org.UID,
-		BillingEmail: user.Email,
-		Host:         hostForBilling,
-	})
-	if createErr != nil {
-		h.A.Logger.Warn("onboarding welcome: ensure billing org failed", "org_id", org.UID, "error", createErr)
-		// Continue: org may already exist; welcome still worth trying.
-	}
+	var welcomeErr error
+	for attempt := 1; attempt <= 5; attempt++ {
+		_, welcomeErr = h.A.BillingClient.EnqueueOnboardingWelcome(ctx, org.UID, billing.OnboardingWelcomeRequest{
+			FirstName: user.FirstName,
+			Track:     "cloud",
+		})
+		if welcomeErr == nil {
+			return
+		}
 
-	_, welcomeErr := h.A.BillingClient.EnqueueOnboardingWelcome(ctx, org.UID, billing.OnboardingWelcomeRequest{
-		FirstName: user.FirstName,
-		Track:     "cloud",
-	})
-	if welcomeErr != nil {
-		h.A.Logger.Warn("onboarding welcome enqueue failed", "org_id", org.UID, "error", welcomeErr)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(3 * time.Second):
+		}
 	}
+	h.A.Logger.Warn("onboarding welcome enqueue failed; sweep will backfill", "org_id", org.UID, "error", welcomeErr)
 }
 
 func (h *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {

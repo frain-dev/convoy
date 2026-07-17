@@ -406,12 +406,19 @@ export class PrivateService {
 		}
 	}
 
+	// Drop the in-memory profile cache so the next getUserDetails without
+	// refresh refetches (verify chip and other consumers). Call after any
+	// server-side profile mutation, e.g. profile save or email verify.
+	clearProfileDetailsCache(): void {
+		this.profileDetails = undefined as any;
+	}
+
 	// Single owner of the email_verified cache sync: patches CONVOY_AUTH and
 	// drops the in-memory profile cache so the next getUserDetails refetches
 	// (verify chip, trial modal). Cache patch failures are ignored; the server
 	// remains the source of truth.
 	setAuthEmailVerified(verified: boolean): void {
-		this.profileDetails = undefined as any;
+		this.clearProfileDetailsCache();
 		try {
 			const raw = localStorage.getItem('CONVOY_AUTH');
 			if (!raw) return;
