@@ -1,0 +1,13 @@
+# Hand-written webhook signature verification — never overwrite with generated code.
+convoy/utils/webhook.py
+convoy/utils/__init__.py
+
+# Shared signature contract + verify unit tests (hand-authored).
+test/signature-vectors.json
+test/test_shared_vectors.py
+test/test_webhook.py
+
+# Project meta.
+CONTRIBUTING.MD
+LICENSE
+MIGRATION.md

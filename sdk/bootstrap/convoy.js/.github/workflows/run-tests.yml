@@ -1,0 +1,36 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Verify hand-written modules are present
+        run: |
+          test -f src/webhook.ts
+          test -f tests/signature-vectors.json
+          test -f tests/shared-vectors.test.ts
+
+      - name: Execute verify + shared vector tests
+        run: npx jest --config jestconfig.json --testPathPattern='(webhook|shared-vectors)'
+
+      - name: Execute full test suite when present
+        run: npm test
+        continue-on-error: true

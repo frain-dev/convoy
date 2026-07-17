@@ -1,0 +1,55 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: Convoy
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  useClassNamesForArrayFields: true
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: true
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+  auth:
+    hoistGlobalSecurity: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: body
+  persistentEdits:
+    enabled: true
+  tests:
+    generateTests: false
+    generateNewTests: false
+python:
+  version: 1.0.0
+  author: Convoy
+  authors:
+    - Frain Inc.
+  packageName: convoy-python
+  # PyPI name stays convoy-python; imports stay `from convoy ...` so the
+  # hand-written verify path (convoy/utils/webhook.py) keeps working.
+  moduleName: convoy
+  description: Python SDK for Convoy (Speakeasy-generated API client; hand-written webhook verify)
+  license: MIT
+  maxMethodParams: 999
+  methodArguments: infer-optional-args
+  packageManager: setuptools
+  templateVersion: v2
+  responseFormat: flat
+  flattenGlobalSecurity: true
+  flattenRequests: true
+  clientServerStatusCodesAsErrors: true
+  asyncMode: both
+  additionalDependencies:
+    dev: {}
+    main: {}
+  imports:
+    option: openapi
+    paths:
+      callbacks: ""
+      errors: errors
+      operations: ""
+      shared: ""
+      webhooks: ""

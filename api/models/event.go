@@ -199,6 +199,11 @@ type QueryCountAffectedEventsResponse struct {
 	*datastore.Filter
 }
 
+// CountResponse is the data payload for count endpoints (e.g. countbatchreplayevents).
+type CountResponse struct {
+	Num int64 `json:"num"`
+}
+
 func (qc *QueryCountAffectedEvents) Transform(r *http.Request) (*QueryCountAffectedEventsResponse, error) {
 	searchParams, err := getSearchParams(r)
 	if err != nil {
