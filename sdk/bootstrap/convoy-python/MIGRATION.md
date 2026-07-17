@@ -3,7 +3,7 @@
 ## What changed
 
 - The **public HTTP API client** will be generated from Convoy's OpenAPI spec (`docs/v3/openapi3.yaml`) via [Speakeasy](https://www.speakeasy.com/).
-- **Webhook signature verification stays hand-written.** Generators do not own crypto. `convoy/utils/webhook.py` and the shared `test/signature-vectors.json` contract remain the source of truth for verify (see `.speakeasyignore`).
+- **Webhook signature verification stays hand-written.** Generators do not own crypto. `convoy/utils/webhook.py` and the shared `test/signature-vectors.json` contract remain the source of truth for verify (see `.genignore`).
 
 ## Breaking change policy
 

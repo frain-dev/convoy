@@ -35,7 +35,7 @@ migrate_convoy_js() {
 
   # Hand-written API stays in place until the first Speakeasy generation PR replaces
   # it as an intentional convoy.js 2.x break. Verify modules are protected via
-  # .speakeasyignore so crypto is never generator-owned.
+  # .genignore so crypto is never generator-owned.
 
   if [[ -f "${dest}/src/convoy.ts" ]] && ! grep -q "Speakeasy migration" "${dest}/src/convoy.ts"; then
     sed -i '1s|^|/** Speakeasy migration: hand-written HTTP API is deprecated; next major replaces this with OpenAPI-generated clients. Webhook verify stays hand-written. */\n|' "${dest}/src/convoy.ts"
@@ -109,7 +109,15 @@ clone_and_apply() {
   fi
 
   cd "$dest"
-  git checkout -B "$BRANCH_NAME"
+
+  # Re-runs must track the remote feature branch so --force-with-lease has a
+  # local expected ref. Shallow clone only fetches the default branch.
+  if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+    git fetch --depth 1 origin "refs/heads/${BRANCH_NAME}:refs/remotes/origin/${BRANCH_NAME}"
+    git checkout -B "$BRANCH_NAME" "origin/${BRANCH_NAME}"
+  else
+    git checkout -B "$BRANCH_NAME"
+  fi
 
   # Prefer rsync when available; fall back to cp for local dry-runs.
   if command -v rsync >/dev/null 2>&1; then

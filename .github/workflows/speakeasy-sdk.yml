@@ -120,13 +120,14 @@ jobs:
 
           run_id=""
           for _ in $(seq 1 30); do
+            # gh --jq does not accept jq --arg; pipe JSON to jq instead.
             run_id=$(gh run list \
               --repo "$owner/$repo" \
               --workflow sdk_generation.yaml \
               --event workflow_dispatch \
               --limit 20 \
               --json databaseId,createdAt \
-              --jq --arg after "$dispatched_after" \
+              | jq -r --arg after "$dispatched_after" \
                 '[.[] | select(.createdAt >= $after)] | sort_by(.createdAt) | reverse | .[0].databaseId // empty')
             if [ -n "$run_id" ]; then
               break
