@@ -4546,7 +4546,7 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "$ref": "#/components/schemas/models.CountResponse"
                         }
                       },
                       "type": "object"
@@ -11348,6 +11348,14 @@
         "required": [
           "uid"
         ],
+        "type": "object"
+      },
+      "models.CountResponse": {
+        "properties": {
+          "num": {
+            "type": "integer"
+          }
+        },
         "type": "object"
       },
       "models.CreateEndpoint": {

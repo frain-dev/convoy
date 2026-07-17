@@ -2518,7 +2518,7 @@ paths:
                   - $ref: '#/components/schemas/util.ServerResponse'
                   - properties:
                       data:
-                        $ref: '#/components/schemas/handlers.Stub'
+                        $ref: '#/components/schemas/models.CountResponse'
                     type: object
           description: OK
         '400':
@@ -6497,6 +6497,11 @@ components:
           type: string
       required:
         - uid
+      type: object
+    models.CountResponse:
+      properties:
+        num:
+          type: integer
       type: object
     models.CreateEndpoint:
       properties:

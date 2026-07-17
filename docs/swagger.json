@@ -4000,7 +4000,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "$ref": "#/definitions/models.CountResponse"
                     }
                   }
                 }
@@ -10184,6 +10184,14 @@
         },
         "uid": {
           "type": "string"
+        }
+      }
+    },
+    "models.CountResponse": {
+      "type": "object",
+      "properties": {
+        "num": {
+          "type": "integer"
         }
       }
     },

@@ -59,16 +59,21 @@ jobs:
           fi
           exit "$missing"
 
-      - name: Install Speakeasy CLI
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/speakeasy-api/speakeasy/main/install.sh | sh
-          echo "$HOME/.speakeasy/bin" >> "$GITHUB_PATH"
-          echo "/usr/local/bin" >> "$GITHUB_PATH"
+      - name: Install mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+        with:
+          install: false
+          cache: true
 
-      - name: Lint OpenAPI document
-        env:
-          SPEAKEASY_API_KEY: ${{ secrets.SPEAKEASY_API_KEY }}
-        run: speakeasy lint openapi -s docs/v3/openapi3.yaml
+      - name: Install OpenAPI CLI
+        run: |
+          # Prefer the pinned openapi binary over `curl | sh` Speakeasy CLI install.
+          mise install "ubi:speakeasy-api/openapi"
+          echo "$(dirname "$(mise which openapi)")" >> "$GITHUB_PATH"
+          command -v openapi
+
+      - name: Validate OpenAPI document
+        run: openapi spec validate docs/v3/openapi3.yaml
 
   trigger-sdk-repos:
     name: Trigger ${{ matrix.repo }} generation
@@ -103,22 +108,34 @@ jobs:
           if [ -z "$force" ]; then force="true"; fi
           feature_branch="${{ steps.branch.outputs.name }}"
 
+          # Capture a lower bound before dispatch so we don't pick up an older
+          # concurrent cron / workflow_dispatch run.
+          dispatched_after=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
           gh workflow run sdk_generation.yaml \
             --repo "$owner/$repo" \
             --ref main \
             --field force="$force" \
             --field feature_branch="$feature_branch"
 
-          sleep 15
-          run_id=$(gh run list \
-            --repo "$owner/$repo" \
-            --workflow sdk_generation.yaml \
-            --limit 1 \
-            --json databaseId \
-            --jq '.[0].databaseId')
+          run_id=""
+          for _ in $(seq 1 30); do
+            run_id=$(gh run list \
+              --repo "$owner/$repo" \
+              --workflow sdk_generation.yaml \
+              --event workflow_dispatch \
+              --limit 20 \
+              --json databaseId,createdAt \
+              --jq --arg after "$dispatched_after" \
+                '[.[] | select(.createdAt >= $after)] | sort_by(.createdAt) | reverse | .[0].databaseId // empty')
+            if [ -n "$run_id" ]; then
+              break
+            fi
+            sleep 2
+          done
 
-          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-            echo "::error::Failed to locate dispatched workflow run for $owner/$repo"
+          if [ -z "$run_id" ]; then
+            echo "::error::Failed to locate dispatched workflow run for $owner/$repo after $dispatched_after"
             exit 1
           fi
 
