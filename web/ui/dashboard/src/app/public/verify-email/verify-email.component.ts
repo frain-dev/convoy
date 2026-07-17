@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { VerifyEmailService } from './verify-email.service';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
+import { PrivateService } from 'src/app/private/private.service';
 
 @Component({
     selector: 'convoy-verify-email',
@@ -16,7 +17,7 @@ export class VerifyEmailComponent implements OnInit {
 	loading = true;
 	showError = false;
 
-	constructor(private route: ActivatedRoute, private verifyEmailService: VerifyEmailService) {}
+	constructor(private route: ActivatedRoute, private verifyEmailService: VerifyEmailService, private privateService: PrivateService) {}
 
 	ngOnInit() {
 		this.verifyEmail();
@@ -26,25 +27,13 @@ export class VerifyEmailComponent implements OnInit {
 		this.showError = false;
 		try {
 			await this.verifyEmailService.verifyEmail(this.token);
-			this.patchAuthEmailVerified();
+			// Sync CONVOY_AUTH and drop the cached profile so dashboard surfaces
+			// (verify chip, trial modal) refetch instead of showing stale state.
+			this.privateService.setAuthEmailVerified(true);
 			this.loading = false;
 		} catch {
 			this.loading = false;
 			this.showError = true;
-		}
-	}
-
-	// Keep CONVOY_AUTH in sync so dashboard surfaces (trial modal, verify chip)
-	// do not keep showing unverified after a successful verify redirect.
-	private patchAuthEmailVerified(): void {
-		try {
-			const raw = localStorage.getItem('CONVOY_AUTH');
-			if (!raw) return;
-			const auth = JSON.parse(raw);
-			auth.email_verified = true;
-			localStorage.setItem('CONVOY_AUTH', JSON.stringify(auth));
-		} catch {
-			// ignore
 		}
 	}
 }

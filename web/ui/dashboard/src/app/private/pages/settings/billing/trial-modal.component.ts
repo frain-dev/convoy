@@ -142,22 +142,10 @@ export class TrialModalComponent implements OnDestroy {
 			const verified = response?.data?.email_verified === true;
 			this.emailVerified = verified;
 			if (verified) {
-				this.patchAuthEmailVerified(true);
+				this.privateService.setAuthEmailVerified(true);
 			}
 		} catch {
 			this.emailVerified = false;
-		}
-	}
-
-	private patchAuthEmailVerified(verified: boolean): void {
-		try {
-			const raw = localStorage.getItem('CONVOY_AUTH');
-			if (!raw) return;
-			const auth = JSON.parse(raw);
-			auth.email_verified = verified;
-			localStorage.setItem('CONVOY_AUTH', JSON.stringify(auth));
-		} catch {
-			// ignore cache patch failures
 		}
 	}
 

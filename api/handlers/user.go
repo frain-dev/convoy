@@ -203,8 +203,16 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	baseUrl, err := h.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	u := services.UpdateUserService{
 		UserRepo: users.New(h.A.Logger, h.A.DB),
+		Queue:    h.A.Queue,
+		BaseURL:  baseUrl,
 		Data:     &userUpdate,
 		User:     user,
 		Logger:   h.A.Logger,

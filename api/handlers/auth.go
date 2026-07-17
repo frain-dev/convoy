@@ -104,6 +104,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	registered := false
 	user, token, err := lu.LoginSSOUser(r.Context(), tokenResp)
 	if err != nil {
 		if !errors.Is(err, datastore.ErrUserNotFound) {
@@ -112,6 +113,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
+		registered = err == nil
 		if err != nil && errors.Is(err, services.ErrUserAlreadyExist) {
 			user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
 		}
@@ -136,6 +138,12 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 	}
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
+
+	// New SSO registrations are cloud signups too; same fire-and-forget welcome
+	// as password RegisterUser. Fail-open: signup already succeeded.
+	if registered {
+		go h.enqueueCloudOnboardingWelcome(context.WithoutCancel(r.Context()), user)
+	}
 }
 
 type adminPortalRequest struct {
@@ -517,4 +525,8 @@ func (h *Handler) GoogleOAuthSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Setup completed successfully", u, http.StatusOK))
+
+	// Google OAuth setup creates a user + org like password RegisterUser; send
+	// the same fire-and-forget onboarding welcome. Fail-open: signup succeeded.
+	go h.enqueueCloudOnboardingWelcome(context.WithoutCancel(r.Context()), user)
 }

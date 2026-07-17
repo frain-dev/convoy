@@ -406,6 +406,23 @@ export class PrivateService {
 		}
 	}
 
+	// Single owner of the email_verified cache sync: patches CONVOY_AUTH and
+	// drops the in-memory profile cache so the next getUserDetails refetches
+	// (verify chip, trial modal). Cache patch failures are ignored; the server
+	// remains the source of truth.
+	setAuthEmailVerified(verified: boolean): void {
+		this.profileDetails = undefined as any;
+		try {
+			const raw = localStorage.getItem('CONVOY_AUTH');
+			if (!raw) return;
+			const auth = JSON.parse(raw);
+			auth.email_verified = verified;
+			localStorage.setItem('CONVOY_AUTH', JSON.stringify(auth));
+		} catch {
+			// ignore cache patch failures
+		}
+	}
+
 	getUserDetails(requestDetails: { userId: string; refresh?: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			const userId = requestDetails?.userId;
