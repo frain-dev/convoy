@@ -32,6 +32,7 @@ jobs:
       - name: Install docs generation tools
         run: |
           # Keep this list aligned with Makefile generate_docs prerequisites.
+          # Versions are pinned in mise.toml so drift CI is not flaky on toolchain floats.
           mise install \
             go \
             nodejs \
