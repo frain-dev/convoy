@@ -26,6 +26,7 @@ signature-vectors.json → hand-written verify tests (unchanged)
 | --- | --- | --- |
 | `SPEAKEASY_API_KEY` | `convoy`, `convoy.js`, `convoy-python` | Speakeasy generation |
 | `SDK_REPOS_PAT` | `convoy` | Dispatch workflows / open PRs on SDK repos |
+| `SDK_BOT_PAT` | `convoy.js`, `convoy-python` | Open generation PRs so verify CI (`run-tests.yml`) triggers — PRs opened with `GITHUB_TOKEN` do not fire `pull_request` workflows. Can be the same fine-grained token as `SDK_REPOS_PAT`. |
 
 ## Bootstrap
 

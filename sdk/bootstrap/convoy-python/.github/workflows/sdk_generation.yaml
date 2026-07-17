@@ -35,5 +35,7 @@ jobs:
       feature_branch: ${{ inputs.feature_branch }}
       environment: ${{ inputs.environment }}
     secrets:
-      github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      # Prefer a PAT: PRs opened with GITHUB_TOKEN do not trigger
+      # pull_request workflows, so verify CI would never run on them.
+      github_access_token: ${{ secrets.SDK_BOT_PAT || secrets.GITHUB_TOKEN }}
       speakeasy_api_key: ${{ secrets.SPEAKEASY_API_KEY }}

@@ -187,6 +187,7 @@ EOF
 
 ## Secrets required
 - \`SPEAKEASY_API_KEY\` on this repository (Actions)
+- \`SDK_BOT_PAT\` on this repository so generation PRs trigger verify CI (PRs opened with \`GITHUB_TOKEN\` do not fire \`pull_request\` workflows)
 
 ## Follow-up
 After merge, run **SDK Generation** (\`sdk_generation.yaml\`) with \`force=true\` to open the first generated API-client PR.
