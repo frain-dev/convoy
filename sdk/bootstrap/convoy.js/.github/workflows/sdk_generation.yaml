@@ -19,6 +19,12 @@ on:
   schedule:
     - cron: "0 6 * * 1"
 
+# Serialize generations: overlapping cron/dispatch runs race on the same
+# branch/PR. Queue instead of cancel so a triggered regen is never dropped.
+concurrency:
+  group: sdk-generation
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
