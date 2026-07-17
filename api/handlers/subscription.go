@@ -413,8 +413,9 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (h *Handler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
-	// For backward compatibility
-	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
+	// For backward compatibility. Return an empty object (not null) so the
+	// documented Stub response schema matches what generated clients parse.
+	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", Stub{}, http.StatusAccepted))
 }
 
 // TestSubscriptionFilter

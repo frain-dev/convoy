@@ -28,6 +28,9 @@ python:
   authors:
     - Frain Inc.
   packageName: convoy-python
+  # PyPI name stays convoy-python; imports stay `from convoy ...` so the
+  # hand-written verify path (convoy/utils/webhook.py) keeps working.
+  moduleName: convoy
   description: Python SDK for Convoy (Speakeasy-generated API client; hand-written webhook verify)
   license: MIT
   maxMethodParams: 999

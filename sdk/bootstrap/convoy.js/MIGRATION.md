@@ -10,7 +10,7 @@
 Shipping the Speakeasy client is an intentional **2.x** break. Hand-written `1.x` method shapes under `src/Api/**` are **not** silently adapted to look the same.
 
 1. This bootstrap PR wires Speakeasy + protects verify.
-2. The first `sdk_generation.yaml` run opens a PR that replaces the hand-written HTTP client with generated code and publishes as `2.x`.
+2. The first `sdk_generation.yaml` run opens a PR that replaces the hand-written HTTP client with generated code and publishes as `2.x`. That PR **must re-export `Webhook` from the generated package entrypoint** (`export { Webhook } from "./webhook";` — preserved by `persistentEdits`), so the snippet below keeps resolving.
 3. Consumers pin `1.x` until they migrate call sites.
 
 ## Verify (unchanged)

@@ -10,7 +10,7 @@
 Shipping the Speakeasy client is an intentional **1.x** break from the hand-written `0.x` surfaces. Method shapes are **not** silently preserved.
 
 1. This bootstrap PR wires Speakeasy + protects verify.
-2. The first `sdk_generation.yaml` run opens a PR that replaces the hand-written HTTP client with generated code and publishes as `1.x`.
+2. The first `sdk_generation.yaml` run opens a PR that replaces the hand-written HTTP client with generated code and publishes as `1.x`. Generation keeps the `convoy` import root (`moduleName: convoy` in `.speakeasy/gen.yaml`); that PR **must relocate `convoy/utils/webhook.py` into the generated module tree unchanged** so `from convoy.utils.webhook import Webhook` keeps resolving.
 3. Consumers pin `0.x` until they migrate call sites.
 
 ## Verify (unchanged)

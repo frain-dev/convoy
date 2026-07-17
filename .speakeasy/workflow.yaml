@@ -3,7 +3,8 @@
 # OpenAPI document from GitHub; this file documents the source of truth and
 # can later publish to the Speakeasy registry when a workspace is connected.
 workflowVersion: 1.0.0
-speakeasyVersion: latest
+# Pin the CLI so generation runs a reviewed, immutable release.
+speakeasyVersion: 1.790.2
 sources:
   convoy:
     inputs:
