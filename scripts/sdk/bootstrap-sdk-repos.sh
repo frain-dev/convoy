@@ -122,10 +122,15 @@ clone_and_apply() {
 
   cd "$dest"
 
-  # Re-runs must track the remote feature branch so --force-with-lease has a
-  # local expected ref. Shallow clone only fetches the default branch.
+  # Re-runs must build on the remote feature branch. Capture its SHA as an
+  # explicit lease expectation: bare --force-with-lease rejects with "stale
+  # info" here because the tracking ref written by an explicit-refspec fetch
+  # is not covered by the single-branch clone's remote.origin.fetch config.
+  # An empty expectation means "branch must not exist yet" (first run).
+  local expected_sha=""
   if git ls-remote --exit-code --heads origin -- "$BRANCH_NAME" >/dev/null 2>&1; then
     git fetch --depth 1 origin "refs/heads/${BRANCH_NAME}:refs/remotes/origin/${BRANCH_NAME}"
+    expected_sha="$(git rev-parse "origin/${BRANCH_NAME}")"
     git checkout -B "$BRANCH_NAME" "origin/${BRANCH_NAME}"
   else
     git checkout -B "$BRANCH_NAME"
@@ -168,7 +173,7 @@ EOF
     return 0
   fi
 
-  git push -u origin "$BRANCH_NAME" --force-with-lease
+  git push -u origin "$BRANCH_NAME" --force-with-lease="${BRANCH_NAME}:${expected_sha}"
 
   local pr_url
   pr_url="$(gh pr list --repo "frain-dev/${repo}" --head "$BRANCH_NAME" --json url --jq '.[0].url' || true)"
