@@ -6,6 +6,7 @@ src/utils/errors/**
 tests/signature-vectors.json
 tests/shared-vectors.test.ts
 tests/webhook.test.ts
+jestconfig.json
 
 # Project meta / contributor docs that Speakeasy should not clobber blindly.
 CONTRIBUTING.md
