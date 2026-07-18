@@ -116,6 +116,7 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
+//	@Param			eventTypeId	path		string					true	"Event Type ID"
 //	@Param			eventType	body		models.UpdateEventType	true	"Event Type Details"
 //	@Success		201			{object}	util.ServerResponse{data=models.EventTypeResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}

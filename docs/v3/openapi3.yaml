@@ -1255,6 +1255,12 @@ paths:
           required: true
           schema:
             type: string
+        - description: Event Type ID
+          in: path
+          name: eventTypeId
+          required: true
+          schema:
+            type: string
       responses:
         '201':
           content:

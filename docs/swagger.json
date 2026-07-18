@@ -2068,6 +2068,13 @@
             "required": true
           },
           {
+            "type": "string",
+            "description": "Event Type ID",
+            "name": "eventTypeId",
+            "in": "path",
+            "required": true
+          },
+          {
             "description": "Event Type Details",
             "name": "eventType",
             "in": "body",
