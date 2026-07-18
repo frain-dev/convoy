@@ -3685,6 +3685,11 @@ paths:
           name: projectID
           required: true
           type: string
+        - description: Event Type ID
+          in: path
+          name: eventTypeId
+          required: true
+          type: string
         - description: Event Type Details
           in: body
           name: eventType
