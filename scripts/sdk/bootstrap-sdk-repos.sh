@@ -49,13 +49,39 @@ ensure_readme_note() {
 migrate_convoy_js() {
   local dest="$1"
 
-  # Hand-written API stays in place until the first Speakeasy generation PR replaces
-  # it as an intentional convoy.js 2.x break. Verify modules are protected via
-  # .genignore so crypto is never generator-owned.
+  # Remove the deprecated hand-written HTTP client now (intentional 2.x break):
+  # persistentEdits preserves any leftovers and they fail compilation under the
+  # generated node16 tsconfig (extensionless relative imports). Verify modules
+  # stay, protected via .genignore so crypto is never generator-owned.
+  rm -rf \
+    "${dest}/src/Api" \
+    "${dest}/src/client.ts" \
+    "${dest}/src/interfaces" \
+    "${dest}/src/utils/helpers" \
+    "${dest}/tests/convoy.test.ts" \
+    "${dest}/tests/routes.test.ts"
 
-  if [[ -f "${dest}/src/convoy.ts" ]] && ! grep -q "Speakeasy migration" "${dest}/src/convoy.ts"; then
-    sed -i '1s|^|/** Speakeasy migration: hand-written HTTP API is deprecated; next major replaces this with OpenAPI-generated clients. Webhook verify stays hand-written. */\n|' "${dest}/src/convoy.ts"
+  # Minimal entrypoint: keep `require('convoy.js').Webhook` working before and
+  # after generation. Explicit .js extensions compile under both the current
+  # commonjs tsconfig and Speakeasy's node16 moduleResolution.
+  cat > "${dest}/src/convoy.ts" <<'EOF'
+/** Speakeasy migration: the hand-written HTTP API was removed for the 2.x
+ * break; OpenAPI-generated clients replace it. Webhook verify stays
+ * hand-written (see MIGRATION.md). */
+export { Webhook } from './webhook.js';
+EOF
+
+  # Keep the protected verify import chain node16-compatible (explicit .js
+  # extensions resolve under both commonjs and node16 moduleResolution).
+  if [[ -f "${dest}/src/webhook.ts" ]]; then
+    sed -i "s|from './utils/errors';|from './utils/errors/index.js';|" "${dest}/src/webhook.ts"
   fi
+  local test_file
+  for test_file in "${dest}/tests/webhook.test.ts" "${dest}/tests/shared-vectors.test.ts"; do
+    if [[ -f "$test_file" ]]; then
+      sed -i "s|from '../src/webhook';|from '../src/webhook.js';|" "$test_file"
+    fi
+  done
 
   if [[ -f "${dest}/package.json" ]]; then
     python3 - <<'PY'

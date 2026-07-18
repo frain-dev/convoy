@@ -35,7 +35,8 @@ python:
   license: MIT
   maxMethodParams: 999
   methodArguments: infer-optional-args
-  packageManager: setuptools
+  # Speakeasy only supports uv or poetry (setuptools is rejected at gen time).
+  packageManager: uv
   templateVersion: v2
   responseFormat: flat
   flattenGlobalSecurity: true
