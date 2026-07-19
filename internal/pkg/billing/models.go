@@ -115,6 +115,12 @@ type StartTrialRequest struct {
 	BillingEmail string `json:"billing_email,omitempty"`
 }
 
+// OnboardingWelcomeRequest asks Overwatch to send the signup welcome email.
+type OnboardingWelcomeRequest struct {
+	FirstName string `json:"first_name,omitempty"`
+	Track     string `json:"track,omitempty"`
+}
+
 type Plan struct {
 	ID              string          `json:"id,omitempty"`
 	Key             string          `json:"key,omitempty"`

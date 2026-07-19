@@ -53,6 +53,9 @@ export class ProfileSettingsComponent implements OnInit {
 
 			this.generalService.showNotification({ style: 'success', message: 'Changes saved successfully!' });
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+			// An email change unverifies the account server-side; drop the cached
+			// profile so the verify chip and other readers refetch fresh state.
+			this.privateService.clearProfileDetailsCache();
 
 			this.isSavingUserDetails = false;
 		} catch {
