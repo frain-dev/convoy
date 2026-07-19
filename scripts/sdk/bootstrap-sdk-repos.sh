@@ -96,9 +96,12 @@ export { WebhookVerificationException };
 EOF
 
   # Keep the protected verify import chain node16-compatible (explicit .js
-  # extensions resolve under both commonjs and node16 moduleResolution).
+  # extensions resolve under both commonjs and node16 moduleResolution), and
+  # satisfy the generated tsconfig's noUncheckedIndexedAccess: array
+  # destructuring yields string | undefined.
   if [[ -f "${dest}/src/webhook.ts" ]]; then
     sed -i "s|from './utils/errors';|from './utils/errors/index.js';|" "${dest}/src/webhook.ts"
+    sed -i "s|if (key.trim() === 't') {|if ((key ?? '').trim() === 't') {|" "${dest}/src/webhook.ts"
   fi
   local test_file
   for test_file in "${dest}/tests/webhook.test.ts" "${dest}/tests/shared-vectors.test.ts"; do
@@ -143,9 +146,19 @@ EOF
 migrate_convoy_python() {
   local dest="$1"
 
-  if [[ -f "${dest}/convoy/convoy.py" ]] && ! grep -q "Speakeasy migration" "${dest}/convoy/convoy.py"; then
-    sed -i '1s|^|"""Speakeasy migration: hand-written HTTP API is deprecated; next major replaces this with OpenAPI-generated clients. Webhook verify stays hand-written."""\n|' "${dest}/convoy/convoy.py"
+  # The generated SDK lives at src/convoy/; the old root convoy/ package
+  # shadows it (mypy resolves convoy.utils to the old tree and fails on
+  # generated imports like FieldMetadata). Move hand-written verify into the
+  # generated tree — import path stays `from convoy.utils.webhook import
+  # Webhook` — and remove the deprecated hand-written client (1.x break).
+  if [[ -f "${dest}/convoy/utils/webhook.py" ]]; then
+    mkdir -p "${dest}/src/convoy/utils"
+    mv "${dest}/convoy/utils/webhook.py" "${dest}/src/convoy/utils/webhook.py"
   fi
+  rm -rf \
+    "${dest}/convoy" \
+    "${dest}/test/test_client.py" \
+    "${dest}/test/test_routes.py"
 
   if [[ -f "${dest}/setup.py" ]]; then
     python3 - <<'PY'
