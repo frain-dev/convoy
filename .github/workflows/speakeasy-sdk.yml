@@ -109,8 +109,10 @@ jobs:
           if [ -n "$FEATURE_BRANCH_INPUT" ]; then
             # SDK PRs must come from a reviewable feature branch, never a
             # protected ref or an option-looking / metacharacter name.
+            # refs/* is blocked too: "refs/heads/main" would bypass the
+            # literal main check on the SDK repos' force-push side.
             case "$FEATURE_BRANCH_INPUT" in
-              main|master|release/*|-*|*[!a-zA-Z0-9._/-]*)
+              main|master|release/*|refs/*|-*|*[!a-zA-Z0-9._/-]*)
                 echo "::error::Invalid feature_branch '$FEATURE_BRANCH_INPUT'"
                 exit 1
                 ;;
