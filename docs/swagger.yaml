@@ -367,6 +367,7 @@ definitions:
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
       deleted_at:
         type: string
       endpoint_metadata:
@@ -552,6 +553,7 @@ definitions:
       data:
         description: Data to be sent to endpoint.
         type: object
+        additionalProperties: true
       interval_seconds:
         type: integer
       max_retry_seconds:
@@ -1143,6 +1145,7 @@ definitions:
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -1290,6 +1293,7 @@ definitions:
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
       endpoint_id:
         description: Specifies the endpoint to send this event to.
         type: string
@@ -1480,6 +1484,7 @@ definitions:
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -1654,6 +1659,7 @@ definitions:
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
       deleted_at:
         type: string
       endpoint_metadata:
@@ -1703,6 +1709,7 @@ definitions:
         type: string
       json_schema:
         type: object
+        additionalProperties: true
       name:
         type: string
       uid:
@@ -1743,6 +1750,7 @@ definitions:
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string

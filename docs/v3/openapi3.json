@@ -10142,6 +10142,7 @@
             "type": "string"
           },
           "data": {
+            "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
             "type": "object"
           },
@@ -10412,6 +10413,7 @@
       "datastore.Metadata": {
         "properties": {
           "data": {
+            "additionalProperties": true,
             "description": "Data to be sent to endpoint.",
             "type": "object"
           },
@@ -11275,6 +11277,7 @@
             "type": "object"
           },
           "data": {
+            "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
             "type": "object"
           },
@@ -11463,6 +11466,7 @@
             "type": "object"
           },
           "data": {
+            "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
             "type": "object"
           },
@@ -11746,6 +11750,7 @@
             "type": "object"
           },
           "data": {
+            "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
             "type": "object"
           },
@@ -11986,6 +11991,7 @@
             "type": "string"
           },
           "data": {
+            "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
             "type": "object"
           },
@@ -12061,6 +12067,7 @@
             "type": "string"
           },
           "json_schema": {
+            "additionalProperties": true,
             "type": "object"
           },
           "name": {
@@ -12112,6 +12119,7 @@
             "type": "object"
           },
           "data": {
+            "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
             "type": "object"
           },
