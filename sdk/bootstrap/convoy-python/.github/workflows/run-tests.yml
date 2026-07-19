@@ -21,9 +21,14 @@ jobs:
       - name: Install package
         run: |
           python -m pip install --upgrade pip
-          # Pre-generation the repo has no installable package yet; the verify
-          # tests import from src/ directly (PYTHONPATH below).
-          pip install -e . || echo "editable install unavailable (pre-generation); continuing"
+          # pyproject.toml arrives with the first Speakeasy generation. Once
+          # it exists, installation must succeed — a packaging regression
+          # (e.g. wheel omitting webhook verify) has to fail CI, not hide.
+          if [ -f pyproject.toml ]; then
+            pip install -e .
+          else
+            echo "pre-generation: no installable package yet; tests import from src/"
+          fi
           pip install pytest
 
       - name: Verify hand-written modules are present
@@ -32,9 +37,18 @@ jobs:
           test -f test/signature-vectors.json
           test -f test/test_shared_vectors.py
 
+      - name: Verify installed package exposes webhook verify
+        if: hashFiles('pyproject.toml') != ''
+        # No PYTHONPATH: this must resolve from the installed distribution.
+        run: python -c "from convoy.utils.webhook import Webhook"
+
       - name: Execute verify + shared vector tests
-        env:
-          # PEP 420 namespace packages: `convoy.utils.webhook` resolves from
-          # src/ before generation adds real __init__.py files.
-          PYTHONPATH: src
-        run: pytest test/test_webhook.py test/test_shared_vectors.py -q
+        run: |
+          if [ -f pyproject.toml ]; then
+            # Import from the installed distribution so packaging bugs surface.
+            pytest test/test_webhook.py test/test_shared_vectors.py -q
+          else
+            # PEP 420 namespace packages: resolve convoy.utils.webhook from
+            # src/ before generation adds real __init__.py files.
+            PYTHONPATH=src pytest test/test_webhook.py test/test_shared_vectors.py -q
+          fi
