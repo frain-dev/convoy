@@ -1,17 +1,19 @@
 name: Speakeasy SDK regeneration
 
 # When public OpenAPI artifacts change on main (or via manual dispatch), kick
-# SDK generation in convoy.js / convoy-python / convoy-java. SDK repos pull
-# docs/v3/openapi3.yaml from this repository. Each repo owns its generator
-# (convoy.js: Speakeasy; convoy-python: openapi-python-client; convoy-java:
-# OpenAPI Generator) behind the same sdk_generation.yaml filename and inputs.
+# SDK generation in the SDK repos (see the trigger-sdk-repos matrix). SDK
+# repos pull docs/v3/openapi3.yaml from this repository. Each repo owns its
+# generator (convoy.js: Speakeasy; convoy-python: openapi-python-client;
+# convoy-go: oapi-codegen; convoy-java / convoy.rb / convoy-php: OpenAPI
+# Generator) behind the same sdk_generation.yaml filename and inputs.
 #
 # Required repository secrets:
 #   SPEAKEASY_API_KEY   — Speakeasy workspace API key (also required on convoy.js)
 #   SDK_REPOS_PAT       — GitHub PAT (or fine-grained token) that can
-#                         workflow_dispatch and open/edit PRs on
-#                         frain-dev/convoy.js, frain-dev/convoy-python and
-#                         frain-dev/convoy-java
+#                         workflow_dispatch and open/edit PRs on every repo in
+#                         the trigger-sdk-repos matrix (convoy.js,
+#                         convoy-python, convoy-java, convoy-go, convoy.rb,
+#                         convoy-php)
 
 on:
   push:
@@ -99,6 +101,12 @@ jobs:
             repo: convoy-python
           - language: java
             repo: convoy-java
+          - language: go
+            repo: convoy-go
+          - language: ruby
+            repo: convoy.rb
+          - language: php
+            repo: convoy-php
     steps:
       - name: Prepare feature branch
         id: branch
