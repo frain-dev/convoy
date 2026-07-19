@@ -289,7 +289,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.DynamicEvent	true	"Event Details"
-//	@Success		201			{object}	Stub
+//	@Success		201			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/dynamic [post]

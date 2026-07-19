@@ -2582,7 +2582,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/handlers.Stub'
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/handlers.Stub'
+                    type: object
           description: Created
         '400':
           content:
@@ -5661,9 +5666,7 @@ components:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
-          items:
-            type: integer
-          type: array
+          type: object
         deleted_at:
           type: string
         endpoint_metadata:
@@ -5760,9 +5763,9 @@ components:
         project_id:
           type: string
         service_account:
-          items:
-            type: integer
-          type: array
+          description: 'encoding/json marshals []byte as a base64 string on the wire.'
+          format: byte
+          type: string
         subscription_id:
           type: string
       type: object
@@ -5848,9 +5851,7 @@ components:
       properties:
         data:
           description: Data to be sent to endpoint.
-          items:
-            type: integer
-          type: array
+          type: object
         interval_seconds:
           type: integer
         max_retry_seconds:
@@ -6981,9 +6982,7 @@ components:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
-          items:
-            type: integer
-          type: array
+          type: object
         deleted_at:
           type: string
         endpoint_metadata:
@@ -7032,9 +7031,7 @@ components:
         description:
           type: string
         json_schema:
-          items:
-            type: integer
-          type: array
+          type: object
         name:
           type: string
         uid:
@@ -7158,9 +7155,9 @@ components:
         project_id:
           type: string
         service_account:
-          items:
-            type: integer
-          type: array
+          description: 'encoding/json marshals []byte as a base64 string on the wire.'
+          format: byte
+          type: string
         subscription_id:
           type: string
       type: object

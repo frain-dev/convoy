@@ -4664,7 +4664,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/handlers.Stub"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/util.ServerResponse"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/handlers.Stub"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
                 }
               }
             },
@@ -10131,10 +10143,7 @@
           },
           "data": {
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-            "items": {
-              "type": "integer"
-            },
-            "type": "array"
+            "type": "object"
           },
           "deleted_at": {
             "type": "string"
@@ -10272,10 +10281,9 @@
             "type": "string"
           },
           "service_account": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array"
+            "description": "encoding/json marshals []byte as a base64 string on the wire.",
+            "format": "byte",
+            "type": "string"
           },
           "subscription_id": {
             "type": "string"
@@ -10405,10 +10413,7 @@
         "properties": {
           "data": {
             "description": "Data to be sent to endpoint.",
-            "items": {
-              "type": "integer"
-            },
-            "type": "array"
+            "type": "object"
           },
           "interval_seconds": {
             "type": "integer"
@@ -11982,10 +11987,7 @@
           },
           "data": {
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-            "items": {
-              "type": "integer"
-            },
-            "type": "array"
+            "type": "object"
           },
           "deleted_at": {
             "type": "string"
@@ -12059,10 +12061,7 @@
             "type": "string"
           },
           "json_schema": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array"
+            "type": "object"
           },
           "name": {
             "type": "string"
@@ -12234,10 +12233,9 @@
             "type": "string"
           },
           "service_account": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array"
+            "description": "encoding/json marshals []byte as a base64 string on the wire.",
+            "format": "byte",
+            "type": "string"
           },
           "subscription_id": {
             "type": "string"
