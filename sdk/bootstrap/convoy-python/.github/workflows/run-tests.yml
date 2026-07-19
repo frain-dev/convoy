@@ -21,14 +21,20 @@ jobs:
       - name: Install package
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          # Pre-generation the repo has no installable package yet; the verify
+          # tests import from src/ directly (PYTHONPATH below).
+          pip install -e . || echo "editable install unavailable (pre-generation); continuing"
           pip install pytest
 
       - name: Verify hand-written modules are present
         run: |
-          test -f convoy/utils/webhook.py
+          test -f src/convoy/utils/webhook.py
           test -f test/signature-vectors.json
           test -f test/test_shared_vectors.py
 
       - name: Execute verify + shared vector tests
+        env:
+          # PEP 420 namespace packages: `convoy.utils.webhook` resolves from
+          # src/ before generation adds real __init__.py files.
+          PYTHONPATH: src
         run: pytest test/test_webhook.py test/test_shared_vectors.py -q

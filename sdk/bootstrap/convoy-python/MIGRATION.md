@@ -3,14 +3,14 @@
 ## What changed
 
 - The **public HTTP API client** will be generated from Convoy's OpenAPI spec (`docs/v3/openapi3.yaml`) via [Speakeasy](https://www.speakeasy.com/).
-- **Webhook signature verification stays hand-written.** Generators do not own crypto. `convoy/utils/webhook.py` and the shared `test/signature-vectors.json` contract remain the source of truth for verify (see `.genignore`).
+- **Webhook signature verification stays hand-written.** Generators do not own crypto. `src/convoy/utils/webhook.py` and the shared `test/signature-vectors.json` contract remain the source of truth for verify (see `.genignore`).
 
 ## Breaking change policy
 
 Shipping the Speakeasy client is an intentional **1.x** break from the hand-written `0.x` surfaces. Method shapes are **not** silently preserved.
 
-1. This bootstrap PR wires Speakeasy + protects verify.
-2. The first `sdk_generation.yaml` run opens a PR that replaces the hand-written HTTP client with generated code and publishes as `1.x`. Generation keeps the `convoy` import root (`moduleName: convoy` in `.speakeasy/gen.yaml`); that PR **must relocate `convoy/utils/webhook.py` into the generated module tree unchanged** so `from convoy.utils.webhook import Webhook` keeps resolving.
+1. This bootstrap PR wires Speakeasy, removes the deprecated hand-written HTTP client, and relocates verify to `src/convoy/utils/webhook.py` (inside the generated module tree, so `from convoy.utils.webhook import Webhook` keeps resolving — `moduleName: convoy` in `.speakeasy/gen.yaml`).
+2. The first `sdk_generation.yaml` run opens a PR that adds the OpenAPI-generated client and publishes as `1.x`.
 3. Consumers pin `0.x` until they migrate call sites.
 
 ## Verify (unchanged)

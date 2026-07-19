@@ -1,9 +1,7 @@
-# Hand-written webhook signature verification — never overwrite with generated code.
-# helpers.py must stay too: utils/__init__.py eagerly imports it, so dropping it
-# would break `from convoy.utils.webhook import Webhook` at package init.
-convoy/utils/webhook.py
-convoy/utils/helpers.py
-convoy/utils/__init__.py
+# Hand-written webhook signature verification — never overwrite with generated
+# code. It lives inside the generated src/convoy tree so the import path stays
+# `from convoy.utils.webhook import Webhook`; only this file is hand-owned.
+src/convoy/utils/webhook.py
 
 # Shared signature contract + verify unit tests (hand-authored).
 test/signature-vectors.json
