@@ -24,15 +24,19 @@ type UpdateUserService struct {
 }
 
 func (u *UpdateUserService) Run(ctx context.Context) (*datastore.User, error) {
-	if !u.User.EmailVerified {
-		return nil, &ServiceError{ErrMsg: "email has not been verified"}
-	}
-
 	// Verification is bound to the address it was performed for. Changing the
 	// email un-verifies the account (fail closed for gates that check
 	// EmailVerified, e.g. cloud trial start) and issues a fresh token so the
 	// new address must be verified.
 	emailChanged := !strings.EqualFold(strings.TrimSpace(u.Data.Email), strings.TrimSpace(u.User.Email))
+
+	// An unverified user may still change their email: that is the only way to
+	// recover from a mistyped address (the verification mail went to an address
+	// they may not control). Every other profile update stays blocked until the
+	// current address is verified.
+	if !u.User.EmailVerified && !emailChanged {
+		return nil, &ServiceError{ErrMsg: "email has not been verified"}
+	}
 
 	u.User.FirstName = u.Data.FirstName
 	u.User.LastName = u.Data.LastName

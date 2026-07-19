@@ -97,12 +97,39 @@ func TestUpdateUserService_Run(t *testing.T) {
 				update: &models.UpdateUser{
 					FirstName: "update_user_test",
 					LastName:  "update_user_test",
-					Email:     "test@update.com",
+					Email:     "old@update.com",
 				},
 			},
 			dbFn:       func(u *UpdateUserService) {},
 			wantErr:    true,
 			wantErrMsg: "email has not been verified",
+		},
+		{
+			// Recovery path: a mistyped email leaves the user unverified, so
+			// correcting the address must not be blocked by the verified gate.
+			name: "should_allow_unverified_user_to_correct_email",
+			args: args{
+				ctx:  ctx,
+				user: &datastore.User{UID: "123456", Email: "typo@update.com", EmailVerified: false},
+				update: &models.UpdateUser{
+					FirstName: "update_user_test",
+					LastName:  "update_user_test",
+					Email:     "correct@update.com",
+				},
+			},
+			wantUser: &datastore.User{
+				FirstName: "update_user_test",
+				LastName:  "update_user_test",
+				Email:     "correct@update.com",
+			},
+			wantVerified: false,
+			dbFn: func(u *UpdateUserService) {
+				us, _ := u.UserRepo.(*mocks.MockUserRepository)
+				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Return(nil)
+
+				q, _ := u.Queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			},
 		},
 
 		{
