@@ -4112,7 +4112,19 @@
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/handlers.Stub"
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/handlers.Stub"
+                    }
+                  }
+                }
+              ]
             }
           },
           "400": {
@@ -8967,10 +8979,7 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "type": "object"
         },
         "deleted_at": {
           "type": "string"
@@ -9108,10 +9117,9 @@
           "type": "string"
         },
         "service_account": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "description": "encoding/json marshals []byte as a base64 string on the wire.",
+          "type": "string",
+          "format": "byte"
         },
         "subscription_id": {
           "type": "string"
@@ -9241,10 +9249,7 @@
       "properties": {
         "data": {
           "description": "Data to be sent to endpoint.",
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "type": "object"
         },
         "interval_seconds": {
           "type": "integer"
@@ -10818,10 +10823,7 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "type": "object"
         },
         "deleted_at": {
           "type": "string"
@@ -10895,10 +10897,7 @@
           "type": "string"
         },
         "json_schema": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "type": "object"
         },
         "name": {
           "type": "string"
@@ -11070,10 +11069,9 @@
           "type": "string"
         },
         "service_account": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "description": "encoding/json marshals []byte as a base64 string on the wire.",
+          "type": "string",
+          "format": "byte"
         },
         "subscription_id": {
           "type": "string"

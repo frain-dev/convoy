@@ -436,7 +436,8 @@ func (sc *SQSPubSubConfig) transform() *datastore.SQSPubSubConfig {
 
 type GooglePubSubConfig struct {
 	SubscriptionID string `json:"subscription_id"`
-	ServiceAccount []byte `json:"service_account"`
+	// encoding/json marshals []byte as a base64 string on the wire.
+	ServiceAccount []byte `json:"service_account" swaggertype:"string" format:"byte"`
 	ProjectID      string `json:"project_id"`
 }
 

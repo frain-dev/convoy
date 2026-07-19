@@ -891,7 +891,7 @@ type Event struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data,omitempty" db:"data"`
+	Data json.RawMessage `json:"data,omitempty" db:"data" swaggertype:"object"`
 	Raw  string          `json:"raw,omitempty" db:"raw"`
 
 	Status   EventStatus `json:"status" db:"status"`
@@ -1006,7 +1006,7 @@ const (
 
 type Metadata struct {
 	// Data to be sent to endpoint.
-	Data     json.RawMessage  `json:"data" bson:"data"`
+	Data     json.RawMessage  `json:"data" bson:"data" swaggertype:"object"`
 	Raw      string           `json:"raw" bson:"raw"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 
@@ -1385,7 +1385,8 @@ type SQSPubSubConfig struct {
 
 type GooglePubSubConfig struct {
 	SubscriptionID string `json:"subscription_id" db:"subscription_id"`
-	ServiceAccount []byte `json:"service_account" db:"service_account"`
+	// encoding/json marshals []byte as a base64 string on the wire.
+	ServiceAccount []byte `json:"service_account" db:"service_account" swaggertype:"string" format:"byte"`
 	ProjectID      string `json:"project_id" db:"project_id"`
 }
 
@@ -1915,7 +1916,7 @@ type ProjectEventType struct {
 	CreatedAt    time.Time       `json:"-" db:"created_at"`
 	UpdatedAt    time.Time       `json:"-" db:"updated_at"`
 	Category     string          `json:"category" db:"category"`
-	JSONSchema   json.RawMessage `json:"json_schema" db:"json_schema"`
+	JSONSchema   json.RawMessage `json:"json_schema" db:"json_schema" swaggertype:"object"`
 	Description  string          `json:"description" db:"description"`
 	DeprecatedAt null.Time       `json:"deprecated_at" db:"deprecated_at"`
 }
