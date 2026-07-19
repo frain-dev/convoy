@@ -5663,6 +5663,7 @@ components:
         created_at:
           type: string
         data:
+          additionalProperties: true
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
@@ -5850,6 +5851,7 @@ components:
     datastore.Metadata:
       properties:
         data:
+          additionalProperties: true
           description: Data to be sent to endpoint.
           type: object
         interval_seconds:
@@ -6444,6 +6446,7 @@ components:
             Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
           type: object
         data:
+          additionalProperties: true
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
@@ -6603,6 +6606,7 @@ components:
             Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
           type: object
         data:
+          additionalProperties: true
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
@@ -6797,6 +6801,7 @@ components:
             Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
           type: object
         data:
+          additionalProperties: true
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
@@ -6979,6 +6984,7 @@ components:
         created_at:
           type: string
         data:
+          additionalProperties: true
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
@@ -7031,6 +7037,7 @@ components:
         description:
           type: string
         json_schema:
+          additionalProperties: true
           type: object
         name:
           type: string
@@ -7071,6 +7078,7 @@ components:
             Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
           type: object
         data:
+          additionalProperties: true
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints

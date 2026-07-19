@@ -8979,7 +8979,8 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "deleted_at": {
           "type": "string"
@@ -9249,7 +9250,8 @@
       "properties": {
         "data": {
           "description": "Data to be sent to endpoint.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "interval_seconds": {
           "type": "integer"
@@ -10112,7 +10114,8 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "event_type": {
           "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -10300,7 +10303,8 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "endpoint_id": {
           "description": "Specifies the endpoint to send this event to.",
@@ -10583,7 +10587,8 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "event_type": {
           "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -10823,7 +10828,8 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "deleted_at": {
           "type": "string"
@@ -10897,7 +10903,8 @@
           "type": "string"
         },
         "json_schema": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "name": {
           "type": "string"
@@ -10949,7 +10956,8 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "event_type": {
           "description": "Event Type is used for filtering and debugging e.g invoice.paid",

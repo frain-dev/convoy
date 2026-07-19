@@ -60,6 +60,22 @@ fix_file_inplace() {
                     )
                 else . end
             )
+        ) |
+
+        # Fix 3: Open up arbitrary-JSON object properties. A bare
+        # {type: object} with no properties/additionalProperties is a CLOSED
+        # empty object; strict SDK generators (e.g. zod) strip every key of
+        # such payloads. json.RawMessage-backed fields must be open maps.
+        .definitions |= with_entries(
+            if .value.properties then
+                .value.properties |= map_values(
+                    if type == "object" and .type == "object"
+                       and (has("properties") | not)
+                       and (has("additionalProperties") | not) then
+                        .additionalProperties = true
+                    else . end
+                )
+            else . end
         )
         ' "$file" > "$tmpfile"
 
@@ -89,6 +105,22 @@ fix_file_inplace() {
                     )
                 else . end
             )
+        ) |
+
+        # Fix 3: Open up arbitrary-JSON object properties. A bare
+        # {type: object} with no properties/additionalProperties is a CLOSED
+        # empty object; strict SDK generators (e.g. zod) strip every key of
+        # such payloads. json.RawMessage-backed fields must be open maps.
+        .definitions |= with_entries(
+            if .value.properties then
+                .value.properties |= map_values(
+                    if type == "object" and .type == "object"
+                       and (has("properties") | not)
+                       and (has("additionalProperties") | not) then
+                        .additionalProperties = true
+                    else . end
+                )
+            else . end
         )
         ' | yq eval -P - > "$tmpfile"
     fi
