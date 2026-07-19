@@ -92,13 +92,7 @@ class WebhookVerificationException extends BaseError {
     }
 }
 
-class ConfigException extends BaseError {
-    constructor(message: string) {
-        super(message);
-    }
-}
-
-export { WebhookVerificationException, ConfigException };
+export { WebhookVerificationException };
 EOF
 
   # Keep the protected verify import chain node16-compatible (explicit .js
@@ -130,6 +124,12 @@ for dep in ("@aws-sdk/client-sqs", "axios", "base-64", "http-status", "kafkajs")
 data.get("devDependencies", {}).pop("@types/base-64", None)
 p.write_text(json.dumps(data, indent=4) + "\n")
 PY
+
+    # package.json changed (version + removed deps): regenerate the lockfile
+    # or `npm ci` fails on the exact-match check.
+    if [[ -f "${dest}/package-lock.json" ]]; then
+      (cd "$dest" && npm install --package-lock-only --ignore-scripts --no-audit --no-fund)
+    fi
   fi
 
   ensure_readme_note "${dest}/README.md" "$(cat <<'EOF'
