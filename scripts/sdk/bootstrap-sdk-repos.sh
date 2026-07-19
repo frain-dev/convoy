@@ -155,24 +155,88 @@ migrate_convoy_python() {
     mkdir -p "${dest}/src/convoy/utils"
     mv "${dest}/convoy/utils/webhook.py" "${dest}/src/convoy/utils/webhook.py"
   fi
+  # setup.py goes with the old client: the generated pyproject.toml (version
+  # and metadata come from .speakeasy/gen.yaml) replaces packaging entirely.
   rm -rf \
     "${dest}/convoy" \
+    "${dest}/setup.py" \
     "${dest}/test/test_client.py" \
     "${dest}/test/test_routes.py"
 
-  if [[ -f "${dest}/setup.py" ]]; then
-    python3 - <<'PY'
+  # Type-level fixes so the protected verify file passes Speakeasy's mypy /
+  # pylint gate (no crypto logic changes): correct the exception *args
+  # annotation, chain re-raises, and fail closed instead of implicitly
+  # returning None on an unsupported encoding.
+  if [[ -f "${dest}/src/convoy/utils/webhook.py" ]]; then
+    python3 - "${dest}/src/convoy/utils/webhook.py" <<'PY'
+import sys
 from pathlib import Path
-import re
-text = Path("setup.py").read_text()
-text = re.sub(r'version="[^"]+"', 'version="1.0.0a0"', text, count=1)
-text = re.sub(
-    r'description="[^"]+"',
-    'description="Python SDK for Convoy (Speakeasy-generated API client; hand-written webhook verify)"',
-    text,
-    count=1,
-)
-Path("setup.py").write_text(text)
+
+p = Path(sys.argv[1])
+text = p.read_text()
+
+# (pattern, replacement, occurrences) — both exception classes share the
+# same __init__ signature line.
+replacements = [
+    (
+        "def __init__(self, *args: list) -> None:",
+        "def __init__(self, *args: str) -> None:",
+        2,
+    ),
+    (
+        """            except (ValueError, TypeError):
+                # A malformed signature is a mismatch, not a crash.
+                raise InvalidSignature("Invalid signature.")""",
+        """            except (ValueError, TypeError) as exc:
+                # A malformed signature is a mismatch, not a crash.
+                raise InvalidSignature("Invalid signature.") from exc""",
+        1,
+    ),
+    (
+        """        except (TypeError, ValueError):
+            raise InvalidTimestampError("Invalid timestamp format")""",
+        """        except (TypeError, ValueError) as exc:
+            raise InvalidTimestampError("Invalid timestamp format") from exc""",
+        1,
+    ),
+    (
+        """        if self.encoding == "base64":
+            sig = hmac.new(bytes(self.secret, "utf-8"), msg=bytes(encoded_payload, "utf-8"), digestmod=self.hash).digest()
+            return base64.b64encode(sig).decode()
+    """,
+        """        if self.encoding == "base64":
+            sig = hmac.new(bytes(self.secret, "utf-8"), msg=bytes(encoded_payload, "utf-8"), digestmod=self.hash).digest()
+            return base64.b64encode(sig).decode()
+
+        # Fail closed instead of implicitly returning None.
+        raise InvalidSignature("Invalid encoding.")
+    """,
+        1,
+    ),
+    (
+        """        if self.encoding == "base64":
+            sig = hmac.new(bytes(self.secret, "utf-8"), msg=bytes(signed_payload, "utf-8"), digestmod=self.hash).digest()
+            return base64.b64encode(sig).decode()
+        """,
+        """        if self.encoding == "base64":
+            sig = hmac.new(bytes(self.secret, "utf-8"), msg=bytes(signed_payload, "utf-8"), digestmod=self.hash).digest()
+            return base64.b64encode(sig).decode()
+
+        # Fail closed instead of implicitly returning None.
+        raise InvalidSignature("Invalid encoding.")
+        """,
+        1,
+    ),
+]
+
+for old, new, count in replacements:
+    if new.strip() in text:
+        continue  # already applied on a previous run
+    if text.count(old) < count:
+        sys.exit(f"webhook.py transform failed: pattern not found {count}x:\n{old}")
+    text = text.replace(old, new, count)
+
+p.write_text(text)
 PY
   fi
 
