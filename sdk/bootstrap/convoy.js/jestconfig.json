@@ -1,6 +1,17 @@
 {
     "transform": {
-        "^.+\\.(t|j)sx?$": "ts-jest"
+        "^.+\\.(t|j)sx?$": [
+            "ts-jest",
+            {
+                "tsconfig": {
+                    "module": "commonjs",
+                    "moduleResolution": "node",
+                    "esModuleInterop": true,
+                    "target": "es2020",
+                    "strict": true
+                }
+            }
+        ]
     },
     "testRegex": "(/tests/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
     "moduleFileExtensions": ["js", "json", "ts"],
