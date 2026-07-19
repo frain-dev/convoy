@@ -183,19 +183,19 @@ clone_and_apply() {
 
   cd "$dest"
 
-  # Re-runs must build on the remote feature branch. Capture its SHA as an
-  # explicit lease expectation: bare --force-with-lease rejects with "stale
-  # info" here because the tracking ref written by an explicit-refspec fetch
-  # is not covered by the single-branch clone's remote.origin.fetch config.
-  # An empty expectation means "branch must not exist yet" (first run).
+  # Always rebuild the feature branch from the default branch: SDK PRs are
+  # squash-merged, so stacking on the stale feature branch makes every
+  # follow-up PR conflict with main's squashed copy of the same files.
+  # If the remote feature branch exists, capture its SHA as an explicit
+  # --force-with-lease expectation (bare lease rejects with "stale info"
+  # because the tracking ref from an explicit-refspec fetch is not covered
+  # by the single-branch clone's fetch config). Empty expectation means
+  # "branch must not exist yet" (first run).
   local expected_sha=""
   if git ls-remote --exit-code --heads origin -- "$BRANCH_NAME" >/dev/null 2>&1; then
-    git fetch --depth 1 origin "refs/heads/${BRANCH_NAME}:refs/remotes/origin/${BRANCH_NAME}"
-    expected_sha="$(git rev-parse "origin/${BRANCH_NAME}")"
-    git checkout -B "$BRANCH_NAME" "origin/${BRANCH_NAME}"
-  else
-    git checkout -B "$BRANCH_NAME"
+    expected_sha="$(git ls-remote origin "refs/heads/${BRANCH_NAME}" | awk '{print $1}')"
   fi
+  git checkout -B "$BRANCH_NAME"
 
   # Prefer rsync when available; fall back to cp for local dry-runs.
   if command -v rsync >/dev/null 2>&1; then
