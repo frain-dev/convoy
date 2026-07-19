@@ -36,8 +36,7 @@ typescript:
   # Hand-written verify (protected by .genignore) needs these to keep building
   # and testing once the generator owns package.json.
   additionalDependencies:
-    dependencies:
-      http-status: ^1.7.3
+    dependencies: {}
     devDependencies:
       "@types/jest": ^29.5.8
       jest: ^29.7.0

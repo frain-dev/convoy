@@ -71,6 +71,36 @@ migrate_convoy_js() {
 export { Webhook } from './webhook.js';
 EOF
 
+  # Trim errors to what verify actually uses: the HTTP API exception classes
+  # died with the hand-written client, and only they needed http-status.
+  cat > "${dest}/src/utils/errors/index.ts" <<'EOF'
+class BaseError extends Error {
+    public statusCode: number;
+
+    constructor(message?: string, status?: number) {
+        super();
+        Error.captureStackTrace(this, this.constructor);
+        this.name = this.constructor.name;
+        this.message = message as string;
+        this.statusCode = status as number;
+    }
+}
+
+class WebhookVerificationException extends BaseError {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
+class ConfigException extends BaseError {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
+export { WebhookVerificationException, ConfigException };
+EOF
+
   # Keep the protected verify import chain node16-compatible (explicit .js
   # extensions resolve under both commonjs and node16 moduleResolution).
   if [[ -f "${dest}/src/webhook.ts" ]]; then
@@ -93,6 +123,11 @@ data["version"] = "2.0.0-alpha.0"
 data["description"] = "Convoy JS SDK (Speakeasy-generated API client; hand-written webhook verify)"
 scripts = data.setdefault("scripts", {})
 scripts["test:verify"] = "jest --config jestconfig.json --testPathPattern='(webhook|shared-vectors)'"
+# Dead dependencies of the removed hand-written HTTP client; verify needs none
+# of them (crypto is node builtin).
+for dep in ("@aws-sdk/client-sqs", "axios", "base-64", "http-status", "kafkajs"):
+    data.get("dependencies", {}).pop(dep, None)
+data.get("devDependencies", {}).pop("@types/base-64", None)
 p.write_text(json.dumps(data, indent=4) + "\n")
 PY
   fi
