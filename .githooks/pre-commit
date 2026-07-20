@@ -5,7 +5,9 @@
 
 pwd
 
-changed=$(git status -s | grep api)
+# datastore structs feed the spec too (annotate_dtos + swag parseDependency),
+# so datastore-only commits must also regenerate
+changed=$(git status -s | grep -E 'api|datastore')
 
 echo "$changed"
 
@@ -18,6 +20,12 @@ else
   for tool in swag jq yq api-spec-converter openapi; do
     command -v "$tool" >/dev/null 2>&1 || { echo "❌ $tool not found. Run 'mise install' to install all required tools."; exit 1; }
   done
+
+  # snapshot files already modified before the hook runs, so only hook-made
+  # changes (x-nullable tags, swag fmt) are staged and unrelated WIP is not
+  # swept into the commit
+  pre_hook_dirty=$(mktemp)
+  git diff --name-only -- api/ datastore/ > "$pre_hook_dirty"
 
   # regenerate docs
   go run docs/annotate_dtos/main.go
@@ -38,9 +46,14 @@ else
   openapi swagger validate ./docs/swagger.yaml
   openapi spec validate ./docs/v3/openapi3.yaml
 
-  # stage generated docs plus the x-nullable tags annotate_dtos writes into the
-  # source trees, so the committed tree regenerates the same spec
-  git add docs/ api/models/ datastore/
+  # stage generated docs plus source files the hook itself modified
+  # (x-nullable tags, swag fmt), so the committed tree regenerates the same
+  # spec; files that were already dirty before the hook stay unstaged
+  git add docs/
+  for f in $(git diff --name-only -- api/ datastore/); do
+    grep -qxF "$f" "$pre_hook_dirty" || git add "$f"
+  done
+  rm -f "$pre_hook_dirty"
 fi
 
 exit 0
