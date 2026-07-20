@@ -447,7 +447,7 @@ type Endpoint struct {
 	Status         EndpointStatus          `json:"status" db:"status"`
 	HttpTimeout    uint64                  `json:"http_timeout" db:"http_timeout"`
 	Events         int64                   `json:"events,omitempty" db:"event_count"`
-	Authentication *EndpointAuthentication `json:"authentication" db:"authentication"`
+	Authentication *EndpointAuthentication `json:"authentication" db:"authentication" extensions:"x-nullable"`
 
 	RateLimit         int    `json:"rate_limit" db:"rate_limit"`
 	RateLimitDuration uint64 `json:"rate_limit_duration" db:"rate_limit_duration"`
@@ -455,32 +455,32 @@ type Endpoint struct {
 	// FailureRate is the circuit breaker's rolling failure rate for this endpoint.
 	// It is a pointer so the API can return null when no rate was computed (circuit
 	// breaker feature off, or sampler not running), distinct from a genuine 0%.
-	FailureRate *float64 `json:"failure_rate" db:"-"`
+	FailureRate *float64 `json:"failure_rate" db:"-" extensions:"x-nullable"`
 	// CBState is the circuit breaker state ("open", "half-open", "closed") so the UI
 	// can reflect a tripped breaker on the endpoint status. Nil when CB is
 	// off/unlicensed or has no sample for this endpoint.
-	CBState *string `json:"cb_state" db:"-"`
+	CBState *string `json:"cb_state" db:"-" extensions:"x-nullable"`
 
 	// PeriodFailureRate is the period failure rate from event_deliveries,
 	// (Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.
 	// Nil when the range has no counted deliveries; sibling counts are transient.
-	PeriodFailureRate *float64 `json:"period_failure_rate" db:"-"`
-	SuccessCount      *int64   `json:"success_count" db:"-"`
-	FailureCount      *int64   `json:"failure_count" db:"-"`
-	RetryCount        *int64   `json:"retry_count" db:"-"`
+	PeriodFailureRate *float64 `json:"period_failure_rate" db:"-" extensions:"x-nullable"`
+	SuccessCount      *int64   `json:"success_count" db:"-" extensions:"x-nullable"`
+	FailureCount      *int64   `json:"failure_count" db:"-" extensions:"x-nullable"`
+	RetryCount        *int64   `json:"retry_count" db:"-" extensions:"x-nullable"`
 
 	// mTLS client certificate configuration
-	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty" db:"mtls_client_cert"`
+	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty" db:"mtls_client_cert" extensions:"x-nullable"`
 
 	// OAuth2 configuration (scanned from oauth2_config column)
-	OAuth2Config *OAuth2 `json:"-" db:"oauth2_config"`
+	OAuth2Config *OAuth2 `json:"-" db:"oauth2_config" extensions:"x-nullable"`
 
 	// BasicAuth configuration (scanned from basic_auth_config column)
-	BasicAuthConfig *BasicAuth `json:"-" db:"basic_auth_config"`
+	BasicAuthConfig *BasicAuth `json:"-" db:"basic_auth_config" extensions:"x-nullable"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 func (e *Endpoint) FindSecret(secretID string) *Secret {
@@ -496,8 +496,8 @@ func (e *Endpoint) FindSecret(secretID string) *Secret {
 type EndpointConfig struct {
 	AdvancedSignatures bool                    `json:"advanced_signatures" db:"advanced_signatures"`
 	Secrets            []Secret                `json:"secrets" db:"secrets"`
-	RateLimit          *RateLimitConfiguration `json:"ratelimit" db:"ratelimit"`
-	Authentication     *EndpointAuthentication `json:"authentication" db:"authentication"`
+	RateLimit          *RateLimitConfiguration `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`
+	Authentication     *EndpointAuthentication `json:"authentication" db:"authentication" extensions:"x-nullable"`
 }
 
 func (e *Endpoint) GetAuthConfig() EndpointAuthentication {
@@ -523,17 +523,17 @@ type Secret struct {
 	UID   string `json:"uid" db:"id"`
 	Value string `json:"value" db:"value"`
 
-	ExpiresAt null.Time `json:"expires_at,omitempty" db:"expires_at,omitempty" swaggertype:"string"`
+	ExpiresAt null.Time `json:"expires_at,omitempty" db:"expires_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type EndpointAuthentication struct {
 	Type      EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key|oauth2|basic_auth)~unsupported authentication type"`
-	ApiKey    *ApiKey                    `json:"api_key,omitempty" db:"api_key"`
-	OAuth2    *OAuth2                    `json:"oauth2,omitempty" db:"oauth2"`
-	BasicAuth *BasicAuth                 `json:"basic_auth,omitempty" db:"basic_auth"`
+	ApiKey    *ApiKey                    `json:"api_key,omitempty" db:"api_key" extensions:"x-nullable"`
+	OAuth2    *OAuth2                    `json:"oauth2,omitempty" db:"oauth2" extensions:"x-nullable"`
+	BasicAuth *BasicAuth                 `json:"basic_auth,omitempty" db:"basic_auth" extensions:"x-nullable"`
 }
 
 // MtlsClientCert holds the client certificate and key configuration for mTLS
@@ -588,14 +588,14 @@ type Project struct {
 	OrganisationID  string             `json:"organisation_id" db:"organisation_id"`
 	ProjectConfigID string             `json:"-" db:"project_configuration_id"`
 	Type            ProjectType        `json:"type" db:"type"`
-	Config          *ProjectConfig     `json:"config" db:"config"`
-	Statistics      *ProjectStatistics `json:"statistics" db:"statistics"`
+	Config          *ProjectConfig     `json:"config" db:"config" extensions:"x-nullable"`
+	Statistics      *ProjectStatistics `json:"statistics" db:"statistics" extensions:"x-nullable"`
 
 	RetainedEvents int `json:"retained_events" db:"retained_events"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type ProjectMetadata struct {
@@ -638,13 +638,13 @@ type ProjectConfig struct {
 	DisableEndpoint               bool                           `json:"disable_endpoint" db:"disable_endpoint"`
 	MultipleEndpointSubscriptions bool                           `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
 	SearchPolicy                  string                         `json:"search_policy" db:"search_policy"`
-	SSL                           *SSLConfiguration              `json:"ssl" db:"ssl"`
-	RateLimit                     *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit"`
-	Strategy                      *StrategyConfiguration         `json:"strategy" db:"strategy"`
-	Signature                     *SignatureConfiguration        `json:"signature" db:"signature"`
+	SSL                           *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`
+	RateLimit                     *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`
+	Strategy                      *StrategyConfiguration         `json:"strategy" db:"strategy" extensions:"x-nullable"`
+	Signature                     *SignatureConfiguration        `json:"signature" db:"signature" extensions:"x-nullable"`
 	RequestIDHeader               config.RequestIDHeaderProvider `json:"request_id_header"`
-	MetaEvent                     *MetaEventConfiguration        `json:"meta_event" db:"meta_event"`
-	CircuitBreaker                *CircuitBreakerConfiguration   `json:"circuit_breaker" db:"circuit_breaker"`
+	MetaEvent                     *MetaEventConfiguration        `json:"meta_event" db:"meta_event" extensions:"x-nullable"`
+	CircuitBreaker                *CircuitBreakerConfiguration   `json:"circuit_breaker" db:"circuit_breaker" extensions:"x-nullable"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -740,7 +740,7 @@ type MetaEventConfiguration struct {
 	EventType pq.StringArray `json:"event_type" db:"event_type"`
 	URL       string         `json:"url" db:"url"`
 	Secret    string         `json:"secret" db:"secret"`
-	PubSub    *PubSubConfig  `json:"pub_sub" db:"pub_sub"`
+	PubSub    *PubSubConfig  `json:"pub_sub" db:"pub_sub" extensions:"x-nullable"`
 }
 
 type SSLConfiguration struct {
@@ -883,7 +883,7 @@ type Event struct {
 	Endpoints        pq.StringArray        `json:"endpoints" db:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" db:"headers"`
 	EndpointMetadata EndpointMetadata      `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
-	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
+	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata" extensions:"x-nullable"`
 	URLQueryParams   string                `json:"url_query_params" db:"url_query_params"`
 	URLPath          string                `json:"url_path" db:"url_path"`
 	IdempotencyKey   string                `json:"idempotency_key" db:"idempotency_key"`
@@ -897,10 +897,10 @@ type Event struct {
 	Status   EventStatus `json:"status" db:"status"`
 	Metadata string      `json:"metadata,omitempty" db:"metadata"`
 
-	AcknowledgedAt null.Time `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
+	AcknowledgedAt null.Time `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 	CreatedAt      time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt      null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 func (e *Event) GetRawHeaders() map[string]interface{} {
@@ -1083,12 +1083,12 @@ type DeliveryAttempt struct {
 	Error  string `json:"error,omitempty" db:"error"`
 	Status bool   `json:"status,omitempty" db:"status"`
 
-	RequestedAt null.Time `json:"requested_at,omitempty" db:"requested_at" swaggertype:"string"`
-	RespondedAt null.Time `json:"responded_at,omitempty" db:"responded_at" swaggertype:"string"`
+	RequestedAt null.Time `json:"requested_at,omitempty" db:"requested_at" swaggertype:"string" extensions:"x-nullable"`
+	RespondedAt null.Time `json:"responded_at,omitempty" db:"responded_at" swaggertype:"string" extensions:"x-nullable"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type DeliveryAttempts []DeliveryAttempt
@@ -1146,20 +1146,20 @@ type EventDelivery struct {
 	EventType      EventType    `json:"event_type,omitempty" db:"event_type"`
 	DeliveryMode   DeliveryMode `json:"delivery_mode" db:"delivery_mode"`
 
-	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
-	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
-	Source   *Source   `json:"source_metadata,omitempty" db:"source_metadata"`
-	Device   *Device   `json:"device_metadata,omitempty" db:"device_metadata"`
+	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata" extensions:"x-nullable"`
+	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata" extensions:"x-nullable"`
+	Source   *Source   `json:"source_metadata,omitempty" db:"source_metadata" extensions:"x-nullable"`
+	Device   *Device   `json:"device_metadata,omitempty" db:"device_metadata" extensions:"x-nullable"`
 
 	DeliveryAttempts DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           EventDeliveryStatus `json:"status" db:"status"`
-	Metadata         *Metadata           `json:"metadata" db:"metadata"`
-	CLIMetadata      *CLIMetadata        `json:"cli_metadata" db:"cli_metadata"`
+	Metadata         *Metadata           `json:"metadata" db:"metadata" extensions:"x-nullable"`
+	CLIMetadata      *CLIMetadata        `json:"cli_metadata" db:"cli_metadata" extensions:"x-nullable"`
 	Description      string              `json:"description,omitempty" db:"description"`
-	AcknowledgedAt   null.Time           `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
+	AcknowledgedAt   null.Time           `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 	CreatedAt        time.Time           `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time           `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt        null.Time           `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt        null.Time           `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 func (d *EventDelivery) GetLatencyStartTime() time.Time {
@@ -1217,10 +1217,10 @@ type APIKey struct {
 	Salt      string    `json:"salt,omitempty" db:"salt"`
 	Type      KeyType   `json:"key_type" db:"key_type"`
 	UserID    string    `json:"user_id" db:"user_id"`
-	ExpiresAt null.Time `json:"expires_at,omitempty" db:"expires_at"`
+	ExpiresAt null.Time `json:"expires_at,omitempty" db:"expires_at" extensions:"x-nullable"`
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" extensions:"x-nullable"`
 }
 
 type Subscription struct {
@@ -1231,23 +1231,23 @@ type Subscription struct {
 	SourceID   string           `json:"-" db:"source_id"`
 	EndpointID string           `json:"-" db:"endpoint_id"`
 	DeviceID   string           `json:"-" db:"device_id"`
-	Function   null.String      `json:"function" db:"function" swaggertype:"string"`
+	Function   null.String      `json:"function" db:"function" swaggertype:"string" extensions:"x-nullable"`
 
-	Source   *Source   `json:"source_metadata" db:"source_metadata"`
-	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata"`
-	Device   *Device   `json:"device_metadata" db:"device_metadata"`
+	Source   *Source   `json:"source_metadata" db:"source_metadata" extensions:"x-nullable"`
+	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata" extensions:"x-nullable"`
+	Device   *Device   `json:"device_metadata" db:"device_metadata" extensions:"x-nullable"`
 
 	// subscription config
-	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" db:"alert_config"`
-	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" db:"retry_config"`
-	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" db:"filter_config"`
-	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" db:"rate_limit_config"`
+	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" db:"alert_config" extensions:"x-nullable"`
+	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" db:"retry_config" extensions:"x-nullable"`
+	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" db:"filter_config" extensions:"x-nullable"`
+	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" db:"rate_limit_config" extensions:"x-nullable"`
 
 	DeliveryMode DeliveryMode `json:"delivery_mode,omitempty" db:"delivery_mode"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 func (s *Subscription) GetAlertConfig() AlertConfiguration {
@@ -1300,19 +1300,19 @@ type Source struct {
 	Provider          SourceProvider  `json:"provider" db:"provider"`
 	IsDisabled        bool            `json:"is_disabled" db:"is_disabled"`
 	VerifierID        string          `json:"-" db:"source_verifier_id"`
-	Verifier          *VerifierConfig `json:"verifier" db:"verifier"`
+	Verifier          *VerifierConfig `json:"verifier" db:"verifier" extensions:"x-nullable"`
 	CustomResponse    CustomResponse  `json:"custom_response" db:"custom_response"`
-	ProviderConfig    *ProviderConfig `json:"provider_config" db:"provider_config"`
+	ProviderConfig    *ProviderConfig `json:"provider_config" db:"provider_config" extensions:"x-nullable"`
 	ForwardHeaders    pq.StringArray  `json:"forward_headers" db:"forward_headers"`
-	PubSub            *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
+	PubSub            *PubSubConfig   `json:"pub_sub" db:"pub_sub" extensions:"x-nullable"`
 	IdempotencyKeys   pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
 	EventTypeLocation string          `json:"event_type_location" db:"event_type_location"`
-	BodyFunction      *string         `json:"body_function" db:"body_function"`
-	HeaderFunction    *string         `json:"header_function" db:"header_function"`
+	BodyFunction      *string         `json:"body_function" db:"body_function" extensions:"x-nullable"`
+	HeaderFunction    *string         `json:"header_function" db:"header_function" extensions:"x-nullable"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 func EventTypeLocationUsesRequestMetadata(location string) bool {
@@ -1344,10 +1344,10 @@ func SourceUsesPayloadSignature(source *Source) bool {
 type PubSubConfig struct {
 	Type    PubSubType          `json:"type" db:"type"`
 	Workers int                 `json:"workers" db:"workers"`
-	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
-	Google  *GooglePubSubConfig `json:"google" db:"google"`
-	Kafka   *KafkaPubSubConfig  `json:"kafka" db:"kafka"`
-	Amqp    *AmqpPubSubConfig   `json:"amqp" db:"amqp"`
+	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs" extensions:"x-nullable"`
+	Google  *GooglePubSubConfig `json:"google" db:"google" extensions:"x-nullable"`
+	Kafka   *KafkaPubSubConfig  `json:"kafka" db:"kafka" extensions:"x-nullable"`
+	Amqp    *AmqpPubSubConfig   `json:"amqp" db:"amqp" extensions:"x-nullable"`
 }
 
 func (p *PubSubConfig) Scan(value interface{}) error {
@@ -1394,7 +1394,7 @@ type KafkaPubSubConfig struct {
 	Brokers         []string   `json:"brokers" db:"brokers"`
 	ConsumerGroupID string     `json:"consumer_group_id" db:"consumer_group_id"`
 	TopicName       string     `json:"topic_name" db:"topic_name"`
-	Auth            *KafkaAuth `json:"auth" db:"auth"`
+	Auth            *KafkaAuth `json:"auth" db:"auth" extensions:"x-nullable"`
 }
 
 type AmqpPubSubConfig struct {
@@ -1402,11 +1402,11 @@ type AmqpPubSubConfig struct {
 	Host               string           `json:"host" db:"host"`
 	Port               string           `json:"port" db:"port"`
 	Queue              string           `json:"queue" db:"queue"`
-	Auth               *AmqpCredentials `json:"auth" db:"auth"`
-	BoundExchange      *string          `json:"bindedExchange" db:"binded_exchange"`
-	Vhost              *string          `json:"vhost" db:"vhost"`
+	Auth               *AmqpCredentials `json:"auth" db:"auth" extensions:"x-nullable"`
+	BoundExchange      *string          `json:"bindedExchange" db:"binded_exchange" extensions:"x-nullable"`
+	Vhost              *string          `json:"vhost" db:"vhost" extensions:"x-nullable"`
 	RoutingKey         string           `json:"routingKey" db:"routing_key"`
-	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange"`
+	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange" extensions:"x-nullable"`
 }
 
 type AmqpCredentials struct {
@@ -1433,7 +1433,7 @@ type User struct {
 	EmailVerificationToken     string    `json:"-" db:"email_verification_token"`
 	CreatedAt                  time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt                  time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt                  null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt                  null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 	ResetPasswordExpiresAt     time.Time `json:"reset_password_expires_at,omitempty" db:"reset_password_expires_at,omitempty" swaggertype:"string"`
 	EmailVerificationExpiresAt time.Time `json:"-" db:"email_verification_expires_at,omitempty" swaggertype:"string"`
 	AuthType                   string    `json:"auth_type" db:"auth_type" swaggertype:"string"`
@@ -1460,7 +1460,7 @@ type EventTypeFilter struct {
 	UID            string     `json:"uid" db:"id"`
 	SubscriptionID string     `json:"subscription_id" db:"subscription_id"`
 	EventType      string     `json:"event_type" db:"event_type"`
-	EnabledAt      *time.Time `json:"enabled_at" db:"enabled_at" swaggertype:"string"`
+	EnabledAt      *time.Time `json:"enabled_at" db:"enabled_at" swaggertype:"string" extensions:"x-nullable"`
 	EnabledAtSet   bool       `json:"-" db:"-"`
 	Headers        M          `json:"headers" db:"headers"`
 	Body           M          `json:"body" db:"body"`
@@ -1570,18 +1570,18 @@ type FilterTestRequest struct {
 }
 
 type ProviderConfig struct {
-	Twitter *TwitterProviderConfig `json:"twitter" db:"twitter"`
+	Twitter *TwitterProviderConfig `json:"twitter" db:"twitter" extensions:"x-nullable"`
 }
 
 type TwitterProviderConfig struct {
-	CrcVerifiedAt null.Time `json:"crc_verified_at" db:"crc_verified_at"`
+	CrcVerifiedAt null.Time `json:"crc_verified_at" db:"crc_verified_at" extensions:"x-nullable"`
 }
 
 type VerifierConfig struct {
 	Type      VerifierType `json:"type,omitempty" db:"type" valid:"supported_verifier~please provide a valid verifier type"`
-	HMac      *HMac        `json:"hmac" db:"hmac"`
-	BasicAuth *BasicAuth   `json:"basic_auth" db:"basic_auth"`
-	ApiKey    *ApiKey      `json:"api_key" db:"api_key"`
+	HMac      *HMac        `json:"hmac" db:"hmac" extensions:"x-nullable"`
+	BasicAuth *BasicAuth   `json:"basic_auth" db:"basic_auth" extensions:"x-nullable"`
+	ApiKey    *ApiKey      `json:"api_key" db:"api_key" extensions:"x-nullable"`
 }
 
 type HMac struct {
@@ -1687,13 +1687,13 @@ type OAuth2 struct {
 	Scope              string                   `json:"scope,omitempty" db:"scope"`
 	Audience           string                   `json:"audience,omitempty" db:"audience"`
 	AuthenticationType OAuth2AuthenticationType `json:"authentication_type" db:"authentication_type" valid:"required,in(shared_secret|client_assertion)~unsupported authentication type"`
-	ClientSecret       string                   `json:"client_secret,omitempty" db:"client_secret"` // Encrypted at rest
-	SigningKey         *OAuth2SigningKey        `json:"signing_key,omitempty" db:"signing_key"`     // Encrypted at rest
+	ClientSecret       string                   `json:"client_secret,omitempty" db:"client_secret"`                     // Encrypted at rest
+	SigningKey         *OAuth2SigningKey        `json:"signing_key,omitempty" db:"signing_key" extensions:"x-nullable"` // Encrypted at rest
 	SigningAlgorithm   string                   `json:"signing_algorithm,omitempty" db:"signing_algorithm"`
 	Issuer             string                   `json:"issuer,omitempty" db:"issuer"`
 	Subject            string                   `json:"subject,omitempty" db:"subject"`
 	// Field mapping for flexible token response parsing
-	FieldMapping *OAuth2FieldMapping `json:"field_mapping,omitempty" db:"field_mapping"`
+	FieldMapping *OAuth2FieldMapping `json:"field_mapping,omitempty" db:"field_mapping" extensions:"x-nullable"`
 	// Expiry time unit (seconds, milliseconds, minutes, hours)
 	ExpiryTimeUnit OAuth2ExpiryTimeUnit `json:"expiry_time_unit,omitempty" db:"expiry_time_unit"`
 }
@@ -1746,8 +1746,8 @@ type FeatureFlagOverride struct {
 	OwnerType     string      `json:"owner_type" db:"owner_type"`
 	OwnerID       string      `json:"owner_id" db:"owner_id"`
 	Enabled       bool        `json:"enabled" db:"enabled"`
-	EnabledAt     null.Time   `json:"enabled_at,omitempty" db:"enabled_at" swaggertype:"string"`
-	EnabledBy     null.String `json:"enabled_by,omitempty" db:"enabled_by"`
+	EnabledAt     null.Time   `json:"enabled_at,omitempty" db:"enabled_at" swaggertype:"string" extensions:"x-nullable"`
+	EnabledBy     null.String `json:"enabled_by,omitempty" db:"enabled_by" extensions:"x-nullable"`
 	CreatedAt     time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt     time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 }
@@ -1757,8 +1757,8 @@ type EarlyAdopterFeature struct {
 	OrganisationID string      `json:"organisation_id" db:"organisation_id"`
 	FeatureKey     string      `json:"feature_key" db:"feature_key"`
 	Enabled        bool        `json:"enabled" db:"enabled"`
-	EnabledBy      null.String `json:"enabled_by,omitempty" db:"enabled_by"`
-	EnabledAt      null.Time   `json:"enabled_at,omitempty" db:"enabled_at" swaggertype:"string"`
+	EnabledBy      null.String `json:"enabled_by,omitempty" db:"enabled_by" extensions:"x-nullable"`
+	EnabledAt      null.Time   `json:"enabled_at,omitempty" db:"enabled_at" swaggertype:"string" extensions:"x-nullable"`
 	CreatedAt      time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 }
@@ -1767,13 +1767,13 @@ type Organisation struct {
 	UID            string      `json:"uid" db:"id"`
 	OwnerID        string      `json:"" db:"owner_id"`
 	Name           string      `json:"name" db:"name"`
-	CustomDomain   null.String `json:"custom_domain" db:"custom_domain"`
-	AssignedDomain null.String `json:"assigned_domain" db:"assigned_domain"`
+	CustomDomain   null.String `json:"custom_domain" db:"custom_domain" extensions:"x-nullable"`
+	AssignedDomain null.String `json:"assigned_domain" db:"assigned_domain" extensions:"x-nullable"`
 	LicenseData    string      `json:"license_data,omitempty" db:"license_data"`
-	DisabledAt     null.Time   `json:"disabled_at,omitempty" db:"disabled_at" swaggertype:"string"`
+	DisabledAt     null.Time   `json:"disabled_at,omitempty" db:"disabled_at" swaggertype:"string" extensions:"x-nullable"`
 	CreatedAt      time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      null.Time   `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt      null.Time   `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type OrganisationUsage struct {
@@ -1794,8 +1794,8 @@ type Configuration struct {
 	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
 	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
 
-	StoragePolicy   *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
-	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	StoragePolicy   *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy" extensions:"x-nullable"`
+	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy" extensions:"x-nullable"`
 
 	LicenseKey              string                               `json:"license_key,omitempty" db:"license_key"`
 	CheckoutLicenseKey      string                               `json:"checkout_license_key,omitempty" db:"checkout_license_key"`
@@ -1804,11 +1804,11 @@ type Configuration struct {
 	ActiveCheckoutAttemptID string                               `json:"active_checkout_attempt_id,omitempty" db:"active_checkout_attempt_id"`
 	CheckoutID              string                               `json:"checkout_id,omitempty" db:"checkout_id"`
 	ExternalID              string                               `json:"external_id,omitempty" db:"external_id"`
-	LicenseSyncedAt         null.Time                            `json:"license_synced_at,omitempty" db:"license_synced_at" swaggertype:"string"`
+	LicenseSyncedAt         null.Time                            `json:"license_synced_at,omitempty" db:"license_synced_at" swaggertype:"string" extensions:"x-nullable"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type SelfHostedCheckoutAttempt struct {
@@ -1824,7 +1824,7 @@ type SelfHostedCheckoutAttempt struct {
 	ExternalID           string    `json:"external_id,omitempty"`
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
-	CompletedAt          null.Time `json:"completed_at,omitempty" swaggertype:"string"`
+	CompletedAt          null.Time `json:"completed_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 	LastCompletionStatus string    `json:"last_completion_status,omitempty"`
 }
 
@@ -1837,31 +1837,31 @@ func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration 
 
 type StoragePolicyConfiguration struct {
 	Type      StorageType       `json:"type,omitempty" db:"type" valid:"supported_storage~please provide a valid storage type,required"`
-	S3        *S3Storage        `json:"s3" db:"s3"`
-	OnPrem    *OnPremStorage    `json:"on_prem" db:"on_prem"`
-	AzureBlob *AzureBlobStorage `json:"azure_blob" db:"azure_blob"`
+	S3        *S3Storage        `json:"s3" db:"s3" extensions:"x-nullable"`
+	OnPrem    *OnPremStorage    `json:"on_prem" db:"on_prem" extensions:"x-nullable"`
+	AzureBlob *AzureBlobStorage `json:"azure_blob" db:"azure_blob" extensions:"x-nullable"`
 }
 
 type S3Storage struct {
-	Prefix       null.String `json:"prefix" db:"prefix"`
-	Bucket       null.String `json:"bucket" db:"bucket" valid:"required~please provide a bucket name"`
-	AccessKey    null.String `json:"access_key,omitempty" db:"access_key" valid:"required~please provide an access key"`
-	SecretKey    null.String `json:"secret_key,omitempty" db:"secret_key" valid:"required~please provide a secret key"`
-	Region       null.String `json:"region,omitempty" db:"region"`
-	SessionToken null.String `json:"session_token" db:"session_token"`
-	Endpoint     null.String `json:"endpoint,omitempty" db:"endpoint"`
+	Prefix       null.String `json:"prefix" db:"prefix" extensions:"x-nullable"`
+	Bucket       null.String `json:"bucket" db:"bucket" valid:"required~please provide a bucket name" extensions:"x-nullable"`
+	AccessKey    null.String `json:"access_key,omitempty" db:"access_key" valid:"required~please provide an access key" extensions:"x-nullable"`
+	SecretKey    null.String `json:"secret_key,omitempty" db:"secret_key" valid:"required~please provide a secret key" extensions:"x-nullable"`
+	Region       null.String `json:"region,omitempty" db:"region" extensions:"x-nullable"`
+	SessionToken null.String `json:"session_token" db:"session_token" extensions:"x-nullable"`
+	Endpoint     null.String `json:"endpoint,omitempty" db:"endpoint" extensions:"x-nullable"`
 }
 
 type OnPremStorage struct {
-	Path null.String `json:"path" db:"path"`
+	Path null.String `json:"path" db:"path" extensions:"x-nullable"`
 }
 
 type AzureBlobStorage struct {
-	AccountName   null.String `json:"account_name" db:"account_name"`
-	AccountKey    null.String `json:"account_key,omitempty" db:"account_key"`
-	ContainerName null.String `json:"container_name" db:"container_name"`
-	Endpoint      null.String `json:"endpoint,omitempty" db:"endpoint"`
-	Prefix        null.String `json:"prefix,omitempty" db:"prefix"`
+	AccountName   null.String `json:"account_name" db:"account_name" extensions:"x-nullable"`
+	AccountKey    null.String `json:"account_key,omitempty" db:"account_key" extensions:"x-nullable"`
+	ContainerName null.String `json:"container_name" db:"container_name" extensions:"x-nullable"`
+	Endpoint      null.String `json:"endpoint,omitempty" db:"endpoint" extensions:"x-nullable"`
+	Prefix        null.String `json:"prefix,omitempty" db:"prefix" extensions:"x-nullable"`
 }
 
 type BackupJob struct {
@@ -1870,8 +1870,8 @@ type BackupJob struct {
 	HourEnd      time.Time        `json:"hour_end" db:"hour_end"`
 	Status       string           `json:"status" db:"status"`
 	AgentID      string           `json:"agent_id" db:"agent_id"`
-	ClaimedAt    *time.Time       `json:"claimed_at" db:"claimed_at"`
-	CompletedAt  *time.Time       `json:"completed_at" db:"completed_at"`
+	ClaimedAt    *time.Time       `json:"claimed_at" db:"claimed_at" extensions:"x-nullable"`
+	CompletedAt  *time.Time       `json:"completed_at" db:"completed_at" extensions:"x-nullable"`
 	Error        string           `json:"error" db:"error"`
 	RecordCounts map[string]int64 `json:"record_counts" db:"record_counts"`
 	CreatedAt    time.Time        `json:"created_at" db:"created_at"`
@@ -1886,7 +1886,7 @@ type OrganisationMember struct {
 	UserMetadata   UserMetadata `json:"user_metadata" db:"user_metadata"`
 	CreatedAt      time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt      null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type Device struct {
@@ -1898,7 +1898,7 @@ type Device struct {
 	LastSeenAt time.Time    `json:"last_seen_at,omitempty" db:"last_seen_at,omitempty" swaggertype:"string"`
 	CreatedAt  time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt  time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt  null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt  null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type DeviceStatus string
@@ -1918,7 +1918,7 @@ type ProjectEventType struct {
 	Category     string          `json:"category" db:"category"`
 	JSONSchema   json.RawMessage `json:"json_schema" db:"json_schema" swaggertype:"object"`
 	Description  string          `json:"description" db:"description"`
-	DeprecatedAt null.Time       `json:"deprecated_at" db:"deprecated_at"`
+	DeprecatedAt null.Time       `json:"deprecated_at" db:"deprecated_at" extensions:"x-nullable"`
 }
 
 type Job struct {
@@ -1926,12 +1926,12 @@ type Job struct {
 	Type        string    `json:"type" db:"type"`
 	Status      JobStatus `json:"status,omitempty" db:"status"`
 	ProjectID   string    `json:"project_id,omitempty" db:"project_id"`
-	FailedAt    null.Time `json:"failed_at,omitempty" db:"failed_at,omitempty" swaggertype:"string"`
-	StartedAt   null.Time `json:"started_at,omitempty" db:"started_at,omitempty" swaggertype:"string"`
-	CompletedAt null.Time `json:"completed_at,omitempty" db:"completed_at,omitempty" swaggertype:"string"`
+	FailedAt    null.Time `json:"failed_at,omitempty" db:"failed_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
+	StartedAt   null.Time `json:"started_at,omitempty" db:"started_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
+	CompletedAt null.Time `json:"completed_at,omitempty" db:"completed_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 	CreatedAt   time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt   time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt   null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt   null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type JobStatus string
@@ -1974,7 +1974,7 @@ type OrganisationInvite struct {
 	ExpiresAt        time.Time    `json:"-" db:"expires_at"`
 	CreatedAt        time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt        null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt        null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type PortalAuthType string
@@ -1996,7 +1996,7 @@ type PortalLink struct {
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
 	// portal auth stuff
-	TokenExpiresAt null.Time      `json:"token_expires_at" db:"token_expires_at"`
+	TokenExpiresAt null.Time      `json:"token_expires_at" db:"token_expires_at" extensions:"x-nullable"`
 	TokenMaskId    string         `json:"token_mask_id" db:"token_mask_id"`
 	TokenHash      string         `json:"token_hash" db:"token_hash"`
 	TokenSalt      string         `json:"token_salt" db:"token_salt"`
@@ -2005,7 +2005,7 @@ type PortalLink struct {
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type PortalToken struct {
@@ -2016,10 +2016,10 @@ type PortalToken struct {
 	Salt         string `json:"salt" db:"salt"`
 	AuthKey      string `json:"-" db:"-"`
 
-	ExpiresAt null.Time `json:"expires_at" db:"expires_at" swaggertype:"string"`
+	ExpiresAt null.Time `json:"expires_at" db:"expires_at" swaggertype:"string" extensions:"x-nullable"`
 	CreatedAt time.Time `json:"created_at" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at" db:"deleted_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type PortalTokens []PortalToken
@@ -2060,7 +2060,7 @@ type Application struct {
 	Endpoints []DeprecatedEndpoint `json:"endpoints,omitempty" db:"endpoints"`
 	CreatedAt time.Time            `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time            `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time            `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time            `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 
 	Events int64 `json:"events,omitempty" db:"-"`
 }
@@ -2077,24 +2077,24 @@ type DeprecatedEndpoint struct {
 	HttpTimeout       string                  `json:"http_timeout" db:"http_timeout"`
 	RateLimit         int                     `json:"rate_limit" db:"rate_limit"`
 	RateLimitDuration string                  `json:"rate_limit_duration" db:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication,omitempty"`
+	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication,omitempty" extensions:"x-nullable"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type MetaEvent struct {
 	UID       string              `json:"uid" db:"id"`
 	ProjectID string              `json:"project_id" db:"project_id"`
 	EventType string              `json:"event_type" db:"event_type"`
-	Metadata  *Metadata           `json:"metadata" db:"metadata"`
-	Attempt   *MetaEventAttempt   `json:"attempt" db:"attempt"`
+	Metadata  *Metadata           `json:"metadata" db:"metadata" extensions:"x-nullable"`
+	Attempt   *MetaEventAttempt   `json:"attempt" db:"attempt" extensions:"x-nullable"`
 	Status    EventDeliveryStatus `json:"status" db:"status"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string" extensions:"x-nullable"`
 }
 
 type MetaEventPayload struct {
@@ -2186,7 +2186,7 @@ type PortalLinkResponse struct {
 	AuthKey           string           `json:"auth_key"`
 	CreatedAt         time.Time        `json:"created_at,omitempty"`
 	UpdatedAt         time.Time        `json:"updated_at,omitempty"`
-	DeletedAt         null.Time        `json:"deleted_at,omitempty"`
+	DeletedAt         null.Time        `json:"deleted_at,omitempty" extensions:"x-nullable"`
 }
 
 type UpdatePortalLinkRequest struct {

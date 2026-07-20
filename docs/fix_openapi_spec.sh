@@ -65,16 +65,84 @@ fix_file_inplace() {
         # Fix 3: Open up arbitrary-JSON object properties. A bare
         # {type: object} with no properties/additionalProperties is a CLOSED
         # empty object; strict SDK generators (e.g. zod) strip every key of
-        # such payloads. json.RawMessage-backed fields must be open maps.
+        # such payloads. json.RawMessage-backed fields must be open maps, and
+        # they serialize as JSON null when unset (Go nil map/RawMessage), so
+        # they must also be nullable or strict parsers crash on reads.
         .definitions |= with_entries(
             if .value.properties then
                 .value.properties |= map_values(
                     if type == "object" and .type == "object"
-                       and (has("properties") | not)
-                       and (has("additionalProperties") | not) then
-                        .additionalProperties = true
+                       and (has("properties") | not) then
+                        (if has("additionalProperties") | not then
+                            .additionalProperties = true
+                         else . end) |
+                        .["x-nullable"] = true
                     else . end
                 )
+            else . end
+        ) |
+
+        # Fix 3b: Named map definitions (datastore.M, datastore.HttpHeader,
+        # httpheader.HTTPHeader, handlers.Stub) are bare objects referenced
+        # via $ref. Go serializes nil maps as JSON null, so the definitions
+        # themselves must be open and nullable or strict parsers crash on
+        # reads (e.g. filter raw_headers: null).
+        .definitions |= with_entries(
+            if .value.type == "object" and (.value | has("properties") | not) then
+                .value.additionalProperties = true |
+                .value["x-nullable"] = true
+            else . end
+        ) |
+
+        # Fix 4: Accept Go zero values in string enums. The server serializes
+        # unset enum fields as "", but a closed enum makes strict generated
+        # parsers (Jackson, PHP/Ruby OpenAPI Generator) crash on reads.
+        # Server-side request validation still rejects "" where required.
+        .definitions |= with_entries(
+            .value |= (
+                if .type == "string" and has("enum") then
+                    .enum |= (if index("") then . else . + [""] end)
+                else . end
+            ) |
+            if .value.properties then
+                .value.properties |= map_values(
+                    if type == "object" and .type == "string" and has("enum") then
+                        .enum |= (if index("") then . else . + [""] end)
+                    else . end
+                )
+            else . end
+        ) |
+
+        # Fix 4b: portal link endpoints_metadata is aggregated in SQL with
+        # ARRAY_AGG(DISTINCT CASE ...), which emits [null] when the link has
+        # no endpoints. Deployed servers ship this, so the items must be
+        # nullable for strict parsers even after the SQL is fixed.
+        .definitions |= with_entries(
+            if .value.properties.endpoints_metadata?.items["$ref"]? then
+                .value.properties.endpoints_metadata.items |=
+                    {"allOf": [{"$ref": .["$ref"]}], "x-nullable": true}
+            else . end
+        ) |
+
+        # Fix 7: the onboard op declares a JSON body plus a multipart file
+        # param; swagger->openapi3 conversion collapses that dual shape to
+        # application/octet-stream, which the server rejects (415). Keep the
+        # generated-SDK contract JSON-only; CSV upload remains a server
+        # feature outside the generated clients.
+        .paths |= with_entries(
+            if (.key | endswith("/onboard")) and .value.post then
+                .value.post.consumes = ["application/json"] |
+                .value.post.parameters |= map(select(.in != "formData"))
+            else . end
+        ) |
+
+        # Fix 5: handlers.Stub envelope data is always null on the wire
+        # (ServerResponse{data=Stub} handlers render data: null). Mark those
+        # inline response data properties nullable so strict parsers accept it.
+        .paths |= walk(
+            if type == "object" and (.data? | type) == "object"
+               and .data["$ref"]? == "#/definitions/handlers.Stub" then
+                .data = {"allOf": [{"$ref": "#/definitions/handlers.Stub"}], "x-nullable": true}
             else . end
         )
         ' "$file" > "$tmpfile"
@@ -110,16 +178,84 @@ fix_file_inplace() {
         # Fix 3: Open up arbitrary-JSON object properties. A bare
         # {type: object} with no properties/additionalProperties is a CLOSED
         # empty object; strict SDK generators (e.g. zod) strip every key of
-        # such payloads. json.RawMessage-backed fields must be open maps.
+        # such payloads. json.RawMessage-backed fields must be open maps, and
+        # they serialize as JSON null when unset (Go nil map/RawMessage), so
+        # they must also be nullable or strict parsers crash on reads.
         .definitions |= with_entries(
             if .value.properties then
                 .value.properties |= map_values(
                     if type == "object" and .type == "object"
-                       and (has("properties") | not)
-                       and (has("additionalProperties") | not) then
-                        .additionalProperties = true
+                       and (has("properties") | not) then
+                        (if has("additionalProperties") | not then
+                            .additionalProperties = true
+                         else . end) |
+                        .["x-nullable"] = true
                     else . end
                 )
+            else . end
+        ) |
+
+        # Fix 3b: Named map definitions (datastore.M, datastore.HttpHeader,
+        # httpheader.HTTPHeader, handlers.Stub) are bare objects referenced
+        # via $ref. Go serializes nil maps as JSON null, so the definitions
+        # themselves must be open and nullable or strict parsers crash on
+        # reads (e.g. filter raw_headers: null).
+        .definitions |= with_entries(
+            if .value.type == "object" and (.value | has("properties") | not) then
+                .value.additionalProperties = true |
+                .value["x-nullable"] = true
+            else . end
+        ) |
+
+        # Fix 4: Accept Go zero values in string enums. The server serializes
+        # unset enum fields as "", but a closed enum makes strict generated
+        # parsers (Jackson, PHP/Ruby OpenAPI Generator) crash on reads.
+        # Server-side request validation still rejects "" where required.
+        .definitions |= with_entries(
+            .value |= (
+                if .type == "string" and has("enum") then
+                    .enum |= (if index("") then . else . + [""] end)
+                else . end
+            ) |
+            if .value.properties then
+                .value.properties |= map_values(
+                    if type == "object" and .type == "string" and has("enum") then
+                        .enum |= (if index("") then . else . + [""] end)
+                    else . end
+                )
+            else . end
+        ) |
+
+        # Fix 4b: portal link endpoints_metadata is aggregated in SQL with
+        # ARRAY_AGG(DISTINCT CASE ...), which emits [null] when the link has
+        # no endpoints. Deployed servers ship this, so the items must be
+        # nullable for strict parsers even after the SQL is fixed.
+        .definitions |= with_entries(
+            if .value.properties.endpoints_metadata?.items["$ref"]? then
+                .value.properties.endpoints_metadata.items |=
+                    {"allOf": [{"$ref": .["$ref"]}], "x-nullable": true}
+            else . end
+        ) |
+
+        # Fix 7: the onboard op declares a JSON body plus a multipart file
+        # param; swagger->openapi3 conversion collapses that dual shape to
+        # application/octet-stream, which the server rejects (415). Keep the
+        # generated-SDK contract JSON-only; CSV upload remains a server
+        # feature outside the generated clients.
+        .paths |= with_entries(
+            if (.key | endswith("/onboard")) and .value.post then
+                .value.post.consumes = ["application/json"] |
+                .value.post.parameters |= map(select(.in != "formData"))
+            else . end
+        ) |
+
+        # Fix 5: handlers.Stub envelope data is always null on the wire
+        # (ServerResponse{data=Stub} handlers render data: null). Mark those
+        # inline response data properties nullable so strict parsers accept it.
+        .paths |= walk(
+            if type == "object" and (.data? | type) == "object"
+               and .data["$ref"]? == "#/definitions/handlers.Stub" then
+                .data = {"allOf": [{"$ref": "#/definitions/handlers.Stub"}], "x-nullable": true}
             else . end
         )
         ' | yq eval -P - > "$tmpfile"

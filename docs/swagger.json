@@ -82,7 +82,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -100,7 +105,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -118,7 +128,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -193,7 +208,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -211,7 +231,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -229,7 +254,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -247,7 +277,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -265,7 +300,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -333,7 +373,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -351,7 +396,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -369,7 +419,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -444,7 +499,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -462,7 +522,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -480,7 +545,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -498,7 +568,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -546,7 +621,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -564,7 +644,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -582,7 +667,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -600,7 +690,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -618,7 +713,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -756,7 +856,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -774,7 +879,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -792,7 +902,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -867,7 +982,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -885,7 +1005,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -903,7 +1028,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -980,7 +1110,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -998,7 +1133,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1016,7 +1156,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1091,7 +1236,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1109,7 +1259,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1127,7 +1282,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1209,7 +1369,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1227,7 +1392,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1245,7 +1415,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1300,7 +1475,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1318,7 +1498,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1336,7 +1521,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1354,7 +1544,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1429,7 +1624,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1447,7 +1647,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1465,7 +1670,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1549,7 +1759,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1567,7 +1782,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1585,7 +1805,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1660,7 +1885,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1678,7 +1908,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1696,7 +1931,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1767,7 +2007,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1785,7 +2030,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1803,7 +2053,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1878,7 +2133,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1896,7 +2156,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1914,7 +2179,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1994,7 +2264,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2012,7 +2287,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2030,7 +2310,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2114,7 +2399,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2132,7 +2422,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2150,7 +2445,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2225,7 +2525,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2243,7 +2548,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2261,7 +2571,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2443,7 +2758,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2461,7 +2781,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2479,7 +2804,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2628,7 +2958,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2646,7 +2981,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2664,7 +3004,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2682,7 +3027,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2741,7 +3091,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2759,7 +3114,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2777,7 +3137,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2795,7 +3160,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2870,7 +3240,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2888,7 +3263,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2906,7 +3286,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2984,7 +3369,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3002,7 +3392,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3020,7 +3415,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3102,7 +3502,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3120,7 +3525,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3138,7 +3548,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3213,7 +3628,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3231,7 +3651,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3249,7 +3674,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3419,7 +3849,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3437,7 +3872,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3455,7 +3895,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3512,7 +3957,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3530,7 +3980,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3548,7 +4003,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3566,7 +4026,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3721,7 +4186,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3739,7 +4209,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3757,7 +4232,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3834,7 +4314,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3852,7 +4337,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3870,7 +4360,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4025,7 +4520,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4043,7 +4543,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4061,7 +4566,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4120,7 +4630,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4138,7 +4653,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4156,7 +4676,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4174,7 +4699,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4233,7 +4763,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4251,7 +4786,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4269,7 +4809,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4287,7 +4832,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4362,7 +4912,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4380,7 +4935,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4398,7 +4958,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4473,7 +5038,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4491,7 +5061,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4509,7 +5084,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4647,7 +5227,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4665,7 +5250,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4683,7 +5273,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4758,7 +5353,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4776,7 +5376,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4794,7 +5399,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4869,7 +5479,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4887,7 +5502,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4905,7 +5525,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4924,8 +5549,7 @@
         ],
         "description": "This endpoint accepts a CSV file or JSON body to bulk-create endpoints with subscriptions",
         "consumes": [
-          "application/json",
-          "multipart/form-data"
+          "application/json"
         ],
         "produces": [
           "application/json"
@@ -4956,12 +5580,6 @@
             "schema": {
               "$ref": "#/definitions/models.BulkOnboardRequest"
             }
-          },
-          {
-            "type": "file",
-            "description": "CSV file upload",
-            "name": "file",
-            "in": "formData"
           }
         ],
         "responses": {
@@ -5012,7 +5630,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5030,7 +5653,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5048,7 +5676,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5186,7 +5819,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5204,7 +5842,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5222,7 +5865,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5297,7 +5945,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5315,7 +5968,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5333,7 +5991,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5408,7 +6071,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5426,7 +6094,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5444,7 +6117,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5526,7 +6204,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5544,7 +6227,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5562,7 +6250,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5637,7 +6330,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5655,7 +6353,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5673,7 +6376,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5730,7 +6438,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5748,7 +6461,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5766,7 +6484,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5784,7 +6507,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5922,7 +6650,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5940,7 +6673,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5958,7 +6696,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6033,7 +6776,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6051,7 +6799,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6069,7 +6822,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6145,7 +6903,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6163,7 +6926,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6181,7 +6949,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6256,7 +7029,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6274,7 +7052,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6292,7 +7075,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6374,7 +7162,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6392,7 +7185,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6410,7 +7208,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6465,7 +7268,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6483,7 +7291,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6501,7 +7314,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6519,7 +7337,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6659,7 +7482,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6677,7 +7505,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6695,7 +7528,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6770,7 +7608,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6788,7 +7631,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6806,7 +7654,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6883,7 +7736,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6901,7 +7759,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6919,7 +7782,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6996,7 +7864,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7014,7 +7887,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7032,7 +7910,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7107,7 +7990,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7125,7 +8013,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7143,7 +8036,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7225,7 +8123,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7243,7 +8146,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7261,7 +8169,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7316,7 +8229,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7334,7 +8252,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7352,7 +8275,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7370,7 +8298,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7448,7 +8381,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7466,7 +8404,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7484,7 +8427,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7566,7 +8514,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7584,7 +8537,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7602,7 +8560,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7692,7 +8655,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7710,7 +8678,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7728,7 +8701,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7818,7 +8796,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7836,7 +8819,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7854,7 +8842,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7945,7 +8938,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7963,7 +8961,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7981,7 +8984,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8063,7 +9071,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8081,7 +9094,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8099,7 +9117,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8188,7 +9211,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8206,7 +9234,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8224,7 +9257,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8286,7 +9324,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8304,7 +9347,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8322,7 +9370,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8340,7 +9393,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8397,7 +9455,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8415,7 +9478,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8433,7 +9501,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8451,7 +9524,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -8471,7 +9549,8 @@
         "billing_admin",
         "project_admin",
         "project_viewer",
-        "api"
+        "api",
+        ""
       ],
       "x-enum-comments": {
         "RoleBillingAdmin": "Organisation level - can manage billing only TODO:",
@@ -8500,7 +9579,8 @@
     "config.RequestIDHeaderProvider": {
       "type": "string",
       "enum": [
-        "X-Convoy-Idempotency-Key"
+        "X-Convoy-Idempotency-Key",
+        ""
       ],
       "x-enum-varnames": [
         "DefaultRequestIDHeader"
@@ -8509,7 +9589,8 @@
     "config.SignatureHeaderProvider": {
       "type": "string",
       "enum": [
-        "X-Convoy-Signature"
+        "X-Convoy-Signature",
+        ""
       ],
       "x-enum-varnames": [
         "DefaultSignatureHeader"
@@ -8522,7 +9603,8 @@
           "type": "string"
         },
         "expires_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "key": {
           "type": "string"
@@ -8570,13 +9652,20 @@
       "type": "object",
       "properties": {
         "auth": {
-          "$ref": "#/definitions/datastore.AmqpCredentials"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.AmqpCredentials"
+            }
+          ],
+          "x-nullable": true
         },
         "bindedExchange": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "deadLetterExchange": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "host": {
           "type": "string"
@@ -8594,7 +9683,8 @@
           "type": "string"
         },
         "vhost": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         }
       }
     },
@@ -8705,7 +9795,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_id": {
           "type": "string"
@@ -8732,10 +9823,12 @@
           "$ref": "#/definitions/datastore.HttpHeader"
         },
         "requested_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "responded_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "response_data": {
           "type": "string"
@@ -8761,7 +9854,8 @@
       "type": "string",
       "enum": [
         "at_least_once",
-        "at_most_once"
+        "at_most_once",
+        ""
       ],
       "x-enum-varnames": [
         "AtLeastOnceDeliveryMode",
@@ -8775,7 +9869,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_id": {
           "type": "string"
@@ -8805,7 +9900,8 @@
       "enum": [
         "offline",
         "online",
-        "disabled"
+        "disabled",
+        ""
       ],
       "x-enum-varnames": [
         "DeviceStatusOffline",
@@ -8817,7 +9913,8 @@
       "type": "string",
       "enum": [
         "base64",
-        "hex"
+        "hex",
+        ""
       ],
       "x-enum-varnames": [
         "Base64Encoding",
@@ -8831,11 +9928,17 @@
           "type": "boolean"
         },
         "authentication": {
-          "$ref": "#/definitions/datastore.EndpointAuthentication"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.EndpointAuthentication"
+            }
+          ],
+          "x-nullable": true
         },
         "cb_state": {
           "description": "CBState is the circuit breaker state (\"open\", \"half-open\", \"closed\") so the UI\ncan reflect a tripped breaker on the endpoint status. Nil when CB is\noff/unlicensed or has no sample for this endpoint.",
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "content_type": {
           "type": "string"
@@ -8844,7 +9947,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "description": {
           "type": "string"
@@ -8853,11 +9957,13 @@
           "type": "integer"
         },
         "failure_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "failure_rate": {
           "description": "FailureRate is the circuit breaker's rolling failure rate for this endpoint.\nIt is a pointer so the API can return null when no rate was computed (circuit\nbreaker feature off, or sampler not running), distinct from a genuine 0%.",
-          "type": "number"
+          "type": "number",
+          "x-nullable": true
         },
         "http_timeout": {
           "type": "integer"
@@ -8868,7 +9974,8 @@
             {
               "$ref": "#/definitions/datastore.MtlsClientCert"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "name": {
           "type": "string"
@@ -8878,7 +9985,8 @@
         },
         "period_failure_rate": {
           "description": "PeriodFailureRate is the period failure rate from event_deliveries,\n(Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.\nNil when the range has no counted deliveries; sibling counts are transient.",
-          "type": "number"
+          "type": "number",
+          "x-nullable": true
         },
         "project_id": {
           "type": "string"
@@ -8890,7 +9998,8 @@
           "type": "integer"
         },
         "retry_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "secrets": {
           "type": "array",
@@ -8905,7 +10014,8 @@
           "$ref": "#/definitions/datastore.EndpointStatus"
         },
         "success_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "support_email": {
           "type": "string"
@@ -8925,13 +10035,28 @@
       "type": "object",
       "properties": {
         "api_key": {
-          "$ref": "#/definitions/datastore.ApiKey"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ApiKey"
+            }
+          ],
+          "x-nullable": true
         },
         "basic_auth": {
-          "$ref": "#/definitions/datastore.BasicAuth"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.BasicAuth"
+            }
+          ],
+          "x-nullable": true
         },
         "oauth2": {
-          "$ref": "#/definitions/datastore.OAuth2"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.OAuth2"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.EndpointAuthenticationType"
@@ -8943,7 +10068,8 @@
       "enum": [
         "api_key",
         "oauth2",
-        "basic_auth"
+        "basic_auth",
+        ""
       ],
       "x-enum-varnames": [
         "APIKeyAuthentication",
@@ -8956,7 +10082,8 @@
       "enum": [
         "active",
         "inactive",
-        "paused"
+        "paused",
+        ""
       ],
       "x-enum-varnames": [
         "ActiveEndpointStatus",
@@ -8968,7 +10095,8 @@
       "type": "object",
       "properties": {
         "acknowledged_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "app_id": {
           "description": "Deprecated",
@@ -8980,10 +10108,12 @@
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_metadata": {
           "type": "array",
@@ -9022,7 +10152,12 @@
           "type": "string"
         },
         "source_metadata": {
-          "$ref": "#/definitions/datastore.Source"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Source"
+            }
+          ],
+          "x-nullable": true
         },
         "status": {
           "$ref": "#/definitions/datastore.EventStatus"
@@ -9049,7 +10184,8 @@
         "Discarded",
         "Failure",
         "Success",
-        "Retry"
+        "Retry",
+        ""
       ],
       "x-enum-varnames": [
         "ScheduledEventStatus",
@@ -9067,7 +10203,8 @@
         "Failure",
         "Success",
         "Retry",
-        "Pending"
+        "Pending",
+        ""
       ],
       "x-enum-varnames": [
         "ProcessingStatus",
@@ -9146,9 +10283,8 @@
     },
     "datastore.HttpHeader": {
       "type": "object",
-      "additionalProperties": {
-        "type": "string"
-      }
+      "additionalProperties": true,
+      "x-nullable": true
     },
     "datastore.KafkaAuth": {
       "type": "object",
@@ -9174,7 +10310,12 @@
       "type": "object",
       "properties": {
         "auth": {
-          "$ref": "#/definitions/datastore.KafkaAuth"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.KafkaAuth"
+            }
+          ],
+          "x-nullable": true
         },
         "brokers": {
           "type": "array",
@@ -9192,7 +10333,8 @@
     },
     "datastore.M": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "x-nullable": true
     },
     "datastore.MetaEventAttempt": {
       "type": "object",
@@ -9221,7 +10363,12 @@
           "type": "boolean"
         },
         "pub_sub": {
-          "$ref": "#/definitions/datastore.PubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.PubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "secret": {
           "type": "string"
@@ -9238,7 +10385,8 @@
       "type": "string",
       "enum": [
         "http",
-        "pub_sub"
+        "pub_sub",
+        ""
       ],
       "x-enum-varnames": [
         "HTTPMetaEvent",
@@ -9251,7 +10399,8 @@
         "data": {
           "description": "Data to be sent to endpoint.",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "interval_seconds": {
           "type": "integer"
@@ -9320,7 +10469,8 @@
             {
               "$ref": "#/definitions/datastore.OAuth2FieldMapping"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "grant_type": {
           "type": "string"
@@ -9340,7 +10490,8 @@
             {
               "$ref": "#/definitions/datastore.OAuth2SigningKey"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "subject": {
           "type": "string"
@@ -9354,7 +10505,8 @@
       "type": "string",
       "enum": [
         "shared_secret",
-        "client_assertion"
+        "client_assertion",
+        ""
       ],
       "x-enum-varnames": [
         "SharedSecretAuth",
@@ -9367,7 +10519,8 @@
         "seconds",
         "milliseconds",
         "minutes",
-        "hours"
+        "hours",
+        ""
       ],
       "x-enum-varnames": [
         "ExpiryTimeUnitSeconds",
@@ -9454,7 +10607,8 @@
       "type": "string",
       "enum": [
         "next",
-        "prev"
+        "prev",
+        ""
       ],
       "x-enum-varnames": [
         "Next",
@@ -9488,7 +10642,8 @@
       "type": "string",
       "enum": [
         "refresh_token",
-        "static_token"
+        "static_token",
+        ""
       ],
       "x-enum-varnames": [
         "PortalAuthTypeRefreshToken",
@@ -9511,7 +10666,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_count": {
           "type": "integer"
@@ -9525,7 +10681,12 @@
         "endpoints_metadata": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/datastore.Endpoint"
+            "allOf": [
+              {
+                "$ref": "#/definitions/datastore.Endpoint"
+              }
+            ],
+            "x-nullable": true
           }
         },
         "name": {
@@ -9558,7 +10719,12 @@
           "type": "boolean"
         },
         "circuit_breaker": {
-          "$ref": "#/definitions/datastore.CircuitBreakerConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.CircuitBreakerConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "disable_endpoint": {
           "type": "boolean"
@@ -9567,13 +10733,23 @@
           "type": "integer"
         },
         "meta_event": {
-          "$ref": "#/definitions/datastore.MetaEventConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.MetaEventConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "multiple_endpoint_subscriptions": {
           "type": "boolean"
         },
         "ratelimit": {
-          "$ref": "#/definitions/datastore.RateLimitConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.RateLimitConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "replay_attacks_prevention_enabled": {
           "type": "boolean"
@@ -9585,13 +10761,28 @@
           "type": "string"
         },
         "signature": {
-          "$ref": "#/definitions/datastore.SignatureConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.SignatureConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "ssl": {
-          "$ref": "#/definitions/datastore.SSLConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.SSLConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "strategy": {
-          "$ref": "#/definitions/datastore.StrategyConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.StrategyConfiguration"
+            }
+          ],
+          "x-nullable": true
         }
       }
     },
@@ -9616,7 +10807,8 @@
       "type": "string",
       "enum": [
         "outgoing",
-        "incoming"
+        "incoming",
+        ""
       ],
       "x-enum-varnames": [
         "OutgoingProject",
@@ -9627,7 +10819,12 @@
       "type": "object",
       "properties": {
         "twitter": {
-          "$ref": "#/definitions/datastore.TwitterProviderConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.TwitterProviderConfig"
+            }
+          ],
+          "x-nullable": true
         }
       }
     },
@@ -9635,16 +10832,36 @@
       "type": "object",
       "properties": {
         "amqp": {
-          "$ref": "#/definitions/datastore.AmqpPubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.AmqpPubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "google": {
-          "$ref": "#/definitions/datastore.GooglePubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.GooglePubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "kafka": {
-          "$ref": "#/definitions/datastore.KafkaPubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.KafkaPubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "sqs": {
-          "$ref": "#/definitions/datastore.SQSPubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.SQSPubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.PubSubType"
@@ -9660,7 +10877,8 @@
         "sqs",
         "google",
         "kafka",
-        "amqp"
+        "amqp",
+        ""
       ],
       "x-enum-varnames": [
         "SqsPubSub",
@@ -9744,10 +10962,12 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "expires_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "uid": {
           "type": "string"
@@ -9795,7 +11015,8 @@
       "type": "object",
       "properties": {
         "body_function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
@@ -9804,7 +11025,8 @@
           "$ref": "#/definitions/datastore.CustomResponse"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "event_type_location": {
           "type": "string"
@@ -9816,7 +11038,8 @@
           }
         },
         "header_function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "idempotency_keys": {
           "type": "array",
@@ -9840,10 +11063,20 @@
           "$ref": "#/definitions/datastore.SourceProvider"
         },
         "provider_config": {
-          "$ref": "#/definitions/datastore.ProviderConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ProviderConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "pub_sub": {
-          "$ref": "#/definitions/datastore.PubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.PubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.SourceType"
@@ -9858,7 +11091,12 @@
           "type": "string"
         },
         "verifier": {
-          "$ref": "#/definitions/datastore.VerifierConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.VerifierConfig"
+            }
+          ],
+          "x-nullable": true
         }
       }
     },
@@ -9867,7 +11105,8 @@
       "enum": [
         "github",
         "twitter",
-        "shopify"
+        "shopify",
+        ""
       ],
       "x-enum-varnames": [
         "GithubSourceProvider",
@@ -9881,7 +11120,8 @@
         "http",
         "rest_api",
         "pub_sub",
-        "db_change_stream"
+        "db_change_stream",
+        ""
       ],
       "x-enum-varnames": [
         "HTTPSource",
@@ -9908,7 +11148,8 @@
       "type": "string",
       "enum": [
         "linear",
-        "exponential"
+        "exponential",
+        ""
       ],
       "x-enum-varnames": [
         "LinearStrategyProvider",
@@ -9919,7 +11160,8 @@
       "type": "string",
       "enum": [
         "cli",
-        "api"
+        "api",
+        ""
       ],
       "x-enum-varnames": [
         "SubscriptionTypeCLI",
@@ -9930,7 +11172,8 @@
       "type": "object",
       "properties": {
         "crc_verified_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         }
       }
     },
@@ -9965,13 +11208,28 @@
       "type": "object",
       "properties": {
         "api_key": {
-          "$ref": "#/definitions/datastore.ApiKey"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ApiKey"
+            }
+          ],
+          "x-nullable": true
         },
         "basic_auth": {
-          "$ref": "#/definitions/datastore.BasicAuth"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.BasicAuth"
+            }
+          ],
+          "x-nullable": true
         },
         "hmac": {
-          "$ref": "#/definitions/datastore.HMac"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.HMac"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.VerifierType"
@@ -9984,7 +11242,8 @@
         "noop",
         "hmac",
         "basic_auth",
-        "api_key"
+        "api_key",
+        ""
       ],
       "x-enum-varnames": [
         "NoopVerifier",
@@ -9994,16 +11253,14 @@
       ]
     },
     "handlers.Stub": {
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true,
+      "x-nullable": true
     },
     "httpheader.HTTPHeader": {
       "type": "object",
-      "additionalProperties": {
-        "type": "array",
-        "items": {
-          "type": "string"
-        }
-      }
+      "additionalProperties": true,
+      "x-nullable": true
     },
     "models.AlertConfiguration": {
       "type": "object",
@@ -10110,12 +11367,14 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "x-nullable": true
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "event_type": {
           "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -10177,7 +11436,8 @@
       "properties": {
         "body": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "enabled_at": {
           "$ref": "#/definitions/models.OptionalTime"
@@ -10187,15 +11447,18 @@
         },
         "headers": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "path": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "query": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "uid": {
           "type": "string"
@@ -10299,12 +11562,14 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "x-nullable": true
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "endpoint_id": {
           "description": "Specifies the endpoint to send this event to.",
@@ -10334,7 +11599,8 @@
         "json_schema": {
           "description": "JSONSchema is the JSON structure of the event type",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "name": {
           "description": "Name is the event type name. E.g., invoice.created",
@@ -10583,12 +11849,14 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "x-nullable": true
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "event_type": {
           "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -10639,11 +11907,17 @@
           "type": "boolean"
         },
         "authentication": {
-          "$ref": "#/definitions/datastore.EndpointAuthentication"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.EndpointAuthentication"
+            }
+          ],
+          "x-nullable": true
         },
         "cb_state": {
           "description": "CBState is the circuit breaker state (\"open\", \"half-open\", \"closed\") so the UI\ncan reflect a tripped breaker on the endpoint status. Nil when CB is\noff/unlicensed or has no sample for this endpoint.",
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "content_type": {
           "type": "string"
@@ -10652,7 +11926,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "description": {
           "type": "string"
@@ -10661,11 +11936,13 @@
           "type": "integer"
         },
         "failure_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "failure_rate": {
           "description": "FailureRate is the circuit breaker's rolling failure rate for this endpoint.\nIt is a pointer so the API can return null when no rate was computed (circuit\nbreaker feature off, or sampler not running), distinct from a genuine 0%.",
-          "type": "number"
+          "type": "number",
+          "x-nullable": true
         },
         "http_timeout": {
           "type": "integer"
@@ -10676,7 +11953,8 @@
             {
               "$ref": "#/definitions/datastore.MtlsClientCert"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "name": {
           "type": "string"
@@ -10686,7 +11964,8 @@
         },
         "period_failure_rate": {
           "description": "PeriodFailureRate is the period failure rate from event_deliveries,\n(Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.\nNil when the range has no counted deliveries; sibling counts are transient.",
-          "type": "number"
+          "type": "number",
+          "x-nullable": true
         },
         "project_id": {
           "type": "string"
@@ -10698,7 +11977,8 @@
           "type": "integer"
         },
         "retry_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "secrets": {
           "type": "array",
@@ -10713,7 +11993,8 @@
           "$ref": "#/definitions/datastore.EndpointStatus"
         },
         "success_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "support_email": {
           "type": "string"
@@ -10733,16 +12014,23 @@
       "type": "object",
       "properties": {
         "acknowledged_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "cli_metadata": {
-          "$ref": "#/definitions/datastore.CLIMetadata"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.CLIMetadata"
+            }
+          ],
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "delivery_mode": {
           "$ref": "#/definitions/datastore.DeliveryMode"
@@ -10754,19 +12042,34 @@
           "type": "string"
         },
         "device_metadata": {
-          "$ref": "#/definitions/datastore.Device"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Device"
+            }
+          ],
+          "x-nullable": true
         },
         "endpoint_id": {
           "type": "string"
         },
         "endpoint_metadata": {
-          "$ref": "#/definitions/datastore.Endpoint"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Endpoint"
+            }
+          ],
+          "x-nullable": true
         },
         "event_id": {
           "type": "string"
         },
         "event_metadata": {
-          "$ref": "#/definitions/datastore.Event"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Event"
+            }
+          ],
+          "x-nullable": true
         },
         "event_type": {
           "type": "string"
@@ -10785,13 +12088,23 @@
           "type": "number"
         },
         "metadata": {
-          "$ref": "#/definitions/datastore.Metadata"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Metadata"
+            }
+          ],
+          "x-nullable": true
         },
         "project_id": {
           "type": "string"
         },
         "source_metadata": {
-          "$ref": "#/definitions/datastore.Source"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Source"
+            }
+          ],
+          "x-nullable": true
         },
         "status": {
           "$ref": "#/definitions/datastore.EventDeliveryStatus"
@@ -10817,7 +12130,8 @@
       "type": "object",
       "properties": {
         "acknowledged_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "app_id": {
           "description": "Deprecated",
@@ -10829,10 +12143,12 @@
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_metadata": {
           "type": "array",
@@ -10871,7 +12187,12 @@
           "type": "string"
         },
         "source_metadata": {
-          "$ref": "#/definitions/datastore.Source"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Source"
+            }
+          ],
+          "x-nullable": true
         },
         "status": {
           "$ref": "#/definitions/datastore.EventStatus"
@@ -10897,14 +12218,16 @@
           "type": "string"
         },
         "deprecated_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "description": {
           "type": "string"
         },
         "json_schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "name": {
           "type": "string"
@@ -10952,12 +12275,14 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "x-nullable": true
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "event_type": {
           "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -11000,7 +12325,8 @@
           "$ref": "#/definitions/datastore.M"
         },
         "enabled_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "event_type": {
           "type": "string"
@@ -11051,7 +12377,8 @@
         },
         "payload": {
           "type": "object",
-          "additionalProperties": {}
+          "additionalProperties": {},
+          "x-nullable": true
         },
         "type": {
           "type": "string"
@@ -11196,19 +12523,30 @@
       "type": "object",
       "properties": {
         "attempt": {
-          "$ref": "#/definitions/datastore.MetaEventAttempt"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.MetaEventAttempt"
+            }
+          ],
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "event_type": {
           "type": "string"
         },
         "metadata": {
-          "$ref": "#/definitions/datastore.Metadata"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Metadata"
+            }
+          ],
+          "x-nullable": true
         },
         "project_id": {
           "type": "string"
@@ -11509,13 +12847,19 @@
       "type": "object",
       "properties": {
         "config": {
-          "$ref": "#/definitions/datastore.ProjectConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ProjectConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "logo_url": {
           "type": "string"
@@ -11530,7 +12874,12 @@
           "type": "integer"
         },
         "statistics": {
-          "$ref": "#/definitions/datastore.ProjectStatistics"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ProjectStatistics"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.ProjectType"
@@ -11662,7 +13011,8 @@
       "type": "object",
       "properties": {
         "body_function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
@@ -11671,7 +13021,8 @@
           "$ref": "#/definitions/datastore.CustomResponse"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "event_type_location": {
           "type": "string"
@@ -11683,7 +13034,8 @@
           }
         },
         "header_function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "idempotency_keys": {
           "type": "array",
@@ -11707,10 +13059,20 @@
           "$ref": "#/definitions/datastore.SourceProvider"
         },
         "provider_config": {
-          "$ref": "#/definitions/datastore.ProviderConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ProviderConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "pub_sub": {
-          "$ref": "#/definitions/datastore.PubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.PubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.SourceType"
@@ -11725,7 +13087,12 @@
           "type": "string"
         },
         "verifier": {
-          "$ref": "#/definitions/datastore.VerifierConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.VerifierConfig"
+            }
+          ],
+          "x-nullable": true
         }
       }
     },
@@ -11752,28 +13119,46 @@
             {
               "$ref": "#/definitions/datastore.AlertConfiguration"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "delivery_mode": {
           "$ref": "#/definitions/datastore.DeliveryMode"
         },
         "device_metadata": {
-          "$ref": "#/definitions/datastore.Device"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Device"
+            }
+          ],
+          "x-nullable": true
         },
         "endpoint_metadata": {
-          "$ref": "#/definitions/datastore.Endpoint"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Endpoint"
+            }
+          ],
+          "x-nullable": true
         },
         "filter_config": {
-          "$ref": "#/definitions/datastore.FilterConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.FilterConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "name": {
           "type": "string"
@@ -11782,13 +13167,28 @@
           "type": "string"
         },
         "rate_limit_config": {
-          "$ref": "#/definitions/datastore.RateLimitConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.RateLimitConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "retry_config": {
-          "$ref": "#/definitions/datastore.RetryConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.RetryConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "source_metadata": {
-          "$ref": "#/definitions/datastore.Source"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Source"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.SubscriptionType"
@@ -12000,7 +13400,8 @@
         "json_schema": {
           "description": "JSONSchema is the JSON structure of the event type",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         }
       }
     },
