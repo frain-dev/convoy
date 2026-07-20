@@ -196,11 +196,9 @@ SELECT
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
+    COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+        cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+    ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
@@ -326,11 +324,9 @@ SELECT
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
+    COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+        cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+    ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
@@ -396,11 +392,9 @@ SELECT
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
+    COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+        cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+    ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
@@ -461,11 +455,9 @@ SELECT
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
+    COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+        cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+    ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
@@ -541,11 +533,9 @@ WITH filtered_portal_links AS (
         END AS endpoint_count,
         p.created_at,
         p.updated_at,
-        ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-            CASE WHEN e.id IS NOT NULL THEN
-                cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-            END
-        )) AS endpoints_metadata
+        COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+        ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
     FROM convoy.portal_links p
     LEFT JOIN convoy.portal_links_endpoints pe
         ON p.id = pe.portal_link_id

@@ -1,6 +1,7 @@
 package portal_links
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -76,6 +77,89 @@ func TestGetPortalLink_WithEndpoints(t *testing.T) {
 	require.NotNil(t, portalLink)
 	require.Equal(t, 2, portalLink.EndpointCount)
 	require.NotNil(t, portalLink.Endpoints)
+}
+
+func TestGetPortalLink_EndpointsMetadata_EmptyWhenNoEndpoints(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	project := seedTestData(t, db)
+
+	logger := log.New("convoy", log.LevelInfo)
+	service := New(logger, db)
+
+	// Create a portal link with no endpoints
+	createRequest := &datastore.CreatePortalLinkRequest{
+		Name:              "Portal Link Without Endpoints",
+		OwnerID:           ulid.Make().String(),
+		AuthType:          string(datastore.PortalAuthTypeStaticToken),
+		CanManageEndpoint: true,
+		Endpoints:         []string{},
+	}
+
+	createdPortalLink, err := service.CreatePortalLink(ctx, project.UID, createRequest)
+	require.NoError(t, err)
+
+	// Fetch by id
+	portalLink, err := service.GetPortalLink(ctx, project.UID, createdPortalLink.UID)
+	require.NoError(t, err)
+	require.NotNil(t, portalLink.EndpointsMetadata)
+	require.Empty(t, portalLink.EndpointsMetadata, "endpoints_metadata must be [] not [null] for a link with no endpoints")
+
+	metadataJSON, err := json.Marshal(portalLink.EndpointsMetadata)
+	require.NoError(t, err)
+	require.Equal(t, "[]", string(metadataJSON))
+
+	// Fetch by token
+	byToken, err := service.GetPortalLinkByToken(ctx, portalLink.Token)
+	require.NoError(t, err)
+	require.NotNil(t, byToken.EndpointsMetadata)
+	require.Empty(t, byToken.EndpointsMetadata)
+
+	// Fetch by owner id
+	byOwner, err := service.GetPortalLinkByOwnerID(ctx, project.UID, createRequest.OwnerID)
+	require.NoError(t, err)
+	require.NotNil(t, byOwner.EndpointsMetadata)
+	require.Empty(t, byOwner.EndpointsMetadata)
+
+	// Fetch many by owner id
+	byOwnerMany, err := service.FindPortalLinksByOwnerID(ctx, createRequest.OwnerID)
+	require.NoError(t, err)
+	require.Len(t, byOwnerMany, 1)
+	require.NotNil(t, byOwnerMany[0].EndpointsMetadata)
+	require.Empty(t, byOwnerMany[0].EndpointsMetadata)
+}
+
+func TestGetPortalLink_EndpointsMetadata_WithEndpoints(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	project := seedTestData(t, db)
+
+	logger := log.New("convoy", log.LevelInfo)
+	service := New(logger, db)
+
+	ownerID := ulid.Make().String()
+	endpoint1 := seedEndpoint(t, db, project, "")
+	endpoint2 := seedEndpoint(t, db, project, "")
+
+	createRequest := &datastore.CreatePortalLinkRequest{
+		Name:              "Portal Link Metadata With Endpoints",
+		OwnerID:           ownerID,
+		AuthType:          string(datastore.PortalAuthTypeStaticToken),
+		CanManageEndpoint: false,
+		Endpoints:         []string{endpoint1.UID, endpoint2.UID},
+	}
+
+	createdPortalLink, err := service.CreatePortalLink(ctx, project.UID, createRequest)
+	require.NoError(t, err)
+
+	portalLink, err := service.GetPortalLink(ctx, project.UID, createdPortalLink.UID)
+	require.NoError(t, err)
+	require.Len(t, portalLink.EndpointsMetadata, 2)
+
+	metadataUIDs := make([]string, 0, len(portalLink.EndpointsMetadata))
+	for _, endpoint := range portalLink.EndpointsMetadata {
+		require.NotNil(t, endpoint, "endpoints_metadata must not contain null elements")
+		metadataUIDs = append(metadataUIDs, endpoint.UID)
+	}
+	require.ElementsMatch(t, []string{endpoint1.UID, endpoint2.UID}, metadataUIDs)
 }
 
 func TestGetPortalLink_NotFound(t *testing.T) {
