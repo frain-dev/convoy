@@ -37,6 +37,12 @@ func main() {
 				return err
 			}
 
+			// Walk reports lstat info, so symlinks are visible here. Skip them
+			// so reads/writes cannot be redirected outside the repo tree.
+			if info.Mode()&os.ModeSymlink != 0 {
+				return nil
+			}
+
 			if !info.IsDir() && strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go") {
 				processFileWithAST(path, dir.responseOnly, dryRun)
 			}
