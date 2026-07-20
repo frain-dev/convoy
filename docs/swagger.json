@@ -10283,7 +10283,9 @@
     },
     "datastore.HttpHeader": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": {
+        "type": "string"
+      },
       "x-nullable": true
     },
     "datastore.KafkaAuth": {
@@ -11259,7 +11261,12 @@
     },
     "httpheader.HTTPHeader": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
       "x-nullable": true
     },
     "models.AlertConfiguration": {

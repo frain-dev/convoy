@@ -86,10 +86,15 @@ fix_file_inplace() {
         # httpheader.HTTPHeader, handlers.Stub) are bare objects referenced
         # via $ref. Go serializes nil maps as JSON null, so the definitions
         # themselves must be open and nullable or strict parsers crash on
-        # reads (e.g. filter raw_headers: null).
+        # reads (e.g. filter raw_headers: null). Typed maps (for example
+        # httpheader.HTTPHeader: map of string arrays) keep their typed
+        # additionalProperties and only gain the nullable marker; overwriting
+        # them with true widens generated client types to map[string]any.
         .definitions |= with_entries(
             if .value.type == "object" and (.value | has("properties") | not) then
-                .value.additionalProperties = true |
+                (if (.value.additionalProperties? | type) != "object" then
+                    .value.additionalProperties = true
+                 else . end) |
                 .value["x-nullable"] = true
             else . end
         ) |
@@ -199,10 +204,15 @@ fix_file_inplace() {
         # httpheader.HTTPHeader, handlers.Stub) are bare objects referenced
         # via $ref. Go serializes nil maps as JSON null, so the definitions
         # themselves must be open and nullable or strict parsers crash on
-        # reads (e.g. filter raw_headers: null).
+        # reads (e.g. filter raw_headers: null). Typed maps (for example
+        # httpheader.HTTPHeader: map of string arrays) keep their typed
+        # additionalProperties and only gain the nullable marker; overwriting
+        # them with true widens generated client types to map[string]any.
         .definitions |= with_entries(
             if .value.type == "object" and (.value | has("properties") | not) then
-                .value.additionalProperties = true |
+                (if (.value.additionalProperties? | type) != "object" then
+                    .value.additionalProperties = true
+                 else . end) |
                 .value["x-nullable"] = true
             else . end
         ) |

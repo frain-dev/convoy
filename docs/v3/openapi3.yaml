@@ -6256,7 +6256,8 @@ components:
           type: string
       type: object
     datastore.HttpHeader:
-      additionalProperties: true
+      additionalProperties:
+        type: string
       nullable: true
       type: object
     datastore.KafkaAuth:
@@ -6907,7 +6908,10 @@ components:
       nullable: true
       type: object
     httpheader.HTTPHeader:
-      additionalProperties: true
+      additionalProperties:
+        items:
+          type: string
+        type: array
       nullable: true
       type: object
     models.AlertConfiguration:

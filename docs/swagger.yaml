@@ -523,7 +523,8 @@ definitions:
         type: string
     type: object
   datastore.HttpHeader:
-    additionalProperties: true
+    additionalProperties:
+      type: string
     type: object
     x-nullable: true
   datastore.KafkaAuth:
@@ -1170,7 +1171,10 @@ definitions:
     additionalProperties: true
     x-nullable: true
   httpheader.HTTPHeader:
-    additionalProperties: true
+    additionalProperties:
+      items:
+        type: string
+      type: array
     type: object
     x-nullable: true
   models.AlertConfiguration:

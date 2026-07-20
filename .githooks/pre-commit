@@ -38,7 +38,9 @@ else
   openapi swagger validate ./docs/swagger.yaml
   openapi spec validate ./docs/v3/openapi3.yaml
 
-  git add docs/ # add all files under the generated doc folder to git
+  # stage generated docs plus the x-nullable tags annotate_dtos writes into the
+  # source trees, so the committed tree regenerates the same spec
+  git add docs/ api/models/ datastore/
 fi
 
 exit 0
