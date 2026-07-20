@@ -64,6 +64,33 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 
 	qtx := repo.New(tx)
 
+	// Idempotency claim: concurrent creates with the same key race the workers'
+	// check-then-insert, so the authoritative duplicate check lives here, inside
+	// the insert transaction. The transaction-scoped advisory lock (released on
+	// commit/rollback) serializes writers of the same project+key across all
+	// instances; the re-check under the lock sees rows committed by earlier
+	// holders, so exactly one row per key is persisted with
+	// is_duplicate_event=false. Events already flagged duplicate skip the claim,
+	// writing another duplicate row is always safe. Failure policy: fail closed,
+	// a lock or lookup error aborts the create and the caller retries.
+	if !util.IsStringEmpty(event.IdempotencyKey) && !event.IsDuplicateEvent {
+		_, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", "events-idempotency:"+event.ProjectID+":"+event.IdempotencyKey)
+		if err != nil {
+			return err
+		}
+
+		exists, lookupErr := qtx.FindEventsByIdempotencyKey(ctx, repo.FindEventsByIdempotencyKeyParams{
+			IdempotencyKey: common.StringToPgTextNullable(event.IdempotencyKey),
+			ProjectID:      common.StringToPgTextNullable(event.ProjectID),
+		})
+		if lookupErr != nil {
+			return lookupErr
+		}
+		if exists {
+			event.IsDuplicateEvent = true
+		}
+	}
+
 	// Create event params
 	params := repo.CreateEventParams{
 		ID:               common.StringToPgTextNullable(event.UID),
