@@ -940,9 +940,10 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
 
-	// Ingestion API.
+	// Ingestion API. Must use the same knob as the control plane's /ingest so
+	// CONVOY_INSTANCE_INGEST_RATE governs every ingest surface.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
