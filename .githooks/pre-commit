@@ -5,7 +5,11 @@
 
 pwd
 
-changed=$(git status -s | grep api)
+# regenerate only when the commit itself stages api/ or datastore/ changes;
+# datastore structs feed the spec too (annotate_dtos + swag parseDependency).
+# gate on the index, not the worktree, so untracked or unstaged files do not
+# trigger regeneration on unrelated commits
+changed=$(git diff --cached --name-only | grep -E '^(api|datastore)/')
 
 echo "$changed"
 
@@ -19,6 +23,21 @@ else
     command -v "$tool" >/dev/null 2>&1 || { echo "❌ $tool not found. Run 'mise install' to install all required tools."; exit 1; }
   done
 
+  # swag parses the live worktree, and --parseDependency follows imports into
+  # every package (auth/, config/, util/, ...), so the spec is only
+  # reproducible from the commit when no Go source anywhere has unstaged or
+  # untracked content. fail closed instead of committing docs generated from
+  # content the commit would not contain, or sweeping unrelated WIP into the
+  # commit
+  unstaged=$(git status --porcelain -- '*.go' | grep -E '^(\?\?|.[^ ])')
+  if [ -n "$unstaged" ]; then
+    echo "❌ Go sources have unstaged or untracked changes; the docs hook"
+    echo "regenerates the spec from the worktree, which must match the commit:"
+    echo "$unstaged"
+    echo "Stage or stash these files, then commit again."
+    exit 1
+  fi
+
   # regenerate docs
   go run docs/annotate_dtos/main.go
   swag init --generatedTime --parseDependency --parseDependencyLevel 3 --parseInternal -g handlers/main.go -d api/ api/*
@@ -29,12 +48,22 @@ else
   # add region descriptions and EU server (swag only supports a single host)
   yq -i '.servers[0].description = "US Region" | .servers += [{"url": "https://eu.getconvoy.cloud/api", "description": "EU Region"}]' ./docs/v3/openapi3.yaml
   jq '.servers[0].description = "US Region" | .servers += [{"url": "https://eu.getconvoy.cloud/api", "description": "EU Region"}]' ./docs/v3/openapi3.json > ./docs/v3/openapi3.json.tmp && mv ./docs/v3/openapi3.json.tmp ./docs/v3/openapi3.json
+  # Swagger 2.0 cannot express http bearer auth; upgrade the converted scheme so
+  # generated SDK clients add the "Bearer " prefix instead of every caller.
+  yq -i '.components.securitySchemes.ApiKeyAuth = {"type": "http", "scheme": "bearer"}' ./docs/v3/openapi3.yaml
+  jq '.components.securitySchemes.ApiKeyAuth = {"type": "http", "scheme": "bearer"}' ./docs/v3/openapi3.json > ./docs/v3/openapi3.json.tmp && mv ./docs/v3/openapi3.json.tmp ./docs/v3/openapi3.json
   # validate specs
   openapi swagger validate ./docs/swagger.json
   openapi swagger validate ./docs/swagger.yaml
   openapi spec validate ./docs/v3/openapi3.yaml
 
-  git add docs/ # add all files under the generated doc folder to git
+  # stage generated docs plus source files the hook modified (x-nullable tags,
+  # swag fmt), so the committed tree regenerates the same spec. the trees were
+  # clean before regeneration, so every diff here is hook-made
+  git add docs/
+  git diff --name-only -- api/ datastore/ | while IFS= read -r f; do
+    git add "$f"
+  done
 fi
 
 exit 0

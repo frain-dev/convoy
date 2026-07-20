@@ -76,7 +76,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -98,7 +103,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -120,7 +130,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -190,7 +205,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -212,7 +232,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -234,7 +259,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -256,7 +286,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -278,7 +313,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -339,7 +379,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -361,7 +406,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -383,7 +433,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -405,7 +460,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -427,7 +487,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -497,7 +562,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -519,7 +589,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -541,7 +616,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -611,7 +691,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -633,7 +718,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -655,7 +745,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -677,7 +772,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -844,7 +944,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -866,7 +971,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -888,7 +998,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -958,7 +1073,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -980,7 +1100,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1002,7 +1127,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1085,7 +1215,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1107,7 +1242,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1129,7 +1269,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1199,7 +1344,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1221,7 +1371,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1243,7 +1398,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1265,7 +1425,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1344,7 +1509,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1366,7 +1536,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1388,7 +1563,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1467,7 +1647,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1489,7 +1674,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1511,7 +1701,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1603,7 +1798,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1625,7 +1825,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1647,7 +1852,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1728,7 +1938,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1750,7 +1965,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1772,7 +1992,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1864,7 +2089,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1886,7 +2116,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1908,7 +2143,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -1983,7 +2223,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2005,7 +2250,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2027,7 +2277,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2097,7 +2352,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2119,7 +2379,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2141,7 +2406,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2227,7 +2497,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2249,7 +2524,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2271,7 +2551,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2363,7 +2648,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2385,7 +2675,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2407,7 +2702,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2499,7 +2799,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2521,7 +2826,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2543,7 +2853,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2755,7 +3070,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2777,7 +3097,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2799,7 +3124,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2974,7 +3304,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -2996,7 +3331,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3018,7 +3358,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3040,7 +3385,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3090,7 +3440,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3112,7 +3467,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3134,7 +3494,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3156,7 +3521,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3248,7 +3618,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3270,7 +3645,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3292,7 +3672,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3376,7 +3761,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3398,7 +3788,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3420,7 +3815,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3510,7 +3910,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3532,7 +3937,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3554,7 +3964,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3635,7 +4050,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3657,7 +4077,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3679,7 +4104,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3875,7 +4305,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3897,7 +4332,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3919,7 +4359,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3967,7 +4412,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -3989,7 +4439,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4011,7 +4466,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4033,7 +4493,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4225,7 +4690,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4247,7 +4717,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4269,7 +4744,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4341,7 +4821,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4363,7 +4848,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4385,7 +4875,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4577,7 +5072,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4599,7 +5099,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4621,7 +5126,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4671,7 +5181,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4693,7 +5208,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4715,7 +5235,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4737,7 +5262,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4798,7 +5328,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4820,7 +5355,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4842,7 +5382,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4864,7 +5409,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4956,7 +5506,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -4978,7 +5533,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5000,7 +5560,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5081,7 +5646,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5103,7 +5673,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5125,7 +5700,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5281,7 +5861,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5303,7 +5888,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5325,7 +5915,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5406,7 +6001,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5428,7 +6028,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5450,7 +6055,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5531,7 +6141,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5553,7 +6168,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5575,7 +6195,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5677,7 +6302,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5699,7 +6329,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5721,7 +6356,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5745,10 +6385,9 @@
         "operationId": "BulkOnboard",
         "requestBody": {
           "content": {
-            "application/octet-stream": {
+            "application/json": {
               "schema": {
-                "format": "binary",
-                "type": "string"
+                "$ref": "#/components/schemas/models.BulkOnboardRequest"
               }
             }
           },
@@ -5888,7 +6527,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5910,7 +6554,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -5932,7 +6581,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6002,7 +6656,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6024,7 +6683,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6046,7 +6710,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6138,7 +6807,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6160,7 +6834,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6182,7 +6861,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6261,7 +6945,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6283,7 +6972,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6305,7 +6999,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6397,7 +7096,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6419,7 +7123,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6441,7 +7150,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6500,7 +7214,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6522,7 +7241,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6544,7 +7268,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6566,7 +7295,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6722,7 +7456,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6744,7 +7483,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6766,7 +7510,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6836,7 +7585,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6858,7 +7612,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6880,7 +7639,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6963,7 +7727,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -6985,7 +7754,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7007,7 +7781,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7076,7 +7855,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7098,7 +7882,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7120,7 +7909,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7142,7 +7936,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7221,7 +8020,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7243,7 +8047,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7265,7 +8074,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7344,7 +8158,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7366,7 +8185,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7388,7 +8212,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7557,7 +8386,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7579,7 +8413,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7601,7 +8440,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7671,7 +8515,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7693,7 +8542,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7715,7 +8569,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7798,7 +8657,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7820,7 +8684,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7842,7 +8711,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7925,7 +8799,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7947,7 +8826,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -7969,7 +8853,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8039,7 +8928,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8061,7 +8955,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8083,7 +8982,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8105,7 +9009,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8184,7 +9093,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8206,7 +9120,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8228,7 +9147,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8307,7 +9231,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8329,7 +9258,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8351,7 +9285,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8446,7 +9385,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8468,7 +9412,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8490,7 +9439,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8569,7 +9523,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8591,7 +9550,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8613,7 +9577,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8708,7 +9677,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8730,7 +9704,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8752,7 +9731,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8850,7 +9834,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8872,7 +9861,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8894,7 +9888,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -8998,7 +9997,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9020,7 +10024,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9042,7 +10051,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9121,7 +10135,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9143,7 +10162,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9165,7 +10189,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9187,7 +10216,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9275,7 +10309,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9297,7 +10336,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9319,7 +10363,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9407,7 +10456,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9429,7 +10483,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9451,7 +10510,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9521,7 +10585,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9543,7 +10612,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9565,7 +10639,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9587,7 +10666,12 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/handlers.Stub"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/handlers.Stub"
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "type": "object"
@@ -9635,7 +10719,8 @@
           "billing_admin",
           "project_admin",
           "project_viewer",
-          "api"
+          "api",
+          ""
         ],
         "type": "string",
         "x-enum-comments": {
@@ -9664,7 +10749,8 @@
       },
       "config.RequestIDHeaderProvider": {
         "enum": [
-          "X-Convoy-Idempotency-Key"
+          "X-Convoy-Idempotency-Key",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -9673,7 +10759,8 @@
       },
       "config.SignatureHeaderProvider": {
         "enum": [
-          "X-Convoy-Signature"
+          "X-Convoy-Signature",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -9686,6 +10773,7 @@
             "type": "string"
           },
           "expires_at": {
+            "nullable": true,
             "type": "string"
           },
           "key": {
@@ -9737,12 +10825,19 @@
             "type": "string"
           },
           "auth": {
-            "$ref": "#/components/schemas/datastore.AmqpCredentials"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.AmqpCredentials"
+              }
+            ],
+            "nullable": true
           },
           "bindedExchange": {
+            "nullable": true,
             "type": "string"
           },
           "deadLetterExchange": {
+            "nullable": true,
             "type": "string"
           },
           "port": {
@@ -9758,6 +10853,7 @@
             "type": "string"
           },
           "vhost": {
+            "nullable": true,
             "type": "string"
           }
         },
@@ -9869,6 +10965,7 @@
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "endpoint_id": {
@@ -9896,9 +10993,11 @@
             "$ref": "#/components/schemas/datastore.HttpHeader"
           },
           "requested_at": {
+            "nullable": true,
             "type": "string"
           },
           "responded_at": {
+            "nullable": true,
             "type": "string"
           },
           "response_data": {
@@ -9925,7 +11024,8 @@
       "datastore.DeliveryMode": {
         "enum": [
           "at_least_once",
-          "at_most_once"
+          "at_most_once",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -9939,6 +11039,7 @@
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "endpoint_id": {
@@ -9969,7 +11070,8 @@
         "enum": [
           "offline",
           "online",
-          "disabled"
+          "disabled",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -9981,7 +11083,8 @@
       "datastore.EncodingType": {
         "enum": [
           "base64",
-          "hex"
+          "hex",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -9995,10 +11098,16 @@
             "type": "boolean"
           },
           "authentication": {
-            "$ref": "#/components/schemas/datastore.EndpointAuthentication"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.EndpointAuthentication"
+              }
+            ],
+            "nullable": true
           },
           "cb_state": {
             "description": "CBState is the circuit breaker state (\"open\", \"half-open\", \"closed\") so the UI\ncan reflect a tripped breaker on the endpoint status. Nil when CB is\noff/unlicensed or has no sample for this endpoint.",
+            "nullable": true,
             "type": "string"
           },
           "content_type": {
@@ -10008,6 +11117,7 @@
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "description": {
@@ -10017,10 +11127,12 @@
             "type": "integer"
           },
           "failure_count": {
+            "nullable": true,
             "type": "integer"
           },
           "failure_rate": {
             "description": "FailureRate is the circuit breaker's rolling failure rate for this endpoint.\nIt is a pointer so the API can return null when no rate was computed (circuit\nbreaker feature off, or sampler not running), distinct from a genuine 0%.",
+            "nullable": true,
             "type": "number"
           },
           "http_timeout": {
@@ -10032,7 +11144,8 @@
                 "$ref": "#/components/schemas/datastore.MtlsClientCert"
               }
             ],
-            "description": "mTLS client certificate configuration"
+            "description": "mTLS client certificate configuration",
+            "nullable": true
           },
           "name": {
             "type": "string"
@@ -10042,6 +11155,7 @@
           },
           "period_failure_rate": {
             "description": "PeriodFailureRate is the period failure rate from event_deliveries,\n(Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.\nNil when the range has no counted deliveries; sibling counts are transient.",
+            "nullable": true,
             "type": "number"
           },
           "project_id": {
@@ -10054,6 +11168,7 @@
             "type": "integer"
           },
           "retry_count": {
+            "nullable": true,
             "type": "integer"
           },
           "secrets": {
@@ -10069,6 +11184,7 @@
             "$ref": "#/components/schemas/datastore.EndpointStatus"
           },
           "success_count": {
+            "nullable": true,
             "type": "integer"
           },
           "support_email": {
@@ -10089,13 +11205,28 @@
       "datastore.EndpointAuthentication": {
         "properties": {
           "api_key": {
-            "$ref": "#/components/schemas/datastore.ApiKey"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.ApiKey"
+              }
+            ],
+            "nullable": true
           },
           "basic_auth": {
-            "$ref": "#/components/schemas/datastore.BasicAuth"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.BasicAuth"
+              }
+            ],
+            "nullable": true
           },
           "oauth2": {
-            "$ref": "#/components/schemas/datastore.OAuth2"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.OAuth2"
+              }
+            ],
+            "nullable": true
           },
           "type": {
             "$ref": "#/components/schemas/datastore.EndpointAuthenticationType"
@@ -10107,7 +11238,8 @@
         "enum": [
           "api_key",
           "oauth2",
-          "basic_auth"
+          "basic_auth",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10120,7 +11252,8 @@
         "enum": [
           "active",
           "inactive",
-          "paused"
+          "paused",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10132,6 +11265,7 @@
       "datastore.Event": {
         "properties": {
           "acknowledged_at": {
+            "nullable": true,
             "type": "string"
           },
           "app_id": {
@@ -10144,9 +11278,11 @@
           "data": {
             "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+            "nullable": true,
             "type": "object"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "endpoint_metadata": {
@@ -10186,7 +11322,12 @@
             "type": "string"
           },
           "source_metadata": {
-            "$ref": "#/components/schemas/datastore.Source"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Source"
+              }
+            ],
+            "nullable": true
           },
           "status": {
             "$ref": "#/components/schemas/datastore.EventStatus"
@@ -10213,7 +11354,8 @@
           "Discarded",
           "Failure",
           "Success",
-          "Retry"
+          "Retry",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10231,7 +11373,8 @@
           "Failure",
           "Success",
           "Retry",
-          "Pending"
+          "Pending",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10313,6 +11456,7 @@
         "additionalProperties": {
           "type": "string"
         },
+        "nullable": true,
         "type": "object"
       },
       "datastore.KafkaAuth": {
@@ -10338,7 +11482,12 @@
       "datastore.KafkaPubSubConfig": {
         "properties": {
           "auth": {
-            "$ref": "#/components/schemas/datastore.KafkaAuth"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.KafkaAuth"
+              }
+            ],
+            "nullable": true
           },
           "brokers": {
             "items": {
@@ -10357,6 +11506,7 @@
       },
       "datastore.M": {
         "additionalProperties": true,
+        "nullable": true,
         "type": "object"
       },
       "datastore.MetaEventAttempt": {
@@ -10385,7 +11535,12 @@
             "type": "boolean"
           },
           "pub_sub": {
-            "$ref": "#/components/schemas/datastore.PubSubConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.PubSubConfig"
+              }
+            ],
+            "nullable": true
           },
           "secret": {
             "type": "string"
@@ -10402,7 +11557,8 @@
       "datastore.MetaEventType": {
         "enum": [
           "http",
-          "pub_sub"
+          "pub_sub",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10415,6 +11571,7 @@
           "data": {
             "additionalProperties": true,
             "description": "Data to be sent to endpoint.",
+            "nullable": true,
             "type": "object"
           },
           "interval_seconds": {
@@ -10484,7 +11641,8 @@
                 "$ref": "#/components/schemas/datastore.OAuth2FieldMapping"
               }
             ],
-            "description": "Field mapping for flexible token response parsing"
+            "description": "Field mapping for flexible token response parsing",
+            "nullable": true
           },
           "grant_type": {
             "type": "string"
@@ -10504,7 +11662,8 @@
                 "$ref": "#/components/schemas/datastore.OAuth2SigningKey"
               }
             ],
-            "description": "Encrypted at rest"
+            "description": "Encrypted at rest",
+            "nullable": true
           },
           "subject": {
             "type": "string"
@@ -10518,7 +11677,8 @@
       "datastore.OAuth2AuthenticationType": {
         "enum": [
           "shared_secret",
-          "client_assertion"
+          "client_assertion",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10531,7 +11691,8 @@
           "seconds",
           "milliseconds",
           "minutes",
-          "hours"
+          "hours",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10618,7 +11779,8 @@
       "datastore.PageDirection": {
         "enum": [
           "next",
-          "prev"
+          "prev",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10652,7 +11814,8 @@
       "datastore.PortalAuthType": {
         "enum": [
           "refresh_token",
-          "static_token"
+          "static_token",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10675,6 +11838,7 @@
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "endpoint_count": {
@@ -10688,7 +11852,12 @@
           },
           "endpoints_metadata": {
             "items": {
-              "$ref": "#/components/schemas/datastore.Endpoint"
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/datastore.Endpoint"
+                }
+              ],
+              "nullable": true
             },
             "type": "array"
           },
@@ -10722,7 +11891,12 @@
             "type": "boolean"
           },
           "circuit_breaker": {
-            "$ref": "#/components/schemas/datastore.CircuitBreakerConfiguration"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.CircuitBreakerConfiguration"
+              }
+            ],
+            "nullable": true
           },
           "disable_endpoint": {
             "type": "boolean"
@@ -10731,13 +11905,23 @@
             "type": "integer"
           },
           "meta_event": {
-            "$ref": "#/components/schemas/datastore.MetaEventConfiguration"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.MetaEventConfiguration"
+              }
+            ],
+            "nullable": true
           },
           "multiple_endpoint_subscriptions": {
             "type": "boolean"
           },
           "ratelimit": {
-            "$ref": "#/components/schemas/datastore.RateLimitConfiguration"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.RateLimitConfiguration"
+              }
+            ],
+            "nullable": true
           },
           "replay_attacks_prevention_enabled": {
             "type": "boolean"
@@ -10749,13 +11933,28 @@
             "type": "string"
           },
           "signature": {
-            "$ref": "#/components/schemas/datastore.SignatureConfiguration"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.SignatureConfiguration"
+              }
+            ],
+            "nullable": true
           },
           "ssl": {
-            "$ref": "#/components/schemas/datastore.SSLConfiguration"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.SSLConfiguration"
+              }
+            ],
+            "nullable": true
           },
           "strategy": {
-            "$ref": "#/components/schemas/datastore.StrategyConfiguration"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.StrategyConfiguration"
+              }
+            ],
+            "nullable": true
           }
         },
         "type": "object"
@@ -10780,7 +11979,8 @@
       "datastore.ProjectType": {
         "enum": [
           "outgoing",
-          "incoming"
+          "incoming",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10791,7 +11991,12 @@
       "datastore.ProviderConfig": {
         "properties": {
           "twitter": {
-            "$ref": "#/components/schemas/datastore.TwitterProviderConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.TwitterProviderConfig"
+              }
+            ],
+            "nullable": true
           }
         },
         "type": "object"
@@ -10799,16 +12004,36 @@
       "datastore.PubSubConfig": {
         "properties": {
           "amqp": {
-            "$ref": "#/components/schemas/datastore.AmqpPubSubConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.AmqpPubSubConfig"
+              }
+            ],
+            "nullable": true
           },
           "google": {
-            "$ref": "#/components/schemas/datastore.GooglePubSubConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.GooglePubSubConfig"
+              }
+            ],
+            "nullable": true
           },
           "kafka": {
-            "$ref": "#/components/schemas/datastore.KafkaPubSubConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.KafkaPubSubConfig"
+              }
+            ],
+            "nullable": true
           },
           "sqs": {
-            "$ref": "#/components/schemas/datastore.SQSPubSubConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.SQSPubSubConfig"
+              }
+            ],
+            "nullable": true
           },
           "type": {
             "$ref": "#/components/schemas/datastore.PubSubType"
@@ -10824,7 +12049,8 @@
           "sqs",
           "google",
           "kafka",
-          "amqp"
+          "amqp",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -10908,9 +12134,11 @@
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "expires_at": {
+            "nullable": true,
             "type": "string"
           },
           "uid": {
@@ -10959,6 +12187,7 @@
       "datastore.Source": {
         "properties": {
           "body_function": {
+            "nullable": true,
             "type": "string"
           },
           "created_at": {
@@ -10968,6 +12197,7 @@
             "$ref": "#/components/schemas/datastore.CustomResponse"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "event_type_location": {
@@ -10980,6 +12210,7 @@
             "type": "array"
           },
           "header_function": {
+            "nullable": true,
             "type": "string"
           },
           "idempotency_keys": {
@@ -11004,10 +12235,20 @@
             "$ref": "#/components/schemas/datastore.SourceProvider"
           },
           "provider_config": {
-            "$ref": "#/components/schemas/datastore.ProviderConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.ProviderConfig"
+              }
+            ],
+            "nullable": true
           },
           "pub_sub": {
-            "$ref": "#/components/schemas/datastore.PubSubConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.PubSubConfig"
+              }
+            ],
+            "nullable": true
           },
           "type": {
             "$ref": "#/components/schemas/datastore.SourceType"
@@ -11022,7 +12263,12 @@
             "type": "string"
           },
           "verifier": {
-            "$ref": "#/components/schemas/datastore.VerifierConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.VerifierConfig"
+              }
+            ],
+            "nullable": true
           }
         },
         "type": "object"
@@ -11031,7 +12277,8 @@
         "enum": [
           "github",
           "twitter",
-          "shopify"
+          "shopify",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -11045,7 +12292,8 @@
           "http",
           "rest_api",
           "pub_sub",
-          "db_change_stream"
+          "db_change_stream",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -11072,7 +12320,8 @@
       "datastore.StrategyProvider": {
         "enum": [
           "linear",
-          "exponential"
+          "exponential",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -11083,7 +12332,8 @@
       "datastore.SubscriptionType": {
         "enum": [
           "cli",
-          "api"
+          "api",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -11094,6 +12344,7 @@
       "datastore.TwitterProviderConfig": {
         "properties": {
           "crc_verified_at": {
+            "nullable": true,
             "type": "string"
           }
         },
@@ -11129,13 +12380,28 @@
       "datastore.VerifierConfig": {
         "properties": {
           "api_key": {
-            "$ref": "#/components/schemas/datastore.ApiKey"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.ApiKey"
+              }
+            ],
+            "nullable": true
           },
           "basic_auth": {
-            "$ref": "#/components/schemas/datastore.BasicAuth"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.BasicAuth"
+              }
+            ],
+            "nullable": true
           },
           "hmac": {
-            "$ref": "#/components/schemas/datastore.HMac"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.HMac"
+              }
+            ],
+            "nullable": true
           },
           "type": {
             "$ref": "#/components/schemas/datastore.VerifierType"
@@ -11148,7 +12414,8 @@
           "noop",
           "hmac",
           "basic_auth",
-          "api_key"
+          "api_key",
+          ""
         ],
         "type": "string",
         "x-enum-varnames": [
@@ -11159,6 +12426,8 @@
         ]
       },
       "handlers.Stub": {
+        "additionalProperties": true,
+        "nullable": true,
         "type": "object"
       },
       "httpheader.HTTPHeader": {
@@ -11168,6 +12437,7 @@
           },
           "type": "array"
         },
+        "nullable": true,
         "type": "object"
       },
       "models.AlertConfiguration": {
@@ -11274,11 +12544,13 @@
               "type": "string"
             },
             "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
+            "nullable": true,
             "type": "object"
           },
           "data": {
             "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+            "nullable": true,
             "type": "object"
           },
           "event_type": {
@@ -11338,6 +12610,7 @@
         "properties": {
           "body": {
             "additionalProperties": true,
+            "nullable": true,
             "type": "object"
           },
           "enabled_at": {
@@ -11348,14 +12621,17 @@
           },
           "headers": {
             "additionalProperties": true,
+            "nullable": true,
             "type": "object"
           },
           "path": {
             "additionalProperties": true,
+            "nullable": true,
             "type": "object"
           },
           "query": {
             "additionalProperties": true,
+            "nullable": true,
             "type": "object"
           },
           "uid": {
@@ -11463,11 +12739,13 @@
               "type": "string"
             },
             "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
+            "nullable": true,
             "type": "object"
           },
           "data": {
             "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+            "nullable": true,
             "type": "object"
           },
           "endpoint_id": {
@@ -11498,6 +12776,7 @@
           "json_schema": {
             "additionalProperties": true,
             "description": "JSONSchema is the JSON structure of the event type",
+            "nullable": true,
             "type": "object"
           },
           "name": {
@@ -11747,11 +13026,13 @@
               "type": "string"
             },
             "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
+            "nullable": true,
             "type": "object"
           },
           "data": {
             "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+            "nullable": true,
             "type": "object"
           },
           "event_type": {
@@ -11803,10 +13084,16 @@
             "type": "boolean"
           },
           "authentication": {
-            "$ref": "#/components/schemas/datastore.EndpointAuthentication"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.EndpointAuthentication"
+              }
+            ],
+            "nullable": true
           },
           "cb_state": {
             "description": "CBState is the circuit breaker state (\"open\", \"half-open\", \"closed\") so the UI\ncan reflect a tripped breaker on the endpoint status. Nil when CB is\noff/unlicensed or has no sample for this endpoint.",
+            "nullable": true,
             "type": "string"
           },
           "content_type": {
@@ -11816,6 +13103,7 @@
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "description": {
@@ -11825,10 +13113,12 @@
             "type": "integer"
           },
           "failure_count": {
+            "nullable": true,
             "type": "integer"
           },
           "failure_rate": {
             "description": "FailureRate is the circuit breaker's rolling failure rate for this endpoint.\nIt is a pointer so the API can return null when no rate was computed (circuit\nbreaker feature off, or sampler not running), distinct from a genuine 0%.",
+            "nullable": true,
             "type": "number"
           },
           "http_timeout": {
@@ -11840,7 +13130,8 @@
                 "$ref": "#/components/schemas/datastore.MtlsClientCert"
               }
             ],
-            "description": "mTLS client certificate configuration"
+            "description": "mTLS client certificate configuration",
+            "nullable": true
           },
           "name": {
             "type": "string"
@@ -11850,6 +13141,7 @@
           },
           "period_failure_rate": {
             "description": "PeriodFailureRate is the period failure rate from event_deliveries,\n(Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.\nNil when the range has no counted deliveries; sibling counts are transient.",
+            "nullable": true,
             "type": "number"
           },
           "project_id": {
@@ -11862,6 +13154,7 @@
             "type": "integer"
           },
           "retry_count": {
+            "nullable": true,
             "type": "integer"
           },
           "secrets": {
@@ -11877,6 +13170,7 @@
             "$ref": "#/components/schemas/datastore.EndpointStatus"
           },
           "success_count": {
+            "nullable": true,
             "type": "integer"
           },
           "support_email": {
@@ -11897,15 +13191,22 @@
       "models.EventDeliveryResponse": {
         "properties": {
           "acknowledged_at": {
+            "nullable": true,
             "type": "string"
           },
           "cli_metadata": {
-            "$ref": "#/components/schemas/datastore.CLIMetadata"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.CLIMetadata"
+              }
+            ],
+            "nullable": true
           },
           "created_at": {
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "delivery_mode": {
@@ -11918,19 +13219,34 @@
             "type": "string"
           },
           "device_metadata": {
-            "$ref": "#/components/schemas/datastore.Device"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Device"
+              }
+            ],
+            "nullable": true
           },
           "endpoint_id": {
             "type": "string"
           },
           "endpoint_metadata": {
-            "$ref": "#/components/schemas/datastore.Endpoint"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Endpoint"
+              }
+            ],
+            "nullable": true
           },
           "event_id": {
             "type": "string"
           },
           "event_metadata": {
-            "$ref": "#/components/schemas/datastore.Event"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Event"
+              }
+            ],
+            "nullable": true
           },
           "event_type": {
             "type": "string"
@@ -11949,13 +13265,23 @@
             "type": "number"
           },
           "metadata": {
-            "$ref": "#/components/schemas/datastore.Metadata"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Metadata"
+              }
+            ],
+            "nullable": true
           },
           "project_id": {
             "type": "string"
           },
           "source_metadata": {
-            "$ref": "#/components/schemas/datastore.Source"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Source"
+              }
+            ],
+            "nullable": true
           },
           "status": {
             "$ref": "#/components/schemas/datastore.EventDeliveryStatus"
@@ -11981,6 +13307,7 @@
       "models.EventResponse": {
         "properties": {
           "acknowledged_at": {
+            "nullable": true,
             "type": "string"
           },
           "app_id": {
@@ -11993,9 +13320,11 @@
           "data": {
             "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+            "nullable": true,
             "type": "object"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "endpoint_metadata": {
@@ -12035,7 +13364,12 @@
             "type": "string"
           },
           "source_metadata": {
-            "$ref": "#/components/schemas/datastore.Source"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Source"
+              }
+            ],
+            "nullable": true
           },
           "status": {
             "$ref": "#/components/schemas/datastore.EventStatus"
@@ -12061,6 +13395,7 @@
             "type": "string"
           },
           "deprecated_at": {
+            "nullable": true,
             "type": "string"
           },
           "description": {
@@ -12068,6 +13403,7 @@
           },
           "json_schema": {
             "additionalProperties": true,
+            "nullable": true,
             "type": "object"
           },
           "name": {
@@ -12116,11 +13452,13 @@
               "type": "string"
             },
             "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
+            "nullable": true,
             "type": "object"
           },
           "data": {
             "additionalProperties": true,
             "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+            "nullable": true,
             "type": "object"
           },
           "event_type": {
@@ -12164,6 +13502,7 @@
             "$ref": "#/components/schemas/datastore.M"
           },
           "enabled_at": {
+            "nullable": true,
             "type": "string"
           },
           "event_type": {
@@ -12215,6 +13554,7 @@
           },
           "payload": {
             "additionalProperties": {},
+            "nullable": true,
             "type": "object"
           },
           "type": {
@@ -12360,19 +13700,30 @@
       "models.MetaEventResponse": {
         "properties": {
           "attempt": {
-            "$ref": "#/components/schemas/datastore.MetaEventAttempt"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.MetaEventAttempt"
+              }
+            ],
+            "nullable": true
           },
           "created_at": {
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "event_type": {
             "type": "string"
           },
           "metadata": {
-            "$ref": "#/components/schemas/datastore.Metadata"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Metadata"
+              }
+            ],
+            "nullable": true
           },
           "project_id": {
             "type": "string"
@@ -12673,12 +14024,18 @@
       "models.ProjectResponse": {
         "properties": {
           "config": {
-            "$ref": "#/components/schemas/datastore.ProjectConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.ProjectConfig"
+              }
+            ],
+            "nullable": true
           },
           "created_at": {
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "logo_url": {
@@ -12694,7 +14051,12 @@
             "type": "integer"
           },
           "statistics": {
-            "$ref": "#/components/schemas/datastore.ProjectStatistics"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.ProjectStatistics"
+              }
+            ],
+            "nullable": true
           },
           "type": {
             "$ref": "#/components/schemas/datastore.ProjectType"
@@ -12826,6 +14188,7 @@
       "models.SourceResponse": {
         "properties": {
           "body_function": {
+            "nullable": true,
             "type": "string"
           },
           "created_at": {
@@ -12835,6 +14198,7 @@
             "$ref": "#/components/schemas/datastore.CustomResponse"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "event_type_location": {
@@ -12847,6 +14211,7 @@
             "type": "array"
           },
           "header_function": {
+            "nullable": true,
             "type": "string"
           },
           "idempotency_keys": {
@@ -12871,10 +14236,20 @@
             "$ref": "#/components/schemas/datastore.SourceProvider"
           },
           "provider_config": {
-            "$ref": "#/components/schemas/datastore.ProviderConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.ProviderConfig"
+              }
+            ],
+            "nullable": true
           },
           "pub_sub": {
-            "$ref": "#/components/schemas/datastore.PubSubConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.PubSubConfig"
+              }
+            ],
+            "nullable": true
           },
           "type": {
             "$ref": "#/components/schemas/datastore.SourceType"
@@ -12889,7 +14264,12 @@
             "type": "string"
           },
           "verifier": {
-            "$ref": "#/components/schemas/datastore.VerifierConfig"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.VerifierConfig"
+              }
+            ],
+            "nullable": true
           }
         },
         "type": "object"
@@ -12916,27 +14296,45 @@
                 "$ref": "#/components/schemas/datastore.AlertConfiguration"
               }
             ],
-            "description": "subscription config"
+            "description": "subscription config",
+            "nullable": true
           },
           "created_at": {
             "type": "string"
           },
           "deleted_at": {
+            "nullable": true,
             "type": "string"
           },
           "delivery_mode": {
             "$ref": "#/components/schemas/datastore.DeliveryMode"
           },
           "device_metadata": {
-            "$ref": "#/components/schemas/datastore.Device"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Device"
+              }
+            ],
+            "nullable": true
           },
           "endpoint_metadata": {
-            "$ref": "#/components/schemas/datastore.Endpoint"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Endpoint"
+              }
+            ],
+            "nullable": true
           },
           "filter_config": {
-            "$ref": "#/components/schemas/datastore.FilterConfiguration"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.FilterConfiguration"
+              }
+            ],
+            "nullable": true
           },
           "function": {
+            "nullable": true,
             "type": "string"
           },
           "name": {
@@ -12946,13 +14344,28 @@
             "type": "string"
           },
           "rate_limit_config": {
-            "$ref": "#/components/schemas/datastore.RateLimitConfiguration"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.RateLimitConfiguration"
+              }
+            ],
+            "nullable": true
           },
           "retry_config": {
-            "$ref": "#/components/schemas/datastore.RetryConfiguration"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.RetryConfiguration"
+              }
+            ],
+            "nullable": true
           },
           "source_metadata": {
-            "$ref": "#/components/schemas/datastore.Source"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/datastore.Source"
+              }
+            ],
+            "nullable": true
           },
           "type": {
             "$ref": "#/components/schemas/datastore.SubscriptionType"
@@ -13164,6 +14577,7 @@
           "json_schema": {
             "additionalProperties": true,
             "description": "JSONSchema is the JSON structure of the event type",
+            "nullable": true,
             "type": "object"
           }
         },
@@ -13412,9 +14826,8 @@
     },
     "securitySchemes": {
       "ApiKeyAuth": {
-        "in": "header",
-        "name": "Authorization",
-        "type": "apiKey"
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   },
