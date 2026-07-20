@@ -116,7 +116,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		h.A.Logger.ErrorContext(r.Context(), fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", 200, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", nil, http.StatusCreated))
 }
 
 // CreateBroadcastEvent
