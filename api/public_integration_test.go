@@ -1194,6 +1194,11 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 	err := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 
+	originalQueue := s.ConvoyApp.A.Queue
+	recorder := &recordingQueuer{opts: originalQueue.Options()}
+	s.ConvoyApp.A.Queue = recorder
+	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
+
 	body := serialize(`{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`, appID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
@@ -1204,6 +1209,17 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert. app_id addressing must behave like endpoint_id addressing:
+	// the alias reaches the worker and subscription-less endpoints still get a
+	// catch-all subscription auto-provisioned.
+	require.Len(s.T(), recorder.jobs, 1)
+
+	var queuedEvent task.CreateEvent
+	err = msgpack.DecodeMsgPack(recorder.jobs[0].Payload, &queuedEvent)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), appID, queuedEvent.Params.AppID)
+	require.True(s.T(), queuedEvent.CreateSubscription)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {

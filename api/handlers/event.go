@@ -112,7 +112,11 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 			IdempotencyKey: newMessage.IdempotencyKey,
 			AcknowledgedAt: time.Now(),
 		},
-		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
+		// Validate() plus the existence checks above guarantee a resolvable target
+		// (endpoint_id or the deprecated app_id alias) at this point, and both
+		// addressing modes resolve to concrete endpoints in the worker, so both get
+		// a catch-all subscription auto-provisioned for subscription-less endpoints.
+		CreateSubscription: true,
 	}
 
 	eventByte, err := msgpack.EncodeMsgPack(e)
