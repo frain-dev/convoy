@@ -11579,7 +11579,7 @@
           "x-nullable": true
         },
         "endpoint_id": {
-          "description": "Specifies the endpoint to send this event to.",
+          "description": "Specifies the endpoint to send this event to. Required unless the\ndeprecated app_id is provided.",
           "type": "string"
         },
         "event_type": {
