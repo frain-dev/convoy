@@ -1,5 +1,23 @@
 # Convoy Changes
 
+## 26.6.6
+
+### Features
+
+- feat(controlplane): Speakeasy public API clients for JS and Python (#2724)
+- feat(controlplane): verify email before cloud trial and enqueue welcome (#2726)
+
+### Bug Fixes
+
+- fix(controlplane): close jul 16 vuln review bundle (#2721)
+- fix(dashboard): default team invite role to organisation_admin (#2722)
+- fix(controlplane): harden endpoint rbac, sh billing gates, and org delete cascade (#2723)
+- fix(controlplane): declare eventTypeId path param on UpdateEventType (#2728)
+- fix: correct OpenAPI types for json.RawMessage and []byte fields (#2736)
+- fix: mark arbitrary-JSON object fields as open maps in OpenAPI spec (#2737)
+- fix(controlplane): send null data in CreateEndpointEvent response (#2741)
+- fix(docs): OpenAPI spec fidelity for generated SDK clients (#2742)
+
 ## 26.6.5
 
 ### Features
