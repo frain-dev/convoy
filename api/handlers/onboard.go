@@ -27,7 +27,7 @@ const onboardBatchSize = 50
 // BulkOnboard
 //
 //	@Summary		Bulk onboard endpoints with subscriptions
-//	@Description	This endpoint accepts a CSV file or JSON body to bulk-create endpoints with subscriptions
+//	@Description	This endpoint bulk-creates endpoints with subscriptions from a JSON body. A CSV file upload is also accepted over raw HTTP as multipart/form-data with a "file" field; generated SDK clients only expose the JSON body.
 //	@Tags			Onboard
 //	@Id				BulkOnboard
 //	@Accept			json,mpfd

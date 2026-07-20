@@ -5547,7 +5547,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint accepts a CSV file or JSON body to bulk-create endpoints with subscriptions",
+        "description": "This endpoint bulk-creates endpoints with subscriptions from a JSON body. A CSV file upload is also accepted over raw HTTP as multipart/form-data with a \"file\" field; generated SDK clients only expose the JSON body.",
         "consumes": [
           "application/json"
         ],
