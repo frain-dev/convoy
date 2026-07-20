@@ -5,9 +5,11 @@
 
 pwd
 
-# datastore structs feed the spec too (annotate_dtos + swag parseDependency),
-# so datastore-only commits must also regenerate
-changed=$(git status -s | grep -E 'api|datastore')
+# regenerate only when the commit itself stages api/ or datastore/ changes;
+# datastore structs feed the spec too (annotate_dtos + swag parseDependency).
+# gate on the index, not the worktree, so untracked or unstaged files do not
+# trigger regeneration on unrelated commits
+changed=$(git diff --cached --name-only | grep -E '^(api|datastore)/')
 
 echo "$changed"
 
@@ -23,9 +25,13 @@ else
 
   # snapshot files already modified before the hook runs, so only hook-made
   # changes (x-nullable tags, swag fmt) are staged and unrelated WIP is not
-  # swept into the commit
+  # swept into the commit; hash them to detect hook rewrites of dirty files
   pre_hook_dirty=$(mktemp)
+  pre_hook_hashes=$(mktemp)
   git diff --name-only -- api/ datastore/ > "$pre_hook_dirty"
+  while IFS= read -r f; do
+    [ -f "$f" ] && shasum "$f"
+  done < "$pre_hook_dirty" > "$pre_hook_hashes"
 
   # regenerate docs
   go run docs/annotate_dtos/main.go
@@ -46,6 +52,19 @@ else
   openapi swagger validate ./docs/swagger.yaml
   openapi spec validate ./docs/v3/openapi3.yaml
 
+  # fail closed if the hook rewrote a file that already had unstaged changes:
+  # the regenerated spec was built from content this commit would not contain,
+  # and auto-staging it would sweep unrelated WIP into the commit. the
+  # developer must stage or stash those files and commit again
+  rewritten=$(shasum -c "$pre_hook_hashes" 2>/dev/null | grep ': FAILED$' | cut -d: -f1)
+  if [ -n "$rewritten" ]; then
+    echo "❌ the docs hook rewrote files that already had unstaged changes:"
+    echo "$rewritten"
+    echo "Stage or stash these files, then commit again."
+    rm -f "$pre_hook_dirty" "$pre_hook_hashes"
+    exit 1
+  fi
+
   # stage generated docs plus source files the hook itself modified
   # (x-nullable tags, swag fmt), so the committed tree regenerates the same
   # spec; files that were already dirty before the hook stay unstaged
@@ -53,7 +72,7 @@ else
   for f in $(git diff --name-only -- api/ datastore/); do
     grep -qxF "$f" "$pre_hook_dirty" || git add "$f"
   done
-  rm -f "$pre_hook_dirty"
+  rm -f "$pre_hook_dirty" "$pre_hook_hashes"
 fi
 
 exit 0
