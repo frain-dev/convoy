@@ -77,6 +77,20 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
+	} else {
+		// Validate() guarantees the deprecated app_id alias is set here. Mirror the
+		// endpoint_id existence check so an app_id that resolves to no endpoints is
+		// rejected now instead of queueing an event that fans out to nothing.
+		eps, innerErr := endpoints.New(h.A.Logger, h.A.DB).FindEndpointsByAppID(r.Context(), newMessage.AppID, projectID)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
+			return
+		}
+
+		if len(eps) == 0 {
+			_ = render.Render(w, r, util.NewErrorResponse("app ID has no configured endpoints", http.StatusBadRequest))
+			return
+		}
 	}
 
 	if h.enforceTrialEventCapForNewEvent(w, r, project.OrganisationID, projectID, newMessage.IdempotencyKey, h.duplicateByAnyEvent) {
@@ -90,6 +104,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		Params: task.CreateEventTaskParams{
 			UID:            id,
 			ProjectID:      projectID,
+			AppID:          newMessage.AppID,
 			EndpointID:     newMessage.EndpointID,
 			EventType:      newMessage.EventType,
 			Data:           newMessage.Data,

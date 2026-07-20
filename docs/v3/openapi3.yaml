@@ -7161,7 +7161,9 @@ components:
           nullable: true
           type: object
         endpoint_id:
-          description: Specifies the endpoint to send this event to.
+          description: |-
+            Specifies the endpoint to send this event to. Required unless the
+            deprecated app_id is provided.
           type: string
         event_type:
           description: Event Type is used for filtering and debugging e.g invoice.paid
