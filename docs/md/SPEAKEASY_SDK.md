@@ -8,17 +8,17 @@ pattern, per-language generator picks:
 | `convoy.js` | [Speakeasy](https://www.speakeasy.com/) (free tier) | Free tier allows exactly one generated SDK per workspace; JS holds the slot |
 | `convoy-python` | [openapi-python-client](https://github.com/openapi-generators/openapi-python-client) (OSS, pinned) | Speakeasy slot taken; OSS output proven idiomatic and complete. Speakeasy pipeline kept dormant in-repo for a provider switch |
 | `convoy-java` | [OpenAPI Generator](https://openapi-generator.tech/) (OSS, pinned; `java`/`native` library) | Same OSS pattern as Python; native `java.net.http` + Jackson, no framework deps |
+| `convoy-go` | [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) (OSS, pinned) | Go-native generator; single-file `client/` subpackage beside the hand-written client |
+| `convoy.rb` | OpenAPI Generator (OSS, pinned; `ruby`) | Generated `ConvoyApi` namespace beside the hand-written `Convoy` gem code |
+| `convoy-php` | OpenAPI Generator (OSS, pinned; `php`) | Generated `Convoy\Client` namespace under `src/Client/` beside the hand-written SDK |
 
 ## Scope
 
 | Surface | Ownership |
 | --- | --- |
-| Public API client (JS, Python, Java) | Generated from OpenAPI |
+| Public API client (JS, Python, Java, Go, Ruby, PHP) | Generated from OpenAPI |
 | Webhook signature verify | **Hand-written** in every language (`signature-vectors.json`) |
 | Dashboard `/ui` auth/billing/org | Out of scope for PDE-755 |
-
-Follow-up tickets cover Go / Ruby / PHP API codegen (Go candidate:
-`oapi-codegen`; Ruby/PHP deferred until demand signal).
 
 ## Pipeline
 
@@ -28,6 +28,9 @@ Follow-up tickets cover Go / Ruby / PHP API codegen (Go candidate:
               convoy.js:      Speakeasy action → regen PR
               convoy-python:  openapi-python-client → regen PR (only on diff)
               convoy-java:    OpenAPI Generator → regen PR (only on diff)
+              convoy-go:      oapi-codegen → regen PR (only on diff)
+              convoy.rb:      OpenAPI Generator → regen PR (only on diff)
+              convoy-php:     OpenAPI Generator → regen PR (only on diff)
 signature-vectors.json → hand-written verify tests (unchanged)
 ```
 
@@ -47,8 +50,8 @@ and inputs (`force`, `feature_branch`); each repo owns its generator.
 | Secret | Where | Purpose |
 | --- | --- | --- |
 | `SPEAKEASY_API_KEY` | `convoy`, `convoy.js` | Speakeasy generation (JS only now) |
-| `SDK_REPOS_PAT` | `convoy` | Dispatch workflows / open PRs on SDK repos |
-| `SDK_BOT_PAT` | `convoy.js`, `convoy-python`, `convoy-java` | Open generation PRs so verify CI triggers — PRs opened with `GITHUB_TOKEN` do not fire `pull_request` workflows. Can be the same fine-grained token as `SDK_REPOS_PAT` (which must also cover `convoy-java`). |
+| `SDK_REPOS_PAT` | `convoy` | Dispatch workflows / open PRs on every SDK repo in the matrix |
+| `SDK_BOT_PAT` | every SDK repo (`convoy.js`, `convoy-python`, `convoy-java`, `convoy-go`, `convoy.rb`, `convoy-php`) | Open generation PRs so verify CI triggers — PRs opened with `GITHUB_TOKEN` do not fire `pull_request` workflows. Can be the same fine-grained token as `SDK_REPOS_PAT` (which must cover all matrix repos). |
 
 ## Speakeasy plan limit
 
