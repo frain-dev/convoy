@@ -536,10 +536,12 @@ func (h *BillingHandler) OnboardSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := validatePlanAndHostRequired(requestData.PlanID, requestData.Host); err != nil {
+	canonicalHost, err := validatePlanAndHost(requestData.PlanID, requestData.Host)
+	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	requestData.Host = canonicalHost
 
 	resp, err := h.BillingClient.OnboardSubscription(r.Context(), orgID, requestData)
 	if err != nil {
@@ -741,10 +743,12 @@ func (h *BillingHandler) UpgradeSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := validatePlanAndHostRequired(requestData.PlanID, requestData.Host); err != nil {
+	canonicalHost, err := validatePlanAndHost(requestData.PlanID, requestData.Host)
+	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	requestData.Host = canonicalHost
 
 	resp, err := h.BillingClient.UpgradeSubscription(r.Context(), orgID, subscriptionID, requestData)
 	if err != nil {

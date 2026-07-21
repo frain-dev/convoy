@@ -153,6 +153,10 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/broadcast [post]
 func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	var newMessage models.BroadcastEvent
 	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
@@ -212,6 +216,10 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
 func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	start := time.Now()
 
 	// Wrap the request body to count bytes in real-time
@@ -313,6 +321,10 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/dynamic [post]
 func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	var newMessage models.DynamicEvent
 	err := util.ReadJSON(r, &newMessage)
 	if err != nil {

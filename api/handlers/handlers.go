@@ -92,6 +92,18 @@ func (h *Handler) IsReqWithPortalLinkToken(authUser *auth.AuthenticatedUser) boo
 	return authUser.Credential.Type == auth.CredentialTypeToken
 }
 
+// rejectPortalLinkToken blocks project-wide event creation routes that must not
+// accept portal credentials (broadcast, fanout, dynamic). Portal tokens stay on
+// CreateEndpointEvent with ownership checks. Failure policy: fail closed 401.
+func (h *Handler) rejectPortalLinkToken(w http.ResponseWriter, r *http.Request) bool {
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if authUser == nil || !h.IsReqWithPortalLinkToken(authUser) {
+		return false
+	}
+	_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+	return true
+}
+
 // requireJWTProjectManage enforces PermissionProjectManage for JWT and PAT
 // callers on endpoint mutations. Portal tokens keep CanManageEndpoint /
 // ownership checks; project API keys stay project-scoped and are skipped.

@@ -48,6 +48,11 @@ func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Creates endpoints and subscriptions; align with CreateEndpoint (manage).
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
+
 	if project.Type == datastore.IncomingProject {
 		_ = render.Render(w, r, util.NewErrorResponse("bulk onboard is only supported for outgoing projects", http.StatusBadRequest))
 		return

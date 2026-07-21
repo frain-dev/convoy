@@ -253,6 +253,12 @@ func (h *Handler) RefreshPortalLinkAuthToken(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Minting a portal auth_key is a privileged mutation. Project view alone
+	// must not refresh another link's token. Failure policy: fail closed 403.
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
+
 	svc := portal_links.New(h.A.Logger, h.A.DB)
 
 	pLink, err := svc.RefreshPortalLinkAuthToken(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))

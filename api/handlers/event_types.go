@@ -225,6 +225,11 @@ func (h *Handler) ImportOpenApiSpec(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Mutates project event types; require manage for JWT/PAT callers.
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
+
 	var body models.ImportOpenAPISpec
 	err = util.ReadJSON(r, &body)
 	if err != nil {
