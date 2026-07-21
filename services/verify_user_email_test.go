@@ -53,6 +53,8 @@ func TestVerifyEmailService_Run(t *testing.T) {
 
 				u1 := *user
 				u1.EmailVerified = true
+				u1.EmailVerificationToken = ""
+				u1.EmailVerificationExpiresAt = time.Time{}
 				us.EXPECT().UpdateUser(gomock.Any(), &u1).Times(1).Return(nil)
 			},
 			args: args{
@@ -116,6 +118,8 @@ func TestVerifyEmailService_Run(t *testing.T) {
 
 				u1 := *user
 				u1.EmailVerified = true
+				u1.EmailVerificationToken = ""
+				u1.EmailVerificationExpiresAt = time.Time{}
 				us.EXPECT().UpdateUser(gomock.Any(), &u1).Times(1).Return(errors.New("failed to update user"))
 
 				ml, _ := u.Logger.(*mocks.MockLogger)
