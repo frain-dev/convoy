@@ -48,7 +48,7 @@ SELECT
     COALESCE(p.owner_id, '') AS owner_id,
     CASE
         WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
@@ -75,7 +75,7 @@ SELECT
     COALESCE(p.owner_id, '') AS owner_id,
     CASE
         WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
@@ -102,7 +102,7 @@ SELECT
     COALESCE(p.owner_id, '') AS owner_id,
     CASE
         WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
@@ -133,7 +133,7 @@ SELECT
     COALESCE(pl.owner_id, '') AS owner_id,
     CASE
         WHEN pl.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = pl.owner_id AND deleted_at IS NULL)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = pl.id)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = pl.id)
     END AS endpoint_count
 FROM convoy.portal_tokens pt
 JOIN convoy.portal_links pl ON pl.id = pt.portal_link_id
@@ -151,7 +151,7 @@ SELECT
     COALESCE(p.owner_id, '') AS owner_id,
     CASE
         WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
@@ -189,7 +189,7 @@ WITH filtered_portal_links AS (
         COALESCE(p.owner_id, '') AS owner_id,
         CASE
             WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
-            ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+            ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
         END AS endpoint_count,
         p.created_at,
         p.updated_at,

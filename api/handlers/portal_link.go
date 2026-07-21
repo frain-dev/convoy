@@ -247,6 +247,12 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID}/refresh_token [get]
 func (h *Handler) RefreshPortalLinkAuthToken(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not mint auth_keys (requireJWTProjectManage skips them).
+	// Failure policy: fail closed 401 for portal credentials.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
