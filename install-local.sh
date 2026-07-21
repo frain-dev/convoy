@@ -6,16 +6,29 @@ REPO_URL="${CONVOY_REPO_URL:-https://github.com/frain-dev/convoy.git}"
 INSTALL_DIR="${CONVOY_INSTALL_DIR:-$HOME/convoy}"
 MAX_WAIT_SECONDS="${CONVOY_MAX_WAIT_SECONDS:-180}"
 
+# Default requested host ports (override via env when needed).
+REQUESTED_HTTP_PORT="${CONVOY_HTTP_PORT:-80}"
+REQUESTED_POSTGRES_PORT="${CONVOY_POSTGRES_PORT:-5433}"
+REQUESTED_PGBOUNCER_PORT="${CONVOY_PGBOUNCER_PORT:-6432}"
+
+SELECTED_HTTP_PORT=""
+SELECTED_POSTGRES_PORT=""
+SELECTED_PGBOUNCER_PORT=""
+SELECTED_HOST_URL=""
+COMPOSE_BASE_FILE=""
+COMPOSE_RENDERED_FILE=""
+USED_HOST_PORTS=()
+
 log() {
   printf "\n==> %s\n" "$1"
 }
 
 warn() {
-  printf "\n[WARN] %s\n" "$1"
+  printf "\n[WARN] %s\n" "$1" >&2
 }
 
 die() {
-  printf "\n[ERROR] %s\n" "$1"
+  printf "\n[ERROR] %s\n" "$1" >&2
   exit 1
 }
 
@@ -97,47 +110,143 @@ EOF
   fi
 }
 
-check_ports() {
-  # These are the host ports published by configs/local/docker-compose.yml.
-  local required_ports=(80 5433 6432)
-  local conflicts=()
-  local unknown=()
-  local p
-  local rc
+find_available_port() {
+  local start_port="$1"
+  local max_tries="${2:-200}"
+  local candidate="$start_port"
+  local i=0
 
-  log "Checking required ports"
+  while [ "$i" -lt "$max_tries" ]; do
+    if is_reserved_port "$candidate"; then
+      candidate=$((candidate + 1))
+      i=$((i + 1))
+      continue
+    fi
 
-  for p in "${required_ports[@]}"; do
-    if is_port_in_use "$p"; then
-      rc=0
+    if is_port_in_use "$candidate"; then
+      : # occupied
     else
-      rc=$?
+      case "$?" in
+        1)
+          printf "%s" "$candidate"
+          return 0
+          ;;
+        2)
+          : # unknown; skip to next candidate
+          ;;
+      esac
     fi
-    if [ "$rc" -eq 0 ]; then
-      conflicts+=("$p")
-    elif [ "$rc" -eq 2 ]; then
-      unknown+=("$p")
-    fi
+    candidate=$((candidate + 1))
+    i=$((i + 1))
   done
 
-  if [ "${#conflicts[@]}" -gt 0 ]; then
-    cat <<EOF
-[ERROR] Required ports are already in use: ${conflicts[*]}
+  return 1
+}
 
-Stop conflicting services/containers, then retry.
-Helpful checks:
-  docker ps --format 'table {{.Names}}\t{{.Ports}}'
-  lsof -nP -iTCP -sTCP:LISTEN
+is_reserved_port() {
+  local port="$1"
+  local used
+  for used in "${USED_HOST_PORTS[@]-}"; do
+    if [ "$used" = "$port" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
 
-If you previously started Convoy local stack:
-  docker compose -f "$INSTALL_DIR/configs/local/docker-compose.yml" down
-EOF
-    exit 1
+reserve_port() {
+  local port="$1"
+  USED_HOST_PORTS+=("$port")
+}
+
+resolve_host_port() {
+  local label="$1"
+  local requested="$2"
+  local fallback_start="$3"
+  local rc
+
+  if is_reserved_port "$requested"; then
+    rc=0
+  elif is_port_in_use "$requested"; then
+    rc=0
+  else
+    rc=$?
   fi
 
-  if [ "${#unknown[@]}" -gt 0 ]; then
-    warn "Could not reliably check privileged ports: ${unknown[*]} (permission denied without lsof)."
+
+  case "$rc" in
+    1)
+      printf "%s" "$requested"
+      return 0
+      ;;
+    0)
+      ;;
+    2)
+      warn "Could not reliably test requested ${label} port ${requested}; searching fallback range."
+      ;;
+    *)
+      ;;
+  esac
+
+  local selected
+  selected="$(find_available_port "$fallback_start")" || return 1
+  warn "${label} port ${requested} is unavailable. Using ${selected} instead."
+  printf "%s" "$selected"
+}
+
+resolve_ports() {
+  log "Resolving host ports"
+  USED_HOST_PORTS=()
+
+  if ! SELECTED_HTTP_PORT="$(resolve_host_port "HTTP" "$REQUESTED_HTTP_PORT" 8080)"; then
+    die "Unable to find a free HTTP port."
   fi
+  reserve_port "$SELECTED_HTTP_PORT"
+
+  if ! SELECTED_POSTGRES_PORT="$(resolve_host_port "Postgres" "$REQUESTED_POSTGRES_PORT" 5434)"; then
+    die "Unable to find a free Postgres port."
+  fi
+  reserve_port "$SELECTED_POSTGRES_PORT"
+
+  if ! SELECTED_PGBOUNCER_PORT="$(resolve_host_port "PgBouncer" "$REQUESTED_PGBOUNCER_PORT" 6433)"; then
+    die "Unable to find a free PgBouncer port."
+  fi
+  reserve_port "$SELECTED_PGBOUNCER_PORT"
+
+  if [ "$SELECTED_HTTP_PORT" = "80" ]; then
+    SELECTED_HOST_URL="http://localhost"
+  else
+    SELECTED_HOST_URL="http://localhost:${SELECTED_HTTP_PORT}"
+  fi
+
+  log "Selected ports: HTTP=${SELECTED_HTTP_PORT}, Postgres=${SELECTED_POSTGRES_PORT}, PgBouncer=${SELECTED_PGBOUNCER_PORT}"
+}
+
+run_compose() {
+  docker compose -f "$COMPOSE_RENDERED_FILE" "$@"
+}
+
+write_compose_file() {
+  COMPOSE_BASE_FILE="$INSTALL_DIR/configs/local/docker-compose.yml"
+  COMPOSE_RENDERED_FILE="$INSTALL_DIR/configs/local/docker-compose.install.generated.yml"
+  local stale_override_file="$INSTALL_DIR/configs/local/docker-compose.install.override.yml"
+
+  [ -f "$COMPOSE_BASE_FILE" ] || die "Missing compose file: $COMPOSE_BASE_FILE"
+
+  # Cleanup stale file from older installer versions.
+  rm -f "$stale_override_file"
+
+  awk \
+    -v http_port="$SELECTED_HTTP_PORT" \
+    -v postgres_port="$SELECTED_POSTGRES_PORT" \
+    -v pgbouncer_port="$SELECTED_PGBOUNCER_PORT" \
+    '{
+      gsub(/"80:80"/, "\"" http_port ":80\"");
+      gsub(/"5433:5432"/, "\"" postgres_port ":5432\"");
+      gsub(/"6432:6432"/, "\"" pgbouncer_port ":6432\"");
+      print;
+    }' \
+    "$COMPOSE_BASE_FILE" > "$COMPOSE_RENDERED_FILE"
 }
 
 prepare_repo() {
@@ -179,6 +288,34 @@ ensure_local_config() {
   fi
 }
 
+update_local_host_config() {
+  local config_path="$INSTALL_DIR/configs/local/convoy.json"
+  local tmp_path="${config_path}.tmp"
+
+  [ -f "$config_path" ] || die "Missing $config_path."
+
+  awk -v host_url="$SELECTED_HOST_URL" '
+    BEGIN { updated = 0 }
+    {
+      if (updated == 0 && $0 ~ /^[[:space:]]*"host"[[:space:]]*:[[:space:]]*"/) {
+        sub(/"host"[[:space:]]*:[[:space:]]*"[^"]*"/, "\"host\": \"" host_url "\"")
+        updated = 1
+      }
+      print
+    }
+    END {
+      if (updated == 0) {
+        exit 2
+      }
+    }
+  ' "$config_path" > "$tmp_path" || {
+    rm -f "$tmp_path"
+    die "Failed to set host in $config_path."
+  }
+
+  mv "$tmp_path" "$config_path"
+}
+
 start_stack() {
   local compose_dir="$INSTALL_DIR/configs/local"
 
@@ -186,22 +323,22 @@ start_stack() {
 
   if [ "${CONVOY_SKIP_PULL:-0}" != "1" ]; then
     log "Pulling latest images"
-    docker compose -f "$compose_dir/docker-compose.yml" pull
+    run_compose pull
   fi
 
   log "Starting Convoy stack"
-  docker compose -f "$compose_dir/docker-compose.yml" up -d
+  run_compose up -d
 }
 
 wait_for_health() {
   local elapsed=0
-  local health_url="http://localhost/healthz"
+  local health_url="${SELECTED_HOST_URL}/healthz"
 
   log "Waiting for Convoy health endpoint ($health_url)"
 
   until curl -fsS "$health_url" >/dev/null 2>&1; do
     if [ "$elapsed" -ge "$MAX_WAIT_SECONDS" ]; then
-      die "Timed out waiting for health after ${MAX_WAIT_SECONDS}s. Check logs with: docker compose -f \"$INSTALL_DIR/configs/local/docker-compose.yml\" logs"
+      die "Timed out waiting for health after ${MAX_WAIT_SECONDS}s. Check logs with: docker compose -f \"$COMPOSE_RENDERED_FILE\" logs"
     fi
 
     sleep 3
@@ -217,21 +354,23 @@ print_next_steps() {
 🎉 Convoy is set up.
 
 Useful commands:
-  docker compose -f "$INSTALL_DIR/configs/local/docker-compose.yml" ps
-  docker compose -f "$INSTALL_DIR/configs/local/docker-compose.yml" logs -f web agent
-  docker compose -f "$INSTALL_DIR/configs/local/docker-compose.yml" down
+  docker compose -f "$COMPOSE_RENDERED_FILE" ps
+  docker compose -f "$COMPOSE_RENDERED_FILE" logs -f web agent
+  docker compose -f "$COMPOSE_RENDERED_FILE" down
 
 Open:
-  http://localhost
+  ${SELECTED_HOST_URL}
 
 EOF
 }
 
 main() {
   check_prereqs
-  check_ports
   prepare_repo
   ensure_local_config
+  resolve_ports
+  update_local_host_config
+  write_compose_file
   start_stack
   wait_for_health
   print_next_steps
