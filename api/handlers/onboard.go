@@ -42,9 +42,20 @@ const onboardBatchSize = 50
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/onboard [post]
 func (h *Handler) BulkOnboard(w http.ResponseWriter, r *http.Request) {
+	// Project-wide provisioning; portal tokens have no owner scoping here.
+	// Failure policy: fail closed 401 for portal credentials.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
+		return
+	}
+
+	// Creates endpoints and subscriptions; align with CreateEndpoint (manage).
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 

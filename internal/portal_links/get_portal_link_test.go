@@ -157,6 +157,7 @@ func TestGetPortalLink_EndpointsMetadata_WithEndpoints(t *testing.T) {
 	metadataUIDs := make([]string, 0, len(portalLink.EndpointsMetadata))
 	for _, endpoint := range portalLink.EndpointsMetadata {
 		require.NotNil(t, endpoint, "endpoints_metadata must not contain null elements")
+		require.Empty(t, endpoint.Secrets, "endpoints_metadata must not embed signing secrets")
 		metadataUIDs = append(metadataUIDs, endpoint.UID)
 	}
 	require.ElementsMatch(t, []string{endpoint1.UID, endpoint2.UID}, metadataUIDs)

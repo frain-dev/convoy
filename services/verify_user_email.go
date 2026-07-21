@@ -30,6 +30,8 @@ func (u *VerifyEmailService) Run(ctx context.Context) error {
 	}
 
 	user.EmailVerified = true
+	user.EmailVerificationToken = ""
+	user.EmailVerificationExpiresAt = time.Time{}
 	err = u.UserRepo.UpdateUser(ctx, user)
 	if err != nil {
 		u.Logger.ErrorContext(ctx, "failed to update user", "error", err)
