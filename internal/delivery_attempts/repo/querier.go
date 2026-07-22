@@ -7,7 +7,6 @@ package repo
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -23,14 +22,6 @@ type Querier interface {
 	// Get counts for a specific endpoint from a specific reset time
 	// This is used when circuit breaker has been reset for specific endpoints
 	GetFailureAndSuccessCountsWithResetTime(ctx context.Context, arg GetFailureAndSuccessCountsWithResetTimeParams) (GetFailureAndSuccessCountsWithResetTimeRow, error)
-	// Hard delete keys off the parent event_delivery.created_at (not attempt.created_at).
-	// Retention deletes deliveries by delivery age next; retry attempts can be newer than
-	// the cutoff while their delivery is older. Deleting by attempt age leaves those rows
-	// and trips delivery_attempts_event_delivery_id_fkey (NO ACTION). Fail closed: remove
-	// every attempt for deliveries in the cutoff window before the delivery delete runs.
-	// Soft delete still filters on attempt.created_at; only hard delete uses this join.
-	HardDeleteProjectDeliveryAttempts(ctx context.Context, arg HardDeleteProjectDeliveryAttemptsParams) (pgconn.CommandTag, error)
-	SoftDeleteProjectDeliveryAttempts(ctx context.Context, arg SoftDeleteProjectDeliveryAttemptsParams) (pgconn.CommandTag, error)
 }
 
 var _ Querier = (*Queries)(nil)

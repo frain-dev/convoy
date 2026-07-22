@@ -518,37 +518,6 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 	return datastore.PrevRowCount{Count: int(count.Int64)}, nil
 }
 
-// DeleteProjectEvents soft or hard deletes events
-func (s *Service) DeleteProjectEvents(ctx context.Context, projectID string, filter *datastore.EventFilter, hardDelete bool) error {
-	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
-
-	if hardDelete {
-		params := repo.HardDeleteProjectEventsParams{
-			ProjectID: common.StringToPgTextNullable(projectID),
-			StartDate: common.TimeToPgTimestamptz(startDate),
-			EndDate:   common.TimeToPgTimestamptz(endDate),
-		}
-		return s.repo.HardDeleteProjectEvents(ctx, params)
-	}
-
-	params := repo.SoftDeleteProjectEventsParams{
-		ProjectID: common.StringToPgTextNullable(projectID),
-		StartDate: common.TimeToPgTimestamptz(startDate),
-		EndDate:   common.TimeToPgTimestamptz(endDate),
-	}
-	return s.repo.SoftDeleteProjectEvents(ctx, params)
-}
-
-// DeleteProjectTokenizedEvents deletes tokenized events within the given date range
-func (s *Service) DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *datastore.EventFilter) error {
-	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
-	return s.repo.HardDeleteTokenizedEvents(ctx, repo.HardDeleteTokenizedEventsParams{
-		ProjectID: common.StringToPgTextNullable(projectID),
-		StartDate: pgtype.Timestamptz{Time: startDate, Valid: true},
-		EndDate:   pgtype.Timestamptz{Time: endDate, Valid: true},
-	})
-}
-
 // CopyRows copies rows from events to events_search
 func (s *Service) CopyRows(ctx context.Context, projectID string, interval int) error {
 	// Start transaction

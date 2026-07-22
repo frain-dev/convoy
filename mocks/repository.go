@@ -45,6 +45,21 @@ func (m *MockEventDeliveryRepository) EXPECT() *MockEventDeliveryRepositoryMockR
 	return m.recorder
 }
 
+// CountDeliveriesByEndpointAndStatus mocks base method.
+func (m *MockEventDeliveryRepository) CountDeliveriesByEndpointAndStatus(ctx context.Context, projectID string, endpointIDs []string, statuses []datastore.EventDeliveryStatus, params datastore.SearchParams) ([]datastore.EndpointStatusDeliveryCount, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountDeliveriesByEndpointAndStatus", ctx, projectID, endpointIDs, statuses, params)
+	ret0, _ := ret[0].([]datastore.EndpointStatusDeliveryCount)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountDeliveriesByEndpointAndStatus indicates an expected call of CountDeliveriesByEndpointAndStatus.
+func (mr *MockEventDeliveryRepositoryMockRecorder) CountDeliveriesByEndpointAndStatus(ctx, projectID, endpointIDs, statuses, params any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountDeliveriesByEndpointAndStatus", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CountDeliveriesByEndpointAndStatus), ctx, projectID, endpointIDs, statuses, params)
+}
+
 // CountDeliveriesByStatus mocks base method.
 func (m *MockEventDeliveryRepository) CountDeliveriesByStatus(ctx context.Context, projectID string, status datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
 	m.ctrl.T.Helper()
@@ -75,21 +90,6 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) CountEventDeliveries(ctx, pro
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CountEventDeliveries), ctx, projectID, endpointIDs, eventID, status, params)
 }
 
-// CountDeliveriesByEndpointAndStatus mocks base method.
-func (m *MockEventDeliveryRepository) CountDeliveriesByEndpointAndStatus(ctx context.Context, projectID string, endpointIDs []string, statuses []datastore.EventDeliveryStatus, params datastore.SearchParams) ([]datastore.EndpointStatusDeliveryCount, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountDeliveriesByEndpointAndStatus", ctx, projectID, endpointIDs, statuses, params)
-	ret0, _ := ret[0].([]datastore.EndpointStatusDeliveryCount)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CountDeliveriesByEndpointAndStatus indicates an expected call of CountDeliveriesByEndpointAndStatus.
-func (mr *MockEventDeliveryRepositoryMockRecorder) CountDeliveriesByEndpointAndStatus(ctx, projectID, endpointIDs, statuses, params any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountDeliveriesByEndpointAndStatus", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CountDeliveriesByEndpointAndStatus), ctx, projectID, endpointIDs, statuses, params)
-}
-
 // CreateEventDeliveries mocks base method.
 func (m *MockEventDeliveryRepository) CreateEventDeliveries(arg0 context.Context, arg1 []*datastore.EventDelivery) error {
 	m.ctrl.T.Helper()
@@ -116,20 +116,6 @@ func (m *MockEventDeliveryRepository) CreateEventDelivery(arg0 context.Context, 
 func (mr *MockEventDeliveryRepositoryMockRecorder) CreateEventDelivery(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEventDelivery", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CreateEventDelivery), arg0, arg1)
-}
-
-// DeleteProjectEventDeliveries mocks base method.
-func (m *MockEventDeliveryRepository) DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteProjectEventDeliveries", ctx, projectID, filter, hardDelete)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteProjectEventDeliveries indicates an expected call of DeleteProjectEventDeliveries.
-func (mr *MockEventDeliveryRepositoryMockRecorder) DeleteProjectEventDeliveries(ctx, projectID, filter, hardDelete any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).DeleteProjectEventDeliveries), ctx, projectID, filter, hardDelete)
 }
 
 // ExportRecords mocks base method.
@@ -418,34 +404,6 @@ func (m *MockEventRepository) CreateEvent(arg0 context.Context, arg1 *datastore.
 func (mr *MockEventRepositoryMockRecorder) CreateEvent(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEvent", reflect.TypeOf((*MockEventRepository)(nil).CreateEvent), arg0, arg1)
-}
-
-// DeleteProjectEvents mocks base method.
-func (m *MockEventRepository) DeleteProjectEvents(ctx context.Context, projectID string, f *datastore.EventFilter, hardDelete bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteProjectEvents", ctx, projectID, f, hardDelete)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteProjectEvents indicates an expected call of DeleteProjectEvents.
-func (mr *MockEventRepositoryMockRecorder) DeleteProjectEvents(ctx, projectID, f, hardDelete any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectEvents", reflect.TypeOf((*MockEventRepository)(nil).DeleteProjectEvents), ctx, projectID, f, hardDelete)
-}
-
-// DeleteProjectTokenizedEvents mocks base method.
-func (m *MockEventRepository) DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *datastore.EventFilter) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteProjectTokenizedEvents", ctx, projectID, filter)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteProjectTokenizedEvents indicates an expected call of DeleteProjectTokenizedEvents.
-func (mr *MockEventRepositoryMockRecorder) DeleteProjectTokenizedEvents(ctx, projectID, filter any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectTokenizedEvents", reflect.TypeOf((*MockEventRepository)(nil).DeleteProjectTokenizedEvents), ctx, projectID, filter)
 }
 
 // ExportRecords mocks base method.
@@ -2966,20 +2924,6 @@ func (m *MockDeliveryAttemptsRepository) CreateDeliveryAttempt(arg0 context.Cont
 func (mr *MockDeliveryAttemptsRepositoryMockRecorder) CreateDeliveryAttempt(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeliveryAttempt", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).CreateDeliveryAttempt), arg0, arg1)
-}
-
-// DeleteProjectDeliveriesAttempts mocks base method.
-func (m *MockDeliveryAttemptsRepository) DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *datastore.DeliveryAttemptsFilter, hardDelete bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteProjectDeliveriesAttempts", ctx, projectID, filter, hardDelete)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteProjectDeliveriesAttempts indicates an expected call of DeleteProjectDeliveriesAttempts.
-func (mr *MockDeliveryAttemptsRepositoryMockRecorder) DeleteProjectDeliveriesAttempts(ctx, projectID, filter, hardDelete any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectDeliveriesAttempts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).DeleteProjectDeliveriesAttempts), ctx, projectID, filter, hardDelete)
 }
 
 // ExportRecords mocks base method.

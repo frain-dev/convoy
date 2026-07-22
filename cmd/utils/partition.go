@@ -5,12 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
 )
 
 func AddPartitionCommand(a *cli.App) *cobra.Command {
@@ -24,16 +22,6 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Get()
-			if err != nil {
-				a.Logger.Fatal("Failed to load configuration", "error", err)
-			}
-
-			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
-			if !featureFlag.CanAccessFeature(fflag.RetentionPolicy) {
-				return fmt.Errorf("partitioning is only available when the retention policy fflag is enabled")
-			}
-
 			if !a.Licenser.RetentionPolicy() {
 				return fmt.Errorf("partitioning is only available with a license key")
 			}
@@ -42,6 +30,7 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 			eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
 			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
 
+			var err error
 			// if the table name isn't supplied, then we will run all of them at the same time
 			if len(args) == 0 {
 				err = eventsRepo.PartitionEventsTable(cmd.Context())
@@ -108,16 +97,6 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Get()
-			if err != nil {
-				a.Logger.Fatal("Failed to load configuration", "error", err)
-			}
-
-			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
-			if !featureFlag.CanAccessFeature(fflag.RetentionPolicy) {
-				return fmt.Errorf("partitioning is only available when the retention policy fflag is enabled")
-			}
-
 			if !a.Licenser.RetentionPolicy() {
 				return fmt.Errorf("partitioning is only available with a license key")
 			}
@@ -126,6 +105,7 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 			eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
 			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
 
+			var err error
 			// if the table name isn't supplied, then we will run all of them at the same time
 			if len(args) == 0 {
 				err = eventsRepo.UnPartitionEventsTable(cmd.Context())

@@ -863,55 +863,6 @@ func TestCountDeliveriesByEndpointAndStatus(t *testing.T) {
 	})
 }
 
-func TestDeleteProjectEventDeliveries(t *testing.T) {
-	service, db := setupTestDB(t)
-	ctx := context.Background()
-
-	t.Run("SoftDelete", func(t *testing.T) {
-		project := seedTestProject(t, db)
-		endpoint := seedTestEndpoint(t, db, project.UID)
-		source := seedTestSource(t, db, project.UID)
-		sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
-		event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
-
-		ids := make([]string, 3)
-		for i := 0; i < 3; i++ {
-			d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
-			require.NoError(t, service.CreateEventDelivery(ctx, d))
-			ids[i] = d.UID
-		}
-
-		filter := &datastore.EventDeliveryFilter{
-			CreatedAtStart: time.Now().Add(-1 * time.Hour).Unix(),
-			CreatedAtEnd:   time.Now().Add(1 * time.Hour).Unix(),
-		}
-
-		err := service.DeleteProjectEventDeliveries(ctx, project.UID, filter, false)
-		require.NoError(t, err)
-	})
-
-	t.Run("HardDelete", func(t *testing.T) {
-		project := seedTestProject(t, db)
-		endpoint := seedTestEndpoint(t, db, project.UID)
-		source := seedTestSource(t, db, project.UID)
-		sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
-		event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
-
-		for i := 0; i < 2; i++ {
-			d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
-			require.NoError(t, service.CreateEventDelivery(ctx, d))
-		}
-
-		filter := &datastore.EventDeliveryFilter{
-			CreatedAtStart: time.Now().Add(-1 * time.Hour).Unix(),
-			CreatedAtEnd:   time.Now().Add(1 * time.Hour).Unix(),
-		}
-
-		err := service.DeleteProjectEventDeliveries(ctx, project.UID, filter, true)
-		require.NoError(t, err)
-	})
-}
-
 func TestLoadEventDeliveriesPaged(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()

@@ -816,24 +816,6 @@ func (q *Queries) FindStuckEventDeliveriesByStatus(ctx context.Context, status p
 	return items, nil
 }
 
-const hardDeleteProjectEventDeliveries = `-- name: HardDeleteProjectEventDeliveries :exec
-DELETE FROM convoy.event_deliveries
-WHERE project_id = $1
-  AND created_at >= $2
-  AND created_at <= $3
-`
-
-type HardDeleteProjectEventDeliveriesParams struct {
-	ProjectID pgtype.Text
-	StartDate pgtype.Timestamptz
-	EndDate   pgtype.Timestamptz
-}
-
-func (q *Queries) HardDeleteProjectEventDeliveries(ctx context.Context, arg HardDeleteProjectEventDeliveriesParams) error {
-	_, err := q.db.Exec(ctx, hardDeleteProjectEventDeliveries, arg.ProjectID, arg.StartDate, arg.EndDate)
-	return err
-}
-
 const loadEventDeliveriesPaged = `-- name: LoadEventDeliveriesPaged :many
 
 WITH filtered_deliveries AS (
@@ -1316,30 +1298,6 @@ func (q *Queries) LoadEventDeliveryIntervalsYearly(ctx context.Context, arg Load
 		return nil, err
 	}
 	return items, nil
-}
-
-const softDeleteProjectEventDeliveries = `-- name: SoftDeleteProjectEventDeliveries :exec
-
-UPDATE convoy.event_deliveries
-SET deleted_at = NOW()
-WHERE project_id = $1
-  AND created_at >= $2
-  AND created_at <= $3
-  AND deleted_at IS NULL
-`
-
-type SoftDeleteProjectEventDeliveriesParams struct {
-	ProjectID pgtype.Text
-	StartDate pgtype.Timestamptz
-	EndDate   pgtype.Timestamptz
-}
-
-// ============================================================================
-// Group 6: Delete Operations
-// ============================================================================
-func (q *Queries) SoftDeleteProjectEventDeliveries(ctx context.Context, arg SoftDeleteProjectEventDeliveriesParams) error {
-	_, err := q.db.Exec(ctx, softDeleteProjectEventDeliveries, arg.ProjectID, arg.StartDate, arg.EndDate)
-	return err
 }
 
 const updateEventDeliveryMetadata = `-- name: UpdateEventDeliveryMetadata :exec

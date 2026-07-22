@@ -150,7 +150,6 @@ func isValidFeatureFlag(flagKey string) bool {
 		"mtls",
 		"oauth-token-exchange",
 		"ip-rules",
-		"retention-policy",
 		"full-text-search",
 	}
 

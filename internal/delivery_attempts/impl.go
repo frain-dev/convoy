@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -127,45 +126,6 @@ func (s *Service) FindDeliveryAttempts(ctx context.Context, eventDeliveryId stri
 	}
 
 	return attempts, nil
-}
-
-func (s *Service) DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *datastore.DeliveryAttemptsFilter, hardDelete bool) error {
-	if filter == nil {
-		return util.NewServiceError(400, errors.New("filter cannot be nil"))
-	}
-
-	start := time.Unix(filter.CreatedAtStart, 0)
-	end := time.Unix(filter.CreatedAtEnd, 0)
-
-	var result pgconn.CommandTag
-	var err error
-
-	// Hard delete: filter dates apply to event_deliveries.created_at (see SQL comment).
-	// Soft delete: filter dates apply to delivery_attempts.created_at.
-	if hardDelete {
-		result, err = s.repo.HardDeleteProjectDeliveryAttempts(ctx, repo.HardDeleteProjectDeliveryAttemptsParams{
-			ProjectID:      common.StringToPgText(projectID),
-			CreatedAtStart: pgtype.Timestamptz{Time: start, Valid: true},
-			CreatedAtEnd:   pgtype.Timestamptz{Time: end, Valid: true},
-		})
-	} else {
-		result, err = s.repo.SoftDeleteProjectDeliveryAttempts(ctx, repo.SoftDeleteProjectDeliveryAttemptsParams{
-			ProjectID:      common.StringToPgText(projectID),
-			CreatedAtStart: pgtype.Timestamptz{Time: start, Valid: true},
-			CreatedAtEnd:   pgtype.Timestamptz{Time: end, Valid: true},
-		})
-	}
-
-	if err != nil {
-		s.logger.Error("failed to delete project delivery attempts", "error", err)
-		return util.NewServiceError(500, fmt.Errorf("failed to delete delivery attempts: %w", err))
-	}
-
-	if result.RowsAffected() < 1 {
-		return datastore.ErrDeliveryAttemptsNotDeleted
-	}
-
-	return nil
 }
 
 func (s *Service) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (map[string]circuit_breaker.PollResult, error) {
