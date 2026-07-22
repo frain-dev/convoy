@@ -288,22 +288,37 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 	go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
 
+	// Retention is paid-only and partition-based; the license is the single
+	// gate (the delete-query retention system and its feature flag were
+	// removed). If the tables have not been converted yet, a disabled policy
+	// is installed instead (fail safe: nothing is deleted, the worker stays
+	// up) and every nightly run points the operator at `convoy partition`.
 	var ret retention.Retentioner
-	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && opts.Licenser.RetentionPolicy() {
-		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
-		if _err != nil {
-			return nil, fmt.Errorf("failed to parse retention policy: %w", _err)
+	if opts.Licenser.RetentionPolicy() {
+		missing, pErr := retention.UnpartitionedTables(ctx, opts.DB)
+		if pErr != nil {
+			// Fail closed: a lookup failure is not a definitive "unpartitioned"
+			// verdict, and boot-time DB reads already abort startup above
+			// (LoadConfiguration). Do not guess which retention policy to install.
+			return nil, fmt.Errorf("failed to check retention partition state: %w", pErr)
 		}
 
-		ret, err = retention.NewPartitionRetentionPolicy(opts.DB, lo, policy)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create retention policy: %w", err)
-		}
+		if len(missing) > 0 {
+			lo.Error(fmt.Sprintf("retention is licensed but these tables are not partitioned: %v. Run `convoy partition` and restart the workers to activate retention", missing))
+			ret = retention.NewDisabledRetentionPolicy(missing, lo)
+		} else {
+			policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
+			if _err != nil {
+				return nil, fmt.Errorf("failed to parse retention policy: %w", _err)
+			}
 
-		ret.Start(ctx, time.Minute)
-	} else {
-		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
-		ret = retention.NewDeleteRetentionPolicy(opts.DB, lo)
+			ret, err = retention.NewPartitionRetentionPolicy(opts.DB, lo, policy)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create retention policy: %w", err)
+			}
+
+			ret.Start(ctx, time.Minute)
+		}
 	}
 
 	channels := make(map[string]task.EventChannel)

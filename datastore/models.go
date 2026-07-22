@@ -821,7 +821,6 @@ var (
 	ErrSubscriptionNotFound                          = errors.New("subscription not found")
 	ErrEventDeliveryNotFound                         = errors.New("event delivery not found")
 	ErrDeliveryAttemptNotFound                       = errors.New("event delivery attempt not found")
-	ErrDeliveryAttemptsNotDeleted                    = errors.New("event delivery attempts not deleted")
 	ErrPortalLinkNotFound                            = errors.New("portal link not found")
 	ErrNotAuthorisedToAccessDocument                 = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                                = errors.New("config not found")

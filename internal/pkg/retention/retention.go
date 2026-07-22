@@ -2,25 +2,84 @@ package retention
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"time"
 
 	partman "github.com/jirevwe/go_partman"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/configuration"
-	"github.com/frain-dev/convoy/internal/delivery_attempts"
-	"github.com/frain-dev/convoy/internal/event_deliveries"
-	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/projects"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
+
+// RetentionTables are the tables the partition retention policy manages.
+// They must be converted to partitioned parents (`convoy partition`) before
+// retention can run.
+var RetentionTables = []string{"events", "events_search", "event_deliveries", "delivery_attempts"}
+
+// UnpartitionedTables returns the retention-managed tables that are not yet
+// declared as partitioned parents (relkind 'p') in Postgres. Retention is
+// partition-drop based, so a non-empty result means retention cannot run.
+func UnpartitionedTables(ctx context.Context, db database.Database) ([]string, error) {
+	rows, err := db.GetDB().QueryContext(ctx, `
+		SELECT c.relname
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		WHERE n.nspname = 'convoy'
+		  AND c.relkind = 'p'
+		  AND c.relname IN ('events', 'events_search', 'event_deliveries', 'delivery_attempts')`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	partitioned := make(map[string]bool, len(RetentionTables))
+	for rows.Next() {
+		var name string
+		if scanErr := rows.Scan(&name); scanErr != nil {
+			return nil, scanErr
+		}
+		partitioned[name] = true
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, rowsErr
+	}
+
+	var missing []string
+	for _, t := range RetentionTables {
+		if !partitioned[t] {
+			missing = append(missing, t)
+		}
+	}
+	return missing, nil
+}
 
 type Retentioner interface {
 	Perform(context.Context) error
 	Start(context.Context, time.Duration)
 }
+
+// DisabledRetentionPolicy is installed when the license includes retention
+// but the tables have not been converted to partitioned parents yet. It never
+// deletes anything; each nightly run logs the actionable error instead, so
+// the scheduled task neither fails nor goes unhandled. Run `convoy partition`
+// and restart the workers to activate real retention.
+type DisabledRetentionPolicy struct {
+	missing []string
+	logger  log.Logger
+}
+
+func NewDisabledRetentionPolicy(missing []string, logger log.Logger) *DisabledRetentionPolicy {
+	return &DisabledRetentionPolicy{missing: missing, logger: logger}
+}
+
+func (d *DisabledRetentionPolicy) Perform(context.Context) error {
+	d.logger.Error(fmt.Sprintf("retention is licensed but skipped: tables are not partitioned: %v. Run `convoy partition` and restart the workers to activate retention", d.missing))
+	return nil
+}
+
+func (d *DisabledRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
 
 type TestRetentionPolicy struct {
 	partitioner partman.Partitioner
@@ -102,64 +161,21 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 				}
 
 				for _, project := range projects {
-					err = r.partitioner.AddManagedTable(partman.Table{
-						Name:              "events",
-						Schema:            "convoy",
-						TenantId:          project.UID,
-						TenantIdColumn:    "project_id",
-						PartitionBy:       "created_at",
-						PartitionType:     partman.TypeRange,
-						RetentionPeriod:   r.retentionPeriod,
-						PartitionInterval: time.Hour * 24,
-						PartitionCount:    10,
-					})
-					if err != nil {
-						r.logger.Error("failed to add convoy.events to managed tables", "error", err)
-					}
-
-					err = r.partitioner.AddManagedTable(partman.Table{
-						Name:              "events_search",
-						Schema:            "convoy",
-						TenantId:          project.UID,
-						TenantIdColumn:    "project_id",
-						PartitionBy:       "created_at",
-						PartitionType:     partman.TypeRange,
-						RetentionPeriod:   r.retentionPeriod,
-						PartitionInterval: time.Hour * 24,
-						PartitionCount:    10,
-					})
-					if err != nil {
-						r.logger.Error("failed to add convoy.events to managed tables", "error", err)
-					}
-
-					err = r.partitioner.AddManagedTable(partman.Table{
-						Name:              "event_deliveries",
-						Schema:            "convoy",
-						TenantId:          project.UID,
-						TenantIdColumn:    "project_id",
-						PartitionBy:       "created_at",
-						PartitionType:     partman.TypeRange,
-						RetentionPeriod:   r.retentionPeriod,
-						PartitionInterval: time.Hour * 24,
-						PartitionCount:    10,
-					})
-					if err != nil {
-						r.logger.Error("failed to add convoy.event_deliveries to managed tables", "error", err)
-					}
-
-					err = r.partitioner.AddManagedTable(partman.Table{
-						Name:              "delivery_attempts",
-						Schema:            "convoy",
-						TenantId:          project.UID,
-						TenantIdColumn:    "project_id",
-						PartitionBy:       "created_at",
-						PartitionType:     partman.TypeRange,
-						RetentionPeriod:   r.retentionPeriod,
-						PartitionInterval: time.Hour * 24,
-						PartitionCount:    10,
-					})
-					if err != nil {
-						r.logger.Error("failed to add convoy.delivery_attempts to managed tables", "error", err)
+					for _, table := range RetentionTables {
+						err = r.partitioner.AddManagedTable(partman.Table{
+							Name:              table,
+							Schema:            "convoy",
+							TenantId:          project.UID,
+							TenantIdColumn:    "project_id",
+							PartitionBy:       "created_at",
+							PartitionType:     partman.TypeRange,
+							RetentionPeriod:   r.retentionPeriod,
+							PartitionInterval: time.Hour * 24,
+							PartitionCount:    10,
+						})
+						if err != nil {
+							r.logger.Error(fmt.Sprintf("failed to add convoy.%s to managed tables", table), "error", err)
+						}
 					}
 				}
 			}
@@ -169,97 +185,4 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 
 func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 	return r.partitioner.Maintain(ctx)
-}
-
-type DeleteRetentionPolicy struct {
-	logger log.Logger
-	db     database.Database
-}
-
-func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
-	eventRepo := events.New(d.logger, d.db)
-	projectRepo := projects.New(d.logger, d.db)
-	configRepo := configuration.New(d.logger, d.db)
-	eventDeliveryRepo := event_deliveries.New(d.logger, d.db)
-	deliveryAttemptsRepo := delivery_attempts.New(d.logger, d.db)
-
-	c, err := configRepo.LoadConfiguration(ctx)
-	if err != nil {
-		if errors.Is(err, datastore.ErrConfigNotFound) {
-			return nil
-		}
-		return err
-	}
-
-	policy, err := time.ParseDuration(c.RetentionPolicy.Policy)
-	if err != nil {
-		return err
-	}
-
-	filter := &datastore.ProjectFilter{}
-	projects, err := projectRepo.LoadProjects(context.Background(), filter)
-	if err != nil {
-		return err
-	}
-
-	if len(projects) == 0 {
-		d.logger.Warn("no existing projects, retention policy job exiting")
-		return nil
-	}
-
-	for _, p := range projects {
-		cutoff := time.Now().Add(-policy).Unix()
-
-		// Hard-delete attempts for deliveries in [0, cutoff] (keyed by delivery
-		// created_at). See HardDeleteProjectDeliveryAttempts.
-		deliveryFilter := &datastore.DeliveryAttemptsFilter{
-			CreatedAtStart: 0,
-			CreatedAtEnd:   cutoff,
-		}
-
-		err = deliveryAttemptsRepo.DeleteProjectDeliveriesAttempts(ctx, p.UID, deliveryFilter, true)
-		// Fail closed: do not delete deliveries if attempt cleanup hit a real error.
-		// ErrDeliveryAttemptsNotDeleted means nothing matched (no attempts to remove).
-		if err != nil && !errors.Is(err, datastore.ErrDeliveryAttemptsNotDeleted) {
-			d.logger.Error("failed to delete project delivery attempts", "error", err)
-			continue
-		}
-
-		eventDeliveryFilter := &datastore.EventDeliveryFilter{
-			CreatedAtStart: 0,
-			CreatedAtEnd:   cutoff,
-		}
-
-		err = eventDeliveryRepo.DeleteProjectEventDeliveries(ctx, p.UID, eventDeliveryFilter, true)
-		if err != nil {
-			d.logger.Error("failed to delete project event deliveries", "error", err)
-			continue
-		}
-
-		eventFilter := &datastore.EventFilter{
-			CreatedAtStart: 0,
-			CreatedAtEnd:   cutoff,
-		}
-		err = eventRepo.DeleteProjectEvents(ctx, p.UID, eventFilter, true)
-		if err != nil {
-			d.logger.Error("failed to delete project events", "error", err)
-			continue
-		}
-
-		err = eventRepo.DeleteProjectTokenizedEvents(ctx, p.UID, eventFilter)
-		if err != nil {
-			d.logger.Error("failed to delete tokenized project events", "error", err)
-		}
-	}
-
-	return nil
-}
-
-func (d *DeleteRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
-
-func NewDeleteRetentionPolicy(db database.Database, logger log.Logger) *DeleteRetentionPolicy {
-	return &DeleteRetentionPolicy{
-		logger: logger,
-		db:     db,
-	}
 }
