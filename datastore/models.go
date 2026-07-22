@@ -773,24 +773,6 @@ type ProjectFilter struct {
 	OrgID string `json:"org_id" bson:"org_id"`
 }
 
-type EventFilter struct {
-	ProjectID      string `json:"project_id" bson:"project_id"`
-	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
-	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
-}
-
-type EventDeliveryFilter struct {
-	ProjectID      string `json:"project_id" bson:"project_id"`
-	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
-	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
-}
-
-type DeliveryAttemptsFilter struct {
-	ProjectID      string `json:"project_id" bson:"project_id"`
-	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
-	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
-}
-
 func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
