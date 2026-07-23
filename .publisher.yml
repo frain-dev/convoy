@@ -1,3 +1,5 @@
+version: 2
+
 project_name: convoy
 
 before:
@@ -56,35 +58,11 @@ nfpms:
     formats:
       - rpm
 
-# https://goreleaser.com/customization/publishers/
-publishers:
-  - name: cloudsmith-raw
-    ids:
-      - cobin-archive
-    dir: "{{ dir .ArtifactPath }}"
-    cmd: cloudsmith push raw --version={{ .Version }} convoy/convoy {{ .ArtifactName }}
-    env:
-      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
-
-  - name: cloudsmith-deb
-    ids:
-      - deb
-    dir: "{{ dir .ArtifactPath }}"
-    cmd: cloudsmith push deb convoy/convoy/any-distro/any-version {{ .ArtifactName }}
-    env:
-      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
-
-  - name: cloudsmith-rpm
-    ids:
-      - rpm
-    dir: "{{ dir .ArtifactPath }}"
-    cmd: cloudsmith push rpm convoy/convoy/any-distro/any-version {{ .ArtifactName }}
-    env:
-      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
-
 # https://goreleaser.com/customization/homebrew/
 brews:
   - name: convoy
+    ids:
+      - cobin-archive
     homepage: https://getconvoy.io/
     description: A fast & secure open source webhooks service
     license: MPL-2.0
@@ -95,14 +73,13 @@ brews:
     repository:
       owner: frain-dev
       name: homebrew-tools
-    url_template: https://dl.cloudsmith.io/public/convoy/convoy/raw/versions/{{.Version}}/{{ .ArtifactName }}
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    url_template: https://github.com/frain-dev/convoy/releases/download/{{ .Tag }}/{{ .ArtifactName }}
 
 checksum:
   name_template: "{{ .ProjectName}}_checksums.txt"
 
 release:
-  ids:
-    - lib
   github:
     owner: frain-dev
     name: Convoy
