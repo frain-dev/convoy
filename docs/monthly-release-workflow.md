@@ -47,7 +47,13 @@ release PR merged
 
 tag pushed
              |
-             +-----> existing release workflow builds binaries for v26.3.0
+             +-----> release workflow builds binaries for v26.3.0
+                     |
+                     +-----> publish archives, packages, and checksums
+                     |       to the GitHub Release
+                     |
+                     +-----> update frain-dev/homebrew-tools
+                             with GitHub Release archive URLs
 ```
 
 ## Patch Promotion Decision Tree
