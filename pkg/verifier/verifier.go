@@ -282,7 +282,12 @@ func (tv *TwitterVerifier) VerifyRequest(r *http.Request, payload []byte) error 
 }
 
 func (tV *TwitterVerifier) getSignature(sig string) string {
-	return strings.Split(sig, "sha256=")[1]
+	values := strings.Split(sig, "sha256=")
+	if len(values) < 2 {
+		return ""
+	}
+
+	return values[1]
 }
 
 type NoopVerifier struct{}

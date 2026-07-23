@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	endpointurl "github.com/frain-dev/convoy/pkg/url"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -66,6 +67,15 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 
 		var successCount, skipCount, failCount int
 		for _, item := range batch.Items {
+			// Re-validate the URL here: the queue payload is a trust boundary, so
+			// the API layer's validation (services.ValidateEndpointURL) must be
+			// re-applied before creating anything from it.
+			if urlErr := validateOnboardItemURL(item.URL, project); urlErr != nil {
+				deps.Logger.ErrorContext(ctx, fmt.Sprintf("bulk onboard: invalid endpoint URL %q: %v", item.URL, urlErr))
+				failCount++
+				continue
+			}
+
 			// Check for existing endpoint with the same URL
 			existingEndpoint, findErr := deps.EndpointRepo.FindEndpointByTargetURL(ctx, project.UID, item.URL)
 			var endpointID string
@@ -140,6 +150,32 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 
 		return nil
 	}
+}
+
+// validateOnboardItemURL mirrors services.ValidateEndpointURL (which worker/task
+// cannot import without a cycle): valid endpoint template, http/https only, and
+// https enforced when the project requires secure endpoints.
+func validateOnboardItemURL(rawURL string, project *datastore.Project) error {
+	if util.IsStringEmpty(rawURL) {
+		return errors.New("endpoint url is required")
+	}
+
+	u, _, err := endpointurl.ValidateEndpointTemplate(rawURL, false)
+	if err != nil {
+		return err
+	}
+
+	switch u.Scheme {
+	case "http":
+		if project.Config != nil && project.Config.SSL != nil && project.Config.SSL.EnforceSecureEndpoints {
+			return errors.New("only https endpoints allowed")
+		}
+	case "https":
+	default:
+		return errors.New("invalid endpoint scheme")
+	}
+
+	return nil
 }
 
 func buildEndpoint(ctx context.Context, deps BulkOnboardDeps, project *datastore.Project, item BulkOnboardItem) (*datastore.Endpoint, error) {

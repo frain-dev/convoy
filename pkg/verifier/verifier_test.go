@@ -439,6 +439,28 @@ func Test_TwitterVerifier_VerifyRequest(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		"malformed_signature_without_prefix": {
+			secret:  "Convoy",
+			payload: []byte(`Test Payload Body`),
+			requestFn: func(t *testing.T) *http.Request {
+				req, err := http.NewRequest("POST", "URL", strings.NewReader(``))
+				require.NoError(t, err)
+
+				req.Header.Add("X-Twitter-Webhooks-Signature", "16FUVH58NeMcTIIOICN2UJOcPTTa4TbjCndXymGrtM8=")
+				return req
+			},
+			expectedError: ErrSignatureCannotBeEmpty,
+		},
+		"missing_signature_header": {
+			secret:  "Convoy",
+			payload: []byte(`Test Payload Body`),
+			requestFn: func(t *testing.T) *http.Request {
+				req, err := http.NewRequest("POST", "URL", strings.NewReader(``))
+				require.NoError(t, err)
+				return req
+			},
+			expectedError: ErrSignatureCannotBeEmpty,
+		},
 	}
 
 	for name, tc := range tests {

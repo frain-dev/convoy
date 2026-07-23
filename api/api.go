@@ -728,6 +728,12 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			BillingClient: a.A.BillingClient,
 		}
 		uiRouter.Route("/billing", func(billingRouter chi.Router) {
+			// Catalog endpoints (config, plans, tax_id_types) are intentionally
+			// readable by any authenticated user: they return only public
+			// catalog data the dashboard needs to render billing UI (plan
+			// names/pricing, tax ID formats, payment provider publishable key,
+			// billing mode). Org-scoped and checkout-state fields stay behind
+			// orgGuard/canManageSelfHostedBilling inside the handlers.
 			billingRouter.Get("/config", billingHandler.GetBillingConfig)
 			billingRouter.Get("/plans", billingHandler.GetPlans)
 			billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
