@@ -16,6 +16,8 @@ func AddRetryCommand(a *cli.App) *cobra.Command {
 	var status string
 	var timeInterval string
 	var eventId string
+	var projectID string
+	var allProjects bool
 
 	cmd := &cobra.Command{
 		Use:   "retry",
@@ -35,13 +37,26 @@ func AddRetryCommand(a *cli.App) *cobra.Command {
 				os.Exit(1)
 			}
 
+			// Instance-wide requeue must be an explicit choice, not the silent
+			// default of an omitted flag.
+			if projectID == "" && !allProjects {
+				fmt.Fprintln(os.Stderr, "Error: provide --project-id to scope the retry, or pass --all-projects to requeue across every project")
+				os.Exit(1)
+			}
+			if projectID != "" && allProjects {
+				fmt.Fprintln(os.Stderr, "Error: --project-id and --all-projects are mutually exclusive")
+				os.Exit(1)
+			}
+
 			statuses := []datastore.EventDeliveryStatus{datastore.EventDeliveryStatus(status)}
-			task.RetryEventDeliveries(a.Logger, a.DB, a.Queue, statuses, timeInterval, eventId)
+			task.RetryEventDeliveries(a.Logger, a.DB, a.Queue, projectID, statuses, timeInterval, eventId)
 		},
 	}
 
 	cmd.Flags().StringVar(&status, "status", "", "Status of event deliveries to requeue")
 	cmd.Flags().StringVar(&timeInterval, "time", "", "Time interval")
 	cmd.Flags().StringVar(&eventId, "eventid", "", "Requeue the informed eventId")
+	cmd.Flags().StringVar(&projectID, "project-id", "", "Limit the retry to a single project")
+	cmd.Flags().BoolVar(&allProjects, "all-projects", false, "Explicitly requeue across all projects")
 	return cmd
 }

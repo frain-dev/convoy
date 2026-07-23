@@ -356,6 +356,35 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestB
 	require.Equal(i.T(), float64(2), response["data"].(float64))
 }
 
+func (i *IngestIntegrationTestSuite) Test_IngestEvent_UnknownVerifierRejected() {
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
+	expectedStatusCode := http.StatusBadRequest
+
+	// A source with an unknown verifier type (e.g. a stale config after a
+	// verifier is renamed/removed) must fail closed, never fall back to
+	// accepting unverified events. An empty type never reaches the handler:
+	// the sources read layer canonicalizes it to the explicit noop verifier.
+	v := &datastore.VerifierConfig{
+		Type: datastore.VerifierType("unknown-verifier"),
+	}
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
+
+	body := serialize(`{ "name": "convoy" }`)
+
+	// Arrange Request.
+	url := fmt.Sprintf("/ingest/%s", maskID)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	i.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(i.T(), expectedStatusCode, w.Code)
+}
+
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_WriteToQueueFailed() {
 	i.T().Skip("Depends on mocking")
 }

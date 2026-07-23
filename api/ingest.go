@@ -115,8 +115,20 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 				verifierConfig.ApiKey.HeaderValue,
 				verifierConfig.ApiKey.HeaderName,
 			)
-		default:
+		case datastore.NoopVerifier:
+			// Explicit opt-out of verification. Sources persisted without a
+			// verifier row are canonicalized to this type by the sources read
+			// layer (buildVerifierConfig), so "no verifier configured" lands
+			// here by design.
 			v = &verifier.NoopVerifier{}
+		default:
+			// Fail closed: an unknown or stale verifier type must not silently
+			// accept unverified events (see frain-dev/convoy#2656).
+			a.A.Logger.Error("no valid verifier configured for source",
+				"source_id", source.UID, "verifier_type", verifierConfig.Type, "mask_id", maskID)
+			_ = render.Render(w, r, util.NewErrorResponse(
+				"source has no valid verifier configured", http.StatusBadRequest))
+			return
 		}
 	}
 
