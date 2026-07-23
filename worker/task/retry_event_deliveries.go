@@ -19,11 +19,14 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func RetryEventDeliveries(logger log.Logger, db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId string) {
-	RetryEventDeliveriesWithTracker(logger, db, eventQueue, statuses, lookBackDuration, eventId, "", nil)
+// RetryEventDeliveries requeues deliveries for one project, or for the whole
+// instance when projectID is empty. Instance-wide requeue is reserved for the
+// admin surfaces (instance-admin API, explicitly confirmed CLI).
+func RetryEventDeliveries(logger log.Logger, db database.Database, eventQueue queue.Queuer, projectID string, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId string) {
+	RetryEventDeliveriesWithTracker(logger, db, eventQueue, projectID, statuses, lookBackDuration, eventId, "", nil)
 }
 
-func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId, batchID string, tracker *batch_tracker.BatchTracker) {
+func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, eventQueue queue.Queuer, projectID string, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId, batchID string, tracker *batch_tracker.BatchTracker) {
 	if len(statuses) == 1 && util.IsStringEmpty(string(statuses[0])) {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
@@ -97,16 +100,16 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 
 			wg.Add(1)
 
-			go processEventDeliveryBatch(ctx, s, eventDeliveryRepo, deliveryChan, q, &wg, batchID, tracker, logger)
+			go processEventDeliveryBatch(ctx, projectID, s, eventDeliveryRepo, deliveryChan, q, &wg, batchID, tracker, logger)
 
-			counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, "", s, searchParams)
+			counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, projectID, s, searchParams)
 			if err != nil {
 				logger.Error("Failed to count event deliveries")
 			}
 			logger.Info(fmt.Sprintf("Total number of event deliveries to requeue is %d", counter))
 
 			for {
-				deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, eventId, "", []datastore.EventDeliveryStatus{s}, searchParams, pageable, "", "", "")
+				deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, projectID, []string{}, eventId, "", []datastore.EventDeliveryStatus{s}, searchParams, pageable, "", "", "")
 				if err != nil {
 					logger.Error(fmt.Sprintf("successfully fetched %d event deliveries but with error: %v", count, err))
 					close(deliveryChan)
@@ -146,7 +149,7 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 	}
 }
 
-func processEventDeliveryBatch(ctx context.Context, s datastore.EventDeliveryStatus, edRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup, batchID string, t *batch_tracker.BatchTracker, l log.Logger) {
+func processEventDeliveryBatch(ctx context.Context, projectID string, s datastore.EventDeliveryStatus, edRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup, batchID string, t *batch_tracker.BatchTracker, l log.Logger) {
 	defer wg.Done()
 
 	batchCount := 1
@@ -166,7 +169,7 @@ func processEventDeliveryBatch(ctx context.Context, s datastore.EventDeliverySta
 		}
 
 		if s == datastore.ProcessingEventStatus {
-			err := edRepo.UpdateStatusOfEventDeliveries(ctx, "", batchIDs, datastore.ScheduledEventStatus)
+			err := edRepo.UpdateStatusOfEventDeliveries(ctx, projectID, batchIDs, datastore.ScheduledEventStatus)
 			if err != nil {
 				l.Error(fmt.Sprintf("batch %d: failed to update event deliveries status: %v", batchCount, err))
 			}
