@@ -155,27 +155,14 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 // validateOnboardItemURL mirrors services.ValidateEndpointURL (which worker/task
 // cannot import without a cycle): valid endpoint template, http/https only, and
 // https enforced when the project requires secure endpoints.
+// validateOnboardItemURL re-applies the shared endpoint URL rule
+// (pkg/url.ValidateEndpointURL) to a queue payload item. The queue is a trust
+// boundary, so the API layer's validation must be re-run here before creating
+// anything from the item.
 func validateOnboardItemURL(rawURL string, project *datastore.Project) error {
-	if util.IsStringEmpty(rawURL) {
-		return errors.New("endpoint url is required")
-	}
-
-	u, _, err := endpointurl.ValidateEndpointTemplate(rawURL, false)
-	if err != nil {
-		return err
-	}
-
-	switch u.Scheme {
-	case "http":
-		if project.Config != nil && project.Config.SSL != nil && project.Config.SSL.EnforceSecureEndpoints {
-			return errors.New("only https endpoints allowed")
-		}
-	case "https":
-	default:
-		return errors.New("invalid endpoint scheme")
-	}
-
-	return nil
+	enforceSecure := project.Config != nil && project.Config.SSL != nil && project.Config.SSL.EnforceSecureEndpoints
+	_, err := endpointurl.ValidateEndpointURL(rawURL, enforceSecure)
+	return err
 }
 
 func buildEndpoint(ctx context.Context, deps BulkOnboardDeps, project *datastore.Project, item BulkOnboardItem) (*datastore.Endpoint, error) {
