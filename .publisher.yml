@@ -74,6 +74,11 @@ brews:
       owner: frain-dev
       name: homebrew-tools
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+      branch: "convoy-{{ .Version }}"
+      pull_request:
+        enabled: true
+        base:
+          branch: main
     url_template: https://github.com/frain-dev/convoy/releases/download/{{ .Tag }}/{{ .ArtifactName }}
 
 checksum:
