@@ -370,24 +370,6 @@ GROUP BY "data.group_only", "data.index"
 ORDER BY "data.group_only" ASC;
 
 -- ============================================================================
--- Group 6: Delete Operations
--- ============================================================================
-
--- name: SoftDeleteProjectEventDeliveries :exec
-UPDATE convoy.event_deliveries
-SET deleted_at = NOW()
-WHERE project_id = @project_id
-  AND created_at >= @start_date
-  AND created_at <= @end_date
-  AND deleted_at IS NULL;
-
--- name: HardDeleteProjectEventDeliveries :exec
-DELETE FROM convoy.event_deliveries
-WHERE project_id = @project_id
-  AND created_at >= @start_date
-  AND created_at <= @end_date;
-
--- ============================================================================
 -- Group 7: Export Operations
 -- ============================================================================
 

@@ -68,29 +68,6 @@ SELECT
     response_data, error, status, requested_at, responded_at, created_at, updated_at, deleted_at
 FROM att ORDER BY created_at ASC;
 
--- name: SoftDeleteProjectDeliveryAttempts :execresult
-UPDATE convoy.delivery_attempts
-SET deleted_at = NOW()
-WHERE project_id = @project_id
-    AND created_at >= @created_at_start
-    AND created_at <= @created_at_end
-    AND deleted_at IS NULL;
-
--- name: HardDeleteProjectDeliveryAttempts :execresult
--- Hard delete keys off the parent event_delivery.created_at (not attempt.created_at).
--- Retention deletes deliveries by delivery age next; retry attempts can be newer than
--- the cutoff while their delivery is older. Deleting by attempt age leaves those rows
--- and trips delivery_attempts_event_delivery_id_fkey (NO ACTION). Fail closed: remove
--- every attempt for deliveries in the cutoff window before the delivery delete runs.
--- Soft delete still filters on attempt.created_at; only hard delete uses this join.
-DELETE FROM convoy.delivery_attempts AS da
-USING convoy.event_deliveries AS ed
-WHERE da.event_delivery_id = ed.id
-  AND da.project_id = @project_id
-  AND ed.project_id = @project_id
-  AND ed.created_at >= @created_at_start
-  AND ed.created_at <= @created_at_end;
-
 -- name: GetFailureAndSuccessCounts :many
 -- Get failure and success counts for endpoints within the lookback duration
 -- This replaces the n+1 query pattern in the legacy implementation

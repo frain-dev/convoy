@@ -388,26 +388,8 @@ WHERE ev.deleted_at IS NULL
            ELSE ev.id > @cursor END);
 
 -- ============================================================================
--- Group 4: Deletion & Maintenance (4 queries)
+-- Group 4: Deletion & Maintenance (2 queries)
 -- ============================================================================
-
--- name: SoftDeleteProjectEvents :exec
-UPDATE convoy.events
-SET deleted_at = NOW()
-WHERE project_id = @project_id
-  AND created_at >= @start_date
-  AND created_at <= @end_date
-  AND deleted_at IS NULL;
-
--- name: HardDeleteProjectEvents :exec
-DELETE
-FROM convoy.events
-WHERE project_id = @project_id
-  AND created_at >= @start_date
-  AND created_at <= @end_date
-  AND NOT EXISTS (SELECT 1
-                  FROM convoy.event_deliveries
-                  WHERE event_id = convoy.events.id);
 
 -- name: HardDeleteTokenizedEvents :exec
 DELETE

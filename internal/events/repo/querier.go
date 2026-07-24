@@ -40,7 +40,9 @@ type Querier interface {
 	FindEventsByIDs(ctx context.Context, arg FindEventsByIDsParams) ([]FindEventsByIDsRow, error)
 	FindEventsByIdempotencyKey(ctx context.Context, arg FindEventsByIdempotencyKeyParams) (bool, error)
 	FindFirstEventWithIdempotencyKey(ctx context.Context, arg FindFirstEventWithIdempotencyKeyParams) (FindFirstEventWithIdempotencyKeyRow, error)
-	HardDeleteProjectEvents(ctx context.Context, arg HardDeleteProjectEventsParams) error
+	// ============================================================================
+	// Group 4: Deletion & Maintenance (2 queries)
+	// ============================================================================
 	HardDeleteTokenizedEvents(ctx context.Context, arg HardDeleteTokenizedEventsParams) error
 	// ============================================================================
 	// Group 3: Complex Pagination (5 queries) ⚠️ MOST CRITICAL
@@ -57,10 +59,6 @@ type Querier interface {
 	// @sort_order: 'ASC' or 'DESC' (user-requested sort order)
 	// Outer sort: always the user-requested sort order (re-reverses backward fetches)
 	LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPagedSearchParams) ([]LoadEventsPagedSearchRow, error)
-	// ============================================================================
-	// Group 4: Deletion & Maintenance (4 queries)
-	// ============================================================================
-	SoftDeleteProjectEvents(ctx context.Context, arg SoftDeleteProjectEventsParams) error
 	UpdateEventEndpoints(ctx context.Context, arg UpdateEventEndpointsParams) error
 	UpdateEventStatus(ctx context.Context, arg UpdateEventStatusParams) error
 }

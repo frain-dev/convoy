@@ -241,7 +241,6 @@ export class OrganisationOverridesComponent implements OnInit {
 			'ip-rules': 'IP Rules',
 			'prometheus': 'Prometheus',
 			'circuit-breaker': 'Circuit Breaker',
-			'retention-policy': 'Retention Policy',
 			'read-replicas': 'Read Replicas',
 			'mtls': 'mTLS',
 			'oauth-token-exchange': 'OAuth Token Exchange'

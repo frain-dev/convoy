@@ -26,7 +26,6 @@ type EventDeliveryRepository interface {
 	UpdateEventDeliveryMetadata(ctx context.Context, projectID string, eventDelivery *EventDelivery) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	CountDeliveriesByEndpointAndStatus(ctx context.Context, projectID string, endpointIDs []string, statuses []EventDeliveryStatus, params SearchParams) ([]EndpointStatusDeliveryCount, error)
-	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(
 		ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string,
 		status []EventDeliveryStatus, params SearchParams, pageable Pageable,
@@ -47,8 +46,6 @@ type EventRepository interface {
 	CountProjectMessages(ctx context.Context, projectID string) (int64, error)
 	CountEvents(ctx context.Context, projectID string, f *Filter) (int64, error)
 	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
-	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
-	DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *EventFilter) error
 	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (bool, error)
 	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
 	CopyRows(ctx context.Context, projectID string, interval int) error
@@ -302,7 +299,6 @@ type DeliveryAttemptsRepository interface {
 	CreateDeliveryAttempt(context.Context, *DeliveryAttempt) error
 	FindDeliveryAttemptById(context.Context, string, string) (*DeliveryAttempt, error)
 	FindDeliveryAttempts(context.Context, string) ([]DeliveryAttempt, error)
-	DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *DeliveryAttemptsFilter, hardDelete bool) error
 	GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (resultsMap map[string]circuit_breaker.PollResult, err error)
 	PartitionDeliveryAttemptsTable(ctx context.Context) error
 	UnPartitionDeliveryAttemptsTable(ctx context.Context) error
