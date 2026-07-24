@@ -237,6 +237,67 @@ func (s *PortalEndpointIntegrationTestSuite) Test_GetSubscription_CrossTenant_Un
 	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
 }
 
+func (s *PortalEndpointIntegrationTestSuite) Test_UpdateSubscription_RetargetToUnownedEndpoint_Unauthorized() {
+	ownerA := ulid.Make().String()
+	ownerB := ulid.Make().String()
+
+	ownedEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep", ownerA, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	foreignEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-b-ep", ownerB, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, ownedEndpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	// The portal link owns the subscription's current endpoint, so the existing
+	// ownership check passes; retargeting to an endpoint owned by another owner
+	// must still be rejected.
+	url := fmt.Sprintf("/portal-api/subscriptions/%s?token=%s", sub.UID, portalLink.Token)
+	body := serialize(`{"endpoint_id":"%s"}`, foreignEndpoint.UID)
+	req := createRequest(http.MethodPut, url, portalLink.Token, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusUnauthorized, w.Code)
+}
+
+func (s *PortalEndpointIntegrationTestSuite) Test_UpdateSubscription_RetargetToOwnedEndpoint_Allowed() {
+	ownerA := ulid.Make().String()
+
+	ownedEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep-1", ownerA, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	otherOwnedEndpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "owner-a-ep-2", ownerA, true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, ownedEndpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	// Retargeting to another endpoint the portal link owns is allowed.
+	url := fmt.Sprintf("/portal-api/subscriptions/%s?token=%s", sub.UID, portalLink.Token)
+	body := serialize(`{"endpoint_id":"%s"}`, otherOwnedEndpoint.UID)
+	req := createRequest(http.MethodPut, url, portalLink.Token, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusAccepted, w.Code)
+}
+
 func (s *PortalEndpointIntegrationTestSuite) Test_GetFilter_CrossTenant_Unauthorized() {
 	ownerA := ulid.Make().String()
 	ownerB := ulid.Make().String()

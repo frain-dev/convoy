@@ -167,6 +167,9 @@ type PortalLinkRepository interface {
 
 	// FindPortalLinkByMaskId finds a portal link by its mask ID
 	FindPortalLinkByMaskId(ctx context.Context, maskId string) (*PortalLink, error)
+
+	// FindPortalLinkTokenMaskIDs returns every refresh-token mask id issued for a portal link
+	FindPortalLinkTokenMaskIDs(ctx context.Context, portalLinkID string) ([]string, error)
 }
 
 type OrganisationInviteRepository interface {

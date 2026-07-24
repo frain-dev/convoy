@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -12,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/events"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 )
@@ -281,6 +283,19 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The public /api/v1/projects route carries no membership middleware and
+	// retrieveOrganisation trusts a caller-supplied ?orgID, so without this a
+	// caller authorized on one organisation could list any other
+	// organisation's projects. Authorize the resolved organisation here.
+	if status := h.authorizeListProjects(r, org); status != 0 {
+		msg := "Unauthorized: must be a member of the organisation"
+		if status == http.StatusInternalServerError {
+			msg = "failed to verify organisation access"
+		}
+		_ = render.Render(w, r, util.NewErrorResponse(msg, status))
+		return
+	}
+
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
 	projectsList, err := h.projectRepo().LoadProjects(r.Context(), filter)
 	if err != nil {
@@ -291,4 +306,44 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 
 	resp := models.NewListProjectResponse(projectsList)
 	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", resp, http.StatusOK))
+}
+
+// authorizeListProjects returns the HTTP status a caller should receive for
+// listing an organisation's projects, or 0 when access is granted. Instance
+// admins may list any organisation; a project API key is restricted to its own
+// project's organisation; every other caller must be a member. Failure policy:
+// fail closed, mapping a definitive negative (not a member, foreign org,
+// unknown project) to 403 and a lookup failure to 500 so a DB outage neither
+// leaks nor locks out real members.
+func (h *Handler) authorizeListProjects(r *http.Request, org *datastore.Organisation) int {
+	if h.isInstanceAdmin(r) {
+		return 0
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+
+	if h.IsReqWithProjectAPIKey(authUser) {
+		project, err := h.projectRepo().FetchProjectByID(r.Context(), authUser.Role.Project)
+		if err != nil {
+			if errors.Is(err, datastore.ErrProjectNotFound) {
+				return http.StatusForbidden
+			}
+			h.A.Logger.Error("failed to resolve project API key organisation", "error", err)
+			return http.StatusInternalServerError
+		}
+		if project.OrganisationID != org.UID {
+			return http.StatusForbidden
+		}
+		return 0
+	}
+
+	if _, err := h.retrieveMembership(r); err != nil {
+		if errors.Is(err, datastore.ErrOrgMemberNotFound) || errors.Is(err, datastore.ErrOrgNotFound) {
+			return http.StatusForbidden
+		}
+		h.A.Logger.Error("failed to verify organisation membership", "error", err)
+		return http.StatusInternalServerError
+	}
+
+	return 0
 }

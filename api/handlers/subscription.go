@@ -374,6 +374,15 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 			return
 		}
+
+		// A portal link may only retarget a subscription onto an endpoint it
+		// owns. Without this, owning endpoint A is enough to move the
+		// subscription to any endpoint B in the project. Failure policy: fail
+		// closed 401 when the requested endpoint is not owned.
+		if !util.IsStringEmpty(update.EndpointID) && !util.StringSliceContains(endpointIDs, update.EndpointID) {
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+			return
+		}
 	}
 
 	us := services.NewUpdateSubscriptionService(

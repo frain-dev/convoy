@@ -137,7 +137,12 @@ SELECT
     END AS endpoint_count
 FROM convoy.portal_tokens pt
 JOIN convoy.portal_links pl ON pl.id = pt.portal_link_id
-WHERE pt.token_mask_id = @token_mask_id;
+WHERE pt.token_mask_id = @token_mask_id AND pl.deleted_at IS NULL;
+
+-- name: FetchPortalLinkTokenMaskIDs :many
+SELECT token_mask_id
+FROM convoy.portal_tokens
+WHERE portal_link_id = @portal_link_id;
 
 -- name: FetchPortalLinksByOwnerID :many
 SELECT
