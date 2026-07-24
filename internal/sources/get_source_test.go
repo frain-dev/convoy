@@ -250,15 +250,12 @@ func TestFindSource_VerifiesProjectScope(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, source.UID, fetched.UID)
 
-	// Should not find when using project2 ID (though FindSourceByID doesn't enforce project scope in current impl)
-	// This test documents current behavior
+	// Must not find the source through another project's id: FindSourceByID is
+	// project-scoped, so a cross-project lookup returns ErrSourceNotFound and
+	// never leaks the source or its broker credentials.
 	fetched2, err := service.FindSourceByID(ctx, project2.UID, source.UID)
-	if err != nil {
-		require.Equal(t, datastore.ErrSourceNotFound, err)
-	} else {
-		// Current implementation doesn't filter by project in FindSourceByID
-		require.Equal(t, project1.UID, fetched2.ProjectID)
-	}
+	require.Nil(t, fetched2)
+	require.ErrorIs(t, err, datastore.ErrSourceNotFound)
 }
 
 func TestFindSource_IncludesTimestamps(t *testing.T) {
