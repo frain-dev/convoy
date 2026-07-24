@@ -106,3 +106,72 @@ func TestUpdateConfigService_Run(t *testing.T) {
 		})
 	}
 }
+
+func TestPreserveStoragePolicySecrets(t *testing.T) {
+	t.Run("blank incoming secrets are preserved from previous within the same type", func(t *testing.T) {
+		prev := &datastore.StoragePolicyConfiguration{
+			Type: datastore.S3,
+			S3: &datastore.S3Storage{
+				Bucket:       null.StringFrom("bucket"),
+				AccessKey:    null.StringFrom("stored-access"),
+				SecretKey:    null.StringFrom("stored-secret"),
+				SessionToken: null.StringFrom("stored-session"),
+			},
+			AzureBlob: &datastore.AzureBlobStorage{AccountKey: null.StringFrom("stored-azure")},
+			OnPrem:    &datastore.OnPremStorage{Path: null.StringFrom("/stored/path")},
+		}
+		next := &datastore.StoragePolicyConfiguration{
+			Type:      datastore.S3,
+			S3:        &datastore.S3Storage{Bucket: null.StringFrom("bucket")},
+			AzureBlob: &datastore.AzureBlobStorage{},
+			OnPrem:    &datastore.OnPremStorage{},
+		}
+
+		preserveStoragePolicySecrets(next, prev)
+
+		require.Equal(t, "stored-access", next.S3.AccessKey.String)
+		require.Equal(t, "stored-secret", next.S3.SecretKey.String)
+		require.Equal(t, "stored-session", next.S3.SessionToken.String)
+		require.Equal(t, "stored-azure", next.AzureBlob.AccountKey.String)
+		require.Equal(t, "/stored/path", next.OnPrem.Path.String)
+	})
+
+	t.Run("provided incoming secrets override previous", func(t *testing.T) {
+		prev := &datastore.StoragePolicyConfiguration{
+			Type: datastore.S3,
+			S3:   &datastore.S3Storage{AccessKey: null.StringFrom("stored-access"), SecretKey: null.StringFrom("stored-secret")},
+		}
+		next := &datastore.StoragePolicyConfiguration{
+			Type: datastore.S3,
+			S3:   &datastore.S3Storage{AccessKey: null.StringFrom("new-access"), SecretKey: null.StringFrom("new-secret")},
+		}
+
+		preserveStoragePolicySecrets(next, prev)
+
+		require.Equal(t, "new-access", next.S3.AccessKey.String)
+		require.Equal(t, "new-secret", next.S3.SecretKey.String)
+	})
+
+	t.Run("switching storage type does not carry secrets over", func(t *testing.T) {
+		prev := &datastore.StoragePolicyConfiguration{
+			Type: datastore.S3,
+			S3:   &datastore.S3Storage{AccessKey: null.StringFrom("stored-access")},
+		}
+		next := &datastore.StoragePolicyConfiguration{
+			Type:   datastore.OnPrem,
+			OnPrem: &datastore.OnPremStorage{Path: null.StringFrom("/new/path")},
+		}
+
+		preserveStoragePolicySecrets(next, prev)
+
+		require.Nil(t, next.S3)
+		require.Equal(t, "/new/path", next.OnPrem.Path.String)
+	})
+
+	t.Run("nil policies are a no-op", func(t *testing.T) {
+		require.NotPanics(t, func() { preserveStoragePolicySecrets(nil, nil) })
+		require.NotPanics(t, func() {
+			preserveStoragePolicySecrets(&datastore.StoragePolicyConfiguration{}, nil)
+		})
+	})
+}

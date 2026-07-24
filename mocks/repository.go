@@ -1146,6 +1146,21 @@ func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkByMaskId(ctx, mask
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPortalLinkByMaskId", reflect.TypeOf((*MockPortalLinkRepository)(nil).FindPortalLinkByMaskId), ctx, maskId)
 }
 
+// FindPortalLinkTokenMaskIDs mocks base method.
+func (m *MockPortalLinkRepository) FindPortalLinkTokenMaskIDs(ctx context.Context, portalLinkID string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindPortalLinkTokenMaskIDs", ctx, portalLinkID)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindPortalLinkTokenMaskIDs indicates an expected call of FindPortalLinkTokenMaskIDs.
+func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkTokenMaskIDs(ctx, portalLinkID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPortalLinkTokenMaskIDs", reflect.TypeOf((*MockPortalLinkRepository)(nil).FindPortalLinkTokenMaskIDs), ctx, portalLinkID)
+}
+
 // FindPortalLinksByOwnerID mocks base method.
 func (m *MockPortalLinkRepository) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) ([]datastore.PortalLink, error) {
 	m.ctrl.T.Helper()

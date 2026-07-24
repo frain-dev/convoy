@@ -63,6 +63,12 @@ func (h *Handler) GetEventTypes(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/event-types [post]
 func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
+	// Project-wide event-type mutation; no portal ownership path.
+	// Failure policy: fail closed 401 for portal credentials.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -123,6 +129,12 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/event-types/{eventTypeId} [put]
 func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
+	// Project-wide event-type mutation; no portal ownership path.
+	// Failure policy: fail closed 401 for portal credentials.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -186,6 +198,12 @@ func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/event-types/{eventTypeId}/deprecate [post]
 func (h *Handler) DeprecateEventType(w http.ResponseWriter, r *http.Request) {
+	// Project-wide event-type mutation; no portal ownership path.
+	// Failure policy: fail closed 401 for portal credentials.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

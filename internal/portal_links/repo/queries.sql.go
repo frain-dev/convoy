@@ -268,7 +268,7 @@ SELECT
     END AS endpoint_count
 FROM convoy.portal_tokens pt
 JOIN convoy.portal_links pl ON pl.id = pt.portal_link_id
-WHERE pt.token_mask_id = $1
+WHERE pt.token_mask_id = $1 AND pl.deleted_at IS NULL
 `
 
 type FetchPortalLinkByMaskIdRow struct {
@@ -306,6 +306,32 @@ func (q *Queries) FetchPortalLinkByMaskId(ctx context.Context, tokenMaskID pgtyp
 		&i.EndpointCount,
 	)
 	return i, err
+}
+
+const fetchPortalLinkTokenMaskIDs = `-- name: FetchPortalLinkTokenMaskIDs :many
+SELECT token_mask_id
+FROM convoy.portal_tokens
+WHERE portal_link_id = $1
+`
+
+func (q *Queries) FetchPortalLinkTokenMaskIDs(ctx context.Context, portalLinkID pgtype.Text) ([]pgtype.Text, error) {
+	rows, err := q.db.Query(ctx, fetchPortalLinkTokenMaskIDs, portalLinkID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.Text
+	for rows.Next() {
+		var token_mask_id pgtype.Text
+		if err := rows.Scan(&token_mask_id); err != nil {
+			return nil, err
+		}
+		items = append(items, token_mask_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const fetchPortalLinkByOwnerID = `-- name: FetchPortalLinkByOwnerID :one

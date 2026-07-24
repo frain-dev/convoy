@@ -112,6 +112,54 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound()
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
+func (s *PublicEndpointIntegrationTestSuite) Test_GetProjects_ProjectAPIKey_CrossOrg_Forbidden() {
+	otherOwner, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+
+	otherOrg, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, otherOwner)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, otherOrg.UID)
+	require.NoError(s.T(), err)
+
+	// A project API key scoped to DefaultProject must not list another org's
+	// projects by passing its orgID.
+	url := fmt.Sprintf("/api/v1/projects?orgID=%s", otherOrg.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code)
+}
+
+func (s *PublicEndpointIntegrationTestSuite) Test_GetProjects_ProjectAPIKey_OwnOrg_Authorized() {
+	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
+}
+
+func (s *PublicEndpointIntegrationTestSuite) Test_GetProjects_PersonalAPIKey_NonMember_Forbidden() {
+	otherOwner, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+
+	otherOrg, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, otherOwner)
+	require.NoError(s.T(), err)
+
+	// The personal key belongs to DefaultUser, who is not a member of otherOrg.
+	url := fmt.Sprintf("/api/v1/projects?orgID=%s", otherOrg.UID)
+	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code)
+}
+
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK

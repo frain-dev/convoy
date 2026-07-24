@@ -25,6 +25,7 @@ type Querier interface {
 	FetchPortalLinkByMaskId(ctx context.Context, tokenMaskID pgtype.Text) (FetchPortalLinkByMaskIdRow, error)
 	FetchPortalLinkByOwnerID(ctx context.Context, arg FetchPortalLinkByOwnerIDParams) (FetchPortalLinkByOwnerIDRow, error)
 	FetchPortalLinkByToken(ctx context.Context, token pgtype.Text) (FetchPortalLinkByTokenRow, error)
+	FetchPortalLinkTokenMaskIDs(ctx context.Context, portalLinkID pgtype.Text) ([]pgtype.Text, error)
 	FetchPortalLinksByOwnerID(ctx context.Context, ownerID pgtype.Text) ([]FetchPortalLinksByOwnerIDRow, error)
 	// Unified Paginated queries using CASE and COALESCE for dynamic filtering
 	// These queries handle both forward/backward pagination and optional endpoint filtering
