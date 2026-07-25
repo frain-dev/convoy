@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
+	"sync"
 	"time"
 
 	partman "github.com/jirevwe/gopartman"
@@ -69,26 +69,124 @@ type Retentioner interface {
 	Start(context.Context, time.Duration)
 }
 
-// DisabledRetentionPolicy is installed when the license includes retention
-// but the tables have not been converted to partitioned parents yet. It never
-// deletes anything; each nightly run logs the actionable error instead, so
-// the scheduled task neither fails nor goes unhandled. Run `convoy partition`
-// and restart the workers to activate real retention.
-type DisabledRetentionPolicy struct {
+// LicensedRetentionPolicy is installed when the license includes retention.
+// It re-reads partition state on Start, on a reconcile ticker, and on every
+// Perform so `convoy partition` can activate retention without a worker
+// restart. Until all RetentionTables are partitioned parents it never
+// deletes; each skip logs the actionable error so the asynq job stays healthy.
+type LicensedRetentionPolicy struct {
+	db     database.Database
+	logger log.Logger
+	period time.Duration
+
+	mu       sync.Mutex
+	interval time.Duration
+	// lifeCtx is the worker lifetime context from Start. Inner reconcile
+	// must use this, not an asynq task ctx from Perform, or the goroutine
+	// exits when the nightly job finishes.
+	lifeCtx context.Context
+	inner   *PartitionRetentionPolicy
 	missing []string
-	logger  log.Logger
 }
 
-func NewDisabledRetentionPolicy(missing []string, logger log.Logger) *DisabledRetentionPolicy {
-	return &DisabledRetentionPolicy{missing: missing, logger: logger}
+func NewLicensedRetentionPolicy(db database.Database, logger log.Logger, period time.Duration) *LicensedRetentionPolicy {
+	return &LicensedRetentionPolicy{db: db, logger: logger, period: period}
 }
 
-func (d *DisabledRetentionPolicy) Perform(context.Context) error {
-	d.logger.Error(fmt.Sprintf("retention is licensed but skipped: tables are not partitioned: %v. Run `convoy partition` and restart the workers to activate retention", d.missing))
+func (l *LicensedRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
+	l.mu.Lock()
+	l.interval = sampleRate
+	l.lifeCtx = ctx
+	l.mu.Unlock()
+
+	if err := l.ensureActive(ctx); err != nil {
+		l.logger.Error("failed to activate partition retention", "error", err)
+	}
+
+	go func() {
+		if sampleRate <= 0 {
+			sampleRate = time.Hour
+		}
+		ticker := time.NewTicker(sampleRate)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				l.mu.Lock()
+				active := l.inner != nil
+				l.mu.Unlock()
+				if active {
+					// inner.Start owns parent/tenant reconciliation.
+					return
+				}
+				if err := l.ensureActive(ctx); err != nil {
+					l.logger.Error("failed to activate partition retention", "error", err)
+				}
+			}
+		}
+	}()
+}
+
+func (l *LicensedRetentionPolicy) Perform(ctx context.Context) error {
+	if err := l.ensureActive(ctx); err != nil {
+		// Fail closed: a partition-state lookup or manager create failure is
+		// not a definitive "unpartitioned" verdict; do not Maintain.
+		return err
+	}
+
+	l.mu.Lock()
+	inner := l.inner
+	missing := append([]string(nil), l.missing...)
+	l.mu.Unlock()
+
+	if inner == nil {
+		l.logger.Error(fmt.Sprintf("retention is licensed but skipped: tables are not partitioned: %v. Run `convoy partition`", missing))
+		return nil
+	}
+	return inner.Perform(ctx)
+}
+
+// ensureActive upgrades to PartitionRetentionPolicy once tables are
+// partitioned. Safe to call concurrently; activation is one-shot.
+func (l *LicensedRetentionPolicy) ensureActive(ctx context.Context) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.inner != nil {
+		return nil
+	}
+
+	missing, err := UnpartitionedTables(ctx, l.db)
+	if err != nil {
+		return err
+	}
+	if len(missing) > 0 {
+		l.missing = missing
+		return nil
+	}
+
+	inner, err := NewPartitionRetentionPolicy(l.db, l.logger, l.period)
+	if err != nil {
+		return err
+	}
+	interval := l.interval
+	if interval <= 0 {
+		interval = time.Minute
+	}
+	lifeCtx := l.lifeCtx
+	if lifeCtx == nil {
+		// Start has not run yet; do not bind reconcile to a short-lived
+		// caller ctx (e.g. asynq task). Fail closed: refuse activation.
+		return fmt.Errorf("retention Start has not run; cannot bind reconcile goroutine")
+	}
+	inner.Start(lifeCtx, interval)
+	l.inner = inner
+	l.missing = nil
+	l.logger.Info("retention activated: tables are partitioned")
 	return nil
 }
-
-func (d *DisabledRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
 
 type TestRetentionPolicy struct {
 	manager *partman.Manager
@@ -117,10 +215,11 @@ func NewPartitionRetentionPolicy(db database.Database, logger log.Logger, period
 	}
 
 	// Nil hook == HookDrop (JIT archiving makes archive-at-drop unnecessary).
+	// Logger omitted: gopartman defaults to slog.Default(); importing log/slog
+	// here is blocked by depguard (use pkg/logger for Convoy-owned logs).
 	pm, err := partman.New(
 		partman.WithDB(db.GetConn()),
 		partman.WithClock(partman.NewRealClock()),
-		partman.WithLogger(slog.Default()),
 		// Asynq drives Maintain; do not also run the library ticker.
 		partman.WithScheduleInterval(24*time.Hour),
 	)
@@ -229,5 +328,9 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 }
 
 func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
+	// Register before Maintain so the nightly job is not racing Start's
+	// first reconcile tick (or stuck after a transient RegisterParent miss).
+	r.registerParents(ctx)
+	r.registerTenants(ctx)
 	return r.manager.Maintain(ctx)
 }

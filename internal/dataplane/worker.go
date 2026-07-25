@@ -290,35 +290,25 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 	// Retention is paid-only and partition-based; the license is the single
 	// gate (the delete-query retention system and its feature flag were
-	// removed). If the tables have not been converted yet, a disabled policy
-	// is installed instead (fail safe: nothing is deleted, the worker stays
-	// up) and every nightly run points the operator at `convoy partition`.
+	// removed). LicensedRetentionPolicy re-reads partition state at job time
+	// so `convoy partition` activates retention without a worker restart.
+	// Until tables are partitioned it deletes nothing and logs the action.
 	var ret retention.Retentioner
 	if opts.Licenser.RetentionPolicy() {
-		missing, pErr := retention.UnpartitionedTables(ctx, opts.DB)
-		if pErr != nil {
+		if _, pErr := retention.UnpartitionedTables(ctx, opts.DB); pErr != nil {
 			// Fail closed: a lookup failure is not a definitive "unpartitioned"
 			// verdict, and boot-time DB reads already abort startup above
 			// (LoadConfiguration). Do not guess which retention policy to install.
 			return nil, fmt.Errorf("failed to check retention partition state: %w", pErr)
 		}
 
-		if len(missing) > 0 {
-			lo.Error(fmt.Sprintf("retention is licensed but these tables are not partitioned: %v. Run `convoy partition` and restart the workers to activate retention", missing))
-			ret = retention.NewDisabledRetentionPolicy(missing, lo)
-		} else {
-			policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
-			if _err != nil {
-				return nil, fmt.Errorf("failed to parse retention policy: %w", _err)
-			}
-
-			ret, err = retention.NewPartitionRetentionPolicy(opts.DB, lo, policy)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create retention policy: %w", err)
-			}
-
-			ret.Start(ctx, time.Minute)
+		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
+		if _err != nil {
+			return nil, fmt.Errorf("failed to parse retention policy: %w", _err)
 		}
+
+		ret = retention.NewLicensedRetentionPolicy(opts.DB, lo, policy)
+		ret.Start(ctx, time.Minute)
 	}
 
 	channels := make(map[string]task.EventChannel)
