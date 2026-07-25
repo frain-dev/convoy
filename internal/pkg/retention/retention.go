@@ -2,10 +2,12 @@ package retention
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
-	partman "github.com/jirevwe/go_partman"
+	partman "github.com/jirevwe/gopartman"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -17,6 +19,13 @@ import (
 // They must be converted to partitioned parents (`convoy partition`) before
 // retention can run.
 var RetentionTables = []string{"events", "events_search", "event_deliveries", "delivery_attempts"}
+
+const (
+	retentionSchema      = "convoy"
+	retentionTenantCol   = "project_id"
+	retentionPartitionBy = "created_at"
+	retentionPremake     = 10
+)
 
 // UnpartitionedTables returns the retention-managed tables that are not yet
 // declared as partitioned parents (relkind 'p') in Postgres. Retention is
@@ -82,38 +91,38 @@ func (d *DisabledRetentionPolicy) Perform(context.Context) error {
 func (d *DisabledRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
 
 type TestRetentionPolicy struct {
-	partitioner partman.Partitioner
-	logger      log.Logger
-	db          database.Database
+	manager *partman.Manager
 }
 
 func (t *TestRetentionPolicy) Perform(ctx context.Context) error {
-	return t.partitioner.Maintain(ctx)
+	return t.manager.Maintain(ctx)
 }
 
 func (t *TestRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
 
-func NewTestRetentionPolicy(db database.Database, manager *partman.Manager) *TestRetentionPolicy {
-	return &TestRetentionPolicy{
-		partitioner: manager,
-		logger:      log.New("convoy", log.LevelInfo),
-		db:          db,
-	}
+func NewTestRetentionPolicy(manager *partman.Manager) *TestRetentionPolicy {
+	return &TestRetentionPolicy{manager: manager}
 }
 
 type PartitionRetentionPolicy struct {
 	retentionPeriod time.Duration
-	partitioner     partman.Partitioner
+	manager         *partman.Manager
 	logger          log.Logger
 	db              database.Database
 }
 
 func NewPartitionRetentionPolicy(db database.Database, logger log.Logger, period time.Duration) (*PartitionRetentionPolicy, error) {
-	pm, err := partman.NewManager(
-		partman.WithDB(db.GetDB()),
-		partman.WithLogger(logger),
-		partman.WithConfig(&partman.Config{SampleRate: time.Second}),
+	if err := applyPartmanMigrations(context.Background(), db); err != nil {
+		return nil, err
+	}
+
+	// Nil hook == HookDrop (JIT archiving makes archive-at-drop unnecessary).
+	pm, err := partman.New(
+		partman.WithDB(db.GetConn()),
 		partman.WithClock(partman.NewRealClock()),
+		partman.WithLogger(slog.Default()),
+		// Asynq drives Maintain; do not also run the library ticker.
+		partman.WithScheduleInterval(24*time.Hour),
 	)
 	if err != nil {
 		return nil, err
@@ -121,68 +130,104 @@ func NewPartitionRetentionPolicy(db database.Database, logger log.Logger, period
 
 	return &PartitionRetentionPolicy{
 		retentionPeriod: period,
-		partitioner:     pm,
+		manager:         pm,
 		logger:          logger,
 		db:              db,
 	}, nil
 }
 
-func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
-	go func(r *PartitionRetentionPolicy) {
-		ticker := time.NewTicker(sampleRate)
-		defer ticker.Stop()
+func applyPartmanMigrations(ctx context.Context, db database.Database) error {
+	pool := db.GetConn()
+	for _, m := range partman.Migrations() {
+		if _, err := pool.Exec(ctx, m.SQL); err != nil {
+			return fmt.Errorf("apply partman migration %s: %w", m.Name, err)
+		}
+	}
+	return nil
+}
 
-		// fetch existing partitions on startup,
-		// this is useful for one time setups,
-		// but I'll leave it in since it'll no-op after the first time
-		err := r.partitioner.ImportExistingPartitions(ctx, partman.Table{
-			Schema:            "convoy",
-			TenantIdColumn:    "project_id",
-			PartitionBy:       "created_at",
-			PartitionType:     partman.TypeRange,
-			RetentionPeriod:   r.retentionPeriod,
-			PartitionInterval: time.Hour * 24,
-			PartitionCount:    10,
-		})
-		if err != nil {
-			r.logger.Errorf("failed to import existing partitions: %v", err)
+func (r *PartitionRetentionPolicy) parentConfig(table string) partman.ParentConfig {
+	// Keep AutomaticMaintenance enabled so Maintain() processes these
+	// parents. We never call Manager.Start(), so the library ticker does
+	// not run; the asynq nightly job drives Maintain.
+	return partman.ParentConfig{
+		SchemaName:        retentionSchema,
+		TableName:         table,
+		TenantColumn:      retentionTenantCol,
+		PartitionBy:       retentionPartitionBy,
+		PartitionInterval: partman.PartitionDayInterval,
+		Premake:           retentionPremake,
+		RetentionPeriod:   r.retentionPeriod,
+	}
+}
+
+func (r *PartitionRetentionPolicy) registerParents(ctx context.Context) {
+	for _, table := range RetentionTables {
+		err := r.manager.RegisterParent(ctx, r.parentConfig(table))
+		if err != nil && !errors.Is(err, partman.ErrParentAlreadyExists) {
+			r.logger.Error(fmt.Sprintf("failed to register convoy.%s with gopartman", table), "error", err)
+			continue
 		}
 
-		projectRepo := projects.New(r.logger, r.db)
+		ref := partman.ParentRef{SchemaName: retentionSchema, TableName: table}
+		if _, err := r.manager.ImportExisting(ctx, ref); err != nil {
+			r.logger.Errorf("failed to import existing partitions for convoy.%s: %v", table, err)
+		}
+	}
+}
+
+func (r *PartitionRetentionPolicy) registerTenants(ctx context.Context) {
+	projectRepo := projects.New(r.logger, r.db)
+	projects, err := projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
+	if err != nil {
+		r.logger.Error("failed to load projects for retention tenant registration", "error", err)
+		return
+	}
+
+	for _, project := range projects {
+		for _, table := range RetentionTables {
+			err := r.manager.RegisterTenant(ctx, partman.TenantConfig{
+				ParentSchema: retentionSchema,
+				ParentName:   table,
+				TenantId:     project.UID,
+			})
+			if err != nil && !errors.Is(err, partman.ErrTenantAlreadyExists) {
+				r.logger.Error(fmt.Sprintf("failed to register tenant for convoy.%s", table), "error", err, "project_id", project.UID)
+			}
+		}
+	}
+}
+
+// Start registers parents and tenants, then reconciles both on sampleRate.
+// Parent registration is re-attempted on each tick so a transient boot-time
+// RegisterParent/ImportExisting failure does not leave Maintain with no
+// managed tables for the life of the process (ErrParentAlreadyExists is
+// treated as success). It does not start gopartman's internal ticker;
+// Perform (the asynq nightly job) calls Maintain.
+func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
+	go func(r *PartitionRetentionPolicy) {
+		r.registerParents(ctx)
+		r.registerTenants(ctx)
+
+		if sampleRate <= 0 {
+			sampleRate = time.Hour
+		}
+		ticker := time.NewTicker(sampleRate)
+		defer ticker.Stop()
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				projects, pErr := projectRepo.LoadProjects(context.Background(), &datastore.ProjectFilter{})
-				if pErr != nil {
-					r.logger.Error("failed to load projects", "error", pErr)
-				}
-
-				for _, project := range projects {
-					for _, table := range RetentionTables {
-						err = r.partitioner.AddManagedTable(partman.Table{
-							Name:              table,
-							Schema:            "convoy",
-							TenantId:          project.UID,
-							TenantIdColumn:    "project_id",
-							PartitionBy:       "created_at",
-							PartitionType:     partman.TypeRange,
-							RetentionPeriod:   r.retentionPeriod,
-							PartitionInterval: time.Hour * 24,
-							PartitionCount:    10,
-						})
-						if err != nil {
-							r.logger.Error(fmt.Sprintf("failed to add convoy.%s to managed tables", table), "error", err)
-						}
-					}
-				}
+				bg := context.Background()
+				r.registerParents(bg)
+				r.registerTenants(bg)
 			}
 		}
 	}(r)
 }
 
 func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
-	return r.partitioner.Maintain(ctx)
+	return r.manager.Maintain(ctx)
 }
