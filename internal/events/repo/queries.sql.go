@@ -656,29 +656,8 @@ func (q *Queries) FindFirstEventWithIdempotencyKey(ctx context.Context, arg Find
 	return i, err
 }
 
-const hardDeleteProjectEvents = `-- name: HardDeleteProjectEvents :exec
-DELETE
-FROM convoy.events
-WHERE project_id = $1
-  AND created_at >= $2
-  AND created_at <= $3
-  AND NOT EXISTS (SELECT 1
-                  FROM convoy.event_deliveries
-                  WHERE event_id = convoy.events.id)
-`
-
-type HardDeleteProjectEventsParams struct {
-	ProjectID pgtype.Text
-	StartDate pgtype.Timestamptz
-	EndDate   pgtype.Timestamptz
-}
-
-func (q *Queries) HardDeleteProjectEvents(ctx context.Context, arg HardDeleteProjectEventsParams) error {
-	_, err := q.db.Exec(ctx, hardDeleteProjectEvents, arg.ProjectID, arg.StartDate, arg.EndDate)
-	return err
-}
-
 const hardDeleteTokenizedEvents = `-- name: HardDeleteTokenizedEvents :exec
+
 DELETE
 FROM convoy.events_search
 WHERE project_id = $1
@@ -692,6 +671,9 @@ type HardDeleteTokenizedEventsParams struct {
 	EndDate   pgtype.Timestamptz
 }
 
+// ============================================================================
+// Group 4: Deletion & Maintenance (2 queries)
+// ============================================================================
 func (q *Queries) HardDeleteTokenizedEvents(ctx context.Context, arg HardDeleteTokenizedEventsParams) error {
 	_, err := q.db.Exec(ctx, hardDeleteTokenizedEvents, arg.ProjectID, arg.StartDate, arg.EndDate)
 	return err
@@ -1069,30 +1051,6 @@ func (q *Queries) LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPaged
 		return nil, err
 	}
 	return items, nil
-}
-
-const softDeleteProjectEvents = `-- name: SoftDeleteProjectEvents :exec
-
-UPDATE convoy.events
-SET deleted_at = NOW()
-WHERE project_id = $1
-  AND created_at >= $2
-  AND created_at <= $3
-  AND deleted_at IS NULL
-`
-
-type SoftDeleteProjectEventsParams struct {
-	ProjectID pgtype.Text
-	StartDate pgtype.Timestamptz
-	EndDate   pgtype.Timestamptz
-}
-
-// ============================================================================
-// Group 4: Deletion & Maintenance (4 queries)
-// ============================================================================
-func (q *Queries) SoftDeleteProjectEvents(ctx context.Context, arg SoftDeleteProjectEventsParams) error {
-	_, err := q.db.Exec(ctx, softDeleteProjectEvents, arg.ProjectID, arg.StartDate, arg.EndDate)
-	return err
 }
 
 const updateEventEndpoints = `-- name: UpdateEventEndpoints :exec
