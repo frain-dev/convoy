@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/render"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/services"
@@ -74,6 +77,56 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Registration successful", u, http.StatusCreated))
+
+	// Fail-open: signup already succeeded; onboarding welcome must not fail the response.
+	// Fire-and-forget: Overwatch ensure+welcome can take up to two client timeouts;
+	// do not hold the registration handler. Detach from r.Context so client
+	// disconnect / handler return cannot cancel the work.
+	welcomeCtx := context.WithoutCancel(r.Context())
+	go h.enqueueCloudOnboardingWelcome(welcomeCtx, user)
+}
+
+// enqueueCloudOnboardingWelcome asks Overwatch to send the Motunrayo welcome
+// email. Cloud-only; errors are logged only (fail-open). The billing org is
+// created asynchronously by RunBillingOrganisationSync, which is the single
+// owner of billing-org creation: a second CreateOrganisation here would race
+// it and make the sync skip its license lookup. Instead, retry the enqueue
+// briefly until that sync has created the org. If all attempts fail, the
+// Overwatch welcome backfill sweep delivers it for recent signups.
+func (h *Handler) enqueueCloudOnboardingWelcome(ctx context.Context, user *datastore.User) {
+	if user == nil || !h.A.Cfg.UsesOrgBilling() || h.A.BillingClient == nil {
+		return
+	}
+
+	orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
+	orgs, _, err := orgMemberRepo.LoadUserOrganisationsPaged(ctx, user.UID, datastore.Pageable{
+		PerPage:    1,
+		Direction:  datastore.Next,
+		NextCursor: datastore.DefaultCursor,
+	})
+	if err != nil || len(orgs) == 0 {
+		h.A.Logger.Warn("onboarding welcome skipped: no org for user", "user_id", user.UID, "error", err)
+		return
+	}
+	org := orgs[0]
+
+	var welcomeErr error
+	for attempt := 1; attempt <= 5; attempt++ {
+		_, welcomeErr = h.A.BillingClient.EnqueueOnboardingWelcome(ctx, org.UID, billing.OnboardingWelcomeRequest{
+			FirstName: user.FirstName,
+			Track:     "cloud",
+		})
+		if welcomeErr == nil {
+			return
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(3 * time.Second):
+		}
+	}
+	h.A.Logger.Warn("onboarding welcome enqueue failed; sweep will backfill", "org_id", org.UID, "error", welcomeErr)
 }
 
 func (h *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
@@ -138,8 +191,16 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	baseUrl, err := h.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	u := services.UpdateUserService{
 		UserRepo: users.New(h.A.Logger, h.A.DB),
+		Queue:    h.A.Queue,
+		BaseURL:  baseUrl,
 		Data:     &userUpdate,
 		User:     user,
 		Logger:   h.A.Logger,

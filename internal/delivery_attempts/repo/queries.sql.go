@@ -8,7 +8,6 @@ package repo
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -325,40 +324,4 @@ func (q *Queries) GetFailureAndSuccessCountsWithResetTime(ctx context.Context, a
 		&i.Successes,
 	)
 	return i, err
-}
-
-const hardDeleteProjectDeliveryAttempts = `-- name: HardDeleteProjectDeliveryAttempts :execresult
-DELETE FROM convoy.delivery_attempts
-WHERE project_id = $1
-    AND created_at >= $2
-    AND created_at <= $3
-`
-
-type HardDeleteProjectDeliveryAttemptsParams struct {
-	ProjectID      pgtype.Text
-	CreatedAtStart pgtype.Timestamptz
-	CreatedAtEnd   pgtype.Timestamptz
-}
-
-func (q *Queries) HardDeleteProjectDeliveryAttempts(ctx context.Context, arg HardDeleteProjectDeliveryAttemptsParams) (pgconn.CommandTag, error) {
-	return q.db.Exec(ctx, hardDeleteProjectDeliveryAttempts, arg.ProjectID, arg.CreatedAtStart, arg.CreatedAtEnd)
-}
-
-const softDeleteProjectDeliveryAttempts = `-- name: SoftDeleteProjectDeliveryAttempts :execresult
-UPDATE convoy.delivery_attempts
-SET deleted_at = NOW()
-WHERE project_id = $1
-    AND created_at >= $2
-    AND created_at <= $3
-    AND deleted_at IS NULL
-`
-
-type SoftDeleteProjectDeliveryAttemptsParams struct {
-	ProjectID      pgtype.Text
-	CreatedAtStart pgtype.Timestamptz
-	CreatedAtEnd   pgtype.Timestamptz
-}
-
-func (q *Queries) SoftDeleteProjectDeliveryAttempts(ctx context.Context, arg SoftDeleteProjectDeliveryAttemptsParams) (pgconn.CommandTag, error) {
-	return q.db.Exec(ctx, softDeleteProjectDeliveryAttempts, arg.ProjectID, arg.CreatedAtStart, arg.CreatedAtEnd)
 }

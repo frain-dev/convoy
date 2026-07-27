@@ -15,6 +15,13 @@ ui_install:
 build:
 	scripts/build.sh
 
+.PHONY: ui-build ui-build-fresh
+ui-build:
+	scripts/build-ui.sh
+
+ui-build-fresh:
+	INSTALL_DEPS=1 scripts/build-ui.sh
+
 .PHONY: test
 test:
 	@go test -race -p 1 $(shell go list ./... | grep -v '/e2e') -v -timeout 30m
@@ -116,6 +123,10 @@ generate_docs:
 	api-spec-converter --from=swagger_2 --to=openapi_3 ./docs/swagger.json > ./docs/v3/openapi3.json
 	yq -i '.servers[0].description = "US Region" | .servers += [{"url": "https://eu.getconvoy.cloud/api", "description": "EU Region"}]' ./docs/v3/openapi3.yaml
 	jq '.servers[0].description = "US Region" | .servers += [{"url": "https://eu.getconvoy.cloud/api", "description": "EU Region"}]' ./docs/v3/openapi3.json > ./docs/v3/openapi3.json.tmp && mv ./docs/v3/openapi3.json.tmp ./docs/v3/openapi3.json
+	# Swagger 2.0 cannot express http bearer auth; upgrade the converted scheme so
+	# generated SDK clients add the "Bearer " prefix instead of every caller.
+	yq -i '.components.securitySchemes.ApiKeyAuth = {"type": "http", "scheme": "bearer"}' ./docs/v3/openapi3.yaml
+	jq '.components.securitySchemes.ApiKeyAuth = {"type": "http", "scheme": "bearer"}' ./docs/v3/openapi3.json > ./docs/v3/openapi3.json.tmp && mv ./docs/v3/openapi3.json.tmp ./docs/v3/openapi3.json
 	@echo "Validating specs..."
 	openapi swagger validate ./docs/swagger.json
 	openapi swagger validate ./docs/swagger.yaml

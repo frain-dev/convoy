@@ -356,24 +356,6 @@ func (s *Service) CountDeliveriesByEndpointAndStatus(ctx context.Context, projec
 	return out, nil
 }
 
-func (s *Service) DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
-	start, end := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
-
-	if hardDelete {
-		return s.repo.HardDeleteProjectEventDeliveries(ctx, repo.HardDeleteProjectEventDeliveriesParams{
-			ProjectID: common.StringToPgTextNullable(projectID),
-			StartDate: common.TimeToPgTimestamptz(start),
-			EndDate:   common.TimeToPgTimestamptz(end),
-		})
-	}
-
-	return s.repo.SoftDeleteProjectEventDeliveries(ctx, repo.SoftDeleteProjectEventDeliveriesParams{
-		ProjectID: common.StringToPgTextNullable(projectID),
-		StartDate: common.TimeToPgTimestamptz(start),
-		EndDate:   common.TimeToPgTimestamptz(end),
-	})
-}
-
 func (s *Service) LoadEventDeliveriesPaged(
 	ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string,
 	status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable,

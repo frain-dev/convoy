@@ -70,6 +70,7 @@ export class CreateProjectComponent implements OnInit {
 				header: [null],
 				versions: this.formBuilder.array([])
 			}),
+			request_id_header: [''],
 			ratelimit: this.formBuilder.group({
 				count: [null],
 				duration: [null]
@@ -118,6 +119,7 @@ export class CreateProjectComponent implements OnInit {
 		{ uid: 'ratelimit', name: 'Rate Limit', show: false, deleted: false },
 		{ uid: 'search_policy', name: 'Search Policy', show: false, deleted: false },
 		{ uid: 'signature', name: 'Signature Format', show: false, deleted: false },
+		{ uid: 'request_id_header', name: 'Request ID Header', show: false, deleted: false },
 	];
 	public rbacService = inject(RbacService);
 	tabs: TAB[] = [
@@ -180,6 +182,12 @@ export class CreateProjectComponent implements OnInit {
 		}
 		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
 		if (this.action === 'update') this.switchTab(this.tabs.find(tab => tab.label == this.route.snapshot.queryParams?.activePage) ?? this.tabs[0]);
+
+		this.projectForm.get('type')?.valueChanges.subscribe(type => {
+			if (type === 'incoming') {
+				this.hideOutgoingOnlyConfigs();
+			}
+		});
 	}
 
 	async checkCircuitBreakerFeatureFlag() {
@@ -217,12 +225,47 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.push(this.newVersion());
 	}
 
+	private readonly DEFAULT_REQUEST_ID_HEADER = 'X-Convoy-Idempotency-Key';
+
+	isCustomRequestIdHeader(value?: string): boolean {
+		const header = (value ?? '').trim();
+		return header !== '' && header !== this.DEFAULT_REQUEST_ID_HEADER;
+	}
+
+	setRequestIdHeaderVisibilityFromValue(value?: string): void {
+		const config = this.configurations.find(item => item.uid === 'request_id_header');
+		if (!config) return;
+
+		config.show = this.isCustomRequestIdHeader(value);
+		config.deleted = false;
+		this.projectForm.get('config.request_id_header')?.setValue(config.show ? (value ?? '').trim() : '');
+	}
+
+	clearRequestIdHeaderConfig(): void {
+		const config = this.configurations.find(item => item.uid === 'request_id_header');
+		if (!config) return;
+
+		config.show = false;
+		config.deleted = true;
+		this.projectForm.get('config.request_id_header')?.setValue('');
+	}
+
 	toggleConfigForm(configValue: string, deleted?: boolean) {
+		if (deleted && configValue === 'request_id_header') {
+			this.clearRequestIdHeaderConfig();
+			return;
+		}
+
 		this.configurations.forEach(config => {
-			if (config.uid === configValue) {
-                config.show = !config.show;
-                config.deleted = deleted ?? false;
-            }
+			if (config.uid !== configValue) return;
+
+			if (deleted) {
+				config.show = false;
+				config.deleted = true;
+			} else {
+				config.show = !config.show;
+				config.deleted = false;
+			}
 		});
 	}
 	setConfigFormDeleted(configValue: string, deleted: boolean) {
@@ -262,10 +305,11 @@ export class CreateProjectComponent implements OnInit {
 
 			this.projectForm.get('config.meta_event.type')?.patchValue('http');
 
-			let filteredConfigs: string[] = [];
+			let filteredConfigs: string[] = ['request_id_header'];
 			if (this.projectDetails?.type === 'incoming') filteredConfigs.push('signature');
 
 			this.configurations.filter(item => !filteredConfigs.includes(item.uid)).forEach(config => this.toggleConfigForm(config.uid));
+			this.setRequestIdHeaderVisibilityFromValue(this.projectDetails?.config?.request_id_header);
 		} catch {}
 	}
 
@@ -323,36 +367,46 @@ export class CreateProjectComponent implements OnInit {
 	async updateProject() {
 		this.checkMetaEventsConfig();
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-		if (typeof this.projectForm.value.config.ratelimit.duration === 'string') this.projectForm.value.config.ratelimit.duration = this.getTimeValue(this.projectForm.value.config.ratelimit.duration);
-		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
-		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
-		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
-		if (typeof this.projectForm.value.config.search_policy === 'number') this.projectForm.value.config.search_policy = `${this.projectForm.value.config.search_policy}h`;
 
-
-        if (!this.showConfig('ratelimit') && this.configDeleted('ratelimit')) {
-            this.projectForm.value.config.ratelimit.count = 0;
-            this.projectForm.value.config.ratelimit.duration = 0;
-            this.projectForm.value.config.ratelimit = null;
-
-            this.projectForm.get('config.ratelimit')?.patchValue({ count: 0, duration: 0 });
-
-            this.setConfigFormDeleted('ratelimit', false);
-        }
+		const payload = this.buildProjectUpdatePayload();
 
 		this.isCreatingProject = true;
 
 		try {
-			// this updateProject service also updates project in localstorage
-			const response = await this.createProjectService.updateProject(this.projectForm.value);
+			const response = await this.createProjectService.updateProject(payload);
 
 			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
+			this.projectDetails = response.data;
+			this.setRequestIdHeaderVisibilityFromValue(response.data?.config?.request_id_header);
 			this.onAction.emit(response.data);
 			this.isCreatingProject = false;
 		} catch (error) {
 			console.error('[updateProject] update failed:', error);
 			this.isCreatingProject = false;
 		}
+	}
+
+	buildProjectUpdatePayload() {
+		const payload = structuredClone(this.projectForm.getRawValue());
+
+		if (typeof payload.config.ratelimit?.duration === 'string') payload.config.ratelimit.duration = this.getTimeValue(payload.config.ratelimit.duration);
+		if (typeof payload.config.strategy?.duration === 'string') payload.config.strategy.duration = this.getTimeValue(payload.config.strategy.duration);
+		if (typeof payload.config.strategy?.retry_count === 'string') payload.config.strategy.retry_count = parseInt(payload.config.strategy.retry_count);
+		if (typeof payload.config.ratelimit?.count === 'string') payload.config.ratelimit.count = parseInt(payload.config.ratelimit.count);
+		if (typeof payload.config.search_policy === 'number') payload.config.search_policy = `${payload.config.search_policy}h`;
+
+		if (!this.showConfig('ratelimit') && this.configDeleted('ratelimit')) {
+			payload.config.ratelimit = { count: 0, duration: 0 };
+			this.projectForm.get('config.ratelimit')?.patchValue({ count: 0, duration: 0 });
+			this.setConfigFormDeleted('ratelimit', false);
+		}
+
+		if (!this.isCustomRequestIdHeader(payload.config?.request_id_header)) {
+			payload.config.request_id_header = '';
+			this.projectForm.get('config.request_id_header')?.setValue('');
+		}
+
+		return payload;
 	}
 
 	async regenerateKey() {
@@ -382,13 +436,23 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	getProjectData() {
-		const configKeys = Object.keys(this.projectForm.value.config);
-		const projectData = this.projectForm.value;
+		const projectData = structuredClone(this.projectForm.getRawValue());
+		const configKeys = Object.keys(projectData.config);
 
 		configKeys.forEach(configKey => {
-			if (!this.showConfig(configKey)) delete projectData.config[configKey];
+			if (!this.showConfig(configKey)) {
+				if (configKey === 'request_id_header') {
+					projectData.config.request_id_header = '';
+				} else {
+					delete projectData.config[configKey];
+				}
+			}
 			if (this.showConfig('search_policy') && typeof projectData.config.search_policy === 'number') projectData.config.search_policy = `${projectData.config.search_policy}h`;
 		});
+
+		if (!this.isCustomRequestIdHeader(projectData.config?.request_id_header)) {
+			projectData.config.request_id_header = '';
+		}
 
 		return projectData;
 	}
@@ -457,6 +521,33 @@ export class CreateProjectComponent implements OnInit {
 
 	get shouldShowBorder(): number {
 		return this.configurations.filter(config => config.show).length;
+	}
+
+	isOutgoingProject(): boolean {
+		return this.projectDetails?.type === 'outgoing' || this.projectForm.get('type')?.value === 'outgoing';
+	}
+
+	isOutgoingOnlyConfig(configUid: string): boolean {
+		return configUid === 'signature' || configUid === 'request_id_header';
+	}
+
+	shouldShowConfigButton(config: { uid: string; show: boolean }, index: number): boolean {
+		if (config.show) {
+			return false;
+		}
+		if (this.isOutgoingOnlyConfig(config.uid)) {
+			return this.isOutgoingProject();
+		}
+		return index < 3;
+	}
+
+	hideOutgoingOnlyConfigs(): void {
+		this.configurations.forEach(config => {
+			if (this.isOutgoingOnlyConfig(config.uid)) {
+				config.show = false;
+				config.deleted = false;
+			}
+		});
 	}
 
     async createNewEventType() {

@@ -322,6 +322,50 @@ func (u *AuthIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
+func (u *AuthIntegrationTestSuite) Test_SSOAdminPortal_Unauthenticated_Rejected() {
+	for _, url := range []string{"/sso/admin-portal", "/ui/saml/admin-portal"} {
+		req := httptest.NewRequest(http.MethodPost, url, serialize(`{"return_url":"https://example.com/settings"}`))
+		req.Header.Add("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		u.Router.ServeHTTP(w, req)
+
+		require.Equal(u.T(), http.StatusUnauthorized, w.Code, "url=%s", url)
+	}
+}
+
+func (u *AuthIntegrationTestSuite) Test_SSOAdminPortal_NonAdmin_Rejected() {
+	password := "123456"
+	user, err := testdb.SeedUser(u.ConvoyApp.A.DB, "", password)
+	require.NoError(u.T(), err)
+
+	owner, err := testdb.SeedDefaultUser(u.ConvoyApp.A.DB)
+	require.NoError(u.T(), err)
+	org, err := testdb.SeedDefaultOrganisation(u.ConvoyApp.A.DB, owner)
+	require.NoError(u.T(), err)
+	project, err := testdb.SeedDefaultProject(u.ConvoyApp.A.DB, org.UID)
+	require.NoError(u.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(u.ConvoyApp.A.DB, org, user, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: project.UID,
+	})
+	require.NoError(u.T(), err)
+
+	authFn := authenticateRequest(&models.LoginUser{Username: user.Email, Password: password})
+
+	for _, url := range []string{"/sso/admin-portal", "/ui/saml/admin-portal"} {
+		req := createRequest(http.MethodPost, url, "", serialize(`{"return_url":"https://example.com/settings"}`))
+		req.Header.Set("X-Organisation-Id", org.UID)
+		require.NoError(u.T(), authFn(req, u.Router))
+
+		w := httptest.NewRecorder()
+		u.Router.ServeHTTP(w, req)
+
+		require.Equal(u.T(), http.StatusForbidden, w.Code, "url=%s body=%s", url, w.Body.String())
+	}
+}
+
 func TestAuthIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(AuthIntegrationTestSuite))
 }
@@ -1141,6 +1185,84 @@ func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_ActiveStatus() {
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointId, dbEndpoint.UID)
 	require.Equal(s.T(), datastore.ActiveEndpointStatus, dbEndpoint.Status)
+}
+
+func (s *EndpointIntegrationTestSuite) Test_ActivateEndpoint_ProjectViewerForbidden() {
+	endpointId := ulid.Make().String()
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.InactiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/activate", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodPost, url, "", nil)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+}
+
+func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint_ProjectViewerForbidden() {
+	endpointId := ulid.Make().String()
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodDelete, url, "", nil)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+}
+
+func (s *EndpointIntegrationTestSuite) Test_ActivateEndpoint_ProjectAdminAccepted() {
+	endpointId := ulid.Make().String()
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.InactiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	password := "admin-pass"
+	admin, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("padmin.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, admin, &auth.Role{
+		Type:    auth.RoleProjectAdmin,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	adminAuth := authenticateRequest(&models.LoginUser{Username: admin.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/activate", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodPost, url, "", nil)
+	err = adminAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusAccepted, w.Code, w.Body.String())
 }
 
 func TestEndpointIntegrationTestSuite(t *testing.T) {
@@ -2000,6 +2122,69 @@ func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
 	orgRepo := organisations.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	_, err = orgRepo.FetchOrganisationByID(context.Background(), uid)
 	require.Equal(s.T(), datastore.ErrOrgNotFound, err)
+}
+
+func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation_CascadesKeysSourcesAndProjectLookup() {
+	uid := ulid.Make().String()
+	seedOrg, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "cascade_org")
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, seedOrg, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin})
+	require.NoError(s.T(), err)
+
+	project, err := testdb.SeedDefaultProject(s.ConvoyApp.A.DB, seedOrg.UID)
+	require.NoError(s.T(), err)
+
+	apiKey, rawKey, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{
+		Type:    auth.RoleProjectAdmin,
+		Project: project.UID,
+	}, "", "project-key", string(datastore.ProjectKey), "")
+	require.NoError(s.T(), err)
+	require.NotEmpty(s.T(), rawKey)
+	require.NotEmpty(s.T(), apiKey.MaskID)
+
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, project, "", "", "http", nil, "", "")
+	require.NoError(s.T(), err)
+
+	cacheKey := "projects:" + project.UID
+	require.NoError(s.T(), s.ConvoyApp.A.Cache.Set(context.Background(), cacheKey, project, 5*time.Minute))
+	apiKeyCacheKey := "apikeys_by_mask:" + apiKey.MaskID
+	require.NoError(s.T(), s.ConvoyApp.A.Cache.Set(context.Background(), apiKeyCacheKey, apiKey, 5*time.Minute))
+
+	url := fmt.Sprintf("/ui/organisations/%s", uid)
+	req := createRequest(http.MethodDelete, url, "", nil)
+	err = s.AuthenticatorIAFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+
+	projectRepo := projects.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	_, err = projectRepo.FetchProjectByID(context.Background(), project.UID)
+	require.ErrorIs(s.T(), err, datastore.ErrProjectNotFound)
+
+	// Cache miss returns nil error with empty payload after invalidation.
+	var cachedProject datastore.Project
+	require.NoError(s.T(), s.ConvoyApp.A.Cache.Get(context.Background(), cacheKey, &cachedProject))
+	require.Empty(s.T(), cachedProject.UID)
+
+	var cachedAPIKey datastore.APIKey
+	require.NoError(s.T(), s.ConvoyApp.A.Cache.Get(context.Background(), apiKeyCacheKey, &cachedAPIKey))
+	require.Empty(s.T(), cachedAPIKey.UID)
+
+	apiRepo := api_keys.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	keys, _, err := apiRepo.LoadAPIKeysPaged(context.Background(), &datastore.Filter{ProjectID: project.UID}, &datastore.Pageable{
+		PerPage:    10,
+		Direction:  datastore.Next,
+		NextCursor: datastore.DefaultCursor,
+	})
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), keys)
+
+	sourceRepo := sources.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	_, err = sourceRepo.FindSourceByID(context.Background(), project.UID, source.UID)
+	require.Error(s.T(), err)
 }
 
 func TestOrganisationIntegrationTestSuite(t *testing.T) {

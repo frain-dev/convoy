@@ -66,10 +66,29 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := project.ValidateOutgoingEventIdempotencyKey(newMessage.IdempotencyKey); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	if !util.IsStringEmpty(newMessage.EndpointID) {
 		_, err = h.retrieveEndpoint(r.Context(), newMessage.EndpointID, projectID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+	} else {
+		// Validate() guarantees the deprecated app_id alias is set here. Mirror the
+		// endpoint_id existence check so an app_id that resolves to no endpoints is
+		// rejected now instead of queueing an event that fans out to nothing.
+		eps, innerErr := endpoints.New(h.A.Logger, h.A.DB).FindEndpointsByAppID(r.Context(), newMessage.AppID, projectID)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
+			return
+		}
+
+		if len(eps) == 0 {
+			_ = render.Render(w, r, util.NewErrorResponse("app ID has no configured endpoints", http.StatusBadRequest))
 			return
 		}
 	}
@@ -85,6 +104,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		Params: task.CreateEventTaskParams{
 			UID:            id,
 			ProjectID:      projectID,
+			AppID:          newMessage.AppID,
 			EndpointID:     newMessage.EndpointID,
 			EventType:      newMessage.EventType,
 			Data:           newMessage.Data,
@@ -92,7 +112,11 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 			IdempotencyKey: newMessage.IdempotencyKey,
 			AcknowledgedAt: time.Now(),
 		},
-		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
+		// Validate() plus the existence checks above guarantee a resolvable target
+		// (endpoint_id or the deprecated app_id alias) at this point, and both
+		// addressing modes resolve to concrete endpoints in the worker, so both get
+		// a catch-all subscription auto-provisioned for subscription-less endpoints.
+		CreateSubscription: true,
 	}
 
 	eventByte, err := msgpack.EncodeMsgPack(e)
@@ -111,7 +135,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		h.A.Logger.ErrorContext(r.Context(), fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", 200, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", nil, http.StatusCreated))
 }
 
 // CreateBroadcastEvent
@@ -129,6 +153,10 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/broadcast [post]
 func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	var newMessage models.BroadcastEvent
 	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
@@ -144,6 +172,11 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 
 	project, err := h.getProjectFromContext(r)
 	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := project.ValidateOutgoingEventIdempotencyKey(newMessage.IdempotencyKey); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -183,6 +216,10 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
 func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	start := time.Now()
 
 	// Wrap the request body to count bytes in real-time
@@ -217,6 +254,11 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	h.A.Logger.Info("processing fanout event", "project_id", project.UID, "owner_id", newMessage.OwnerID, "event_type", newMessage.EventType, "body_size_bytes", bodySize)
+
+	if err := project.ValidateOutgoingEventIdempotencyKey(newMessage.IdempotencyKey); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 
 	// Fanout decides novelty with FindFirstEventWithIdempotencyKey (non-duplicate rows
 	// only), so the gate must use the same predicate; see trialCapDuplicateVerdict.
@@ -274,11 +316,15 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.DynamicEvent	true	"Event Details"
-//	@Success		201			{object}	Stub
+//	@Success		201			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/dynamic [post]
 func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	var newMessage models.DynamicEvent
 	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
@@ -294,6 +340,11 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 
 	err = newMessage.Validate()
 	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := project.ValidateOutgoingEventIdempotencyKey(newMessage.IdempotencyKey); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -543,6 +594,20 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
+// CountAffectedEvents
+//
+//	@Summary		Count events matching batch replay filters
+//	@Description	This endpoint returns how many events would be affected by a batch replay with the given filters.
+//	@Id				CountAffectedEvents
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			request		query		models.QueryListEvent	false	"Query Params"
+//	@Success		200			{object}	util.ServerResponse{data=models.CountResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events/countbatchreplayevents [get]
 func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEvent
 	p, err := h.getProjectFromContext(r)
@@ -572,7 +637,7 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if len(endpointIDs) == 0 {
-			_ = render.Render(w, r, util.NewServerResponse("events count successful", map[string]interface{}{"num": 0}, http.StatusOK))
+			_ = render.Render(w, r, util.NewServerResponse("events count successful", models.CountResponse{Num: 0}, http.StatusOK))
 			return
 		}
 
@@ -586,7 +651,7 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("events count successful", map[string]interface{}{"num": count}, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("events count successful", models.CountResponse{Num: count}, http.StatusOK))
 }
 
 func (h *Handler) retrieveEvent(r *http.Request) (*datastore.Event, error) {

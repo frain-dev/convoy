@@ -70,7 +70,9 @@ func New(doc interface{}) (*Converter, error) {
 // NewFromBytes creates a new Converter instance from bytes
 func NewFromBytes(data []byte) (*Converter, error) {
 	loader := openapi3.NewLoader()
-	loader.IsExternalRefsAllowed = true
+	// Failure policy: fail closed. External $ref fetches are an SSRF vector on
+	// event-type import; only in-document refs are allowed.
+	loader.IsExternalRefsAllowed = false
 	swagger, err := loader.LoadFromData(data)
 	if err != nil {
 		return nil, fmt.Errorf("error loading OpenAPI spec: %v", err)

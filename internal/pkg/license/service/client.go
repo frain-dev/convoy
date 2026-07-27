@@ -36,6 +36,7 @@ type Client struct {
 	retryCount   int
 	version      string
 	deploymentID string
+	usageLoader  UsageLoader
 	httpClient   *http.Client
 	logger       log.Logger
 }
@@ -51,7 +52,9 @@ type Config struct {
 	// DeploymentID is the instance configuration UID sent with validation
 	// requests; empty when configuration is unavailable.
 	DeploymentID string
-	Logger       log.Logger
+	// UsageLoader optionally attaches anonymized usage counts (licensed instances only).
+	UsageLoader UsageLoader
+	Logger      log.Logger
 }
 
 // NewClientFromConfig builds a license service client from the typed license service
@@ -92,6 +95,7 @@ func NewClient(cfg Config) *Client {
 		retryCount:   cfg.RetryCount,
 		version:      cfg.Version,
 		deploymentID: cfg.DeploymentID,
+		usageLoader:  cfg.UsageLoader,
 		httpClient: &http.Client{
 			Timeout:   cfg.Timeout,
 			Transport: otelhttp.NewTransport(http.DefaultTransport),
@@ -110,6 +114,12 @@ func (c *Client) ValidateLicense(ctx context.Context, licenseKey string) (*Licen
 		LicenseKey:   licenseKey,
 		Version:      c.version,
 		DeploymentID: c.deploymentID,
+	}
+	// Fail open: omit usage on loader error or miss. Never block validate.
+	if c.usageLoader != nil {
+		if snap, err := c.usageLoader.LoadCached(ctx); err == nil && snap != nil {
+			reqBody.Usage = snap
+		}
 	}
 
 	jsonData, err := json.Marshal(reqBody)

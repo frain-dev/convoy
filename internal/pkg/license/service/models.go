@@ -1,17 +1,35 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 )
 
+// UsageSnapshot is anonymized instance-wide counts attached to license validate.
+// Counts only: no hostnames, URLs, emails, or org names.
+type UsageSnapshot struct {
+	EndpointCount int64  `json:"endpoint_count"`
+	EventCount    int64  `json:"event_count"`
+	ProjectCount  int64  `json:"project_count"`
+	OrgCount      int64  `json:"org_count"`
+	UserCount     int64  `json:"user_count"`
+	AsOf          string `json:"as_of,omitempty"` // RFC3339
+}
+
 // ValidateLicenseRequest represents the request to validate a license.
-// Version and DeploymentID are optional request metadata and are omitted when empty.
+// Version, DeploymentID, and Usage are optional and omitted when empty/nil.
 type ValidateLicenseRequest struct {
-	LicenseKey   string `json:"license_key"`
-	Version      string `json:"version,omitempty"`
-	DeploymentID string `json:"deployment_id,omitempty"`
+	LicenseKey   string         `json:"license_key"`
+	Version      string         `json:"version,omitempty"`
+	DeploymentID string         `json:"deployment_id,omitempty"`
+	Usage        *UsageSnapshot `json:"usage,omitempty"`
+}
+
+// UsageLoader loads a cached usage snapshot for license validate (fail open).
+type UsageLoader interface {
+	LoadCached(ctx context.Context) (*UsageSnapshot, error)
 }
 
 // LicenseValidationResponse represents the response from the license service

@@ -1,5 +1,53 @@
 # Convoy Changes
 
+## 26.6.6
+
+### Features
+
+- feat(controlplane): Speakeasy public API clients for JS and Python (#2724)
+- feat(controlplane): verify email before cloud trial and enqueue welcome (#2726)
+
+### Bug Fixes
+
+- fix(controlplane): close jul 16 vuln review bundle (#2721)
+- fix(dashboard): default team invite role to organisation_admin (#2722)
+- fix(controlplane): harden endpoint rbac, sh billing gates, and org delete cascade (#2723)
+- fix(controlplane): declare eventTypeId path param on UpdateEventType (#2728)
+- fix: correct OpenAPI types for json.RawMessage and []byte fields (#2736)
+- fix: mark arbitrary-JSON object fields as open maps in OpenAPI spec (#2737)
+- fix(controlplane): send null data in CreateEndpointEvent response (#2741)
+- fix(docs): OpenAPI spec fidelity for generated SDK clients (#2742)
+
+## 26.6.5
+
+### Features
+
+- feat(dataplane,dashboard): configurable outbound request ID header per project (#2665)
+
+### Bug Fixes
+
+- fix(dataplane): delete retention attempts by delivery cutoff (#2718)
+- fix(controlplane): require auth for SSO admin portal (#2719)
+
+## 26.6.4
+
+### Features
+
+- feat(controlplane): attach anonymized usage on license validate (#2715)
+- feat(controlplane): document projects CRUD and harden endpoint activate (#2716)
+
+## 26.6.3
+
+### Features
+
+- feat(billing): render cloud plans dynamically for three-tier pricing (#2710)
+- feat(controlplane): print user/org ids and optionally mint an api key on bootstrap (#2712)
+
+
+### Bug Fixes
+
+- fix(billing): send org owner email on cloud trial start to backfill legacy billing email (#2709)
+
 ## 26.6.2
 
 

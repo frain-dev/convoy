@@ -153,7 +153,19 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 
 	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
 	start := time.Now()
-	resp, err := dispatch.SendWebhook(ctx, url, sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID), httpDuration, "application/json")
+	resp, err := dispatch.SendWebhook(
+		ctx,
+		url,
+		sig.Payload,
+		"X-Convoy-Signature",
+		header,
+		int64(cfg.MaxResponseSize),
+		httpheader.HTTPHeader{},
+		config.DefaultRequestIDHeader.String(),
+		dedup.GenerateChecksum(metaEvent.UID),
+		httpDuration,
+		"application/json",
+	)
 	if err != nil {
 		return nil, err
 	}

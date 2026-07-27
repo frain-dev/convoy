@@ -83,6 +83,9 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	if h.IsReqWithPortalLinkToken(authUser) {
 		pLink, innerErr := h.retrievePortalLinkFromToken(r)
@@ -444,6 +447,9 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	var e models.UpdateEndpoint
 	err = migrator.Unmarshal(body, &e)
@@ -539,6 +545,9 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 
@@ -656,6 +665,9 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	endpointID := chi.URLParam(r, "endpointID")
 
@@ -727,11 +739,21 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
+
+	endpointID := chi.URLParam(r, "endpointID")
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if !h.ensurePortalLinkOwnsEndpoints(w, r, authUser, endpointID) {
+		return
+	}
 
 	aes := services.ActivateEndpointService{
 		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
 		ProjectID:    project.UID,
-		EndpointId:   chi.URLParam(r, "endpointID"),
+		EndpointId:   endpointID,
 		Logger:       h.A.Logger,
 	}
 

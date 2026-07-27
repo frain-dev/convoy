@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -441,6 +442,71 @@ func TestFindFirstEventWithIdempotencyKey(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, event1.UID, found.UID)
 		require.False(t, found.IsDuplicateEvent)
+	})
+}
+
+func TestCreateEventIdempotencyClaim(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+
+	t.Run("SequentialDuplicateIsFlagged", func(t *testing.T) {
+		idempotencyKey := fmt.Sprintf("seq-key-%s", ulid.Make().String())
+
+		first := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		first.IdempotencyKey = idempotencyKey
+		require.NoError(t, service.CreateEvent(ctx, first))
+		require.False(t, first.IsDuplicateEvent)
+
+		// Second create with the same key and a stale not-duplicate flag must be
+		// flagged duplicate by the claim inside CreateEvent.
+		second := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		second.IdempotencyKey = idempotencyKey
+		require.NoError(t, service.CreateEvent(ctx, second))
+		require.True(t, second.IsDuplicateEvent)
+
+		found, err := service.FindEventByID(ctx, project.UID, second.UID)
+		require.NoError(t, err)
+		require.True(t, found.IsDuplicateEvent)
+	})
+
+	t.Run("ConcurrentDuplicatesYieldOneOriginal", func(t *testing.T) {
+		idempotencyKey := fmt.Sprintf("conc-key-%s", ulid.Make().String())
+
+		const workers = 8
+		eventIDs := make([]string, workers)
+		errs := make([]error, workers)
+
+		start := make(chan struct{})
+		var wg sync.WaitGroup
+		for i := 0; i < workers; i++ {
+			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+			event.IdempotencyKey = idempotencyKey
+			eventIDs[i] = event.UID
+
+			wg.Add(1)
+			go func(i int, event *datastore.Event) {
+				defer wg.Done()
+				<-start
+				errs[i] = service.CreateEvent(ctx, event)
+			}(i, event)
+		}
+		close(start)
+		wg.Wait()
+
+		nonDuplicates := 0
+		for i := 0; i < workers; i++ {
+			require.NoError(t, errs[i])
+			found, err := service.FindEventByID(ctx, project.UID, eventIDs[i])
+			require.NoError(t, err)
+			if !found.IsDuplicateEvent {
+				nonDuplicates++
+			}
+		}
+		require.Equal(t, 1, nonDuplicates, "exactly one concurrent create should win the idempotency claim")
 	})
 }
 
@@ -1016,74 +1082,6 @@ func TestLoadEventsPaged(t *testing.T) {
 		require.NoError(t, err)
 		t.Logf("LoadEventsPaged result - Events count: %d (expected at least 1)", len(events))
 		require.NotEmpty(t, events, "Expected events using EXISTS path, got 0")
-	})
-}
-
-func TestDeleteProjectEvents(t *testing.T) {
-	service, db := setupTestDB(t)
-	ctx := context.Background()
-
-	project := seedTestProject(t, db)
-	endpoint := seedTestEndpoint(t, db, project.UID)
-	source := seedTestSource(t, db, project.UID)
-
-	t.Run("DeleteProjectEvents_SoftDelete", func(t *testing.T) {
-		// Create test events
-		eventIDs := make([]string, 3)
-		for i := 0; i < 3; i++ {
-			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
-			require.NoError(t, service.CreateEvent(ctx, event))
-			eventIDs[i] = event.UID
-		}
-
-		filter := &datastore.EventFilter{
-			CreatedAtStart: time.Now().Add(-1 * time.Hour).Unix(),
-			CreatedAtEnd:   time.Now().Add(1 * time.Hour).Unix(),
-		}
-
-		err := service.DeleteProjectEvents(ctx, project.UID, filter, false) // soft delete
-		require.NoError(t, err)
-
-		// Verify events still exist but are soft deleted
-		for _, eventID := range eventIDs {
-			found, err := service.FindEventByID(ctx, project.UID, eventID)
-			if err == nil {
-				require.NotNil(t, found.DeletedAt)
-			}
-		}
-	})
-
-	t.Run("DeleteProjectEvents_HardDelete", func(t *testing.T) {
-		// Create test events
-		for i := 0; i < 2; i++ {
-			event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
-			require.NoError(t, service.CreateEvent(ctx, event))
-		}
-
-		filter := &datastore.EventFilter{
-			CreatedAtStart: time.Now().Add(-1 * time.Hour).Unix(),
-			CreatedAtEnd:   time.Now().Add(1 * time.Hour).Unix(),
-		}
-
-		err := service.DeleteProjectEvents(ctx, project.UID, filter, true) // hard delete
-		require.NoError(t, err)
-	})
-}
-
-func TestDeleteProjectTokenizedEvents(t *testing.T) {
-	service, db := setupTestDB(t)
-	ctx := context.Background()
-
-	project := seedTestProject(t, db)
-
-	t.Run("DeleteProjectTokenizedEvents_Success", func(t *testing.T) {
-		filter := &datastore.EventFilter{
-			CreatedAtStart: time.Now().Add(-24 * time.Hour).Unix(),
-			CreatedAtEnd:   time.Now().Unix(),
-		}
-
-		err := service.DeleteProjectTokenizedEvents(ctx, project.UID, filter)
-		require.NoError(t, err)
 	})
 }
 

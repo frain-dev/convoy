@@ -313,7 +313,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		ssoRouter.Use(middleware.JsonResponse)
 		ssoRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger))
 		ssoRouter.Get("/callback", handler.RedeemSSOCallback)
-		ssoRouter.Post("/admin-portal", handler.GetSSOAdminPortal)
+		// Admin portal mints an SSO config link that can rewrite SAML IdP metadata.
+		// RequireAuth here; handler also enforces organisation/instance admin.
+		ssoRouter.With(middleware.RequireAuth(handler.A.Logger)).Post("/admin-portal", handler.GetSSOAdminPortal)
 	})
 
 	// Ingestion API.
@@ -354,6 +356,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 							e.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteEndpoint)
 							e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/expire_secret", handler.ExpireSecret)
 							e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/pause", handler.PauseEndpoint)
+							e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/activate", handler.ActivateEndpoint)
 						})
 					})
 
@@ -492,7 +495,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger)).Get("/sso", handler.InitSSO)
+			authRouter.With(
+				middleware.WorkspaceSlugProbeRateLimit(a.A.Rate),
+				middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger),
+			).Get("/sso", handler.InitSSO)
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
@@ -532,7 +538,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Delete("/organisations/{orgID}/overrides/{featureKey}", handler.DeleteOrganisationOverride)
 			adminRouter.Get("/organisations/{orgID}/circuit-breaker-config", handler.GetOrganisationCircuitBreakerConfig)
 			adminRouter.Put("/organisations/{orgID}/circuit-breaker-config", handler.UpdateOrganisationCircuitBreakerConfig)
-			adminRouter.Get("/organisations/{orgID}/projects", handler.GetProjects)
+			adminRouter.With(handler.RequireInstanceAdmin()).Get("/organisations/{orgID}/projects", handler.GetProjects)
 			adminRouter.Get("/projects/{projectID}/circuit-breaker-config", handler.GetProjectCircuitBreakerConfig)
 			adminRouter.Put("/projects/{projectID}/circuit-breaker-config", handler.UpdateProjectCircuitBreakerConfig)
 			adminRouter.Post("/retry-event-deliveries", handler.RetryEventDeliveries)
@@ -599,7 +605,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 								e.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteEndpoint)
 								e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/expire_secret", handler.ExpireSecret)
 								e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Put("/pause", handler.PauseEndpoint)
-								e.With(handler.RequireEnabledProject()).Post("/activate", handler.ActivateEndpoint)
+								e.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/activate", handler.ActivateEndpoint)
 							})
 						})
 
@@ -710,7 +716,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
-			configRouter.Get("/auth", handler.GetAuthConfiguration)
+			configRouter.With(middleware.WorkspaceSlugProbeRateLimit(a.A.Rate)).Get("/auth", handler.GetAuthConfiguration)
 		})
 
 		uiRouter.Route("/backups", func(backupRouter chi.Router) {
@@ -789,7 +795,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		portalLinkRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
-			configRouter.Get("/auth", handler.GetAuthConfiguration)
+			configRouter.With(middleware.WorkspaceSlugProbeRateLimit(a.A.Rate)).Get("/auth", handler.GetAuthConfiguration)
 		})
 
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
@@ -934,9 +940,10 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
 
-	// Ingestion API.
+	// Ingestion API. Must use the same knob as the control plane's /ingest so
+	// CONVOY_INSTANCE_INGEST_RATE governs every ingest surface.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -1003,7 +1010,10 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 		// TODO(subomi): added these back for the tests to pass.
 		// What should we do in the future?
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger)).Get("/sso", handler.InitSSO)
+			authRouter.With(
+				middleware.WorkspaceSlugProbeRateLimit(a.A.Rate),
+				middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser, handler.A.Logger),
+			).Get("/sso", handler.InitSSO)
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)

@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -31,24 +32,19 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	licenseKey := configuration.LicenseKey
 	if useOrgBilling && slug != "" {
 		orgRepo := organisations.New(h.A.Logger, h.A.DB)
-		orgMemberRepo := organisation_members.New(h.A.Logger, h.A.DB)
-		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
+		result, err := services.LookupWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
 			BillingClient: h.A.BillingClient,
 			OrgRepo:       orgRepo,
 			Logger:        h.A.Logger,
 			Cfg:           configuration,
-			RefreshDeps: services.RefreshLicenseDataDeps{
-				OrgMemberRepo: orgMemberRepo,
-				OrgRepo:       orgRepo,
-				BillingClient: h.A.BillingClient,
-				Logger:        h.A.Logger,
-				Cfg:           configuration,
-				Cache:         h.A.Cache,
-			},
 		})
 		if err != nil {
-			h.A.Logger.Debug("InitSSO: workspace resolve failed", "error", err, "slug", slug)
-			_ = render.Render(w, r, util.NewErrorResponse("Workspace not found", http.StatusBadRequest))
+			if errors.Is(err, services.ErrWorkspaceNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse("Workspace not found", http.StatusBadRequest))
+				return
+			}
+			h.A.Logger.ErrorContext(r.Context(), "InitSSO: workspace resolve failed", "error", err, "slug", slug)
+			_ = render.Render(w, r, util.NewErrorResponse("failed to resolve workspace", http.StatusServiceUnavailable))
 			return
 		}
 		if !result.SSOAvailable {
@@ -108,6 +104,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	registered := false
 	user, token, err := lu.LoginSSOUser(r.Context(), tokenResp)
 	if err != nil {
 		if !errors.Is(err, datastore.ErrUserNotFound) {
@@ -116,6 +113,7 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
+		registered = err == nil
 		if err != nil && errors.Is(err, services.ErrUserAlreadyExist) {
 			user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
 		}
@@ -140,6 +138,12 @@ func (h *Handler) RedeemSSOCallback(w http.ResponseWriter, r *http.Request) {
 		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 	}
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
+
+	// New SSO registrations are cloud signups too; same fire-and-forget welcome
+	// as password RegisterUser. Fail-open: signup already succeeded.
+	if registered {
+		go h.enqueueCloudOnboardingWelcome(context.WithoutCancel(r.Context()), user)
+	}
 }
 
 type adminPortalRequest struct {
@@ -148,6 +152,14 @@ type adminPortalRequest struct {
 }
 
 func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
+	// Failure policy: fail closed. Unauthenticated callers are rejected by
+	// RequireAuth on /sso/admin-portal and /ui/saml/admin-portal; non-admins
+	// are rejected here so an SSO admin portal link that can rewrite SAML IdP
+	// metadata is never minted for a low-privilege session.
+	if !h.requireSSOAdminPortalAccess(w, r) {
+		return
+	}
+
 	configuration := h.A.Cfg
 	if configuration.LicenseKey == "" {
 		h.A.Logger.Error("SSO admin portal: missing license key")
@@ -170,6 +182,19 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	returnURL, err := validateSSOAdminPortalRedirectURL(returnURL, configuration)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	if successURL != "" {
+		successURL, err = validateSSOAdminPortalRedirectURL(successURL, configuration)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
 	sc := service.Config{
 		Host:            configuration.SSOService.Host,
 		RedirectPath:    configuration.SSOService.RedirectPath,
@@ -181,7 +206,7 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 	if configuration.UsesOrgBilling() {
 		sc.APIKey = configuration.Billing.APIKey
 		sc.LicenseKey = configuration.LicenseKey
-		sc.OrgID = r.Header.Get("X-Organisation-Id")
+		sc.OrgID = r.Header.Get(headerOrganisationID)
 	}
 	ssoClient := service.NewClient(sc)
 
@@ -200,6 +225,47 @@ func (h *Handler) GetSSOAdminPortal(w http.ResponseWriter, r *http.Request) {
 		"expires_in": resp.Data.ExpiresIn,
 	}
 	_ = render.Render(w, r, util.NewServerResponse("Admin portal URL generated", data, http.StatusOK))
+}
+
+// requireSSOAdminPortalAccess allows instance admins and organisation admins only.
+// Matches the dashboard Configure SSO button (Organisations|MANAGE). The UI call
+// often omits X-Organisation-Id, so any organisation-admin membership is accepted
+// when no org header is present (same cooperative self-hosted model as billing).
+func (h *Handler) requireSSOAdminPortalAccess(w http.ResponseWriter, r *http.Request) bool {
+	user, err := h.retrieveUser(r)
+	if err != nil || user == nil || user.UID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
+		return false
+	}
+
+	memberRepo := organisation_members.New(h.A.Logger, h.A.DB)
+	if _, err = memberRepo.FetchInstanceAdminByUserID(r.Context(), user.UID); err == nil {
+		return true
+	}
+
+	orgID := strings.TrimSpace(r.Header.Get(headerOrganisationID))
+	if orgID == "" {
+		orgID = strings.TrimSpace(r.URL.Query().Get("orgID"))
+	}
+	if orgID != "" {
+		org, fetchErr := organisations.New(h.A.Logger, h.A.DB).FetchOrganisationByID(r.Context(), orgID)
+		if fetchErr != nil || org == nil {
+			_ = render.Render(w, r, util.NewErrorResponse("organisation not found", http.StatusNotFound))
+			return false
+		}
+		if authErr := h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); authErr != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: organisation admin access required to manage SSO", http.StatusForbidden))
+			return false
+		}
+		return true
+	}
+
+	if _, err = memberRepo.FetchAnyOrganisationAdminByUserID(r.Context(), user.UID); err == nil {
+		return true
+	}
+
+	_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: organisation admin access required to manage SSO", http.StatusForbidden))
+	return false
 }
 
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -459,4 +525,8 @@ func (h *Handler) GoogleOAuthSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Setup completed successfully", u, http.StatusOK))
+
+	// Google OAuth setup creates a user + org like password RegisterUser; send
+	// the same fire-and-forget onboarding welcome. Fail-open: signup succeeded.
+	go h.enqueueCloudOnboardingWelcome(context.WithoutCancel(r.Context()), user)
 }

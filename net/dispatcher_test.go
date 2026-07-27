@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -686,7 +687,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendWebhook(context.Background(), tt.args.endpoint, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute, constants.ContentTypeJSON)
+			got, err := d.SendWebhook(context.Background(), tt.args.endpoint, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, config.DefaultRequestIDHeader.String(), "", time.Minute, constants.ContentTypeJSON)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)
@@ -741,6 +742,7 @@ func TestDispatcher_SendFormDataWithSignature(t *testing.T) {
 		"test-hmac",
 		config.MaxResponseSize,
 		nil,
+		config.DefaultRequestIDHeader.String(),
 		"",
 		time.Minute,
 		constants.ContentTypeFormURLEncoded,
@@ -846,7 +848,7 @@ func TestDispatcherSendRequest(t *testing.T) {
 		require.Equal(t, "POST", r.Method)
 		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		require.Equal(t, "test-hmac", r.Header.Get("X-Signature"))
-		require.Equal(t, "test-key", r.Header.Get("X-Convoy-Idempotency-Key"))
+		require.Equal(t, "test-key", r.Header.Get(config.DefaultRequestIDHeader.String()))
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status": "success"}`))
@@ -886,6 +888,7 @@ func TestDispatcherSendRequest(t *testing.T) {
 		"test-hmac",
 		1024,
 		headers,
+		config.DefaultRequestIDHeader.String(),
 		"test-key",
 		5*time.Second,
 		constants.ContentTypeJSON,
@@ -898,10 +901,107 @@ func TestDispatcherSendRequest(t *testing.T) {
 	require.Equal(t, "custom-value", resp.RequestHeader.Get("X-Custom-Header"))
 }
 
-func TestDispatcherIdempotencyKeyHeaderCanBeOverriddenByCustomHeaders(t *testing.T) {
+func TestDispatcherCustomRequestIDHeader(t *testing.T) {
+	const customHeader = "Split-Request-ID"
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "customer-idempotency-key", r.Header.Get("X-Convoy-Idempotency-Key"))
-		require.NotEqual(t, "event-idempotency-key", r.Header.Get("X-Convoy-Idempotency-Key"))
+		require.Equal(t, "stable-request-id", requestHeaderValue(r.Header, customHeader))
+		require.Empty(t, requestHeaderValue(r.Header, config.DefaultRequestIDHeader.String()))
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status": "success"}`))
+	}))
+	defer server.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(4).Return(true)
+
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
+		ProxyOption("nil"),
+		AllowListOption([]string{"0.0.0.0/0"}),
+		BlockListOption([]string{"10.0.0.0/8"}),
+	)
+	require.NoError(t, err)
+
+	resp, err := dispatcher.SendWebhook(
+		context.Background(),
+		server.URL,
+		json.RawMessage(`{"key": "value"}`),
+		"X-Signature",
+		"test-hmac",
+		1024,
+		nil,
+		customHeader,
+		"stable-request-id",
+		5*time.Second,
+		constants.ContentTypeJSON,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "stable-request-id", requestHeaderValue(resp.RequestHeader, customHeader))
+	require.Contains(t, resp.RequestHeader, customHeader)
+	require.Empty(t, requestHeaderValue(resp.RequestHeader, config.DefaultRequestIDHeader.String()))
+}
+
+func TestDispatcherRequiresIdempotencyKeyForCustomRequestIDHeader(t *testing.T) {
+	const customHeader = "Split-Request-ID"
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(4).Return(true)
+
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
+		ProxyOption("nil"),
+		AllowListOption([]string{"0.0.0.0/0"}),
+		BlockListOption([]string{"10.0.0.0/8"}),
+	)
+	require.NoError(t, err)
+
+	_, err = dispatcher.SendWebhook(
+		context.Background(),
+		"http://127.0.0.1:1",
+		json.RawMessage(`{"key": "value"}`),
+		"X-Signature",
+		"test-hmac",
+		1024,
+		nil,
+		customHeader,
+		"",
+		5*time.Second,
+		constants.ContentTypeJSON,
+	)
+
+	require.ErrorIs(t, err, ErrMissingIdempotencyKeyForCustomRequestIDHeader)
+}
+
+func requestHeaderValue(header http.Header, key string) string {
+	for k, values := range header {
+		if strings.EqualFold(k, key) && len(values) > 0 {
+			return values[0]
+		}
+	}
+	return ""
+}
+
+func TestDispatcherIdempotencyKeyHeaderOverridesCustomHeaders(t *testing.T) {
+	const customHeader = "Split-Request-ID"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "event-idempotency-key", requestHeaderValue(r.Header, customHeader))
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status": "success"}`))
@@ -926,7 +1026,7 @@ func TestDispatcherIdempotencyKeyHeaderCanBeOverriddenByCustomHeaders(t *testing
 	require.NoError(t, err)
 
 	headers := httpheader.HTTPHeader{
-		"X-Convoy-Idempotency-Key": []string{"customer-idempotency-key"},
+		customHeader: []string{"customer-idempotency-key"},
 	}
 
 	resp, err := dispatcher.SendWebhook(
@@ -937,6 +1037,7 @@ func TestDispatcherIdempotencyKeyHeaderCanBeOverriddenByCustomHeaders(t *testing
 		"test-hmac",
 		1024,
 		headers,
+		customHeader,
 		"event-idempotency-key",
 		5*time.Second,
 		constants.ContentTypeJSON,
@@ -944,7 +1045,7 @@ func TestDispatcherIdempotencyKeyHeaderCanBeOverriddenByCustomHeaders(t *testing
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	require.Equal(t, "customer-idempotency-key", resp.RequestHeader.Get("X-Convoy-Idempotency-Key"))
+	require.Equal(t, "event-idempotency-key", requestHeaderValue(resp.RequestHeader, customHeader))
 }
 
 func TestDispatcherDoesNotSetIdempotencyKeyHeaderWhenEmpty(t *testing.T) {
@@ -981,6 +1082,7 @@ func TestDispatcherDoesNotSetIdempotencyKeyHeaderWhenEmpty(t *testing.T) {
 		"test-hmac",
 		1024,
 		nil,
+		config.DefaultRequestIDHeader.String(),
 		"",
 		5*time.Second,
 		constants.ContentTypeJSON,
@@ -988,7 +1090,7 @@ func TestDispatcherDoesNotSetIdempotencyKeyHeaderWhenEmpty(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	require.Empty(t, resp.RequestHeader.Get("X-Convoy-Idempotency-Key"))
+	require.Empty(t, resp.RequestHeader.Get(config.DefaultRequestIDHeader.String()))
 }
 
 // TestDispatcherWithTimeout tests the timeout functionality
@@ -1025,6 +1127,7 @@ func TestDispatcherWithTimeout(t *testing.T) {
 		"test-hmac",
 		1024,
 		nil,
+		config.DefaultRequestIDHeader.String(),
 		"",
 		1*time.Second,
 		constants.ContentTypeJSON,
@@ -1071,6 +1174,7 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 		"test-hmac",
 		1024,
 		nil,
+		config.DefaultRequestIDHeader.String(),
 		"",
 		5*time.Second,
 		constants.ContentTypeJSON,
@@ -1111,6 +1215,7 @@ func TestDispatcherPopulatesRemoteIP(t *testing.T) {
 		"test-hmac",
 		1024,
 		nil,
+		config.DefaultRequestIDHeader.String(),
 		"",
 		5*time.Second,
 		constants.ContentTypeJSON,
@@ -1158,6 +1263,7 @@ func TestDispatcherSkipsRemoteIPWhenProxyApplies(t *testing.T) {
 		"test-hmac",
 		1024,
 		nil,
+		config.DefaultRequestIDHeader.String(),
 		"",
 		5*time.Second,
 		constants.ContentTypeJSON,
@@ -1258,6 +1364,7 @@ C6azzwqUOSsfDcuAS5sfJp/6
 		"test-hmac",
 		1024,
 		nil,
+		config.DefaultRequestIDHeader.String(),
 		"",
 		5*time.Second,
 		"application/json",
@@ -1313,6 +1420,7 @@ func TestDispatcherProxyWithNoProxy(t *testing.T) {
 			"test-hmac",
 			1024,
 			nil,
+			config.DefaultRequestIDHeader.String(),
 			"",
 			5*time.Second,
 			constants.ContentTypeJSON,
@@ -1359,6 +1467,7 @@ func TestDispatcherDefaultProxyFromEnvironment(t *testing.T) {
 			"test-hmac",
 			1024,
 			nil,
+			config.DefaultRequestIDHeader.String(),
 			"",
 			5*time.Second,
 			constants.ContentTypeJSON,
@@ -1427,6 +1536,81 @@ func TestBlockPrivateNetworks(t *testing.T) {
 			}
 			require.NoError(t, err)
 		})
+	}
+}
+
+func TestBlockMetadataEndpoints(t *testing.T) {
+	tests := []struct {
+		name    string
+		address string
+		blocked bool
+	}{
+		// Metadata / link-local targets: blocked regardless of encoding.
+		{name: "aws/gcp metadata v4", address: "169.254.169.254:80", blocked: true},
+		{name: "link-local v4", address: "169.254.0.1:80", blocked: true},
+		{name: "link-local v6", address: "[fe80::1]:80", blocked: true},
+		{name: "link-local multicast v6", address: "[ff02::1]:80", blocked: true},
+		{name: "aws imds v6", address: "[fd00:ec2::254]:80", blocked: true},
+		{name: "ipv4-mapped metadata", address: "[::ffff:169.254.169.254]:80", blocked: true},
+		{name: "nat64-wrapped metadata", address: "[64:ff9b::a9fe:a9fe]:80", blocked: true},
+		{name: "6to4-wrapped metadata", address: "[2002:a9fe:a9fe::1]:80", blocked: true},
+		{name: "unparseable", address: "not-an-ip:80", blocked: true},
+
+		// General private + public targets: allowed (delivery must keep working).
+		{name: "private 10/8", address: "10.0.0.5:80", blocked: false},
+		{name: "private 192.168", address: "192.168.1.10:8080", blocked: false},
+		{name: "private 172.16", address: "172.16.0.1:80", blocked: false},
+		{name: "ipv6 ula non-metadata", address: "[fd12:3456::1]:80", blocked: false},
+		{name: "public ipv4", address: "1.1.1.1:443", blocked: false},
+		{name: "public ipv6", address: "[2606:4700:4700::1111]:443", blocked: false},
+		{name: "nat64-wrapped public", address: "[64:ff9b::808:808]:80", blocked: false},
+		{name: "6to4-wrapped public", address: "[2002:0808:0808::1]:80", blocked: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := blockMetadataEndpoints("tcp", tc.address, nil)
+			if tc.blocked {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestDeliveryTransport_BlocksMetadataButAllowsPrivate(t *testing.T) {
+	// Unlicensed default delivery client dials the metadata IP: refused.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().IpRules().Return(false).AnyTimes()
+
+	d, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{}),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
+	)
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(http.MethodGet, "http://169.254.169.254:80", nil)
+	require.NoError(t, err)
+	_, err = d.client.Do(req)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "ssrf guard")
+
+	// A private RFC1918 target is still allowed to dial (it fails to connect, but
+	// not with an ssrf-guard rejection), so self-hosted internal delivery keeps
+	// working. Bound the dial with a short context so an unreachable host does
+	// not ride the full dialer timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, "http://10.255.255.1:9", nil)
+	require.NoError(t, err)
+	_, err = d.client.Do(req)
+	if err != nil {
+		require.NotContains(t, err.Error(), "ssrf guard")
 	}
 }
 

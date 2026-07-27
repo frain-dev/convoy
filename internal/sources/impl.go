@@ -432,7 +432,7 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 	return nil
 }
 
-// FindSourceByID retrieves a source by its ID
+// FindSourceByID retrieves a source by its ID, scoped to the given project.
 func (s *Service) FindSourceByID(ctx context.Context, projectID, id string) (*datastore.Source, error) {
 	row, err := s.repo.FetchSourceByID(ctx, common.StringToPgText(id))
 	if err != nil {
@@ -443,7 +443,21 @@ func (s *Service) FindSourceByID(ctx context.Context, projectID, id string) (*da
 		return nil, &ServiceError{ErrMsg: "error retrieving source", Err: err}
 	}
 
-	return rowToSource(row)
+	source, err := rowToSource(row)
+	if err != nil {
+		return nil, err
+	}
+
+	// FetchSourceByID keys only on the source id, so enforce the project scope
+	// here (the sibling FindSourceByName/DeleteSourceByID scope in SQL). Without
+	// this, any authorized caller could read another project's source by id,
+	// including its plaintext broker credentials. Treat a cross-project hit as
+	// not found so ids stay non-enumerable.
+	if source.ProjectID != projectID {
+		return nil, datastore.ErrSourceNotFound
+	}
+
+	return source, nil
 }
 
 // FindSourceByName retrieves a source by its name and project ID

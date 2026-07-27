@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
 )
@@ -64,6 +65,67 @@ func TestSelfHostedCheckoutAttempt_PreservesNonceInJSON(t *testing.T) {
 	var decoded map[string]SelfHostedCheckoutAttempt
 	require.NoError(t, json.Unmarshal(raw, &decoded))
 	require.Equal(t, "raw-nonce", decoded["attempt_123"].CheckoutNonce)
+}
+
+func TestProject_ValidateOutgoingEventIdempotencyKey(t *testing.T) {
+	customProject := &Project{
+		Type: OutgoingProject,
+		Config: &ProjectConfig{
+			RequestIDHeader: config.RequestIDHeaderProvider("Split-Request-ID"),
+		},
+	}
+
+	tests := []struct {
+		name           string
+		project        *Project
+		idempotencyKey string
+		wantErr        error
+	}{
+		{
+			name:           "custom_header_requires_idempotency_key",
+			project:        customProject,
+			idempotencyKey: "",
+			wantErr:        ErrMissingIdempotencyKeyForCustomRequestIDHeader,
+		},
+		{
+			name:           "custom_header_with_idempotency_key",
+			project:        customProject,
+			idempotencyKey: "stable-request-id",
+		},
+		{
+			name:    "default_header_allows_missing_idempotency_key",
+			project: &Project{Type: OutgoingProject, Config: &ProjectConfig{}},
+		},
+		{
+			name:    "incoming_project_allows_missing_idempotency_key",
+			project: &Project{Type: IncomingProject, Config: &ProjectConfig{RequestIDHeader: "Split-Request-ID"}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.project.ValidateOutgoingEventIdempotencyKey(tc.idempotencyKey)
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestProjectConfig_GetRequestIDHeader(t *testing.T) {
+	t.Run("trims_whitespace", func(t *testing.T) {
+		cfg := &ProjectConfig{RequestIDHeader: "  Split-Request-ID  "}
+		require.Equal(t, config.RequestIDHeaderProvider("Split-Request-ID"), cfg.GetRequestIDHeader())
+		require.True(t, cfg.UsesCustomRequestIDHeader())
+	})
+
+	t.Run("whitespace_only_falls_back_to_default", func(t *testing.T) {
+		cfg := &ProjectConfig{RequestIDHeader: "   "}
+		require.Equal(t, config.DefaultRequestIDHeader, cfg.GetRequestIDHeader())
+		require.False(t, cfg.UsesCustomRequestIDHeader())
+	})
 }
 
 func TestProject_IsOwner(t *testing.T) {

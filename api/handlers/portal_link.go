@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
 	apiModels "github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	endpointsvc "github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
@@ -247,9 +249,21 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID}/refresh_token [get]
 func (h *Handler) RefreshPortalLinkAuthToken(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not mint auth_keys (requireJWTProjectManage skips them).
+	// Failure policy: fail closed 401 for portal credentials.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	// Minting a portal auth_key is a privileged mutation. Project view alone
+	// must not refresh another link's token. Failure policy: fail closed 403.
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 
@@ -285,7 +299,12 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc := portal_links.New(h.A.Logger, h.A.DB)
+	// The portal realm authenticates refresh tokens through the cached portal
+	// link repo (portal_links_by_mask). Revoke must go through the same cached
+	// repo so its mask-id cache entries are invalidated; a bare service would
+	// soft-delete the row but leave the token authenticating until the TTL
+	// expires. The TTL value is irrelevant here since revoke only issues deletes.
+	svc := h.portalLinkRepo()
 
 	err = svc.RevokePortalLink(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
@@ -298,6 +317,19 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Portal link revoked successfully", nil, http.StatusOK))
+}
+
+// portalLinkRepo returns the portal link repository used for mutations that must
+// invalidate the realm's mask-id cache (revoke). When a cache is configured it
+// wraps the service in the same cached decorator the realm reads through, so
+// invalidation reaches the live cache; without a cache (tests) it returns the
+// bare service.
+func (h *Handler) portalLinkRepo() datastore.PortalLinkRepository {
+	svc := portal_links.New(h.A.Logger, h.A.DB)
+	if h.A.Cache == nil {
+		return svc
+	}
+	return cached.NewCachedPortalLinkRepository(svc, h.A.Cache, 5*time.Minute, h.A.Logger)
 }
 
 // LoadPortalLinksPaged

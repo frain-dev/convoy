@@ -38,6 +38,11 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) (err error) {
 		return &ServiceError{ErrMsg: "an error occurred while creating dynamic event - invalid project"}
 	}
 	span.SetAttributes(tracer.AttrProjectID.String(e.Project.UID))
+
+	if err := e.Project.ValidateOutgoingEventIdempotencyKey(e.DynamicEvent.IdempotencyKey); err != nil {
+		return &ServiceError{ErrMsg: err.Error()}
+	}
+
 	id := ulid.Make().String()
 	jobId := queue.JobId{ProjectID: e.Project.UID, ResourceID: id}.DynamicJobId()
 

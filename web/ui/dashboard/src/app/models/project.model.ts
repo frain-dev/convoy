@@ -17,6 +17,7 @@ export interface PROJECT {
 			header: string;
 			versions: VERSIONS[];
 		};
+		request_id_header?: string;
 		meta_event: {
 			event_type: string[];
 			is_enabled: boolean;

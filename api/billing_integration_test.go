@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
@@ -132,6 +133,20 @@ func (s *BillingIntegrationTestSuite) TearDownTest() {
 	metrics.Reset()
 }
 
+// promoteDefaultUserOnDefaultOrg updates the suite user's role on the single
+// default org. Prefer this over SeedDefaultOrganisationWithRole for self-hosted
+// org-admin cases: that helper creates a second org and PDE-861 only allows
+// org/billing admins when CountOrganisations == 1.
+func (s *BillingIntegrationTestSuite) promoteDefaultUserOnDefaultOrg(role auth.RoleType) {
+	s.T().Helper()
+	memberRepo := organisation_members.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	member, err := memberRepo.FetchOrganisationMemberByUserID(context.Background(), s.DefaultUser.UID, s.DefaultOrg.UID)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), member)
+	member.Role.Type = role
+	require.NoError(s.T(), memberRepo.UpdateOrganisationMember(context.Background(), member))
+}
+
 func (s *BillingIntegrationTestSuite) Test_GetBillingConfigIncludesStrategy() {
 	req := createRequest(http.MethodGet, "/ui/billing/config", "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
@@ -156,12 +171,67 @@ func (s *BillingIntegrationTestSuite) Test_GetBillingConfigIncludesStrategy() {
 	require.Equal(s.T(), "cloud", data["strategy"])
 }
 
-func (s *BillingIntegrationTestSuite) Test_GetBillingConfigHidesActiveCheckoutForNonInstanceAdmin() {
+func (s *BillingIntegrationTestSuite) Test_GetBillingConfigShowsActiveCheckoutForSelfHostedBillingAdmin() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	defer func() {
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+	}()
+
 	restore := s.seedActiveSelfHostedCheckout()
 	defer restore()
 
+	// Default user is RoleBillingAdmin on a single-org SH instance (PDE-861).
 	req := createRequest(http.MethodGet, "/ui/billing/config", "", nil)
 	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(s.T(), err)
+
+	data := response["data"].(map[string]interface{})
+	selfHosted := data["self_hosted"].(map[string]interface{})
+	activeCheckout := selfHosted["active_checkout"].(map[string]interface{})
+	require.Equal(s.T(), "attempt-active", activeCheckout["attempt_id"])
+	require.Equal(s.T(), "checkout-active", selfHosted["checkout_id"])
+	require.Equal(s.T(), "external-active", selfHosted["external_id"])
+}
+
+func (s *BillingIntegrationTestSuite) Test_GetBillingConfigHidesActiveCheckoutForProjectViewer() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	defer func() {
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+	}()
+
+	restore := s.seedActiveSelfHostedCheckout()
+	defer restore()
+
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type: auth.RoleProjectViewer,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	req := createRequest(http.MethodGet, "/ui/billing/config", "", nil)
+	err = viewerAuth(req, s.Router)
 	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
@@ -194,11 +264,10 @@ func (s *BillingIntegrationTestSuite) Test_GetBillingConfigIncludesActiveCheckou
 
 	restore := s.seedActiveSelfHostedCheckout()
 	defer restore()
-	_, err := testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	req := createRequest(http.MethodGet, "/ui/billing/config", "", nil)
-	err = s.AuthenticatorFn(req, s.Router)
+	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
@@ -210,7 +279,7 @@ func (s *BillingIntegrationTestSuite) Test_GetBillingConfigIncludesActiveCheckou
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(s.T(), err)
 
-	// Self-hosted is single-tenant, so an org admin manages instance billing and must
+	// Self-hosted single-org: an org admin manages instance billing and must
 	// see the active checkout to resume or replace it (same as an instance admin).
 	data := response["data"].(map[string]interface{})
 	selfHosted := data["self_hosted"].(map[string]interface{})
@@ -262,8 +331,7 @@ func (s *BillingIntegrationTestSuite) Test_SelfHostedOrganisationAdminCanStartCh
 	}
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 	cfg := s.ConvoyApp.A.Cfg
 	cfg.Billing.APIKey = ""
 	s.ConvoyApp.A.Cfg = cfg
@@ -386,8 +454,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_OrganisationAdmi
 	}
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	// refreshInstanceLicenser re-validates the minted key against the configured
 	// billing service host. Point that host at a local server returning an active trial
@@ -459,14 +526,15 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_OrganisationAdmi
 	require.Equal(s.T(), config.LicenseSourceGuestCheckout, stored.LicenseKeySource)
 }
 
-func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_RejectsNonAdmin() {
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_RejectsProjectViewer() {
 	originalCfg := s.ConvoyApp.A.Cfg
 	originalRouter := s.Router
 	originalClient := s.ConvoyApp.A.BillingClient
 
-	// Default user is seeded with RoleBillingAdmin only (not org/instance admin),
-	// which self-hosted billing does not accept, so the trial must be rejected and
-	// the billing service must never be called.
+	// Sole user demoted to project_viewer can still log in under the single-user
+	// license escape hatch, but must not manage self-hosted billing.
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleProjectViewer)
+
 	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
 	cfg := s.ConvoyApp.A.Cfg
 	cfg.Billing.APIKey = ""
@@ -491,6 +559,141 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_RejectsNonAdmin(
 
 	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
 	require.Equal(s.T(), 0, client.trialCalls)
+}
+
+func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_BillingAdminStartsTrialOnSingleOrg() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+
+	licSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":true,"data":{"valid":true,"status":"active","trial":true,"entitlements":[{"key":"project_limit","value":-1},{"key":"org_limit","value":-1}]}}`))
+	}))
+	defer licSrv.Close()
+
+	globalCfg, err := config.Get()
+	require.NoError(s.T(), err)
+	originalLicHost := globalCfg.LicenseService.Host
+	originalLicPath := globalCfg.LicenseService.ValidatePath
+	globalCfg.LicenseService.Host = licSrv.URL
+	globalCfg.LicenseService.ValidatePath = "/validate"
+	require.NoError(s.T(), config.Override(&globalCfg))
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	cfg.InstanceId = "deploy-abc-123"
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		restored, _ := config.Get()
+		restored.LicenseService.Host = originalLicHost
+		restored.LicenseService.ValidatePath = originalLicPath
+		_ = config.Override(&restored)
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	body, err := json.Marshal(map[string]string{
+		"email": "billing-admin@example.com",
+		"host":  "https://customer.example.com",
+	})
+	require.NoError(s.T(), err)
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+	require.Equal(s.T(), 1, client.trialCalls)
+}
+
+func (s *BillingIntegrationTestSuite) Test_SelfHostedBillingAdminDeniedOnMultiOrg() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+
+	client := &countingBillingClient{MockBillingClient: &billing.MockBillingClient{}}
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	cfg.InstanceId = "deploy-abc-123"
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = client
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	_, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, "", s.DefaultUser.UID, "second-org")
+	require.NoError(s.T(), err)
+
+	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer([]byte("{}")))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+	require.Equal(s.T(), 0, client.trialCalls)
+}
+
+func (s *BillingIntegrationTestSuite) Test_GetSelfHostedUsage_BillingAdminAllowedOnSingleOrg() {
+	originalCfg := s.ConvoyApp.A.Cfg
+	originalRouter := s.Router
+	originalClient := s.ConvoyApp.A.BillingClient
+	cfgSvc := configuration.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	savedBillingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
+	if err != nil {
+		savedBillingCfg, err = testdb.SeedConfiguration(s.ConvoyApp.A.DB)
+	}
+	require.NoError(s.T(), err)
+	testBillingCfg := *savedBillingCfg
+	testBillingCfg.LicenseKey = "sh-license-key"
+	require.NoError(s.T(), cfgSvc.UpdateInstanceBillingConfig(context.Background(), &testBillingCfg))
+
+	cfg := s.ConvoyApp.A.Cfg
+	cfg.Billing.APIKey = ""
+	s.ConvoyApp.A.Cfg = cfg
+	s.ConvoyApp.cfg = cfg
+	s.ConvoyApp.A.BillingClient = &billing.MockBillingClient{}
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	defer func() {
+		_ = cfgSvc.UpdateInstanceBillingConfig(context.Background(), savedBillingCfg)
+		s.ConvoyApp.A.Cfg = originalCfg
+		s.ConvoyApp.cfg = originalCfg
+		s.ConvoyApp.A.BillingClient = originalClient
+		s.Router = originalRouter
+	}()
+
+	req := createRequest(http.MethodGet, "/ui/billing/sh_usage", "", nil)
+	req.Header.Set("X-Organisation-Id", s.DefaultOrg.UID)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
 }
 
 func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_RequiresEmailWithoutResubscribeKey() {
@@ -519,8 +722,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_RequiresEmailWit
 		s.Router = originalRouter
 	}()
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer([]byte("{}")))
 	err = s.AuthenticatorFn(req, s.Router)
@@ -545,8 +747,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_ResubscribeWitho
 	}
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	billingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
 	require.NoError(s.T(), err)
@@ -631,8 +832,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_SurfacesBillingC
 		s.Router = originalRouter
 	}()
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	body, err := json.Marshal(map[string]string{
 		"email": "buyer@example.com",
@@ -669,8 +869,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_LeavesCheckoutUn
 	}
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	client := &countingBillingClient{
 		MockBillingClient: &billing.MockBillingClient{},
@@ -736,8 +935,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_PreservesActiveC
 	savedBillingCfg.CheckoutID = "cs_test_active"
 	require.NoError(s.T(), cfgSvc.UpdateCheckoutAttempts(context.Background(), savedBillingCfg))
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	client := &countingBillingClient{
 		MockBillingClient: &billing.MockBillingClient{},
@@ -810,8 +1008,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_SupersedesPendin
 	savedBillingCfg.CheckoutID = "cs_test_active"
 	require.NoError(s.T(), cfgSvc.UpdateCheckoutAttempts(context.Background(), savedBillingCfg))
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	licSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -887,8 +1084,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_MarksAttemptFail
 	}
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	client := &countingBillingClient{
 		MockBillingClient: &billing.MockBillingClient{},
@@ -943,8 +1139,7 @@ func (s *BillingIntegrationTestSuite) Test_UpgradeSelfHostedSubscription_Returns
 	}
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	billingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
 	require.NoError(s.T(), err)
@@ -1004,8 +1199,7 @@ func (s *BillingIntegrationTestSuite) Test_UpgradeSelfHostedSubscription_Require
 	}
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, s.DefaultUser, auth.RoleOrganisationAdmin)
-	require.NoError(s.T(), err)
+	s.promoteDefaultUserOnDefaultOrg(auth.RoleOrganisationAdmin)
 
 	billingCfg, err := cfgSvc.LoadInstanceBillingConfig(context.Background())
 	require.NoError(s.T(), err)

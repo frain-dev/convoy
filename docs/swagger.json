@@ -21,6 +21,713 @@
   "host": "us.getconvoy.cloud",
   "basePath": "/api",
   "paths": {
+    "/v1/projects": {
+      "get": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "This endpoint fetches projects for an organisation. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "List all projects",
+        "operationId": "GetProjects",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Organisation ID",
+            "name": "orgID",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/models.ProjectResponse"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "This endpoint creates a project. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter. The response includes the project and a one-time project API key.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Create a project",
+        "operationId": "CreateProject",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Organisation ID",
+            "name": "orgID",
+            "in": "query",
+            "required": true
+          },
+          {
+            "description": "Project Details",
+            "name": "project",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/models.CreateProject"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/models.CreateProjectResponse"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectID}": {
+      "get": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "This endpoint fetches a project by its id",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Retrieve a project",
+        "operationId": "GetProject",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Project ID",
+            "name": "projectID",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/models.ProjectResponse"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "This endpoint updates a project's name, logo, and config",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Update a project",
+        "operationId": "UpdateProject",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Project ID",
+            "name": "projectID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "Project Details",
+            "name": "project",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/models.UpdateProject"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/models.ProjectResponse"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "This endpoint deletes a project",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Delete a project",
+        "operationId": "DeleteProject",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Project ID",
+            "name": "projectID",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
     "/v1/projects/{projectID}/endpoints": {
       "get": {
         "security": [
@@ -149,7 +856,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -167,7 +879,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -185,7 +902,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -260,7 +982,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -278,7 +1005,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -296,7 +1028,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -373,7 +1110,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -391,7 +1133,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -409,7 +1156,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -484,7 +1236,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -502,7 +1259,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -520,7 +1282,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -602,7 +1369,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -620,7 +1392,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -638,7 +1415,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -693,7 +1475,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -711,7 +1498,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -729,7 +1521,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -747,7 +1544,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -822,7 +1624,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -840,7 +1647,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -858,7 +1670,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -942,7 +1759,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -960,7 +1782,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -978,7 +1805,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1053,7 +1885,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1071,7 +1908,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1089,7 +1931,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1160,7 +2007,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1178,7 +2030,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1196,7 +2053,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1271,7 +2133,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1289,7 +2156,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1307,7 +2179,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1387,7 +2264,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1405,7 +2287,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1423,7 +2310,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1457,6 +2349,13 @@
             "type": "string",
             "description": "Project ID",
             "name": "projectID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Event Type ID",
+            "name": "eventTypeId",
             "in": "path",
             "required": true
           },
@@ -1500,7 +2399,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1518,7 +2422,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1536,7 +2445,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1611,7 +2525,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1629,7 +2548,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1647,7 +2571,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1829,7 +2758,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1847,7 +2781,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -1865,7 +2804,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2014,7 +2958,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2032,7 +2981,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2050,7 +3004,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2068,7 +3027,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2127,7 +3091,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2145,7 +3114,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2163,7 +3137,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2181,7 +3160,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2256,7 +3240,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2274,7 +3263,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2292,7 +3286,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2370,7 +3369,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2388,7 +3392,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2406,7 +3415,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2488,7 +3502,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2506,7 +3525,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2524,7 +3548,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2599,7 +3628,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2617,7 +3651,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2635,7 +3674,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2805,7 +3849,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2823,7 +3872,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2841,7 +3895,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2898,7 +3957,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2916,7 +3980,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2934,7 +4003,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -2952,7 +4026,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3107,7 +4186,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3125,7 +4209,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3143,7 +4232,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3220,7 +4314,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3238,7 +4337,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3256,7 +4360,218 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectID}/events/countbatchreplayevents": {
+      "get": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "This endpoint returns how many events would be affected by a batch replay with the given filters.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Events"
+        ],
+        "summary": "Count events matching batch replay filters",
+        "operationId": "CountAffectedEvents",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Project ID",
+            "name": "projectID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "enum": [
+              "next",
+              "prev"
+            ],
+            "type": "string",
+            "x-enum-varnames": [
+              "Next",
+              "Prev"
+            ],
+            "name": "direction",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "example": "2008-05-02T15:04:05",
+            "description": "The end date",
+            "name": "endDate",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "csv",
+            "description": "A list of endpoint ids to filter by",
+            "name": "endpointId",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "IdempotencyKey to filter by",
+            "name": "idempotencyKey",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "example": "01H0JA5MEES38RRK3HTEJC647K",
+            "description": "A pagination cursor to fetch the next page of a list",
+            "name": "next_page_cursor",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "example": 20,
+            "description": "The number of items to return per page",
+            "name": "perPage",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
+            "description": "A pagination cursor to fetch the previous page of a list",
+            "name": "prev_page_cursor",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Any arbitrary value to filter the events payload",
+            "name": "query",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "example": "ASC | DESC",
+            "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "csv",
+            "description": "A list of Source IDs to filter the events by.",
+            "name": "sourceId",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "example": "2006-01-02T15:04:05",
+            "description": "The start date",
+            "name": "startDate",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/models.CountResponse"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3307,7 +4622,24 @@
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/handlers.Stub"
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
             }
           },
           "400": {
@@ -3321,7 +4653,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3339,7 +4676,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3357,7 +4699,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3416,7 +4763,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3434,7 +4786,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3452,7 +4809,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3470,7 +4832,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3545,7 +4912,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3563,7 +4935,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3581,7 +4958,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3656,7 +5038,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3674,7 +5061,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3692,7 +5084,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3830,7 +5227,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3848,7 +5250,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3866,7 +5273,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3941,7 +5353,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3959,7 +5376,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -3977,7 +5399,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4052,7 +5479,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4070,7 +5502,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4088,7 +5525,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4105,10 +5547,9 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint accepts a CSV file or JSON body to bulk-create endpoints with subscriptions",
+        "description": "This endpoint bulk-creates endpoints with subscriptions from a JSON body. A CSV file upload is also accepted over raw HTTP as multipart/form-data with a \"file\" field; generated SDK clients only expose the JSON body.",
         "consumes": [
-          "application/json",
-          "multipart/form-data"
+          "application/json"
         ],
         "produces": [
           "application/json"
@@ -4139,12 +5580,6 @@
             "schema": {
               "$ref": "#/definitions/models.BulkOnboardRequest"
             }
-          },
-          {
-            "type": "file",
-            "description": "CSV file upload",
-            "name": "file",
-            "in": "formData"
           }
         ],
         "responses": {
@@ -4195,7 +5630,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4213,7 +5653,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4231,7 +5676,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4369,7 +5819,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4387,7 +5842,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4405,7 +5865,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4480,7 +5945,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4498,7 +5968,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4516,7 +5991,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4591,7 +6071,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4609,7 +6094,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4627,7 +6117,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4709,7 +6204,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4727,7 +6227,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4745,7 +6250,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4820,7 +6330,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4838,7 +6353,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4856,7 +6376,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4913,7 +6438,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4931,7 +6461,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4949,7 +6484,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -4967,7 +6507,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5105,7 +6650,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5123,7 +6673,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5141,7 +6696,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5216,7 +6776,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5234,7 +6799,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5252,7 +6822,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5328,7 +6903,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5346,7 +6926,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5364,7 +6949,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5439,7 +7029,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5457,7 +7052,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5475,7 +7075,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5557,7 +7162,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5575,7 +7185,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5593,7 +7208,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5648,7 +7268,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5666,7 +7291,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5684,7 +7314,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5702,7 +7337,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5842,7 +7482,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5860,7 +7505,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5878,7 +7528,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5953,7 +7608,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5971,7 +7631,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -5989,7 +7654,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6066,7 +7736,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6084,7 +7759,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6102,7 +7782,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6179,7 +7864,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6197,7 +7887,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6215,7 +7910,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6290,7 +7990,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6308,7 +8013,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6326,7 +8036,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6408,7 +8123,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6426,7 +8146,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6444,7 +8169,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6499,7 +8229,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6517,7 +8252,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6535,7 +8275,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6553,7 +8298,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6631,7 +8381,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6649,7 +8404,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6667,7 +8427,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6749,7 +8514,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6767,7 +8537,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6785,7 +8560,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6875,7 +8655,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6893,7 +8678,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -6911,7 +8701,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7001,7 +8796,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7019,7 +8819,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7037,7 +8842,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7128,7 +8938,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7146,7 +8961,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7164,7 +8984,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7246,7 +9071,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7264,7 +9094,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7282,7 +9117,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7371,7 +9211,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7389,7 +9234,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7407,7 +9257,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7469,7 +9324,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7487,7 +9347,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7505,7 +9370,12 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7523,7 +9393,143 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/handlers.Stub"
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status": {
+      "put": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "This endpoint toggles a subscription status. Retained for backward compatibility.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Subscriptions"
+        ],
+        "summary": "Toggle subscription status",
+        "operationId": "ToggleSubscriptionStatus",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Project ID",
+            "name": "projectID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "subscription id",
+            "name": "subscriptionID",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
                     }
                   }
                 }
@@ -7535,6 +9541,91 @@
     }
   },
   "definitions": {
+    "auth.RoleType": {
+      "type": "string",
+      "enum": [
+        "instance_admin",
+        "organisation_admin",
+        "billing_admin",
+        "project_admin",
+        "project_viewer",
+        "api",
+        ""
+      ],
+      "x-enum-comments": {
+        "RoleBillingAdmin": "Organisation level - can manage billing only TODO:",
+        "RoleInstanceAdmin": "Instance level - can manage all orgs and projects",
+        "RoleOrganisationAdmin": "Organisation level - can manage org and all projects",
+        "RoleProjectAdmin": "Project level - can manage project settings and users",
+        "RoleProjectViewer": "Project level - can view project data only"
+      },
+      "x-enum-descriptions": [
+        "Instance level - can manage all orgs and projects",
+        "Organisation level - can manage org and all projects",
+        "Organisation level - can manage billing only TODO:",
+        "Project level - can manage project settings and users",
+        "Project level - can view project data only",
+        ""
+      ],
+      "x-enum-varnames": [
+        "RoleInstanceAdmin",
+        "RoleOrganisationAdmin",
+        "RoleBillingAdmin",
+        "RoleProjectAdmin",
+        "RoleProjectViewer",
+        "RoleAPI"
+      ]
+    },
+    "config.RequestIDHeaderProvider": {
+      "type": "string",
+      "enum": [
+        "X-Convoy-Idempotency-Key",
+        ""
+      ],
+      "x-enum-varnames": [
+        "DefaultRequestIDHeader"
+      ]
+    },
+    "config.SignatureHeaderProvider": {
+      "type": "string",
+      "enum": [
+        "X-Convoy-Signature",
+        ""
+      ],
+      "x-enum-varnames": [
+        "DefaultSignatureHeader"
+      ]
+    },
+    "datastore.APIKeyResponse": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "expires_at": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "key": {
+          "type": "string"
+        },
+        "key_type": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/datastore.Role"
+        },
+        "uid": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        }
+      }
+    },
     "datastore.AlertConfiguration": {
       "type": "object",
       "properties": {
@@ -7561,13 +9652,20 @@
       "type": "object",
       "properties": {
         "auth": {
-          "$ref": "#/definitions/datastore.AmqpCredentials"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.AmqpCredentials"
+            }
+          ],
+          "x-nullable": true
         },
         "bindedExchange": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "deadLetterExchange": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "host": {
           "type": "string"
@@ -7585,7 +9683,8 @@
           "type": "string"
         },
         "vhost": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         }
       }
     },
@@ -7619,6 +9718,32 @@
         },
         "source_id": {
           "type": "string"
+        }
+      }
+    },
+    "datastore.CircuitBreakerConfiguration": {
+      "type": "object",
+      "properties": {
+        "consecutive_failure_threshold": {
+          "type": "integer"
+        },
+        "error_timeout": {
+          "type": "integer"
+        },
+        "failure_threshold": {
+          "type": "integer"
+        },
+        "minimum_request_count": {
+          "type": "integer"
+        },
+        "observability_window": {
+          "type": "integer"
+        },
+        "sample_rate": {
+          "type": "integer"
+        },
+        "success_threshold": {
+          "type": "integer"
         }
       }
     },
@@ -7670,7 +9795,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_id": {
           "type": "string"
@@ -7697,10 +9823,12 @@
           "$ref": "#/definitions/datastore.HttpHeader"
         },
         "requested_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "responded_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "response_data": {
           "type": "string"
@@ -7726,7 +9854,8 @@
       "type": "string",
       "enum": [
         "at_least_once",
-        "at_most_once"
+        "at_most_once",
+        ""
       ],
       "x-enum-varnames": [
         "AtLeastOnceDeliveryMode",
@@ -7740,7 +9869,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_id": {
           "type": "string"
@@ -7770,7 +9900,8 @@
       "enum": [
         "offline",
         "online",
-        "disabled"
+        "disabled",
+        ""
       ],
       "x-enum-varnames": [
         "DeviceStatusOffline",
@@ -7782,7 +9913,8 @@
       "type": "string",
       "enum": [
         "base64",
-        "hex"
+        "hex",
+        ""
       ],
       "x-enum-varnames": [
         "Base64Encoding",
@@ -7796,11 +9928,17 @@
           "type": "boolean"
         },
         "authentication": {
-          "$ref": "#/definitions/datastore.EndpointAuthentication"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.EndpointAuthentication"
+            }
+          ],
+          "x-nullable": true
         },
         "cb_state": {
           "description": "CBState is the circuit breaker state (\"open\", \"half-open\", \"closed\") so the UI\ncan reflect a tripped breaker on the endpoint status. Nil when CB is\noff/unlicensed or has no sample for this endpoint.",
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "content_type": {
           "type": "string"
@@ -7809,7 +9947,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "description": {
           "type": "string"
@@ -7818,11 +9957,13 @@
           "type": "integer"
         },
         "failure_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "failure_rate": {
           "description": "FailureRate is the circuit breaker's rolling failure rate for this endpoint.\nIt is a pointer so the API can return null when no rate was computed (circuit\nbreaker feature off, or sampler not running), distinct from a genuine 0%.",
-          "type": "number"
+          "type": "number",
+          "x-nullable": true
         },
         "http_timeout": {
           "type": "integer"
@@ -7833,7 +9974,8 @@
             {
               "$ref": "#/definitions/datastore.MtlsClientCert"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "name": {
           "type": "string"
@@ -7843,7 +9985,8 @@
         },
         "period_failure_rate": {
           "description": "PeriodFailureRate is the period failure rate from event_deliveries,\n(Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.\nNil when the range has no counted deliveries; sibling counts are transient.",
-          "type": "number"
+          "type": "number",
+          "x-nullable": true
         },
         "project_id": {
           "type": "string"
@@ -7855,7 +9998,8 @@
           "type": "integer"
         },
         "retry_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "secrets": {
           "type": "array",
@@ -7870,7 +10014,8 @@
           "$ref": "#/definitions/datastore.EndpointStatus"
         },
         "success_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "support_email": {
           "type": "string"
@@ -7890,13 +10035,28 @@
       "type": "object",
       "properties": {
         "api_key": {
-          "$ref": "#/definitions/datastore.ApiKey"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ApiKey"
+            }
+          ],
+          "x-nullable": true
         },
         "basic_auth": {
-          "$ref": "#/definitions/datastore.BasicAuth"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.BasicAuth"
+            }
+          ],
+          "x-nullable": true
         },
         "oauth2": {
-          "$ref": "#/definitions/datastore.OAuth2"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.OAuth2"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.EndpointAuthenticationType"
@@ -7908,7 +10068,8 @@
       "enum": [
         "api_key",
         "oauth2",
-        "basic_auth"
+        "basic_auth",
+        ""
       ],
       "x-enum-varnames": [
         "APIKeyAuthentication",
@@ -7921,7 +10082,8 @@
       "enum": [
         "active",
         "inactive",
-        "paused"
+        "paused",
+        ""
       ],
       "x-enum-varnames": [
         "ActiveEndpointStatus",
@@ -7933,7 +10095,8 @@
       "type": "object",
       "properties": {
         "acknowledged_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "app_id": {
           "description": "Deprecated",
@@ -7944,13 +10107,13 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "type": "object",
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_metadata": {
           "type": "array",
@@ -7989,7 +10152,12 @@
           "type": "string"
         },
         "source_metadata": {
-          "$ref": "#/definitions/datastore.Source"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Source"
+            }
+          ],
+          "x-nullable": true
         },
         "status": {
           "$ref": "#/definitions/datastore.EventStatus"
@@ -8016,7 +10184,8 @@
         "Discarded",
         "Failure",
         "Success",
-        "Retry"
+        "Retry",
+        ""
       ],
       "x-enum-varnames": [
         "ScheduledEventStatus",
@@ -8034,7 +10203,8 @@
         "Failure",
         "Success",
         "Retry",
-        "Pending"
+        "Pending",
+        ""
       ],
       "x-enum-varnames": [
         "ProcessingStatus",
@@ -8085,10 +10255,9 @@
           "type": "string"
         },
         "service_account": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "description": "encoding/json marshals []byte as a base64 string on the wire.",
+          "type": "string",
+          "format": "byte"
         },
         "subscription_id": {
           "type": "string"
@@ -8116,7 +10285,8 @@
       "type": "object",
       "additionalProperties": {
         "type": "string"
-      }
+      },
+      "x-nullable": true
     },
     "datastore.KafkaAuth": {
       "type": "object",
@@ -8142,7 +10312,12 @@
       "type": "object",
       "properties": {
         "auth": {
-          "$ref": "#/definitions/datastore.KafkaAuth"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.KafkaAuth"
+            }
+          ],
+          "x-nullable": true
         },
         "brokers": {
           "type": "array",
@@ -8160,7 +10335,8 @@
     },
     "datastore.M": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "x-nullable": true
     },
     "datastore.MetaEventAttempt": {
       "type": "object",
@@ -8176,15 +10352,57 @@
         }
       }
     },
+    "datastore.MetaEventConfiguration": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "is_enabled": {
+          "type": "boolean"
+        },
+        "pub_sub": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.PubSubConfig"
+            }
+          ],
+          "x-nullable": true
+        },
+        "secret": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/datastore.MetaEventType"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "datastore.MetaEventType": {
+      "type": "string",
+      "enum": [
+        "http",
+        "pub_sub",
+        ""
+      ],
+      "x-enum-varnames": [
+        "HTTPMetaEvent",
+        "PubSubMetaEvent"
+      ]
+    },
     "datastore.Metadata": {
       "type": "object",
       "properties": {
         "data": {
           "description": "Data to be sent to endpoint.",
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "type": "object",
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "interval_seconds": {
           "type": "integer"
@@ -8253,7 +10471,8 @@
             {
               "$ref": "#/definitions/datastore.OAuth2FieldMapping"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "grant_type": {
           "type": "string"
@@ -8273,7 +10492,8 @@
             {
               "$ref": "#/definitions/datastore.OAuth2SigningKey"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "subject": {
           "type": "string"
@@ -8287,7 +10507,8 @@
       "type": "string",
       "enum": [
         "shared_secret",
-        "client_assertion"
+        "client_assertion",
+        ""
       ],
       "x-enum-varnames": [
         "SharedSecretAuth",
@@ -8300,7 +10521,8 @@
         "seconds",
         "milliseconds",
         "minutes",
-        "hours"
+        "hours",
+        ""
       ],
       "x-enum-varnames": [
         "ExpiryTimeUnitSeconds",
@@ -8387,7 +10609,8 @@
       "type": "string",
       "enum": [
         "next",
-        "prev"
+        "prev",
+        ""
       ],
       "x-enum-varnames": [
         "Next",
@@ -8421,7 +10644,8 @@
       "type": "string",
       "enum": [
         "refresh_token",
-        "static_token"
+        "static_token",
+        ""
       ],
       "x-enum-varnames": [
         "PortalAuthTypeRefreshToken",
@@ -8444,7 +10668,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_count": {
           "type": "integer"
@@ -8458,7 +10683,12 @@
         "endpoints_metadata": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/datastore.Endpoint"
+            "allOf": [
+              {
+                "$ref": "#/definitions/datastore.Endpoint"
+              }
+            ],
+            "x-nullable": true
           }
         },
         "name": {
@@ -8484,11 +10714,119 @@
         }
       }
     },
+    "datastore.ProjectConfig": {
+      "type": "object",
+      "properties": {
+        "add_event_id_trace_headers": {
+          "type": "boolean"
+        },
+        "circuit_breaker": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.CircuitBreakerConfiguration"
+            }
+          ],
+          "x-nullable": true
+        },
+        "disable_endpoint": {
+          "type": "boolean"
+        },
+        "max_payload_read_size": {
+          "type": "integer"
+        },
+        "meta_event": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.MetaEventConfiguration"
+            }
+          ],
+          "x-nullable": true
+        },
+        "multiple_endpoint_subscriptions": {
+          "type": "boolean"
+        },
+        "ratelimit": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.RateLimitConfiguration"
+            }
+          ],
+          "x-nullable": true
+        },
+        "replay_attacks_prevention_enabled": {
+          "type": "boolean"
+        },
+        "request_id_header": {
+          "$ref": "#/definitions/config.RequestIDHeaderProvider"
+        },
+        "search_policy": {
+          "type": "string"
+        },
+        "signature": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.SignatureConfiguration"
+            }
+          ],
+          "x-nullable": true
+        },
+        "ssl": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.SSLConfiguration"
+            }
+          ],
+          "x-nullable": true
+        },
+        "strategy": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.StrategyConfiguration"
+            }
+          ],
+          "x-nullable": true
+        }
+      }
+    },
+    "datastore.ProjectStatistics": {
+      "type": "object",
+      "properties": {
+        "endpoints_exist": {
+          "type": "boolean"
+        },
+        "events_exist": {
+          "type": "boolean"
+        },
+        "sources_exist": {
+          "type": "boolean"
+        },
+        "subscriptions_exist": {
+          "type": "boolean"
+        }
+      }
+    },
+    "datastore.ProjectType": {
+      "type": "string",
+      "enum": [
+        "outgoing",
+        "incoming",
+        ""
+      ],
+      "x-enum-varnames": [
+        "OutgoingProject",
+        "IncomingProject"
+      ]
+    },
     "datastore.ProviderConfig": {
       "type": "object",
       "properties": {
         "twitter": {
-          "$ref": "#/definitions/datastore.TwitterProviderConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.TwitterProviderConfig"
+            }
+          ],
+          "x-nullable": true
         }
       }
     },
@@ -8496,16 +10834,36 @@
       "type": "object",
       "properties": {
         "amqp": {
-          "$ref": "#/definitions/datastore.AmqpPubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.AmqpPubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "google": {
-          "$ref": "#/definitions/datastore.GooglePubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.GooglePubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "kafka": {
-          "$ref": "#/definitions/datastore.KafkaPubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.KafkaPubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "sqs": {
-          "$ref": "#/definitions/datastore.SQSPubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.SQSPubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.PubSubType"
@@ -8521,7 +10879,8 @@
         "sqs",
         "google",
         "kafka",
-        "amqp"
+        "amqp",
+        ""
       ],
       "x-enum-varnames": [
         "SqsPubSub",
@@ -8555,6 +10914,20 @@
         }
       }
     },
+    "datastore.Role": {
+      "type": "object",
+      "properties": {
+        "app": {
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/auth.RoleType"
+        }
+      }
+    },
     "datastore.SQSPubSubConfig": {
       "type": "object",
       "properties": {
@@ -8576,6 +10949,14 @@
         }
       }
     },
+    "datastore.SSLConfiguration": {
+      "type": "object",
+      "properties": {
+        "enforce_secure_endpoints": {
+          "type": "boolean"
+        }
+      }
+    },
     "datastore.Secret": {
       "type": "object",
       "properties": {
@@ -8583,10 +10964,12 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "expires_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "uid": {
           "type": "string"
@@ -8599,11 +10982,43 @@
         }
       }
     },
+    "datastore.SignatureConfiguration": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/config.SignatureHeaderProvider"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/datastore.SignatureVersion"
+          }
+        }
+      }
+    },
+    "datastore.SignatureVersion": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "encoding": {
+          "$ref": "#/definitions/datastore.EncodingType"
+        },
+        "hash": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        }
+      }
+    },
     "datastore.Source": {
       "type": "object",
       "properties": {
         "body_function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
@@ -8612,7 +11027,8 @@
           "$ref": "#/definitions/datastore.CustomResponse"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "event_type_location": {
           "type": "string"
@@ -8624,7 +11040,8 @@
           }
         },
         "header_function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "idempotency_keys": {
           "type": "array",
@@ -8648,10 +11065,20 @@
           "$ref": "#/definitions/datastore.SourceProvider"
         },
         "provider_config": {
-          "$ref": "#/definitions/datastore.ProviderConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ProviderConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "pub_sub": {
-          "$ref": "#/definitions/datastore.PubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.PubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.SourceType"
@@ -8666,7 +11093,12 @@
           "type": "string"
         },
         "verifier": {
-          "$ref": "#/definitions/datastore.VerifierConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.VerifierConfig"
+            }
+          ],
+          "x-nullable": true
         }
       }
     },
@@ -8675,7 +11107,8 @@
       "enum": [
         "github",
         "twitter",
-        "shopify"
+        "shopify",
+        ""
       ],
       "x-enum-varnames": [
         "GithubSourceProvider",
@@ -8689,7 +11122,8 @@
         "http",
         "rest_api",
         "pub_sub",
-        "db_change_stream"
+        "db_change_stream",
+        ""
       ],
       "x-enum-varnames": [
         "HTTPSource",
@@ -8698,11 +11132,26 @@
         "DBChangeStream"
       ]
     },
+    "datastore.StrategyConfiguration": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "type": "integer"
+        },
+        "retry_count": {
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/definitions/datastore.StrategyProvider"
+        }
+      }
+    },
     "datastore.StrategyProvider": {
       "type": "string",
       "enum": [
         "linear",
-        "exponential"
+        "exponential",
+        ""
       ],
       "x-enum-varnames": [
         "LinearStrategyProvider",
@@ -8713,7 +11162,8 @@
       "type": "string",
       "enum": [
         "cli",
-        "api"
+        "api",
+        ""
       ],
       "x-enum-varnames": [
         "SubscriptionTypeCLI",
@@ -8724,7 +11174,8 @@
       "type": "object",
       "properties": {
         "crc_verified_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         }
       }
     },
@@ -8759,13 +11210,28 @@
       "type": "object",
       "properties": {
         "api_key": {
-          "$ref": "#/definitions/datastore.ApiKey"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ApiKey"
+            }
+          ],
+          "x-nullable": true
         },
         "basic_auth": {
-          "$ref": "#/definitions/datastore.BasicAuth"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.BasicAuth"
+            }
+          ],
+          "x-nullable": true
         },
         "hmac": {
-          "$ref": "#/definitions/datastore.HMac"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.HMac"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.VerifierType"
@@ -8778,7 +11244,8 @@
         "noop",
         "hmac",
         "basic_auth",
-        "api_key"
+        "api_key",
+        ""
       ],
       "x-enum-varnames": [
         "NoopVerifier",
@@ -8788,7 +11255,9 @@
       ]
     },
     "handlers.Stub": {
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true,
+      "x-nullable": true
     },
     "httpheader.HTTPHeader": {
       "type": "object",
@@ -8797,7 +11266,8 @@
         "items": {
           "type": "string"
         }
-      }
+      },
+      "x-nullable": true
     },
     "models.AlertConfiguration": {
       "type": "object",
@@ -8904,11 +11374,14 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "x-nullable": true
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "event_type": {
           "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -8970,7 +11443,8 @@
       "properties": {
         "body": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "enabled_at": {
           "$ref": "#/definitions/models.OptionalTime"
@@ -8980,18 +11454,29 @@
         },
         "headers": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "path": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "query": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "uid": {
           "type": "string"
+        }
+      }
+    },
+    "models.CountResponse": {
+      "type": "object",
+      "properties": {
+        "num": {
+          "type": "integer"
         }
       }
     },
@@ -9084,14 +11569,17 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "x-nullable": true
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "endpoint_id": {
-          "description": "Specifies the endpoint to send this event to.",
+          "description": "Specifies the endpoint to send this event to. Required unless the\ndeprecated app_id is provided.",
           "type": "string"
         },
         "event_type": {
@@ -9118,7 +11606,8 @@
         "json_schema": {
           "description": "JSONSchema is the JSON structure of the event type",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "name": {
           "description": "Name is the event type name. E.g., invoice.created",
@@ -9175,6 +11664,51 @@
               "$ref": "#/definitions/datastore.M"
             }
           ]
+        }
+      }
+    },
+    "models.CreateProject": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "description": "Project Config",
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.ProjectConfig"
+            }
+          ]
+        },
+        "logo_url": {
+          "type": "string"
+        },
+        "name": {
+          "description": "Project Name",
+          "type": "string"
+        },
+        "type": {
+          "description": "Project Type, supported values are `outgoing`, `incoming`",
+          "type": "string"
+        }
+      }
+    },
+    "models.CreateProjectResponse": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.APIKeyResponse"
+            }
+          ],
+          "x-nullable": true
+        },
+        "project": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.ProjectResponse"
+            }
+          ],
+          "x-nullable": true
         }
       }
     },
@@ -9322,11 +11856,14 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "x-nullable": true
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "event_type": {
           "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -9377,11 +11914,17 @@
           "type": "boolean"
         },
         "authentication": {
-          "$ref": "#/definitions/datastore.EndpointAuthentication"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.EndpointAuthentication"
+            }
+          ],
+          "x-nullable": true
         },
         "cb_state": {
           "description": "CBState is the circuit breaker state (\"open\", \"half-open\", \"closed\") so the UI\ncan reflect a tripped breaker on the endpoint status. Nil when CB is\noff/unlicensed or has no sample for this endpoint.",
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "content_type": {
           "type": "string"
@@ -9390,7 +11933,8 @@
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "description": {
           "type": "string"
@@ -9399,11 +11943,13 @@
           "type": "integer"
         },
         "failure_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "failure_rate": {
           "description": "FailureRate is the circuit breaker's rolling failure rate for this endpoint.\nIt is a pointer so the API can return null when no rate was computed (circuit\nbreaker feature off, or sampler not running), distinct from a genuine 0%.",
-          "type": "number"
+          "type": "number",
+          "x-nullable": true
         },
         "http_timeout": {
           "type": "integer"
@@ -9414,7 +11960,8 @@
             {
               "$ref": "#/definitions/datastore.MtlsClientCert"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "name": {
           "type": "string"
@@ -9424,7 +11971,8 @@
         },
         "period_failure_rate": {
           "description": "PeriodFailureRate is the period failure rate from event_deliveries,\n(Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.\nNil when the range has no counted deliveries; sibling counts are transient.",
-          "type": "number"
+          "type": "number",
+          "x-nullable": true
         },
         "project_id": {
           "type": "string"
@@ -9436,7 +11984,8 @@
           "type": "integer"
         },
         "retry_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "secrets": {
           "type": "array",
@@ -9451,7 +12000,8 @@
           "$ref": "#/definitions/datastore.EndpointStatus"
         },
         "success_count": {
-          "type": "integer"
+          "type": "integer",
+          "x-nullable": true
         },
         "support_email": {
           "type": "string"
@@ -9471,16 +12021,23 @@
       "type": "object",
       "properties": {
         "acknowledged_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "cli_metadata": {
-          "$ref": "#/definitions/datastore.CLIMetadata"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.CLIMetadata"
+            }
+          ],
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "delivery_mode": {
           "$ref": "#/definitions/datastore.DeliveryMode"
@@ -9492,19 +12049,34 @@
           "type": "string"
         },
         "device_metadata": {
-          "$ref": "#/definitions/datastore.Device"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Device"
+            }
+          ],
+          "x-nullable": true
         },
         "endpoint_id": {
           "type": "string"
         },
         "endpoint_metadata": {
-          "$ref": "#/definitions/datastore.Endpoint"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Endpoint"
+            }
+          ],
+          "x-nullable": true
         },
         "event_id": {
           "type": "string"
         },
         "event_metadata": {
-          "$ref": "#/definitions/datastore.Event"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Event"
+            }
+          ],
+          "x-nullable": true
         },
         "event_type": {
           "type": "string"
@@ -9523,13 +12095,23 @@
           "type": "number"
         },
         "metadata": {
-          "$ref": "#/definitions/datastore.Metadata"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Metadata"
+            }
+          ],
+          "x-nullable": true
         },
         "project_id": {
           "type": "string"
         },
         "source_metadata": {
-          "$ref": "#/definitions/datastore.Source"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Source"
+            }
+          ],
+          "x-nullable": true
         },
         "status": {
           "$ref": "#/definitions/datastore.EventDeliveryStatus"
@@ -9555,7 +12137,8 @@
       "type": "object",
       "properties": {
         "acknowledged_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "app_id": {
           "description": "Deprecated",
@@ -9566,13 +12149,13 @@
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "type": "object",
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "endpoint_metadata": {
           "type": "array",
@@ -9611,7 +12194,12 @@
           "type": "string"
         },
         "source_metadata": {
-          "$ref": "#/definitions/datastore.Source"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Source"
+            }
+          ],
+          "x-nullable": true
         },
         "status": {
           "$ref": "#/definitions/datastore.EventStatus"
@@ -9637,16 +12225,16 @@
           "type": "string"
         },
         "deprecated_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "description": {
           "type": "string"
         },
         "json_schema": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "type": "object",
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "name": {
           "type": "string"
@@ -9694,11 +12282,14 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "x-nullable": true
         },
         "data": {
           "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true,
+          "x-nullable": true
         },
         "event_type": {
           "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -9741,7 +12332,8 @@
           "$ref": "#/definitions/datastore.M"
         },
         "enabled_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "event_type": {
           "type": "string"
@@ -9792,7 +12384,8 @@
         },
         "payload": {
           "type": "object",
-          "additionalProperties": {}
+          "additionalProperties": {},
+          "x-nullable": true
         },
         "type": {
           "type": "string"
@@ -9818,10 +12411,9 @@
           "type": "string"
         },
         "service_account": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
+          "description": "encoding/json marshals []byte as a base64 string on the wire.",
+          "type": "string",
+          "format": "byte"
         },
         "subscription_id": {
           "type": "string"
@@ -9911,23 +12503,57 @@
         }
       }
     },
+    "models.MetaEventConfiguration": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "is_enabled": {
+          "type": "boolean"
+        },
+        "secret": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
     "models.MetaEventResponse": {
       "type": "object",
       "properties": {
         "attempt": {
-          "$ref": "#/definitions/datastore.MetaEventAttempt"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.MetaEventAttempt"
+            }
+          ],
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "event_type": {
           "type": "string"
         },
         "metadata": {
-          "$ref": "#/definitions/datastore.Metadata"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Metadata"
+            }
+          ],
+          "x-nullable": true
         },
         "project_id": {
           "type": "string"
@@ -10139,6 +12765,140 @@
         }
       }
     },
+    "models.ProjectConfig": {
+      "type": "object",
+      "properties": {
+        "add_event_id_trace_headers": {
+          "description": "Controls of the Event ID and Event Delivery ID Headers are added to the request when events are dispatched to endpoints",
+          "type": "boolean"
+        },
+        "circuit_breaker": {
+          "description": "CircuitBreaker is used to configure the project's circuit breaker settings",
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.CircuitBreakerConfiguration"
+            }
+          ]
+        },
+        "disable_endpoint": {
+          "description": "Controls if the project will disable and endpoint after the retry threshold for an event is reached",
+          "type": "boolean"
+        },
+        "max_payload_read_size": {
+          "description": "Specifies how many bytes and incoming project should read from the ingest request, and how many bytes an outgoing project should from the response of your endpoints\nDefaults to 50KB.",
+          "type": "integer"
+        },
+        "meta_event": {
+          "description": "MetaEvent is used to configure the project's meta events",
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.MetaEventConfiguration"
+            }
+          ]
+        },
+        "multiple_endpoint_subscriptions": {
+          "description": "MultipleEndpointSubscriptions is used to configure if multiple subscriptions\ncan be created for the endpoint in a project",
+          "type": "boolean"
+        },
+        "ratelimit": {
+          "description": "RateLimit is used to configure the projects rate limiting config values",
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.RateLimitConfiguration"
+            }
+          ]
+        },
+        "replay_attacks_prevention_enabled": {
+          "description": "Controls if your project will add a timestamp to it's webhook signature header to prevent a replay attack, See this blog post[https://getconvoy.io/blog/generating-stripe-like-webhook-signatures] for more]",
+          "type": "boolean"
+        },
+        "request_id_header": {
+          "description": "RequestIDHeader is the outbound header name for the stable request id sent on webhook deliveries.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/config.RequestIDHeaderProvider"
+            }
+          ]
+        },
+        "search_policy": {
+          "description": "Specify the interval in hours for which the event tokenizer runs",
+          "type": "string"
+        },
+        "signature": {
+          "description": "Signature is used to configure the project's signature header versions",
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.SignatureConfiguration"
+            }
+          ]
+        },
+        "ssl": {
+          "description": "SSL is used to configure the project's endpoint ssl enforcement rules",
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.SSLConfiguration"
+            }
+          ]
+        },
+        "strategy": {
+          "description": "Strategy is used to configure the project's retry strategies for failing events.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.StrategyConfiguration"
+            }
+          ]
+        }
+      }
+    },
+    "models.ProjectResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ProjectConfig"
+            }
+          ],
+          "x-nullable": true
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "type": "string",
+          "x-nullable": true
+        },
+        "logo_url": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "organisation_id": {
+          "type": "string"
+        },
+        "retained_events": {
+          "type": "integer"
+        },
+        "statistics": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ProjectStatistics"
+            }
+          ],
+          "x-nullable": true
+        },
+        "type": {
+          "$ref": "#/definitions/datastore.ProjectType"
+        },
+        "uid": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      }
+    },
     "models.PubSubConfig": {
       "type": "object",
       "properties": {
@@ -10215,11 +12975,51 @@
         }
       }
     },
+    "models.SSLConfiguration": {
+      "type": "object",
+      "properties": {
+        "enforce_secure_endpoints": {
+          "type": "boolean"
+        }
+      }
+    },
+    "models.SignatureConfiguration": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/config.SignatureHeaderProvider"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/models.SignatureVersion"
+          }
+        }
+      }
+    },
+    "models.SignatureVersion": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "encoding": {
+          "type": "string"
+        },
+        "hash": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        }
+      }
+    },
     "models.SourceResponse": {
       "type": "object",
       "properties": {
         "body_function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
@@ -10228,7 +13028,8 @@
           "$ref": "#/definitions/datastore.CustomResponse"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "event_type_location": {
           "type": "string"
@@ -10240,7 +13041,8 @@
           }
         },
         "header_function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "idempotency_keys": {
           "type": "array",
@@ -10264,10 +13066,20 @@
           "$ref": "#/definitions/datastore.SourceProvider"
         },
         "provider_config": {
-          "$ref": "#/definitions/datastore.ProviderConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.ProviderConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "pub_sub": {
-          "$ref": "#/definitions/datastore.PubSubConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.PubSubConfig"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.SourceType"
@@ -10282,7 +13094,26 @@
           "type": "string"
         },
         "verifier": {
-          "$ref": "#/definitions/datastore.VerifierConfig"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.VerifierConfig"
+            }
+          ],
+          "x-nullable": true
+        }
+      }
+    },
+    "models.StrategyConfiguration": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "type": "integer"
+        },
+        "retry_count": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string"
         }
       }
     },
@@ -10295,28 +13126,46 @@
             {
               "$ref": "#/definitions/datastore.AlertConfiguration"
             }
-          ]
+          ],
+          "x-nullable": true
         },
         "created_at": {
           "type": "string"
         },
         "deleted_at": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "delivery_mode": {
           "$ref": "#/definitions/datastore.DeliveryMode"
         },
         "device_metadata": {
-          "$ref": "#/definitions/datastore.Device"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Device"
+            }
+          ],
+          "x-nullable": true
         },
         "endpoint_metadata": {
-          "$ref": "#/definitions/datastore.Endpoint"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Endpoint"
+            }
+          ],
+          "x-nullable": true
         },
         "filter_config": {
-          "$ref": "#/definitions/datastore.FilterConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.FilterConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "function": {
-          "type": "string"
+          "type": "string",
+          "x-nullable": true
         },
         "name": {
           "type": "string"
@@ -10325,13 +13174,28 @@
           "type": "string"
         },
         "rate_limit_config": {
-          "$ref": "#/definitions/datastore.RateLimitConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.RateLimitConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "retry_config": {
-          "$ref": "#/definitions/datastore.RetryConfiguration"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.RetryConfiguration"
+            }
+          ],
+          "x-nullable": true
         },
         "source_metadata": {
-          "$ref": "#/definitions/datastore.Source"
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.Source"
+            }
+          ],
+          "x-nullable": true
         },
         "type": {
           "$ref": "#/definitions/datastore.SubscriptionType"
@@ -10543,7 +13407,8 @@
         "json_schema": {
           "description": "JSONSchema is the JSON structure of the event type",
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "x-nullable": true
         }
       }
     },
@@ -10597,6 +13462,26 @@
               "$ref": "#/definitions/datastore.M"
             }
           ]
+        }
+      }
+    },
+    "models.UpdateProject": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "description": "Project Config",
+          "allOf": [
+            {
+              "$ref": "#/definitions/models.ProjectConfig"
+            }
+          ]
+        },
+        "logo_url": {
+          "type": "string"
+        },
+        "name": {
+          "description": "Project Name",
+          "type": "string"
         }
       }
     },
@@ -10776,6 +13661,10 @@
     }
   },
   "tags": [
+    {
+      "description": "Project related APIs",
+      "name": "Projects"
+    },
     {
       "description": "Subscription related APIs",
       "name": "Subscriptions"

@@ -536,10 +536,12 @@ func (h *BillingHandler) OnboardSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := validatePlanAndHostRequired(requestData.PlanID, requestData.Host); err != nil {
+	canonicalHost, err := validatePlanAndHost(requestData.PlanID, requestData.Host)
+	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	requestData.Host = canonicalHost
 
 	resp, err := h.BillingClient.OnboardSubscription(r.Context(), orgID, requestData)
 	if err != nil {
@@ -554,6 +556,13 @@ func (h *BillingHandler) StartTrial(w http.ResponseWriter, r *http.Request) {
 	// Same access gate as OnboardSubscription; trial eligibility is enforced by billing.
 	orgID, ok := h.orgGuard(w, r)
 	if !ok {
+		return
+	}
+
+	// Cloud-only: require a verified user email before minting a free trial.
+	// Failure policy: fail closed when the auth user is missing or unverified.
+	if !h.cloudTrialEmailVerified(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("verify your email before starting a trial", http.StatusForbidden))
 		return
 	}
 
@@ -581,6 +590,20 @@ func (h *BillingHandler) StartTrial(w http.ResponseWriter, r *http.Request) {
 	h.activateTrialCap(orgID)
 
 	_ = render.Render(w, r, util.NewServerResponse("Trial started successfully", resp.Data, http.StatusOK))
+}
+
+// cloudTrialEmailVerified is true when the caller may start a cloud free trial.
+// Self-hosted / non-cloud modes always pass. Cloud fails closed on missing or
+// unverified auth user.
+func (h *BillingHandler) cloudTrialEmailVerified(r *http.Request) bool {
+	if !h.A.Cfg.UsesOrgBilling() {
+		return true
+	}
+	user, err := h.retrieveUser(r)
+	if err != nil || user == nil || user.UID == "" {
+		return false
+	}
+	return user.EmailVerified
 }
 
 const (
@@ -720,10 +743,12 @@ func (h *BillingHandler) UpgradeSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := validatePlanAndHostRequired(requestData.PlanID, requestData.Host); err != nil {
+	canonicalHost, err := validatePlanAndHost(requestData.PlanID, requestData.Host)
+	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	requestData.Host = canonicalHost
 
 	resp, err := h.BillingClient.UpgradeSubscription(r.Context(), orgID, subscriptionID, requestData)
 	if err != nil {

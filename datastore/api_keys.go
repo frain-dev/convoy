@@ -19,7 +19,7 @@ type CreateAPIKeyRequest struct {
 	Role      auth.Role `json:"role" valid:"required"`
 	Type      string    `json:"key_type" valid:"required"`
 	UserID    string    `json:"user_id,omitempty"`
-	ExpiresAt null.Time `json:"expires_at,omitempty"`
+	ExpiresAt null.Time `json:"expires_at,omitempty" extensions:"x-nullable"`
 }
 
 // Validate validates the create API key request
@@ -88,7 +88,7 @@ type APIKeyRes struct {
 	Name      string    `json:"name"`
 	Role      Role      `json:"role"`
 	Type      string    `json:"key_type"`
-	ExpiresAt null.Time `json:"expires_at"`
+	ExpiresAt null.Time `json:"expires_at" extensions:"x-nullable"`
 }
 
 type Role struct {

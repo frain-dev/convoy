@@ -201,8 +201,12 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	orgRepo := organisations.New(h.A.Logger, h.A.DB)
-	err = orgRepo.DeleteOrganisation(r.Context(), org.UID)
+	err = services.SoftDeleteOrganisationWithCascade(r.Context(), services.SoftDeleteOrganisationDeps{
+		ProjectRepo: h.projectRepo(),
+		DB:          h.A.DB,
+		Cache:       h.A.Cache,
+		Logger:      h.A.Logger,
+	}, org.UID)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to delete organisation", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

@@ -156,7 +156,8 @@ func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastor
 				Duration:   10,
 				RetryCount: 2,
 			},
-			SSL: ssl,
+			SSL:             ssl,
+			RequestIDHeader: config.DefaultRequestIDHeader,
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
 				Versions: []datastore.SignatureVersion{

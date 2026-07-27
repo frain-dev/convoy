@@ -13,11 +13,12 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 )
 
-func provideCancelOrgMemberService(ctrl *gomock.Controller, inviteID string) *CancelOrgMemberService {
+func provideCancelOrgMemberService(ctrl *gomock.Controller, inviteID, orgID string) *CancelOrgMemberService {
 	return &CancelOrgMemberService{
 		Queue:      mocks.NewMockQueuer(ctrl),
 		InviteRepo: mocks.NewMockOrganisationInviteRepository(ctrl),
 		InviteID:   inviteID,
+		OrgID:      orgID,
 	}
 }
 
@@ -27,6 +28,7 @@ func TestCancelOrgMemberService_Run(t *testing.T) {
 
 	type args struct {
 		inviteID string
+		orgID    string
 		ctx      context.Context
 	}
 	tests := []struct {
@@ -42,6 +44,7 @@ func TestCancelOrgMemberService_Run(t *testing.T) {
 			args: args{
 				ctx:      ctx,
 				inviteID: "abc",
+				orgID:    "123",
 			},
 			dbFn: func(co *CancelOrgMemberService) {
 				a, _ := co.InviteRepo.(*mocks.MockOrganisationInviteRepository)
@@ -75,12 +78,37 @@ func TestCancelOrgMemberService_Run(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "should_not_cancel_invite_from_another_organisation",
+			args: args{
+				ctx:      ctx,
+				inviteID: "abc",
+				orgID:    "999",
+			},
+			dbFn: func(co *CancelOrgMemberService) {
+				a, _ := co.InviteRepo.(*mocks.MockOrganisationInviteRepository)
+				a.EXPECT().FetchOrganisationInviteByID(gomock.Any(), "abc").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						UID:            "abc",
+						OrganisationID: "123",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@example.com",
+					}, nil)
+
+				// A foreign invite must never be mutated.
+				a.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Any()).Times(0)
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch organisation invite by id",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			co := provideCancelOrgMemberService(ctrl, tt.args.inviteID)
+			co := provideCancelOrgMemberService(ctrl, tt.args.inviteID, tt.args.orgID)
 
 			// Arrange Expectations
 			if tt.dbFn != nil {

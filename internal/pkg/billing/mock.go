@@ -334,6 +334,20 @@ func (m *MockBillingClient) StartTrial(ctx context.Context, orgID string, req St
 	}, nil
 }
 
+func (m *MockBillingClient) EnqueueOnboardingWelcome(ctx context.Context, orgID string, req OnboardingWelcomeRequest) (*Response[interface{}], error) {
+	if orgID == "" {
+		return nil, &Error{Message: "organisation ID is required"}
+	}
+
+	m.ensureOrganisation(orgID)
+
+	return &Response[interface{}]{
+		Status:  true,
+		Message: "Onboarding welcome enqueued",
+		Data:    nil,
+	}, nil
+}
+
 func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID, subscriptionID string) (*Response[interface{}], error) {
 	if orgID == "" || subscriptionID == "" {
 		return nil, &Error{Message: "organisation ID and subscription ID are required"}

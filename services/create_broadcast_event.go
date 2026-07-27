@@ -29,6 +29,10 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "an error occurred while creating broadcast event - invalid project"}
 	}
 
+	if err := e.Project.ValidateOutgoingEventIdempotencyKey(e.BroadcastEvent.IdempotencyKey); err != nil {
+		return &ServiceError{ErrMsg: err.Error()}
+	}
+
 	id := ulid.Make().String()
 	jobId := queue.JobId{ProjectID: e.Project.UID, ResourceID: id}.BroadcastJobId()
 

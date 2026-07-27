@@ -33,6 +33,15 @@ func Test_MergeHeaders(t *testing.T) {
 			}),
 			fields: []string{"User-Agent"},
 		},
+		"do_not_overwrite_case_insensitive_fields": {
+			header: HTTPHeader(map[string][]string{
+				"Authorization": {"Bearer trusted"},
+			}),
+			newHeader: HTTPHeader(map[string][]string{
+				"authorization": {"Bearer attacker"},
+			}),
+			fields: []string{"Authorization"},
+		},
 	}
 
 	for name, tc := range tests {
@@ -54,4 +63,19 @@ func Test_MergeHeaders(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_MergeHeaders_SkipsCaseInsensitiveDuplicates(t *testing.T) {
+	header := HTTPHeader{
+		"Authorization": {"Bearer trusted"},
+	}
+	header.MergeHeaders(HTTPHeader{
+		"authorization": {"Bearer attacker"},
+		"X-Custom":      {"keep"},
+	})
+
+	require.Equal(t, []string{"Bearer trusted"}, header["Authorization"])
+	require.Equal(t, []string{"keep"}, header["X-Custom"])
+	_, hasLower := header["authorization"]
+	require.False(t, hasLower)
 }

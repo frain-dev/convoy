@@ -22,6 +22,9 @@ package handlers
 //	@in							header
 //	@name						Authorization
 
+//	@tag.name			Projects
+//	@tag.description	Project related APIs
+
 //	@tag.name			Subscriptions
 //	@tag.description	Subscription related APIs
 

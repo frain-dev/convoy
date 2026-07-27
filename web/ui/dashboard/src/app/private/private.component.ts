@@ -66,6 +66,7 @@ export class PrivateComponent implements OnInit {
 	];
 	private jwtHelper: JwtHelperService = new JwtHelperService();
 	private shouldShowOrgSubscription: Subscription | undefined;
+	private profileChangedSubscription: Subscription | undefined;
 
 	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService, private rbacService: RbacService, public trialStatusService: TrialStatusService) {}
 
@@ -84,6 +85,9 @@ export class PrivateComponent implements OnInit {
 		}
 
 		this.checkIfTokenIsExpired();
+		// Re-read the verify chip whenever a profile mutation (email change,
+		// verify) invalidates the cached profile.
+		this.profileChangedSubscription = this.privateService.profileChanged.subscribe(() => void this.getUserDetails());
 		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
 		await this.licenseService.loadAllLicenses();
 		await this.checkInstanceAdminAccess();
@@ -95,6 +99,10 @@ export class PrivateComponent implements OnInit {
 		if (this.shouldShowOrgSubscription) {
 			this.shouldShowOrgSubscription.unsubscribe();
 			this.shouldShowOrgSubscription = undefined;
+		}
+		if (this.profileChangedSubscription) {
+			this.profileChangedSubscription.unsubscribe();
+			this.profileChangedSubscription = undefined;
 		}
 		if (this.checkTokenInterval) {
 			clearTimeout(this.checkTokenInterval);

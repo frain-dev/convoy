@@ -33,6 +33,62 @@ func TestLoadPortalLinksPaged_Success_EmptyList(t *testing.T) {
 	require.Equal(t, 0, paginationData.PrevRowCount.Count)
 }
 
+func TestLoadPortalLinksPaged_EndpointsMetadata(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	project := seedTestData(t, db)
+
+	logger := log.New("convoy", log.LevelInfo)
+	service := New(logger, db)
+
+	// One portal link with no endpoints
+	emptyRequest := &datastore.CreatePortalLinkRequest{
+		Name:              "Paged Portal Link Without Endpoints",
+		OwnerID:           ulid.Make().String(),
+		AuthType:          string(datastore.PortalAuthTypeStaticToken),
+		CanManageEndpoint: true,
+		Endpoints:         []string{},
+	}
+	emptyLink, err := service.CreatePortalLink(ctx, project.UID, emptyRequest)
+	require.NoError(t, err)
+
+	// One portal link with an endpoint
+	endpoint := seedEndpoint(t, db, project, "")
+	withEndpointsRequest := &datastore.CreatePortalLinkRequest{
+		Name:              "Paged Portal Link With Endpoints",
+		OwnerID:           ulid.Make().String(),
+		AuthType:          string(datastore.PortalAuthTypeStaticToken),
+		CanManageEndpoint: false,
+		Endpoints:         []string{endpoint.UID},
+	}
+	withEndpointsLink, err := service.CreatePortalLink(ctx, project.UID, withEndpointsRequest)
+	require.NoError(t, err)
+
+	filter := &datastore.FilterBy{}
+	pageable := datastore.Pageable{
+		PerPage:   10,
+		Direction: datastore.Next,
+	}
+	pageable.SetCursors()
+
+	portalLinks, _, err := service.LoadPortalLinksPaged(ctx, project.UID, filter, pageable)
+	require.NoError(t, err)
+	require.Len(t, portalLinks, 2)
+
+	byUID := make(map[string]datastore.PortalLink, len(portalLinks))
+	for _, pl := range portalLinks {
+		byUID[pl.UID] = pl
+	}
+
+	emptyResult := byUID[emptyLink.UID]
+	require.NotNil(t, emptyResult.EndpointsMetadata)
+	require.Empty(t, emptyResult.EndpointsMetadata, "endpoints_metadata must be [] not [null] for a link with no endpoints")
+
+	withEndpointsResult := byUID[withEndpointsLink.UID]
+	require.Len(t, withEndpointsResult.EndpointsMetadata, 1)
+	require.NotNil(t, withEndpointsResult.EndpointsMetadata[0], "endpoints_metadata must not contain null elements")
+	require.Equal(t, endpoint.UID, withEndpointsResult.EndpointsMetadata[0].UID)
+}
+
 func TestLoadPortalLinksPaged_Success_MultiplePortalLinks(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	project := seedTestData(t, db)

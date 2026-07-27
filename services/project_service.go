@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -72,6 +74,11 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			checkSignatureVersions(projectConfig.Signature.Versions)
 		} else {
 			projectConfig.Signature = datastore.DefaultProjectConfig.Signature
+		}
+
+		normalizeRequestIDHeader(projectConfig)
+		if err := validateRequestIDHeaderForProject(datastore.ProjectType(newProject.Type), projectConfig); err != nil {
+			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
 		if projectConfig.RateLimit == nil {
@@ -186,7 +193,11 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 			}
 		}
 
-		project.Config = update.Config.Transform()
+		project.Config = applyProjectConfigPatch(project.Config, update.Config, update.ConfigPresentKeys())
+		normalizeRequestIDHeader(project.Config)
+		if err := validateRequestIDHeaderForProject(project.Type, project.Config); err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
 		checkSignatureVersions(project.Config.Signature.Versions)
 		err := validateMetaEvent(project.Config, ps.Licenser)
 		if err != nil {
@@ -209,6 +220,123 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	}
 
 	return project, nil
+}
+
+var ErrCustomRequestIDHeaderOutgoingOnly = errors.New("request_id_header can only be customized on outgoing projects")
+var ErrInvalidRequestIDHeaderName = errors.New("request_id_header must be a valid HTTP header token")
+
+func normalizeRequestIDHeader(cfg *datastore.ProjectConfig) {
+	if cfg == nil {
+		return
+	}
+
+	header := strings.TrimSpace(string(cfg.RequestIDHeader))
+	if header == "" {
+		cfg.RequestIDHeader = datastore.DefaultProjectConfig.RequestIDHeader
+		return
+	}
+	cfg.RequestIDHeader = config.RequestIDHeaderProvider(header)
+}
+
+func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.ProjectConfig, present map[string]struct{}) *datastore.ProjectConfig {
+	if patch == nil {
+		return existing
+	}
+	if existing == nil {
+		return patch.Transform()
+	}
+
+	merged := *existing
+	incoming := patch.Transform()
+	if patch.RateLimit != nil {
+		merged.RateLimit = incoming.RateLimit
+	}
+	if patch.Strategy != nil {
+		merged.Strategy = incoming.Strategy
+	}
+	if patch.Signature != nil {
+		merged.Signature = incoming.Signature
+	}
+	if patch.SSL != nil {
+		merged.SSL = incoming.SSL
+	}
+	if patch.MetaEvent != nil {
+		merged.MetaEvent = incoming.MetaEvent
+	}
+	if patch.CircuitBreaker != nil {
+		merged.CircuitBreaker = incoming.CircuitBreaker
+	}
+	if !util.IsStringEmpty(patch.SearchPolicy) {
+		merged.SearchPolicy = incoming.SearchPolicy
+	}
+	if patch.MaxIngestSize > 0 {
+		merged.MaxIngestSize = incoming.MaxIngestSize
+	}
+	if present != nil {
+		if _, ok := present["request_id_header"]; ok {
+			merged.RequestIDHeader = incoming.RequestIDHeader
+		}
+		if _, ok := present["replay_attacks_prevention_enabled"]; ok {
+			merged.ReplayAttacks = incoming.ReplayAttacks
+		}
+		if _, ok := present["disable_endpoint"]; ok {
+			merged.DisableEndpoint = incoming.DisableEndpoint
+		}
+		if _, ok := present["add_event_id_trace_headers"]; ok {
+			merged.AddEventIDTraceHeaders = incoming.AddEventIDTraceHeaders
+		}
+		if _, ok := present["multiple_endpoint_subscriptions"]; ok {
+			merged.MultipleEndpointSubscriptions = incoming.MultipleEndpointSubscriptions
+		}
+	} else if patch.RequestIDHeader != "" {
+		// Legacy callers without present-key tracking still apply non-empty values.
+		merged.RequestIDHeader = incoming.RequestIDHeader
+	}
+	return &merged
+}
+
+// validateRequestIDHeaderForProject rejects a non-default request_id_header on
+// non-outgoing projects. Failure policy: fail closed at write time so delivery
+// never sees a custom header without a matching publish-time idempotency gate.
+func validateRequestIDHeaderForProject(projectType datastore.ProjectType, cfg *datastore.ProjectConfig) error {
+	if cfg == nil || !cfg.UsesCustomRequestIDHeader() {
+		return nil
+	}
+	if projectType != datastore.OutgoingProject {
+		return ErrCustomRequestIDHeaderOutgoingOnly
+	}
+	if err := validateHTTPHeaderToken(string(cfg.GetRequestIDHeader())); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateHTTPHeaderToken(name string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ErrInvalidRequestIDHeaderName
+	}
+	for i, r := range name {
+		if !isHTTPTokenChar(r) {
+			return fmt.Errorf("%w: invalid character at position %d", ErrInvalidRequestIDHeaderName, i)
+		}
+	}
+	return nil
+}
+
+func isHTTPTokenChar(r rune) bool {
+	switch {
+	case r >= 'a' && r <= 'z':
+		return true
+	case r >= 'A' && r <= 'Z':
+		return true
+	case r >= '0' && r <= '9':
+		return true
+	case strings.ContainsRune("!#$%&'*+-.^_`|~", r):
+		return true
+	default:
+		return false
+	}
 }
 
 func checkSignatureVersions(versions []datastore.SignatureVersion) {

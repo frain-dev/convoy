@@ -1,0 +1,55 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: Convoy
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  useClassNamesForArrayFields: true
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: true
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+  auth:
+    hoistGlobalSecurity: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: body
+  persistentEdits:
+    enabled: true
+  tests:
+    generateTests: false
+    generateNewTests: false
+typescript:
+  version: 2.0.0
+  author: Convoy
+  packageName: convoy.js
+  maxMethodParams: 4
+  methodArguments: infer-optional-args
+  modelPropertyCasing: camel
+  moduleFormat: dual
+  responseFormat: flat
+  flattenGlobalSecurity: true
+  clientServerStatusCodesAsErrors: true
+  # Hand-written verify (protected by .genignore) needs these to keep building
+  # and testing once the generator owns package.json.
+  additionalDependencies:
+    dependencies: {}
+    devDependencies:
+      "@types/jest": ^29.5.8
+      jest: ^29.7.0
+      ts-jest: ^29.1.1
+    peerDependencies: {}
+  additionalPackageJSON: {}
+  additionalScripts:
+    test:verify: jest --config jestconfig.json --testPathPattern='(webhook|shared-vectors)'
+  imports:
+    option: openapi
+    paths:
+      callbacks: models/callbacks
+      errors: models/errors
+      operations: models/operations
+      shared: models
+      webhooks: models/webhooks

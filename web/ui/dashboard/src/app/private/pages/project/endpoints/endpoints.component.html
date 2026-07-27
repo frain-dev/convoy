@@ -149,7 +149,7 @@
                           </button>
                         </li>
                         <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                          <button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+                          <button convoy-permission="Endpoints|MANAGE" convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
                             <svg width="14" height="14" class="stroke-neutral-10 mr-8px">
                               <use [attr.xlink:href]="selectedEndpoint?.status === 'paused' ? '#play-icon' : '#pause-icon'"></use>
                             </svg>
@@ -158,7 +158,7 @@
                         </li>
                         @if (endpoint.status === 'inactive') {
                           <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                            <button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="activateEndpoint()" [disabled]="isTogglingEndpoint">
+                            <button convoy-permission="Endpoints|MANAGE" convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="activateEndpoint()" [disabled]="isTogglingEndpoint">
                               <svg width="14" height="14" class="fill-neutral-10 mr-8px">
                                 <use xlink:href="#activate-icon"></use>
                               </svg>
@@ -167,7 +167,7 @@
                           </li>
                         }
                         <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                          <button convoy-dropdown-option convoy-button color="neutral" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid">
+                          <button convoy-permission="Endpoints|MANAGE" convoy-dropdown-option convoy-button color="neutral" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid">
                             <svg width="17" height="16" class="fill-neutral-10 mr-8px">
                               <use xlink:href="#edit-icon"></use>
                             </svg>
@@ -175,7 +175,7 @@
                           </button>
                         </li>
                         <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                          <button convoy-dropdown-option convoy-button color="error" class="w-full !justify-start" fill="text" (click)="deleteDialog.showModal()">
+                          <button convoy-permission="Endpoints|MANAGE" convoy-dropdown-option convoy-button color="error" class="w-full !justify-start" fill="text" (click)="deleteDialog.showModal()">
                             <svg width="14" height="14" class="fill-transparent stroke-new.error-400 mr-8px">
                               <use xlink:href="#delete-icon2"></use>
                             </svg>

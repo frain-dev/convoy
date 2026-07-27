@@ -8,6 +8,7 @@ import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponen
 import { GeneralService } from 'src/app/services/general/general.service';
 import { HttpService } from 'src/app/services/http/http.service';
 import { TrialStatusService } from 'src/app/services/trial-status/trial-status.service';
+import { PrivateService } from 'src/app/private/private.service';
 import { PlanCatalogDialogComponent } from './plan-catalog-dialog.component';
 import { PlanService } from './plan.service';
 import {
@@ -50,6 +51,8 @@ export class TrialModalComponent implements OnDestroy {
 
 	cloudOffer: TrialOffer | null = null;
 	starting = false;
+	// Fail closed for cloud until profile refresh proves verified (matches server gate).
+	emailVerified = false;
 	billingEmail = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] });
 	formatTrialLimitLine = formatTrialLimitLine;
 	trialFeaturesLead = trialFeaturesLead;
@@ -60,7 +63,8 @@ export class TrialModalComponent implements OnDestroy {
 		private planService: PlanService,
 		private trialStatusService: TrialStatusService,
 		private generalService: GeneralService,
-		private httpService: HttpService
+		private httpService: HttpService,
+		private privateService: PrivateService
 	) {
 		this.offerSub = this.trialStatusService.offer$.subscribe(offer => (this.cloudOffer = offer));
 	}
@@ -101,6 +105,9 @@ export class TrialModalComponent implements OnDestroy {
 		if (this.starting) {
 			return true;
 		}
+		if (this.mode === 'cloud' && !this.emailVerified) {
+			return true;
+		}
 		if (this.mode === 'self_hosted') {
 			return this.billingEmail.invalid;
 		}
@@ -109,10 +116,37 @@ export class TrialModalComponent implements OnDestroy {
 
 	open(): void {
 		this.starting = false;
+		if (this.mode === 'cloud') {
+			this.emailVerified = false;
+			void this.refreshEmailVerified();
+		} else {
+			this.emailVerified = true;
+		}
 		if (this.mode === 'self_hosted') {
 			this.billingEmail.reset('');
 		}
 		this.dialog?.nativeElement.showModal();
+	}
+
+	// Source of truth is GET /users/:id/profile (same as the verify chip), not
+	// stale CONVOY_AUTH. Failure policy: keep fail-closed (button disabled) on
+	// transport/parse errors so the UI never enables Start trial when unknown.
+	private async refreshEmailVerified(): Promise<void> {
+		const userId = this.privateService.getUserProfile?.uid;
+		if (!userId) {
+			this.emailVerified = false;
+			return;
+		}
+		try {
+			const response = await this.privateService.getUserDetails({ userId, refresh: true });
+			const verified = response?.data?.email_verified === true;
+			this.emailVerified = verified;
+			if (verified) {
+				this.privateService.setAuthEmailVerified(true);
+			}
+		} catch {
+			this.emailVerified = false;
+		}
 	}
 
 	close(): void {

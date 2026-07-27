@@ -85,6 +85,34 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:    "should_not_resend_invite_from_another_organisation",
+			cfgPath: "./testdata/basic-convoy.json",
+			args: args{
+				ctx:          ctx,
+				Organisation: &datastore.Organisation{UID: "999"},
+				InviteID:     "abcd",
+				User:         &datastore.User{},
+			},
+			dbFn: func(rs *ResendOrgMemberService) {
+				a, _ := rs.InviteRepo.(*mocks.MockOrganisationInviteRepository)
+				a.EXPECT().FetchOrganisationInviteByID(gomock.Any(), gomock.Any()).
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@example.com",
+					}, nil)
+
+				// A foreign invite must never be mutated or re-emailed.
+				a.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Any()).Times(0)
+				q := rs.Queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch organisation invite by id",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

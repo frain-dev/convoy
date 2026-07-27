@@ -220,7 +220,8 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 	}
 
 	var payload any
-	if source.BodyFunction != nil && !util.IsStringEmpty(*source.BodyFunction) {
+	// Match process_event_creation: transforms require the Transformations entitlement.
+	if source.BodyFunction != nil && !util.IsStringEmpty(*source.BodyFunction) && i.licenser != nil && i.licenser.Transformations() {
 		t := transform.NewTransformer()
 		p, _, err := t.Transform(*source.BodyFunction, raw)
 		if err != nil {
@@ -269,7 +270,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 	mergeHeaders(headerMap, convoyEvent.CustomHeaders)
 
 	headers := map[string]string{}
-	if source.HeaderFunction != nil && !util.IsStringEmpty(*source.HeaderFunction) {
+	if source.HeaderFunction != nil && !util.IsStringEmpty(*source.HeaderFunction) && i.licenser != nil && i.licenser.Transformations() {
 		t := transform.NewTransformer()
 		h, _, transErr := t.Transform(*source.HeaderFunction, headerMap)
 		if transErr != nil {

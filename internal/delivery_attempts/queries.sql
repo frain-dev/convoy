@@ -68,20 +68,6 @@ SELECT
     response_data, error, status, requested_at, responded_at, created_at, updated_at, deleted_at
 FROM att ORDER BY created_at ASC;
 
--- name: SoftDeleteProjectDeliveryAttempts :execresult
-UPDATE convoy.delivery_attempts
-SET deleted_at = NOW()
-WHERE project_id = @project_id
-    AND created_at >= @created_at_start
-    AND created_at <= @created_at_end
-    AND deleted_at IS NULL;
-
--- name: HardDeleteProjectDeliveryAttempts :execresult
-DELETE FROM convoy.delivery_attempts
-WHERE project_id = @project_id
-    AND created_at >= @created_at_start
-    AND created_at <= @created_at_end;
-
 -- name: GetFailureAndSuccessCounts :many
 -- Get failure and success counts for endpoints within the lookback duration
 -- This replaces the n+1 query pattern in the legacy implementation

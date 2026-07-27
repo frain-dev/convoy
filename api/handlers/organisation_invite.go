@@ -218,6 +218,7 @@ func (h *Handler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Reques
 		Queue:      h.A.Queue,
 		InviteRepo: organisation_invites.New(h.A.Logger, h.A.DB),
 		InviteID:   chi.URLParam(r, "inviteID"),
+		OrgID:      org.UID,
 		Logger:     h.A.Logger,
 	}
 

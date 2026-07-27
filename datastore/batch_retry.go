@@ -33,7 +33,7 @@ type BatchRetry struct {
 	Filter          RetryFilter      `json:"filter" db:"filter"`
 	CreatedAt       time.Time        `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time        `json:"updated_at" db:"updated_at"`
-	CompletedAt     null.Time        `json:"completed_at" db:"completed_at"`
+	CompletedAt     null.Time        `json:"completed_at" db:"completed_at" extensions:"x-nullable"`
 }
 
 type RetryFilter map[string]any

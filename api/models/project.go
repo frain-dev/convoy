@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/lib/pq"
@@ -34,6 +35,37 @@ type UpdateProject struct {
 
 	// Project Config
 	Config *ProjectConfig `json:"config" valid:"optional"`
+
+	configPresentKeys map[string]struct{} `json:"-"`
+}
+
+func (uP *UpdateProject) UnmarshalJSON(data []byte) error {
+	type plain UpdateProject
+	aux := struct {
+		plain
+		Config json.RawMessage `json:"config"`
+	}{}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	*uP = UpdateProject(aux.plain)
+	if len(aux.Config) == 0 {
+		return nil
+	}
+	var keys map[string]json.RawMessage
+	if err := json.Unmarshal(aux.Config, &keys); err != nil {
+		return err
+	}
+	uP.configPresentKeys = make(map[string]struct{}, len(keys))
+	for key := range keys {
+		uP.configPresentKeys[key] = struct{}{}
+	}
+	uP.Config = &ProjectConfig{}
+	return json.Unmarshal(aux.Config, uP.Config)
+}
+
+func (uP *UpdateProject) ConfigPresentKeys() map[string]struct{} {
+	return uP.configPresentKeys
 }
 
 func (uP *UpdateProject) Validate() error {
@@ -69,6 +101,9 @@ type ProjectConfig struct {
 	// Signature is used to configure the project's signature header versions
 	Signature *SignatureConfiguration `json:"signature"`
 
+	// RequestIDHeader is the outbound header name for the stable request id sent on webhook deliveries.
+	RequestIDHeader config.RequestIDHeaderProvider `json:"request_id_header,omitempty" valid:"optional"`
+
 	// MetaEvent is used to configure the project's meta events
 	MetaEvent *MetaEventConfiguration `json:"meta_event"`
 
@@ -96,6 +131,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		RateLimit:                     pc.RateLimit.Transform(),
 		Strategy:                      pc.Strategy.transform(),
 		Signature:                     pc.Signature.transform(),
+		RequestIDHeader:               pc.RequestIDHeader,
 		MetaEvent:                     pc.MetaEvent.transform(),
 		CircuitBreaker:                pc.CircuitBreaker,
 	}

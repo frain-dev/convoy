@@ -288,22 +288,27 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 	go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
 
+	// Retention is paid-only and partition-based; the license is the single
+	// gate (the delete-query retention system and its feature flag were
+	// removed). LicensedRetentionPolicy re-reads partition state at job time
+	// so `convoy partition` activates retention without a worker restart.
+	// Until tables are partitioned it deletes nothing and logs the action.
 	var ret retention.Retentioner
-	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && opts.Licenser.RetentionPolicy() {
+	if opts.Licenser.RetentionPolicy() {
+		if _, pErr := retention.UnpartitionedTables(ctx, opts.DB); pErr != nil {
+			// Fail closed: a lookup failure is not a definitive "unpartitioned"
+			// verdict, and boot-time DB reads already abort startup above
+			// (LoadConfiguration). Do not guess which retention policy to install.
+			return nil, fmt.Errorf("failed to check retention partition state: %w", pErr)
+		}
+
 		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
 		if _err != nil {
 			return nil, fmt.Errorf("failed to parse retention policy: %w", _err)
 		}
 
-		ret, err = retention.NewPartitionRetentionPolicy(opts.DB, lo, policy)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create retention policy: %w", err)
-		}
-
+		ret = retention.NewLicensedRetentionPolicy(opts.DB, lo, policy)
 		ret.Start(ctx, time.Minute)
-	} else {
-		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
-		ret = retention.NewDeleteRetentionPolicy(opts.DB, lo)
 	}
 
 	channels := make(map[string]task.EventChannel)
@@ -399,6 +404,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(opts.DB, opts.Queue, rd, lo), nil)
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, opts.DB, rd), nil)
+	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, rd), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
 	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && opts.Licenser.AdvancedWebhookFiltering() {

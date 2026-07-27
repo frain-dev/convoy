@@ -17,26 +17,45 @@ import (
 func main() {
 	dryRun := len(os.Args) > 1 && os.Args[1] == "--dry-run"
 
-	dtoDir := "./api/models"
-	fmt.Printf("Using AST to add nullable extensions in: %s\n", dtoDir)
+	// api/models: only *Response structs (request DTO nullability is owned by
+	// validation). datastore: every struct, because responses embed datastore
+	// types whose pointer/null fields serialize as JSON null; without
+	// x-nullable the generated SDK parsers reject those nulls.
+	dirs := []struct {
+		path         string
+		responseOnly bool
+	}{
+		{"./api/models", true},
+		{"./datastore", false},
+	}
 
-	err := filepath.Walk(dtoDir, func(path string, info os.FileInfo, err error) error {
+	for _, dir := range dirs {
+		fmt.Printf("Using AST to add nullable extensions in: %s\n", dir.path)
+
+		err := filepath.Walk(dir.path, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// Walk reports lstat info, so symlinks are visible here. Skip them
+			// so reads/writes cannot be redirected outside the repo tree.
+			if info.Mode()&os.ModeSymlink != 0 {
+				return nil
+			}
+
+			if !info.IsDir() && strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go") {
+				processFileWithAST(path, dir.responseOnly, dryRun)
+			}
+			return nil
+		})
+
 		if err != nil {
-			return err
+			fmt.Printf("Error: %v\n", err)
 		}
-
-		if !info.IsDir() && strings.HasSuffix(path, ".go") {
-			processFileWithAST(path, dryRun)
-		}
-		return nil
-	})
-
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
 	}
 }
 
-func processFileWithAST(filePath string, dryRun bool) {
+func processFileWithAST(filePath string, responseOnly bool, dryRun bool) {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		fmt.Printf("Error reading %s: %v\n", filePath, err)
@@ -44,7 +63,7 @@ func processFileWithAST(filePath string, dryRun bool) {
 	}
 
 	// Check if file contains Response structs
-	if !strings.Contains(string(content), "Response") {
+	if responseOnly && !strings.Contains(string(content), "Response") {
 		return
 	}
 
@@ -68,8 +87,8 @@ func processFileWithAST(filePath string, dryRun bool) {
 			return true
 		}
 
-		// Only process Response structs
-		if !strings.Contains(typeSpec.Name.Name, "Response") {
+		// Only process Response structs when scoped to responses
+		if responseOnly && !strings.Contains(typeSpec.Name.Name, "Response") {
 			return true
 		}
 

@@ -5,7 +5,9 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"path"
 	"strings"
+	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 )
@@ -58,9 +60,20 @@ func NewEmail(c smtp.SmtpClient) *Email {
 	return &Email{client: c}
 }
 
+// templateFuncs are available to every email template.
+var templateFuncs = template.FuncMap{
+	"currentYear": func() int {
+		return time.Now().Year()
+	},
+}
+
 // TODO(subomi): glob pattern must not match more than one template
 func (e *Email) Build(glob string, params interface{}) error {
-	templ, err := e.templ.ParseFS(templateDir, e.buildGlob(glob))
+	pattern := e.buildGlob(glob)
+
+	// The root template must share the parsed file's base name so that
+	// Execute runs the parsed template.
+	templ, err := template.New(path.Base(pattern)).Funcs(templateFuncs).ParseFS(templateDir, pattern)
 	if err != nil {
 		return fmt.Errorf("failed to parse template fs: %v", err)
 	}

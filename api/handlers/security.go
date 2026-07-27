@@ -145,20 +145,24 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 
-	f := &datastore.Filter{}
+	// This dashboard route only lists the caller's personal keys. Empty or
+	// invalid keyType previously left Filter empty and returned every key on
+	// the instance. Failure policy: fail closed to personal_key + auth user.
+	user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
+	if !ok {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	keyType := datastore.KeyType(r.URL.Query().Get("keyType"))
+	if keyType != "" && keyType != datastore.PersonalKey {
+		_ = render.Render(w, r, util.NewErrorResponse("only personal_key listing is supported on this route", http.StatusBadRequest))
+		return
+	}
 
-	if keyType.IsValid() {
-		f.KeyType = keyType
-
-		if keyType == datastore.PersonalKey {
-			user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
-			if !ok {
-				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
-				return
-			}
-			f.UserID = user.UID
-		}
+	f := &datastore.Filter{
+		KeyType: datastore.PersonalKey,
+		UserID:  user.UID,
 	}
 
 	apiKeys, paginationData, err := api_keys.New(h.A.Logger, h.A.DB).LoadAPIKeysPaged(r.Context(), f, &pageable)

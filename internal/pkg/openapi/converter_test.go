@@ -363,3 +363,19 @@ func TestConverter_ExtractWebhooks_Examples(t *testing.T) {
 		})
 	}
 }
+
+func TestNewFromBytes_RejectsExternalRefs(t *testing.T) {
+	spec := []byte(`
+openapi: 3.0.0
+info:
+  title: SSRF probe
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Remote:
+      $ref: "https://example.invalid/schemas/remote.yaml#/Remote"
+`)
+	_, err := NewFromBytes(spec)
+	require.Error(t, err)
+}

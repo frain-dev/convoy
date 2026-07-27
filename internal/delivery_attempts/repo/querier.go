@@ -7,7 +7,6 @@ package repo
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -23,8 +22,6 @@ type Querier interface {
 	// Get counts for a specific endpoint from a specific reset time
 	// This is used when circuit breaker has been reset for specific endpoints
 	GetFailureAndSuccessCountsWithResetTime(ctx context.Context, arg GetFailureAndSuccessCountsWithResetTimeParams) (GetFailureAndSuccessCountsWithResetTimeRow, error)
-	HardDeleteProjectDeliveryAttempts(ctx context.Context, arg HardDeleteProjectDeliveryAttemptsParams) (pgconn.CommandTag, error)
-	SoftDeleteProjectDeliveryAttempts(ctx context.Context, arg SoftDeleteProjectDeliveryAttemptsParams) (pgconn.CommandTag, error)
 }
 
 var _ Querier = (*Queries)(nil)

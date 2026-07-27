@@ -71,6 +71,15 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 
 		project, err := deps.ProjectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
+			// Deleted org JOIN miss is terminal: do not retry forever.
+			if errors.Is(err, datastore.ErrProjectNotFound) {
+				eventDelivery.Description = datastore.ErrProjectNotFound.Error()
+				if updErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, eventDelivery.ProjectID, *eventDelivery, datastore.DiscardedEventStatus); updErr != nil {
+					deps.Logger.ErrorContext(ctx, "failed to update event delivery status to discarded", "error", updErr)
+				}
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryDiscarded, attributes)
+				return nil
+			}
 			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
@@ -209,27 +218,29 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
 		}
 
-		// Refresh OAuth2 token if endpoint uses OAuth2 authentication
-		if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.OAuth2Authentication {
-			// Check feature flag for OAuth2 using project's organisation ID
-			oauth2Enabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
-			if !oauth2Enabled {
-				deps.Logger.WarnContext(ctx, "Endpoint has OAuth2 configured but feature flag is disabled, continuing without OAuth2 authentication")
-				// Continue without OAuth2 authentication if feature flag is disabled
-			} else if deps.OAuth2TokenService == nil {
-				deps.Logger.ErrorContext(ctx, "OAuth2 token service is nil during retry")
-			} else {
-				authHeader, err := deps.OAuth2TokenService.GetAuthorizationHeader(ctx, endpoint)
-				if err != nil {
-					deps.Logger.ErrorContext(ctx, "failed to get OAuth2 authorization header for retry", "error", err)
-				} else {
-					if eventDelivery.Headers == nil {
-						eventDelivery.Headers = httpheader.HTTPHeader{}
-					}
-					eventDelivery.Headers["Authorization"] = []string{authHeader}
-					deps.Logger.InfoContext(ctx, "OAuth2 authorization header refreshed for retry", "endpoint.id", endpoint.UID)
+		// Refresh endpoint auth headers before retry dispatch. Failure policy: fail closed
+		// when authentication is configured but cannot be applied.
+		if endpoint.Authentication != nil {
+			resolvedHeaders, authErr := resolveEndpointDeliveryHeaders(ctx, endpoint, eventDelivery.Headers, endpointAuthDeps{
+				FeatureFlag:                deps.FeatureFlag,
+				FeatureFlagFetcher:         deps.FeatureFlagFetcher,
+				EarlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
+				OAuth2TokenService:         deps.OAuth2TokenService,
+				OrganisationID:             project.OrganisationID,
+				Logger:                     deps.Logger,
+			})
+			if authErr != nil {
+				deps.Logger.ErrorContext(ctx, "endpoint authentication unavailable for retry", "endpoint.id", endpoint.UID, "error", authErr)
+				eventDelivery.Status = datastore.FailureEventStatus
+				eventDelivery.Description = authErr.Error()
+				innerErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+				if innerErr != nil {
+					deps.Logger.ErrorContext(ctx, "failed to update event delivery status to failed", "error", innerErr)
 				}
+				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
+				return nil
 			}
+			eventDelivery.Headers = resolvedHeaders
 		}
 
 		var httpDuration time.Duration
@@ -290,8 +301,34 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		}
 
 		requestSentAt := time.Now()
-		resp, err := deps.Dispatcher.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)
+		resp, err := deps.Dispatcher.SendWebhookWithMTLS(
+			ctx,
+			targetURL,
+			sig.Payload,
+			project.Config.Signature.Header.String(),
+			header,
+			int64(cfg.MaxResponseSize),
+			eventDelivery.Headers,
+			project.Config.GetRequestIDHeader().String(),
+			eventDelivery.IdempotencyKey,
+			httpDuration,
+			contentType,
+			mtlsCert,
+		)
 		responseReceivedAt := time.Now()
+
+		// Missing idempotency key for a custom request ID header is deterministic; fail
+		// closed and do not schedule retries.
+		if errors.Is(err, datastore.ErrMissingIdempotencyKeyForCustomRequestIDHeader) {
+			deps.Logger.ErrorContext(ctx, "event delivery missing idempotency key for custom request id header", "error", err, "event_delivery_uid", eventDelivery.UID)
+			eventDelivery.Status = datastore.FailureEventStatus
+			eventDelivery.Description = err.Error()
+			if updateErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus); updateErr != nil {
+				deps.Logger.ErrorContext(ctx, "failed to update event delivery status to failed", "error", updateErr)
+			}
+			tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryError, attributes)
+			return nil
+		}
 
 		status := "-"
 		statusCode := 0

@@ -1,5 +1,69 @@
 basePath: /api
 definitions:
+  auth.RoleType:
+    enum:
+      - instance_admin
+      - organisation_admin
+      - billing_admin
+      - project_admin
+      - project_viewer
+      - api
+      - ""
+    type: string
+    x-enum-comments:
+      RoleBillingAdmin: 'Organisation level - can manage billing only TODO:'
+      RoleInstanceAdmin: Instance level - can manage all orgs and projects
+      RoleOrganisationAdmin: Organisation level - can manage org and all projects
+      RoleProjectAdmin: Project level - can manage project settings and users
+      RoleProjectViewer: Project level - can view project data only
+    x-enum-descriptions:
+      - Instance level - can manage all orgs and projects
+      - Organisation level - can manage org and all projects
+      - 'Organisation level - can manage billing only TODO:'
+      - Project level - can manage project settings and users
+      - Project level - can view project data only
+      - ""
+    x-enum-varnames:
+      - RoleInstanceAdmin
+      - RoleOrganisationAdmin
+      - RoleBillingAdmin
+      - RoleProjectAdmin
+      - RoleProjectViewer
+      - RoleAPI
+  config.RequestIDHeaderProvider:
+    enum:
+      - X-Convoy-Idempotency-Key
+      - ""
+    type: string
+    x-enum-varnames:
+      - DefaultRequestIDHeader
+  config.SignatureHeaderProvider:
+    enum:
+      - X-Convoy-Signature
+      - ""
+    type: string
+    x-enum-varnames:
+      - DefaultSignatureHeader
+  datastore.APIKeyResponse:
+    properties:
+      created_at:
+        type: string
+      expires_at:
+        type: string
+        x-nullable: true
+      key:
+        type: string
+      key_type:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/datastore.Role'
+      uid:
+        type: string
+      user_id:
+        type: string
+    type: object
   datastore.AlertConfiguration:
     properties:
       count:
@@ -17,11 +81,15 @@ definitions:
   datastore.AmqpPubSubConfig:
     properties:
       auth:
-        $ref: '#/definitions/datastore.AmqpCredentials'
+        allOf:
+          - $ref: '#/definitions/datastore.AmqpCredentials'
+        x-nullable: true
       bindedExchange:
         type: string
+        x-nullable: true
       deadLetterExchange:
         type: string
+        x-nullable: true
       host:
         type: string
       port:
@@ -34,6 +102,7 @@ definitions:
         type: string
       vhost:
         type: string
+        x-nullable: true
     type: object
   datastore.ApiKey:
     properties:
@@ -55,6 +124,23 @@ definitions:
         type: string
       source_id:
         type: string
+    type: object
+  datastore.CircuitBreakerConfiguration:
+    properties:
+      consecutive_failure_threshold:
+        type: integer
+      error_timeout:
+        type: integer
+      failure_threshold:
+        type: integer
+      minimum_request_count:
+        type: integer
+      observability_window:
+        type: integer
+      sample_rate:
+        type: integer
+      success_threshold:
+        type: integer
     type: object
   datastore.CreatePortalLinkRequest:
     properties:
@@ -92,6 +178,7 @@ definitions:
         type: string
       deleted_at:
         type: string
+        x-nullable: true
       endpoint_id:
         type: string
       error:
@@ -110,8 +197,10 @@ definitions:
         $ref: '#/definitions/datastore.HttpHeader'
       requested_at:
         type: string
+        x-nullable: true
       responded_at:
         type: string
+        x-nullable: true
       response_data:
         type: string
       response_http_header:
@@ -129,6 +218,7 @@ definitions:
     enum:
       - at_least_once
       - at_most_once
+      - ""
     type: string
     x-enum-varnames:
       - AtLeastOnceDeliveryMode
@@ -139,6 +229,7 @@ definitions:
         type: string
       deleted_at:
         type: string
+        x-nullable: true
       endpoint_id:
         type: string
       host_name:
@@ -159,6 +250,7 @@ definitions:
       - offline
       - online
       - disabled
+      - ""
     type: string
     x-enum-varnames:
       - DeviceStatusOffline
@@ -168,6 +260,7 @@ definitions:
     enum:
       - base64
       - hex
+      - ""
     type: string
     x-enum-varnames:
       - Base64Encoding
@@ -177,37 +270,44 @@ definitions:
       advanced_signatures:
         type: boolean
       authentication:
-        $ref: '#/definitions/datastore.EndpointAuthentication'
+        allOf:
+          - $ref: '#/definitions/datastore.EndpointAuthentication'
+        x-nullable: true
       cb_state:
         description: |-
           CBState is the circuit breaker state ("open", "half-open", "closed") so the UI
           can reflect a tripped breaker on the endpoint status. Nil when CB is
           off/unlicensed or has no sample for this endpoint.
         type: string
+        x-nullable: true
       content_type:
         type: string
       created_at:
         type: string
       deleted_at:
         type: string
+        x-nullable: true
       description:
         type: string
       events:
         type: integer
       failure_count:
         type: integer
+        x-nullable: true
       failure_rate:
         description: |-
           FailureRate is the circuit breaker's rolling failure rate for this endpoint.
           It is a pointer so the API can return null when no rate was computed (circuit
           breaker feature off, or sampler not running), distinct from a genuine 0%.
         type: number
+        x-nullable: true
       http_timeout:
         type: integer
       mtls_client_cert:
         allOf:
           - $ref: '#/definitions/datastore.MtlsClientCert'
         description: mTLS client certificate configuration
+        x-nullable: true
       name:
         type: string
       owner_id:
@@ -218,6 +318,7 @@ definitions:
           (Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.
           Nil when the range has no counted deliveries; sibling counts are transient.
         type: number
+        x-nullable: true
       project_id:
         type: string
       rate_limit:
@@ -226,6 +327,7 @@ definitions:
         type: integer
       retry_count:
         type: integer
+        x-nullable: true
       secrets:
         items:
           $ref: '#/definitions/datastore.Secret'
@@ -236,6 +338,7 @@ definitions:
         $ref: '#/definitions/datastore.EndpointStatus'
       success_count:
         type: integer
+        x-nullable: true
       support_email:
         type: string
       uid:
@@ -248,11 +351,17 @@ definitions:
   datastore.EndpointAuthentication:
     properties:
       api_key:
-        $ref: '#/definitions/datastore.ApiKey'
+        allOf:
+          - $ref: '#/definitions/datastore.ApiKey'
+        x-nullable: true
       basic_auth:
-        $ref: '#/definitions/datastore.BasicAuth'
+        allOf:
+          - $ref: '#/definitions/datastore.BasicAuth'
+        x-nullable: true
       oauth2:
-        $ref: '#/definitions/datastore.OAuth2'
+        allOf:
+          - $ref: '#/definitions/datastore.OAuth2'
+        x-nullable: true
       type:
         $ref: '#/definitions/datastore.EndpointAuthenticationType'
     type: object
@@ -261,6 +370,7 @@ definitions:
       - api_key
       - oauth2
       - basic_auth
+      - ""
     type: string
     x-enum-varnames:
       - APIKeyAuthentication
@@ -271,6 +381,7 @@ definitions:
       - active
       - inactive
       - paused
+      - ""
     type: string
     x-enum-varnames:
       - ActiveEndpointStatus
@@ -280,6 +391,7 @@ definitions:
     properties:
       acknowledged_at:
         type: string
+        x-nullable: true
       app_id:
         description: Deprecated
         type: string
@@ -289,11 +401,12 @@ definitions:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
-        items:
-          type: integer
-        type: array
+        type: object
+        additionalProperties: true
+        x-nullable: true
       deleted_at:
         type: string
+        x-nullable: true
       endpoint_metadata:
         items:
           $ref: '#/definitions/datastore.Endpoint'
@@ -319,7 +432,9 @@ definitions:
       source_id:
         type: string
       source_metadata:
-        $ref: '#/definitions/datastore.Source'
+        allOf:
+          - $ref: '#/definitions/datastore.Source'
+        x-nullable: true
       status:
         $ref: '#/definitions/datastore.EventStatus'
       uid:
@@ -339,6 +454,7 @@ definitions:
       - Failure
       - Success
       - Retry
+      - ""
     type: string
     x-enum-varnames:
       - ScheduledEventStatus
@@ -354,6 +470,7 @@ definitions:
       - Success
       - Retry
       - Pending
+      - ""
     type: string
     x-enum-varnames:
       - ProcessingStatus
@@ -388,9 +505,9 @@ definitions:
       project_id:
         type: string
       service_account:
-        items:
-          type: integer
-        type: array
+        description: encoding/json marshals []byte as a base64 string on the wire.
+        format: byte
+        type: string
       subscription_id:
         type: string
     type: object
@@ -409,6 +526,7 @@ definitions:
     additionalProperties:
       type: string
     type: object
+    x-nullable: true
   datastore.KafkaAuth:
     properties:
       hash:
@@ -425,7 +543,9 @@ definitions:
   datastore.KafkaPubSubConfig:
     properties:
       auth:
-        $ref: '#/definitions/datastore.KafkaAuth'
+        allOf:
+          - $ref: '#/definitions/datastore.KafkaAuth'
+        x-nullable: true
       brokers:
         items:
           type: string
@@ -438,6 +558,7 @@ definitions:
   datastore.M:
     additionalProperties: true
     type: object
+    x-nullable: true
   datastore.MetaEventAttempt:
     properties:
       request_http_header:
@@ -447,13 +568,41 @@ definitions:
       response_http_header:
         $ref: '#/definitions/datastore.HttpHeader'
     type: object
+  datastore.MetaEventConfiguration:
+    properties:
+      event_type:
+        items:
+          type: string
+        type: array
+      is_enabled:
+        type: boolean
+      pub_sub:
+        allOf:
+          - $ref: '#/definitions/datastore.PubSubConfig'
+        x-nullable: true
+      secret:
+        type: string
+      type:
+        $ref: '#/definitions/datastore.MetaEventType'
+      url:
+        type: string
+    type: object
+  datastore.MetaEventType:
+    enum:
+      - http
+      - pub_sub
+      - ""
+    type: string
+    x-enum-varnames:
+      - HTTPMetaEvent
+      - PubSubMetaEvent
   datastore.Metadata:
     properties:
       data:
         description: Data to be sent to endpoint.
-        items:
-          type: integer
-        type: array
+        type: object
+        additionalProperties: true
+        x-nullable: true
       interval_seconds:
         type: integer
       max_retry_seconds:
@@ -500,6 +649,7 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.OAuth2FieldMapping'
         description: Field mapping for flexible token response parsing
+        x-nullable: true
       grant_type:
         type: string
       issuer:
@@ -512,6 +662,7 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.OAuth2SigningKey'
         description: Encrypted at rest
+        x-nullable: true
       subject:
         type: string
       url:
@@ -521,6 +672,7 @@ definitions:
     enum:
       - shared_secret
       - client_assertion
+      - ""
     type: string
     x-enum-varnames:
       - SharedSecretAuth
@@ -531,6 +683,7 @@ definitions:
       - milliseconds
       - minutes
       - hours
+      - ""
     type: string
     x-enum-varnames:
       - ExpiryTimeUnitSeconds
@@ -595,6 +748,7 @@ definitions:
     enum:
       - next
       - prev
+      - ""
     type: string
     x-enum-varnames:
       - Next
@@ -618,6 +772,7 @@ definitions:
     enum:
       - refresh_token
       - static_token
+      - ""
     type: string
     x-enum-varnames:
       - PortalAuthTypeRefreshToken
@@ -634,6 +789,7 @@ definitions:
         type: string
       deleted_at:
         type: string
+        x-nullable: true
       endpoint_count:
         type: integer
       endpoints:
@@ -642,7 +798,9 @@ definitions:
         type: array
       endpoints_metadata:
         items:
-          $ref: '#/definitions/datastore.Endpoint'
+          allOf:
+            - $ref: '#/definitions/datastore.Endpoint'
+          x-nullable: true
         type: array
       name:
         type: string
@@ -659,21 +817,92 @@ definitions:
       url:
         type: string
     type: object
+  datastore.ProjectConfig:
+    properties:
+      add_event_id_trace_headers:
+        type: boolean
+      circuit_breaker:
+        allOf:
+          - $ref: '#/definitions/datastore.CircuitBreakerConfiguration'
+        x-nullable: true
+      disable_endpoint:
+        type: boolean
+      max_payload_read_size:
+        type: integer
+      meta_event:
+        allOf:
+          - $ref: '#/definitions/datastore.MetaEventConfiguration'
+        x-nullable: true
+      multiple_endpoint_subscriptions:
+        type: boolean
+      ratelimit:
+        allOf:
+          - $ref: '#/definitions/datastore.RateLimitConfiguration'
+        x-nullable: true
+      replay_attacks_prevention_enabled:
+        type: boolean
+      request_id_header:
+        $ref: '#/definitions/config.RequestIDHeaderProvider'
+      search_policy:
+        type: string
+      signature:
+        allOf:
+          - $ref: '#/definitions/datastore.SignatureConfiguration'
+        x-nullable: true
+      ssl:
+        allOf:
+          - $ref: '#/definitions/datastore.SSLConfiguration'
+        x-nullable: true
+      strategy:
+        allOf:
+          - $ref: '#/definitions/datastore.StrategyConfiguration'
+        x-nullable: true
+    type: object
+  datastore.ProjectStatistics:
+    properties:
+      endpoints_exist:
+        type: boolean
+      events_exist:
+        type: boolean
+      sources_exist:
+        type: boolean
+      subscriptions_exist:
+        type: boolean
+    type: object
+  datastore.ProjectType:
+    enum:
+      - outgoing
+      - incoming
+      - ""
+    type: string
+    x-enum-varnames:
+      - OutgoingProject
+      - IncomingProject
   datastore.ProviderConfig:
     properties:
       twitter:
-        $ref: '#/definitions/datastore.TwitterProviderConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.TwitterProviderConfig'
+        x-nullable: true
     type: object
   datastore.PubSubConfig:
     properties:
       amqp:
-        $ref: '#/definitions/datastore.AmqpPubSubConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.AmqpPubSubConfig'
+        x-nullable: true
       google:
-        $ref: '#/definitions/datastore.GooglePubSubConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.GooglePubSubConfig'
+        x-nullable: true
       kafka:
-        $ref: '#/definitions/datastore.KafkaPubSubConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.KafkaPubSubConfig'
+        x-nullable: true
       sqs:
-        $ref: '#/definitions/datastore.SQSPubSubConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.SQSPubSubConfig'
+        x-nullable: true
       type:
         $ref: '#/definitions/datastore.PubSubType'
       workers:
@@ -685,6 +914,7 @@ definitions:
       - google
       - kafka
       - amqp
+      - ""
     type: string
     x-enum-varnames:
       - SqsPubSub
@@ -707,6 +937,15 @@ definitions:
       type:
         $ref: '#/definitions/datastore.StrategyProvider'
     type: object
+  datastore.Role:
+    properties:
+      app:
+        type: string
+      project:
+        type: string
+      type:
+        $ref: '#/definitions/auth.RoleType'
+    type: object
   datastore.SQSPubSubConfig:
     properties:
       access_key_id:
@@ -721,14 +960,21 @@ definitions:
       secret_key:
         type: string
     type: object
+  datastore.SSLConfiguration:
+    properties:
+      enforce_secure_endpoints:
+        type: boolean
+    type: object
   datastore.Secret:
     properties:
       created_at:
         type: string
       deleted_at:
         type: string
+        x-nullable: true
       expires_at:
         type: string
+        x-nullable: true
       uid:
         type: string
       updated_at:
@@ -736,16 +982,38 @@ definitions:
       value:
         type: string
     type: object
+  datastore.SignatureConfiguration:
+    properties:
+      header:
+        $ref: '#/definitions/config.SignatureHeaderProvider'
+      versions:
+        items:
+          $ref: '#/definitions/datastore.SignatureVersion'
+        type: array
+    type: object
+  datastore.SignatureVersion:
+    properties:
+      created_at:
+        type: string
+      encoding:
+        $ref: '#/definitions/datastore.EncodingType'
+      hash:
+        type: string
+      uid:
+        type: string
+    type: object
   datastore.Source:
     properties:
       body_function:
         type: string
+        x-nullable: true
       created_at:
         type: string
       custom_response:
         $ref: '#/definitions/datastore.CustomResponse'
       deleted_at:
         type: string
+        x-nullable: true
       event_type_location:
         type: string
       forward_headers:
@@ -754,6 +1022,7 @@ definitions:
         type: array
       header_function:
         type: string
+        x-nullable: true
       idempotency_keys:
         items:
           type: string
@@ -769,9 +1038,13 @@ definitions:
       provider:
         $ref: '#/definitions/datastore.SourceProvider'
       provider_config:
-        $ref: '#/definitions/datastore.ProviderConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.ProviderConfig'
+        x-nullable: true
       pub_sub:
-        $ref: '#/definitions/datastore.PubSubConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.PubSubConfig'
+        x-nullable: true
       type:
         $ref: '#/definitions/datastore.SourceType'
       uid:
@@ -781,13 +1054,16 @@ definitions:
       url:
         type: string
       verifier:
-        $ref: '#/definitions/datastore.VerifierConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.VerifierConfig'
+        x-nullable: true
     type: object
   datastore.SourceProvider:
     enum:
       - github
       - twitter
       - shopify
+      - ""
     type: string
     x-enum-varnames:
       - GithubSourceProvider
@@ -799,16 +1075,27 @@ definitions:
       - rest_api
       - pub_sub
       - db_change_stream
+      - ""
     type: string
     x-enum-varnames:
       - HTTPSource
       - RestApiSource
       - PubSubSource
       - DBChangeStream
+  datastore.StrategyConfiguration:
+    properties:
+      duration:
+        type: integer
+      retry_count:
+        type: integer
+      type:
+        $ref: '#/definitions/datastore.StrategyProvider'
+    type: object
   datastore.StrategyProvider:
     enum:
       - linear
       - exponential
+      - ""
     type: string
     x-enum-varnames:
       - LinearStrategyProvider
@@ -817,6 +1104,7 @@ definitions:
     enum:
       - cli
       - api
+      - ""
     type: string
     x-enum-varnames:
       - SubscriptionTypeCLI
@@ -825,6 +1113,7 @@ definitions:
     properties:
       crc_verified_at:
         type: string
+        x-nullable: true
     type: object
   datastore.UpdatePortalLinkRequest:
     properties:
@@ -850,11 +1139,17 @@ definitions:
   datastore.VerifierConfig:
     properties:
       api_key:
-        $ref: '#/definitions/datastore.ApiKey'
+        allOf:
+          - $ref: '#/definitions/datastore.ApiKey'
+        x-nullable: true
       basic_auth:
-        $ref: '#/definitions/datastore.BasicAuth'
+        allOf:
+          - $ref: '#/definitions/datastore.BasicAuth'
+        x-nullable: true
       hmac:
-        $ref: '#/definitions/datastore.HMac'
+        allOf:
+          - $ref: '#/definitions/datastore.HMac'
+        x-nullable: true
       type:
         $ref: '#/definitions/datastore.VerifierType'
     type: object
@@ -864,6 +1159,7 @@ definitions:
       - hmac
       - basic_auth
       - api_key
+      - ""
     type: string
     x-enum-varnames:
       - NoopVerifier
@@ -872,12 +1168,15 @@ definitions:
       - APIKeyVerifier
   handlers.Stub:
     type: object
+    additionalProperties: true
+    x-nullable: true
   httpheader.HTTPHeader:
     additionalProperties:
       items:
         type: string
       type: array
     type: object
+    x-nullable: true
   models.AlertConfiguration:
     properties:
       count:
@@ -949,11 +1248,14 @@ definitions:
           type: string
         description: Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
         type: object
+        x-nullable: true
       data:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
+        x-nullable: true
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -993,6 +1295,7 @@ definitions:
       body:
         additionalProperties: true
         type: object
+        x-nullable: true
       enabled_at:
         $ref: '#/definitions/models.OptionalTime'
       event_type:
@@ -1000,16 +1303,24 @@ definitions:
       headers:
         additionalProperties: true
         type: object
+        x-nullable: true
       path:
         additionalProperties: true
         type: object
+        x-nullable: true
       query:
         additionalProperties: true
         type: object
+        x-nullable: true
       uid:
         type: string
     required:
       - uid
+    type: object
+  models.CountResponse:
+    properties:
+      num:
+        type: integer
     type: object
   models.CreateEndpoint:
     properties:
@@ -1091,13 +1402,18 @@ definitions:
           type: string
         description: Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
         type: object
+        x-nullable: true
       data:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
+        x-nullable: true
       endpoint_id:
-        description: Specifies the endpoint to send this event to.
+        description: |-
+          Specifies the endpoint to send this event to. Required unless the
+          deprecated app_id is provided.
         type: string
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
@@ -1118,6 +1434,7 @@ definitions:
         additionalProperties: true
         description: JSONSchema is the JSON structure of the event type
         type: object
+        x-nullable: true
       name:
         description: Name is the event type name. E.g., invoice.created
         type: string
@@ -1149,6 +1466,32 @@ definitions:
         description: Query matching criteria (optional)
     required:
       - event_type
+    type: object
+  models.CreateProject:
+    properties:
+      config:
+        allOf:
+          - $ref: '#/definitions/models.ProjectConfig'
+        description: Project Config
+      logo_url:
+        type: string
+      name:
+        description: Project Name
+        type: string
+      type:
+        description: Project Type, supported values are `outgoing`, `incoming`
+        type: string
+    type: object
+  models.CreateProjectResponse:
+    properties:
+      api_key:
+        allOf:
+          - $ref: '#/definitions/datastore.APIKeyResponse'
+        x-nullable: true
+      project:
+        allOf:
+          - $ref: '#/definitions/models.ProjectResponse'
+        x-nullable: true
     type: object
   models.CreateSource:
     properties:
@@ -1255,11 +1598,14 @@ definitions:
           type: string
         description: Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
         type: object
+        x-nullable: true
       data:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
+        x-nullable: true
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -1296,37 +1642,44 @@ definitions:
       advanced_signatures:
         type: boolean
       authentication:
-        $ref: '#/definitions/datastore.EndpointAuthentication'
+        allOf:
+          - $ref: '#/definitions/datastore.EndpointAuthentication'
+        x-nullable: true
       cb_state:
         description: |-
           CBState is the circuit breaker state ("open", "half-open", "closed") so the UI
           can reflect a tripped breaker on the endpoint status. Nil when CB is
           off/unlicensed or has no sample for this endpoint.
         type: string
+        x-nullable: true
       content_type:
         type: string
       created_at:
         type: string
       deleted_at:
         type: string
+        x-nullable: true
       description:
         type: string
       events:
         type: integer
       failure_count:
         type: integer
+        x-nullable: true
       failure_rate:
         description: |-
           FailureRate is the circuit breaker's rolling failure rate for this endpoint.
           It is a pointer so the API can return null when no rate was computed (circuit
           breaker feature off, or sampler not running), distinct from a genuine 0%.
         type: number
+        x-nullable: true
       http_timeout:
         type: integer
       mtls_client_cert:
         allOf:
           - $ref: '#/definitions/datastore.MtlsClientCert'
         description: mTLS client certificate configuration
+        x-nullable: true
       name:
         type: string
       owner_id:
@@ -1337,6 +1690,7 @@ definitions:
           (Failure+Retry)/(Success+Failure+Retry). Retry counts as failed-so-far.
           Nil when the range has no counted deliveries; sibling counts are transient.
         type: number
+        x-nullable: true
       project_id:
         type: string
       rate_limit:
@@ -1345,6 +1699,7 @@ definitions:
         type: integer
       retry_count:
         type: integer
+        x-nullable: true
       secrets:
         items:
           $ref: '#/definitions/datastore.Secret'
@@ -1355,6 +1710,7 @@ definitions:
         $ref: '#/definitions/datastore.EndpointStatus'
       success_count:
         type: integer
+        x-nullable: true
       support_email:
         type: string
       uid:
@@ -1368,12 +1724,16 @@ definitions:
     properties:
       acknowledged_at:
         type: string
+        x-nullable: true
       cli_metadata:
-        $ref: '#/definitions/datastore.CLIMetadata'
+        allOf:
+          - $ref: '#/definitions/datastore.CLIMetadata'
+        x-nullable: true
       created_at:
         type: string
       deleted_at:
         type: string
+        x-nullable: true
       delivery_mode:
         $ref: '#/definitions/datastore.DeliveryMode'
       description:
@@ -1381,15 +1741,21 @@ definitions:
       device_id:
         type: string
       device_metadata:
-        $ref: '#/definitions/datastore.Device'
+        allOf:
+          - $ref: '#/definitions/datastore.Device'
+        x-nullable: true
       endpoint_id:
         type: string
       endpoint_metadata:
-        $ref: '#/definitions/datastore.Endpoint'
+        allOf:
+          - $ref: '#/definitions/datastore.Endpoint'
+        x-nullable: true
       event_id:
         type: string
       event_metadata:
-        $ref: '#/definitions/datastore.Event'
+        allOf:
+          - $ref: '#/definitions/datastore.Event'
+        x-nullable: true
       event_type:
         type: string
       headers:
@@ -1402,11 +1768,15 @@ definitions:
       latency_seconds:
         type: number
       metadata:
-        $ref: '#/definitions/datastore.Metadata'
+        allOf:
+          - $ref: '#/definitions/datastore.Metadata'
+        x-nullable: true
       project_id:
         type: string
       source_metadata:
-        $ref: '#/definitions/datastore.Source'
+        allOf:
+          - $ref: '#/definitions/datastore.Source'
+        x-nullable: true
       status:
         $ref: '#/definitions/datastore.EventDeliveryStatus'
       subscription_id:
@@ -1424,6 +1794,7 @@ definitions:
     properties:
       acknowledged_at:
         type: string
+        x-nullable: true
       app_id:
         description: Deprecated
         type: string
@@ -1433,11 +1804,12 @@ definitions:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
-        items:
-          type: integer
-        type: array
+        type: object
+        additionalProperties: true
+        x-nullable: true
       deleted_at:
         type: string
+        x-nullable: true
       endpoint_metadata:
         items:
           $ref: '#/definitions/datastore.Endpoint'
@@ -1463,7 +1835,9 @@ definitions:
       source_id:
         type: string
       source_metadata:
-        $ref: '#/definitions/datastore.Source'
+        allOf:
+          - $ref: '#/definitions/datastore.Source'
+        x-nullable: true
       status:
         $ref: '#/definitions/datastore.EventStatus'
       uid:
@@ -1481,12 +1855,13 @@ definitions:
         type: string
       deprecated_at:
         type: string
+        x-nullable: true
       description:
         type: string
       json_schema:
-        items:
-          type: integer
-        type: array
+        type: object
+        additionalProperties: true
+        x-nullable: true
       name:
         type: string
       uid:
@@ -1522,11 +1897,14 @@ definitions:
           type: string
         description: Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
         type: object
+        x-nullable: true
       data:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
         type: object
+        additionalProperties: true
+        x-nullable: true
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -1555,6 +1933,7 @@ definitions:
         $ref: '#/definitions/datastore.M'
       enabled_at:
         type: string
+        x-nullable: true
       event_type:
         type: string
       headers:
@@ -1590,6 +1969,7 @@ definitions:
       payload:
         additionalProperties: {}
         type: object
+        x-nullable: true
       type:
         type: string
     type: object
@@ -1606,9 +1986,9 @@ definitions:
       project_id:
         type: string
       service_account:
-        items:
-          type: integer
-        type: array
+        description: encoding/json marshals []byte as a base64 string on the wire.
+        format: byte
+        type: string
       subscription_id:
         type: string
     type: object
@@ -1667,18 +2047,38 @@ definitions:
       topic_name:
         type: string
     type: object
+  models.MetaEventConfiguration:
+    properties:
+      event_type:
+        items:
+          type: string
+        type: array
+      is_enabled:
+        type: boolean
+      secret:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
   models.MetaEventResponse:
     properties:
       attempt:
-        $ref: '#/definitions/datastore.MetaEventAttempt'
+        allOf:
+          - $ref: '#/definitions/datastore.MetaEventAttempt'
+        x-nullable: true
       created_at:
         type: string
       deleted_at:
         type: string
+        x-nullable: true
       event_type:
         type: string
       metadata:
-        $ref: '#/definitions/datastore.Metadata'
+        allOf:
+          - $ref: '#/definitions/datastore.Metadata'
+        x-nullable: true
       project_id:
         type: string
       status:
@@ -1820,6 +2220,89 @@ definitions:
           - $ref: '#/definitions/datastore.PaginationData'
         x-nullable: true
     type: object
+  models.ProjectConfig:
+    properties:
+      add_event_id_trace_headers:
+        description: Controls of the Event ID and Event Delivery ID Headers are added to the request when events are dispatched to endpoints
+        type: boolean
+      circuit_breaker:
+        allOf:
+          - $ref: '#/definitions/datastore.CircuitBreakerConfiguration'
+        description: CircuitBreaker is used to configure the project's circuit breaker settings
+      disable_endpoint:
+        description: Controls if the project will disable and endpoint after the retry threshold for an event is reached
+        type: boolean
+      max_payload_read_size:
+        description: |-
+          Specifies how many bytes and incoming project should read from the ingest request, and how many bytes an outgoing project should from the response of your endpoints
+          Defaults to 50KB.
+        type: integer
+      meta_event:
+        allOf:
+          - $ref: '#/definitions/models.MetaEventConfiguration'
+        description: MetaEvent is used to configure the project's meta events
+      multiple_endpoint_subscriptions:
+        description: |-
+          MultipleEndpointSubscriptions is used to configure if multiple subscriptions
+          can be created for the endpoint in a project
+        type: boolean
+      ratelimit:
+        allOf:
+          - $ref: '#/definitions/models.RateLimitConfiguration'
+        description: RateLimit is used to configure the projects rate limiting config values
+      replay_attacks_prevention_enabled:
+        description: Controls if your project will add a timestamp to it's webhook signature header to prevent a replay attack, See this blog post[https://getconvoy.io/blog/generating-stripe-like-webhook-signatures] for more]
+        type: boolean
+      request_id_header:
+        allOf:
+          - $ref: '#/definitions/config.RequestIDHeaderProvider'
+        description: RequestIDHeader is the outbound header name for the stable request id sent on webhook deliveries.
+      search_policy:
+        description: Specify the interval in hours for which the event tokenizer runs
+        type: string
+      signature:
+        allOf:
+          - $ref: '#/definitions/models.SignatureConfiguration'
+        description: Signature is used to configure the project's signature header versions
+      ssl:
+        allOf:
+          - $ref: '#/definitions/models.SSLConfiguration'
+        description: SSL is used to configure the project's endpoint ssl enforcement rules
+      strategy:
+        allOf:
+          - $ref: '#/definitions/models.StrategyConfiguration'
+        description: Strategy is used to configure the project's retry strategies for failing events.
+    type: object
+  models.ProjectResponse:
+    properties:
+      config:
+        allOf:
+          - $ref: '#/definitions/datastore.ProjectConfig'
+        x-nullable: true
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+        x-nullable: true
+      logo_url:
+        type: string
+      name:
+        type: string
+      organisation_id:
+        type: string
+      retained_events:
+        type: integer
+      statistics:
+        allOf:
+          - $ref: '#/definitions/datastore.ProjectStatistics'
+        x-nullable: true
+      type:
+        $ref: '#/definitions/datastore.ProjectType'
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.PubSubConfig:
     properties:
       amqp:
@@ -1869,16 +2352,43 @@ definitions:
       secret_key:
         type: string
     type: object
+  models.SSLConfiguration:
+    properties:
+      enforce_secure_endpoints:
+        type: boolean
+    type: object
+  models.SignatureConfiguration:
+    properties:
+      header:
+        $ref: '#/definitions/config.SignatureHeaderProvider'
+      versions:
+        items:
+          $ref: '#/definitions/models.SignatureVersion'
+        type: array
+    type: object
+  models.SignatureVersion:
+    properties:
+      created_at:
+        type: string
+      encoding:
+        type: string
+      hash:
+        type: string
+      uid:
+        type: string
+    type: object
   models.SourceResponse:
     properties:
       body_function:
         type: string
+        x-nullable: true
       created_at:
         type: string
       custom_response:
         $ref: '#/definitions/datastore.CustomResponse'
       deleted_at:
         type: string
+        x-nullable: true
       event_type_location:
         type: string
       forward_headers:
@@ -1887,6 +2397,7 @@ definitions:
         type: array
       header_function:
         type: string
+        x-nullable: true
       idempotency_keys:
         items:
           type: string
@@ -1902,9 +2413,13 @@ definitions:
       provider:
         $ref: '#/definitions/datastore.SourceProvider'
       provider_config:
-        $ref: '#/definitions/datastore.ProviderConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.ProviderConfig'
+        x-nullable: true
       pub_sub:
-        $ref: '#/definitions/datastore.PubSubConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.PubSubConfig'
+        x-nullable: true
       type:
         $ref: '#/definitions/datastore.SourceType'
       uid:
@@ -1914,7 +2429,18 @@ definitions:
       url:
         type: string
       verifier:
-        $ref: '#/definitions/datastore.VerifierConfig'
+        allOf:
+          - $ref: '#/definitions/datastore.VerifierConfig'
+        x-nullable: true
+    type: object
+  models.StrategyConfiguration:
+    properties:
+      duration:
+        type: integer
+      retry_count:
+        type: integer
+      type:
+        type: string
     type: object
   models.SubscriptionResponse:
     properties:
@@ -1922,30 +2448,45 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.AlertConfiguration'
         description: subscription config
+        x-nullable: true
       created_at:
         type: string
       deleted_at:
         type: string
+        x-nullable: true
       delivery_mode:
         $ref: '#/definitions/datastore.DeliveryMode'
       device_metadata:
-        $ref: '#/definitions/datastore.Device'
+        allOf:
+          - $ref: '#/definitions/datastore.Device'
+        x-nullable: true
       endpoint_metadata:
-        $ref: '#/definitions/datastore.Endpoint'
+        allOf:
+          - $ref: '#/definitions/datastore.Endpoint'
+        x-nullable: true
       filter_config:
-        $ref: '#/definitions/datastore.FilterConfiguration'
+        allOf:
+          - $ref: '#/definitions/datastore.FilterConfiguration'
+        x-nullable: true
       function:
         type: string
+        x-nullable: true
       name:
         type: string
       project_id:
         type: string
       rate_limit_config:
-        $ref: '#/definitions/datastore.RateLimitConfiguration'
+        allOf:
+          - $ref: '#/definitions/datastore.RateLimitConfiguration'
+        x-nullable: true
       retry_config:
-        $ref: '#/definitions/datastore.RetryConfiguration'
+        allOf:
+          - $ref: '#/definitions/datastore.RetryConfiguration'
+        x-nullable: true
       source_metadata:
-        $ref: '#/definitions/datastore.Source'
+        allOf:
+          - $ref: '#/definitions/datastore.Source'
+        x-nullable: true
       type:
         $ref: '#/definitions/datastore.SubscriptionType'
       uid:
@@ -2100,6 +2641,7 @@ definitions:
         additionalProperties: true
         description: JSONSchema is the JSON structure of the event type
         type: object
+        x-nullable: true
     type: object
   models.UpdateFilterRequest:
     properties:
@@ -2129,6 +2671,18 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.M'
         description: Query matching criteria (optional)
+    type: object
+  models.UpdateProject:
+    properties:
+      config:
+        allOf:
+          - $ref: '#/definitions/models.ProjectConfig'
+        description: Project Config
+      logo_url:
+        type: string
+      name:
+        description: Project Name
+        type: string
     type: object
   models.UpdateSource:
     properties:
@@ -2263,6 +2817,373 @@ info:
   title: Convoy API Reference
   version: 26.3.5
 paths:
+  /v1/projects:
+    get:
+      consumes:
+        - application/json
+      description: This endpoint fetches projects for an organisation. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter.
+      operationId: GetProjects
+      parameters:
+        - description: Organisation ID
+          in: query
+          name: orgID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    items:
+                      $ref: '#/definitions/models.ProjectResponse'
+                    type: array
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: List all projects
+      tags:
+        - Projects
+    post:
+      consumes:
+        - application/json
+      description: This endpoint creates a project. Authenticate with a personal API key or JWT and pass the organisation id as the orgID query parameter. The response includes the project and a one-time project API key.
+      operationId: CreateProject
+      parameters:
+        - description: Organisation ID
+          in: query
+          name: orgID
+          required: true
+          type: string
+        - description: Project Details
+          in: body
+          name: project
+          required: true
+          schema:
+            $ref: '#/definitions/models.CreateProject'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/models.CreateProjectResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "402":
+          description: Payment Required
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Create a project
+      tags:
+        - Projects
+  /v1/projects/{projectID}:
+    delete:
+      consumes:
+        - application/json
+      description: This endpoint deletes a project
+      operationId: DeleteProject
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Delete a project
+      tags:
+        - Projects
+    get:
+      consumes:
+        - application/json
+      description: This endpoint fetches a project by its id
+      operationId: GetProject
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/models.ProjectResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Retrieve a project
+      tags:
+        - Projects
+    put:
+      consumes:
+        - application/json
+      description: This endpoint updates a project's name, logo, and config
+      operationId: UpdateProject
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+        - description: Project Details
+          in: body
+          name: project
+          required: true
+          schema:
+            $ref: '#/definitions/models.UpdateProject'
+      produces:
+        - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/models.ProjectResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "403":
+          description: Forbidden
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Update a project
+      tags:
+        - Projects
   /v1/projects/{projectID}/endpoints:
     get:
       consumes:
@@ -2340,7 +3261,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2349,7 +3272,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2358,7 +3283,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2401,7 +3328,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2410,7 +3339,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2419,7 +3350,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2453,7 +3386,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "400":
           description: Bad Request
@@ -2462,7 +3397,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2471,7 +3408,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2480,7 +3419,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2522,7 +3463,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2531,7 +3474,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2540,7 +3485,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2588,7 +3535,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2597,7 +3546,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2606,7 +3557,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2649,7 +3602,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2658,7 +3613,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2667,7 +3624,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2716,7 +3675,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2725,7 +3686,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2734,7 +3697,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2777,7 +3742,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2786,7 +3753,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2795,7 +3764,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2839,7 +3810,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2848,7 +3821,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2857,7 +3832,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2897,7 +3874,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2906,7 +3885,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2915,7 +3896,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2958,7 +3941,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -2967,7 +3952,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -2976,7 +3963,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -2993,6 +3982,11 @@ paths:
         - description: Project ID
           in: path
           name: projectID
+          required: true
+          type: string
+        - description: Event Type ID
+          in: path
+          name: eventTypeId
           required: true
           type: string
         - description: Event Type Details
@@ -3020,7 +4014,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3029,7 +4025,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3038,7 +4036,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3081,7 +4081,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3090,7 +4092,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3099,7 +4103,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3145,7 +4151,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3154,7 +4162,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3163,7 +4173,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3277,7 +4289,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3286,7 +4300,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3295,7 +4311,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3338,7 +4356,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3347,7 +4367,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3356,7 +4378,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3401,7 +4425,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3410,7 +4436,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3419,7 +4447,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3467,7 +4497,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3476,7 +4508,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3485,7 +4519,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3528,7 +4564,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3537,7 +4575,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3546,7 +4586,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3644,7 +4686,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "400":
           description: Bad Request
@@ -3653,7 +4697,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3662,7 +4708,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3671,7 +4719,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3706,7 +4756,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "400":
           description: Bad Request
@@ -3715,7 +4767,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3724,7 +4778,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3733,7 +4789,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3839,7 +4897,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3848,7 +4908,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3857,7 +4919,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3891,7 +4955,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "400":
           description: Bad Request
@@ -3900,7 +4966,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3909,7 +4977,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3918,7 +4988,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -3961,7 +5033,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -3970,7 +5044,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -3979,7 +5055,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4022,7 +5100,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4031,7 +5111,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4040,7 +5122,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4139,7 +5223,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4148,7 +5234,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4157,7 +5245,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4201,7 +5291,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4210,7 +5302,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4219,11 +5313,136 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
       summary: Create a broadcast event
+      tags:
+        - Events
+  /v1/projects/{projectID}/events/countbatchreplayevents:
+    get:
+      consumes:
+        - application/json
+      description: This endpoint returns how many events would be affected by a batch replay with the given filters.
+      operationId: CountAffectedEvents
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+        - enum:
+            - next
+            - prev
+          in: query
+          name: direction
+          type: string
+          x-enum-varnames:
+            - Next
+            - Prev
+        - description: The end date
+          example: 2008-05-02T15:04:05
+          in: query
+          name: endDate
+          type: string
+        - collectionFormat: csv
+          description: A list of endpoint ids to filter by
+          in: query
+          items:
+            type: string
+          name: endpointId
+          type: array
+        - description: IdempotencyKey to filter by
+          in: query
+          name: idempotencyKey
+          type: string
+        - description: A pagination cursor to fetch the next page of a list
+          example: 01H0JA5MEES38RRK3HTEJC647K
+          in: query
+          name: next_page_cursor
+          type: string
+        - description: The number of items to return per page
+          example: 20
+          in: query
+          name: perPage
+          type: integer
+        - description: A pagination cursor to fetch the previous page of a list
+          example: 01H0JATTVCXZK8FRDX1M1JN3QY
+          in: query
+          name: prev_page_cursor
+          type: string
+        - description: Any arbitrary value to filter the events payload
+          in: query
+          name: query
+          type: string
+        - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+          example: ASC | DESC
+          in: query
+          name: sort
+          type: string
+        - collectionFormat: csv
+          description: A list of Source IDs to filter the events by.
+          in: query
+          items:
+            type: string
+          name: sourceId
+          type: array
+        - description: The start date
+          example: 2006-01-02T15:04:05
+          in: query
+          name: startDate
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    $ref: '#/definitions/models.CountResponse'
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Count events matching batch replay filters
       tags:
         - Events
   /v1/projects/{projectID}/events/dynamic:
@@ -4250,7 +5469,14 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.Stub'
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
         "400":
           description: Bad Request
           schema:
@@ -4258,7 +5484,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4267,7 +5495,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4276,7 +5506,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4311,7 +5543,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "400":
           description: Bad Request
@@ -4320,7 +5554,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4329,7 +5565,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4338,7 +5576,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4422,7 +5662,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4431,7 +5673,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4440,7 +5684,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4483,7 +5729,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4492,7 +5740,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4501,7 +5751,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4544,7 +5796,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4553,7 +5807,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4562,7 +5818,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4573,8 +5831,7 @@ paths:
     post:
       consumes:
         - application/json
-        - multipart/form-data
-      description: This endpoint accepts a CSV file or JSON body to bulk-create endpoints with subscriptions
+      description: This endpoint bulk-creates endpoints with subscriptions from a JSON body. A CSV file upload is also accepted over raw HTTP as multipart/form-data with a "file" field; generated SDK clients only expose the JSON body.
       operationId: BulkOnboard
       parameters:
         - description: Project ID
@@ -4591,10 +5848,6 @@ paths:
           name: onboard
           schema:
             $ref: '#/definitions/models.BulkOnboardRequest'
-        - description: CSV file upload
-          in: formData
-          name: file
-          type: file
       produces:
         - application/json
       responses:
@@ -4623,7 +5876,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4632,7 +5887,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4641,7 +5898,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4725,7 +5984,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4734,7 +5995,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4743,7 +6006,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4786,7 +6051,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4795,7 +6062,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4804,7 +6073,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4847,7 +6118,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4856,7 +6129,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4865,7 +6140,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4913,7 +6190,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4922,7 +6201,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4931,7 +6212,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -4974,7 +6257,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -4983,7 +6268,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -4992,7 +6279,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5026,7 +6315,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "400":
           description: Bad Request
@@ -5035,7 +6326,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5044,7 +6337,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5053,7 +6348,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5137,7 +6434,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5146,7 +6445,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5155,7 +6456,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5198,7 +6501,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5207,7 +6512,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5216,7 +6523,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5250,7 +6559,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "400":
           description: Bad Request
@@ -5259,7 +6570,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5268,7 +6581,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5277,7 +6592,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5319,7 +6636,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5328,7 +6647,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5337,7 +6658,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5385,7 +6708,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5394,7 +6719,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5403,7 +6730,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5446,7 +6775,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5455,7 +6786,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5464,7 +6797,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5549,7 +6884,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5558,7 +6895,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5567,7 +6906,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5610,7 +6951,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5619,7 +6962,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5628,7 +6973,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5662,7 +7009,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "400":
           description: Bad Request
@@ -5671,7 +7020,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5680,7 +7031,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5689,7 +7042,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5731,7 +7086,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5740,7 +7097,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5749,7 +7108,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5797,7 +7158,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5806,7 +7169,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5815,7 +7180,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5860,7 +7227,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5869,7 +7238,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5878,7 +7249,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5926,7 +7299,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -5935,7 +7310,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -5944,7 +7321,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -5983,7 +7362,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "400":
           description: Bad Request
@@ -5992,7 +7373,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -6001,7 +7384,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -6010,7 +7395,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -6057,7 +7444,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -6066,7 +7455,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -6075,7 +7466,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -6128,7 +7521,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -6137,7 +7532,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -6146,7 +7543,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -6199,7 +7598,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -6208,7 +7609,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -6217,7 +7620,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -6270,7 +7675,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -6279,7 +7686,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -6288,7 +7697,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -6342,7 +7753,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -6351,7 +7764,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -6360,13 +7775,84 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
       summary: Test a filter
       tags:
         - Filters
+  /v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status:
+    put:
+      consumes:
+        - application/json
+      description: This endpoint toggles a subscription status. Retained for backward compatibility.
+      operationId: ToggleSubscriptionStatus
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+        - description: subscription id
+          in: path
+          name: subscriptionID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Toggle subscription status
+      tags:
+        - Subscriptions
   /v1/projects/{projectID}/subscriptions/test_filter:
     post:
       consumes:
@@ -6404,7 +7890,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -6413,7 +7901,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -6422,7 +7912,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -6466,7 +7958,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "401":
           description: Unauthorized
@@ -6475,7 +7969,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
         "404":
           description: Not Found
@@ -6484,7 +7980,9 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/handlers.Stub'
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
                 type: object
       security:
         - ApiKeyAuth: []
@@ -6500,6 +7998,8 @@ securityDefinitions:
     type: apiKey
 swagger: "2.0"
 tags:
+  - description: Project related APIs
+    name: Projects
   - description: Subscription related APIs
     name: Subscriptions
   - description: Endpoint related APIs

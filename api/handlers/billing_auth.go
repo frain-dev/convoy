@@ -13,6 +13,8 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/policies"
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/util"
 )
@@ -83,10 +85,15 @@ func (h *BillingHandler) requireSelfHostedBillingAdmin(w http.ResponseWriter, r 
 		return true
 	}
 
-	_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: organisation admin or instance admin access required to manage self-hosted billing", http.StatusForbidden))
+	_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin, organisation admin, or billing admin access required to manage self-hosted billing", http.StatusForbidden))
 	return false
 }
 
+// canManageSelfHostedBilling gates self-hosted billing mutations and usage.
+// Instance admin always passes. Cloud org billing never uses this path for org
+// admins (UsesOrgBilling). On self-hosted: single-org instances allow org admin
+// or billing admin; multi-org instances require instance admin only.
+// Failure policy: fail closed on count errors and on multi-org non-instance-admins.
 func (h *BillingHandler) canManageSelfHostedBilling(r *http.Request) bool {
 	user, err := h.retrieveUser(r)
 	if err != nil {
@@ -101,13 +108,27 @@ func (h *BillingHandler) canManageSelfHostedBilling(r *http.Request) bool {
 		return false
 	}
 
-	// Self-hosted is a single-tenant, cooperative deployment, not Convoy Cloud's
-	// adversarial multi-tenant model. Orgs here are teams inside one company that
-	// runs the instance, so an organisation admin may manage the instance-global
-	// license. This guard is only reached in self-hosted mode; cloud org billing
-	// uses checkBillingAccess (PermissionBillingManage) instead.
-	_, err = memberRepo.FetchAnyOrganisationAdminByUserID(r.Context(), user.UID)
-	return err == nil
+	orgCount, err := h.orgRepo().CountOrganisations(r.Context())
+	if err != nil || orgCount != 1 {
+		return false
+	}
+
+	// Resolve the sole live org from the instance, not the request path and not
+	// FetchAnyOrganisationAdminByUserID (that helper can match soft-deleted orgs).
+	// Billing routes like /ui/billing/config often have no orgID in the URL.
+	orgs, _, err := h.orgRepo().LoadOrganisationsPaged(r.Context(), datastore.Pageable{
+		PerPage:    1,
+		Direction:  datastore.Next,
+		NextCursor: datastore.DefaultCursor,
+	})
+	if err != nil || len(orgs) != 1 {
+		return false
+	}
+	member, err := memberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, orgs[0].UID)
+	if err != nil || member == nil {
+		return false
+	}
+	return member.Role.Type == auth.RoleOrganisationAdmin || member.Role.Type == auth.RoleBillingAdmin
 }
 
 func newCheckoutNonce() (string, error) {

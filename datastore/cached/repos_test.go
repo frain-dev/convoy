@@ -340,6 +340,44 @@ func TestCachedPortalLinkRepo_FindByMaskId_CacheMiss(t *testing.T) {
 	require.Equal(t, "pl-123", result.UID)
 }
 
+func TestCachedPortalLinkRepo_RevokePortalLink_InvalidatesMaskCache(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockPortalLinkRepository(ctrl)
+	mockCache := mocks.NewMockCache(ctrl)
+	logger := mocks.NewMockLogger(ctrl)
+	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+	// A link can accumulate several mask ids via refresh rotation; every cached
+	// entry must be invalidated so a revoked token stops authenticating.
+	mockRepo.EXPECT().FindPortalLinkTokenMaskIDs(gomock.Any(), "pl-123").Return([]string{"mask-1", "mask-2"}, nil)
+	mockRepo.EXPECT().RevokePortalLink(gomock.Any(), "proj-1", "pl-123").Return(nil)
+	mockCache.EXPECT().Delete(gomock.Any(), "portal_links_by_mask:mask-1").Return(nil)
+	mockCache.EXPECT().Delete(gomock.Any(), "portal_links_by_mask:mask-2").Return(nil)
+
+	repo := NewCachedPortalLinkRepository(mockRepo, mockCache, 5*time.Minute, logger)
+	require.NoError(t, repo.RevokePortalLink(context.Background(), "proj-1", "pl-123"))
+}
+
+func TestCachedPortalLinkRepo_RevokePortalLink_LookupError_StillRevokes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockPortalLinkRepository(ctrl)
+	mockCache := mocks.NewMockCache(ctrl)
+	logger := mocks.NewMockLogger(ctrl)
+	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+	// Failure policy: a mask-id lookup error must not block revoke; entries are
+	// left to expire by TTL and no Delete is issued.
+	mockRepo.EXPECT().FindPortalLinkTokenMaskIDs(gomock.Any(), "pl-123").Return(nil, errors.New("db down"))
+	mockRepo.EXPECT().RevokePortalLink(gomock.Any(), "proj-1", "pl-123").Return(nil)
+
+	repo := NewCachedPortalLinkRepository(mockRepo, mockCache, 5*time.Minute, logger)
+	require.NoError(t, repo.RevokePortalLink(context.Background(), "proj-1", "pl-123"))
+}
+
 // ============================================================================
 // OrganisationRepository Tests
 // ============================================================================

@@ -35,6 +35,7 @@ import (
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/license/service"
+	licenseusage "github.com/frain-dev/convoy/internal/pkg/license/usage"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -227,14 +228,19 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
-		licenseClient := service.NewClient(service.Config{
+		licenseClientCfg := service.Config{
 			Host:         cfg.LicenseService.Host,
 			ValidatePath: cfg.LicenseService.ValidatePath,
 			Timeout:      cfg.LicenseService.Timeout,
 			RetryCount:   cfg.LicenseService.RetryCount,
 			DeploymentID: cfg.InstanceId,
 			Logger:       lo,
-		})
+		}
+		// Licensed instances only: attach cached anonymized usage on validate.
+		if !util.IsStringEmpty(cfg.LicenseKey) {
+			licenseClientCfg.UsageLoader = licenseusage.NewStore(app.DB, redis)
+		}
+		licenseClient := service.NewClient(licenseClientCfg)
 
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			LicenseService: service.LicenserConfig{

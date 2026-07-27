@@ -47,21 +47,19 @@ SELECT
     COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
     COALESCE(p.owner_id, '') AS owner_id,
     CASE
-        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
+    COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+        cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url) as jsonb)
+    ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
 LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
+    ON e.id = pe.endpoint_id AND e.deleted_at IS NULL
 WHERE p.id = @id AND p.project_id = @project_id AND p.deleted_at IS NULL
 GROUP BY p.id;
 
@@ -76,21 +74,19 @@ SELECT
     COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
     COALESCE(p.owner_id, '') AS owner_id,
     CASE
-        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
+    COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+        cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url) as jsonb)
+    ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
 LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
+    ON e.id = pe.endpoint_id AND e.deleted_at IS NULL
 WHERE p.owner_id = @owner_id AND p.project_id = @project_id AND p.deleted_at IS NULL
 GROUP BY p.id;
 
@@ -105,21 +101,19 @@ SELECT
     COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
     COALESCE(p.owner_id, '') AS owner_id,
     CASE
-        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
+    COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+        cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url) as jsonb)
+    ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
 LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
+    ON e.id = pe.endpoint_id AND e.deleted_at IS NULL
 WHERE p.token = @token AND p.deleted_at IS NULL
 GROUP BY p.id;
 
@@ -138,12 +132,17 @@ SELECT
     COALESCE(pl.can_manage_endpoint, FALSE) AS can_manage_endpoint,
     COALESCE(pl.owner_id, '') AS owner_id,
     CASE
-        WHEN pl.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = pl.owner_id)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = pl.id)
+        WHEN pl.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = pl.owner_id AND deleted_at IS NULL)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = pl.id)
     END AS endpoint_count
 FROM convoy.portal_tokens pt
 JOIN convoy.portal_links pl ON pl.id = pt.portal_link_id
-WHERE pt.token_mask_id = @token_mask_id;
+WHERE pt.token_mask_id = @token_mask_id AND pl.deleted_at IS NULL;
+
+-- name: FetchPortalLinkTokenMaskIDs :many
+SELECT token_mask_id
+FROM convoy.portal_tokens
+WHERE portal_link_id = @portal_link_id;
 
 -- name: FetchPortalLinksByOwnerID :many
 SELECT
@@ -156,21 +155,19 @@ SELECT
     COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
     COALESCE(p.owner_id, '') AS owner_id,
     CASE
-        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
+        ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
     END AS endpoint_count,
     p.created_at,
     p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
+    COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+        cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url) as jsonb)
+    ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
 LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
+    ON e.id = pe.endpoint_id AND e.deleted_at IS NULL
 WHERE p.owner_id = @owner_id AND p.deleted_at IS NULL
 GROUP BY p.id;
 
@@ -196,21 +193,19 @@ WITH filtered_portal_links AS (
         COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
         COALESCE(p.owner_id, '') AS owner_id,
         CASE
-            WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-            ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+            WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id AND deleted_at IS NULL)
+            ELSE (SELECT count(pe2.portal_link_id) FROM convoy.portal_links_endpoints pe2 JOIN convoy.endpoints e2 ON e2.id = pe2.endpoint_id AND e2.deleted_at IS NULL WHERE pe2.portal_link_id = p.id)
         END AS endpoint_count,
         p.created_at,
         p.updated_at,
-        ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-            CASE WHEN e.id IS NOT NULL THEN
-                cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-            END
-        )) AS endpoints_metadata
+        COALESCE(ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url) as jsonb)
+        ) FILTER (WHERE e.id IS NOT NULL)), '[]'::json) AS endpoints_metadata
     FROM convoy.portal_links p
     LEFT JOIN convoy.portal_links_endpoints pe
         ON p.id = pe.portal_link_id
     LEFT JOIN convoy.endpoints e
-        ON e.id = pe.endpoint_id
+        ON e.id = pe.endpoint_id AND e.deleted_at IS NULL
     WHERE p.deleted_at IS NULL
         AND (p.project_id = @project_id OR @project_id = '')
         -- Cursor comparison: <= for forward (next), >= for backward (prev)

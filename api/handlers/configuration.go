@@ -25,14 +25,6 @@ func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 
 	var configResponse []*models.ConfigurationResponse
 	if configuration != nil {
-		if configuration.StoragePolicy.Type == datastore.S3 {
-			policy := &datastore.S3Storage{}
-			policy.Bucket = configuration.StoragePolicy.S3.Bucket
-			policy.Endpoint = configuration.StoragePolicy.S3.Endpoint
-			policy.Region = configuration.StoragePolicy.S3.Region
-			configuration.StoragePolicy.S3 = policy
-		}
-
 		redactConfigurationSecrets(configuration)
 
 		c := &models.ConfigurationResponse{
@@ -46,13 +38,14 @@ func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Configuration fetched successfully", configResponse, http.StatusOK))
 }
 
-// redactConfigurationSecrets strips commercial-license and checkout secrets from
-// the instance configuration before it leaves GetConfiguration. That handler is
-// served on the UI and portal-api routes to any authenticated user or portal-link
-// holder, none of which need these fields (the config UI reads only
-// analytics/signup/retention/storage). Billing management surfaces read these via
-// their own gated endpoints, so redacting here removes a license-key and
-// checkout-nonce leak without breaking any current caller.
+// redactConfigurationSecrets strips commercial-license, checkout, and storage
+// secrets from the instance configuration before it leaves GetConfiguration. That
+// handler is served on the UI and portal-api routes to any authenticated user or
+// portal-link holder, none of which need these fields (the config UI reads only
+// analytics/signup/retention/storage metadata). Billing management surfaces read
+// license/checkout fields via their own gated endpoints, so redacting here removes
+// a license-key, checkout-nonce, and blob-storage credential leak without breaking
+// any current caller.
 func redactConfigurationSecrets(c *datastore.Configuration) {
 	if c == nil {
 		return
@@ -65,6 +58,41 @@ func redactConfigurationSecrets(c *datastore.Configuration) {
 	c.ActiveCheckoutAttemptID = ""
 	c.CheckoutID = ""
 	c.ExternalID = ""
+
+	redactStoragePolicySecrets(c)
+}
+
+// redactStoragePolicySecrets clears blob-storage credentials from the storage
+// policy, keeping only the non-sensitive location metadata the config UI renders.
+// Stripping is keyed on struct presence rather than StoragePolicy.Type so a
+// misconfigured Type cannot leak a populated credential set.
+func redactStoragePolicySecrets(c *datastore.Configuration) {
+	if c.StoragePolicy == nil {
+		return
+	}
+
+	if s3 := c.StoragePolicy.S3; s3 != nil {
+		c.StoragePolicy.S3 = &datastore.S3Storage{
+			Bucket:   s3.Bucket,
+			Endpoint: s3.Endpoint,
+			Region:   s3.Region,
+		}
+	}
+
+	if azure := c.StoragePolicy.AzureBlob; azure != nil {
+		c.StoragePolicy.AzureBlob = &datastore.AzureBlobStorage{
+			AccountName:   azure.AccountName,
+			ContainerName: azure.ContainerName,
+			Endpoint:      azure.Endpoint,
+			Prefix:        azure.Prefix,
+		}
+	}
+
+	if c.StoragePolicy.OnPrem != nil {
+		// The on-prem path points at the host filesystem backing instance
+		// backups; it is not needed by any config reader and must not leak.
+		c.StoragePolicy.OnPrem = &datastore.OnPremStorage{}
+	}
 }
 
 func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -157,23 +185,22 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 
 	ssoEnabled := h.A.Licenser.EnterpriseSSO()
 	if useOrgBilling && slug != "" {
-		result, err := services.ResolveWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
+		result, err := services.LookupWorkspaceBySlug(r.Context(), slug, services.ResolveWorkspaceBySlugDeps{
 			BillingClient: h.A.BillingClient,
 			OrgRepo:       h.A.OrgRepo,
 			Logger:        h.A.Logger,
 			Cfg:           cfg,
-			RefreshDeps: services.RefreshLicenseDataDeps{
-				OrgMemberRepo: h.A.OrgMemberRepo,
-				OrgRepo:       h.A.OrgRepo,
-				BillingClient: h.A.BillingClient,
-				Logger:        h.A.Logger,
-				Cfg:           cfg,
-				Cache:         h.A.Cache,
-			},
 		})
-		if err == nil {
-			ssoEnabled = result.SSOAvailable
+		if err != nil {
+			if errors.Is(err, services.ErrWorkspaceNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse("workspace not found", http.StatusBadRequest))
+				return
+			}
+			h.A.Logger.ErrorContext(r.Context(), "failed to resolve workspace slug", "error", err, "slug", slug)
+			_ = render.Render(w, r, util.NewErrorResponse("failed to resolve workspace", http.StatusServiceUnavailable))
+			return
 		}
+		ssoEnabled = result.SSOAvailable
 	}
 
 	authConfig := map[string]interface{}{

@@ -1,0 +1,14 @@
+# Hand-written webhook signature verification — never overwrite with generated
+# code. It lives inside the generated src/convoy tree so the import path stays
+# `from convoy.utils.webhook import Webhook`; only this file is hand-owned.
+src/convoy/utils/webhook.py
+
+# Shared signature contract + verify unit tests (hand-authored).
+test/signature-vectors.json
+test/test_shared_vectors.py
+test/test_webhook.py
+
+# Project meta.
+CONTRIBUTING.MD
+LICENSE
+MIGRATION.md

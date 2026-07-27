@@ -214,6 +214,15 @@ func newFailoverClient(cfg config.RedisConfiguration) (*Redis, error) {
 	return &Redis{addresses: sentinelAddrs, client: client}, nil
 }
 
+// FromClient wraps an existing UniversalClient. Used when the process already
+// holds the raw client (e.g. api.App) and a *Redis is needed by callers.
+func FromClient(client redis.UniversalClient) *Redis {
+	if client == nil {
+		return nil
+	}
+	return &Redis{client: client}
+}
+
 // Client is to return underlying redis interface
 func (r *Redis) Client() redis.UniversalClient {
 	return r.client

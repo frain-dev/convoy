@@ -12,6 +12,9 @@ import {USER} from '../models/user.model';
 export class PrivateService {
 	projects$: EventEmitter<HTTP_RESPONSE> = new EventEmitter();
 	showOrgModal: EventEmitter<boolean> = new EventEmitter();
+	// Emits after any server-side profile mutation so live shell surfaces
+	// (verify chip) re-read instead of waiting for a remount.
+	profileChanged: EventEmitter<void> = new EventEmitter();
 	organisationDetails?: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
 	projects!: HTTP_RESPONSE;
@@ -403,6 +406,32 @@ export class PrivateService {
 			return !!flags.find(flag => flag.flagKey === flagKey)?.match;
 		} catch (error) {
 			return false;
+		}
+	}
+
+	// Drop the in-memory profile cache so the next getUserDetails without
+	// refresh refetches, and notify live subscribers (shell verify chip) to
+	// re-read. Call after any server-side profile mutation, e.g. profile save
+	// or email verify.
+	clearProfileDetailsCache(): void {
+		this.profileDetails = undefined as any;
+		this.profileChanged.next();
+	}
+
+	// Single owner of the email_verified cache sync: patches CONVOY_AUTH and
+	// drops the in-memory profile cache so the next getUserDetails refetches
+	// (verify chip, trial modal). Cache patch failures are ignored; the server
+	// remains the source of truth.
+	setAuthEmailVerified(verified: boolean): void {
+		this.clearProfileDetailsCache();
+		try {
+			const raw = localStorage.getItem('CONVOY_AUTH');
+			if (!raw) return;
+			const auth = JSON.parse(raw);
+			auth.email_verified = verified;
+			localStorage.setItem('CONVOY_AUTH', JSON.stringify(auth));
+		} catch {
+			// ignore cache patch failures
 		}
 	}
 
