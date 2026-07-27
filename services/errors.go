@@ -1,6 +1,10 @@
 package services
 
-import "errors"
+import (
+	"errors"
+
+	endpointurl "github.com/frain-dev/convoy/pkg/url"
+)
 
 const (
 	ErrCodeAuthInvalid    = "auth.invalid"
@@ -18,9 +22,12 @@ const (
 )
 
 var (
-	ErrEndpointURLRequired   = errors.New("please provide the endpoint url")
-	ErrHTTPSOnly             = errors.New("only https endpoints allowed")
-	ErrInvalidEndpointScheme = errors.New("invalid endpoint scheme")
+	// Endpoint URL validation errors are owned by pkg/url (the single source of
+	// truth shared by the API and the bulk-onboard worker); aliased here so
+	// existing services callers and errors.Is checks keep working.
+	ErrEndpointURLRequired   = endpointurl.ErrEndpointURLRequired
+	ErrHTTPSOnly             = endpointurl.ErrHTTPSOnly
+	ErrInvalidEndpointScheme = endpointurl.ErrInvalidEndpointScheme
 	ErrAPIKeyFieldRequired   = errors.New("api key field is required")
 )
 
