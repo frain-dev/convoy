@@ -182,7 +182,9 @@ resolve_host_port() {
     0)
       ;;
     2)
-      warn "Could not reliably test requested ${label} port ${requested}; searching fallback range."
+      warn "Could not reliably test requested ${label} port ${requested}; using it as requested."
+      printf "%s" "$requested"
+      return 0
       ;;
     *)
       ;;
