@@ -17,6 +17,12 @@ on:
 permissions:
   contents: read
 
+# Serialize bumps: overlapping runs can otherwise merge out of order and
+# roll staging back to an older main-<sha> tag.
+concurrency:
+  group: bump-convoy-cloud-staging
+  cancel-in-progress: false
+
 jobs:
   open-bump-pr:
     if: >-
@@ -60,14 +66,118 @@ jobs:
           echo "short_sha=${short}" >> "$GITHUB_OUTPUT"
           echo "image_tag=main-${short}" >> "$GITHUB_OUTPUT"
 
+      # workflow_run already attested a successful image publish. Manual
+      # dispatch must prove the tag exists on Docker Hub before merging
+      # staging (failure policy: fail closed — no bump without a published image).
+      - name: Require published image for manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          url="https://hub.docker.com/v2/repositories/getconvoy/convoy/tags/${IMAGE_TAG}"
+          code=$(curl -sS -o /tmp/hub-tag.json -w '%{http_code}' "$url" || true)
+          if [ "$code" != "200" ]; then
+            echo "::error::Docker Hub has no getconvoy/convoy:${IMAGE_TAG} (HTTP ${code}). Refuse staging bump without a published image."
+            exit 1
+          fi
+          echo "Confirmed Docker Hub tag ${IMAGE_TAG}."
+
+      # App tokens (not CONVOY_CLOUD_REPO_TOKEN / GITHUB_TOKEN): human PATs
+      # author as that user; GITHUB_TOKEN PRs often skip downstream workflows.
+      # convoy-cloud requires ≥1 review, so author + reviewer apps.
+      - name: Mint convoy-cloud-bot token
+        id: bot-token
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        with:
+          app-id: ${{ secrets.CLOUD_BOT_APP_ID }}
+          private-key: ${{ secrets.CLOUD_BOT_APP_KEY }}
+          owner: frain-dev
+          repositories: convoy-cloud
+
       - name: Checkout convoy-cloud
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: frain-dev/convoy-cloud
-          token: ${{ secrets.CONVOY_CLOUD_REPO_TOKEN }}
+          token: ${{ steps.bot-token.outputs.token }}
           path: convoy-cloud
 
+      # Skip if staging main already points at this tag, or at a newer Convoy
+      # commit (queued older builds must not roll staging back after a newer
+      # bump merged first). Failure policy: fail open to skip (exit 0).
+      - name: Skip stale or no-op bumps
+        id: skip
+        env:
+          CLOUD_TOKEN: ${{ steps.bot-token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
+          SOURCE_SHA: ${{ inputs.head_sha || github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$VALUES_YAML_PATH" ]; then
+            echo "::error::CONVOY_CLOUD_VALUES_YAML_PATH is empty."
+            exit 1
+          fi
+          content=$(GH_TOKEN="$CLOUD_TOKEN" gh api "repos/frain-dev/convoy-cloud/contents/${VALUES_YAML_PATH}?ref=main" --jq .content | base64 --decode)
+          current=$(printf '%s\n' "$content" | python3 -c '
+          import re, sys
+          text = sys.stdin.read()
+          m = re.search(r"(?m)^(?!\s*#)\s*tag: &tag \"([^\"]+)\"\s*$", text)
+          print(m.group(1) if m else "")
+          ')
+          if [ -z "$current" ]; then
+            echo "::error::Could not read active tag from main ${VALUES_YAML_PATH}."
+            exit 1
+          fi
+          echo "Staging main tag is ${current}; this run wants ${IMAGE_TAG}."
+
+          close_this_bump_pr() {
+            # Only this run's branch — never close a newer concurrent bump PR.
+            head="bump/convoy-staging-${IMAGE_TAG}"
+            num=$(GH_TOKEN="$CLOUD_TOKEN" gh pr list --repo frain-dev/convoy-cloud --head "$head" --state open \
+              --json number -q '.[0].number // empty' || true)
+            if [ -n "$num" ]; then
+              GH_TOKEN="$CLOUD_TOKEN" gh pr close "$num" --repo frain-dev/convoy-cloud \
+                --comment "Superseded; staging is at \`${current}\`." || true
+            fi
+          }
+
+          if [ "$current" = "$IMAGE_TAG" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Staging already at ${IMAGE_TAG}."
+            close_this_bump_pr
+            exit 0
+          fi
+          # Ancestry on frain-dev/convoy (not committer dates): skip when staging
+          # tip already contains this build, or has diverged / cannot be compared.
+          if [[ "$current" != main-* ]]; then
+            echo "::error::Staging tag \`${current}\` is not main-<sha>; refusing automated bump."
+            exit 1
+          fi
+          cur_sha="${current#main-}"
+          status=$(gh api "repos/frain-dev/convoy/compare/${SOURCE_SHA}...${cur_sha}" --jq .status 2>/dev/null || true)
+          case "$status" in
+            identical|ahead)
+              # tip == source, or tip is ahead of source → this bump is stale/no-op
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "Staging tip ${current} compare vs ${SOURCE_SHA}: ${status}; skipping."
+              close_this_bump_pr
+              exit 0
+              ;;
+            behind)
+              echo "skip=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              # diverged / empty / API error — fail closed to skip
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "Could not prove ${IMAGE_TAG} is ahead of staging tip ${current} (compare=${status:-empty}); skipping."
+              close_this_bump_pr
+              exit 0
+              ;;
+          esac
+
       - name: Update staging tag
+        if: steps.skip.outputs.skip != 'true'
         working-directory: convoy-cloud
         env:
           IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
@@ -87,9 +197,18 @@ jobs:
           path = os.environ["VALUES_YAML_PATH"]
           tag = os.environ["IMAGE_TAG"]
           text = open(path, encoding="utf-8").read()
-          new, n = re.subn(r'(tag: &tag ")[^"]*(")', rf"\g<1>{tag}\2", text)
-          if n == 0:
-              print("::error::Tag line pattern matched zero times — YAML may have changed", file=sys.stderr)
+          # Only the active (non-comment) tag anchor — staging values keep a
+          # commented historical `# tag: &tag "..."` line that must not change.
+          new, n = re.subn(
+              r'(?m)^(?!\s*#)(\s*tag: &tag ")[^"]*(")',
+              rf"\g<1>{tag}\2",
+              text,
+          )
+          if n != 1:
+              print(
+                  f"::error::Expected exactly one active tag: &tag line, got {n}",
+                  file=sys.stderr,
+              )
               sys.exit(1)
           open(path, "w", encoding="utf-8").write(new)
           PY
@@ -97,28 +216,54 @@ jobs:
 
       - name: Create pull request
         id: pr
+        if: steps.skip.outputs.skip != 'true'
         working-directory: convoy-cloud
         env:
-          GH_TOKEN: ${{ secrets.CONVOY_CLOUD_REPO_TOKEN }}
+          GH_TOKEN: ${{ steps.bot-token.outputs.token }}
+          CONVOY_TOKEN: ${{ github.token }}
           IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
           SOURCE_SHA: ${{ inputs.head_sha || github.event.workflow_run.head_sha }}
           SOURCE_RUN: ${{ github.event.workflow_run.html_url || '' }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
+
+          git config user.name "convoy-cloud-bot[bot]"
+          git config user.email "convoy-cloud-bot[bot]@users.noreply.github.com"
           branch="bump/convoy-staging-${IMAGE_TAG}"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
 
-          existing="$(gh pr list --repo frain-dev/convoy-cloud --head "$branch" --json number -q '.[0].number' 2>/dev/null || true)"
-          if [ -n "$existing" ]; then
-            echo "PR #${existing} already open for ${branch} — nothing to do."
-            exit 0
-          fi
+          close_older_bump_prs() {
+            # Close only PRs whose tag is behind this IMAGE_TAG (ancestry).
+            while read -r num head; do
+              [ -z "${num:-}" ] && continue
+              case "$head" in
+                bump/convoy-staging-"${IMAGE_TAG}") continue ;;
+                bump/convoy-staging-main-*)
+                  other="${head#bump/convoy-staging-}"
+                  status=$(GH_TOKEN="$CONVOY_TOKEN" gh api \
+                    "repos/frain-dev/convoy/compare/${other#main-}...${IMAGE_TAG#main-}" \
+                    --jq .status 2>/dev/null || true)
+                  # ahead/identical ⇒ IMAGE_TAG contains other → other is obsolete
+                  case "$status" in
+                    ahead|identical)
+                      gh pr close "$num" --repo frain-dev/convoy-cloud \
+                        --comment "Superseded by staging bump to \`${IMAGE_TAG}\`." || true
+                      ;;
+                  esac
+                  ;;
+              esac
+            done < <(gh pr list --repo frain-dev/convoy-cloud --state open --limit 50 \
+              --json number,headRefName \
+              --jq '.[] | select(.headRefName | startswith("bump/convoy-staging-")) | "\(.number) \(.headRefName)"')
+          }
 
-          git checkout -b "$branch"
+          git checkout -B "$branch"
           git add "$VALUES_YAML_PATH"
 
           if git diff --cached --quiet; then
-            echo "No changes (tag already ${IMAGE_TAG}); nothing to do."
+            echo "No changes (tag already ${IMAGE_TAG}); closing any older bump PRs."
+            close_older_bump_prs
+            echo "opened=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -135,113 +280,263 @@ jobs:
           git commit -F "$commit_msg"
           rm -f "$commit_msg"
 
-          git push -u origin "$branch"
+          # Force push is safe: the bump branch is fully derived from main plus
+          # this run's tag substitution; any previous tip is stale.
+          git push --force -u origin "$branch"
+          pushed_sha=$(git rev-parse HEAD)
+          echo "pushed_sha=${pushed_sha}" >> "$GITHUB_OUTPUT"
 
-          pr_body="$(mktemp)"
-          {
-            echo "Automated bump after Convoy main image publish."
-            echo ""
-            echo "- **Image tag:** \`${IMAGE_TAG}\`"
-            echo "- **Convoy commit:** \`${SOURCE_SHA}\`"
-            echo "- **Build run:** ${run_url}"
-          } >"$pr_body"
-          pr_url="$(gh pr create \
-            --repo frain-dev/convoy-cloud \
-            --base main \
-            --head "$branch" \
-            --title "chore(staging): bump Convoy to ${IMAGE_TAG}" \
-            --body-file "$pr_body")"
-          rm -f "$pr_body"
+          existing="$(gh pr list --repo frain-dev/convoy-cloud --head "$branch" --state open --json number,url -q '.[0] // empty' 2>/dev/null || true)"
+          if [ -n "$existing" ]; then
+            pr_num="$(echo "$existing" | jq -r .number)"
+            pr_url="$(echo "$existing" | jq -r .url)"
+            echo "Updated existing PR #${pr_num} for ${branch}."
+          else
+            pr_body="$(mktemp)"
+            {
+              echo "Automated bump after Convoy main image publish."
+              echo ""
+              echo "- **Image tag:** \`${IMAGE_TAG}\`"
+              echo "- **Convoy commit:** \`${SOURCE_SHA}\`"
+              echo "- **Build run:** ${run_url}"
+              echo ""
+              echo "_Opened by convoy-cloud-bot; approved and squash-merged by convoy-cloud-reviewer + bot._"
+            } >"$pr_body"
+            pr_url="$(gh pr create \
+              --repo frain-dev/convoy-cloud \
+              --base main \
+              --head "$branch" \
+              --title "chore(staging): bump Convoy to ${IMAGE_TAG}" \
+              --body-file "$pr_body")"
+            rm -f "$pr_body"
+            pr_num="$(gh pr view "$pr_url" --repo frain-dev/convoy-cloud --json number -q .number)"
+            echo "Opened ${pr_url}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
           echo "pr_url=${pr_url}" >> "$GITHUB_OUTPUT"
+          echo "pr_number=${pr_num}" >> "$GITHUB_OUTPUT"
+          echo "opened=true" >> "$GITHUB_OUTPUT"
 
-      - name: Notify engineering on Slack
-        if: ${{ steps.pr.outputs.pr_url != '' }}
+      - name: Mint convoy-cloud-reviewer token
+        if: steps.skip.outputs.skip != 'true' && steps.pr.outputs.opened == 'true'
+        id: reviewer-token
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        with:
+          app-id: ${{ secrets.CLOUD_REVIEWER_APP_ID }}
+          private-key: ${{ secrets.CLOUD_REVIEWER_APP_KEY }}
+          owner: frain-dev
+          repositories: convoy-cloud
+
+      - name: Approve and squash-merge
+        if: steps.skip.outputs.skip != 'true' && steps.pr.outputs.opened == 'true'
+        working-directory: convoy-cloud
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ENGINEERING_WEBHOOK_URL }}
-          PR_URL: ${{ steps.pr.outputs.pr_url }}
+          APP_TOKEN: ${{ steps.reviewer-token.outputs.token }}
+          MERGE_TOKEN: ${{ steps.bot-token.outputs.token }}
+          CONVOY_TOKEN: ${{ github.token }}
+          PR: ${{ steps.pr.outputs.pr_number }}
+          BRANCH: ${{ steps.pr.outputs.branch }}
+          PUSHED_SHA: ${{ steps.pr.outputs.pushed_sha }}
           IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
-          MENTIONS_RAW: ${{ vars.SLACK_BUMP_MENTIONS || secrets.SLACK_BUMP_MENTIONS }}
+          ALLOWED_PATH: ${{ secrets.CONVOY_CLOUD_VALUES_YAML_PATH }}
         run: |
-          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
-            echo "SLACK_ENGINEERING_WEBHOOK_URL not set — skipping Slack."
+          # Failure policy: fail open to human review on gate misses (wrong
+          # author/base/paths/content). Merge failure fails the step (loud CI);
+          # leave the PR open. No Slack.
+          set -euo pipefail
+
+          GH_REPO=frain-dev/convoy-cloud
+          pr="$PR"
+
+          deny() {
+            printf '%s\n' "$1" | GH_TOKEN="$APP_TOKEN" gh pr comment "$pr" --repo "$GH_REPO" --body-file - || true
+            exit 0
+          }
+
+          pr_json=$(GH_TOKEN="$APP_TOKEN" gh pr view "$pr" --repo "$GH_REPO" \
+            --json number,baseRefName,headRefOid,state)
+          state=$(echo "$pr_json" | jq -r .state)
+          if [ "$state" != "OPEN" ]; then
+            echo "PR #$pr is $state; nothing to approve."
             exit 0
           fi
-          python3 <<'PY'
-          import json
-          import os
-          import re
-          import urllib.request
 
-          webhook = os.environ["SLACK_WEBHOOK_URL"]
-          pr_url = os.environ["PR_URL"]
-          image_tag = os.environ["IMAGE_TAG"]
-          mentions = (os.environ.get("MENTIONS_RAW") or "").strip()
+          base=$(echo "$pr_json" | jq -r .baseRefName)
+          head_sha=$(echo "$pr_json" | jq -r .headRefOid)
 
-          def format_mentions(raw: str) -> str:
-              if not raw:
-                  return ""
+          if [ "$base" != "main" ]; then
+            deny "convoy-cloud-reviewer: not auto-approving; base is \`$base\`, not \`main\`. Left for human review."
+          fi
 
-              # Accept commas or whitespace in SLACK_BUMP_MENTIONS.
-              tokens = [t for t in re.split(r"[\s,]+", raw) if t]
-              formatted = []
+          author=$(GH_TOKEN="$APP_TOKEN" gh api "repos/$GH_REPO/pulls/$pr" --jq '.user.login')
+          if [ "$author" != "convoy-cloud-bot[bot]" ]; then
+            deny "convoy-cloud-reviewer: not auto-approving; author is \`$author\`, not convoy-cloud-bot[bot]. Left for human review."
+          fi
 
-              for token in tokens:
-                  # Preserve explicit Slack mention syntax.
-                  if token.startswith("<") and token.endswith(">"):
-                      formatted.append(token)
-                      continue
+          # Always bind approval to the commit this run force-pushed.
+          if [ -z "${PUSHED_SHA:-}" ] || [ "$head_sha" != "$PUSHED_SHA" ]; then
+            deny "convoy-cloud-reviewer: not auto-approving; PR head \`$head_sha\` is not this run's push \`${PUSHED_SHA:-empty}\`. Left for human review."
+          fi
 
-                  normalized = token.lstrip("@")
-                  lower = normalized.lower()
+          if [ -z "${ALLOWED_PATH:-}" ]; then
+            echo "::error::CONVOY_CLOUD_VALUES_YAML_PATH secret is empty."
+            exit 1
+          fi
 
-                  # Broadcast mentions must be in bang syntax to notify.
-                  if lower in {"here", "channel", "everyone"}:
-                      formatted.append(f"<!{lower}>")
-                      continue
+          files=$(GH_TOKEN="$APP_TOKEN" gh api "repos/$GH_REPO/pulls/$pr/files" --paginate \
+            --jq '.[] | .filename, (.previous_filename // empty)')
+          if [ -z "$files" ]; then
+            deny "convoy-cloud-reviewer: not auto-approving; changed-files listing was empty. Left for human review."
+          fi
 
-                  # User IDs and subteam IDs can be passed directly.
-                  if re.fullmatch(r"[UW][A-Z0-9]+", normalized):
-                      formatted.append(f"<@{normalized}>")
-                      continue
-                  if re.fullmatch(r"S[A-Z0-9]+", normalized):
-                      formatted.append(f"<!subteam^{normalized}>")
-                      continue
+          bad=$(printf '%s\n' "$files" \
+            | while read -r f; do
+                [ -z "$f" ] && continue
+                if [ "$f" = "$ALLOWED_PATH" ]; then
+                  continue
+                fi
+                echo "$f"
+              done)
+          if [ -n "$bad" ]; then
+            deny "$(printf '%s\n' \
+              "convoy-cloud-reviewer: not auto-approving; diff touches paths outside the staging values allowlist (\`$ALLOWED_PATH\`):" \
+              "" '```' "$bad" '```' "" \
+              "Left for human review.")"
+          fi
 
-                  # Fall back to raw text for unresolved aliases.
-                  formatted.append(token)
+          # Content gate: only the tag line may change, and it must equal IMAGE_TAG.
+          # Embed path carefully: VALUES path is a repo-relative string without quotes.
+          patch=$(GH_TOKEN="$APP_TOKEN" gh api "repos/$GH_REPO/pulls/$pr/files" --paginate \
+            --jq ".[] | select(.filename == \"${ALLOWED_PATH}\") | .patch // empty")
+          if [ -z "$patch" ]; then
+            deny "convoy-cloud-reviewer: not auto-approving; empty patch for \`$ALLOWED_PATH\`. Left for human review."
+          fi
+          export PATCH="$patch" IMAGE_TAG
+          if ! python3 <<'PY'
+          import os, re, sys
 
-              return " ".join(formatted)
+          patch = os.environ["PATCH"]
+          tag = os.environ["IMAGE_TAG"]
+          plus = []
+          minus = []
+          for line in patch.splitlines():
+              if line.startswith("+++") or line.startswith("---") or line.startswith("@@"):
+                  continue
+              if line.startswith("+"):
+                  plus.append(line[1:])
+              elif line.startswith("-"):
+                  minus.append(line[1:])
 
-          mentions = format_mentions(mentions)
-
-          body_lines = [
-              f":package: *Convoy → convoy-cloud · staging image bump*",
-              f"Image `{image_tag}` is published. A PR is open to update staging Helm values.",
-              f":point_right: <{pr_url}|Open pull request>",
-              f"_GitHub Actions · automated_",
-          ]
-          mrkdwn = "\n".join(body_lines)
-          if mentions:
-              mrkdwn = f"{mentions} — quick heads-up: staging bump PR is ready for review.\n\n{mrkdwn}"
-
-          payload = {
-              "text": mrkdwn,
-              "link_names": 1,
-              "blocks": [
-                  {
-                      "type": "section",
-                      "text": {"type": "mrkdwn", "text": mrkdwn},
-                  }
-              ],
-          }
-          data = json.dumps(payload).encode("utf-8")
-          req = urllib.request.Request(
-              webhook,
-              data=data,
-              headers={"Content-type": "application/json"},
-              method="POST",
-          )
-          with urllib.request.urlopen(req) as resp:
-              if resp.status not in (200, 201):
-                  raise SystemExit(f"Slack webhook HTTP {resp.status}")
+          tag_re = re.compile(r'^(\s*)tag: &tag "([^"]*)"\s*$')
+          if len(plus) != 1 or len(minus) != 1:
+              print(f"unexpected hunk size plus={len(plus)} minus={len(minus)}", file=sys.stderr)
+              sys.exit(1)
+          mp, mm = tag_re.match(plus[0]), tag_re.match(minus[0])
+          if not mp or not mm:
+              print("hunk lines are not tag: &tag lines", file=sys.stderr)
+              sys.exit(1)
+          if mp.group(1) != mm.group(1):
+              print("indentation drift on tag line", file=sys.stderr)
+              sys.exit(1)
+          if mp.group(2) != tag:
+              print(f"plus tag {mp.group(2)!r} != expected {tag!r}", file=sys.stderr)
+              sys.exit(1)
           PY
+          then
+            deny "convoy-cloud-reviewer: not auto-approving; patch is not a tag-only bump to \`${IMAGE_TAG}\`. Left for human review."
+          fi
+
+          # Approve (or reuse an existing APPROVE from this reviewer on this head).
+          # Retry path: a prior run may have approved then failed merge; a second
+          # APPROVE returns 422 and must not block merge.
+          already=$(GH_TOKEN="$APP_TOKEN" gh api "repos/$GH_REPO/pulls/$pr/reviews" --paginate \
+            --jq '.[] | select(.user.login == "convoy-cloud-reviewer[bot]" and .state == "APPROVED") | .commit_id' \
+            | grep -cxF "$head_sha" || true)
+          if [ "$already" = "0" ]; then
+            review_id=$(GH_TOKEN="$APP_TOKEN" gh api -X POST "repos/$GH_REPO/pulls/$pr/reviews" \
+              -f event=APPROVE \
+              -f commit_id="$head_sha" \
+              -f body="convoy-cloud-reviewer: approving tag-only staging bump by convoy-cloud-bot." \
+              --jq '.id')
+
+            now_sha=$(GH_TOKEN="$APP_TOKEN" gh pr view "$pr" --repo "$GH_REPO" --json headRefOid --jq '.headRefOid')
+            if [ "$now_sha" != "$head_sha" ]; then
+              GH_TOKEN="$APP_TOKEN" gh api -X PUT "repos/$GH_REPO/pulls/$pr/reviews/$review_id/dismissals" \
+                -f message="Head moved during approval; the approved commit is no longer the PR head." \
+                -f event=DISMISS || true
+              deny "convoy-cloud-reviewer: approval dismissed; PR head changed during review. Left for human review."
+            fi
+          else
+            echo "Reviewer already approved commit $head_sha; proceeding to merge."
+          fi
+
+          # Re-bind immediately before merge: a force-push after APPROVE must
+          # not ship unreviewed tip (fail open to human review).
+          final_sha=$(GH_TOKEN="$APP_TOKEN" gh pr view "$pr" --repo "$GH_REPO" --json headRefOid --jq '.headRefOid')
+          if [ "$final_sha" != "$PUSHED_SHA" ]; then
+            deny "convoy-cloud-reviewer: not merging; PR head moved to \`$final_sha\` after approval of \`$PUSHED_SHA\`. Left for human review."
+          fi
+
+          # Re-check staging main tip so a newer bump merged while we ran cannot
+          # be rolled back by this older merge (fail open: close PR, no merge).
+          main_content=$(GH_TOKEN="$MERGE_TOKEN" gh api "repos/$GH_REPO/contents/${ALLOWED_PATH}?ref=main" --jq .content | base64 --decode)
+          main_tag=$(printf '%s\n' "$main_content" | python3 -c '
+          import re, sys
+          text = sys.stdin.read()
+          m = re.search(r"(?m)^(?!\s*#)\s*tag: &tag \"([^\"]+)\"\s*$", text)
+          print(m.group(1) if m else "")
+          ')
+          if [ -z "$main_tag" ]; then
+            deny "convoy-cloud-reviewer: not merging; could not read active tag from staging main. Left for human review."
+          fi
+          if [ "$main_tag" = "$IMAGE_TAG" ]; then
+            GH_TOKEN="$MERGE_TOKEN" gh pr close "$pr" --repo "$GH_REPO" \
+              --comment "Staging main already at \`${IMAGE_TAG}\`; closing duplicate bump." || true
+            echo "Staging already at ${IMAGE_TAG}; closed PR #$pr."
+            exit 0
+          fi
+          if [ "$main_tag" != "$IMAGE_TAG" ]; then
+            if [[ "$main_tag" != main-* ]]; then
+              deny "convoy-cloud-reviewer: not merging; staging main tag \`$main_tag\` is not main-<sha>. Left for human review."
+            fi
+            # compare IMAGE_TAG...main_tag: ahead/identical means tip already
+            # contains this build (or is newer); only behind means safe to merge.
+            status=$(GH_TOKEN="$CONVOY_TOKEN" gh api \
+              "repos/frain-dev/convoy/compare/${IMAGE_TAG#main-}...${main_tag#main-}" \
+              --jq .status 2>/dev/null || true)
+            case "$status" in
+              behind) ;;
+              *)
+                GH_TOKEN="$MERGE_TOKEN" gh pr close "$pr" --repo "$GH_REPO" \
+                  --comment "Staging tip \`${main_tag}\` is not behind \`${IMAGE_TAG}\` (compare=${status:-empty}); closing stale PR." || true
+                echo "Pre-merge compare=${status:-empty}; closed PR #$pr."
+                exit 0
+                ;;
+            esac
+          fi
+
+          # Immediate squash-merge once the required review is present.
+          GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash --delete-branch
+
+          echo "Approved and merged PR #$pr" >> "$GITHUB_STEP_SUMMARY"
+
+          while read -r num head; do
+            [ -z "${num:-}" ] && continue
+            case "$head" in
+              bump/convoy-staging-"${IMAGE_TAG}") continue ;;
+              bump/convoy-staging-main-*)
+                other="${head#bump/convoy-staging-}"
+                status=$(GH_TOKEN="$CONVOY_TOKEN" gh api \
+                  "repos/frain-dev/convoy/compare/${other#main-}...${IMAGE_TAG#main-}" \
+                  --jq .status 2>/dev/null || true)
+                case "$status" in
+                  ahead|identical)
+                    GH_TOKEN="$MERGE_TOKEN" gh pr close "$num" --repo "$GH_REPO" \
+                      --comment "Superseded by staging bump to \`${IMAGE_TAG}\`." || true
+                    ;;
+                esac
+                ;;
+            esac
+          done < <(GH_TOKEN="$MERGE_TOKEN" gh pr list --repo "$GH_REPO" --state open --limit 50 \
+            --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("bump/convoy-staging-")) | "\(.number) \(.headRefName)"')
