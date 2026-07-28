@@ -25,6 +25,9 @@ fi
 
 if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
   echo "Tag ${TAG} already exists; exiting."
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    echo "created=false" >>"${GITHUB_OUTPUT}"
+  fi
   exit 0
 fi
 
@@ -36,3 +39,7 @@ export GIT_COMMITTER_EMAIL="${GIT_COMMITTER_EMAIL:-${GIT_AUTHOR_EMAIL}}"
 
 git tag -a "${TAG}" "${TARGET_SHA}" -m "Release ${TAG}"
 git push origin "${TAG}"
+
+if [ -n "${GITHUB_OUTPUT:-}" ]; then
+  echo "created=true" >>"${GITHUB_OUTPUT}"
+fi
