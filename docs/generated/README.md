@@ -28,15 +28,21 @@ After changing `config/config.go`, env tags, defaults, CLI flags in `cmd/main.go
 
 ## CI sync (main)
 
-On each push to `main`, the workflow [docs-generated-sync.yml](../../.github/workflows/docs-generated-sync.yml) runs `make docs-generated`. If `docs/generated/` changes, it opens or updates pull request branch `chore/docs-generated-sync` against `main` (only files under `docs/generated/` are included). That job uses the default `GITHUB_TOKEN` with `contents` and `pull-requests` write permission.
+On each push to `main` (and on `workflow_dispatch`), [docs-generated-sync.yml](../../.github/workflows/docs-generated-sync.yml) runs `make docs-generated`, then:
 
-### Notify convoy-website (cross-repo)
+1. If `docs/generated/` drifted on Convoy: `convoy-docs-bot` opens/updates `chore/docs-generated-sync`; `convoy-docs-reviewer` auto-approves only when the diff is under `docs/generated/**`; the bot squash-merges.
+2. Mirrors the same artifacts into `frain-dev/convoy-website` at `docs/generated/convoy/` the same way (`chore/sync-convoy-generated-docs`, allowlist `docs/generated/convoy/**`).
 
-A second job (`needs: sync`) runs only after the sync job succeeds. It sends `repository_dispatch` to `${GITHUB_REPOSITORY_OWNER}/convoy-website` with `event_type` `convoy_docs_sync` and `client_payload.convoy_ref` set to the push commit SHA (`github.sha`), so the website repo can check out that ref.
+No personal access token and no `repository_dispatch`. Secrets live on `frain-dev/convoy`:
 
-**Repository secret (required on the Convoy server repo):** `CONVOY_WEBSITE_DISPATCH_TOKEN`: a personal access token (classic: `repo` scope, or fine-grained: **Contents** write on `convoy-website`) allowed to call the GitHub API and create a repository dispatch on the target repo. Add it under **Settings → Secrets and variables → Actions** on this repository.
+| Secret | App |
+|--------|-----|
+| `DOCS_BOT_APP_ID` / `DOCS_BOT_APP_KEY` | `convoy-docs-bot` |
+| `DOCS_REVIEWER_APP_ID` / `DOCS_REVIEWER_APP_KEY` | `convoy-docs-reviewer` |
 
-If the sync job fails, the dispatch job is skipped. If the secret is missing or the token lacks access to `convoy-website`, the dispatch job fails after sync completes successfully.
+Install both apps on `frain-dev/convoy` and `frain-dev/convoy-website` (selected repos). Same author/reviewer GitHub App pattern as the cloud staging and SDK bots.
+
+Failure policy: allowlist / author / base misses fail open to human review; merge errors fail the job and leave the PR open.
 
 ## Maintaining `gencliref`
 

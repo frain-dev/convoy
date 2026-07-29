@@ -32,6 +32,12 @@
       "default": "2025-11-24"
     },
     {
+      "json_path": "retention_policy.backup_interval",
+      "env_var": "CONVOY_BACKUP_INTERVAL",
+      "go_type": "string",
+      "default": "1h"
+    },
+    {
       "json_path": "auth.file.basic",
       "env_var": "CONVOY_BASIC_AUTH_CONFIG",
       "go_type": "config.BasicAuthConfig",
@@ -44,12 +50,6 @@
       "default": ""
     },
     {
-      "json_path": "billing.enabled",
-      "env_var": "CONVOY_BILLING_ENABLED",
-      "go_type": "bool",
-      "default": "false"
-    },
-    {
       "json_path": "billing.organisation_host",
       "env_var": "CONVOY_BILLING_ORGANISATION_HOST",
       "go_type": "string",
@@ -60,6 +60,18 @@
       "env_var": "CONVOY_BILLING_URL",
       "go_type": "string",
       "default": ""
+    },
+    {
+      "json_path": "billing.usage_source",
+      "env_var": "CONVOY_BILLING_USAGE_SOURCE",
+      "go_type": "string",
+      "default": "postgres"
+    },
+    {
+      "json_path": "retention_policy.cdc_backup_enabled",
+      "env_var": "CONVOY_CDC_BACKUP_ENABLED",
+      "go_type": "bool",
+      "default": "false"
     },
     {
       "json_path": "circuit_breaker.consecutive_failure_threshold",
@@ -626,6 +638,12 @@
       "default": ""
     },
     {
+      "json_path": "retention_policy.replication_dsn",
+      "env_var": "CONVOY_REPLICATION_DSN",
+      "go_type": "string",
+      "default": ""
+    },
+    {
       "json_path": "retention_policy.policy",
       "env_var": "CONVOY_RETENTION_POLICY",
       "go_type": "string",
@@ -830,6 +848,36 @@
       "default": ""
     },
     {
+      "json_path": "storage_policy.azure_blob.account_key",
+      "env_var": "CONVOY_STORAGE_AZURE_ACCOUNT_KEY",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.azure_blob.account_name",
+      "env_var": "CONVOY_STORAGE_AZURE_ACCOUNT_NAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.azure_blob.container_name",
+      "env_var": "CONVOY_STORAGE_AZURE_CONTAINER_NAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.azure_blob.endpoint",
+      "env_var": "CONVOY_STORAGE_AZURE_ENDPOINT",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "storage_policy.azure_blob.prefix",
+      "env_var": "CONVOY_STORAGE_AZURE_PREFIX",
+      "go_type": "string",
+      "default": ""
+    },
+    {
       "json_path": "storage_policy.type",
       "env_var": "CONVOY_STORAGE_POLICY_TYPE",
       "go_type": "string",
@@ -870,6 +918,12 @@
       "env_var": "INGEST_PORT",
       "go_type": "uint32",
       "default": "5009"
+    },
+    {
+      "json_path": "server.http.no_proxy",
+      "env_var": "NO_PROXY",
+      "go_type": "string",
+      "default": ""
     },
     {
       "json_path": "server.http.port",
