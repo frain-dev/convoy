@@ -28,10 +28,22 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      # Minted before checkout so the persisted git credentials belong to the
+      # bot: the job GITHUB_TOKEN is contents: read and cannot push the branch.
+      - name: Mint convoy-docs-bot token (convoy)
+        id: bot-convoy
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        with:
+          app-id: ${{ secrets.DOCS_BOT_APP_ID }}
+          private-key: ${{ secrets.DOCS_BOT_APP_KEY }}
+          owner: frain-dev
+          repositories: convoy
+
       - name: Check out Convoy
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+          token: ${{ steps.bot-convoy.outputs.token }}
 
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
@@ -45,15 +57,6 @@ jobs:
           rm -rf /tmp/convoy-docs-generated
           mkdir -p /tmp/convoy-docs-generated
           cp -R docs/generated/. /tmp/convoy-docs-generated/
-
-      - name: Mint convoy-docs-bot token (convoy)
-        id: bot-convoy
-        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
-        with:
-          app-id: ${{ secrets.DOCS_BOT_APP_ID }}
-          private-key: ${{ secrets.DOCS_BOT_APP_KEY }}
-          owner: frain-dev
-          repositories: convoy
 
       - name: Open or update Convoy generated-docs PR
         id: convoy-pr

@@ -13,6 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
+
+	flagset "github.com/spf13/pflag"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cmd/agent"
 	configCmd "github.com/frain-dev/convoy/cmd/config"
@@ -20,8 +24,6 @@ import (
 	"github.com/frain-dev/convoy/cmd/server"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-	"github.com/spf13/cobra"
-	flagset "github.com/spf13/pflag"
 )
 
 type flagEntry struct {
