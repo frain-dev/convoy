@@ -1,0 +1,18 @@
+<div class="min-h-screen w-full bg-new.surface-page flex flex-col p-40px mobile:p-20px">
+	<img src="/assets/img/logo.svg" alt="Convoy logo" class="h-28px w-auto self-start" />
+
+	<div class="flex-1 flex flex-col items-center justify-center">
+		<div class="flex flex-col items-center gap-16px p-32px">
+			<img src="/assets/img/svg/inbox-verify.svg" class="w-48px h-48px" alt="" />
+
+			<div class="flex flex-col items-center gap-12px w-full max-w-[320px]">
+				<div class="flex flex-col items-center gap-4px text-center w-full">
+					<p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Verify your email</p>
+					<p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Please check your inbox for a verification link to complete your signup</p>
+				</div>
+
+				<button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="router.navigateByUrl('/projects')">I've verified my email</button>
+			</div>
+		</div>
+	</div>
+</div>

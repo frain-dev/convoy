@@ -1,156 +1,336 @@
-<div>
-  <div class="flex items-center mt-40px">
-    <h2 class="text-12 font-medium text-neutral-10 mr-8px">Event Deliveries</h2>
-    <convoy-tooltip size="sm" position="top-right">
-      <h4 class="mb-10px font-semibold text-12">Deliveries missing?</h4>
-      <p>
-        Your receiving endpoint possibly isn't subscribed for events,
-        @if (portalToken) {
-          reach out to provider
-        }
-        @if (!portalToken) {
-          check
-          <span convoy-button fill="link" class="!inline-block text-12 !p-0" routerLink="../event-logs" [relativeTo]="route">Events Log</span>
-          or subscribe your endpoint to events
-          <span convoy-button fill="link" class="!inline-block text-12 !p-0" routerLink="../subscriptions/new" [relativeTo]="route">here</span>
-          .
-        }
-      </p>
-    </convoy-tooltip>
+<div class="mt-64px">
+  <!-- Section header -->
+  <div class="flex flex-col gap-4px">
+    <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Delivery Table</h2>
+    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary min-h-[21px]">
+      @if (totalCount !== undefined) {
+        {{ totalCount | number }} event{{ totalCount === 1 ? '' : 's' }}
+      }
+    </p>
   </div>
 
-  <convoy-event-delivery-filter (filter)="fetchEventDeliveries($event)" (tail)="handleTailing($event)" (batchRetry)="fetchRetryCount($event)"></convoy-event-delivery-filter>
+  <div class="h-[1px] w-full bg-new.border mt-16px"></div>
 
-  @if (isloadingEventDeliveries) {
-    <convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead"></convoy-table-loader>
-  }
-
-  <!-- empty state  -->
-  @if (!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries.length === 0)) {
-    <div convoy-card class="py-60px rounded-8px">
-      <div class="flex justify-center items-center p-40px flex-col">
-        <img src="/assets/img/empty-state.svg" alt="empty state image" />
-        <p class="mt-16px text-12 text-neutral-11">No event to show here</p>
-      </div>
-    </div>
-  }
-
-  @if (!isloadingEventDeliveries && displayedEventDeliveries && displayedEventDeliveries.length > 0) {
-    <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px] mobile:min-w-0" id="event-deliveries-table-container">
-      <div convoy-card>
-        <table convoy-table>
-          <thead convoy-table-head>
-            @for (head of eventDelTableHead; track $index; let i = $index) {
-              @if (projectService.activeProjectDetails?.type === 'outgoing' || i !== 1 || portalToken) {
-                <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
-              }
+  <!-- Filter group -->
+  <div class="flex items-center justify-between gap-16px mt-20px flex-wrap">
+    <div class="flex items-center gap-4px flex-wrap">
+      <!-- Status filter -->
+      <div convoy-dropdown size="sm" position="left">
+        <button dropdownTrigger type="button" class="h-44px min-w-[120px] flex items-center justify-between gap-8px pl-12px pr-8px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary">
+          Status{{ statusFilter.length ? ' (' + statusFilter.length + ')' : '' }}
+          <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px" alt="" />
+        </button>
+        <ng-container dropdownOptions>
+          <ul class="py-4px max-h-[220px] overflow-y-auto">
+            @for (status of eventDeliveryStatuses; track $index) {
+              <li>
+                <label class="flex items-center gap-8px px-12px py-8px cursor-pointer transition-colors hover:bg-new.surface-muted">
+                  <input type="checkbox" class="table-checkbox" [checked]="statusDraft.includes(status)" (change)="toggleStatusDraft(status)" />
+                  <span class="font-body font-normal text-[14px] text-new.text-primary">{{ status }}</span>
+                </label>
+              </li>
             }
-          </thead>
-          <tbody>
-            @for (eventDeliveriesGroup of displayedEventDeliveries; track $index; let i = $index) {
-              <tr convoy-table-row [forDate]="true">
-                <td convoy-table-cell [forDate]="true">{{ eventDeliveriesGroup.date }}</td>
-                <td convoy-table-cell [forDate]="true"></td>
-                <td convoy-table-cell [forDate]="true"></td>
-                <td convoy-table-cell [forDate]="true"></td>
-                <td convoy-table-cell [forDate]="true"></td>
-                <td convoy-table-cell [forDate]="true"></td>
-              </tr>
-              @for (eventDelivery of eventDeliveriesGroup.content; track $index; let deliveryIndex = $index) {
-                @for (event of eventDelivery.eventDeliveries; track $index; let eventIndex = $index) {
-                  <tr class="cursor-pointer" convoy-table-row [id]="'eventDel' + event.uid" [routerLink]="['./event-deliveries/' + event.uid]" [queryParams]="{ token: portalToken }">
-                    <td convoy-table-cell class="pl-16px relative w-140px">
-                      @if (event.metadata.num_trials > event.metadata.retry_limit) {
-                        <img src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
-                      }
-                      <convoy-tag className="ml-20px" [color]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
-                    </td>
-                    @if (projectService.activeProjectDetails?.type === 'outgoing' || portalToken) {
-                      <td convoy-table-cell>
-                        <div convoy-tag class="bg-neutral-a2">{{ event.event_metadata.event_type }}</div>
-                      </td>
-                    }
-                    <td convoy-table-cell>
-                      <div class="flex items-center">
-                        @if (projectService.activeProjectDetails?.type === 'incoming') {
-                          <span class="max-w-[146px] overflow-hidden overflow-ellipsis">
-                            {{ event?.source_metadata?.name || 'Rest API' }}
-                          </span>
-                          <span class="px-20px font-light">→</span>
-                        }
-                        <span [class]="projectService.activeProjectDetails?.type === 'incoming' ? 'max-w-[146px] overflow-hidden overflow-ellipsis' : 'w-166px' + ' overflow-hidden overflow-ellipsis'">
-                          {{ event.endpoint_metadata.title || event.endpoint_metadata.name }}
-                        </span>
-                        <!-- show this if CLI is the receiver -->
-                        @if (event.device_id) {
-                          <convoy-tag className="flex items-center">
-                            <svg width="16" height="14" class="mr-10px">
-                              <use xlink:href="#cli-icon"></use>
-                            </svg>
-                            CLI Device
-                          </convoy-tag>
-                        }
-                      </div>
-                    </td>
-                    <td convoy-table-cell>{{ event.device_id ? '-' : event.metadata.num_trials }}</td>
-                    <td convoy-table-cell>{{ event?.status == 'Success' || event.metadata.num_trials >= event.metadata.retry_limit || event?.status == 'Discarded' ? '-' : (event.metadata.next_send_time | date: 'mediumTime') }}</td>
-                    <td convoy-table-cell>
-                      <convoy-copy-button
-                        [text]="formatPreciseTimestamp(event.created_at)"
-                        show-icon="false"
-                        notificationText="Queued timestamp copied to clipboard">
-                        <span class="relative inline-flex group" [title]="formatPreciseTimestamp(event.created_at)">
-                          <span>{{ event.created_at | date: 'mediumTime' }}</span>
-                          <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                            {{ formatPreciseTimestamp(event.created_at) }}
-                          </span>
-                        </span>
-                      </convoy-copy-button>
-                    </td>
-                    <td convoy-table-cell>
-                      <button
-                        convoy-button
-                        size="xs"
-                        fill="soft"
-                        [disabled]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
-                        [title]="event.status !== 'Failure' && event.status !== 'Success' && event.status !== 'Discarded' ? 'You can not retry an event when it is scheduled or still processing.' : ''"
-                        (click)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: eventIndex, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: eventIndex, eventDeliveryId: event.uid })"
-                        >
-                        <img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
-                        {{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
-                      </button>
-                    </td>
-                    <td convoy-table-cell>
-                      <button size="xs" [routerLink]="'./event-deliveries/' + event.uid">
-                        <img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
-                      </button>
-                    </td>
-                  </tr>
+          </ul>
+          <div class="px-12px py-8px flex justify-end gap-8px border-t border-new.border">
+            <button convoy-dropdown-option type="button" class="px-12px py-6px rounded-full font-body font-medium text-[12px] text-new.text-secondary transition-colors hover:bg-new.surface-muted" (click)="clearStatusFilter()">Clear</button>
+            <button convoy-dropdown-option type="button" class="px-12px py-6px rounded-full bg-new.primary-400 font-body font-medium text-[12px] text-white-100 transition-all hover:opacity-90" (click)="applyStatusFilter()">Apply</button>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Endpoint filter -->
+      @if (!portalToken) {
+        <div convoy-dropdown size="sm" position="left">
+          <button dropdownTrigger type="button" class="h-44px min-w-[120px] max-w-[220px] flex items-center justify-between gap-8px pl-12px pr-8px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary">
+            <span class="truncate">{{ selectedEndpointData?.title || selectedEndpointData?.name || 'Endpoint' }}</span>
+            <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px shrink-0" alt="" />
+          </button>
+          <ng-container dropdownOptions>
+            <div class="flex items-center gap-8px px-12px h-40px border-b border-new.border">
+              <img src="/assets/img/svg/search-gray.svg" class="w-14px h-14px" alt="" />
+              <input
+                type="search"
+                placeholder="Search endpoints"
+                [(ngModel)]="endpointSearchString"
+                (input)="onEndpointSearch()"
+                [ngModelOptions]="{ standalone: true }"
+                class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+                />
+            </div>
+            <ul class="py-4px max-h-[220px] overflow-y-auto">
+              @if (loadingFilterEndpoints) {
+                <li class="px-12px py-8px font-body text-[14px] text-new.text-secondary">Loading endpoints...</li>
+              } @else {
+                <li>
+                  <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="clearEndpointFilter()">All endpoints</button>
+                </li>
+                @for (endpoint of filterEndpoints; track endpoint.uid) {
+                  <li>
+                    <button
+                      convoy-dropdown-option
+                      type="button"
+                      class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary truncate transition-colors hover:bg-new.surface-muted"
+                      [class.!font-medium]="selectedEndpointData?.uid === endpoint.uid"
+                      (click)="updateEndpointFilter(endpoint)"
+                      >
+                      {{ endpoint.title || endpoint.name }}
+                    </button>
+                  </li>
                 }
-                <tr convoy-table-row [forDate]="true"></tr>
+                @if (!filterEndpoints.length) {
+                  <li class="px-12px py-8px font-body text-[14px] text-new.text-secondary">No endpoints found</li>
+                }
               }
-            }
-          </tbody>
-        </table>
-      </div>
-      <!-- pagination -->
-      @if (eventDeliveries.pagination.has_next_page || eventDeliveries.pagination.has_prev_page) {
-        <div class="pt-8px flex items-center justify-between px-10px">
-          <convoy-pagination [pagination]="eventDeliveries.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
-          <div class="text-neutral-11 text-14">{{ eventDeliveries.content.length }} event{{ eventDeliveries.content.length > 1 ? 's' : '' }}</div>
+            </ul>
+          </ng-container>
         </div>
       }
+
+      <!-- Event type filter (outgoing projects) -->
+      @if (isOutgoingProject) {
+        <div convoy-dropdown size="sm" position="left">
+          <button dropdownTrigger type="button" class="h-44px min-w-[120px] max-w-[220px] flex items-center justify-between gap-8px pl-12px pr-8px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary">
+            <span class="truncate">{{ queryParams.eventType || 'Event type' }}</span>
+            <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px shrink-0" alt="" />
+          </button>
+          <ul dropdownOptions class="py-4px max-h-[220px] overflow-y-auto">
+            <li>
+              <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="setEventType()">All event types</button>
+            </li>
+            @for (type of eventTypes; track $index) {
+              <li>
+                <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary truncate transition-colors hover:bg-new.surface-muted" (click)="setEventType(type.name)">{{ type.name }}</button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <!-- Sort -->
+      <div convoy-dropdown size="sm" position="left">
+        <button dropdownTrigger type="button" class="h-44px min-w-[140px] flex items-center justify-between gap-8px pl-12px pr-8px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary">
+          {{ sortOrder === 'asc' ? 'Oldest first' : 'Most recent' }}
+          <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px" alt="" />
+        </button>
+        <ul dropdownOptions class="py-4px">
+          <li>
+            <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="setSortOrder('desc')">Most recent</button>
+          </li>
+          <li>
+            <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="setSortOrder('asc')">Oldest first</button>
+          </li>
+        </ul>
+      </div>
+
+      @if (hasActiveFilters) {
+        <button type="button" class="h-44px px-12px font-body font-medium text-[14px] text-new.text-secondary rounded-8px transition-colors hover:bg-new.surface-muted" (click)="clearAllFilters()">Clear filters</button>
+      }
     </div>
-  }
+
+    <!-- Tail mode -->
+    <label class="flex items-center gap-8px cursor-pointer select-none" title="Automatically refresh deliveries every 5 seconds">
+      <span class="font-body font-normal text-[14px] text-new.text-secondary">Tail events</span>
+      <input type="checkbox" class="table-checkbox" [checked]="enableTailMode" (change)="toggleTailMode($event)" />
+    </label>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white-100 border border-new.border rounded-12px mt-16px">
+    <!-- Search -->
+    <div class="flex items-center gap-8px px-12px h-40px border-b border-new.border">
+      <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px" alt="search" />
+      <input
+        type="search"
+        placeholder="Search by event type, endpoint, id..."
+        [(ngModel)]="searchString"
+        (input)="onSearch()"
+        [ngModelOptions]="{ standalone: true }"
+        class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+        />
+    </div>
+
+    @if (isloadingEventDeliveries) {
+      <!-- Loading state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-loading.svg" class="w-48px h-48px animate-spin" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Loading deliveries</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Fetching delivery activity. This usually takes a moment.</p>
+        </div>
+      </div>
+    } @else if (loadError) {
+      <!-- Error state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-error.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">We couldn&rsquo;t load deliveries</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Check your connection and try again.</p>
+        </div>
+        <button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="refreshDeliveries(false)">Try again</button>
+      </div>
+    } @else if (!displayedEventDeliveries.length && hasActiveFilters) {
+      <!-- No results state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-no-results.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No deliveries match</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Adjust the filters or date range to see more results.</p>
+        </div>
+        <button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="clearAllFilters()">Clear filters</button>
+      </div>
+    } @else if (!displayedEventDeliveries.length) {
+      <!-- Empty state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-empty.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No data yet</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Deliveries will appear here once events are sent.</p>
+        </div>
+      </div>
+    } @else {
+      <!-- Header row -->
+      <div
+        class="grid w-full bg-new.surface-subtle border-b border-new.border"
+        [class]="showEventTypeColumn ? 'grid-cols-[48px_minmax(0,1.5fr)_minmax(0,2fr)_120px_90px_100px_110px_130px]' : 'grid-cols-[48px_minmax(0,3.5fr)_120px_90px_100px_110px_130px]'"
+        >
+        <div class="flex items-center pl-20px pr-8px h-36px">
+          <input type="checkbox" class="table-checkbox" [checked]="allPageSelected" (change)="toggleSelectAll()" />
+        </div>
+        @if (showEventTypeColumn) {
+          <div class="flex items-center px-12px h-36px">
+            <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Event Type</span>
+          </div>
+        }
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">{{ projectService.activeProjectDetails?.type === 'incoming' ? 'Source → Endpoint' : 'Endpoint' }}</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Status</span>
+        </div>
+        <div class="flex items-center justify-end px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Attempts</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary truncate">Next Attempt</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Timestamp</span>
+        </div>
+        <div class="h-36px"></div>
+      </div>
+
+      <!-- Date groups -->
+      @for (group of displayedEventDeliveries; track group.date) {
+        <div class="flex items-center justify-between pl-48px pr-8px h-40px bg-new.surface-subtle border-b border-new.border">
+          <span class="font-body font-medium text-[12px] leading-normal text-new.text-secondary">{{ groupDateLabel(group.date) }}</span>
+          <button type="button" class="flex items-center gap-4px px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" [disabled]="fetchingCount" (click)="openGroupRetry(group.date, $event)">
+            <img src="/assets/img/svg/retry-small.svg" class="w-14px h-14px" alt="" />
+            Retry All
+          </button>
+        </div>
+
+        @for (event of group.content; track event.uid) {
+          <div
+            class="grid w-full border-b border-new.border cursor-pointer transition-colors hover:bg-new.surface-page"
+            [class]="showEventTypeColumn ? 'grid-cols-[48px_minmax(0,1.5fr)_minmax(0,2fr)_120px_90px_100px_110px_130px]' : 'grid-cols-[48px_minmax(0,3.5fr)_120px_90px_100px_110px_130px]'"
+            [routerLink]="['./event-deliveries/' + event.uid]"
+            [queryParams]="{ token: portalToken }"
+            >
+            <div class="flex items-center pl-20px pr-8px h-40px" (click)="$event.stopPropagation()">
+              <input type="checkbox" class="table-checkbox" [checked]="isSelected(event.uid)" (change)="toggleSelection(event.uid)" />
+            </div>
+
+            @if (showEventTypeColumn) {
+              <div class="flex items-center px-12px h-40px min-w-0">
+                <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-primary truncate">{{ event.event_metadata.event_type || '-' }}</span>
+              </div>
+            }
+
+            <div class="flex items-center px-12px h-40px min-w-0 gap-8px">
+              @if (projectService.activeProjectDetails?.type === 'incoming') {
+                <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-secondary truncate max-w-[45%]">{{ event?.source_metadata?.name || 'Rest API' }}</span>
+                <span class="text-new.text-placeholder font-light shrink-0">→</span>
+              }
+              <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-secondary truncate">{{ event.endpoint_metadata.title || event.endpoint_metadata.name }}</span>
+              @if (event.device_id) {
+                <span class="inline-flex items-center px-6px py-2px rounded-4px bg-neutral-a3 font-body font-medium text-[12px] text-neutral-11 shrink-0">CLI</span>
+              }
+            </div>
+
+            <div class="flex items-center px-12px h-40px">
+              <span class="inline-flex items-center gap-4px px-8px py-2px rounded-4px font-body font-medium text-[12px] leading-normal" [class]="statusPillClass(event.status)" [title]="event.metadata.num_trials > event.metadata.retry_limit ? 'Manually retried' : ''">
+                {{ event.status }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-end px-12px h-40px">
+              <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-primary">{{ event.device_id ? '-' : event.metadata.num_trials }}</span>
+            </div>
+
+            <div class="flex items-center px-12px h-40px">
+              <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-secondary truncate">
+                {{ event?.status == 'Success' || event.metadata.num_trials >= event.metadata.retry_limit || event?.status == 'Discarded' ? '-' : (event.metadata.next_send_time | date: 'HH:mm:ss') }}
+              </span>
+            </div>
+
+            <div class="flex items-center px-12px h-40px">
+              <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-secondary" [title]="formatPreciseTimestamp(event.created_at)">{{ event.created_at | date: 'HH:mm:ss' }}</span>
+            </div>
+
+            <div class="flex items-center justify-end gap-4px px-8px h-40px">
+              <button
+                type="button"
+                class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none"
+                [disabled]="!canRetry(event.status)"
+                [title]="!canRetry(event.status) ? 'You can not retry an event when it is scheduled or still processing.' : event.status === 'Success' ? 'Force retry' : 'Retry'"
+                (click)="event.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: event.uid }) : retryEvent({ e: $event, eventDeliveryId: event.uid })"
+                >
+                <img src="/assets/img/svg/retry-small.svg" class="w-16px h-16px opacity-60" alt="retry" />
+              </button>
+              <button type="button" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" title="Copy delivery ID" (click)="copyDeliveryId(event, $event)">
+                <img src="/assets/img/svg/copy-gray.svg" class="w-16px h-16px" alt="copy delivery id" />
+              </button>
+            </div>
+          </div>
+        }
+      }
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between px-20px py-16px">
+        <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-secondary">{{ pageRangeLabel }}</span>
+        <div class="flex items-center gap-8px">
+          <button
+            type="button"
+            class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none"
+            [disabled]="!eventDeliveries?.pagination?.has_prev_page"
+            (click)="paginateEvents('prev')"
+            >
+            <img src="/assets/img/svg/chevron-left-small.svg" class="w-16px h-16px" alt="previous page" />
+          </button>
+          <span class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page font-body font-medium text-[14px] leading-[16px] text-new.text-primary">{{ currentPage }}</span>
+          <button
+            type="button"
+            class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none"
+            [disabled]="!eventDeliveries?.pagination?.has_next_page"
+            (click)="paginateEvents('next')"
+            >
+            <img src="/assets/img/svg/chevron-right-small.svg" class="w-16px h-16px" alt="next page" />
+          </button>
+        </div>
+      </div>
+    }
+  </div>
 </div>
 
 <!-- batch retry modal  -->
 <dialog #batchRetryDialog convoy-dialog position="center" size="sm">
-  <div class="text-center py-30px">
+  <div class="text-center py-30px px-20px">
     <img src="/assets/img/filter.gif" alt="filter icon" class="w-30px m-auto mb-16px" />
-    <div class="text-center text-14 font-medium text-neutral-11 mb-8px">The filters applied will affect</div>
-    <div class="text-center text-12 font-semibold mb-32px">{{ batchRetryCount || 0 }} event deliver{{ batchRetryCount > 1 ? 'ies' : 'y' }}</div>
-    <button convoy-button size="sm" [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-    <button convoy-button fill="text" size="sm" class="font-semibold m-auto mt-16px" (click)="dialog.nativeElement.close()">No, Cancel</button>
+    <div class="text-center font-body font-normal text-[14px] text-new.text-secondary mb-8px">Retrying all deliveries on {{ batchRetryDate }} with the current filters will affect</div>
+    <div class="text-center font-heading font-medium text-[16px] text-new.text-primary mb-32px">{{ batchRetryCount || 0 }} event deliver{{ batchRetryCount > 1 ? 'ies' : 'y' }}</div>
+    <button type="button" [disabled]="isRetrying || batchRetryCount == 0" class="m-auto block min-w-[140px] rounded-full py-12px px-16px bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all duration-300 hover:opacity-90 disabled:opacity-60" (click)="batchRetryEvent()">
+      {{ isRetrying ? 'Retrying Events...' : 'Yes, Retry All' }}
+    </button>
+    <button type="button" class="m-auto block mt-16px rounded-full py-10px px-16px font-body font-medium text-[14px] leading-[16px] text-new.text-secondary transition-colors hover:bg-new.surface-muted" (click)="dialog.nativeElement.close()">No, Cancel</button>
   </div>
 </dialog>

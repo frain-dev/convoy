@@ -1,6 +1,6 @@
-<div class="min-h-screen">
-  <div class="w-full border-b border-b-new.primary-50 fixed top-0 z-[12] bg-white-100">
-    <nav class="flex items-center justify-between max-w-[1300px] m-auto px-24px py-16px">
+<div class="min-h-screen bg-new.surface-page">
+  <div class="w-full border-b border-new.border fixed top-0 z-[12] bg-white-100">
+    <nav class="flex items-center justify-between max-w-[1300px] m-auto px-24px py-12px">
       <ul class="flex items-center justify-between w-full relative">
         <div class="flex items-center gap-6px">
           @for (nav of sideBarItems; track $index) {
@@ -8,25 +8,26 @@
               <a
                 [routerLink]="'.' + nav.route"
                 [queryParams]="{ token: token, owner_id: ownerId }"
-                routerLinkActive="!text-new.primary-400 on hover:bg-transparent"
+                routerLinkActive="!text-new.text-primary !font-medium on hover:bg-transparent"
                 #route="routerLinkActive"
                 [routerLinkActiveOptions]="{ exact: true }"
-                class="nav-tab text-neutral-10 rounded-22px py-8px px-16px transition-all duration-200 font-medium hover:bg-neutral-a2"
+                class="nav-tab block text-new.text-secondary rounded-22px py-8px px-16px transition-all duration-200 font-body font-normal hover:bg-new.surface-subtle"
                 >
-                <span class="text-12 transition-all duration-200 whitespace-nowrap">{{ nav.name }}</span>
+                <span class="text-[14px] leading-[20px] transition-all duration-200 whitespace-nowrap">{{ nav.name }}</span>
               </a>
             </li>
           }
         </div>
 
-        <div class="absolute w-122px left-0 h-[36px] bg-new.primary-25 rounded-22px z-0 transition-all duration-300" [style]="'left: ' + activeTab?.offsetLeft + 'px; width: ' + activeTab?.offsetWidth + 'px'"></div>
+        <div class="absolute w-122px left-0 h-[36px] bg-new.surface-muted rounded-22px z-0 transition-all duration-300" [style]="'left: ' + activeTab?.offsetLeft + 'px; width: ' + activeTab?.offsetWidth + 'px'"></div>
       </ul>
     </nav>
   </div>
   <router-outlet></router-outlet>
 </div>
 
-<div class="flex justify-center py-24px">
+<div class="flex flex-col items-center gap-8px py-24px bg-new.surface-page">
+  <span class="font-body font-normal text-[12px] leading-normal text-new.text-secondary">Powered by</span>
   <a href="https://getconvoy.io/?utm_source=portal_link" target="_blank" rel="noreferrer">
     <img ngSrc="/assets/img/logo.svg" alt="convoy logo" class="w-100px" height="56" width="218"/>
   </a>

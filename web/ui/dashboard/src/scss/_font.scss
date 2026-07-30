@@ -479,3 +479,21 @@
 	font-display: swap;
 	src: url('../assets/fonts/OpenSauceSans-Bold.ttf') format('truetype');
 }
+
+/* New design system fonts (2026 UI refresh) */
+@font-face {
+	font-family: 'Pretendard Variable';
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url('../assets/fonts/PretendardStdVariable.woff2') format('woff2-variations');
+}
+
+@font-face {
+	font-family: 'Archivo';
+	font-style: normal;
+	font-weight: 100 900;
+	font-stretch: 62% 125%;
+	font-display: swap;
+	src: url('../assets/fonts/ArchivoVariable.woff2') format('woff2-variations');
+}

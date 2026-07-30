@@ -1,92 +1,126 @@
-<ng-container>
-  <h2 class="text-12 font-medium text-neutral-10 mb-16px">Events Summary</h2>
-  <div class="max-w-[1300px] w-full mx-auto px-24px pt-44px pb-100px">
-    <h2 class="text-12 font-medium text-neutral-10 mb-16px">Events Summary</h2>
+<div class="max-w-[1300px] w-full mx-auto px-24px pt-80px pb-100px">
+  <div class="pt-24px">
+    <h1 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Event Deliveries</h1>
+  </div>
 
-    <div class="pb-24px flex items-center">
+  <!-- Summary controls -->
+  <div class="flex items-center justify-between gap-16px mt-24px flex-wrap">
+    <div class="flex items-center gap-16px flex-wrap">
+      <!-- Interval segmented control -->
+      <div class="flex items-stretch h-44px drop-shadow-[0px_2px_1px_rgba(0,0,0,0.04)]">
+        @for (filterOption of filterOptions; track $index; let first = $first; let last = $last) {
+          <button
+            type="button"
+            (click)="dashboardFrequency = filterOption; fetchDashboardData()"
+            class="px-12px font-body font-medium text-[14px] leading-[16px] border transition-colors capitalize"
+            [class]="
+              (first ? 'rounded-l-8px ' : '-ml-[1px] ') +
+              (last ? 'rounded-r-8px ' : '') +
+              (dashboardFrequency === filterOption ? 'bg-new.primary-400 border-new.primary-400 text-white-100 z-[1] relative' : 'bg-white-100 border-new.border text-new.text-primary hover:bg-new.surface-muted')
+            "
+            >
+            {{ filterOption }}
+          </button>
+        }
+      </div>
+
+      <!-- Date range -->
       <convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()">
-        <button dropdownTrigger convoy-button fill="outline" size="sm" class="px-10px !border-primary-400 justify-between gap-10px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!dateRangeValue?.startDate && !!dateRangeValue?.endDate }">
-          <svg width="18" height="18" class="transition-all fill-none scale-75" [class]="!!dateRangeValue?.startDate && !!dateRangeValue?.endDate ? 'stroke-new.primary-300' : 'stroke-neutral-11'">
-            <use xlink:href="#calendar-icon"></use>
-          </svg>
-          <span class="text-neutral-11 mr-4px">Date</span>
-
-          @if (dateRangeValue?.startDate && dateRangeValue?.endDate) {
-            <button type="button" (click)="getSelectedDateRange()">
-              <svg width="10" height="10" class="fill-primary-100">
-                <use xlink:href="#close-icon"></use>
-              </svg>
-            </button>
-          }
+        <button dropdownTrigger type="button" class="h-44px flex items-center gap-12px px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-colors hover:bg-new.surface-muted">
+          {{ dateRangeLabel }}
+          <img src="/assets/img/svg/calendar-small.svg" class="w-16px h-16px" alt="" />
         </button>
       </convoy-date-picker>
-
-      <div convoy-dropdown size="sm" position="left">
-        <button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px">
-          <span class="text-neutral-11 mr-4px">Filter By:</span>
-          <span class="text-primary-100 capitalize">{{ dashboardFrequency }}</span>
-          <img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-14px h-14px ml-10px" />
-        </button>
-
-        <ul dropdownOptions>
-          @for (filterOption of filterOptions; track $index) {
-            <li convoy-dropdown-option convoy-list-item class="text-14 px-20px" [active]="dashboardFrequency == filterOption ? 'true' : 'false'" [hasBorder]="true">
-              <button convoy-button color="neutral" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData()" class="capitalize font-normal text-left w-full !justify-start text-12">
-                {{ filterOption }}
-              </button>
-            </li>
-          }
-        </ul>
-      </div>
     </div>
 
-    <div convoy-card class="relative mb-22px">
-      <ul class="flex flex-wrap items-center min-h-[76px] metrics">
-        <li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-[length:30px_30px] bg-no-repeat flex items-center px-30px py-16px border-r border-neutral-a3 [background-position-x:185px] [background-position-y:46px] min-w-[220px]">
-          <img src="/assets/img/message-icon.svg" class="mr-30px" alt="message icon" />
-          @if (isloadingDashboardData) {
-            <div>
-              <convoy-skeleton-loader className="w-60px h-16px mb-10px"></convoy-skeleton-loader>
-              <convoy-skeleton-loader className="w-120px h-16px"></convoy-skeleton-loader>
-            </div>
-          }
-          @if (!isloadingDashboardData) {
-            <div>
-              <div class="text-16 font-medium">{{ dashboardData.events_sent | number }}</div>
-              <div class="text-neutral-11 text-14">
-                <span class="font-normal">Events Sent</span>
-              </div>
-            </div>
-          }
+    <!-- Endpoint scope for delivery counts -->
+    <div convoy-dropdown size="md" position="right">
+      <button dropdownTrigger type="button" class="w-[160px] h-44px flex items-center justify-between pl-12px pr-8px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary">
+        <span class="truncate">{{ selectedSummaryEndpoint?.title || selectedSummaryEndpoint?.name || 'All endpoints' }}</span>
+        <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px shrink-0" alt="" />
+      </button>
+      <ul dropdownOptions class="py-4px max-h-[240px] overflow-y-auto">
+        <li>
+          <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="selectSummaryEndpoint()">All endpoints</button>
         </li>
-
-        <li class="bg-[url(/assets/img/apps-icon-transparent.svg)] bg-[length:30px_30px] bg-no-repeat flex items-center px-30px py-16px border-r border-neutral-a3 [background-position-x:185px] [background-position-y:46px] min-w-[220px]">
-          <img src="/assets/img/apps-icon.svg" class="mr-30px" alt="apps icon" />
-          @if (isloadingDashboardData) {
-            <div>
-              <convoy-skeleton-loader className="w-60px h-16px mb-10px"></convoy-skeleton-loader>
-              <convoy-skeleton-loader className="w-100px h-16px"></convoy-skeleton-loader>
-            </div>
-          }
-          @if (!isloadingDashboardData) {
-            <div>
-              <div class="text-16 font-medium">{{ dashboardData.apps | number }}</div>
-              <div class="text-neutral-11 text-14">
-                <span class="font-normal">Endpoint</span>
-                @if (dashboardData.apps > 1) {
-                  <span class="font-normal">s</span>
-                }
-              </div>
-            </div>
-          }
-        </li>
+        @for (endpoint of summaryEndpoints; track endpoint.uid) {
+          <li>
+            <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary truncate transition-colors hover:bg-new.surface-muted" (click)="selectSummaryEndpoint(endpoint)">
+              {{ endpoint.title || endpoint.name }}
+            </button>
+          </li>
+        }
       </ul>
-
-      <div class="border-t border-neutral-a3 p-16px">
-        <convoy-chart [chartData]="chartData" [isLoading]="isloadingDashboardData"></convoy-chart>
-      </div>
     </div>
-
-    <app-event-deliveries></app-event-deliveries>
   </div>
-</ng-container>
+
+  <!-- Metric cards -->
+  <div class="grid grid-cols-4 desktop:grid-cols-2 mobile:!grid-cols-1 gap-20px mt-24px max-w-[860px]">
+    <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
+      @if (isloadingDashboardData) {
+        <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
+      } @else {
+        <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ dashboardData.events_sent | number }}</span>
+      }
+      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Events sent</span>
+    </div>
+    <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
+      @if (isLoadingDeliveryCounts) {
+        <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
+      } @else {
+        <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.success | number }}</span>
+      }
+      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Successful deliveries</span>
+    </div>
+    <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
+      @if (isLoadingDeliveryCounts) {
+        <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
+      } @else {
+        <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.failure | number }}</span>
+      }
+      <span class="font-body font-normal text-[14px] leading-normal" [class]="deliveryCounts.failure > 0 ? 'text-[#df3520]' : 'text-new.text-secondary'">Failed deliveries</span>
+    </div>
+    <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
+      @if (isLoadingSummaryEndpoints) {
+        <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
+      } @else {
+        <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ activeEndpointCount | number }}</span>
+      }
+      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Active endpoints</span>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="bg-white-100 border border-new.border rounded-12px mt-20px p-16px">
+    <h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Event Deliveries over time</h2>
+    @if (isloadingDashboardData) {
+      <div class="h-[200px] flex items-end gap-14px mt-24px">
+        <convoy-skeleton-loader className="w-full h-120px"></convoy-skeleton-loader>
+      </div>
+    } @else if (!chartData.length) {
+      <div class="h-[200px] flex items-center justify-center mt-24px">
+        <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">No delivery activity in this range</p>
+      </div>
+    } @else {
+      <div class="mt-32px flex items-end gap-8px overflow-x-auto pb-4px min-h-[200px]">
+        @for (bucket of chartData; track $index) {
+          <div class="flex flex-col items-center gap-8px flex-1 min-w-[26px] max-w-[48px] group relative self-stretch justify-end">
+            <div class="w-full max-w-[32px] bg-[#40cf8e] rounded-[2px] transition-opacity group-hover:opacity-80" [style.height.px]="barHeight(bucket.data) * 1.6"></div>
+            <span class="font-body font-normal text-[12px] leading-normal text-new.text-placeholder whitespace-nowrap">{{ bucket.label }}</span>
+
+            <!-- Hover tooltip -->
+            <div class="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1c1c1c] rounded-8px px-12px py-8px z-10 whitespace-nowrap flex flex-col gap-4px">
+              <span class="font-body font-medium text-[12px] text-white-100">{{ bucket.label }}</span>
+              <span class="font-body font-normal text-[12px] text-white-100 flex items-center gap-6px">
+                <span class="w-8px h-8px rounded-[2px] bg-[#40cf8e] inline-block"></span>
+                Events: {{ bucket.data | number }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <app-event-deliveries [dateRange]="statsDateRangeForRequest"></app-event-deliveries>
+</div>

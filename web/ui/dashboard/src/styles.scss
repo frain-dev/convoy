@@ -1,6 +1,7 @@
 @use './scss/font' as *;
 
 @use './scss/forms' as *;
+@use './scss/auth' as *;
 @use './scss/prism' as *;
 @use './scss/material-design-reset' as *;
 @use 'prismjs/plugins/toolbar/prism-toolbar.css' as *;
@@ -71,6 +72,15 @@
 	/* Exclude Monaco Editor and code elements - they should use monospace fonts */
 	p, span, div, h1, h2, h3, h4, h5, h6, a, button, input, textarea, select, label, td, th, li {
 		font-family: 'Open Sauce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+	}
+
+	/* 2026 UI refresh fonts: must out-specify the legacy Open Sauce Sans rule above */
+	.font-heading, .font-heading * {
+		font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+	}
+	.font-body, .font-body *,
+	.auth-input, .auth-label {
+		font-family: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 	}
 
 	/* Monaco Editor should use monospace fonts, not Open Sauce Sans */

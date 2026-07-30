@@ -8,11 +8,9 @@ import {
     LabelComponent
 } from 'src/app/components/input/input.component';
 import {ButtonComponent} from 'src/app/components/button/button.component';
-import {RadioComponent} from 'src/app/components/radio/radio.component';
 import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {ActivatedRoute, Router} from '@angular/router';
-import {CardComponent} from 'src/app/components/card/card.component';
 import {CreateEndpointService} from './create-endpoint.service';
 import {PrivateService} from '../../private.service';
 import {FormLoaderComponent} from 'src/app/components/form-loader/form-loader.component';
@@ -21,7 +19,7 @@ import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {ENDPOINT, SECRET} from 'src/app/models/endpoint.model';
 import {EndpointsService} from '../../pages/project/endpoints/endpoints.service';
 import {NotificationComponent} from 'src/app/components/notification/notification.component';
-import {ConfigButtonComponent} from '../config-button/config-button.component';
+import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
 import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {TagComponent} from 'src/app/components/tag/tag.component';
@@ -65,13 +63,12 @@ function mtlsKeyValidator(): ValidatorFn {
         InputFieldDirective,
         LabelComponent,
         ButtonComponent,
-        RadioComponent,
         TooltipComponent,
-        CardComponent,
         FormLoaderComponent,
         PermissionDirective,
         NotificationComponent,
-        ConfigButtonComponent,
+        DropdownComponent,
+        DropdownOptionDirective,
         CopyButtonComponent,
         TagComponent,
         SelectComponent
@@ -159,8 +156,11 @@ export class CreateEndpointComponent implements OnInit {
 	enableMoreConfig = false;
 	configurations = [
 		{ uid: 'content_type', name: 'Content Type', show: false, deleted: false },
-		{ uid: 'http_timeout', name: 'Timeout ', show: false, deleted: false }
+		{ uid: 'http_timeout', name: 'Timeout', show: false, deleted: false }
 	];
+	// UI-level auth choice; 'none' maps to saving the endpoint without credentials
+	// (empty api_key fields are stripped by saveEndpoint's existing cleanup).
+	authChoice: 'none' | 'api_key' | 'basic_auth' | 'oauth2' = 'api_key';
 	contentTypeOptions = [
 		{ uid: 'application/json', name: 'JSON (application/json)' },
 		{ uid: 'application/x-www-form-urlencoded', name: 'Form Data (application/x-www-form-urlencoded)' }
@@ -197,11 +197,11 @@ export class CreateEndpointComponent implements OnInit {
 
 		if (this.type !== 'portal')
 			this.configurations.push(
-				{ uid: 'owner_id', name: 'Owner ID ', show: false, deleted: false },
-				{ uid: 'rate_limit', name: 'Rate Limit ', show: false, deleted: false },
+				{ uid: 'owner_id', name: 'Owner ID', show: false, deleted: false },
+				{ uid: 'rate_limit', name: 'Rate Limits', show: false, deleted: false },
 				{ uid: 'auth', name: 'Auth', show: false, deleted: false },
 				{ uid: 'alert_config', name: 'Notifications', show: false, deleted: false },
-				{ uid: 'signature', name: 'Signature Format', show: false, deleted: false },
+				{ uid: 'signature', name: 'Signature Formats', show: false, deleted: false },
 				{ uid: 'mtls', name: 'mTLS Client Certificate', show: false, deleted: false },
 			);
 
@@ -257,6 +257,11 @@ export class CreateEndpointComponent implements OnInit {
 		if (!this.endpointUid) this.endpointUid = this.route.snapshot.params.id;
 		if ((this.isUpdateAction || this.editMode) && this.type !== 'subscription') this.getEndpointDetails();
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
+	}
+
+	selectAuthChoice(value: 'none' | 'api_key' | 'basic_auth' | 'oauth2') {
+		this.authChoice = value;
+		if (value !== 'none') this.onAuthTypeChange(value);
 	}
 
 	onAuthTypeChange(value: string) {
@@ -478,7 +483,7 @@ export class CreateEndpointComponent implements OnInit {
 			signature: ['advanced_signatures'],
 			rate_limit: ['rate_limit', 'rate_limit_duration'],
 			alert_config: [],
-			auth: authType === 'api_key' ? ['authentication.api_key.header_name', 'authentication.api_key.header_value'] : [],
+			auth: authType === 'api_key' && this.authChoice !== 'none' ? ['authentication.api_key.header_name', 'authentication.api_key.header_value'] : [],
 			mtls: []
 		};
 		this.configurations.forEach(config => {
@@ -509,6 +514,13 @@ export class CreateEndpointComponent implements OnInit {
 
 	async saveEndpoint() {
 		if (this.savingEndpoint) return;
+
+		// 'No authentication' selected: clear api_key fields so the existing
+		// cleanup below strips the authentication object entirely.
+		if (this.authChoice === 'none') {
+			this.addNewEndpointForm.get('authentication.type')?.setValue('api_key', { emitEvent: false });
+			this.addNewEndpointForm.get('authentication.api_key')?.patchValue({ header_name: '', header_value: '' });
+		}
 
 		await this.runEndpointValidation();
 
@@ -667,6 +679,7 @@ export class CreateEndpointComponent implements OnInit {
 		
 		// Update selectedAuthType after patching form
 		this.selectedAuthType = endpointDetails.authentication?.type || 'api_key';
+		this.authChoice = (endpointDetails.authentication?.type as any) || 'api_key';
 		
 		// Update selectedOAuth2AuthType if OAuth2 is configured
 		if (endpointDetails.authentication?.oauth2) {
@@ -781,6 +794,13 @@ export class CreateEndpointComponent implements OnInit {
 
 	get shouldShowBorder(): number {
 		return this.configurations.filter(config => config.show).length;
+	}
+
+	get addableConfigs(): Array<{ uid: string; name: string; locked: boolean }> {
+		return this.configurations
+			.map((config, index) => ({ uid: config.uid, name: config.name, index, show: config.show }))
+			.filter(config => !config.show && (config.index < 5 || this.privateService.getProjectDetails?.type === 'outgoing'))
+			.map(config => ({ uid: config.uid, name: config.name, locked: config.uid === 'mtls' && !this.mtlsFeatureEnabled }));
 	}
 
 	get isUpdateAction(): boolean {

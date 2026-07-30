@@ -1,46 +1,59 @@
 <dialog #projectSetupDialog convoy-dialog id="configureProjectForm" position="full" escapeAction="delegate" (escaped)="cancel()">
   <div convoy-dialog-header fullscreen="true" (closeDialog)="cancel()">
-    <h2 class="font-semibold capitalize text-14">{{ projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project' }}</h2>
+    <h2 class="font-heading font-medium text-[14px] text-new.text-primary capitalize">{{ projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project' }}</h2>
   </div>
 
-  <div class="h-full w-full">
-    <div class="max-w-[770px] m-auto mt-20px pb-60px flex flex-col desktop:px-24px">
+  <div class="h-full w-full bg-new.surface-page">
+    <div class="max-w-[800px] m-auto pt-24px pb-80px flex flex-col desktop:px-24px">
       @if (showLoader) {
         <convoy-loader></convoy-loader>
       }
 
-      @if (projectType === 'incoming') {
-        <h3 class="font-semibold text-neutral-12 mt-20px text-14">{{ sources.length > 0 ? 'Choose a source' : 'Create your first source' }}</h3>
-        <p class="text-12 text-neutral-10 mt-6px max-w-[634px]">
-          A source represents the provider or service you want to receive events from. Reuse an existing source to keep its unique ingest URL, or create a new source when you need a separate URL for a new provider.
+      <!-- Intro -->
+      <div class="flex flex-col gap-4px order-1">
+        <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">{{ projectType === 'outgoing' ? 'Set up your outgoing project' : 'Set up your incoming project' }}</h2>
+        <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary max-w-[634px]">
+          {{ projectType === 'outgoing' ? 'Create an endpoint and subscription so your project can start sending webhook events.' : 'Connect a source and endpoint so your project can start receiving and routing webhook events.' }}
         </p>
+      </div>
+      <div class="h-[1px] w-full bg-new.border mt-16px mb-24px order-2"></div>
+
+      @if (projectType === 'incoming') {
+        <div class="flex flex-col gap-4px order-3">
+          <h3 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">{{ sources.length > 0 ? 'Choose a source' : 'Create your first source' }}</h3>
+          <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary max-w-[634px]">
+            A source represents the provider or service you want to receive events from. Reuse an existing source to keep its unique ingest URL, or create a new source when you need a separate URL for a new provider.
+          </p>
+        </div>
       }
 
-      <div class="p-24px pb-0 mt-20px mb-40px" [class]="projectType === 'incoming' ? 'order-4' : 'order-10'" convoy-card>
+      <div class="mt-16px mb-32px" [class]="projectType === 'incoming' ? 'order-4' : 'order-10'">
         @if (projectType === 'outgoing') {
-          <div class="mb-20px">
-            <div class="flex justify-between">
-              <p class="text-12 text-neutral-10">Connect third-party event source</p>
+          <div class="bg-white-100 border border-new.border rounded-16px p-24px" [class]="connectPubSub ? 'mb-16px' : ''">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-2px">
+                <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Connect third-party event source</p>
+                <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Ingest events from a message broker into this project.</p>
+              </div>
               <convoy-toggle name="connectPubSub" (onChange)="connectPubSub = !connectPubSub" [isChecked]="connectPubSub"></convoy-toggle>
             </div>
           </div>
         }
 
-        @if (connectPubSub) {
-          <hr class="border-new.primary-25 mb-24px" />
-        }
-
         @if (projectType === 'incoming' && sources.length > 0) {
-          <div class="mb-24px">
-            <div class="flex items-center justify-between mb-12px">
-              <p class="text-12 text-neutral-10">Use existing source</p>
+          <div class="bg-white-100 border border-new.border rounded-16px p-24px mb-16px">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-2px">
+                <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Use existing source</p>
+                <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Keep the ingest URL of a source you already created.</p>
+              </div>
               <convoy-toggle name="useExistingSource" (onChange)="useExistingSource = !useExistingSource" [isChecked]="useExistingSource"></convoy-toggle>
             </div>
             @if (useExistingSource) {
-              <div [formGroup]="reuseForm">
+              <div [formGroup]="reuseForm" class="mt-16px">
                 <convoy-select label="Source" name="source_id" formControlName="source_id" [options]="sources" (selectedOption)="onSelectExistingSource($event)"></convoy-select>
                 @if (sources.length > 1 && !selectedSourceId) {
-                  <p class="text-12 text-neutral-8 mt-8px">Select the source this subscription should receive events from.</p>
+                  <p class="font-body text-[12px] text-new.text-secondary mt-8px">Select the source this subscription should receive events from.</p>
                 }
               </div>
             }
@@ -52,20 +65,25 @@
         }
       </div>
 
-      <h3 class="font-semibold mt-20px order-5 text-14">{{ endpoints.length > 0 ? 'Choose an endpoint' : 'Create your first endpoint' }}</h3>
-      <p class="text-12 text-neutral-10 mt-6px max-w-[634px] order-6">HTTP Endpoint is the destination of events from your sources. Reuse an existing endpoint when possible, or create a new endpoint for a new destination.</p>
-      <div class="order-7 mb-20px">
+      <div class="flex flex-col gap-4px order-5">
+        <h3 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">{{ endpoints.length > 0 ? 'Choose an endpoint' : 'Create your first endpoint' }}</h3>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary max-w-[634px]">HTTP Endpoint is the destination of events from your sources. Reuse an existing endpoint when possible, or create a new endpoint for a new destination.</p>
+      </div>
+      <div class="order-7 mt-16px mb-32px">
         @if (endpoints.length > 0) {
-          <div convoy-card class="p-24px mb-20px">
-            <div class="flex items-center justify-between mb-12px">
-              <p class="text-12 text-neutral-10">Use existing endpoint</p>
+          <div class="bg-white-100 border border-new.border rounded-16px p-24px" [class]="useExistingEndpoint ? '' : 'mb-16px'">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-2px">
+                <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Use existing endpoint</p>
+                <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Route events to an endpoint you already created.</p>
+              </div>
               <convoy-toggle name="useExistingEndpoint" (onChange)="useExistingEndpoint = !useExistingEndpoint" [isChecked]="useExistingEndpoint"></convoy-toggle>
             </div>
             @if (useExistingEndpoint) {
-              <div [formGroup]="reuseForm">
+              <div [formGroup]="reuseForm" class="mt-16px">
                 <convoy-select label="Endpoint" name="endpoint_id" formControlName="endpoint_id" [options]="endpointOptions" (selectedOption)="onSelectExistingEndpoint($event)"></convoy-select>
                 @if (endpoints.length > 1 && !selectedEndpointId) {
-                  <p class="text-12 text-neutral-8 mt-8px">Select the endpoint that should receive matching events.</p>
+                  <p class="font-body text-[12px] text-new.text-secondary mt-8px">Select the endpoint that should receive matching events.</p>
                 }
               </div>
             }
@@ -77,24 +95,38 @@
         }
       </div>
 
-      <div convoy-card class="p-24px order-8 my-20px">
-        <div class="flex items-center justify-between mb-16px" [ngClass]="{ 'mb-16px': !automaticSubscription }">
-          <p class="text-12 text-neutral-10">Automatically subscribe endpoint to all events sent?</p>
+      <div class="bg-white-100 border border-new.border rounded-16px p-24px order-8 mb-32px">
+        <div class="flex items-center justify-between">
+          <div class="flex flex-col gap-2px">
+            <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Automatically subscribe endpoint to all events sent?</p>
+            <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Turn this off to pick specific event types for this endpoint.</p>
+          </div>
           <convoy-toggle name="automaticSubscription" (onChange)="automaticSubscription = !automaticSubscription" [isChecked]="automaticSubscription"></convoy-toggle>
         </div>
 
-        <convoy-create-subscription [setupMode]="true" [ngClass]="{ 'h-0 hidden invisible': automaticSubscription }" (onAction)="projectType === 'incoming' ? sourceURLDialog.showModal() : onProjectOnboardingComplete()"></convoy-create-subscription>
+        <convoy-create-subscription [setupMode]="true" [ngClass]="{ 'h-0 hidden invisible': automaticSubscription, 'block mt-16px': !automaticSubscription }" (onAction)="projectType === 'incoming' ? sourceURLDialog.showModal() : onProjectOnboardingComplete()"></convoy-create-subscription>
       </div>
 
       <div class="order-11">
         @if (setupSaveHint) {
-          <p class="text-12 text-neutral-8 mb-8px text-right">{{ setupSaveHint }}</p>
+          <p class="font-body text-[12px] text-new.text-secondary mb-8px text-right">{{ setupSaveHint }}</p>
         }
-        <div class="flex justify-end">
-          <button convoy-button fill="outline" type="button" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (click)="cancel()">Cancel</button>
-          <button convoy-button [disabled]="!canSave" (click)="saveProjectConfig()">
+        <div class="flex justify-end items-center gap-12px">
+          <button
+            type="button"
+            class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80"
+            (click)="cancel()"
+            >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="min-w-[160px] rounded-full py-12px px-16px bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all duration-300 hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-8px"
+            [disabled]="!canSave"
+            (click)="saveProjectConfig()"
+            >
             Save and Proceed
-            <svg width="24" height="24" class="ml-8px fill-white-100">
+            <svg width="20" height="20" class="fill-white-100 scale-90">
               <use xlink:href="#arrow-right-icon"></use>
             </svg>
           </button>

@@ -1,105 +1,109 @@
 @if (!singleEventMode) {
-  <div class="max-w-[1300px] w-full mx-auto px-24px pb-100px pt-80px">
-    <h2 class="font-medium text-14 text-neutral-10 mb-24px">Event Catalog</h2>
-    <div class="flex justify-between items-center mb-12px">
-      <form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
-        <img ngSrc="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" height="14" width="14"/>
-        <input type="search" placeholder="Search event types" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="eventSearchString" [ngModelOptions]="{ standalone: true }" />
-        @if (eventSearchString && eventSearchString.length > 0) {
-          <button convoy-button class="transition-all duration-200" fill="text" (click)="filterEvents(eventSearchString)" size="sm">
-            <img ngSrc="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" height="50" width="50"/>
-          </button>
-        }
-      </form>
+  <div class="max-w-[1300px] w-full mx-auto px-24px pt-80px pb-100px">
+    <!-- Section header -->
+    <div class="flex flex-col gap-4px pt-24px">
+      <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Event Catalog</h2>
+      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Browse the event types available to your endpoints</p>
     </div>
-    <ul convoy-card class="mb-40px">
-      @if (isLoadingEvents && !validEventTypes().length) {
-        <li class="px-4 py-14px">
-          <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
-        </li>
-        @for (i of [0, 1, 2]; track $index) {
-          <li class="flex items-center gap-36px p-16px">
-            <div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
-            <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
-            <div class="bg-neutral-a3 rounded-8px animate-pulse w-320px h-20px"></div>
-          </li>
-        }
-      }
-      @for (eventType of displayedEventTypes; track $index) {
-        <li class="flex flex-col justify-between py-12px px-22px hover:bg-new.primary-25 transition-all duration-300 last-of-type:mb-0 relative border-b border-new.primary-25">
-          <button convoy-button size="sm" fill="text" class="w-full flex items-center py-2 px-3 text-left" (click)="toggleEventTypeExpand(eventType)">
-            <svg width="10" height="10" class="fill-new.primary-400 scale-150 mr-2">
-              <use [attr.xlink:href]="eventType.expanded ? '#angle-arrow-down-icon' : '#arrow-right-icon'"></use>
-            </svg>
-            <span class="flex-1 font-semibold">{{ eventType.name }}</span>
-          </button>
-          <p class="pl-32px text-12 text-neutral-10">
-            {{ eventType.description }}
-          </p>
-        </li>
-        @if (eventType.expanded) {
-          <div class="p-16px flex justify-between gap-16px border-t border-new.primary-25">
-            <div class="w-[730px] overflow-y-auto">
-              <ng-container *ngTemplateOutlet="fieldsList; context: { $implicit: eventType.fields, eventType: eventType, level: 0 }"></ng-container>
-            </div>
-            <div class="w-[1px] bg-new.primary-25"></div>
-            <div class="w-[620px]">
-              <div class="w-full">
-                @if (eventType.expanded) {
-                  <prism title="JSON Schema" language="json" [code]="generalService.getCodeSnippetString('event_data', eventType.example_json)"></prism>
+
+    <div class="h-[1px] w-full bg-new.border mt-16px"></div>
+
+    <!-- Search -->
+    <div class="flex items-center gap-8px px-12px h-44px mt-20px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)]">
+      <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px" alt="search" />
+      <input
+        type="search"
+        placeholder="Search event types"
+        [(ngModel)]="eventSearchString"
+        [ngModelOptions]="{ standalone: true }"
+        class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+        />
+    </div>
+
+    @if (isLoadingEvents && !validEventTypes().length) {
+      <!-- Loading state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px mt-16px bg-white-100 border border-new.border rounded-12px">
+        <img src="/assets/img/svg/deliveries-loading.svg" class="w-48px h-48px animate-spin" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Loading event types</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Fetching the event catalog. This usually takes a moment.</p>
+        </div>
+      </div>
+    } @else if (!isLoadingEvents && displayedEventTypes.length === 0) {
+      <!-- Empty state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px mt-16px bg-white-100 border border-new.border rounded-12px">
+        <img src="/assets/img/svg/deliveries-empty.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">{{ eventSearchString ? 'No event types match' : 'No event types available' }}</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ eventSearchString ? 'Adjust your search to see more results.' : 'Event types will show up here once they are defined.' }}</p>
+        </div>
+      </div>
+    } @else {
+      <!-- Accordion cards, one per event type -->
+      <div class="flex flex-col gap-12px mt-16px">
+        @for (eventType of displayedEventTypes; track $index) {
+          <div class="bg-white-100 border border-new.border rounded-12px overflow-hidden">
+            <button type="button" class="w-full flex items-center justify-between gap-12px px-20px py-14px text-left transition-colors hover:bg-new.surface-subtle" (click)="toggleEventTypeExpand(eventType)">
+              <span class="flex flex-col gap-2px min-w-0">
+                <span class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary">{{ eventType.name }}</span>
+                @if (eventType.description) {
+                  <span class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">{{ eventType.description }}</span>
                 }
+              </span>
+              <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px shrink-0 transition-transform" [class.rotate-180]="eventType.expanded" alt="" />
+            </button>
+
+            @if (eventType.expanded) {
+              <div class="p-16px flex justify-between gap-16px border-t border-new.border">
+                <div class="w-[730px] overflow-y-auto">
+                  <ng-container *ngTemplateOutlet="fieldsList; context: { $implicit: eventType.fields, eventType: eventType, level: 0 }"></ng-container>
+                </div>
+                <div class="w-[1px] bg-new.border"></div>
+                <div class="w-[620px]">
+                  <div class="w-full">
+                    <prism title="JSON Schema" language="json" [code]="generalService.getCodeSnippetString('event_data', eventType.example_json)"></prism>
+                  </div>
+                </div>
               </div>
-            </div>
+            }
           </div>
         }
-      }
-      @if (!isLoadingEvents && displayedEventTypes.length === 0) {
-        <div class="flex justify-center items-center p-40px flex-col">
-          <img ngSrc="/assets/img/empty-state.svg" alt="empty state image" height="108" width="124"/>
-          <p class="mt-16px text-12 text-neutral-11">
-            {{ eventSearchString ? 'No event types match your search' : 'No event types available' }}
-          </p>
-        </div>
-      }
-    </ul>
+      </div>
+    }
   </div>
 }
 
 <ng-template #fieldsList let-fields let-eventType="eventType" let-level="level">
   @for (field of fields; track $index) {
-    <div class="border-b border-new.primary-25">
+    <div class="border-b border-new.border last:border-b-0">
       <button (click)="toggleFieldExpand(field)"
-        class="py-12px w-full hover:bg-new.primary-25 transition-all duration-200"
-        [style.paddingLeft.px]="22 + (level * 20)"
+        class="py-12px w-full hover:bg-new.surface-muted transition-all duration-200"
+        [style.paddingLeft.px]="20 + (level * 20)"
         >
         <div class="flex items-start">
           <div class="flex-shrink-0 mt-10px">
             @if (field.children && field.children.length > 0) {
-              <button convoy-button size="sm" fill="text">
-                <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+              <span class="inline-flex px-4px">
+                <svg width="10" height="10" class="fill-new.text-secondary scale-150">
                   <use [attr.xlink:href]="field.expanded ? '#angle-arrow-down-icon' : '#arrow-right-icon'"></use>
                 </svg>
-              </button>
+              </span>
             }
           </div>
-          <div class="flex flex-col ml-2">
+          <div class="flex flex-col ml-8px text-left">
             <div class="flex items-center">
-              <span class="text-12 text-neutral-12 font-bold">{{ field.displayName }}</span>
-              <convoy-tag class="ml-2" size="sm" fill="soft" [color]="getTagColor(field.type)">
+              <span class="font-body font-medium text-[13px] leading-[20px] text-new.text-primary">{{ field.displayName }}</span>
+              <convoy-tag class="ml-8px" size="sm" fill="soft" [color]="getTagColor(field.type)">
                 {{ field.type }}
               </convoy-tag>
               @if (field.optional) {
-                <span class="ml-2 text-12 italic px-2 py-1 rounded-full bg-gray-100 text-gray-800">
-                  optional
-                </span>
+                <span class="ml-8px font-body text-[12px] italic px-8px py-2px rounded-full bg-new.surface-muted text-new.text-secondary">optional</span>
               }
             </div>
-            <div class="mt-1 text-12 text-neutral-10">
+            <div class="mt-4px font-body font-normal text-[13px] leading-normal text-new.text-secondary">
               {{ getFieldDescription(field) }}
               @if (field.children?.length > 0) {
-                <span class="ml-2 text-12 font-medium text-new.primary-500">
-                  ({{ field.children.length }} item{{ field.children.length > 1 ? 's' : '' }})
-                </span>
+                <span class="ml-8px text-[12px] font-medium text-new.primary-400">({{ field.children.length }} item{{ field.children.length > 1 ? 's' : '' }})</span>
               }
             </div>
           </div>
@@ -118,11 +122,11 @@
 <!-- Single Event Mode -->
 @if (singleEventMode) {
   <div>
-    <div class="p-16px flex justify-between gap-16px border-new.primary-25">
+    <div class="p-16px flex justify-between gap-16px">
       <div class="w-[730px] overflow-y-auto max-h-[600px]">
         <ng-container *ngTemplateOutlet="fieldsList; context: { $implicit: selectedEventType?.fields ?? [], eventType: selectedEventType, level: 0 }"></ng-container>
       </div>
-      <div class="w-[1px] bg-new.primary-25"></div>
+      <div class="w-[1px] bg-new.border"></div>
       <div class="w-[620px]">
         <div class="py-12px w-full">
           <prism title="JSON Schema" language="json" [code]="generalService.getCodeSnippetString('event_data', selectedEventType?.example_json ?? {})"></prism>
@@ -131,5 +135,3 @@
     </div>
   </div>
 }
-
-

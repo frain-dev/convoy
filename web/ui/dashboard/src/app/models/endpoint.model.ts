@@ -106,6 +106,7 @@ export interface PORTAL_LINK {
 	can_manage_endpoint: boolean;
 	name: string;
 	owner_id: string;
+	auth_type?: string;
 	url: string;
 	created_at: string;
 	updated_at: string;

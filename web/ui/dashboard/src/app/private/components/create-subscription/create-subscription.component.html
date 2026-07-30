@@ -1,13 +1,14 @@
-<form class="relative mt-40px" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
+<form class="relative flex flex-col gap-16px" [class]="showAction === 'true' ? 'pt-24px' : 'pt-8px'" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
   @if (isLoadingForm) {
     <convoy-loader></convoy-loader>
   }
 
+  <!-- Source (incoming projects) -->
   @if (isPortal === 'false' && showAction === 'true' && !setupMode) {
     @if (projectType === 'incoming' && !token) {
-      <h3 class="font-semibold text-14">Source</h3>
-      <p class="text-12 text-neutral-10 mt-6px">Incoming event source this subscription is connected to.</p>
-      <div convoy-card class="px-24px py-24px mb-70px mt-20px">
+      <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+        <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Source</h3>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px mb-20px">Incoming event source this subscription is connected to.</p>
         @if (!showCreateSourceForm) {
           <convoy-select
             [options]="sources"
@@ -22,24 +23,25 @@
             (searchString)="getSources($event)"
             (selectedOption)="subscriptionForm.patchValue({ source_id: $event })"
           ></convoy-select>
-          <button size="sm" convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px font-medium" (click)="showCreateSourceForm = true; subscriptionForm.patchValue({ source_id: null })">Create New Source</button>
+          <button type="button" convoy-permission="Subscriptions|MANAGE" class="mt-16px font-body font-medium text-[14px] text-new.primary-400 transition-opacity hover:opacity-80" (click)="showCreateSourceForm = true; subscriptionForm.patchValue({ source_id: null })">Create New Source</button>
         }
         @if (showCreateSourceForm) {
           <convoy-create-source (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data)">
-            <button size="sm" convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="pt-30px font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">Use Existing Source</button>
+            <button type="button" convoy-permission="Subscriptions|MANAGE" class="pt-24px font-body font-medium text-[14px] text-new.primary-400 transition-opacity hover:opacity-80" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">Use Existing Source</button>
           </convoy-create-source>
         }
       </div>
     }
   }
 
+  <!-- Endpoint -->
   @if (((!endpointId && !isUpdateAction) || isPortal === 'false') && !setupMode) {
-    <h3 class="font-semibold text-14 mt-40px">Endpoint</h3>
-    <p class="text-12 text-neutral-10 mt-6px">Endpoint this subscription routes events into.</p>
     @if (!showCreateEndpointForm) {
-      <div convoy-card class="px-24px py-24px mt-20px mb-70px">
+      <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+        <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Endpoint</h3>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px mb-20px">Endpoint this subscription routes events into.</p>
         <convoy-select
-          className="mb-0 mt-24px"
+          className="mb-0"
           [options]="endpoints"
           name="endpoint"
           formControlName="endpoint_id"
@@ -53,188 +55,190 @@
           (selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
         ></convoy-select>
         @if (!token) {
-          <button size="sm" convoy-button fill="text" type="button" class="mt-24px font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })">Create New Endpoint</button>
+          <button type="button" class="mt-16px font-body font-medium text-[14px] text-new.primary-400 transition-opacity hover:opacity-80" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })">Create New Endpoint</button>
         }
       </div>
     }
     @if (showCreateEndpointForm) {
-      <convoy-create-endpoint (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)" type="subscription" class="block mb-70px">
-        @if (!token) {
-          <button size="sm" convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-40px font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })">Use Existing Endpoint</button>
-        }
-      </convoy-create-endpoint>
+      <div>
+        <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Endpoint</h3>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px">Create the endpoint this subscription routes events into.</p>
+        <convoy-create-endpoint (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)" type="subscription" class="block">
+          @if (!token) {
+            <button type="button" convoy-permission="Subscriptions|MANAGE" class="mt-24px font-body font-medium text-[14px] text-new.primary-400 transition-opacity hover:opacity-80" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })">Use Existing Endpoint</button>
+          }
+        </convoy-create-endpoint>
+      </div>
     }
   }
 
-  @if (showAction == 'true') {
-    <h3 class="font-semibold text-14 mt-20px">Webhook Subscription Configuration</h3>
-    <p class="text-12 text-neutral-10 mt-6px">Configure how you want this endpoint to receive webhook events.</p>
-  }
-  <div class="mt-24px relative" [ngClass]="{ 'border border-neutral-4 p-24px rounded-8px pt-24px': showAction == 'true' }">
+  <div class="relative flex flex-col gap-16px">
+    <!-- Subscription details -->
     @if (showAction === 'true') {
-      <convoy-input-field className="mb-40px">
-        <label for="subscription-name" required="true" convoy-label>Subscription name</label>
-        <input type="text" id="subscription-name" convoy-input autocomplete="subscription-name" formControlName="name" placeholder="e.g paystack-live" />
-        @if (subscriptionForm.get('name')?.touched && subscriptionForm.get('name')?.invalid) {
-          <convoy-input-error>Enter new subscription name</convoy-input-error>
-        }
-      </convoy-input-field>
-      <hr class="border-t border-neutral-4 mb-40px" />
+      <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+        <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Subscription details</h3>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px mb-20px">Configure how you want this endpoint to receive webhook events.</p>
+        <div class="max-w-[420px] flex flex-col gap-8px">
+          <label for="subscription-name" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Subscription name *</label>
+          <input
+            type="text"
+            id="subscription-name"
+            autocomplete="off"
+            formControlName="name"
+            placeholder="e.g paystack-live"
+            class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+            />
+          @if (subscriptionForm.get('name')?.touched && subscriptionForm.get('name')?.invalid) {
+            <span class="font-body text-[12px] text-new.error-500">Enter new subscription name</span>
+          }
+        </div>
+      </div>
     }
 
+    <!-- Event types -->
     @if (showConfig('events')) {
       @if (projectType === 'outgoing' || projectType === 'incoming' || token) {
-        <div class="border-l-2 border-neutral-3 pl-16px mb-40px">
-          <div class="flex justify-between items-end mb-8px">
-            <p class="text-12 font-medium text-neutral-9 flex items-center" >
-              Event Types
-              <convoy-tooltip size="sm" position="top-right" class="ml-4px">
-                These are the event types that this subscription will receive. You can add filters to each event type to control which events are delivered.
-              </convoy-tooltip>
-            </p>
-            @if (action !== 'view') {
-              <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('events')">
-                <svg width="14" height="14" class="fill-transparent stroke-neutral-9">
-                  <use xlink:href="#delete-icon2"></use>
-                </svg>
-              </button>
-            }
-          </div>
-          <p class="text-12 text-neutral-8 mb-12px">Selected event types are delivered by default. Add a filter only when this endpoint should receive a narrower set of matching events.</p>
-          <div class="mt-16px">
-            @if (!licenseService.hasLicense('AdvancedSubscriptions')) {
-              <div convoy-tag size="sm" color="primary">
-                <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                  <use xlink:href="#lock-icon"></use>
-                </svg>
-                Business
-              </div>
-            }
-            @if (licenseService.hasLicense('AdvancedSubscriptions')) {
-              <div>
-                @for (eventType of subscriptionEventTypes(); track $index) {
-                  <div class="flex items-center justify-between mb-12px border border-neutral-4 p-12px rounded-6px">
-                    <div class="flex items-center">
-                      <div class="relative mr-12px">
-                        <div
-                          class="border border-neutral-5 w-16px h-16px flex items-center justify-center rounded-sm"
-                          [class.border-primary-600]="isEventTypeSelected(eventType.name)"
-                          [class.bg-primary-50]="isEventTypeSelected(eventType.name)"
-                          >
-                          @if (isEventTypeSelected(eventType.name)) {
-                            <span class="text-primary-600 text-12 font-bold leading-none">✓</span>
-                          }
-                        </div>
-                        <input
-                          type="checkbox"
-                          [id]="'event_type_' + eventType.name + '_box'"
-                          [checked]="isEventTypeSelected(eventType.name)"
-                          (change)="toggleEventType(eventType.name)"
-                          [disabled]="action === 'view'"
-                          class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"
-                          />
-                      </div>
-                      <label [for]="'event_type_' + eventType.name + '_box'" class="text-12 cursor-pointer">
-                        {{ eventTypeDisplayName(eventType.name) }}
-                      </label>
-                      @if (hasFilterForEventType(eventType.name)) {
-                        <span class="ml-10px px-8px py-2px rounded-4px bg-primary-25 text-primary-100 text-10 font-medium">{{ getFilterIndicator(eventType.name) }}</span>
-                      }
-                    </div>
-                    <div class="flex items-center">
-                      <button convoy-button
-                        type="button"
-                        size="xs"
-                        fill="soft-outline"
-                        color="primary"
-                        class="mr-8px"
-                        (click)="openFilterDialog(eventType.name)"
-                        [disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('AdvancedSubscriptions')" >
-                        {{ hasFilterForEventType(eventType.name) ? 'Edit Filter' : 'Add Filter' }}
-                      </button>
-                    </div>
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <div class="flex items-start justify-between gap-16px mb-16px">
+            <div class="flex flex-col gap-2px">
+              <div class="flex items-center gap-8px">
+                <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Event types</h3>
+                @if (!licenseService.hasLicense('AdvancedSubscriptions')) {
+                  <div convoy-tag size="sm" color="primary">
+                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                      <use xlink:href="#lock-icon"></use>
+                    </svg>
+                    Business
                   </div>
                 }
-                @if (subscriptionEventTypes().length === 0) {
-                  <p class="text-12 text-neutral-7 italic">No event types available</p>
-                }
               </div>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Selected event types are delivered by default. Add a filter only when this endpoint should receive a narrower set of matching events.</p>
+            </div>
+            @if (action !== 'view') {
+              <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('events')">Remove setting</button>
             }
           </div>
+
+          @if (licenseService.hasLicense('AdvancedSubscriptions')) {
+            <div>
+              @for (eventType of subscriptionEventTypes(); track $index) {
+                <div class="flex items-center justify-between gap-12px border border-new.border rounded-8px px-12px py-10px mb-8px last:mb-0">
+                  <div class="flex items-center min-w-0">
+                    <div class="relative mr-12px shrink-0">
+                      <div
+                        class="border border-new.border w-16px h-16px flex items-center justify-center rounded-4px transition-colors"
+                        [class.!border-new.primary-400]="isEventTypeSelected(eventType.name)"
+                        [class.bg-new.primary-25]="isEventTypeSelected(eventType.name)"
+                        >
+                        @if (isEventTypeSelected(eventType.name)) {
+                          <span class="text-new.primary-400 text-12 font-bold leading-none">✓</span>
+                        }
+                      </div>
+                      <input
+                        type="checkbox"
+                        [id]="'event_type_' + eventType.name + '_box'"
+                        [checked]="isEventTypeSelected(eventType.name)"
+                        (change)="toggleEventType(eventType.name)"
+                        [disabled]="action === 'view'"
+                        class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"
+                        />
+                    </div>
+                    <label [for]="'event_type_' + eventType.name + '_box'" class="font-body font-normal text-[14px] text-new.text-primary cursor-pointer truncate">
+                      {{ eventTypeDisplayName(eventType.name) }}
+                    </label>
+                    @if (hasFilterForEventType(eventType.name)) {
+                      <span class="ml-10px shrink-0 inline-flex items-center h-20px px-6px rounded-4px bg-new.primary-25 font-body font-medium text-[12px] leading-[14px] text-new.primary-400">{{ getFilterIndicator(eventType.name) }}</span>
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    class="shrink-0 px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3 disabled:opacity-50 disabled:pointer-events-none"
+                    (click)="openFilterDialog(eventType.name)"
+                    [disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('AdvancedSubscriptions')"
+                    >
+                    {{ hasFilterForEventType(eventType.name) ? 'Edit Filter' : 'Add Filter' }}
+                  </button>
+                </div>
+              }
+              @if (subscriptionEventTypes().length === 0) {
+                <p class="font-body text-[13px] text-new.text-placeholder italic">No event types available</p>
+              }
+            </div>
+          }
         </div>
       }
     }
 
+    <!-- Transform -->
     @if (showConfig('tranform_config')) {
-      <div class="border-l-2 border-neutral-3 pl-16px mb-40px flex justify-between items-center">
-        <div>
-          <div class="flex items-center gap-8px">
+      <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+        <div class="flex items-start justify-between gap-16px">
+          <div class="flex flex-col gap-2px">
             <div class="flex items-center gap-8px">
-              <h4 class="text-neutral-10 font-medium text-12">Transform</h4>
+              <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Transform</h3>
+              @if (!licenseService.hasLicense('Transformations')) {
+                <div convoy-tag size="sm" color="primary">
+                  <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                    <use xlink:href="#lock-icon"></use>
+                  </svg>
+                  Business
+                </div>
+              }
             </div>
-            @if (!licenseService.hasLicense('Transformations')) {
-              <div convoy-tag size="sm" color="primary">
-                <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                  <use xlink:href="#lock-icon"></use>
-                </svg>
-                Business
-              </div>
+            <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Transform request body of events with a javascript function.</p>
+          </div>
+          <div class="flex items-center gap-8px shrink-0">
+            <button type="button" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3 disabled:opacity-50 disabled:pointer-events-none" (click)="setupTransformDialog()" [disabled]="!licenseService.hasLicense('Transformations')">Open Editor</button>
+            @if (action !== 'view') {
+              <button type="button" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('tranform_config')">Remove setting</button>
             }
           </div>
-          <p class="text-10 text-neutral-10 mt-4px">Transform request body of events with a javascript function.</p>
-        </div>
-        <div class="flex items-center">
-          <button convoy-button fill="soft-outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()" [disabled]="!licenseService.hasLicense('Transformations')">Open Editor</button>
-          <div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
-          @if (action !== 'view') {
-            <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('tranform_config')">
-              <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
-            </button>
-          }
         </div>
       </div>
     }
 
+    <!-- Delivery mode -->
     @if (showConfig('delivery_mode')) {
-      <div class="border-l-2 border-neutral-3 pl-16px mb-40px">
-        <div class="flex justify-between items-start">
-          <div>
-            <h4 class="text-neutral-10 font-medium text-12 flex items-center">
-              Delivery Mode
+      <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+        <div class="flex items-start justify-between gap-16px mb-20px">
+          <div class="flex flex-col gap-2px">
+            <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary flex items-center">
+              Delivery mode
               <convoy-tooltip size="sm" position="top-right" class="ml-4px">
                 <p><span class="font-medium">At least once:</span> Convoy retries failed deliveries until the endpoint responds successfully or retries are exhausted.</p>
                 <p class="mt-8px"><span class="font-medium">At most once:</span> any HTTP response from the endpoint is final, so there is a single attempt. Convoy only retries when there is no HTTP response (for example a network error).</p>
               </convoy-tooltip>
-            </h4>
-            <p class="text-12 text-neutral-8 mt-4px">Controls retry behaviour for this subscription.</p>
+            </h3>
+            <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Controls retry behaviour for this subscription.</p>
           </div>
           @if (action !== 'view') {
-            <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('delivery_mode')">
-              <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
-            </button>
+            <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('delivery_mode')">Remove setting</button>
           }
         </div>
-        <convoy-select
-          className="mb-0 mt-16px"
-          [options]="deliveryModeTypes"
-          name="delivery_mode"
-          formControlName="delivery_mode"
-          [value]="subscriptionForm.get('delivery_mode')?.value"
-          placeholder="Select delivery mode"
-          (selectedOption)="subscriptionForm.patchValue({ delivery_mode: $event })"
-        ></convoy-select>
+        <div class="max-w-[420px] flex flex-col gap-8px">
+          <label for="delivery_mode" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Delivery mode</label>
+          <div class="relative">
+            <select
+              id="delivery_mode"
+              formControlName="delivery_mode"
+              class="h-40px w-full pl-12px pr-36px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary outline-none focus:border-new.primary-400 transition-colors appearance-none"
+              >
+              @for (option of deliveryModeTypes; track option.uid) {
+                <option [value]="option.uid">{{ option.name }}</option>
+              }
+            </select>
+            <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px absolute right-12px top-1/2 -translate-y-1/2 pointer-events-none" alt="" />
+          </div>
+        </div>
       </div>
     }
 
+    <!-- Add settings -->
     @if (shouldShowBorder < configurations.length) {
-      <div class="flex flex-wrap items-center gap-24px">
+      <div class="flex flex-wrap items-center gap-8px">
         @for (config of configurations; track $index) {
           @if (!config.show) {
-            <convoy-config-button convoy-permission="Subscriptions|MANAGE" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
+            <button type="button" convoy-permission="Subscriptions|MANAGE" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm(config.uid)">+ {{ config.name }}</button>
           }
         }
       </div>
@@ -245,14 +249,14 @@
     }
   </div>
 
-  <div class="flex justify-end mt-40px pb-40px" [ngClass]="{ hidden: showAction === 'false' }">
-    <button convoy-button convoy-permission="Subscriptions|MANAGE" size="sm" [disabled]="isCreatingSubscription || subscriptionForm.disabled">
+  <div class="flex justify-end pb-40px" [ngClass]="{ hidden: showAction === 'false' }">
+    <button
+      type="submit"
+      convoy-permission="Subscriptions|MANAGE"
+      class="min-w-[160px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50"
+      [disabled]="isCreatingSubscription || subscriptionForm.disabled"
+      >
       {{ action == 'update' || isUpdateAction ? 'Updat' : 'Creat' }}{{ isCreatingSubscription ? 'ing Subscription...' : 'e Subscription' }}
-      @if (action === 'create') {
-        <svg width="24" height="24" class="ml-8px" class="fill-white-100">
-          <use xlink:href="#arrow-right-icon"></use>
-        </svg>
-      }
     </button>
   </div>
 </form>

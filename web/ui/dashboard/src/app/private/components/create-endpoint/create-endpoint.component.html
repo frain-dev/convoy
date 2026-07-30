@@ -1,247 +1,366 @@
 <div [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'">
-  <div convoy-card class="p-24px relative">
-    <form [formGroup]="addNewEndpointForm">
-      <div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
-        <convoy-input-field>
-          <label for="endpoint_name" convoy-label required="true">Endpoint Name</label>
-          <input id="endpoint_name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoint name here" />
-          @if (addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid) {
-            <convoy-input-error>Please provide a name</convoy-input-error>
-          }
-        </convoy-input-field>
+  <div class="relative">
+    <form [formGroup]="addNewEndpointForm" class="flex flex-col gap-16px">
+      <!-- Endpoint details -->
+      <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+        <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Endpoint details</h3>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px mb-20px">Where Convoy should deliver this endpoint&rsquo;s events. Payloads use JSON (application/json).</p>
 
-        <convoy-input-field>
-          <label for="endpoint_url" convoy-label required="true" class="flex items-center">Enter URL@if (endpointURLTemplatesFeatureEnabled) {<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Use single-segment placeholders like {reference} in the path or query for dynamic callback URLs."></convoy-tooltip>}</label>
-          <input type="url" id="endpoint_url" convoy-input autocomplete="url" formControlName="url" [placeholder]="endpointURLTemplatesFeatureEnabled ? 'https://example.com/orders/{reference}/callback' : 'Enter endpoint URL here'" />
-          @if (addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid) {
-            <convoy-input-error>Invalid endpoint URL</convoy-input-error>
+        <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1 mb-16px">
+          <div class="flex flex-col gap-8px">
+            <label for="endpoint_name" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Endpoint name *</label>
+            <input
+              id="endpoint_name"
+              autocomplete="off"
+              formControlName="name"
+              placeholder="e.g. Billing production"
+              class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+              />
+            @if (addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid) {
+              <span class="font-body text-[12px] text-new.error-500">Please provide a name</span>
+            }
+          </div>
+
+          <div class="flex flex-col gap-8px">
+            <label for="endpoint_url" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary flex items-center">
+              Endpoint URL *
+              @if (endpointURLTemplatesFeatureEnabled) {
+                <convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Use single-segment placeholders like {reference} in the path or query for dynamic callback URLs."></convoy-tooltip>
+              }
+            </label>
+            <input
+              type="url"
+              id="endpoint_url"
+              autocomplete="url"
+              formControlName="url"
+              [placeholder]="endpointURLTemplatesFeatureEnabled ? 'https://example.com/orders/{reference}/callback' : 'https://api.example.com/webhooks'"
+              class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+              />
+            @if (addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid) {
+              <span class="font-body text-[12px] text-new.error-500">Invalid endpoint URL</span>
+            }
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-8px">
+          <label for="secret" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Endpoint secret</label>
+          @if (editMode && type !== 'portal') {
+            <div class="h-40px w-full flex items-center justify-between gap-8px px-12px bg-new.surface-muted border border-new.border rounded-8px">
+              <span class="flex-1 truncate font-body font-normal text-[14px] text-new.text-secondary">{{ endpointSecret?.value || '' }}</span>
+              <div class="shrink-0" convoy-copy-button [text]="endpointSecret?.value || ''" notificationText="Endpoint secret copied to clipboard."></div>
+            </div>
           }
-        </convoy-input-field>
+          @if (!editMode || type === 'portal') {
+            <input
+              type="text"
+              id="secret"
+              autocomplete="off"
+              formControlName="secret"
+              placeholder="Enter endpoint secret"
+              class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+              />
+          }
+          <span class="font-body font-normal text-[12px] leading-normal text-new.text-placeholder">Optional. Used to sign webhook payloads.</span>
+        </div>
       </div>
 
-      <convoy-input-field className="mb-24px">
-        <label for="secret" convoy-label>Endpoint Secret</label>
-        @if (editMode && type !== 'portal') {
-          <div class="flex items-center justify-between w-full h-46px border border-new.gray-200 bg-[#F7F9FC] rounded-[6px] px-16px mb-12px">
-            <span class="text-12 text-new.gray-600 font-normal truncate">{{ endpointSecret?.value || '' }}</span>
-            <div class="ml-8px" convoy-copy-button [text]="endpointSecret?.value || ''" notificationText="Endpoint secret copied to clipboard."></div>
-          </div>
-        }
-        @if (!editMode || type === 'portal') {
-          <input type="secret" id="secret" convoy-input formControlName="secret" placeholder="Enter endpoint secret here" />
-        }
-      </convoy-input-field>
-
+      <!-- Content type -->
       @if (showConfig('content_type')) {
-        <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-          <div class="flex justify-between items-center mb-16px">
-            <label for="content_type" convoy-label>
-              Content Type
-              <convoy-tooltip
-                class="ml-4px"
-                size="sm"
-                tooltipContent="The content type for webhook delivery. JSON sends data as application/json, Form Data sends as application/x-www-form-urlencoded."
-                position="top-right"
-              ></convoy-tooltip>
-            </label>
-            <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('content_type', true)">
-              <svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
-            </button>
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <div class="flex items-start justify-between gap-16px mb-20px">
+            <div class="flex flex-col gap-2px">
+              <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Content type</h3>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">The content type Convoy uses to deliver payloads.</p>
+            </div>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('content_type', true)">Remove setting</button>
           </div>
-          <convoy-input-field>
-            <convoy-select
-              [options]="contentTypeOptions"
-              name="content_type"
-              formControlName="content_type"
-              placeholder="Select content type"
-              label=""
-              [required]="true"
-              (selectedOption)="onContentTypeSelected($event)"
-            ></convoy-select>
+          <div class="max-w-[420px] flex flex-col gap-8px">
+            <label for="content_type" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Content type *</label>
+            <div class="relative">
+              <select
+                id="content_type"
+                formControlName="content_type"
+                class="h-40px w-full pl-12px pr-36px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary outline-none focus:border-new.primary-400 transition-colors appearance-none"
+                >
+                @for (option of contentTypeOptions; track option.uid) {
+                  <option [value]="option.uid">{{ option.name }}</option>
+                }
+              </select>
+              <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px absolute right-12px top-1/2 -translate-y-1/2 pointer-events-none" alt="" />
+            </div>
             @if (addNewEndpointForm.get('content_type')?.touched && addNewEndpointForm.get('content_type')?.invalid) {
-              <convoy-input-error>Please select a content type</convoy-input-error>
+              <span class="font-body text-[12px] text-new.error-500">Please select a content type</span>
             }
-          </convoy-input-field>
+          </div>
         </div>
       }
 
+      <!-- Timeout -->
+      @if (showConfig('http_timeout')) {
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <div class="flex items-start justify-between gap-16px mb-20px">
+            <div class="flex flex-col gap-2px">
+              <div class="flex items-center gap-8px">
+                <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Timeout</h3>
+                @if (!licenseService.hasLicense('AdvancedEndpointMgmt')) {
+                  <div convoy-tag size="sm" color="primary">
+                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                      <use xlink:href="#lock-icon"></use>
+                    </svg>
+                    Business
+                  </div>
+                }
+              </div>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">How long Convoy waits for a response before timing out.</p>
+            </div>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('http_timeout', true)">Remove setting</button>
+          </div>
+          <div class="max-w-[420px] flex flex-col gap-8px">
+            <label for="http_timeout" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Timeout value</label>
+            <div class="relative">
+              <input
+                id="http_timeout"
+                type="number"
+                autocomplete="off"
+                formControlName="http_timeout"
+                placeholder="e.g 60"
+                [readonly]="!licenseService.hasLicense('AdvancedEndpointMgmt')"
+                class="h-40px w-full pl-12px pr-44px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors read-only:bg-new.surface-muted"
+                />
+              <span class="absolute right-12px top-1/2 -translate-y-1/2 font-body text-[13px] text-new.text-placeholder">sec</span>
+            </div>
+            @if (addNewEndpointForm.get('http_timeout')?.touched && addNewEndpointForm.get('http_timeout')?.invalid) {
+              <span class="font-body text-[12px] text-new.error-500">Timeout value must be a whole number</span>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Owner ID -->
       @if (showConfig('owner_id')) {
-        <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-          <div class="flex justify-between items-center mb-16px">
-            <label for="owner_id" convoy-label>
-              Owner ID
-              <convoy-tooltip
-                class="ml-4px"
-                size="sm"
-                tooltipContent="A unique id for identifying a group of endpoints, like a user id. Useful for fanning out an event to multiple endpoints and creating portal link for multiple endpoints."
-                position="top-right"
-              ></convoy-tooltip>
-            </label>
-            <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('owner_id', true)">
-              <svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
-            </button>
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <div class="flex items-start justify-between gap-16px mb-20px">
+            <div class="flex flex-col gap-2px">
+              <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Owner ID</h3>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Group multiple endpoints under a single owner, useful for fan-out and portal links.</p>
+            </div>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('owner_id', true)">Remove setting</button>
           </div>
-          <convoy-input-field>
-            <input type="text" id="owner_id" convoy-input autocomplete="owner_id" formControlName="owner_id" placeholder="Enter owner id here" />
-          </convoy-input-field>
+          <div class="max-w-[420px] flex flex-col gap-8px">
+            <label for="owner_id" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Owner ID</label>
+            <input
+              type="text"
+              id="owner_id"
+              autocomplete="off"
+              formControlName="owner_id"
+              placeholder="Enter owner ID"
+              class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+              />
+          </div>
         </div>
       }
 
+      <!-- Rate limits -->
       @if (showConfig('rate_limit')) {
-        <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-          <div class="flex justify-between items-center mb-16px">
-            <p class="text-12 text-neutral-11 font-medium flex items-center">Rate Limit</p>
-            <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('rate_limit', true)">
-              <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
-            </button>
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <div class="flex items-start justify-between gap-16px mb-20px">
+            <div class="flex flex-col gap-2px">
+              <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Rate limits</h3>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Cap deliveries to this endpoint over a time window.</p>
+            </div>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('rate_limit', true)">Remove setting</button>
           </div>
-          <div class="grid grid-cols-2 gap-24px">
-            <convoy-input-field className="mb-0">
-              <label for="rate-limit-duration" convoy-label>Duration</label>
+          <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
+            <div class="flex flex-col gap-8px">
+              <label for="rate-limit-duration" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Duration</label>
               <div class="relative">
-                <input type="number" id="rate-limit-duration" convoy-input autocomplete="rate-limit-duration" formControlName="rate_limit_duration" placeholder="e.g 50" />
-                <div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">sec</div>
+                <input
+                  type="number"
+                  id="rate-limit-duration"
+                  autocomplete="off"
+                  formControlName="rate_limit_duration"
+                  placeholder="e.g 50"
+                  class="h-40px w-full pl-12px pr-44px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+                  />
+                <span class="absolute right-12px top-1/2 -translate-y-1/2 font-body text-[13px] text-new.text-placeholder">sec</span>
               </div>
               @if (addNewEndpointForm.get('rate_limit_duration')?.touched && addNewEndpointForm.get('rate_limit_duration')?.invalid) {
-                <convoy-input-error>Please enter a rate limit duration</convoy-input-error>
+                <span class="font-body text-[12px] text-new.error-500">Please enter a rate limit duration</span>
               }
-            </convoy-input-field>
-            <convoy-input-field className="mb-0">
-              <label for="rate-limit-count" convoy-label>Limit</label>
-              <input type="number" id="rate-limit-count" convoy-input autocomplete="rate-limit-count" formControlName="rate_limit" placeholder="e.g 10" />
+            </div>
+            <div class="flex flex-col gap-8px">
+              <label for="rate-limit-count" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Limit</label>
+              <input
+                type="number"
+                id="rate-limit-count"
+                autocomplete="off"
+                formControlName="rate_limit"
+                placeholder="e.g 10"
+                class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+                />
               @if (addNewEndpointForm.get('rate_limit')?.touched && addNewEndpointForm.get('rate_limit')?.invalid) {
-                <convoy-input-error>Please enter a rate limit</convoy-input-error>
+                <span class="font-body text-[12px] text-new.error-500">Please enter a rate limit</span>
               }
-            </convoy-input-field>
+            </div>
           </div>
         </div>
       }
 
-      @if (showConfig('alert_config')) {
-        <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-          <div class="flex justify-between items-center mb-16px">
-            <div class="flex items-center gap-12px">
-              <p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
-              @if (!licenseService.hasLicense('AdvancedEndpointMgmt')) {
-                <div convoy-tag size="sm" color="primary">
-                  <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                    <use xlink:href="#lock-icon"></use>
-                  </svg>
-                  Business
-                </div>
-              }
-            </div>
-            <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('alert_config', true)">
-              <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
-            </button>
-          </div>
-          @if (licenseService.hasLicense('AdvancedEndpointMgmt')) {
-            <div class="grid grid-cols-2 gap-24px">
-              <convoy-input-field className="mb-0">
-                <label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
-                <input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
-                @if (addNewEndpointForm.get('support_email')?.touched && addNewEndpointForm.get('support_email')?.invalid) {
-                  <convoy-input-error>Email is invalid</convoy-input-error>
-                }
-              </convoy-input-field>
-              <convoy-input-field className="mb-0">
-                <label for="slack-url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
-                <input id="slack-url" convoy-input autocomplete="slack-url" formControlName="slack_webhook_url" placeholder="Enter slack webhook URL" />
-                @if (addNewEndpointForm.get('slack_webhook_url')?.touched && addNewEndpointForm.get('slack_webhook_url')?.invalid) {
-                  <convoy-input-error>URL is invalid</convoy-input-error>
-                }
-              </convoy-input-field>
-            </div>
-          }
-        </div>
-      }
-
+      <!-- Authentication -->
       @if (showConfig('auth')) {
-        <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-          <div class="flex justify-between items-center mb-16px">
-            <p class="flex items-center text-12 font-medium text-neutral-11">
-              Endpoint Authentication
-              <convoy-tooltip size="sm" position="top-right" class="ml-4px">You can set your provided endpoint authentication if any is required</convoy-tooltip>
-            </p>
-            <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('auth', true)">
-              <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
-            </button>
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <div class="flex items-start justify-between gap-16px mb-20px">
+            <div class="flex flex-col gap-2px">
+              <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Authentication</h3>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Add credentials sent with each delivery.</p>
+            </div>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('auth', true)">Remove setting</button>
           </div>
+
           <ng-container formGroupName="authentication">
-            <!-- Authentication Type Selection -->
-            <convoy-input-field className="mb-24px">
-              <label for="auth_type" convoy-label>Authentication Type</label>
-              <div class="flex items-center gap-12px">
-                <div class="flex-1">
-                  <convoy-select
-										[options]="privateService.getProjectDetails?.type === 'incoming'
-											? [{ uid: 'api_key', name: 'API Key' }]
-											: [
-												{ uid: 'api_key', name: 'API Key' },
-												{ uid: 'basic_auth', name: 'Basic Auth' },
-												{ uid: 'oauth2', name: 'OAuth2' }
-											]"
-                    name="auth_type"
-                    formControlName="type"
-                    placeholder="Select authentication type"
-                    label=""
-                    [required]="true"
-                    (selectedOption)="onAuthTypeChange($event)"
-                  ></convoy-select>
-                </div>
-                @if (selectedAuthType == 'basic_auth' && !licenseService.hasLicense('BasicAuthEndpointAuth')) {
-                  <div convoy-tag size="sm" color="primary">
-                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                      <use xlink:href="#lock-icon"></use>
-                    </svg>
-                    Business
-                  </div>
+            <!-- Auth type selection cards -->
+            <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1 mb-20px">
+              <button
+                type="button"
+                class="flex items-start gap-8px p-16px rounded-12px text-left bg-white-100 transition-all"
+                [class]="authChoice === 'api_key' ? 'border border-new.primary-400 ring-1 ring-new.primary-400' : 'border border-new.border'"
+                [disabled]="addNewEndpointForm.disabled"
+                (click)="selectAuthChoice('api_key')"
+                >
+                <span class="flex-1 flex flex-col gap-4px">
+                  <span class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">API key</span>
+                  <span class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Send a named header with each request.</span>
+                </span>
+                @if (authChoice === 'api_key') {
+                  <span class="w-22px h-22px shrink-0 rounded-full bg-new.primary-400 flex items-center justify-center">
+                    <img src="/assets/img/svg/check-white.svg" class="w-14px h-14px" alt="" />
+                  </span>
+                } @else {
+                  <span class="w-22px h-22px shrink-0 rounded-full border border-new.border"></span>
                 }
-                @if (selectedAuthType === 'oauth2' && !licenseService.hasLicense('OAuth2EndpointAuth')) {
-                  <div convoy-tag size="sm" color="primary">
-                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                      <use xlink:href="#lock-icon"></use>
-                    </svg>
-                    Business
-                  </div>
+              </button>
+
+              <button
+                type="button"
+                class="flex items-start gap-8px p-16px rounded-12px text-left bg-white-100 transition-all"
+                [class]="authChoice === 'none' ? 'border border-new.primary-400 ring-1 ring-new.primary-400' : 'border border-new.border'"
+                [disabled]="addNewEndpointForm.disabled"
+                (click)="selectAuthChoice('none')"
+                >
+                <span class="flex-1 flex flex-col gap-4px">
+                  <span class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">No authentication</span>
+                  <span class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Send requests without credentials.</span>
+                </span>
+                @if (authChoice === 'none') {
+                  <span class="w-22px h-22px shrink-0 rounded-full bg-new.primary-400 flex items-center justify-center">
+                    <img src="/assets/img/svg/check-white.svg" class="w-14px h-14px" alt="" />
+                  </span>
+                } @else {
+                  <span class="w-22px h-22px shrink-0 rounded-full border border-new.border"></span>
                 }
-              </div>
-            </convoy-input-field>
+              </button>
+
+              @if (privateService.getProjectDetails?.type !== 'incoming') {
+                <button
+                  type="button"
+                  class="flex items-start gap-8px p-16px rounded-12px text-left bg-white-100 transition-all"
+                  [class]="authChoice === 'basic_auth' ? 'border border-new.primary-400 ring-1 ring-new.primary-400' : 'border border-new.border'"
+                  [disabled]="addNewEndpointForm.disabled"
+                  (click)="selectAuthChoice('basic_auth')"
+                  >
+                  <span class="flex-1 flex flex-col gap-4px">
+                    <span class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary flex items-center gap-8px">
+                      Basic auth
+                      @if (!licenseService.hasLicense('BasicAuthEndpointAuth')) {
+                        <div convoy-tag size="sm" color="primary">
+                          <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                            <use xlink:href="#lock-icon"></use>
+                          </svg>
+                          Business
+                        </div>
+                      }
+                    </span>
+                    <span class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Send a username and password with each request.</span>
+                  </span>
+                  @if (authChoice === 'basic_auth') {
+                    <span class="w-22px h-22px shrink-0 rounded-full bg-new.primary-400 flex items-center justify-center">
+                      <img src="/assets/img/svg/check-white.svg" class="w-14px h-14px" alt="" />
+                    </span>
+                  } @else {
+                    <span class="w-22px h-22px shrink-0 rounded-full border border-new.border"></span>
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  class="flex items-start gap-8px p-16px rounded-12px text-left bg-white-100 transition-all"
+                  [class]="authChoice === 'oauth2' ? 'border border-new.primary-400 ring-1 ring-new.primary-400' : 'border border-new.border'"
+                  [disabled]="addNewEndpointForm.disabled"
+                  (click)="selectAuthChoice('oauth2')"
+                  >
+                  <span class="flex-1 flex flex-col gap-4px">
+                    <span class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary flex items-center gap-8px">
+                      OAuth2
+                      @if (!licenseService.hasLicense('OAuth2EndpointAuth')) {
+                        <div convoy-tag size="sm" color="primary">
+                          <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                            <use xlink:href="#lock-icon"></use>
+                          </svg>
+                          Business
+                        </div>
+                      }
+                    </span>
+                    <span class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Fetch access tokens from your OAuth2 provider.</span>
+                  </span>
+                  @if (authChoice === 'oauth2') {
+                    <span class="w-22px h-22px shrink-0 rounded-full bg-new.primary-400 flex items-center justify-center">
+                      <img src="/assets/img/svg/check-white.svg" class="w-14px h-14px" alt="" />
+                    </span>
+                  } @else {
+                    <span class="w-22px h-22px shrink-0 rounded-full border border-new.border"></span>
+                  }
+                </button>
+              }
+            </div>
+
             <!-- API Key Authentication -->
-            @if (selectedAuthType === 'api_key') {
+            @if (authChoice === 'api_key') {
               <ng-container formGroupName="api_key">
-                <div class="grid grid-cols-2 gap-24px">
-                  <convoy-input-field className="mb-0">
-                    <label for="header_name" convoy-label>API Key Name</label>
-                    <input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
+                <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
+                  <div class="flex flex-col gap-8px">
+                    <label for="header_name" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">API key name *</label>
+                    <input
+                      id="header_name"
+                      autocomplete="off"
+                      formControlName="header_name"
+                      placeholder="X-API-Key"
+                      class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+                      />
                     @if (addNewEndpointForm.get('authentication.api_key.header_name')?.touched && addNewEndpointForm.get('authentication.api_key.header_name')?.invalid) {
-                      <convoy-input-error>Endpoint auth API key is required</convoy-input-error>
+                      <span class="font-body text-[12px] text-new.error-500">Endpoint auth API key is required</span>
                     }
-                  </convoy-input-field>
-                  <convoy-input-field className="mb-0">
-                    <label for="header_value" convoy-label>API Key Value</label>
-                    <input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
+                  </div>
+                  <div class="flex flex-col gap-8px">
+                    <label for="header_value" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">API key value *</label>
+                    <input
+                      id="header_value"
+                      autocomplete="off"
+                      formControlName="header_value"
+                      placeholder="Enter value"
+                      class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+                      />
                     @if (addNewEndpointForm.get('authentication.api_key.header_value')?.touched && addNewEndpointForm.get('authentication.api_key.header_value')?.invalid) {
-                      <convoy-input-error>Endpoint auth API key value is required</convoy-input-error>
+                      <span class="font-body text-[12px] text-new.error-500">Endpoint auth API key value is required</span>
                     }
-                  </convoy-input-field>
+                  </div>
                 </div>
               </ng-container>
             }
+
             <!-- Basic Auth Authentication -->
-            @if (selectedAuthType === 'basic_auth') {
+            @if (authChoice === 'basic_auth') {
               @if (!licenseService.hasLicense('BasicAuthEndpointAuth')) {
-                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
                       <use xlink:href="#lock-icon"></use>
@@ -255,7 +374,7 @@
                 </div>
               }
               @if (licenseService.hasLicense('BasicAuthEndpointAuth') && !basicAuthFeatureEnabled) {
-                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
                       <use xlink:href="#lock-icon"></use>
@@ -266,24 +385,38 @@
                 </div>
               }
             }
-            @if (selectedAuthType === 'basic_auth' && licenseService.hasLicense('BasicAuthEndpointAuth') && basicAuthFeatureEnabled) {
+            @if (authChoice === 'basic_auth' && licenseService.hasLicense('BasicAuthEndpointAuth') && basicAuthFeatureEnabled) {
               <ng-container formGroupName="basic_auth">
-                <div class="grid grid-cols-2 gap-24px">
-                  <convoy-input-field className="mb-0">
-                    <label for="basic_auth_username" convoy-label>Username</label>
-                    <input id="basic_auth_username" convoy-input autocomplete="username" formControlName="username" placeholder="Username" />
-                  </convoy-input-field>
-                  <convoy-input-field className="mb-0">
-                    <label for="basic_auth_password" convoy-label>Password</label>
-                    <input type="password" id="basic_auth_password" convoy-input autocomplete="current-password" formControlName="password" placeholder="Password" />
-                  </convoy-input-field>
+                <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
+                  <div class="flex flex-col gap-8px">
+                    <label for="basic_auth_username" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Username</label>
+                    <input
+                      id="basic_auth_username"
+                      autocomplete="username"
+                      formControlName="username"
+                      placeholder="Username"
+                      class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+                      />
+                  </div>
+                  <div class="flex flex-col gap-8px">
+                    <label for="basic_auth_password" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Password</label>
+                    <input
+                      type="password"
+                      id="basic_auth_password"
+                      autocomplete="current-password"
+                      formControlName="password"
+                      placeholder="Password"
+                      class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+                      />
+                  </div>
                 </div>
               </ng-container>
             }
+
             <!-- OAuth2 Authentication -->
-            @if (selectedAuthType === 'oauth2') {
+            @if (authChoice === 'oauth2') {
               @if (!licenseService.hasLicense('OAuth2EndpointAuth')) {
-                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
                       <use xlink:href="#lock-icon"></use>
@@ -297,7 +430,7 @@
                 </div>
               }
               @if (licenseService.hasLicense('OAuth2EndpointAuth') && !oauth2FeatureEnabled) {
-                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
                       <use xlink:href="#lock-icon"></use>
@@ -308,7 +441,7 @@
                 </div>
               }
             }
-            @if (selectedAuthType === 'oauth2' && licenseService.hasLicense('OAuth2EndpointAuth') && oauth2FeatureEnabled) {
+            @if (authChoice === 'oauth2' && licenseService.hasLicense('OAuth2EndpointAuth') && oauth2FeatureEnabled) {
               <ng-container formGroupName="oauth2">
                 <div class="grid grid-cols-1 gap-24px mb-24px">
                   <convoy-input-field>
@@ -694,131 +827,209 @@
         </div>
       }
 
+      <!-- Notifications -->
+      @if (showConfig('alert_config')) {
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <div class="flex items-start justify-between gap-16px mb-20px">
+            <div class="flex flex-col gap-2px">
+              <div class="flex items-center gap-8px">
+                <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Notifications</h3>
+                @if (!licenseService.hasLicense('AdvancedEndpointMgmt')) {
+                  <div convoy-tag size="sm" color="primary">
+                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                      <use xlink:href="#lock-icon"></use>
+                    </svg>
+                    Business
+                  </div>
+                }
+              </div>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Get notified when deliveries to this endpoint fail.</p>
+            </div>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('alert_config', true)">Remove setting</button>
+          </div>
+          @if (licenseService.hasLicense('AdvancedEndpointMgmt')) {
+            <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
+              <div class="flex flex-col gap-8px">
+                <label for="support-email" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary" title="We use this to send an email notification when a failure happens">Support email</label>
+                <input
+                  id="support-email"
+                  autocomplete="off"
+                  formControlName="support_email"
+                  placeholder="Enter support email"
+                  class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+                  />
+                @if (addNewEndpointForm.get('support_email')?.touched && addNewEndpointForm.get('support_email')?.invalid) {
+                  <span class="font-body text-[12px] text-new.error-500">Email is invalid</span>
+                }
+              </div>
+              <div class="flex flex-col gap-8px">
+                <label for="slack-url" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary" title="We use this to send notifications to your slack channel when a failure happens">Slack webhook URL</label>
+                <input
+                  id="slack-url"
+                  autocomplete="off"
+                  formControlName="slack_webhook_url"
+                  placeholder="Enter slack webhook URL"
+                  class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+                  />
+                @if (addNewEndpointForm.get('slack_webhook_url')?.touched && addNewEndpointForm.get('slack_webhook_url')?.invalid) {
+                  <span class="font-body text-[12px] text-new.error-500">URL is invalid</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Signature formats -->
       @if (showConfig('signature')) {
-        <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-          <div class="flex justify-between items-center mb-16px">
-            <p class="text-12 font-medium text-neutral-11 flex items-center">
-              Signature Format
-              <convoy-tooltip size="sm" position="top-right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
-            </p>
-            <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('signature', true)">
-              <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
-            </button>
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <div class="flex items-start justify-between gap-16px mb-20px">
+            <div class="flex flex-col gap-2px">
+              <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Signature formats</h3>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">The format used to sign payloads sent to this endpoint.</p>
+            </div>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('signature', true)">Remove setting</button>
           </div>
-          <div class="grid grid-cols-2 gap-6 mb-50px">
-            <convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
-            <convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
-          </div>
-        </div>
-      }
-
-      @if (showConfig('http_timeout')) {
-        <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-          <div class="flex justify-between items-center mb-16px">
-            <div class="flex items-center gap-8px">
-              <p class="flex items-center text-12 font-medium text-neutral-11">
-                Endpoint Timeout
-                <convoy-tooltip size="sm" position="top-right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
-              </p>
-              @if (!licenseService.hasLicense('AdvancedEndpointMgmt')) {
-                <div convoy-tag size="sm" color="primary">
-                  <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                    <use xlink:href="#lock-icon"></use>
-                  </svg>
-                  Business
-                </div>
+          <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
+            <button
+              type="button"
+              class="flex items-start gap-8px p-16px rounded-12px text-left bg-white-100 transition-all"
+              [class]="addNewEndpointForm.get('advanced_signatures')?.value === false ? 'border border-new.primary-400 ring-1 ring-new.primary-400' : 'border border-new.border'"
+              [disabled]="addNewEndpointForm.disabled"
+              (click)="addNewEndpointForm.get('advanced_signatures')?.setValue(false)"
+              >
+              <span class="flex-1 flex flex-col gap-4px">
+                <span class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">Simple</span>
+                <span class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">A single signature header per payload.</span>
+              </span>
+              @if (addNewEndpointForm.get('advanced_signatures')?.value === false) {
+                <span class="w-22px h-22px shrink-0 rounded-full bg-new.primary-400 flex items-center justify-center">
+                  <img src="/assets/img/svg/check-white.svg" class="w-14px h-14px" alt="" />
+                </span>
+              } @else {
+                <span class="w-22px h-22px shrink-0 rounded-full border border-new.border"></span>
               }
-            </div>
-            <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('http_timeout', true)">
-              <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
+            </button>
+            <button
+              type="button"
+              class="flex items-start gap-8px p-16px rounded-12px text-left bg-white-100 transition-all"
+              [class]="addNewEndpointForm.get('advanced_signatures')?.value === true ? 'border border-new.primary-400 ring-1 ring-new.primary-400' : 'border border-new.border'"
+              [disabled]="addNewEndpointForm.disabled"
+              (click)="addNewEndpointForm.get('advanced_signatures')?.setValue(true)"
+              >
+              <span class="flex-1 flex flex-col gap-4px">
+                <span class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">Advanced</span>
+                <span class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Versioned signatures with support for key rotation.</span>
+              </span>
+              @if (addNewEndpointForm.get('advanced_signatures')?.value === true) {
+                <span class="w-22px h-22px shrink-0 rounded-full bg-new.primary-400 flex items-center justify-center">
+                  <img src="/assets/img/svg/check-white.svg" class="w-14px h-14px" alt="" />
+                </span>
+              } @else {
+                <span class="w-22px h-22px shrink-0 rounded-full border border-new.border"></span>
+              }
             </button>
           </div>
-          <convoy-input-field>
-            <label for="http_timeout" convoy-label>Timeout Value</label>
-            <div class="relative">
-              <input id="http_timeout" type="number" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" [readonly]="!licenseService.hasLicense('AdvancedEndpointMgmt')" />
-              <div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">sec</div>
-            </div>
-            @if (addNewEndpointForm.get('http_timeout')?.touched && addNewEndpointForm.get('http_timeout')?.invalid) {
-              <convoy-input-error>Timeout value must be a whole number</convoy-input-error>
-            }
-          </convoy-input-field>
         </div>
       }
 
+      <!-- mTLS client certificate -->
       @if (showConfig('mtls') && mtlsFeatureEnabled) {
-        <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-          <div class="flex justify-between items-center mb-16px">
-            <div class="flex items-center gap-12px">
-              <p class="flex items-center text-12 font-medium text-neutral-11">
-                mTLS Client Certificate
-                <convoy-tooltip size="sm" position="top-right" class="ml-4px">Configure client certificate and private key for mutual TLS authentication. Provide PEM-encoded certificate and key strings.</convoy-tooltip>
-              </p>
-              @if (!licenseService.hasLicense('MutualTLS')) {
-                <div convoy-tag size="sm" color="primary">
-                  <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                    <use xlink:href="#lock-icon"></use>
-                  </svg>
-                  Business
-                </div>
-              }
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <div class="flex items-start justify-between gap-16px mb-20px">
+            <div class="flex flex-col gap-2px">
+              <div class="flex items-center gap-8px">
+                <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">mTLS client certificate</h3>
+                @if (!licenseService.hasLicense('MutualTLS')) {
+                  <div convoy-tag size="sm" color="primary">
+                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                      <use xlink:href="#lock-icon"></use>
+                    </svg>
+                    Business
+                  </div>
+                }
+              </div>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">PEM-encoded client certificate and private key for mutual TLS.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('mtls', true)">
-              <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                <use xlink:href="#delete-icon2"></use>
-              </svg>
-            </button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('mtls', true)">Remove setting</button>
           </div>
           @if (licenseService.hasLicense('MutualTLS')) {
             <ng-container formGroupName="mtls_client_cert">
-              <div class="grid grid-cols-1 gap-24px">
-                <convoy-input-field className="mb-0">
-                  <label for="client_cert" convoy-label>Client Certificate (PEM)</label>
-                  <textarea id="client_cert" convoy-input autocomplete="client_cert" formControlName="client_cert" placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----" rows="6"></textarea>
+              <div class="grid grid-cols-1 gap-16px">
+                <div class="flex flex-col gap-8px">
+                  <label for="client_cert" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Client certificate (PEM)</label>
+                  <textarea
+                    id="client_cert"
+                    autocomplete="off"
+                    formControlName="client_cert"
+                    placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
+                    rows="6"
+                    class="w-full px-12px py-10px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-menlo text-[12px] text-new.text-primary placeholder:text-new.text-placeholder placeholder:font-body outline-none focus:border-new.primary-400 transition-colors"
+                  ></textarea>
                   @if (addNewEndpointForm.get('mtls_client_cert.client_cert')?.touched && addNewEndpointForm.get('mtls_client_cert.client_cert')?.invalid) {
-                    <convoy-input-error>
+                    <span class="font-body text-[12px] text-new.error-500">
                       @if (addNewEndpointForm.get('mtls_client_cert.client_cert')?.hasError('pattern')) {
-                        <span>Certificate must be in valid PEM format (-----BEGIN CERTIFICATE-----)</span>
+                        Certificate must be in valid PEM format (-----BEGIN CERTIFICATE-----)
                       }
                       @if (addNewEndpointForm.get('mtls_client_cert.client_cert')?.hasError('required')) {
-                        <span>Certificate is required when using mTLS</span>
+                        Certificate is required when using mTLS
                       }
-                    </convoy-input-error>
+                    </span>
                   }
-                </convoy-input-field>
-                <convoy-input-field className="mb-0">
-                  <label for="client_key" convoy-label>Client Private Key (PEM)</label>
-                  <textarea id="client_key" convoy-input autocomplete="client_key" formControlName="client_key" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----" rows="6"></textarea>
+                </div>
+                <div class="flex flex-col gap-8px">
+                  <label for="client_key" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Client private key (PEM)</label>
+                  <textarea
+                    id="client_key"
+                    autocomplete="off"
+                    formControlName="client_key"
+                    placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"
+                    rows="6"
+                    class="w-full px-12px py-10px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-menlo text-[12px] text-new.text-primary placeholder:text-new.text-placeholder placeholder:font-body outline-none focus:border-new.primary-400 transition-colors"
+                  ></textarea>
                   @if (addNewEndpointForm.get('mtls_client_cert.client_key')?.touched && addNewEndpointForm.get('mtls_client_cert.client_key')?.invalid) {
-                    <convoy-input-error>
+                    <span class="font-body text-[12px] text-new.error-500">
                       @if (addNewEndpointForm.get('mtls_client_cert.client_key')?.hasError('pattern')) {
-                        <span>Private key must be in valid PEM format (-----BEGIN PRIVATE KEY-----)</span>
+                        Private key must be in valid PEM format (-----BEGIN PRIVATE KEY-----)
                       }
                       @if (addNewEndpointForm.get('mtls_client_cert.client_key')?.hasError('required')) {
-                        <span>Private key is required when using mTLS</span>
+                        Private key is required when using mTLS
                       }
-                    </convoy-input-error>
+                    </span>
                   }
-                </convoy-input-field>
+                </div>
               </div>
             </ng-container>
           }
         </div>
       }
 
-      <div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
-        @for (config of configurations; track $index; let i = $index) {
-          @if (!config.show) {
-            @if ((i < 5 || privateService.getProjectDetails?.type === 'outgoing') && (config.uid !== 'mtls' || mtlsFeatureEnabled)) {
-              <convoy-config-button convoy-permission="Endpoints|MANAGE" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
-            }
-          }
-        }
-      </div>
+      <!-- Additional settings -->
+      @if (addableConfigs.length) {
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Additional settings</h3>
+          <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px mb-20px">Add only the configuration this endpoint needs.</p>
+          <div convoy-dropdown size="md" position="left">
+            <button dropdownTrigger convoy-permission="Endpoints|MANAGE" type="button" class="px-14px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3">+ Add setting</button>
+            <ul dropdownOptions class="py-4px max-h-[340px] overflow-y-auto">
+              @for (config of addableConfigs; track config.uid) {
+                <li>
+                  @if (config.locked) {
+                    <div class="flex items-center justify-between gap-8px px-12px py-8px font-body text-[14px] text-new.text-placeholder whitespace-nowrap cursor-not-allowed">
+                      {{ config.name }}
+                      <svg width="12" height="12" class="fill-new.primary-400 shrink-0">
+                        <use xlink:href="#lock-icon"></use>
+                      </svg>
+                    </div>
+                  } @else {
+                    <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary whitespace-nowrap transition-colors hover:bg-new.surface-muted" (click)="toggleConfigForm(config.uid)">{{ config.name }}</button>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
     </form>
 
     <div class="empty:hidden">
@@ -830,8 +1041,15 @@
     }
   </div>
 
-  <div class="flex justify-end mt-40px mb-60px" [ngClass]="{ hidden: showAction === 'false' }">
-    <button convoy-button [disabled]="savingEndpoint || addNewEndpointForm.disabled" (click)="saveEndpoint()">{{ editMode || isUpdateAction ? 'Updat' : 'Creat' }}{{ savingEndpoint ? 'ing' : 'e' }} Endpoint{{ savingEndpoint ? '...' : '' }}</button>
+  <div class="flex justify-end mt-24px mb-60px" [ngClass]="{ hidden: showAction === 'false' }">
+    <button
+      type="button"
+      class="min-w-[140px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50"
+      [disabled]="savingEndpoint || addNewEndpointForm.disabled"
+      (click)="saveEndpoint()"
+      >
+      {{ editMode || isUpdateAction ? 'Updat' : 'Creat' }}{{ savingEndpoint ? 'ing' : 'e' }} Endpoint{{ savingEndpoint ? '...' : '' }}
+    </button>
   </div>
 </div>
 

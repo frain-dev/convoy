@@ -1,117 +1,152 @@
-<div class="max-w-[1300px] w-full mx-auto px-24px pb-100px pt-80px">
-  <h2 class="font-medium text-14 text-neutral-10 mb-24px">Subscriptions</h2>
-  <div class="flex justify-between items-center mb-12px">
-    <form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getSubscriptions({ name: subscriptionSearchString })">
-      <img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-      <input type="search" placeholder="Search subscriptions" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="subscriptionSearchString" [ngModelOptions]="{ standalone: true }" />
-      @if (subscriptionSearchString && subscriptionSearchString.length > 0) {
-        <button convoy-button class="transition-all duration-200" fill="text" (click)="getSubscriptions({ name: subscriptionSearchString })" size="sm">
-          <img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
-        </button>
-      }
-    </form>
+<div class="max-w-[1300px] w-full mx-auto px-24px pt-80px pb-100px">
+  <!-- Section header -->
+  <div class="flex items-start justify-between gap-16px pt-24px">
+    <div class="flex flex-col gap-4px">
+      <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Subscriptions</h2>
+      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Rules that route events to your endpoints</p>
+    </div>
     @if (portalDetails?.can_manage_endpoint && portalDetails?.owner_id) {
-      <button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="openSubsriptionForm('create')">
-        <img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
+      <button
+        type="button"
+        class="flex items-center gap-4px min-w-[100px] px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+        (click)="openSubsriptionForm('create')"
+        >
+        <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
         Add Subscription
       </button>
     }
   </div>
 
-  <ul convoy-card class="mb-40px">
+  <div class="h-[1px] w-full bg-new.border mt-16px"></div>
+
+  <!-- Table card -->
+  <div class="bg-white-100 border border-new.border rounded-12px mt-20px">
+    <!-- Search -->
+    <form class="flex items-center gap-8px px-12px h-40px border-b border-new.border" (ngSubmit)="getSubscriptions({ name: subscriptionSearchString })">
+      <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px" alt="search" />
+      <input
+        type="search"
+        placeholder="Search subscriptions"
+        [(ngModel)]="subscriptionSearchString"
+        [ngModelOptions]="{ standalone: true }"
+        class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+        />
+    </form>
+
     @if (isLoadingSubscriptions && subscriptions && !subscriptions.content.length) {
-      @for (i of [0, 1]; track $index) {
-        <li class="px-4 py-14px">
-          <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
-        </li>
-        @for (i of [0, 1, 2]; track $index) {
-          <li class="flex items-center gap-36px p-16px">
-            <div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
-            <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
-            <div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
-            <div class="bg-neutral-a3 rounded-8px animate-pulse w-320px h-20px"></div>
-            <div class="bg-neutral-a3 rounded-8px animate-pulse w-12px h-20px ml-auto"></div>
-          </li>
-        }
-      }
-    }
-    @for (subscriptionGroup of displayedSubscriptions; track $index; let i = $index) {
-      <li class="py-10px px-22px">
-        <div class="text-neutral-10 text-12">{{ subscriptionGroup.date }}</div>
-      </li>
-      @for (subscription of subscriptionGroup.content; track $index; let i = $index) {
-        <li class="flex justify-between py-12px px-22px hover:bg-new.primary-25 transition-all duration-300 last-of-type:mb-0 relative border-b border-new.primary-25">
-          <div class="flex text-14 text-neutral-10 gap-36px items-center min-h-[28px]">
-            <div class="flex items-center min-w-200px gap-10px">
-              <div class="max-w-150px w-full truncate">{{ subscription?.name }}</div>
-              <div convoy-tag size="sm" color="neutral">{{ subscription?.type }}</div>
-            </div>
-            <div class="whitespace-nowrap">{{ subscription?.endpoint_metadata?.name }}</div>
-            <div>
-              <div convoy-tag class="!gap-10px flex items-center">
-                <span class="max-w-250px w-full truncate">{{ subscription?.endpoint_metadata?.url || subscription?.endpoint_metadata?.target_url }}</span>
-                @if (subscription.endpoint_metadata) {
-                  <convoy-copy-button size="sm" [notificationText]="'Endpoint Url has been copied to clipboard'" [text]="subscription.endpoint_metadata.url || subscription.endpoint_metadata.target_url"></convoy-copy-button>
-                }
-              </div>
-            </div>
-          </div>
-          <div convoy-dropdown #subscriptionDropdown position="right" size="md" class="ml-4px">
-            <button dropdownTrigger convoy-button size="sm" fill="text" class="!p-0">
-              <img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
-            </button>
-            <ul dropdownOptions class="p-10px">
-              @if (portalDetails?.can_manage_endpoint) {
-                <li class="hover:bg-new.primary-25 transition-all duration-300 rounded-8px mb-4px">
-                  <button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="activeSubscription = subscription; openSubsriptionForm('update')">
-                    <svg width="16" height="16" class="mr-8px">
-                      <use xlink:href="#edit-icon"></use>
-                    </svg>
-                    Edit
-                  </button>
-                </li>
-              }
-              <li class="rounded-8px hover:bg-new.primary-25 duration-300 transition-all">
-                <button convoy-dropdown-option convoy-button size="sm" color="error" class="w-full !justify-start px-8px py-4px" fill="text" (click)="activeSubscription = subscription; deleteDialog.showModal()">
-                  <svg width="14" height="14" class="fill-transparent stroke-error-9 mr-8px">
-                    <use xlink:href="#delete-icon2"></use>
-                  </svg>
-                  Delete
-                </button>
-              </li>
-            </ul>
-          </div>
-        </li>
-      }
-    }
-
-    @if (!isLoadingSubscriptions && subscriptions?.content?.length === 0) {
-      <div class="flex justify-center items-center p-40px flex-col">
-        <img src="/assets/img/empty-state.svg" alt="empty state image" />
-        <p class="mt-16px text-12 text-neutral-11">You don't have any endpoints yet</p>
+      <!-- Loading state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-loading.svg" class="w-48px h-48px animate-spin" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Loading subscriptions</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Fetching your subscriptions. This usually takes a moment.</p>
+        </div>
       </div>
-    }
-  </ul>
+    } @else if (!isLoadingSubscriptions && subscriptions?.content?.length === 0) {
+      <!-- Empty state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-empty.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No subscriptions yet</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Subscriptions define which events get delivered to your endpoints.</p>
+        </div>
+      </div>
+    } @else if (subscriptions?.content?.length) {
+      <!-- Header row -->
+      <div class="grid w-full grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,2.4fr)_56px] bg-new.surface-subtle border-b border-new.border">
+        <div class="flex items-center px-20px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Subscription</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Endpoint</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">URL</span>
+        </div>
+        <div class="h-36px"></div>
+      </div>
 
-  <!-- Pagination -->
-  @if (subscriptions?.pagination?.has_next_page || subscriptions?.pagination?.has_prev_page) {
-    <convoy-pagination [pagination]="subscriptions?.pagination" (paginate)="getSubscriptions($event)"></convoy-pagination>
-  }
+      <!-- Rows -->
+      @for (subscription of subscriptions?.content; track subscription.uid) {
+        <div class="grid w-full grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,2.4fr)_56px] items-center border-b border-new.border last:border-b-0 transition-colors hover:bg-new.surface-subtle group">
+          <!-- Name + type -->
+          <div class="flex items-center gap-8px px-20px h-40px min-w-0">
+            <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-primary truncate">{{ subscription?.name }}</span>
+            <span class="inline-flex items-center h-20px px-4px rounded-4px bg-new.surface-muted font-body font-medium text-[12px] leading-[14px] text-new.text-primary capitalize shrink-0">{{ subscription?.type }}</span>
+          </div>
+
+          <!-- Endpoint name -->
+          <div class="flex items-center px-12px h-40px min-w-0">
+            <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary truncate">{{ subscription?.endpoint_metadata?.name }}</span>
+          </div>
+
+          <!-- Endpoint URL + copy -->
+          <div class="flex items-center gap-8px px-12px h-40px min-w-0">
+            <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary truncate">{{ subscription?.endpoint_metadata?.url || subscription?.endpoint_metadata?.target_url }}</span>
+            @if (subscription.endpoint_metadata) {
+              <convoy-copy-button size="sm" className="opacity-0 group-hover:opacity-100 transition-all" [notificationText]="'Endpoint URL has been copied to clipboard'" [text]="subscription.endpoint_metadata.url || subscription.endpoint_metadata.target_url"></convoy-copy-button>
+            }
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end px-12px h-40px">
+            <div convoy-dropdown #subscriptionDropdown position="right" size="md">
+              <button dropdownTrigger type="button" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted">
+                <img src="assets/img/more-icon-vertical.svg" class="h-16px" alt="more actions" />
+              </button>
+              <ul dropdownOptions class="py-4px">
+                @if (portalDetails?.can_manage_endpoint) {
+                  <li>
+                    <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="activeSubscription = subscription; openSubsriptionForm('update')">Edit</button>
+                  </li>
+                }
+                <li>
+                  <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.error-500 transition-colors hover:bg-new.surface-muted" (click)="activeSubscription = subscription; deleteDialog.showModal()">Delete</button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Pagination footer -->
+      @if (subscriptions?.pagination?.has_next_page || subscriptions?.pagination?.has_prev_page) {
+        <div class="flex items-center justify-end gap-8px px-20px h-56px bg-white-100">
+          <button
+            type="button"
+            class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none"
+            [disabled]="!subscriptions?.pagination?.has_prev_page"
+            (click)="getSubscriptions({ prev_page_cursor: subscriptions?.pagination?.prev_page_cursor || '', next_page_cursor: '', direction: 'prev' })"
+            >
+            <img src="/assets/img/svg/chevron-left-small.svg" class="w-16px h-16px" alt="previous page" />
+          </button>
+          <button
+            type="button"
+            class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none"
+            [disabled]="!subscriptions?.pagination?.has_next_page"
+            (click)="getSubscriptions({ next_page_cursor: subscriptions?.pagination?.next_page_cursor || '', prev_page_cursor: '', direction: 'next' })"
+            >
+            <img src="/assets/img/svg/chevron-right-small.svg" class="w-16px h-16px" alt="next page" />
+          </button>
+        </div>
+      }
+    }
+  </div>
 </div>
 
-<dialog #deleteDialog convoy-dialog position="center" size="sm">
+<dialog #deleteDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
   <app-delete-modal [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteSubscripton()"></app-delete-modal>
 </dialog>
 
 @if (showSubscriptionForm || currentRoute === 'new' || (currentRoute !== 'subscriptions' && currentRoute !== 'new')) {
-  <div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20 pb-100px overflow-auto">
-    <div class="max-w-[900px] w-full mx-auto pt-40px">
-      <button convoy-button fill="text" class="!p-0 font-medium capitalize text-12" (click)="goBack(true)">
-        <div class="block p-2px rounded-100px border border-new.primary-50 mr-8px">
-          <svg width="24" height="24" class="fill-neutral-10 scale-75">
+  <div class="fixed top-0 left-0 right-0 bottom-0 bg-new.surface-page z-20 pb-100px overflow-auto">
+    <div class="max-w-[900px] w-full mx-auto pt-40px px-24px">
+      <button type="button" class="flex items-center gap-8px font-body font-medium text-[14px] text-new.text-primary" (click)="goBack(true)">
+        <span class="w-28px h-28px flex items-center justify-center rounded-full bg-white-100 border border-new.border">
+          <svg width="24" height="24" class="fill-new.text-primary scale-[0.6]">
             <use xlink:href="#arrow-left-icon"></use>
           </svg>
-        </div>
+        </span>
         Back
       </button>
       <convoy-create-portal-endpoint

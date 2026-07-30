@@ -1,53 +1,32 @@
 <div class="bg-white-100 min-h-screen overflow-y-auto flex flex-col justify-between">
-  <header class="w-full border-b border-b-neutral-a3 bg-neutral-2 fixed z-[50]">
-    <div class="flex items-center justify-between w-full max-w-[1440px] m-auto px-24px py-12px">
-      <div class="flex items-center">
+  <header class="w-full border-b border-new.border bg-white-100 fixed z-[50]">
+    <div class="flex items-center justify-between w-full max-w-[1449px] m-auto px-24px h-60px">
+      <div class="flex items-center gap-16px">
         <a routerLink="/" rel="noreferrer">
-          <img src="/assets/img/logo-v2.svg" alt="convoy logo" class="w-[28.256px] h-[30px]" />
+          <img src="/assets/img/logo-v2.svg" alt="convoy logo" class="w-auto h-24px" />
         </a>
-      </div>
-
-      <div class="flex items-center">
-        @if (trialStatusService.status$ | async; as trial) {
-          <a class="flex items-center mr-24px px-10px py-4px rounded-8px border border-primary-300 bg-primary-500" routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" title="You are on a free trial">
-            <span class="font-medium text-12 text-primary-100">{{ trial.label }}</span>
-          </a>
-        }
-        <a class="flex items-center mr-24px" target="_blank" href="https://docs.getconvoy.io" rel="noreferrer">
-          <img src="/assets/img/doc-icon-primary.svg" class="w-14px" alt="doc icon" />
-          <span class="hidden md:inline font-medium text-12 text-primary-100 md:ml-2">Go to docs</span>
-        </a>
-        @if (isInstanceAdmin) {
-          <a convoy-button fill="soft" class="py-4px !px-8px mr-24px" routerLink="/admin">
-            <svg width="18" height="18" class="fill-neutral-10">
-              <use xlink:href="#settings-icon"></use>
-            </svg>
-          </a>
-        }
 
         @if (hasOrganisations) {
-          <div convoy-dropdown size="lg" #organisationDropdown>
-            <button dropdownTrigger convoy-button color="neutral" fill="soft" size="sm" class="py-10px px-20px rounded-8px mr-12px">
+          <div convoy-dropdown size="lg" position="center" #organisationDropdown>
+            <button dropdownTrigger class="flex items-center gap-10px p-4px rounded-full transition-colors hover:bg-new.surface-muted">
               @if (userOrganization?.name) {
-                <convoy-badge className="mr-8px" [show-text]="false" [text]="userOrganization?.name || ''">
-                  <div class="max-w-[110px] truncate">{{ userOrganization?.name }}</div>
-                </convoy-badge>
+                <span class="max-w-[160px] truncate font-body font-medium text-[14px] leading-[16px] text-new.text-secondary">{{ userOrganization?.name }}</span>
               }
-              <img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+              <img src="/assets/img/svg/chevron-grabber.svg" class="w-16px h-16px" alt="" />
             </button>
             <ul dropdownOptions>
-              <li class="flex items-center justify-between px-16px pt-12px pb-8px border-b border-b-neutral-a3" (click)="$event.stopPropagation()">
+              <li class="flex items-center justify-between px-12px pt-10px pb-8px border-b border-new.border" (click)="$event.stopPropagation()">
                 <!-- Plain total normally; "loaded of total" only while more pages exist, so a
                      one-page (1) can't be misread as the x/y limit pill format. -->
-                <span class="font-semibold text-12 text-neutral-11">Your organisations @if (orgPagination?.total) {<span>({{ orgPagination?.has_next_page ? (organisations?.length || 0) + ' of ' + orgPagination?.total : orgPagination?.total }})</span>}</span>
+                <span class="font-heading font-medium text-[13px] leading-[18px] text-new.text-secondary">Your organisations @if (orgPagination?.total) {<span>({{ orgPagination?.has_next_page ? (organisations?.length || 0) + ' of ' + orgPagination?.total : orgPagination?.total }})</span>}</span>
                 @if (orgSearchEnabled) {
-                  <button type="button" class="p-4px rounded-6px transition-colors" [class.bg-neutral-3]="showOrgSearchInput" (click)="$event.stopPropagation(); toggleOrgSearch()" [attr.aria-label]="showOrgSearchInput ? 'Close search' : 'Search organisations'">
+                  <button type="button" class="p-4px rounded-6px transition-colors hover:bg-new.surface-muted" [class.bg-new.surface-muted]="showOrgSearchInput" (click)="$event.stopPropagation(); toggleOrgSearch()" [attr.aria-label]="showOrgSearchInput ? 'Close search' : 'Search organisations'">
                     <img class="w-14px" src="/assets/img/search-icon.svg" alt="search" />
                   </button>
                 }
               </li>
               @if (showOrgSearchInput) {
-                <li class="px-16px py-8px border-b border-b-neutral-a3" (click)="$event.stopPropagation()">
+                <li class="px-12px py-8px border-b border-new.border" (click)="$event.stopPropagation()">
                   <input
                     #orgSearchInput
                     type="search"
@@ -55,24 +34,24 @@
                     [value]="orgSearch"
                     (input)="onOrgSearch(orgSearchInput.value)"
                     (click)="$event.stopPropagation()"
-                    class="w-full text-12 text-neutral-11 bg-neutral-3 rounded-6px px-12px py-8px outline-none border border-neutral-a3 focus:border-primary-100"
+                    class="w-full font-body font-normal text-[13px] text-new.text-primary placeholder:text-new.text-placeholder bg-white-100 rounded-8px px-12px py-8px outline-none border border-new.border focus:border-new.primary-400 transition-colors"
                   />
                 </li>
               }
               <ul class="max-h-[260px] overflow-y-auto">
                 @for (organisation of organisations; track organisation.uid) {
                   <li convoy-dropdown-option>
-                    <button convoy-button fill="text" color="neutral" size="sm" class="justify-start px-16px py-12px w-full" (click)="selectOrganisation(organisation)">
+                    <button type="button" class="w-full text-left px-12px py-10px transition-colors hover:bg-new.surface-muted" (click)="selectOrganisation(organisation)">
                       <div class="flex justify-between items-center w-full">
-                        <div class="flex items-center gap-8px">
+                        <div class="flex items-center gap-8px font-body font-normal text-[14px] text-new.text-primary">
                           <convoy-badge [text]="organisation.name" [show-text]="false">
                             <div class="max-w-[110px] truncate">{{ organisation?.name }}</div>
                           </convoy-badge>
                         </div>
                         @if (organisation.uid == userOrganization?.uid) {
-                          <div class="flex gap-16px items-center">
-                            <a convoy-button fill="soft" class="py-4px !px-8px" convoy-dropdown-option (click)="$event.stopPropagation(); this.showOrgDropdown = false" routerLink="/settings">
-                              <svg width="18" height="18" class="mr-10px" class="fill-neutral-10">
+                          <div class="flex gap-12px items-center">
+                            <a class="w-28px h-28px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" convoy-dropdown-option (click)="$event.stopPropagation(); this.showOrgDropdown = false" routerLink="/settings">
+                              <svg width="16" height="16" class="fill-neutral-10">
                                 <use xlink:href="#settings-icon"></use>
                               </svg>
                             </a>
@@ -84,18 +63,18 @@
                   </li>
                 }
                 @if (!organisations?.length && !isSearchingOrganisations) {
-                  <li class="px-16px py-12px text-12 text-neutral-10">No organisations found</li>
+                  <li class="px-12px py-12px font-body font-normal text-[13px] text-new.text-secondary">No organisations found</li>
                 }
                 @if (orgPagination?.has_next_page) {
-                  <li class="border-t border-t-neutral-a3">
-                    <button convoy-button fill="text" color="neutral" size="sm" class="justify-center w-full py-12px" (click)="$event.stopPropagation(); loadMoreOrganisations()" [disabled]="loadingMoreOrganisations">
+                  <li class="border-t border-new.border">
+                    <button type="button" class="w-full py-10px font-body font-medium text-[13px] text-new.text-secondary text-center transition-colors hover:bg-new.surface-subtle disabled:opacity-50" (click)="$event.stopPropagation(); loadMoreOrganisations()" [disabled]="loadingMoreOrganisations">
                       {{ loadingMoreOrganisations ? 'Loading...' : 'Load more' }}
                     </button>
                   </li>
                 }
               </ul>
-              <li class="border-t border-t-neutral-a3 relative">
-                <button convoy-permission="Organisations|ADD" convoy-dropdown-option convoy-button fill="text" size="sm" class="p-16px" (click)="dialog.nativeElement.showModal()">
+              <li class="border-t border-new.border relative">
+                <button convoy-permission="Organisations|ADD" convoy-dropdown-option type="button" class="w-full flex items-center px-12px py-12px font-body font-medium text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="dialog.nativeElement.showModal()">
                   <img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
                   Add {{ organisations?.length ? 'another' : 'an' }} Organization
                 </button>
@@ -116,22 +95,40 @@
             </ul>
           </div>
         }
+      </div>
+
+      <div class="flex items-center gap-16px">
+        @if (trialStatusService.status$ | async; as trial) {
+          <a class="flex items-center px-10px py-4px rounded-full border border-new.border bg-new.surface-muted" routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" title="You are on a free trial">
+            <span class="font-body font-medium text-12 text-new.text-secondary">{{ trial.label }}</span>
+          </a>
+        }
+        <a class="flex items-center" target="_blank" href="https://docs.getconvoy.io" rel="noreferrer">
+          <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-primary">Go to Docs</span>
+        </a>
+        @if (isInstanceAdmin) {
+          <a class="flex items-center p-4px rounded-full transition-colors hover:bg-new.surface-muted" routerLink="/admin">
+            <svg width="16" height="16" class="fill-neutral-10">
+              <use xlink:href="#settings-icon"></use>
+            </svg>
+          </a>
+        }
 
         <div convoy-dropdown size="lg" #accountDropdown>
-          <button dropdownTrigger convoy-button color="neutral" fill="soft" size="sm" class="py-12px px-10px rounded-8px h-36px">
-            <img src="/assets/img/user-icon.svg" alt="user icon" />
+          <button dropdownTrigger class="w-24px h-24px rounded-full bg-new.primary-400 flex items-center justify-center">
+            <span class="font-body font-medium text-[11px] leading-none text-white-100 uppercase">{{ (authDetails()?.first_name || 'U').charAt(0) }}{{ (authDetails()?.last_name || '').charAt(0) }}</span>
           </button>
 
-          <ul dropdownOptions>
-            <li class="border-b border-b-neutral-a3 pt-12px pb-8px px-16px">
-              <h3 class="capitalize text-14 font-medium">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
-              <p class="text-12 text-neutral-11">{{ authDetails()?.email }}</p>
+          <ul dropdownOptions class="py-4px">
+            <li class="border-b border-new.border pt-8px pb-10px px-12px">
+              <h3 class="capitalize font-body font-medium text-[14px] leading-[20px] text-new.text-primary">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px">{{ authDetails()?.email }}</p>
             </li>
             <li>
-              <a convoy-dropdown-option routerLink="/user-settings" class="block py-8px text-12 pl-16px text-neutral-11 w-full">My account</a>
+              <a convoy-dropdown-option routerLink="/user-settings" class="block w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted">My account</a>
             </li>
-            <li class="border-t border-t-neutral-a3">
-              <button convoy-dropdown-option convoy-button fill="text" color="error" class="font-medium px-16px py-8px text-12 w-full !justify-start" (click)="logout()">Logout</button>
+            <li class="border-t border-new.border">
+              <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body font-medium text-[14px] text-new.error-500 transition-colors hover:bg-new.surface-muted" (click)="logout()">Logout</button>
             </li>
           </ul>
         </div>
@@ -155,8 +152,8 @@
         id="organisation-empty-state"
         class="mt-80px"
         >
-        <button convoy-button class="mt-40px px-18px py-14px" size="sm" emptyStateCTA (click)="privateService.showOrgModal.emit(true)">
-          <img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
+        <button type="button" class="mt-32px flex items-center gap-8px px-20px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" emptyStateCTA (click)="privateService.showOrgModal.emit(true)">
+          <img src="/assets/img/add-circlar-icon.svg" alt="add icon" />
           Create Organisation
         </button>
       </div>
@@ -189,22 +186,25 @@
   </dialog>
 
   <dialog #orgDialog convoy-dialog position="center">
-    <div class="p-40px">
-      <img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-16px w-62px" />
-      <p class="text-neutral-11 text-14 max-w-[276px] pb-40px">Your organization information will help us to know how to get you set up.</p>
+    <div class="p-32px">
+      <div class="rounded-12px bg-new.primary-25 w-56px h-56px flex justify-center items-center mb-16px">
+        <img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="w-28px" />
+      </div>
+      <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary mb-4px">Create an organisation</h3>
+      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary mb-24px">Your organization information will help us to know how to get you set up.</p>
 
       <form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
         <convoy-input-field>
-          <label for="name" required="true" convoy-label>What's your bussiness name?</label>
+          <label for="name" required="true" convoy-label>What's your business name?</label>
           <input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g. Kuda" />
           @if (addOrganisationForm.get('name')?.touched && addOrganisationForm.get('name')?.invalid) {
             <convoy-input-error>Organisation name is required</convoy-input-error>
           }
         </convoy-input-field>
 
-        <div class="flex items-center gap-24px justify-end w-full">
-          <button convoy-button [disabled]="creatingOrganisation" size="sm" type="button" (click)="dialog.nativeElement.close()" fill="outline" color="error" class="self-stretch px-18px">Cancel</button>
-          <button convoy-button [disabled]="creatingOrganisation" size="sm" class="self-stretch px-18px">Create</button>
+        <div class="flex items-center gap-12px justify-end w-full mt-24px">
+          <button type="button" [disabled]="creatingOrganisation" class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" (click)="dialog.nativeElement.close()">Cancel</button>
+          <button [disabled]="creatingOrganisation" class="min-w-[90px] px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50">Create</button>
         </div>
       </form>
     </div>

@@ -1,8 +1,11 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { formatDistanceToNow } from 'date-fns';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
+import { CreateProjectComponentService } from '../../components/create-project-component/create-project-component.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { OrganisationStateService } from 'src/app/services/organisation-state/organisation-state.service';
 import { BillingStrategy, SelfHostedBillingConfig } from 'src/app/models/billing.model';
@@ -62,6 +65,21 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 	private trialPollToken = 0;
 	@ViewChild('trialModal') trialModal!: TrialModalComponent;
 
+	// 2026 UI refresh: list search, client-side pagination, row selection and the
+	// create-project modal (same create flow as /projects/new, smaller form).
+	searchTerm = '';
+	currentPage = 1;
+	pageSize = 10;
+	isCreatingProject = false;
+	apiKey = '';
+	newProjectId = '';
+	createProjectForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required],
+		type: ['incoming', Validators.required]
+	});
+	@ViewChild('createProjectDialog', { static: true }) createProjectDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('apiKeyDialog', { static: true }) apiKeyDialog!: ElementRef<HTMLDialogElement>;
+
 	constructor(
 		private privateService: PrivateService,
 		private router: Router,
@@ -69,7 +87,9 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 		private orgState: OrganisationStateService,
 		private generalService: GeneralService,
 		private trialStatusService: TrialStatusService,
-		private billingPaymentDetailsService: BillingPaymentDetailsService
+		private billingPaymentDetailsService: BillingPaymentDetailsService,
+		private formBuilder: FormBuilder,
+		private createProjectService: CreateProjectComponentService
 	) {
 		this.privateService.projects$.subscribe(projects => (this.projects = projects.data));
 	}
@@ -144,6 +164,121 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 			this.isLoadingProjects = false;
 			return error;
 		}
+	}
+
+	// ---- list presentation (search / pagination / selection) ----
+
+	get filteredProjects(): PROJECT[] {
+		const term = this.searchTerm.trim().toLowerCase();
+		if (!term) return this.projects;
+		return this.projects.filter(project => project.name?.toLowerCase().includes(term) || project.uid?.toLowerCase().includes(term));
+	}
+
+	get pagedProjects(): PROJECT[] {
+		const start = (this.currentPage - 1) * this.pageSize;
+		return this.filteredProjects.slice(start, start + this.pageSize);
+	}
+
+	get totalPages(): number {
+		return Math.max(1, Math.ceil(this.filteredProjects.length / this.pageSize));
+	}
+
+	get pageRangeLabel(): string {
+		const total = this.filteredProjects.length;
+		if (!total) return '0 of 0';
+		const start = (this.currentPage - 1) * this.pageSize + 1;
+		const end = Math.min(this.currentPage * this.pageSize, total);
+		return `${start}-${end} of ${total}`;
+	}
+
+	onSearch(term: string) {
+		this.searchTerm = term;
+		this.currentPage = 1;
+	}
+
+	prevPage() {
+		if (this.currentPage > 1) this.currentPage--;
+	}
+
+	nextPage() {
+		if (this.currentPage < this.totalPages) this.currentPage++;
+	}
+
+	timeAgo(date?: Date): string {
+		return date ? formatDistanceToNow(new Date(date), { addSuffix: true }) : '-';
+	}
+
+	// ---- row actions ----
+
+	copyProjectId(project: PROJECT, event: Event) {
+		event.stopPropagation();
+		navigator.clipboard.writeText(project.uid).then(() => {
+			this.generalService.showNotification({ message: 'Project ID copied to clipboard', style: 'success' });
+		});
+	}
+
+	async openProjectSettings(project: PROJECT, event: Event) {
+		event.stopPropagation();
+		this.isLoadingProjects = true;
+
+		try {
+			await this.privateService.getProject({ refresh: true, projectId: project.uid });
+			await this.privateService.getProjectStat({ refresh: true });
+
+			this.router.navigate([`/projects/${project.uid}/settings`]);
+			this.isLoadingProjects = false;
+		} catch (error) {
+			this.isLoadingProjects = false;
+		}
+	}
+
+	// ---- create-project modal (same flow as the create-project page) ----
+
+	openCreateProjectModal() {
+		if (this.shouldBlockProjectCreation) return;
+		this.createProjectForm.reset({ name: '', type: 'incoming' });
+		this.createProjectDialog.nativeElement.showModal();
+	}
+
+	closeCreateProjectModal() {
+		this.createProjectDialog.nativeElement.close();
+	}
+
+	async createProject() {
+		if (this.createProjectForm.invalid) return this.createProjectForm.markAllAsTouched();
+
+		this.isCreatingProject = true;
+
+		try {
+			// Same minimal payload the create-project page sends when no optional
+			// config sections are enabled.
+			const response = await this.createProjectService.createProject({ ...this.createProjectForm.value, config: { request_id_header: '' } } as any);
+
+			// Sync new project as active so UI (e.g. project selector) auto-selects it
+			const user = this.privateService.getUserProfile;
+			if (user?.uid) {
+				this.privateService.setUserProject(user.uid, response.data.project);
+			}
+			this.privateService.projectDetails = { data: response.data.project } as any;
+			await this.privateService.getProjectStat({ refresh: true });
+
+			this.privateService.getProjects({ refresh: true });
+
+			this.isCreatingProject = false;
+			this.apiKey = response.data.api_key.key;
+			this.newProjectId = response.data.project.uid;
+			this.createProjectForm.reset({ name: '', type: 'incoming' });
+			this.createProjectDialog.nativeElement.close();
+			this.apiKeyDialog.nativeElement.showModal();
+			this.licenseService.setLicenses();
+		} catch (error) {
+			this.isCreatingProject = false;
+		}
+	}
+
+	onApiKeyModalClosed() {
+		this.apiKeyDialog.nativeElement.close();
+		this.router.navigateByUrl('/projects/' + this.newProjectId);
 	}
 
 	get isDisabled(): boolean {

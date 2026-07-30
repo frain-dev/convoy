@@ -2,13 +2,12 @@ import { Component, OnInit } from '@angular/core';
 
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { VerifyEmailService } from './verify-email.service';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { PrivateService } from 'src/app/private/private.service';
 
 @Component({
     selector: 'convoy-verify-email',
-    imports: [RouterModule, ButtonComponent, LoaderModule],
+    imports: [RouterModule, LoaderModule],
     templateUrl: './verify-email.component.html',
     styleUrls: ['./verify-email.component.scss']
 })

@@ -1,10 +1,14 @@
-<button convoy-button fill="text" class="!p-0 font-medium capitalize text-12" (click)="goBack()">
-	<div class="block p-2px rounded-100px border border-new.primary-50 mr-8px">
-		<svg width="24" height="24" class="fill-neutral-10 scale-75">
-			<use xlink:href="#arrow-left-icon"></use>
-		</svg>
-	</div>
-	Back
-</button>
+<div class="flex items-center justify-between gap-16px">
+	<button type="button" class="flex items-center gap-8px font-body font-medium text-[14px] text-new.text-secondary transition-colors hover:text-new.text-primary" (click)="goBack()">
+		<span class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-white-100 transition-colors hover:bg-new.surface-muted">
+			<svg width="20" height="20" class="fill-neutral-10 scale-75">
+				<use xlink:href="#arrow-left-icon"></use>
+			</svg>
+		</span>
+		Back
+	</button>
+	<h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Delivery details</h2>
+	<span class="w-[76px]"></span>
+</div>
 
 <app-event-delivery-details></app-event-delivery-details>

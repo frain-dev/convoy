@@ -186,8 +186,11 @@ export class HttpService {
 			try {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
-				// Use token for authorization if available, otherwise use ownerId or access_token
-				let authToken = this.getPortalLinkAuthToken() || this.token || this.ownerId;
+				// Prefer the page's static portal token (or owner_id) over a short-lived
+				// auth_token in localStorage. localStorage is shared across tabs, so an
+				// expired leftover JWT must not override a valid ?token= session, and
+				// opening a static-token link must not clear storage another tab needs.
+				let authToken = this.token || this.ownerId || this.getPortalLinkAuthToken();
 
 				if (authToken !== undefined && authToken !== null) {
 					requestDetails.isPortal = true;
@@ -195,7 +198,7 @@ export class HttpService {
 
 				// not a portal link innit?
 				if (!(this.token || this.ownerId)) {
-					authToken = this.authDetails()?.access_token;
+					authToken = this.authDetails()?.access_token ?? null;
 					requestDetails.isPortal = false;
 				}
 

@@ -77,7 +77,10 @@ module.exports = {
 			},
 			fontFamily: {
 				sans: ['Open Sauce Sans', 'Inter', ...defaultTheme.fontFamily.sans],
-				menlo: ['Menlo Regular', ...defaultTheme.fontFamily.sans]
+				menlo: ['Menlo Regular', ...defaultTheme.fontFamily.sans],
+				// 2026 UI refresh: Pretendard for headings, Archivo for body
+				heading: ['Pretendard Variable', ...defaultTheme.fontFamily.sans],
+				body: ['Archivo', ...defaultTheme.fontFamily.sans]
 			},
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(white 10%, #fafafe78)'
@@ -107,7 +110,9 @@ module.exports = {
 			'12px': '12px',
 			'16px': '16px',
 			'22px': '22px',
-			'100px': '100px'
+			'24px': '24px',
+			'100px': '100px',
+			full: '9999px'
 		},
 		fontSize: {
 			10: ['10px', '150%'],
@@ -228,6 +233,25 @@ module.exports = {
 				300: '#F6CE95',
 				400: '#FBE6CA',
 				500: '#FEF7ED'
+			},
+			// 2026 UI refresh semantic tokens (from Figma "Convoy - Clean")
+			'new.surface': {
+				page: '#FBFAF9',
+				default: '#FFFFFF',
+				muted: '#F3F3F3',
+				subtle: '#F7F7F7'
+			},
+			'new.border': {
+				DEFAULT: '#E7E7E7'
+			},
+			'new.text': {
+				primary: '#09090B',
+				secondary: '#71717A',
+				placeholder: '#A1A1AA'
+			},
+			'new.brand': {
+				grid: '#4490EF',
+				'grid-accent': '#1F6ED2'
 			},
 			secondary: '#32587D',
 			purple: '#5A53B3',

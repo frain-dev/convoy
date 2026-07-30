@@ -4,8 +4,8 @@
   }
 </div>
 
-<div class="max-w-[1192px] m-auto mb-100px" convoy-card>
-  <div class="px-24px pt-24px flex justify-end">
+<div class="border border-new.border rounded-12px overflow-hidden bg-white-100">
+  <div class="px-16px pt-16px flex justify-end">
     <form [formGroup]="transformForm" class="max-w-[50%] w-full">
       <convoy-select
         (selectedOption)="selectEventType($event)"
@@ -19,17 +19,17 @@
   </div>
 
   <div class="flex mt-12px px-12px">
-    <div class="flex flex-col w-full border-r border-r-neutral-4">
+    <div class="flex flex-col w-full border-r border-r-new.border">
       <div>
-        <div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tl-8px">Input</div>
+        <div class="font-body font-medium text-[13px] text-new.text-secondary border-b border-b-new.border px-12px py-8px rounded-tl-8px">Input</div>
         <convoy-monaco [editorValue]="payload" className="h-300px w-[96%]" #payloadEditor></convoy-monaco>
       </div>
       <div class="min-h-[370px]">
-        <ul class="flex flex-row w-full border-y-[.5px] border-y-neutral-4">
+        <ul class="flex flex-row w-full border-y-[.5px] border-y-new.border">
           @for (tab of tabs; track $index) {
             <li class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
-              <button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
-                <span class="text-12 text-neutral-11 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+              <button type="button" class="py-8px flex items-center border-b-2 transition-colors" [class]="activeTab === tab ? 'border-new.primary-400' : 'border-transparent'" (click)="activeTab = tab">
+                <span class="font-body font-medium text-[13px] capitalize tracking-[0.02em] mobile:min-w-[80px]" [class]="activeTab === tab ? 'text-new.text-primary' : 'text-new.text-secondary'">{{ tab }}</span>
               </button>
             </li>
           }
@@ -45,10 +45,15 @@
       </div>
     </div>
     <div class="flex flex-col w-full">
-      <div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tr-8px flex items-center justify-between">
+      <div class="font-body font-medium text-[13px] text-new.text-secondary border-b border-b-new.border px-12px py-6px rounded-tr-8px flex items-center justify-between">
         Transform Function
-        <button convoy-button size="xs" type="button" fill="outline" class="py-0" [disabled]="isTestingFunction" (click)="testTransformFunction()">
-          <svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
+        <button
+          type="button"
+          class="flex items-center gap-6px px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3 disabled:opacity-40 disabled:pointer-events-none"
+          [disabled]="isTestingFunction"
+          (click)="testTransformFunction()"
+          >
+          <svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
               d="M1.66797 5.5004V4.01707C1.66797 2.1754 2.97214 1.42124 4.56797 2.34207L5.85547 3.08374L7.14297 3.8254C8.7388 4.74624 8.7388 6.25457 7.14297 7.1754L5.85547 7.91707L4.56797 8.65874C2.97214 9.57957 1.66797 8.8254 1.66797 6.98374V5.5004Z"
               stroke="#477DB3"
@@ -64,10 +69,10 @@
       <div [class]="showConsole ? 'h-[500px]' : 'h-[632px]'">
         <convoy-monaco className="h-[500px] w-[96%]" format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
       </div>
-      <div class="text-12 text-neutral-11 border-y border-y-neutral-4 px-12px py-6px flex items-center justify-between">
+      <div class="font-body font-medium text-[13px] text-new.text-secondary border-y border-y-new.border px-12px py-6px flex items-center justify-between">
         Console
         <div class="flex items-center">
-          <button convoy-button size="xs" type="button" fill="soft-outline" color="neutral" class="p-2px" [disabled]="isTestingFunction" (click)="logs = []">
+          <button type="button" class="w-28px h-28px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none" [disabled]="isTestingFunction" (click)="logs = []">
             <svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M7.90273 4.75233L5.33773 6.31234L4.16773 4.39235C3.74023 3.68735 3.96523 2.75735 4.67023 2.32985C5.37523 1.90235 6.30523 2.12733 6.73273 2.83233L7.90273 4.75233Z"
@@ -89,12 +94,12 @@
               <path d="M13.1562 11.9375L14.3938 13.97" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
-          <button convoy-button size="xs" type="button" fill="soft-outline" color="neutral" class="p-2px ml-10px" [disabled]="isTestingFunction" (click)="logs = []; showConsole = !showConsole">
+          <button type="button" class="w-28px h-28px flex items-center justify-center rounded-[6px] ml-8px transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none" [disabled]="isTestingFunction" (click)="logs = []; showConsole = !showConsole">
             <img class="w-18px transition-all duration-300" [class]="{ 'rotate-180': !showConsole }" src="/assets/img/angle-down.svg" alt="arrow down icon" />
           </button>
         </div>
       </div>
-      <div class="bg-neutral-a2 w-full transition-all ease-in-out duration-300" [class]="showConsole ? 'max-h-132px h-full overflow-auto opacity-100' : 'h-0 overflow-hidden opacity-0'">
+      <div class="bg-new.surface-subtle w-full transition-all ease-in-out duration-300" [class]="showConsole ? 'max-h-132px h-full overflow-auto opacity-100' : 'h-0 overflow-hidden opacity-0'">
         @for (log of logs; track $index) {
           <prism language="javascript" type="display" [code]="generalService.getCodeSnippetString('log', parseLog(log))"></prism>
         }

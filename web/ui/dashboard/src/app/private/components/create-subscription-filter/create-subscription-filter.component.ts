@@ -1,8 +1,6 @@
 import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {CardComponent} from 'src/app/components/card/card.component';
 import {FormBuilder, ReactiveFormsModule} from '@angular/forms';
-import {ButtonComponent} from 'src/app/components/button/button.component';
 import {CreateSubscriptionService} from '../create-subscription/create-subscription.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {MonacoComponent} from '../monaco/monaco.component';
@@ -11,7 +9,7 @@ import {DialogHeaderComponent} from 'src/app/components/dialog/dialog.directive'
 
 @Component({
     selector: 'convoy-create-subscription-filter',
-    imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, DialogHeaderComponent],
+    imports: [CommonModule, ReactiveFormsModule, MonacoComponent, DialogHeaderComponent],
     templateUrl: './create-subscription-filter.component.html',
     styleUrls: ['./create-subscription-filter.component.scss']
 })

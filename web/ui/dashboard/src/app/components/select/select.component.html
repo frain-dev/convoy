@@ -7,12 +7,10 @@
         convoy-input
                 class="
 				peer-disabled:text-neutral-4 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
-				py-12px
-				px-16px
 				appearance-none
 				bg-[url(/assets/img/angle-down.svg)] bg-no-repeat
-				bg-[right_10px_top_15px]
-				min-h-[46px]
+				bg-[right_10px_center]
+				min-h-[42px]
 				cursor-pointer
 				flex
 				items-center
@@ -52,20 +50,20 @@
             </div>
           </li>
         }
-        <li class="text-14 text-neutral-4">Select</li>
+        <li class="font-body text-[13px] text-new.text-placeholder">Select</li>
         @if (multiple) {
           @for (option of options; track $index) {
             @if (!isSelected(option)) {
-              <li class="list-none py-10px border-b border-new.primary-25">
-                <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+              <li class="list-none border-b border-new.border last:border-b-0">
+                <button type="button" (click)="selectOption(option)" class="w-full text-left py-10px font-body text-[14px] text-new.text-primary transition-colors hover:text-new.primary-400">{{ option?.name || option }}</button>
               </li>
             }
           }
         }
         @if (!multiple) {
           @for (option of options; track $index) {
-            <li class="list-none py-10px border-b border-new.primary-25" convoy-dropdown-option [value]="option">
-              <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option); $event.stopPropagation()" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+            <li class="list-none border-b border-new.border last:border-b-0" convoy-dropdown-option [value]="option">
+              <button type="button" (click)="selectOption(option); $event.stopPropagation()" class="w-full text-left py-10px font-body text-[14px] text-new.text-primary transition-colors hover:text-new.primary-400">{{ option?.name || option }}</button>
             </li>
           }
         }

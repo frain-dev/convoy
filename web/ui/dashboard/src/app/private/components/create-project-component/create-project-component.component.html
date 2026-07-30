@@ -1,16 +1,20 @@
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled id="project-form">
-  <div class="mt-24px flex flex-col md:flex-row gap-24px md:gap-100px" [class]="action !== 'update' ? 'rounded-8px p-24px my-24px block border border-new.primary-50' : ''">
+  <div class="flex flex-col md:flex-row gap-24px md:gap-40px">
     @if (action === 'update') {
-      <div class="min-w-[170px]">
-        <h3 class="mb-24px text-12 text-neutral-12 font-semibold">Project Settings</h3>
-        <ul class="flex gap-24px flex-col w-full border-l-2 border-l-neutral-4">
+      <div class="min-w-[220px] shrink-0">
+        <ul class="flex flex-col gap-6px">
           @for (tab of tabs; track $index) {
-            <li class="!list-none last-of-type:mr-0 -ml-2px">
-              <button class="pt-0px pl-16px flex items-center border-l border-l-transparent transition-all" [class]="activeTab.label === tab.label ? 'border-l-new.primary-400' : ''" type="button" (click)="switchTab(tab)">
-                <svg width="18" height="18" class="mr-10px transition-all scale-75" [class]="activeTab === tab ? tab.svg + '-new.primary-400' : tab.svg + '-neutral-11'">
+            <li class="!list-none">
+              <button
+                type="button"
+                class="w-full flex items-center gap-10px px-12px py-10px rounded-8px font-body text-[14px] leading-[20px] text-left transition-colors"
+                [class]="activeTab.label === tab.label ? 'bg-new.surface-muted text-new.text-primary font-medium' : 'text-new.text-secondary hover:bg-new.surface-subtle'"
+                (click)="switchTab(tab)"
+                >
+                <svg width="16" height="16" class="transition-all shrink-0" [class]="activeTab === tab ? tab.svg + '-new.primary-400' : tab.svg + '-neutral-11'">
                   <use [attr.xlink:href]="'#' + tab.icon + '-icon'"></use>
                 </svg>
-                <span class="text-12 text-left capitalize tracking-[0.02em] mobile:min-w-[80px] !font-medium" [class]="activeTab === tab ? 'text-new.primary-400 !font-semibold' : 'text-neutral-11'">{{ tab.label }}</span>
+                <span class="capitalize">{{ tab.label }}</span>
               </button>
             </li>
           }
@@ -18,48 +22,48 @@
       </div>
     }
 
-    <div class="w-full">
+    <div class="w-full min-w-0">
       @if (activeTab.label === 'project config') {
-        @if (action === 'update') {
-          <h3 class="text-16 font-bold text-neutral-12 mb-24px">Project Configurations</h3>
-        }
-        <convoy-input-field>
-          <label for="project-name" required="true" convoy-label>Project name</label>
-          <input type="text" id="project-name" convoy-input autocomplete="project-name" formControlName="name" placeholder="Enter project name here" />
-          @if (projectForm.controls.name.touched && projectForm.controls.name.invalid) {
-            <convoy-input-error>Enter new project name</convoy-input-error>
-          }
-        </convoy-input-field>
-        @if (action !== 'update') {
-          <h3 class="mt-24px mb-16px font-medium text-14">Project type</h3>
-          <div class="project-types grid grid-cols-2 mobile:grid-cols-1 gap-24px">
-            <convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
-            <convoy-radio formControlName="type" description="Create an outgoing webhooks project to publish events to your customer-provided endpoints" label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
-          </div>
-          @if (projectForm.controls['type'].touched && projectForm.controls['type'].invalid) {
-            <div class="flex items-center text-12 text-error-9 mt-8px">
-              <img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
-              <span>Please select a project type</span>
-            </div>
-          }
-        }
-        <div class="mt-40px">
-          <div formGroupName="config">
-            @if (showConfig('signature')) {
-              <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-                <div class="flex justify-between items-center mb-24px">
-                  <p class="text-12 font-medium text-neutral-11 flex items-center">
-                    Signature Details
-                    <convoy-tooltip size="sm" position="top-right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
-                  </p>
-                  <button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('signature', true)">
-                    <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                      <use xlink:href="#delete-icon2"></use>
-                    </svg>
-                  </button>
+        <div class="flex flex-col gap-20px">
+          <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+            <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">{{ action === 'update' ? 'Project configuration' : 'Project details' }}</h3>
+            <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px mb-24px">The name and type of this project.</p>
+
+            <convoy-input-field className="mb-0 max-w-[420px]">
+              <label for="project-name" required="true" convoy-label>Project name</label>
+              <input type="text" id="project-name" convoy-input autocomplete="project-name" formControlName="name" placeholder="Enter project name here" />
+              @if (projectForm.controls.name.touched && projectForm.controls.name.invalid) {
+                <convoy-input-error>Enter new project name</convoy-input-error>
+              }
+            </convoy-input-field>
+
+            @if (action !== 'update') {
+              <h4 class="mt-24px mb-16px font-heading font-medium text-[14px] text-new.text-primary">Project type</h4>
+              <div class="project-types grid grid-cols-2 mobile:grid-cols-1 gap-24px">
+                <convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
+                <convoy-radio formControlName="type" description="Create an outgoing webhooks project to publish events to your customer-provided endpoints" label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
+              </div>
+              @if (projectForm.controls['type'].touched && projectForm.controls['type'].invalid) {
+                <div class="flex items-center font-body text-[12px] text-new.error-500 mt-8px">
+                  <img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+                  <span>Please select a project type</span>
                 </div>
-                <div formGroupName="signature" class="mb-24px" [ngClass]="{ 'grid grid-cols-2 mobile:grid-cols-1 gap-x-24px': action === 'create' }">
-                  <convoy-input-field>
+              }
+            }
+          </div>
+
+          <div formGroupName="config" class="flex flex-col gap-20px">
+            @if (showConfig('signature')) {
+              <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+                <div class="flex items-start justify-between gap-16px mb-24px">
+                  <div class="flex flex-col gap-2px">
+                    <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Signature details</h3>
+                    <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">The header and hash function used to sign this project&rsquo;s webhooks.</p>
+                  </div>
+                  <button convoy-permission="Project Settings|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('signature', true)">Remove setting</button>
+                </div>
+                <div formGroupName="signature" [ngClass]="{ 'grid grid-cols-2 mobile:grid-cols-1 gap-x-24px': action === 'create' }">
+                  <convoy-input-field className="mb-0 max-w-[420px]">
                     <label for="header" required="true" convoy-label>Header</label>
                     <input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="X-Convoy-Signature" />
                     @if (projectForm.get('config.signature.header')?.touched && projectForm.get('config.signature.header')?.invalid) {
@@ -84,40 +88,33 @@
                 </div>
               </div>
             }
+
             @if (showConfig('request_id_header') && isOutgoingProject()) {
-              <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-                <div class="flex justify-between items-center mb-24px">
-                  <p class="text-12 font-medium text-neutral-11 flex items-center">
-                    Request ID Header
-                    <convoy-tooltip size="sm" position="top-right" class="ml-4px">Outbound header for the stable request id sent on webhook deliveries (same value across retries). Defaults to X-Convoy-Idempotency-Key.</convoy-tooltip>
-                  </p>
-                  <button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="$event.preventDefault(); clearRequestIdHeaderConfig()">
-                    <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                      <use xlink:href="#delete-icon2"></use>
-                    </svg>
-                  </button>
+              <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+                <div class="flex items-start justify-between gap-16px mb-24px">
+                  <div class="flex flex-col gap-2px">
+                    <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Request ID header</h3>
+                    <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Outbound header for the stable request id sent on webhook deliveries (same value across retries). Defaults to X-Convoy-Idempotency-Key.</p>
+                  </div>
+                  <button convoy-permission="Project Settings|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="$event.preventDefault(); clearRequestIdHeaderConfig()">Remove setting</button>
                 </div>
-                <convoy-input-field>
+                <convoy-input-field className="mb-0 max-w-[420px]">
                   <label for="request-id-header" convoy-label>Header</label>
                   <input type="text" id="request-id-header" convoy-input autocomplete="request-id-header" formControlName="request_id_header" placeholder="X-Convoy-Idempotency-Key" />
                 </convoy-input-field>
               </div>
             }
+
             @if (showConfig('strategy')) {
-              <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-                <div class="flex justify-between items-center mb-24px">
-                  <p class="flex items-center text-12 font-semibold text-neutral-11">
-                    Retry Logic
-                    <convoy-tooltip size="sm" position="top-right" class="ml-4px">
-                      These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next
-                      retry attempt.
-                    </convoy-tooltip>
-                  </p>
-                  <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('strategy', true)">
-                    <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                      <use xlink:href="#delete-icon2"></use>
-                    </svg>
-                  </button>
+              <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+                <div class="flex items-start justify-between gap-16px mb-24px">
+                  <div class="flex flex-col gap-2px">
+                    <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Retry logic</h3>
+                    <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">
+                      How failed deliveries are retried. Linear retries wait a fixed time between attempts; exponential back-off progressively increases the wait.
+                    </p>
+                  </div>
+                  <button convoy-permission="Project Settings|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('strategy', true)">Remove setting</button>
                 </div>
                 <div class="grid grid-cols-2 mobile:grid-cols-1 gap-x-24px" formGroupName="strategy">
                   <convoy-select
@@ -148,18 +145,15 @@
                 </div>
               </div>
             }
+
             @if (showConfig('ratelimit')) {
-              <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-                <div class="flex justify-between items-center mb-24px">
-                  <p class="flex items-center text-12 font-medium text-neutral-11">
-                    Rate Limit Parameters
-                    <convoy-tooltip size="sm" position="top-right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
-                  </p>
-                  <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('ratelimit', true)">
-                    <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                      <use xlink:href="#delete-icon2"></use>
-                    </svg>
-                  </button>
+              <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+                <div class="flex items-start justify-between gap-16px mb-24px">
+                  <div class="flex flex-col gap-2px">
+                    <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Rate limit</h3>
+                    <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">How many events can be sent to an endpoint per time period.</p>
+                  </div>
+                  <button convoy-permission="Project Settings|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('ratelimit', true)">Remove setting</button>
                 </div>
                 <div class="grid grid-cols-2 mobile:grid-cols-1 gap-24px" formGroupName="ratelimit">
                   <convoy-input-field className="mb-0">
@@ -182,31 +176,28 @@
                 </div>
               </div>
             }
+
             @if (showConfig('search_policy')) {
-              <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-                <div class="flex justify-between items-center mb-24px">
-                  <div class="flex items-center gap-12px">
-                    <p class="flex items-center text-12 font-medium text-neutral-11">
-                      Search Period
-                      <convoy-tooltip size="sm" position="top-right" class="ml-4px">This will trigger search re-tokenization and only events within this period will be available for search.</convoy-tooltip>
-                    </p>
-                    @if (!licenseService.hasLicense('AdvancedWebhookFiltering')) {
-                      <div convoy-tag size="sm" color="primary">
-                        <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                          <use xlink:href="#lock-icon"></use>
-                        </svg>
-                        Business
-                      </div>
-                    }
+              <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+                <div class="flex items-start justify-between gap-16px mb-24px">
+                  <div class="flex flex-col gap-2px">
+                    <div class="flex items-center gap-8px">
+                      <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Search period</h3>
+                      @if (!licenseService.hasLicense('AdvancedWebhookFiltering')) {
+                        <div convoy-tag size="sm" color="primary">
+                          <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                            <use xlink:href="#lock-icon"></use>
+                          </svg>
+                          Business
+                        </div>
+                      }
+                    </div>
+                    <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Triggers search re-tokenization; only events within this period will be available for search.</p>
                   </div>
-                  <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('search_policy', true)">
-                    <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                      <use xlink:href="#delete-icon2"></use>
-                    </svg>
-                  </button>
+                  <button convoy-permission="Project Settings|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('search_policy', true)">Remove setting</button>
                 </div>
                 @if (licenseService.hasLicense('AdvancedWebhookFiltering')) {
-                  <convoy-input-field>
+                  <convoy-input-field className="mb-0 max-w-[420px]">
                     <div class="relative">
                       <input type="number" id="search_policy" convoy-input autocomplete="search_policy" formControlName="search_policy" placeholder="e.g. 720" />
                       <div class="absolute top-[50%] right-14px text-12 text-neutral-a30 opacity-40 translate-y-[-50%]">hour(s)</div>
@@ -219,11 +210,12 @@
               </div>
             }
           </div>
+
           @if (shouldShowBorder < configurations.length) {
-            <div class="flex flex-wrap gap-24px gap-y-12px items-center">
+            <div class="flex flex-wrap gap-8px items-center">
               @for (config of configurations; track $index; let i = $index) {
                 @if (shouldShowConfigButton(config, i)) {
-                  <convoy-config-button (onClick)="toggleConfigForm(config.uid)" convoy-permission="Project Settings|MANAGE">{{ config.name }}</convoy-config-button>
+                  <button type="button" convoy-permission="Project Settings|MANAGE" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm(config.uid)">+ {{ config.name }}</button>
                 }
               }
             </div>
@@ -233,90 +225,88 @@
 
       @if (action === 'update' && activeTab.label === 'endpoints config') {
         <ng-container formGroupName="config">
-          @if (action === 'update') {
-            <h3 class="text-16 font-bold mb-24px">Endpoint Configurations</h3>
-          }
-          <div class="flex justify-between items-start">
-            <div class="max-w-[500px]">
-              <h3 class="font-semibold mb-8px text-12">Disable Failing Endpoint</h3>
-              <p class="text-12 text-neutral-11 mt-10px w-full max-w-[460px]">Toggling this configuration on will automatically disable all endpoints in this project with failure response untill request to them are manually retried</p>
+          <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+            <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary mb-24px">Endpoint configuration</h3>
+            <div class="flex justify-between items-start gap-24px">
+              <div class="max-w-[500px]">
+                <h4 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-4px">Disable failing endpoints</h4>
+                <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Automatically disable all endpoints in this project with failure responses until requests to them are manually retried.</p>
+              </div>
+              <convoy-toggle name="disable_endpoint" formControlName="disable_endpoint" (onChange)="confirmToggleAction($event, 'endpoints')"></convoy-toggle>
             </div>
-            <convoy-toggle name="disable_endpoint" formControlName="disable_endpoint" (onChange)="confirmToggleAction($event, 'endpoints')"></convoy-toggle>
-          </div>
-          <hr class="border-t border-neutral-4 my-24px" />
-          <div class="flex justify-between items-start" formGroupName="ssl">
-            <div class="max-w-[500px]">
-              <h3 class="font-semibold mb-8px text-12">Allow Only HTTPS Secure Endpoints</h3>
-              <p class="text-12 text-neutral-11 mt-10px w-full max-w-[460px]">Toggling this will allow only HTTPS secure endpoints, this allows only TLS connections to your endpoints.</p>
+            <hr class="border-t border-new.border my-24px" />
+            <div class="flex justify-between items-start gap-24px" formGroupName="ssl">
+              <div class="max-w-[500px]">
+                <h4 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-4px">Allow only HTTPS secure endpoints</h4>
+                <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Allow only HTTPS secure endpoints, so only TLS connections are made to your endpoints.</p>
+              </div>
+              <convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle>
             </div>
-            <convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle>
           </div>
         </ng-container>
       }
 
       @if (action === 'update' && projectDetails.type === 'outgoing' && activeTab.label === 'signature history') {
-        <div class="flex items-center justify-between mb-24px">
-          @if (action === 'update') {
-            <h3 class="text-16 font-bold">Project Signature History</h3>
-          }
-          <button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" type="button" (click)="versions.push(newVersion()); newSignatureDialog.showModal()">
-            <svg width="18" height="18" class="mr-2 fill-white-100">
-              <use xlink:href="#plus-icon"></use>
-            </svg>
+        <div class="flex items-center justify-between gap-16px mb-16px">
+          <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Signature history</h3>
+          <button
+            type="button"
+            convoy-permission="Project Settings|MANAGE"
+            class="flex items-center gap-4px px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+            (click)="versions.push(newVersion()); newSignatureDialog.showModal()"
+            >
+            <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
             Signature
           </button>
         </div>
-        <div convoy-card>
+        <div class="bg-white-100 border border-new.border rounded-12px overflow-hidden">
           <div class="overflow-x-auto w-full">
-          <table convoy-table>
-            <thead convoy-table-head>
-              @for (head of signatureTableHead; track $index; let i = $index) {
-                <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
-              }
-            </thead>
-            <tbody>
-              @for (version of signatureVersions; track $index; let i = $index) {
-                <tr convoy-table-row [forDate]="true">
-                  <td convoy-table-cell [forDate]="true">{{ version.date }}</td>
-                  <td convoy-table-cell [forDate]="true"></td>
-                  <td convoy-table-cell [forDate]="true"></td>
-                  <td convoy-table-cell [forDate]="true"></td>
-                </tr>
-                @for (signatureVersion of version.content; track $index; let index = $index) {
-                  <tr convoy-table-row [id]="'app' + i">
-                    <td convoy-table-cell class="pl-16px">
-                      <div class="flex items-center">
-                        {{ projectDetails.config.signature.header }}
-                      </div>
-                    </td>
-                    <td convoy-table-cell>v{{ index + 1 }}</td>
-                    <td convoy-table-cell>{{ signatureVersion.hash }}</td>
-                    <td convoy-table-cell>{{ signatureVersion.encoding }}</td>
-                  </tr>
+            <table convoy-table>
+              <thead convoy-table-head>
+                @for (head of signatureTableHead; track $index; let i = $index) {
+                  <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
                 }
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (version of signatureVersions; track $index; let i = $index) {
+                  <tr convoy-table-row [forDate]="true">
+                    <td convoy-table-cell [forDate]="true">{{ version.date }}</td>
+                    <td convoy-table-cell [forDate]="true"></td>
+                    <td convoy-table-cell [forDate]="true"></td>
+                    <td convoy-table-cell [forDate]="true"></td>
+                  </tr>
+                  @for (signatureVersion of version.content; track $index; let index = $index) {
+                    <tr convoy-table-row [id]="'app' + i">
+                      <td convoy-table-cell class="pl-16px">
+                        <div class="flex items-center">
+                          {{ projectDetails.config.signature.header }}
+                        </div>
+                      </td>
+                      <td convoy-table-cell>v{{ index + 1 }}</td>
+                      <td convoy-table-cell>{{ signatureVersion.hash }}</td>
+                      <td convoy-table-cell>{{ signatureVersion.encoding }}</td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
           </div>
         </div>
       }
 
       @if (activeTab.label === 'meta events config') {
         <ng-container formGroupName="config">
-          @if (action === 'update') {
-            <h3 class="text-16 font-bold mb-24px">Meta Event Configurations</h3>
-          }
-          <div formGroupName="meta_event" class="mb-40px">
-            <div class="flex justify-between items-start pb-24px">
+          <div class="bg-white-100 border border-new.border rounded-16px p-24px" formGroupName="meta_event">
+            <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary mb-24px">Meta events configuration</h3>
+            <div class="flex justify-between items-start gap-24px pb-24px">
               <div class="max-w-[500px]">
-                <h3 class="font-semibold mb-8px text-12">Enable Meta Events</h3>
-                <p class="text-12 font-normal text-neutral-11 mt-10px">Meta events allows you to receive webhook events based on events happening in your projects including webhook event activities.</p>
+                <h4 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-4px">Enable meta events</h4>
+                <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Meta events allow you to receive webhook events based on events happening in your projects, including webhook event activities.</p>
               </div>
               <convoy-toggle formControlName="is_enabled" (onChange)="confirmToggleAction($event, 'metaEvents')"></convoy-toggle>
             </div>
             @if (projectForm.get('config.meta_event.is_enabled')?.value) {
-              <hr class="border-neutral-5 mb-24px" />
-              <h4 class="text-12 font-semibold mb-24px" [ngClass]="{ 'opacity-60 pointer-events-none': !projectForm.get('config.meta_event.is_enabled')?.value }">Meta Events Configurations</h4>
+              <hr class="border-t border-new.border mb-24px" />
               <div class="grid grid-cols-2 mobile:grid-cols-1 gap-24px">
                 <convoy-input-field>
                   <label for="url" convoy-label required="true">Webhook URL</label>
@@ -338,7 +328,7 @@
                 [required]="true"
                 [multiple]="true"
                 errorMessage="Please select at least one event"
-                className="mb-24px"
+                className="mb-0"
                 (selectedOption)="projectForm.patchValue({ config: { meta_event: { event_type: $event } } })"
               ></convoy-select>
             }
@@ -347,181 +337,177 @@
       }
 
       @if (activeTab.label === 'secrets') {
-        @if (action === 'update') {
-          <h3 class="text-16 font-bold text-neutral-10 mb-24px">Project Secrets</h3>
-        }
-        <label for="project-name" required="true" convoy-label>Project ID</label>
-        <div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px">
-          <span class="text-12 text-neutral-11 font-normal">{{ projectDetails.uid }}</span>
-          <convoy-copy-button [text]="projectDetails.uid || ''" notificationText="Project ID has been copied to you clipboard."></convoy-copy-button>
-        </div>
-        <div class="flex justify-center mt-24px">
-          <button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" type="button" (click)="confirmationDialog.showModal()" [disabled]="regeneratingKey">
-            <svg width="16" height="16" class="mr-8px stroke-16px stroke-white-100 scale-90" [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
-              <use xlink:href="#refresh-icon"></use>
-            </svg>
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary mb-24px">Project secrets</h3>
+          <div class="flex flex-col gap-8px max-w-[480px]">
+            <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Project ID</span>
+            <div class="h-40px w-full flex items-center gap-8px px-12px bg-new.surface-muted border border-new.border rounded-8px">
+              <span class="flex-1 truncate font-menlo text-[13px] text-new.text-primary">{{ projectDetails.uid }}</span>
+              <div class="shrink-0" convoy-copy-button [text]="projectDetails.uid || ''" notificationText="Project ID has been copied to you clipboard."></div>
+            </div>
+          </div>
+          <button
+            type="button"
+            convoy-permission="Project Settings|MANAGE"
+            class="mt-24px flex items-center gap-8px px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50"
+            (click)="confirmationDialog.showModal()"
+            [disabled]="regeneratingKey"
+            >
+            <img src="/assets/img/svg/retry-small.svg" class="w-14px h-14px" [ngClass]="{ 'animate-spin-slow': regeneratingKey }" alt="" />
             Regenerate API Key
           </button>
         </div>
       }
 
       @if (activeTab.label === 'circuit breaker') {
-        @if (action === 'update') {
-          <h3 class="text-16 font-bold text-neutral-10 mb-24px">Circuit Breaker Configuration</h3>
-        }
-        <div class="text-12 text-neutral-11 mb-24px">
-          Circuit breaker settings control how endpoints are automatically disabled when they fail too frequently.
+        <div class="bg-white-100 border border-new.border rounded-16px p-24px">
+          <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Circuit breaker configuration</h3>
+          <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px mb-24px">Circuit breaker settings control how endpoints are automatically disabled when they fail too frequently.</p>
+
+          @if (!circuitBreakerFeatureEnabled) {
+            <div class="p-16px bg-new.surface-subtle rounded-8px border border-new.border">
+              <div class="flex items-center gap-8px mb-4px">
+                <svg width="14" height="14" class="fill-new.primary-400">
+                  <use xlink:href="#lock-icon"></use>
+                </svg>
+                <p class="font-heading font-medium text-[13px] text-new.text-primary">Circuit breaker feature flag disabled</p>
+              </div>
+              <p class="font-body font-normal text-[13px] text-new.text-secondary">Circuit breaker configuration feature flag is not enabled for your organization.</p>
+            </div>
+          }
+          @if (circuitBreakerFeatureEnabled) {
+            <div class="grid grid-cols-2 mobile:grid-cols-1 gap-20px">
+              <div class="flex flex-col gap-8px">
+                <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Sample rate (seconds)</span>
+                <div class="h-40px bg-new.surface-muted border border-new.border rounded-8px px-12px flex items-center font-body text-[14px] text-new.text-primary">{{ circuitBreakerView.sample_rate }}</div>
+                <span class="font-body text-[12px] text-new.text-placeholder">Time interval for polling data source</span>
+              </div>
+              <div class="flex flex-col gap-8px">
+                <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Error timeout (seconds)</span>
+                <div class="h-40px bg-new.surface-muted border border-new.border rounded-8px px-12px flex items-center font-body text-[14px] text-new.text-primary">{{ circuitBreakerView.error_timeout }}</div>
+                <span class="font-body text-[12px] text-new.text-placeholder">Time before circuit breaker resets</span>
+              </div>
+              <div class="flex flex-col gap-8px">
+                <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Failure threshold (%)</span>
+                <div class="h-40px bg-new.surface-muted border border-new.border rounded-8px px-12px flex items-center font-body text-[14px] text-new.text-primary">{{ circuitBreakerView.failure_threshold }}</div>
+                <span class="font-body text-[12px] text-new.text-placeholder">Percentage of failures to trigger circuit breaker</span>
+              </div>
+              <div class="flex flex-col gap-8px">
+                <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Success threshold (%)</span>
+                <div class="h-40px bg-new.surface-muted border border-new.border rounded-8px px-12px flex items-center font-body text-[14px] text-new.text-primary">{{ circuitBreakerView.success_threshold }}</div>
+                <span class="font-body text-[12px] text-new.text-placeholder">Percentage of successes to close circuit breaker</span>
+              </div>
+              <div class="flex flex-col gap-8px">
+                <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Observability window (minutes)</span>
+                <div class="h-40px bg-new.surface-muted border border-new.border rounded-8px px-12px flex items-center font-body text-[14px] text-new.text-primary">{{ circuitBreakerView.observability_window }}</div>
+                <span class="font-body text-[12px] text-new.text-placeholder">Time window for monitoring failures</span>
+              </div>
+              <div class="flex flex-col gap-8px">
+                <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Minimum request count</span>
+                <div class="h-40px bg-new.surface-muted border border-new.border rounded-8px px-12px flex items-center font-body text-[14px] text-new.text-primary">{{ circuitBreakerView.minimum_request_count }}</div>
+                <span class="font-body text-[12px] text-new.text-placeholder">Minimum requests before triggering</span>
+              </div>
+              <div class="flex flex-col gap-8px">
+                <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Consecutive failure threshold</span>
+                <div class="h-40px bg-new.surface-muted border border-new.border rounded-8px px-12px flex items-center font-body text-[14px] text-new.text-primary">{{ circuitBreakerView.consecutive_failure_threshold }}</div>
+                <span class="font-body text-[12px] text-new.text-placeholder">Consecutive failures before disabling endpoint</span>
+              </div>
+            </div>
+          }
         </div>
-        @if (!circuitBreakerFeatureEnabled) {
-          <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
-            <div class="flex items-center gap-8px mb-6px">
-              <svg width="14" height="14" class="fill-new.primary-400">
-                <use xlink:href="#lock-icon"></use>
-              </svg>
-              <p class="text-10 font-semibold text-neutral-12">Circuit Breaker Feature Flag Disabled</p>
-            </div>
-            <p class="text-10 text-neutral-10">Circuit breaker configuration feature flag is not enabled for your organization.</p>
-          </div>
-        }
-        @if (circuitBreakerFeatureEnabled) {
-          <div class="grid grid-cols-2 mobile:grid-cols-1 gap-24px">
-            <div>
-              <label class="text-12 font-medium text-neutral-11 mb-8px block">Sample Rate (seconds)</label>
-              <div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
-                <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.sample_rate }}</span>
-              </div>
-              <small class="text-10 text-neutral-9">Time interval for polling data source</small>
-            </div>
-            <div>
-              <label class="text-12 font-medium text-neutral-11 mb-8px block">Error Timeout (seconds)</label>
-              <div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
-                <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.error_timeout }}</span>
-              </div>
-              <small class="text-10 text-neutral-9">Time before circuit breaker resets</small>
-            </div>
-            <div>
-              <label class="text-12 font-medium text-neutral-11 mb-8px block">Failure Threshold (%)</label>
-              <div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
-                <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.failure_threshold }}</span>
-              </div>
-              <small class="text-10 text-neutral-9">Percentage of failures to trigger circuit breaker</small>
-            </div>
-            <div>
-              <label class="text-12 font-medium text-neutral-11 mb-8px block">Success Threshold (%)</label>
-              <div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
-                <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.success_threshold }}</span>
-              </div>
-              <small class="text-10 text-neutral-9">Percentage of successes to close circuit breaker</small>
-            </div>
-            <div>
-              <label class="text-12 font-medium text-neutral-11 mb-8px block">Observability Window (minutes)</label>
-              <div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
-                <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.observability_window }}</span>
-              </div>
-              <small class="text-10 text-neutral-9">Time window for monitoring failures</small>
-            </div>
-            <div>
-              <label class="text-12 font-medium text-neutral-11 mb-8px block">Minimum Request Count</label>
-              <div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
-                <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.minimum_request_count }}</span>
-              </div>
-              <small class="text-10 text-neutral-9">Minimum requests before triggering</small>
-            </div>
-            <div>
-              <label class="text-12 font-medium text-neutral-11 mb-8px block">Consecutive Failure Threshold</label>
-              <div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
-                <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.consecutive_failure_threshold }}</span>
-              </div>
-              <small class="text-10 text-neutral-9">Consecutive failures before disabling endpoint</small>
-            </div>
-          </div>
-        }
       }
 
       @if (activeTab.label === 'event types') {
-        <div class="flex items-end justify-between flex-wrap gap-12px mb-24px">
-          @if (action === 'update') {
-            <h3 class="text-16 font-bold">Event Types</h3>
-          }
+        <div class="flex items-center justify-between flex-wrap gap-12px mb-16px">
+          <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Event types</h3>
           @if (licenseService.hasLicense('AdvancedSubscriptions')) {
-            <div class="flex gap-12px">
+            <div class="flex gap-8px">
               <!-- Import OpenAPI Spec Button -->
-              <button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" type="button" fill="outline"
-                (click)="fileInput.click()">
-                <svg width="18" height="18" class="mr-2 fill-new.primary-400">
-                  <use xlink:href="#plus-icon"></use>
-                </svg>
+              <button
+                type="button"
+                convoy-permission="Project Settings|MANAGE"
+                class="flex items-center gap-4px px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
+                (click)="fileInput.click()"
+                >
                 Import OpenAPI Spec
               </button>
               <input #fileInput type="file" accept=".json,.yaml,.yml" hidden (change)="importOpenAPISpec($event)">
               <!-- Create Event Type Button -->
               @if (validEventTypes().length > 0) {
-                <button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" type="button"
-                  (click)="openCreateEventTypeModal()">
-                  <svg width="18" height="18" class="mr-2 fill-white-100">
-                    <use xlink:href="#plus-icon"></use>
-                  </svg>
+                <button
+                  type="button"
+                  convoy-permission="Project Settings|MANAGE"
+                  class="flex items-center gap-4px px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+                  (click)="openCreateEventTypeModal()"
+                  >
+                  <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
                   Event Type
                 </button>
               }
             </div>
           }
         </div>
-        <div convoy-card>
+        <div class="bg-white-100 border border-new.border rounded-12px overflow-hidden">
           <!-- empty state  -->
           @if (validEventTypes().length == 0) {
-            <div class="py-40px">
-              <div convoy-empty-state imgSrc="/assets/img/events-log-empty-state.png" heading="You currently do not have any event types" description="Event types will be listed here when available" id="event-type-empty-state">
-                <button emptyStateCTA convoy-button type="button" size="sm" class="mt-36px" id="create-eventtype-modal-button" (click)="openCreateEventTypeModal()">
-                  <svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
-                    <use xlink:href="#plus-icon"></use>
-                  </svg>
-                  Create Event Type
-                </button>
+            <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px" id="event-type-empty-state">
+              <img src="/assets/img/svg/deliveries-empty.svg" class="w-48px h-48px" alt="" />
+              <div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
+                <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No event types yet</p>
+                <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Event types will be listed here when available.</p>
               </div>
+              <button
+                type="button"
+                class="flex items-center gap-4px min-w-[100px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+                id="create-eventtype-modal-button"
+                (click)="openCreateEventTypeModal()"
+                >
+                <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
+                Create Event Type
+              </button>
             </div>
           }
           @if (validEventTypes().length > 0) {
             <div class="overflow-x-auto w-full">
-            <table convoy-table>
-              <thead convoy-table-head>
-                @for (head of eventTypeTableHead; track $index; let i = $index) {
-                  <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
-                }
-              </thead>
-              <tbody>
-                @for (event of validEventTypes(); track $index; let i = $index) {
-                  <tr convoy-table-row [id]="'event' + i">
-                    <td convoy-table-cell class="pl-16px">
-                      <div class="flex gap-4px">
-                        <div convoy-tag>{{ event?.name }}</div>
-                        <div convoy-tag size="sm" [color]="event.deprecated_at ? 'error' : 'success'">{{ event.deprecated_at ? 'deprecated' : 'active' }}</div>
-                      </div>
-                    </td>
-                    <td convoy-table-cell>{{ event.category || '-' }}</td>
-                    <td convoy-table-cell>
-                      <div class="max-w-[240px] whitespace-normal text-12">{{ event.description || '-' }}</div>
-                    </td>
-                    <td convoy-table-cell>
-                      <div class="flex items-center gap-12px">
-                        <button convoy-button color="neutral" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('AdvancedSubscriptions')" (click)="openEditEventTypeModal(event)">
-                          <svg width="14" height="14" class="fill-transparent stroke-neutral-9 mr-8px">
-                            <use xlink:href="#edit-icon"></use>
-                          </svg>
-                          Edit
-                        </button>
-                        <button convoy-button color="error" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('AdvancedSubscriptions')" (click)="deprecateEventType(event.uid)">
-                          <svg width="14" height="14" class="fill-transparent stroke-error-9 mr-8px">
-                            <use xlink:href="#delete-icon2"></use>
-                          </svg>
-                          Deprecate
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+              <table convoy-table>
+                <thead convoy-table-head>
+                  @for (head of eventTypeTableHead; track $index; let i = $index) {
+                    <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''">{{ head }}</th>
+                  }
+                </thead>
+                <tbody>
+                  @for (event of validEventTypes(); track $index; let i = $index) {
+                    <tr convoy-table-row [id]="'event' + i">
+                      <td convoy-table-cell class="pl-16px">
+                        <div class="flex gap-4px">
+                          <div convoy-tag>{{ event?.name }}</div>
+                          <div convoy-tag size="sm" [color]="event.deprecated_at ? 'error' : 'success'">{{ event.deprecated_at ? 'deprecated' : 'active' }}</div>
+                        </div>
+                      </td>
+                      <td convoy-table-cell>{{ event.category || '-' }}</td>
+                      <td convoy-table-cell>
+                        <div class="max-w-[240px] whitespace-normal text-12">{{ event.description || '-' }}</div>
+                      </td>
+                      <td convoy-table-cell>
+                        <div class="flex items-center gap-12px">
+                          <button convoy-button color="neutral" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('AdvancedSubscriptions')" (click)="openEditEventTypeModal(event)">
+                            <svg width="14" height="14" class="fill-transparent stroke-neutral-9 mr-8px">
+                              <use xlink:href="#edit-icon"></use>
+                            </svg>
+                            Edit
+                          </button>
+                          <button convoy-button color="error" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('AdvancedSubscriptions')" (click)="deprecateEventType(event.uid)">
+                            <svg width="14" height="14" class="fill-transparent stroke-error-9 mr-8px">
+                              <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                            Deprecate
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
             </div>
           }
         </div>
@@ -530,20 +516,19 @@
   </div>
 
   @if (activeTab.label !== 'signature history' && activeTab.label !== 'endpoints config' && activeTab.label !== 'secrets' && activeTab.label !== 'event types' && activeTab.label !== 'circuit breaker') {
-    <div>
+    <div class="mt-32px">
       @if (action === 'create' && isDisabled) {
-        <div class="mb-12px text-12 text-error-9 text-right">
+        <div class="mb-12px font-body text-[12px] text-new.error-500 text-right">
           This action is disabled for this organization. Please contact support or subscribe to a plan.
         </div>
       }
       <div class="flex justify-end">
-        <button convoy-button [disabled]="isCreatingProject || projectForm.disabled || (action === 'create' && isDisabled)">
-          {{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
-          @if (action !== 'update') {
-            <svg width="24" height="24" class="ml-8px fill-white-100">
-              <use xlink:href="#arrow-right-icon"></use>
-            </svg>
-          }
+        <button
+          type="submit"
+          class="min-w-[160px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50"
+          [disabled]="isCreatingProject || projectForm.disabled || (action === 'create' && isDisabled)"
+          >
+          {{ action === 'update' ? 'Save Changes' : 'Create Project' }}
         </button>
       </div>
     </div>
@@ -600,9 +585,9 @@
           <convoy-input-error>Please enter a valid schema</convoy-input-error>
         }
       </convoy-input-field>
-      <div class="flex justify-end gap-12px mt-38px">
-        <button convoy-button color="error" fill="outline" type="button" (click)="closeEventTypeModal()">Discard</button>
-        <button convoy-button (click)="selectedEventType ? updateNewEventType() : createNewEventType(); this.selectedEventType = null; ">{{ selectedEventType ? 'Update' : 'Create' }}</button>
+      <div class="flex justify-end gap-8px mt-38px">
+        <button type="button" class="px-16px py-10px rounded-full font-body font-medium text-[14px] leading-[16px] text-new.text-secondary transition-colors hover:bg-new.surface-muted" (click)="closeEventTypeModal()">Discard</button>
+        <button type="button" class="min-w-[100px] px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" (click)="selectedEventType ? updateNewEventType() : createNewEventType(); this.selectedEventType = null; ">{{ selectedEventType ? 'Update' : 'Create' }}</button>
       </div>
     </form>
   </div>
@@ -621,9 +606,9 @@
       <div class="spacer mb-24px"></div>
       <convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
 
-      <div class="flex justify-end mt-38px">
-        <button convoy-button color="error" fill="outline" class="mr-16px" (click)="versions.removeAt(versionsLength - 1); newSignatureDialog.close()">Discard</button>
-        <button convoy-button (click)="createNewSignature(versionsLength - 1)">Create</button>
+      <div class="flex justify-end gap-8px mt-38px">
+        <button type="button" class="px-16px py-10px rounded-full font-body font-medium text-[14px] leading-[16px] text-new.text-secondary transition-colors hover:bg-new.surface-muted" (click)="versions.removeAt(versionsLength - 1); newSignatureDialog.close()">Discard</button>
+        <button type="button" class="min-w-[100px] px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" (click)="createNewSignature(versionsLength - 1)">Create</button>
       </div>
     </form>
   </div>
@@ -631,62 +616,78 @@
 <!-- add new signature modal  -->
 
 <!-- regenerate and cancel modal prompt  -->
-<dialog #confirmationDialog convoy-dialog position="center" size="sm">
-  <div class="px-20px py-30px">
-    <p class="text-14 font-bold text-black mb-8px">Confirm Action</p>
-    <p class="text-12 font-medium text-neutral-11 mb-24px">You are about to regenerate a new Api Key for this project</p>
-    <div class="flex items-center gap-12px">
-      <button convoy-button class="px-16px" (click)="regenerateKey()">Confirm</button>
-      <button convoy-button fill="text" size="sm" class="font-semibold" (click)="confirmationDialog.close()">Cancel</button>
+<dialog #confirmationDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
+  <div class="p-24px flex flex-col gap-24px">
+    <div class="flex flex-col gap-8px">
+      <div class="flex items-center justify-between">
+        <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Regenerate API key?</h2>
+        <button type="button" class="w-24px h-24px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" (click)="confirmationDialog.close()">
+          <img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close" />
+        </button>
+      </div>
+      <p class="font-body font-normal text-[16px] leading-[20px] text-new.text-secondary">You are about to regenerate a new API key for this project. The current key stops working immediately.</p>
+    </div>
+    <div class="flex flex-col gap-8px">
+      <button type="button" class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90" (click)="regenerateKey()">Confirm</button>
+      <button type="button" class="w-full px-16px py-12px rounded-full font-body font-medium text-[14px] leading-[16px] text-new.text-secondary text-center transition-colors hover:bg-new.surface-muted" (click)="confirmationDialog.close()">Cancel</button>
     </div>
   </div>
 </dialog>
 <!-- regenerate and cancel modal prompt  -->
 
 <!-- disable endpoints confirmation prompt -->
-<dialog #disableEndpointsDialog convoy-dialog position="center" size="sm">
-  <div class="flex flex-col p-30px">
-    <h3 class="text-14 font-bold text-black mb-8px">Confirm Action</h3>
-    <p class="text-12 font-medium text-neutral-11 mb-20px">You are about to re-enable all endpoints on this project, please confirm this action</p>
-
-    <div class="flex gap-16px items-center">
-      <button convoy-button size="sm" (click)="updateProject(); disableEndpointsDialog.close()">Confirm</button>
-      <button convoy-button fill="text" size="sm" class="font-semibold" (click)="disableEndpointsDialog.close(); projectForm.patchValue({ config: { disable_endpoint: true } })">Close</button>
+<dialog #disableEndpointsDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
+  <div class="p-24px flex flex-col gap-24px">
+    <div class="flex flex-col gap-8px">
+      <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Re-enable all endpoints?</h2>
+      <p class="font-body font-normal text-[16px] leading-[20px] text-new.text-secondary">You are about to re-enable all endpoints on this project. Please confirm this action.</p>
+    </div>
+    <div class="flex flex-col gap-8px">
+      <button type="button" class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90" (click)="updateProject(); disableEndpointsDialog.close()">Confirm</button>
+      <button type="button" class="w-full px-16px py-12px rounded-full font-body font-medium text-[14px] leading-[16px] text-new.text-secondary text-center transition-colors hover:bg-new.surface-muted" (click)="disableEndpointsDialog.close(); projectForm.patchValue({ config: { disable_endpoint: true } })">Close</button>
     </div>
   </div>
 </dialog>
 
 <!-- disable tls endpoints confirmation prompt -->
-<dialog #disableTLSEndpointsDialog convoy-dialog position="center" size="sm">
-  <div class="flex flex-col justify-center items-center px-30px py-40px text-black text-12 text-center">
-    <img src="/assets/img/warning.gif" class="h-[126px] w-[126px]" alt="warning" />
-    <p class="max-w-[250px] font-semibold">Are you sure you want to disable this?</p>
-    <p class="max-w-[300px] font-medium mb-12px">Connections to your endpoints will be susceptible to machine-in-the-middle attacks</p>
-    <button convoy-button color="error" class="mb-18px mt-24px" [disabled]="isCreatingProject" (click)="updateProject(); disableTLSEndpointsDialog.close()">Yes, Disable</button>
-    <button convoy-button size="sm" fill="text" class="font-semibold !text-neutral-11" (click)="disableTLSEndpointsDialog.close(); projectForm.patchValue({ config: { ssl: { enforce_secure_endpoints: true } } })">No, Cancel</button>
+<dialog #disableTLSEndpointsDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
+  <div class="p-24px flex flex-col gap-24px">
+    <div class="flex flex-col gap-8px">
+      <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Allow insecure endpoints?</h2>
+      <p class="font-body font-normal text-[16px] leading-[20px] text-new.text-secondary">Connections to your endpoints will be susceptible to machine-in-the-middle attacks. Are you sure you want to disable this?</p>
+    </div>
+    <div class="flex flex-col gap-8px">
+      <button type="button" class="w-full px-16px py-12px rounded-full bg-[#DC2626] font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50" [disabled]="isCreatingProject" (click)="updateProject(); disableTLSEndpointsDialog.close()">Yes, Disable</button>
+      <button type="button" class="w-full px-16px py-12px rounded-full font-body font-medium text-[14px] leading-[16px] text-new.text-secondary text-center transition-colors hover:bg-new.surface-muted" (click)="disableTLSEndpointsDialog.close(); projectForm.patchValue({ config: { ssl: { enforce_secure_endpoints: true } } })">No, Cancel</button>
+    </div>
   </div>
 </dialog>
 
 <!-- enable muliple endpoints subscription confirmation prompt -->
-<dialog #mutliSubEndpointsDialog convoy-dialog position="center" size="sm">
-  <div class="flex flex-col p-30px">
-    <h3 class="text-14 font-bold text-black mb-8px">Confirm Action</h3>
-    <p class="text-12 font-medium text-neutral-11 mb-20px">You are about to enable multiple subscriptions for endpoints on this project, please confirm this action</p>
-
-    <div class="flex gap-16px items-center">
-      <button convoy-button size="sm" (click)="updateProject(); mutliSubEndpointsDialog.close()">Confirm</button>
-      <button convoy-button fill="text" size="sm" class="font-semibold" (click)="mutliSubEndpointsDialog.close(); projectForm.patchValue({ config: { multiple_endpoint_subscriptions: false } })">Close</button>
+<dialog #mutliSubEndpointsDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
+  <div class="p-24px flex flex-col gap-24px">
+    <div class="flex flex-col gap-8px">
+      <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Enable multiple subscriptions?</h2>
+      <p class="font-body font-normal text-[16px] leading-[20px] text-new.text-secondary">You are about to enable multiple subscriptions for endpoints on this project. Please confirm this action.</p>
+    </div>
+    <div class="flex flex-col gap-8px">
+      <button type="button" class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90" (click)="updateProject(); mutliSubEndpointsDialog.close()">Confirm</button>
+      <button type="button" class="w-full px-16px py-12px rounded-full font-body font-medium text-[14px] leading-[16px] text-new.text-secondary text-center transition-colors hover:bg-new.surface-muted" (click)="mutliSubEndpointsDialog.close(); projectForm.patchValue({ config: { multiple_endpoint_subscriptions: false } })">Close</button>
     </div>
   </div>
 </dialog>
 
 <!-- disable meta events prompt  -->
-<dialog #metaEventsDialog convoy-dialog position="center" size="sm">
-  <div class="flex flex-col justify-center items-center px-30px py-40px">
-    <img src="/assets/img/warning.gif" class="h-[126px] w-[126px]" alt="warning" />
-    <p class="max-w-[250px] font-medium text-black text-12 mb-12px text-center">Are you sure you want to disable meta events on this project?</p>
-    <button convoy-button color="error" class="mb-18px mt-24px" [disabled]="isCreatingProject" (click)="updateProject(); metaEventsDialog.close()">Yes, Disable</button>
-    <button convoy-button size="sm" fill="text" color="neutral" class="font-semibold" (click)="metaEventsDialog.close(); projectForm.patchValue({ config: { meta_event: { is_enabled: true } } })">No, Cancel</button>
+<dialog #metaEventsDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
+  <div class="p-24px flex flex-col gap-24px">
+    <div class="flex flex-col gap-8px">
+      <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Disable meta events?</h2>
+      <p class="font-body font-normal text-[16px] leading-[20px] text-new.text-secondary">Are you sure you want to disable meta events on this project?</p>
+    </div>
+    <div class="flex flex-col gap-8px">
+      <button type="button" class="w-full px-16px py-12px rounded-full bg-[#DC2626] font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50" [disabled]="isCreatingProject" (click)="updateProject(); metaEventsDialog.close()">Yes, Disable</button>
+      <button type="button" class="w-full px-16px py-12px rounded-full font-body font-medium text-[14px] leading-[16px] text-new.text-secondary text-center transition-colors hover:bg-new.surface-muted" (click)="metaEventsDialog.close(); projectForm.patchValue({ config: { meta_event: { is_enabled: true } } })">No, Cancel</button>
+    </div>
   </div>
 </dialog>
 <!-- disable meta events prompt  -->

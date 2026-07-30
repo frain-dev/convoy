@@ -1,7 +1,28 @@
-<div class="flex flex-col justify-center items-center px-20px py-30px">
-    <img src="/assets/img/warning.gif" class="w-100px" alt="warning" />
-    <p class="text-14 font-medium text-black mb-8px text-center max-w-[230px]">Are you sure you want to {{ deleteText }}?</p>
-    <p class="text-12 font-normal text-neutral-11 my-20px">This action is irrevesible.</p>
-    <button convoy-button color="error" class="mb-18px" [disabled]="isLoading" (click)="deleteData.emit()">{{ deleteButtonText ? 'Yes, ' + deleteButtonText : 'Yes, Delete' }}</button>
-    <button convoy-button fill="text" color="neutral" size="sm" class="font-semibold" (click)="closeModal.emit()">No, Cancel</button>
+<div class="p-24px flex flex-col gap-24px">
+  <div class="flex flex-col gap-8px">
+    <div class="flex items-center justify-between">
+      <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Are you sure?</h2>
+      <button type="button" class="w-24px h-24px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" (click)="closeModal.emit()">
+        <img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close" />
+      </button>
+    </div>
+    <p class="font-body font-normal text-[16px] leading-[20px] text-new.text-secondary">You are about to {{ deleteText }}. This action is irreversible.</p>
+  </div>
+  <div class="flex flex-col gap-8px">
+    <button
+      type="button"
+      class="w-full px-16px py-12px rounded-full bg-[#DC2626] font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50"
+      [disabled]="isLoading"
+      (click)="deleteData.emit()"
+      >
+      {{ deleteButtonText ? 'Yes, ' + deleteButtonText : 'Yes, Delete' }}
+    </button>
+    <button
+      type="button"
+      class="w-full px-16px py-12px rounded-full font-body font-medium text-[14px] leading-[16px] text-new.text-secondary text-center transition-colors hover:bg-new.surface-muted"
+      (click)="closeModal.emit()"
+      >
+      No, Cancel
+    </button>
+  </div>
 </div>

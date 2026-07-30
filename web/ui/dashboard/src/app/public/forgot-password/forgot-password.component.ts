@@ -2,14 +2,14 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { InputErrorComponent } from 'src/app/components/input/input.component';
+import { AuthShellComponent } from 'src/app/public/components/auth-shell/auth-shell.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ForgotPasswordService } from './forgot-password.service';
 
 @Component({
     selector: 'app-forgot-password',
-    imports: [ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective],
+    imports: [ReactiveFormsModule, InputErrorComponent, AuthShellComponent],
     templateUrl: './forgot-password.component.html',
     styleUrls: ['./forgot-password.component.scss']
 })

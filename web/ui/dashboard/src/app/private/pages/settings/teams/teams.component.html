@@ -1,171 +1,178 @@
 <div>
-  <div class="flex justify-between items-center mb-24px">
-    <h3 class="text-16 font-bold text-neutral-10">Team</h3>
-    <button convoy-permission="Team|MANAGE" convoy-button size="sm" class="" (click)="action = 'create'; teamsDialog.showModal()">
-      <svg width="18" height="18" class="mr-2 fill-white-100">
-        <use xlink:href="#plus-icon"></use>
-      </svg>
-      Member
-    </button>
-  </div>
-
-  <div class="flex flex-row items-center mb-24px">
-    <form class="border border-primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-white-100">
-      <img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-      <input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" class="w-full text-neutral-11 text-14 outline-none" />
-      @if (searchString && searchString.length > 0) {
-        <button convoy-button fill="text" class="transition-all duration-200 !p-0" (click)="searchTeam({ searchInput: $event })">
-          <img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
-        </button>
-      }
-    </form>
-
-    <div convoy-dropdown size="sm">
-      <button dropdownTrigger convoy-button size="sm" fill="outline" color="neutral" class="px-10px border border-primary-400 mx-16px min-w-[180px] whitespace-nowrap justify-between h-36px">
-        <span class="text-neutral-11 text-12 mr-4px">Filter By:</span>
-        <span class="text-primary-100 text-12 capitalize">{{ selectedFilterOption }} Invites</span>
-        <img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-[16px] ml-8px" />
-      </button>
-
-      <ul dropdownOptions>
-        @for (filterOption of filterOptions; track $index) {
-          <li class="px-20px" convoy-list-item convoy-dropdown-option [active]="selectedFilterOption == filterOption ? 'true' : 'false'">
-            <button convoy-button fill="text" class="w-full text-12 text-black !justify-start capitalize" (click)="toggleFilter(filterOption); dropdownComponent.show = false">{{ filterOption }} Invites</button>
-          </li>
-        }
-      </ul>
+  <!-- Section header -->
+  <div class="flex items-start justify-between gap-16px mb-20px">
+    <div class="flex flex-col gap-2px">
+      <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Team</h3>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Manage who has access to this organisation.</p>
     </div>
-  </div>
-
-  @if ((selectedFilterOption === 'active' && isFetchingTeamMembers) || (selectedFilterOption === 'pending' && isFetchingPendingInvites)) {
-    <div convoy-card>
-      <convoy-table-loader [withDate]="false" [tableHead]="tableHead"></convoy-table-loader>
-    </div>
-  }
-
-  @if (selectedFilterOption === 'active' && !isFetchingTeamMembers && !noData) {
-    <div convoy-card>
-      <div class="min-h-[70vh]">
-        <table convoy-table>
-          <thead convoy-table-head>
-            @for (head of tableHead; track $index; let i = $index) {
-              <th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }">{{ head }}</th>
-            }
-          </thead>
-          <tbody>
-            @for (team of teams.content; track $index; let i = $index) {
-              <tr convoy-table-row class="border border-primary-500" [id]="'team' + i">
-                <td convoy-table-cell class="pl-20px">
-                  <convoy-badge texture="dark" [text]="team?.user_metadata?.first_name + ' ' + team?.user_metadata?.last_name"></convoy-badge>
-                </td>
-                <td convoy-table-cell>
-                  {{ team.role.type | role }}
-                </td>
-                <td convoy-table-cell>All projects</td>
-                <td convoy-table-cell>
-                  @if (team.user_id !== userDetails?.uid) {
-                    <div convoy-dropdown size="md" position="right">
-                      <button dropdownTrigger convoy-button size="sm" fill="text">
-                        <img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-                      </button>
-                      <ul dropdownOptions>
-                        <li>
-                          <button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="text" class="w-full !justify-start" (click)="showUpdateMemberModal(team)">Update</button>
-                        </li>
-                        <li>
-                          <button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="text" color="error" class="w-full !justify-start" (click)="deleteDialog.showModal(); selectedMember = team; showOverlay = false">Deactivate</button>
-                        </li>
-                      </ul>
-                    </div>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="flex items-center mt-16px">
-      <!-- <button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: teams.pagination.prev }" [disabled]="teams.pagination.prev === 0" (click)="fetchTeamMembers({ page: teams.pagination.prev })">
-      <svg width="24" height="24" class="mr-8px fill-primary-100">
-        <use xlink:href="#arrow-left-icon"></use>
-      </svg>
-      Previous
-    </button>
     <button
-      convoy-button
-      fill="outline"
-      size="sm"
-      class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-      routerLink="./"
-      [queryParams]="{ page: teams.pagination.next }"
-      [disabled]="teams.pagination.next === 0"
-      (click)="fetchTeamMembers({ page: teams.pagination.next })"
+      type="button"
+      convoy-permission="Team|MANAGE"
+      class="shrink-0 flex items-center gap-4px px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+      (click)="action = 'create'; teamsDialog.showModal()"
       >
-      Next
-      <svg width="24" height="24" class="ml-8px fill-primary-100">
-        <use xlink:href="#arrow-right-icon"></use>
-      </svg>
-    </button> -->
+      <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
+      Add Member
+    </button>
   </div>
-}
 
-<!-- Invites -->
-@if (selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData) {
-  <div convoy-card class="min-h-[70vh]">
-    <table convoy-table>
-      <thead convoy-table-head>
-        @for (head of tableHead; track $index; let i = $index) {
-          <th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
+  <!-- Active / pending toggle -->
+  <div class="inline-flex items-center gap-2px p-2px bg-new.surface-muted rounded-8px mb-16px">
+    @for (filterOption of filterOptions; track $index) {
+      <button
+        type="button"
+        class="px-12px py-6px rounded-6px font-body font-medium text-[13px] leading-[16px] capitalize transition-colors"
+        [class]="selectedFilterOption === filterOption ? 'bg-white-100 text-new.text-primary shadow-[0px_1px_2px_rgba(0,0,0,0.06)]' : 'text-new.text-secondary hover:text-new.text-primary'"
+        (click)="toggleFilter(filterOption)"
+        >
+        {{ filterOption === 'active' ? 'Members' : 'Pending invites' }}
+      </button>
+    }
+  </div>
+
+  <!-- Table card -->
+  <div class="bg-white-100 border border-new.border rounded-12px">
+    @if (selectedFilterOption === 'active') {
+      <!-- Search -->
+      <div class="flex items-center gap-8px px-12px h-40px border-b border-new.border">
+        <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px" alt="search" />
+        <input
+          type="search"
+          placeholder="Search team members..."
+          [(ngModel)]="searchString"
+          (change)="searchTeam({ searchInput: $event })"
+          [ngModelOptions]="{ standalone: true }"
+          class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+          />
+      </div>
+    }
+
+    @if ((selectedFilterOption === 'active' && isFetchingTeamMembers) || (selectedFilterOption === 'pending' && isFetchingPendingInvites)) {
+      <!-- Loading state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-loading.svg" class="w-48px h-48px animate-spin" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Loading {{ selectedFilterOption === 'active' ? 'team members' : 'pending invites' }}</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">This usually takes a moment.</p>
+        </div>
+      </div>
+    } @else if ((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && (noInvitesData || !pendingInvites?.content?.length))) {
+      <!-- Empty state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-empty.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">
+            {{ searchString ? 'No team member matches “' + searchString + '”' : selectedFilterOption === 'active' ? 'No one is on your team yet' : 'No pending invites' }}
+          </p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
+            {{ selectedFilterOption === 'active' ? 'Invite team members to join your organisation and assign them roles.' : 'Invites you send will appear here until they are accepted.' }}
+          </p>
+        </div>
+        @if (!searchString) {
+          <button
+            type="button"
+            convoy-permission="Team|MANAGE"
+            class="flex items-center gap-4px min-w-[100px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+            (click)="action = 'create'; teamsDialog.showModal()"
+            >
+            <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
+            Add Member
+          </button>
         }
-      </thead>
-      <tbody>
-        @for (team of pendingInvites.content; track $index; let i = $index) {
-          <tr convoy-table-row [id]="'pendingInvite' + i">
-            <td convoy-table-cell class="pl-20px">
-              {{ team.invitee_email }}
-            </td>
-            <td convoy-table-cell>{{ team.role.type | role }}</td>
-            <td convoy-table-cell>All projects</td>
-            <td convoy-table-cell>
-              <div convoy-dropdown>
-                <button dropdownTrigger convoy-button size="sm" fill="text">
-                  <img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+      </div>
+    } @else {
+      <!-- Header row -->
+      <div class="grid w-full grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_56px] bg-new.surface-subtle border-b border-new.border">
+        <div class="flex items-center px-20px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">{{ selectedFilterOption === 'pending' ? 'Email' : 'Name' }}</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Role</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Projects</span>
+        </div>
+        <div class="h-36px"></div>
+      </div>
+
+      @if (selectedFilterOption === 'active') {
+        @for (team of teams.content; track team.uid; let i = $index) {
+          <div class="grid w-full grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_56px] items-center border-b border-new.border last:border-b-0 transition-colors hover:bg-new.surface-subtle" [id]="'team' + i">
+            <div class="flex items-center gap-10px px-20px h-48px min-w-0">
+              <span class="w-28px h-28px shrink-0 flex items-center justify-center rounded-full bg-new.surface-muted border border-new.border font-body font-medium text-[11px] uppercase text-new.text-secondary">
+                {{ (team.user_metadata.first_name || '?').charAt(0) }}{{ (team.user_metadata.last_name || '').charAt(0) }}
+              </span>
+              <div class="flex flex-col min-w-0">
+                <span class="font-body font-medium text-[14px] leading-[18px] text-new.text-primary truncate">{{ team.user_metadata.first_name }} {{ team.user_metadata.last_name }}</span>
+                @if (team.user_metadata.email) {
+                  <span class="font-body font-normal text-[12px] leading-[16px] text-new.text-secondary truncate">{{ team.user_metadata.email }}</span>
+                }
+              </div>
+            </div>
+            <div class="flex items-center px-12px h-48px">
+              <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ team.role.type | role }}</span>
+            </div>
+            <div class="flex items-center px-12px h-48px">
+              <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">All projects</span>
+            </div>
+            <div class="flex items-center justify-end px-12px h-48px">
+              @if (team.user_id !== userDetails?.uid) {
+                <div convoy-dropdown position="right" size="md">
+                  <button dropdownTrigger type="button" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted">
+                    <img src="assets/img/more-icon-vertical.svg" class="h-16px" alt="more actions" />
+                  </button>
+                  <ul dropdownOptions class="py-4px">
+                    <li>
+                      <button convoy-permission="Team|MANAGE" convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="showUpdateMemberModal(team)">Update</button>
+                    </li>
+                    <li>
+                      <button convoy-permission="Team|MANAGE" convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.error-500 transition-colors hover:bg-new.surface-muted" (click)="deleteDialog.showModal(); selectedMember = team; showOverlay = false">Deactivate</button>
+                    </li>
+                  </ul>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+
+      @if (selectedFilterOption === 'pending') {
+        @for (team of pendingInvites.content; track team.uid; let i = $index) {
+          <div class="grid w-full grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_56px] items-center border-b border-new.border last:border-b-0 transition-colors hover:bg-new.surface-subtle" [id]="'pendingInvite' + i">
+            <div class="flex items-center px-20px h-48px min-w-0">
+              <span class="font-body font-medium text-[14px] leading-[18px] text-new.text-primary truncate">{{ team.invitee_email }}</span>
+            </div>
+            <div class="flex items-center px-12px h-48px">
+              <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ team.role.type | role }}</span>
+            </div>
+            <div class="flex items-center px-12px h-48px">
+              <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">All projects</span>
+            </div>
+            <div class="flex items-center justify-end px-12px h-48px">
+              <div convoy-dropdown position="right" size="md">
+                <button dropdownTrigger type="button" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted">
+                  <img src="assets/img/more-icon-vertical.svg" class="h-16px" alt="more actions" />
                 </button>
-                <ul dropdownOptions>
-                  <li class="border-b border-b-neutral-a3">
-                    <button convoy-dropdown-option convoy-button fill="text" color="neutral" class="w-full" (click)="resendInvite(team.uid)">Resend Invite</button>
+                <ul dropdownOptions class="py-4px">
+                  <li>
+                    <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="resendInvite(team.uid)">Resend Invite</button>
                   </li>
                   <li>
-                    <button convoy-dropdown-option convoy-button fill="text" color="neutral" class="w-full" (click)="deleteDialog.showModal(); showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+                    <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.error-500 transition-colors hover:bg-new.surface-muted" (click)="deleteDialog.showModal(); showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
                   </li>
                 </ul>
               </div>
-            </td>
-          </tr>
+            </div>
+          </div>
         }
-      </tbody>
-    </table>
+      }
+    }
   </div>
-}
-
-@if (((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)) {
-  <div convoy-card class="py-100px">
-    <div
-      convoy-empty-state
-      (onAction)="action = 'create'; teamsDialog.showModal()"
-      imgSrc="/assets/img/teams-empty-state.png"
-      [buttonText]="!searchString ? 'Add team member' : ''"
-      [heading]="searchString ? 'You have no one with the name ' + searchString + ' on your team' : selectedFilterOption === 'active' ? 'You have no one on your team yet' : 'You have no pending invites'"
-      [description]="!searchString ? 'You can invite team members to join your organization and assign them roles to projects' : ''"
-    ></div>
-  </div>
-}
 </div>
 
 <dialog #teamsDialog convoy-dialog>
   <div convoy-dialog-header (closeDialog)="closeInviteModal()">
-    <h2 class="font-semibold text-14 capitalize">{{ action === 'update' ? 'Update' : 'Add' }} Team Member</h2>
+    <h2 class="font-heading font-medium text-[14px] text-new.text-primary capitalize">{{ action === 'update' ? 'Update' : 'Add' }} Team Member</h2>
   </div>
 
   <div class="h-full w-full">
@@ -184,18 +191,27 @@
           </ng-container>
         }
         @if (inviteLink) {
-          <p class="text-neutral-11 text-12 mt-20px">Invite Link</p>
-          <div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
-            <span class="text-14 font-normal whitespace-nowrap w-380px overflow-hidden text-ellipsis">{{ inviteLink || '' }}</span>
-            <convoy-copy-button [text]="inviteLink || ''" notificationText="Invite link has been copied to clipboard!"></convoy-copy-button>
+          <p class="font-body font-normal text-[13px] text-new.text-secondary mt-20px mb-8px">Invite Link</p>
+          <div class="flex items-center gap-8px w-full h-40px bg-new.surface-muted border border-new.border rounded-8px px-12px mb-12px">
+            <span class="flex-1 truncate font-menlo text-[13px] text-new.text-primary">{{ inviteLink || '' }}</span>
+            <convoy-copy-button class="shrink-0" [text]="inviteLink || ''" notificationText="Invite link has been copied to clipboard!"></convoy-copy-button>
           </div>
         }
-        <div class="flex justify-end pt-24px pb-40px">
-          <button convoy-button class="ml-16px" [disabled]="invitingUser || inviteUserForm.disabled || inviteLink">
+        <div class="flex justify-end gap-12px pt-24px pb-40px">
+          <button
+            class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50"
+            [disabled]="invitingUser || inviteUserForm.disabled || inviteLink"
+            >
             {{ invitingUser ? 'Inviting User...' : 'Send Invite' }}
           </button>
           @if (inviteLink) {
-            <button convoy-button class="ml-16px text-14" type="button" fill="outline" (click)="closeInviteModal(); toggleFilter('pending')">Done</button>
+            <button
+              type="button"
+              class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
+              (click)="closeInviteModal(); toggleFilter('pending')"
+              >
+              Done
+            </button>
           }
         </div>
       </form>
@@ -212,7 +228,10 @@
           <convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="memberForm.get('role')?.patchValue({ type: $event })"></convoy-select>
         </ng-container>
         <div class="flex justify-end pt-24px pb-40px">
-          <button convoy-button class="ml-16px" [disabled]="updatingMember || memberForm.disabled">
+          <button
+            class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50"
+            [disabled]="updatingMember || memberForm.disabled"
+            >
             {{ updatingMember ? 'Updating...' : 'Update' }}
           </button>
         </div>
@@ -222,7 +241,7 @@
   </div>
 </dialog>
 
-<dialog #deleteDialog convoy-dialog position="center" size="sm">
+<dialog #deleteDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
   <app-delete-modal
     [isLoading]="deactivatingUser || cancelingInvite"
     [deleteText]="showCancelInviteModal ? 'cancel this invite' : 'deactivate “' + selectedMember?.user_metadata?.first_name + ' ' + selectedMember?.user_metadata?.last_name + '”'"

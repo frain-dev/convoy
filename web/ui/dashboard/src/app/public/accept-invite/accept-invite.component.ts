@@ -1,16 +1,15 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { InputErrorComponent } from 'src/app/components/input/input.component';
+import { AuthShellComponent } from 'src/app/public/components/auth-shell/auth-shell.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { AcceptInviteService } from './accept-invite.service';
 
 @Component({
     selector: 'app-accept-invite',
-    imports: [CommonModule, ReactiveFormsModule, ButtonComponent, LoaderModule, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent],
+    imports: [ReactiveFormsModule, LoaderModule, InputErrorComponent, RouterModule, AuthShellComponent],
     templateUrl: './accept-invite.component.html',
     styleUrls: ['./accept-invite.component.scss']
 })

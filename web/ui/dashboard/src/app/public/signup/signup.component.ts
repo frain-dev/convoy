@@ -3,13 +3,9 @@ import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
 import {ButtonComponent} from 'src/app/components/button/button.component';
-import {
-    InputDirective,
-    InputErrorComponent,
-    InputFieldDirective,
-    LabelComponent
-} from 'src/app/components/input/input.component';
+import {InputErrorComponent} from 'src/app/components/input/input.component';
 import {LoaderModule} from 'src/app/private/components/loader/loader.module';
+import {AuthShellComponent} from '../components/auth-shell/auth-shell.component';
 import {HubspotService} from 'src/app/services/hubspot/hubspot.service';
 import {SignupService} from './signup.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
@@ -21,7 +17,7 @@ import {GeneralService} from 'src/app/services/general/general.service';
 
 @Component({
     selector: 'convoy-signup',
-    imports: [ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective, LoaderModule],
+    imports: [ReactiveFormsModule, ButtonComponent, InputErrorComponent, LoaderModule, AuthShellComponent],
     templateUrl: './signup.component.html',
     styleUrls: ['./signup.component.scss']
 })
@@ -75,7 +71,9 @@ export class SignupComponent implements OnInit {
 
 			if (window.location.hostname === 'dashboard.getconvoy.io') await this.hubspotService.sendWelcomeEmail({ email: this.signupForm.value.email, firstname: this.signupForm.value.first_name, lastname: this.signupForm.value.last_name });
 
-			this.router.navigateByUrl('/projects');
+			// Email signups land on the verify-email holding page before the
+			// dashboard; the emailed link itself is handled by /verify-email.
+			this.router.navigateByUrl('/email-verification');
 			this.disableSignupBtn = false;
 		} catch {
 			this.disableSignupBtn = false;

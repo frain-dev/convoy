@@ -1,119 +1,218 @@
-<div convoy-page>
-  @if (!isLoadingProjects && projects.length) {
-    <h3 class="mb-2 font-bold mt-40px text-16 text-neutral-12">Projects</h3>
-    <p class="text-neutral-11 text-12 font-medium mb-24px">All your project's summary at a glance</p>
-    <div class="grid grid-cols-3 desktop:grid-cols-2 mobile:grid-cols-1 gap-6">
-      <div class="relative">
-        <a convoy-permission="Project Settings|MANAGE" [routerLink]="isDisabled ? null : './new'" [class.pointer-events-none]="isDisabled" [class.opacity-50]="isDisabled" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
-          <svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
-            <use xlink:href="#plus-icon"></use>
-          </svg>
-          <span class="text-primary-100 font-medium text-12">Create new project</span>
-        </a>
-        @if (getProjectLimitMessage()) {
-          <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full">
-            <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-              <use xlink:href="#lock-icon"></use>
-            </svg>
-            {{ getProjectLimitMessage() }}
-          </div>
-        }
-        @if (isDisabled && !getProjectLimitMessage()) {
-          <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full px-16px text-center">
-            <svg width="10" height="10" class="fill-new.primary-400 scale-150 shrink-0">
-              <use xlink:href="#lock-icon"></use>
-            </svg>
-            {{ disabledOrganisationMessage }}
-          </div>
-        }
-      </div>
-      @for (project of projects; track $index) {
-        <button (click)="getProject(project.uid)" class="flex items-center rounded-8px bg-white-100 border border-neutral-a3 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)] text-left min-h-[88px]">
-          <!-- <div class="px-6 py-4 flex items-center justify-between border-b border-b-neutral-a3"> -->
-          <div class="px-6 py-4 flex items-center justify-between w-full">
-            <div class="flex items-center">
-              <div class="bg-primary-500 w-6 h-6 rounded-[50px] mr-2 flex items-center justify-center">
-                <svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-75" [ngClass]="{ 'rotate-180': project.type === 'incoming' }">
-                  <use xlink:href="#top-right-icon"></use>
-                </svg>
-              </div>
-              <h4 class="cursor-pointer text-12 font-medium">{{ project.name }}</h4>
-            </div>
-            <div class="bg-primary-500 rounded-8px px-2 pt-[1px] text-10 font-medium text-primary-100 uppercase">{{ project.type || '-' }}</div>
-          </div>
-          <!-- <div class="flex items-center p-0">
-          <div class="py-2 px-6 text-12 font-medium w-1/2 whitespace-nowrap">
-            <span class="text-black mr-2">{{ project.statistics?.messages_sent | number }}</span>
-            <span class="text-neutral-11">Events {{ project.type === 'incoming' ? 'Received' : 'Sent' }}</span>
-          </div>
-          <div class="py-2 px-6 w-1/2 whitespace-nowrap flex items-center justify-between border-l border-l-neutral-a3">
-            <div class="text-12 font-medium">
-              <span class="text-black mr-2">{{ project.statistics?.total_endpoints | number }}</span>
-              <span class="text-neutral-11">Endpoints</span>
-            </div>
-            <svg width="20" height="20" fill="#477db3">
-              <use xlink:href="#arrow-right-icon"></use>
-            </svg>
-          </div>
-        </div> -->
-      </button>
-    }
-  </div>
-}
+<div class="bg-new.surface-page min-h-[calc(100vh-60px)] w-full">
+	<div class="max-w-[1449px] m-auto px-24px py-40px flex flex-col gap-20px">
+		<!-- Section header -->
+		<div class="flex items-center justify-between w-full">
+			<div class="flex flex-col gap-4px">
+				<h1 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Projects</h1>
+				<p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ projects.length }} {{ projects.length === 1 ? 'project' : 'projects' }}</p>
+			</div>
 
-<!-- empty state  -->
-@if (!isLoadingProjects && !projects.length) {
-  <div class="mt-50px">
-    <div convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" heading="Create a project to get started" description="Your incoming and outgoing projects appear here." id="subscriptions-empty-state">
-      <div emptyStateCTA class="mt-24px flex flex-col items-center gap-24px">
-        @if (trialProvisioning) {
-          <div class="flex flex-col items-center gap-8px text-center">
-            @if (isStartingTrial) {
-              <button convoy-button size="sm" [disabled]="true" class="!py-12px">Setting up your trial...</button>
-              <p class="text-12 text-neutral-11">Activating your trial. Projects unlock automatically in a moment.</p>
-            } @else {
-              <p class="text-12 text-neutral-11">Your trial is active and finishing setup.</p>
-              <button convoy-button size="sm" class="!py-12px" (click)="retryTrialUnlock()">Refresh</button>
-            }
-          </div>
-        } @else if (!ctaResolved) {
-          <convoy-loader position="relative"></convoy-loader>
-        } @else {
-          <button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" [routerLink]="emptyStateCreateDisabled ? null : './new'" [disabled]="emptyStateCreateDisabled" [class.opacity-50]="emptyStateCreateDisabled" [class.cursor-not-allowed]="emptyStateCreateDisabled" class="!py-12px">
-            <img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
-            Create a Project
-          </button>
-          @if (canStartCloudTrial) {
-            <p class="text-12 text-neutral-11 text-center">
-              {{ cloudTrialUpsellLead }}
-              <button type="button" convoy-permission="Billing|MANAGE" class="text-12 font-medium text-primary-100 hover:underline bg-transparent border-0 p-0 cursor-pointer inline" (click)="openTrialModal()">Start a free trial</button>
-            </p>
-          } @else if (canShowSelfHostedTrialUpsell) {
-            <p class="text-12 text-neutral-11 text-center">
-              {{ selfHostedTrialUpsellLead }}
-              <button type="button" convoy-permission="Billing|MANAGE" class="text-12 font-medium text-primary-100 hover:underline bg-transparent border-0 p-0 cursor-pointer inline" (click)="openTrialModal()">Start a free trial</button>
-            </p>
-          } @else if (shouldBlockProjectCreation) {
-            <div class="flex flex-col items-center gap-8px text-center">
-              @if (getProjectLimitMessageForEmptyState()) {
-                <p class="text-12 text-new.primary-400 font-medium">{{ getProjectLimitMessageForEmptyState() }}</p>
-              }
-              @if (isDisabled) {
-                <p class="text-12 text-neutral-11">{{ disabledOrganisationMessage }}</p>
-              }
-              @if (canOpenBillingForProjectLimit) {
-                <a routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="text-12 font-medium text-neutral-11 hover:text-primary-100 underline hover:no-underline">Go to Billing</a>
-              }
-            </div>
-          }
-        }
-      </div>
-    </div>
-  </div>
-}
+			<button
+				convoy-permission="Project Settings|MANAGE"
+				type="button"
+				class="flex items-center gap-4px justify-center min-w-[100px] px-16px py-8px rounded-full bg-new.primary-400 transition-all duration-300 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+				[disabled]="shouldBlockProjectCreation"
+				[title]="getProjectLimitMessage() || (isDisabled ? disabledOrganisationMessage : '')"
+				(click)="openCreateProjectModal()"
+			>
+				<img src="/assets/img/svg/plus-white.svg" class="w-16px h-16px" alt="" />
+				<span class="font-body font-medium text-[14px] leading-[16px] text-white-100">Add Project</span>
+			</button>
+		</div>
+
+		<div class="h-px w-full bg-new.border"></div>
+
+		<!-- Table shell -->
+		<div class="bg-white-100 border border-new.border rounded-[6px] w-full overflow-hidden">
+			<!-- Search toolbar -->
+			<div class="flex items-center gap-8px h-40px px-12px border-b border-new.border shadow-[0_2px_2px_-1px_rgba(0,0,0,0.04)]">
+				<img src="/assets/img/svg/search-gray.svg" class="w-20px h-20px" alt="" />
+				<input
+					#searchInput
+					type="text"
+					class="w-full h-full bg-transparent outline-none font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-secondary"
+					placeholder="Search by name, owner id..."
+					[value]="searchTerm"
+					(input)="onSearch(searchInput.value)"
+				/>
+			</div>
+
+			@if (isLoadingProjects) {
+				<div class="py-80px">
+					<convoy-loader position="relative"></convoy-loader>
+				</div>
+			} @else if (projects.length) {
+				<!-- Table header -->
+				<div class="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_40px_40px] w-full bg-new.surface-subtle border-b border-new.border">
+					<div class="flex items-center px-20px py-8px h-40px">
+						<span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Name</span>
+					</div>
+					<div class="flex items-center px-12px py-8px h-40px">
+						<span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Last updated</span>
+					</div>
+					<div class="h-40px"></div>
+					<div class="h-40px"></div>
+				</div>
+
+				<!-- Rows -->
+				@for (project of pagedProjects; track project.uid) {
+					<div class="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_40px_40px] w-full border-b border-new.border cursor-pointer transition-colors hover:bg-new.surface-page" (click)="getProject(project.uid)">
+						<div class="flex items-center px-20px py-12px h-40px min-w-0">
+							<span class="font-body font-medium text-[14px] leading-[16px] text-new.text-primary truncate">{{ project.name }}</span>
+						</div>
+						<div class="flex items-center p-12px h-40px">
+							<span class="font-body font-medium text-[14px] leading-[16px] text-new.text-secondary">{{ timeAgo(project.updated_at) }}</span>
+						</div>
+						<div class="flex items-center justify-center p-4px h-40px">
+							<button type="button" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" title="Copy project ID" (click)="copyProjectId(project, $event)">
+								<img src="/assets/img/svg/copy-gray.svg" class="w-16px h-16px" alt="copy project id" />
+							</button>
+						</div>
+						<div class="flex items-center justify-center p-4px h-40px">
+							<button type="button" convoy-permission="Project Settings|MANAGE" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" title="Project settings" (click)="openProjectSettings(project, $event)">
+								<img src="/assets/img/svg/edit-gray.svg" class="w-16px h-16px" alt="edit project" />
+							</button>
+						</div>
+					</div>
+				}
+
+				@if (!filteredProjects.length) {
+					<div class="flex flex-col items-center justify-center gap-8px py-48px">
+						<p class="font-body font-normal text-[14px] text-new.text-secondary">No projects match your search</p>
+					</div>
+				}
+			} @else {
+				<!-- Empty state -->
+				<div class="flex flex-col items-center justify-center gap-16px py-64px px-32px">
+					<img src="/assets/img/svg/project-empty-icon.svg" class="w-56px h-56px" alt="" />
+
+					<div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
+						<p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Create a project to get started</p>
+						<p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Your incoming and outgoing projects appear here</p>
+					</div>
+
+					@if (trialProvisioning) {
+						<div class="flex flex-col items-center gap-8px text-center">
+							@if (isStartingTrial) {
+								<button type="button" disabled class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary opacity-60">Setting up your trial...</button>
+								<p class="font-body text-12 text-new.text-secondary">Activating your trial. Projects unlock automatically in a moment.</p>
+							} @else {
+								<p class="font-body text-12 text-new.text-secondary">Your trial is active and finishing setup.</p>
+								<button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="retryTrialUnlock()">Refresh</button>
+							}
+						</div>
+					} @else if (!ctaResolved) {
+						<convoy-loader position="relative"></convoy-loader>
+					} @else {
+						<button
+							type="button"
+							convoy-permission="Project Settings|MANAGE"
+							class="min-w-[100px] rounded-full py-12px px-16px bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all duration-300 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+							[disabled]="emptyStateCreateDisabled"
+							(click)="openCreateProjectModal()"
+						>
+							Create a Project
+						</button>
+						@if (canStartCloudTrial) {
+							<p class="font-body text-12 text-new.text-secondary text-center">
+								{{ cloudTrialUpsellLead }}
+								<button type="button" convoy-permission="Billing|MANAGE" class="font-body text-12 font-medium text-new.primary-400 hover:underline bg-transparent border-0 p-0 cursor-pointer inline" (click)="openTrialModal()">Start a free trial</button>
+							</p>
+						} @else if (canShowSelfHostedTrialUpsell) {
+							<p class="font-body text-12 text-new.text-secondary text-center">
+								{{ selfHostedTrialUpsellLead }}
+								<button type="button" convoy-permission="Billing|MANAGE" class="font-body text-12 font-medium text-new.primary-400 hover:underline bg-transparent border-0 p-0 cursor-pointer inline" (click)="openTrialModal()">Start a free trial</button>
+							</p>
+						} @else if (shouldBlockProjectCreation) {
+							<div class="flex flex-col items-center gap-8px text-center">
+								@if (getProjectLimitMessageForEmptyState()) {
+									<p class="font-body text-12 text-new.primary-400 font-medium">{{ getProjectLimitMessageForEmptyState() }}</p>
+								}
+								@if (isDisabled) {
+									<p class="font-body text-12 text-new.text-secondary">{{ disabledOrganisationMessage }}</p>
+								}
+								@if (canOpenBillingForProjectLimit) {
+									<a routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="font-body text-12 font-medium text-new.text-secondary hover:text-new.primary-400 underline hover:no-underline">Go to Billing</a>
+								}
+							</div>
+						}
+					}
+				</div>
+			}
+
+			<!-- Footer / pagination -->
+			<div class="flex items-center justify-between h-60px px-20px py-16px">
+				@if (!isLoadingProjects && filteredProjects.length) {
+					<p class="font-body font-medium text-[14px] leading-[16px] text-new.text-secondary">{{ pageRangeLabel }}</p>
+					<div class="flex items-center gap-8px">
+						<button type="button" class="w-28px h-28px rounded-[6px] border border-new.border bg-new.surface-page flex items-center justify-center transition-opacity disabled:opacity-40" [disabled]="currentPage === 1" (click)="prevPage()">
+							<img src="/assets/img/svg/chevron-left-small.svg" class="w-20px h-20px" alt="previous page" />
+						</button>
+						<span class="min-w-[28px] h-28px px-4px rounded-[6px] border border-new.border bg-white-100 flex items-center justify-center font-body font-medium text-[14px] text-new.text-primary">{{ currentPage }}</span>
+						<button type="button" class="w-28px h-28px rounded-[6px] border border-new.border bg-new.surface-page flex items-center justify-center transition-opacity disabled:opacity-40" [disabled]="currentPage === totalPages" (click)="nextPage()">
+							<img src="/assets/img/svg/chevron-right-small.svg" class="w-20px h-20px" alt="next page" />
+						</button>
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+</div>
 
 @if (isLoadingProject) {
-  <convoy-loader position="fixed"></convoy-loader>
+	<convoy-loader position="fixed"></convoy-loader>
 }
+
+<!-- Create project modal -->
+<dialog #createProjectDialog convoy-dialog position="center" size="md" class="!w-[640px] mobile:!w-[calc(100vw-40px)]">
+	<div class="p-24px flex flex-col gap-8px">
+		<div class="flex items-start justify-between">
+			<h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Create Project</h2>
+			<button type="button" class="w-24px h-24px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" (click)="closeCreateProjectModal()">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close" />
+			</button>
+		</div>
+
+		<p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary max-w-[480px]">A project represents the top level namespace for grouping event sources, applications, endpoints and events</p>
+
+		<form [formGroup]="createProjectForm" (ngSubmit)="createProject()" class="flex flex-col gap-16px mt-8px">
+			<div class="grid grid-cols-2 mobile:grid-cols-1 gap-16px">
+				<div>
+					<label for="new-project-name" class="auth-label">Project Name</label>
+					<input type="text" id="new-project-name" class="auth-input" formControlName="name" placeholder="Enter project name" autocomplete="off" />
+					@if (createProjectForm.controls['name'].touched && createProjectForm.controls['name'].invalid) {
+						<convoy-input-error>Please enter a project name</convoy-input-error>
+					}
+				</div>
+
+				<div>
+					<label for="new-project-type" class="auth-label">Project type</label>
+					<div class="relative">
+						<select id="new-project-type" class="auth-input !appearance-none !pr-32px cursor-pointer" formControlName="type">
+							<option value="incoming">Incoming webhooks</option>
+							<option value="outgoing">Outgoing webhooks</option>
+						</select>
+						<img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px absolute right-10px top-1/2 -translate-y-1/2 pointer-events-none" alt="" />
+					</div>
+				</div>
+			</div>
+
+			<button [disabled]="isCreatingProject" class="w-full rounded-full py-12px px-16px bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all duration-300 hover:opacity-90 disabled:opacity-60">
+				{{ isCreatingProject ? 'Creating Project...' : 'Create Project' }}
+			</button>
+		</form>
+	</div>
+</dialog>
+
+<!-- API key modal (shown once after a successful create) -->
+<dialog #apiKeyDialog convoy-dialog position="center" size="sm">
+	<convoy-token-modal
+		title="Project Created Successfully"
+		description="Your API Key has also been created. Please copy this key and save it somewhere safe."
+		[token]="apiKey"
+		notificationText="API key has been copied to your clipboard."
+		(closeModal)="onApiKeyModalClosed()"
+	></convoy-token-modal>
+</dialog>
+
 <convoy-trial-modal #trialModal [mode]="trialModalMode" [selfHostedOffer]="selfHostedTrialOffer" (trialStarted)="onTrialStarted()" (subscribeNow)="onSubscribeInsteadOfTrial()"></convoy-trial-modal>
-</div>

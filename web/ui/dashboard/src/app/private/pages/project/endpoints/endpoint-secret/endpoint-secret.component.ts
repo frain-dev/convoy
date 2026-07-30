@@ -1,8 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { SelectComponent } from 'src/app/components/select/select.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
@@ -10,7 +8,7 @@ import { EndpointsService } from '../endpoints.service';
 
 @Component({
     selector: 'convoy-endpoint-secret',
-    imports: [ReactiveFormsModule, ButtonComponent, SelectComponent, CopyButtonComponent],
+    imports: [ReactiveFormsModule, CopyButtonComponent],
     templateUrl: './endpoint-secret.component.html',
     styleUrls: ['./endpoint-secret.component.scss']
 })

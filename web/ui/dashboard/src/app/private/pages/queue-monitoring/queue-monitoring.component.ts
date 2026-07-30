@@ -6,13 +6,11 @@ import { apiOrigin } from 'src/app/services/api-origin';
 import { HttpService } from 'src/app/services/http/http.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 
 @Component({
     selector: 'convoy-queue-monitoring',
-    imports: [CardComponent, ButtonComponent, LoaderModule],
+    imports: [LoaderModule],
     templateUrl: './queue-monitoring.component.html',
     styleUrls: ['./queue-monitoring.component.scss']
 })
