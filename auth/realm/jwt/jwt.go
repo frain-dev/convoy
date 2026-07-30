@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -130,7 +131,30 @@ func (j *Jwt) BlacklistToken(verified *VerifiedToken, token string) error {
 }
 
 func (j *Jwt) EncodeToken(token string) string {
-	return base64.StdEncoding.EncodeToString([]byte(token))
+	return base64.StdEncoding.EncodeToString([]byte(canonicalToken(token)))
+}
+
+// canonicalToken normalizes a JWT so alternate base64url spellings of the same
+// token collapse to a single blacklist key. golang-jwt decodes the signature
+// non-strictly, so a token and an equivalent spelling of its signature verify
+// identically; keying the blacklist on the raw string would let a logged-out
+// token survive under a re-spelled signature (see GHSA-hpqj-2j2x-p5p2). Only the
+// signature segment is malleable, since the header and payload are covered by
+// the signature, so we re-encode just that segment canonically. Anything that
+// is not a well-formed three-segment token is returned unchanged.
+func canonicalToken(token string) string {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return token
+	}
+
+	sig, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return token
+	}
+
+	parts[2] = base64.RawURLEncoding.EncodeToString(sig)
+	return strings.Join(parts, ".")
 }
 
 func (j *Jwt) generateRefreshToken(user *datastore.User) (string, error) {

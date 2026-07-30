@@ -85,9 +85,14 @@ Then release with `git tag-release`.
 
 Once a tag is created, the release process through Github actions will take care of the rest.
 
-TODO: A missing step here which should be later automated. A release needs to be created before the assets can be uploaded to match the tag. :)
+Wait for the tag workflows to finish. GoReleaser creates and publishes the
+GitHub Release, uploads binary archives, Linux packages, and checksums, publishes
+the Homebrew formula to `frain-dev/homebrew-tools`, and the container release
+workflow publishes the tagged images separately.
 
-Finally, wait for the build step for the tag to finish. The point here is to wait for tarballs to be uploaded to the Github release and the container images to be pushed to the Docker Hub and Quay.io. Once that has happened, click _Publish release_, which will make the release publicly visible and create a GitHub notification.
+The repository must define `HOMEBREW_TAP_TOKEN` with contents write access to
+`frain-dev/homebrew-tools`. The GitHub Release itself uses the workflow's
+repository-scoped `GITHUB_TOKEN`.
 
 ## Release Manager
 The release manager is the individual responsible for the release. The following are the responsibilities of the release manager: 

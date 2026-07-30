@@ -64,6 +64,33 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 
 	qtx := repo.New(tx)
 
+	// Idempotency claim: concurrent creates with the same key race the workers'
+	// check-then-insert, so the authoritative duplicate check lives here, inside
+	// the insert transaction. The transaction-scoped advisory lock (released on
+	// commit/rollback) serializes writers of the same project+key across all
+	// instances; the re-check under the lock sees rows committed by earlier
+	// holders, so exactly one row per key is persisted with
+	// is_duplicate_event=false. Events already flagged duplicate skip the claim,
+	// writing another duplicate row is always safe. Failure policy: fail closed,
+	// a lock or lookup error aborts the create and the caller retries.
+	if !util.IsStringEmpty(event.IdempotencyKey) && !event.IsDuplicateEvent {
+		_, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", "events-idempotency:"+event.ProjectID+":"+event.IdempotencyKey)
+		if err != nil {
+			return err
+		}
+
+		exists, lookupErr := qtx.FindEventsByIdempotencyKey(ctx, repo.FindEventsByIdempotencyKeyParams{
+			IdempotencyKey: common.StringToPgTextNullable(event.IdempotencyKey),
+			ProjectID:      common.StringToPgTextNullable(event.ProjectID),
+		})
+		if lookupErr != nil {
+			return lookupErr
+		}
+		if exists {
+			event.IsDuplicateEvent = true
+		}
+	}
+
 	// Create event params
 	params := repo.CreateEventParams{
 		ID:               common.StringToPgTextNullable(event.UID),
@@ -489,37 +516,6 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 		return datastore.PrevRowCount{}, err
 	}
 	return datastore.PrevRowCount{Count: int(count.Int64)}, nil
-}
-
-// DeleteProjectEvents soft or hard deletes events
-func (s *Service) DeleteProjectEvents(ctx context.Context, projectID string, filter *datastore.EventFilter, hardDelete bool) error {
-	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
-
-	if hardDelete {
-		params := repo.HardDeleteProjectEventsParams{
-			ProjectID: common.StringToPgTextNullable(projectID),
-			StartDate: common.TimeToPgTimestamptz(startDate),
-			EndDate:   common.TimeToPgTimestamptz(endDate),
-		}
-		return s.repo.HardDeleteProjectEvents(ctx, params)
-	}
-
-	params := repo.SoftDeleteProjectEventsParams{
-		ProjectID: common.StringToPgTextNullable(projectID),
-		StartDate: common.TimeToPgTimestamptz(startDate),
-		EndDate:   common.TimeToPgTimestamptz(endDate),
-	}
-	return s.repo.SoftDeleteProjectEvents(ctx, params)
-}
-
-// DeleteProjectTokenizedEvents deletes tokenized events within the given date range
-func (s *Service) DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *datastore.EventFilter) error {
-	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
-	return s.repo.HardDeleteTokenizedEvents(ctx, repo.HardDeleteTokenizedEventsParams{
-		ProjectID: common.StringToPgTextNullable(projectID),
-		StartDate: pgtype.Timestamptz{Time: startDate, Valid: true},
-		EndDate:   pgtype.Timestamptz{Time: endDate, Valid: true},
-	})
 }
 
 // CopyRows copies rows from events to events_search

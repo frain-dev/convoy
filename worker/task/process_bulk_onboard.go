@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	endpointurl "github.com/frain-dev/convoy/pkg/url"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -66,6 +67,15 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 
 		var successCount, skipCount, failCount int
 		for _, item := range batch.Items {
+			// Re-validate the URL here: the queue payload is a trust boundary, so
+			// the API layer's validation (services.ValidateEndpointURL) must be
+			// re-applied before creating anything from it.
+			if urlErr := validateOnboardItemURL(item.URL, project); urlErr != nil {
+				deps.Logger.ErrorContext(ctx, fmt.Sprintf("bulk onboard: invalid endpoint URL %q: %v", item.URL, urlErr))
+				failCount++
+				continue
+			}
+
 			// Check for existing endpoint with the same URL
 			existingEndpoint, findErr := deps.EndpointRepo.FindEndpointByTargetURL(ctx, project.UID, item.URL)
 			var endpointID string
@@ -140,6 +150,19 @@ func ProcessBulkOnboard(deps BulkOnboardDeps) func(context.Context, *asynq.Task)
 
 		return nil
 	}
+}
+
+// validateOnboardItemURL mirrors services.ValidateEndpointURL (which worker/task
+// cannot import without a cycle): valid endpoint template, http/https only, and
+// https enforced when the project requires secure endpoints.
+// validateOnboardItemURL re-applies the shared endpoint URL rule
+// (pkg/url.ValidateEndpointURL) to a queue payload item. The queue is a trust
+// boundary, so the API layer's validation must be re-run here before creating
+// anything from the item.
+func validateOnboardItemURL(rawURL string, project *datastore.Project) error {
+	enforceSecure := project.Config != nil && project.Config.SSL != nil && project.Config.SSL.EnforceSecureEndpoints
+	_, err := endpointurl.ValidateEndpointURL(rawURL, enforceSecure)
+	return err
 }
 
 func buildEndpoint(ctx context.Context, deps BulkOnboardDeps, project *datastore.Project, item BulkOnboardItem) (*datastore.Endpoint, error) {

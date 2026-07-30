@@ -49,7 +49,6 @@ type Querier interface {
 	// faithful and does not clobber a stored description with an empty value.
 	FindEventDeliveryByIDSlim(ctx context.Context, arg FindEventDeliveryByIDSlimParams) (FindEventDeliveryByIDSlimRow, error)
 	FindStuckEventDeliveriesByStatus(ctx context.Context, status pgtype.Text) ([]FindStuckEventDeliveriesByStatusRow, error)
-	HardDeleteProjectEventDeliveries(ctx context.Context, arg HardDeleteProjectEventDeliveriesParams) error
 	// ============================================================================
 	// Group 4: Pagination
 	// ============================================================================
@@ -63,10 +62,6 @@ type Querier interface {
 	LoadEventDeliveryIntervalsMonthly(ctx context.Context, arg LoadEventDeliveryIntervalsMonthlyParams) ([]LoadEventDeliveryIntervalsMonthlyRow, error)
 	LoadEventDeliveryIntervalsWeekly(ctx context.Context, arg LoadEventDeliveryIntervalsWeeklyParams) ([]LoadEventDeliveryIntervalsWeeklyRow, error)
 	LoadEventDeliveryIntervalsYearly(ctx context.Context, arg LoadEventDeliveryIntervalsYearlyParams) ([]LoadEventDeliveryIntervalsYearlyRow, error)
-	// ============================================================================
-	// Group 6: Delete Operations
-	// ============================================================================
-	SoftDeleteProjectEventDeliveries(ctx context.Context, arg SoftDeleteProjectEventDeliveriesParams) error
 	UpdateEventDeliveryMetadata(ctx context.Context, arg UpdateEventDeliveryMetadataParams) error
 	UpdateStatusOfEventDeliveries(ctx context.Context, arg UpdateStatusOfEventDeliveriesParams) error
 }

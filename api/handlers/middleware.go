@@ -265,3 +265,20 @@ func (h *Handler) RequireOrganisationMembership() func(next http.Handler) http.H
 		})
 	}
 }
+
+// RequireInstanceAdmin fails closed unless the authenticated user is an instance
+// admin. The /ui/admin routes are documented as instance-admin only, but several
+// admin handlers (e.g. GetProjects) carry no in-handler admin check, so the gate
+// must live on the router. Failure policy: fail closed 403 for every non-admin.
+func (h *Handler) RequireInstanceAdmin() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !h.isInstanceAdmin(r) {
+				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}

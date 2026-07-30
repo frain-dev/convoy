@@ -11,7 +11,6 @@ import (
 
 var ErrCircuitBreakerNotEnabled = errors.New("[feature flag] circuit breaker is not enabled")
 var ErrFullTextSearchNotEnabled = errors.New("[feature flag] full text search is not enabled")
-var ErrRetentionPolicyNotEnabled = errors.New("[feature flag] retention policy is not enabled")
 var ErrPrometheusMetricsNotEnabled = errors.New("[feature flag] prometheus metrics is not enabled")
 var ErrCredentialEncryptionNotEnabled = errors.New("[feature flag] credential encryption is not enabled")
 var ErrMTLSNotEnabled = errors.New("[feature flag] mTLS is not enabled")
@@ -27,7 +26,6 @@ const (
 	Prometheus           FeatureFlagKey = "prometheus"
 	CircuitBreaker       FeatureFlagKey = "circuit-breaker"
 	FullTextSearch       FeatureFlagKey = "full-text-search"
-	RetentionPolicy      FeatureFlagKey = "retention-policy"
 	ReadReplicas         FeatureFlagKey = "read-replicas"
 	CredentialEncryption FeatureFlagKey = "credential-encryption"
 	MTLS                 FeatureFlagKey = "mtls"
@@ -50,7 +48,6 @@ var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
 	Prometheus:           disabled,
 	FullTextSearch:       disabled,
 	CircuitBreaker:       disabled,
-	RetentionPolicy:      disabled,
 	ReadReplicas:         disabled,
 	CredentialEncryption: disabled,
 	MTLS:                 disabled,
@@ -78,8 +75,6 @@ func NewFFlag(enableFeatureFlags []string) *FFlag {
 			f.Features[FullTextSearch] = enabled
 		case string(CircuitBreaker):
 			f.Features[CircuitBreaker] = enabled
-		case string(RetentionPolicy):
-			f.Features[RetentionPolicy] = enabled
 		case string(ReadReplicas):
 			f.Features[ReadReplicas] = enabled
 		case string(CredentialEncryption):
@@ -125,7 +120,7 @@ func (c *FFlag) CanAccessFeature(key FeatureFlagKey) bool {
 }
 
 func (c *FFlag) CanAccessOrgFeature(ctx context.Context, key FeatureFlagKey, fetcher FeatureFlagFetcher, earlyAdopterFetcher EarlyAdopterFeatureFetcher, orgID string) bool {
-	if key == Prometheus || key == ReadReplicas || key == IpRules || key == RetentionPolicy || key == FullTextSearch {
+	if key == Prometheus || key == ReadReplicas || key == IpRules || key == FullTextSearch {
 		return c.CanAccessFeature(key)
 	}
 

@@ -1539,6 +1539,81 @@ func TestBlockPrivateNetworks(t *testing.T) {
 	}
 }
 
+func TestBlockMetadataEndpoints(t *testing.T) {
+	tests := []struct {
+		name    string
+		address string
+		blocked bool
+	}{
+		// Metadata / link-local targets: blocked regardless of encoding.
+		{name: "aws/gcp metadata v4", address: "169.254.169.254:80", blocked: true},
+		{name: "link-local v4", address: "169.254.0.1:80", blocked: true},
+		{name: "link-local v6", address: "[fe80::1]:80", blocked: true},
+		{name: "link-local multicast v6", address: "[ff02::1]:80", blocked: true},
+		{name: "aws imds v6", address: "[fd00:ec2::254]:80", blocked: true},
+		{name: "ipv4-mapped metadata", address: "[::ffff:169.254.169.254]:80", blocked: true},
+		{name: "nat64-wrapped metadata", address: "[64:ff9b::a9fe:a9fe]:80", blocked: true},
+		{name: "6to4-wrapped metadata", address: "[2002:a9fe:a9fe::1]:80", blocked: true},
+		{name: "unparseable", address: "not-an-ip:80", blocked: true},
+
+		// General private + public targets: allowed (delivery must keep working).
+		{name: "private 10/8", address: "10.0.0.5:80", blocked: false},
+		{name: "private 192.168", address: "192.168.1.10:8080", blocked: false},
+		{name: "private 172.16", address: "172.16.0.1:80", blocked: false},
+		{name: "ipv6 ula non-metadata", address: "[fd12:3456::1]:80", blocked: false},
+		{name: "public ipv4", address: "1.1.1.1:443", blocked: false},
+		{name: "public ipv6", address: "[2606:4700:4700::1111]:443", blocked: false},
+		{name: "nat64-wrapped public", address: "[64:ff9b::808:808]:80", blocked: false},
+		{name: "6to4-wrapped public", address: "[2002:0808:0808::1]:80", blocked: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := blockMetadataEndpoints("tcp", tc.address, nil)
+			if tc.blocked {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestDeliveryTransport_BlocksMetadataButAllowsPrivate(t *testing.T) {
+	// Unlicensed default delivery client dials the metadata IP: refused.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().IpRules().Return(false).AnyTimes()
+
+	d, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{}),
+		LoggerOption(log.New("convoy", log.LevelInfo)),
+	)
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(http.MethodGet, "http://169.254.169.254:80", nil)
+	require.NoError(t, err)
+	_, err = d.client.Do(req)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "ssrf guard")
+
+	// A private RFC1918 target is still allowed to dial (it fails to connect, but
+	// not with an ssrf-guard rejection), so self-hosted internal delivery keeps
+	// working. Bound the dial with a short context so an unreachable host does
+	// not ride the full dialer timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, "http://10.255.255.1:9", nil)
+	require.NoError(t, err)
+	_, err = d.client.Do(req)
+	if err != nil {
+		require.NotContains(t, err.Error(), "ssrf guard")
+	}
+}
+
 func TestNotificationTransport_SSRFGuardBlocksPrivate(t *testing.T) {
 	// No proxy configured, so egress is direct: a user-controlled notification
 	// URL resolving to a private/loopback host is refused at dial time.

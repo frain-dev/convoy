@@ -560,6 +560,27 @@ func (s *Service) RevokePortalLink(ctx context.Context, projectID, portalLinkID 
 	return nil
 }
 
+// FindPortalLinkTokenMaskIDs returns every refresh-token mask id ever issued for
+// a portal link. Refresh rotation appends token rows without deleting old ones,
+// so a link can map to several mask ids; the cached repo uses this to invalidate
+// each portal_links_by_mask cache entry on revoke.
+func (s *Service) FindPortalLinkTokenMaskIDs(ctx context.Context, portalLinkID string) ([]string, error) {
+	rows, err := s.repo.FetchPortalLinkTokenMaskIDs(ctx, common.StringToPgText(portalLinkID))
+	if err != nil {
+		s.logger.Error("failed to fetch portal link token mask ids", "error", err)
+		return nil, &ServiceError{ErrMsg: "error retrieving portal link tokens", Err: err}
+	}
+
+	maskIDs := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if row.String != "" {
+			maskIDs = append(maskIDs, row.String)
+		}
+	}
+
+	return maskIDs, nil
+}
+
 func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	// Consolidate endpoint IDs from filter
 	var endpointIDs []string

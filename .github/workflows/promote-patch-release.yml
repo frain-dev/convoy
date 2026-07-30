@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   promote-patch-release:
@@ -47,5 +48,21 @@ jobs:
           echo "Next cutoff gate: ${{ steps.plan.outputs.next_cutoff_tag }} (${{ steps.validate.outputs.next_cutoff_sha }})"
 
       - name: Create and push patch tag
+        id: tag
         run: |
           ./scripts/tag-release.sh "${{ steps.plan.outputs.version }}" "${{ inputs.commit_sha }}"
+
+      # Tag pushes made with GITHUB_TOKEN do not fire `on: push: tags`
+      # workflows, so dispatch the tag-triggered workflows explicitly.
+      # Keep this list in sync with workflows that declare `tags: [v*]`.
+      # Gated on the tag actually being created so re-runs cannot re-publish
+      # an existing tag; to heal a tag with missing artifacts, dispatch
+      # build-image.yml / release.yml directly on the tag ref.
+      - name: Trigger release workflows for the tag
+        if: ${{ steps.tag.outputs.created == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ steps.plan.outputs.version }}"
+          gh workflow run build-image.yml --repo "${GITHUB_REPOSITORY}" --ref "${TAG}" -f name="publish ${TAG} docker images"
+          gh workflow run release.yml --repo "${GITHUB_REPOSITORY}" --ref "${TAG}" -f name="publish ${TAG} binaries"

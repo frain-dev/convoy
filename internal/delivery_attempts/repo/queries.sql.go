@@ -8,7 +8,6 @@ package repo
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -325,49 +324,4 @@ func (q *Queries) GetFailureAndSuccessCountsWithResetTime(ctx context.Context, a
 		&i.Successes,
 	)
 	return i, err
-}
-
-const hardDeleteProjectDeliveryAttempts = `-- name: HardDeleteProjectDeliveryAttempts :execresult
-DELETE FROM convoy.delivery_attempts AS da
-USING convoy.event_deliveries AS ed
-WHERE da.event_delivery_id = ed.id
-  AND da.project_id = $1
-  AND ed.project_id = $1
-  AND ed.created_at >= $2
-  AND ed.created_at <= $3
-`
-
-type HardDeleteProjectDeliveryAttemptsParams struct {
-	ProjectID      pgtype.Text
-	CreatedAtStart pgtype.Timestamptz
-	CreatedAtEnd   pgtype.Timestamptz
-}
-
-// Hard delete keys off the parent event_delivery.created_at (not attempt.created_at).
-// Retention deletes deliveries by delivery age next; retry attempts can be newer than
-// the cutoff while their delivery is older. Deleting by attempt age leaves those rows
-// and trips delivery_attempts_event_delivery_id_fkey (NO ACTION). Fail closed: remove
-// every attempt for deliveries in the cutoff window before the delivery delete runs.
-// Soft delete still filters on attempt.created_at; only hard delete uses this join.
-func (q *Queries) HardDeleteProjectDeliveryAttempts(ctx context.Context, arg HardDeleteProjectDeliveryAttemptsParams) (pgconn.CommandTag, error) {
-	return q.db.Exec(ctx, hardDeleteProjectDeliveryAttempts, arg.ProjectID, arg.CreatedAtStart, arg.CreatedAtEnd)
-}
-
-const softDeleteProjectDeliveryAttempts = `-- name: SoftDeleteProjectDeliveryAttempts :execresult
-UPDATE convoy.delivery_attempts
-SET deleted_at = NOW()
-WHERE project_id = $1
-    AND created_at >= $2
-    AND created_at <= $3
-    AND deleted_at IS NULL
-`
-
-type SoftDeleteProjectDeliveryAttemptsParams struct {
-	ProjectID      pgtype.Text
-	CreatedAtStart pgtype.Timestamptz
-	CreatedAtEnd   pgtype.Timestamptz
-}
-
-func (q *Queries) SoftDeleteProjectDeliveryAttempts(ctx context.Context, arg SoftDeleteProjectDeliveryAttemptsParams) (pgconn.CommandTag, error) {
-	return q.db.Exec(ctx, softDeleteProjectDeliveryAttempts, arg.ProjectID, arg.CreatedAtStart, arg.CreatedAtEnd)
 }

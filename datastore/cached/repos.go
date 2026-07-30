@@ -429,7 +429,33 @@ func (r *CachedPortalLinkRepository) RefreshPortalLinkAuthToken(ctx context.Cont
 	return r.inner.RefreshPortalLinkAuthToken(ctx, projectID, portalLinkID)
 }
 func (r *CachedPortalLinkRepository) RevokePortalLink(ctx context.Context, projectID, portalLinkID string) error {
-	return r.inner.RevokePortalLink(ctx, projectID, portalLinkID)
+	// The portal realm authenticates refresh tokens via FindPortalLinkByMaskId,
+	// which reads through the portal_links_by_mask cache. RevokePortalLink only
+	// soft-deletes the link row, so without invalidating the cached mask-id
+	// entries a revoked token keeps authenticating until the TTL expires. Resolve
+	// the mask ids before revoking (revoke does not delete the token rows).
+	// Failure policy: revoke must not be blocked by a cache concern, so a mask-id
+	// lookup error is logged and the entries are left to expire by TTL; the DB
+	// read already rejects the revoked link.
+	maskIDs, lookupErr := r.inner.FindPortalLinkTokenMaskIDs(ctx, portalLinkID)
+	if lookupErr != nil {
+		r.logger.Error("failed to resolve portal link mask ids for cache invalidation", "error", lookupErr)
+	}
+
+	if err := r.inner.RevokePortalLink(ctx, projectID, portalLinkID); err != nil {
+		return err
+	}
+
+	keys := make([]string, 0, len(maskIDs))
+	for _, maskID := range maskIDs {
+		keys = append(keys, "portal_links_by_mask:"+maskID)
+	}
+	cachedrepo.Invalidate(ctx, r.cache, r.logger, keys...)
+
+	return nil
+}
+func (r *CachedPortalLinkRepository) FindPortalLinkTokenMaskIDs(ctx context.Context, portalLinkID string) ([]string, error) {
+	return r.inner.FindPortalLinkTokenMaskIDs(ctx, portalLinkID)
 }
 func (r *CachedPortalLinkRepository) LoadPortalLinksPaged(ctx context.Context, projectID string, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	return r.inner.LoadPortalLinksPaged(ctx, projectID, filter, pageable)

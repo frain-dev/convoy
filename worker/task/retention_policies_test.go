@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/guregu/null.v4"
 
-	partman "github.com/jirevwe/go_partman"
+	partman "github.com/jirevwe/gopartman"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/testdb"
@@ -106,56 +106,40 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	project, err := testdb.SeedProject(r.ConvoyApp.database, ulid.Make().String(), "test", r.DefaultOrg.UID, datastore.OutgoingProject, projectConfig)
 	require.NoError(r.T(), err)
 
-	pmConfig := &partman.Config{
-		SampleRate: time.Second,
-		Tables: []partman.Table{
-			{
-				Name:              "events",
-				Schema:            "convoy",
-				TenantId:          project.UID,
-				TenantIdColumn:    "project_id",
-				PartitionBy:       "created_at",
-				PartitionType:     partman.TypeRange,
-				RetentionPeriod:   time.Hour * 24,
-				PartitionInterval: time.Hour * 24,
-				PartitionCount:    2,
-			},
-			{
-				Name:              "event_deliveries",
-				Schema:            "convoy",
-				TenantId:          project.UID,
-				TenantIdColumn:    "project_id",
-				PartitionBy:       "created_at",
-				PartitionType:     partman.TypeRange,
-				RetentionPeriod:   time.Hour * 24,
-				PartitionInterval: time.Hour * 24,
-				PartitionCount:    2,
-			},
-			{
-				Name:              "delivery_attempts",
-				Schema:            "convoy",
-				TenantId:          project.UID,
-				TenantIdColumn:    "project_id",
-				PartitionBy:       "created_at",
-				PartitionType:     partman.TypeRange,
-				RetentionPeriod:   time.Hour * 24,
-				PartitionInterval: time.Hour * 24,
-				PartitionCount:    2,
-			},
-		},
+	ctx := context.Background()
+	for _, m := range partman.Migrations() {
+		_, err = r.ConvoyApp.database.GetConn().Exec(ctx, m.SQL)
+		require.NoError(r.T(), err)
 	}
 
 	clock := partman.NewSimulatedClock(time.Now().Add(-duration))
-	pm, err := partman.NewManager(
-		partman.WithConfig(pmConfig),
-		partman.WithDB(r.ConvoyApp.database.GetDB()),
+	pm, err := partman.New(
+		partman.WithDB(r.ConvoyApp.database.GetConn()),
 		partman.WithClock(clock),
-		partman.WithLogger(log.New("convoy", log.LevelInfo)),
 	)
 	require.NoError(r.T(), err)
 
-	ret := retention.NewTestRetentionPolicy(r.ConvoyApp.database, pm)
-	ret.Start(context.Background(), time.Second)
+	for _, table := range []string{"events", "event_deliveries", "delivery_attempts"} {
+		err = pm.RegisterParent(ctx, partman.ParentConfig{
+			SchemaName:        "convoy",
+			TableName:         table,
+			TenantColumn:      "project_id",
+			PartitionBy:       "created_at",
+			PartitionInterval: partman.PartitionDayInterval,
+			Premake:           2,
+			RetentionPeriod:   time.Hour * 24,
+		})
+		require.NoError(r.T(), err)
+
+		err = pm.RegisterTenant(ctx, partman.TenantConfig{
+			ParentSchema: "convoy",
+			ParentName:   table,
+			TenantId:     project.UID,
+		})
+		require.NoError(r.T(), err)
+	}
+
+	ret := retention.NewTestRetentionPolicy(pm)
 
 	endpoint, err := testdb.SeedEndpoint(r.ConvoyApp.database, project, ulid.Make().String(), "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(r.T(), err)
@@ -197,7 +181,10 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 
 	// call handler
 	retentionTask := asynq.NewTask(string(convoy.RetentionPolicies), nil, asynq.Queue(string(convoy.ScheduleQueue)))
-	clock.AdvanceTime(duration + time.Hour)
+	// Daily partitions drop only after their upper bound is past the retention
+	// cutoff. Advance two full days past the seed day so that partition is
+	// eligible (24h advance was enough for the old hour-aware go_partman path).
+	clock.AdvanceTime(duration*2 + time.Hour)
 
 	// Backup is now handled separately by CDC collector or ProcessBackupJob task.
 	// This test only validates retention (deletion) behavior.

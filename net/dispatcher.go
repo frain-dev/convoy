@@ -283,7 +283,9 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	if ff.CanAccessFeature(fflag.IpRules) && l.IpRules() {
 		d.client.Transport = NewNetJailTransport(netJailTransport, d.detailedTrace.Enabled)
 	} else {
-		d.client.Transport = NewVanillaTransport(d.transport, d.detailedTrace.Enabled)
+		// Default (unlicensed) egress: block cloud metadata / link-local targets
+		// at dial time while still allowing delivery to general private networks.
+		d.client.Transport = NewVanillaTransport(withMetadataGuard(d.transport), d.detailedTrace.Enabled)
 	}
 
 	// Notifications dial user-controlled URLs (e.g. slack_webhook_url), so the
@@ -384,6 +386,99 @@ func blockPrivateNetworks(_, address string, _ syscall.RawConn) error {
 	}
 
 	return nil
+}
+
+// awsIMDSv6 is the fixed IPv6 address of the AWS instance metadata service.
+var awsIMDSv6 = netip.MustParseAddr("fd00:ec2::254")
+
+// nat64WellKnown is the RFC 6052 well-known NAT64 prefix used to embed an IPv4
+// address inside an IPv6 address.
+var nat64WellKnown = netip.MustParsePrefix("64:ff9b::/96")
+
+// blockMetadataEndpoints is the default (unlicensed) webhook egress guard.
+// Unlike blockPrivateNetworks it deliberately does NOT block general private
+// networks: self-hosted deployments legitimately deliver webhooks to RFC1918
+// internal services. It blocks only the cloud instance-metadata / link-local
+// targets that no legitimate webhook needs and that are the SSRF
+// credential-theft vector:
+//   - IPv4 link-local 169.254.0.0/16 (covers 169.254.169.254 and, post-DNS,
+//     metadata.google.internal),
+//   - IPv6 link-local (fe80::/10) and link-local multicast,
+//   - the AWS IMDS IPv6 address fd00:ec2::254,
+//
+// including IPv4-mapped, NAT64 (64:ff9b::/96) and 6to4 (2002::/16) encodings of
+// a link-local IPv4 target. It runs post-DNS with the concrete dial IP, closing
+// the DNS-rebinding window a write-time URL check cannot. Fail-closed: an
+// address that cannot be parsed is rejected. Licensed deployments layer the
+// netjail allow/block rules on top of delivery instead of this baseline.
+func blockMetadataEndpoints(_, address string, _ syscall.RawConn) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return fmt.Errorf("ssrf guard: cannot parse dial address %q: %w", address, err)
+	}
+
+	ip, err := netip.ParseAddr(host)
+	if err != nil {
+		return fmt.Errorf("ssrf guard: cannot parse dial ip %q: %w", host, err)
+	}
+
+	if isMetadataOrLinkLocal(ip) {
+		return fmt.Errorf("ssrf guard: blocked connection to metadata/link-local address %s", ip)
+	}
+
+	return nil
+}
+
+// isMetadataOrLinkLocal reports whether ip is a cloud-metadata / link-local
+// target, resolving IPv4-mapped, NAT64 and 6to4 encodings to the embedded IPv4
+// so a wrapped 169.254.x.x target cannot slip past.
+func isMetadataOrLinkLocal(ip netip.Addr) bool {
+	ip = ip.Unmap()
+
+	if ip.Is6() {
+		if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip == awsIMDSv6 {
+			return true
+		}
+		if v4, ok := embeddedV4(ip); ok {
+			ip = v4
+		}
+	}
+
+	return ip.Is4() && (ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast())
+}
+
+// embeddedV4 extracts the IPv4 address embedded in a NAT64 (64:ff9b::/96) or
+// 6to4 (2002::/16) IPv6 address.
+func embeddedV4(ip netip.Addr) (netip.Addr, bool) {
+	b := ip.As16()
+
+	if nat64WellKnown.Contains(ip) {
+		return netip.AddrFrom4([4]byte{b[12], b[13], b[14], b[15]}), true
+	}
+
+	if b[0] == 0x20 && b[1] == 0x02 { // 6to4 2002::/16
+		return netip.AddrFrom4([4]byte{b[2], b[3], b[4], b[5]}), true
+	}
+
+	return netip.Addr{}, false
+}
+
+// withMetadataGuard returns a clone of base whose dialer applies the default
+// webhook egress guard (blockMetadataEndpoints), blocking cloud metadata /
+// link-local targets at connect time while leaving general private-network
+// delivery intact. ForceAttemptHTTP2 is set because installing a custom
+// DialContext otherwise disables HTTP/2 negotiation for TLS targets.
+func withMetadataGuard(base *http.Transport) *http.Transport {
+	t := base.Clone()
+	t.ForceAttemptHTTP2 = true
+	t.DialContext = (&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+		ControlContext: func(_ context.Context, network, address string, c syscall.RawConn) error {
+			return blockMetadataEndpoints(network, address, c)
+		},
+	}).DialContext
+	return t
 }
 
 // NewOAuth2Dispatcher builds a dispatcher for OAuth2 token exchange. It mirrors
@@ -582,7 +677,7 @@ func (d *Dispatcher) createClientWithMTLS(mtlsCert *tls.Certificate) *http.Clien
 		return &http.Client{Transport: NewNetJailTransport(netJailTransport, d.detailedTrace.Enabled)}
 	}
 
-	return &http.Client{Transport: NewVanillaTransport(customTransport, d.detailedTrace.Enabled)}
+	return &http.Client{Transport: NewVanillaTransport(withMetadataGuard(customTransport), d.detailedTrace.Enabled)}
 }
 
 // SendWebhookWithMTLS sends a webhook request with optional mTLS client certificate configuration

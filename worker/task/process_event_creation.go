@@ -455,7 +455,10 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 				}
 
 				subscriptions = append(subscriptions, *genSubs)
-				return subscriptions, nil
+				// Keep iterating: an event can resolve to several endpoints (app_id
+				// addressing), and every subscription-less endpoint must get its
+				// catch-all subscription, not just the first one.
+				continue
 			}
 
 			matchedSubs, innerErr := matchSubscriptions(ctx, string(event.EventType), subs, filterRepo)

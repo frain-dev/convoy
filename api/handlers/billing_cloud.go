@@ -444,16 +444,30 @@ func (h *BillingHandler) GetOrganisation(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Organisation retrieved successfully", resp.Data, http.StatusOK))
 }
 
+// updateBillingOrganisationRequest allowlists the caller-settable billing
+// profile fields. Identity and linkage fields (external_id, license_key, host,
+// id, slug) are owned by the billing bootstrap flow and must never be forwarded
+// from a user request body.
+type updateBillingOrganisationRequest struct {
+	Name         string `json:"name,omitempty"`
+	BillingEmail string `json:"billing_email,omitempty"`
+}
+
 func (h *BillingHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	orgID, ok := h.orgGuard(w, r)
 	if !ok {
 		return
 	}
 
-	var orgData billing.BillingOrganisation
-	if err := json.NewDecoder(r.Body).Decode(&orgData); err != nil {
+	var req updateBillingOrganisationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
 		return
+	}
+
+	orgData := billing.BillingOrganisation{
+		Name:         req.Name,
+		BillingEmail: req.BillingEmail,
 	}
 
 	resp, err := h.BillingClient.UpdateOrganisation(r.Context(), orgID, orgData)
@@ -536,10 +550,12 @@ func (h *BillingHandler) OnboardSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := validatePlanAndHostRequired(requestData.PlanID, requestData.Host); err != nil {
+	canonicalHost, err := validatePlanAndHost(requestData.PlanID, requestData.Host)
+	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	requestData.Host = canonicalHost
 
 	resp, err := h.BillingClient.OnboardSubscription(r.Context(), orgID, requestData)
 	if err != nil {
@@ -741,10 +757,12 @@ func (h *BillingHandler) UpgradeSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := validatePlanAndHostRequired(requestData.PlanID, requestData.Host); err != nil {
+	canonicalHost, err := validatePlanAndHost(requestData.PlanID, requestData.Host)
+	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	requestData.Host = canonicalHost
 
 	resp, err := h.BillingClient.UpgradeSubscription(r.Context(), orgID, subscriptionID, requestData)
 	if err != nil {

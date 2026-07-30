@@ -538,7 +538,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Delete("/organisations/{orgID}/overrides/{featureKey}", handler.DeleteOrganisationOverride)
 			adminRouter.Get("/organisations/{orgID}/circuit-breaker-config", handler.GetOrganisationCircuitBreakerConfig)
 			adminRouter.Put("/organisations/{orgID}/circuit-breaker-config", handler.UpdateOrganisationCircuitBreakerConfig)
-			adminRouter.Get("/organisations/{orgID}/projects", handler.GetProjects)
+			adminRouter.With(handler.RequireInstanceAdmin()).Get("/organisations/{orgID}/projects", handler.GetProjects)
 			adminRouter.Get("/projects/{projectID}/circuit-breaker-config", handler.GetProjectCircuitBreakerConfig)
 			adminRouter.Put("/projects/{projectID}/circuit-breaker-config", handler.UpdateProjectCircuitBreakerConfig)
 			adminRouter.Post("/retry-event-deliveries", handler.RetryEventDeliveries)
@@ -728,6 +728,12 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			BillingClient: a.A.BillingClient,
 		}
 		uiRouter.Route("/billing", func(billingRouter chi.Router) {
+			// Catalog endpoints (config, plans, tax_id_types) are intentionally
+			// readable by any authenticated user: they return only public
+			// catalog data the dashboard needs to render billing UI (plan
+			// names/pricing, tax ID formats, payment provider publishable key,
+			// billing mode). Org-scoped and checkout-state fields stay behind
+			// orgGuard/canManageSelfHostedBilling inside the handlers.
 			billingRouter.Get("/config", billingHandler.GetBillingConfig)
 			billingRouter.Get("/plans", billingHandler.GetPlans)
 			billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
@@ -940,9 +946,10 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
 
-	// Ingestion API.
+	// Ingestion API. Must use the same knob as the control plane's /ingest so
+	// CONVOY_INSTANCE_INGEST_RATE governs every ingest surface.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})

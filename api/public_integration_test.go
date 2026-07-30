@@ -112,6 +112,54 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound()
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
+func (s *PublicEndpointIntegrationTestSuite) Test_GetProjects_ProjectAPIKey_CrossOrg_Forbidden() {
+	otherOwner, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+
+	otherOrg, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, otherOwner)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, otherOrg.UID)
+	require.NoError(s.T(), err)
+
+	// A project API key scoped to DefaultProject must not list another org's
+	// projects by passing its orgID.
+	url := fmt.Sprintf("/api/v1/projects?orgID=%s", otherOrg.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code)
+}
+
+func (s *PublicEndpointIntegrationTestSuite) Test_GetProjects_ProjectAPIKey_OwnOrg_Authorized() {
+	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
+}
+
+func (s *PublicEndpointIntegrationTestSuite) Test_GetProjects_PersonalAPIKey_NonMember_Forbidden() {
+	otherOwner, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+
+	otherOrg, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, otherOwner)
+	require.NoError(s.T(), err)
+
+	// The personal key belongs to DefaultUser, who is not a member of otherOrg.
+	url := fmt.Sprintf("/api/v1/projects?orgID=%s", otherOrg.UID)
+	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code)
+}
+
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
@@ -915,8 +963,54 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	// require.Equal(s.T(), event.Endpoinints[0], endpointID)
 }
 
+func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_RejectsMissingDeliveryTarget() {
+	originalQueue := s.ConvoyApp.A.Queue
+	recorder := &recordingQueuer{opts: originalQueue.Options()}
+	s.ConvoyApp.A.Queue = recorder
+	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
+
+	body := serialize(`{"event_type":"*", "data":{"level":"test"}}`)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+	require.Contains(s.T(), w.Body.String(), "please provide an endpoint ID")
+	require.Empty(s.T(), recorder.jobs)
+}
+
+func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_RejectsAppIDWithNoEndpoints() {
+	originalQueue := s.ConvoyApp.A.Queue
+	recorder := &recordingQueuer{opts: originalQueue.Options()}
+	s.ConvoyApp.A.Queue = recorder
+	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
+
+	body := serialize(`{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`, ulid.Make().String())
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), http.StatusBadRequest, w.Code)
+	require.Contains(s.T(), w.Body.String(), "app ID has no configured endpoints")
+	require.Empty(s.T(), recorder.jobs)
+}
+
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_UsesAPIKeyProjectWhenURLProjectDiffers() {
 	otherProject, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "url-project-"+ulid.Make().String(), s.DefaultProject.OrganisationID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
+	require.NoError(s.T(), err)
+
+	endpointID := ulid.Make().String()
+	_, err = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
 	originalQueue := s.ConvoyApp.A.Queue
@@ -924,7 +1018,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_UsesAPIKeyPro
 	s.ConvoyApp.A.Queue = recorder
 	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
 
-	body := serialize(`{"event_type":"*", "data":{"level":"test"}}`)
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
 	url := fmt.Sprintf("/api/v1/projects/%s/events", otherProject.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -1001,12 +1095,16 @@ func (s *PublicEventIntegrationTestSuite) Test_DataPlaneCreateEndpointEvent_Reje
 	s.ConvoyApp.A.Licenser = projectDisabledLicenser{Licenser: originalLicenser, disabledProjectID: s.DefaultProject.UID}
 	defer func() { s.ConvoyApp.A.Licenser = originalLicenser }()
 
+	endpointID := ulid.Make().String()
+	_, err = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
 	originalQueue := s.ConvoyApp.A.Queue
 	recorder := &recordingQueuer{opts: originalQueue.Options()}
 	s.ConvoyApp.A.Queue = recorder
 	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
 
-	body := serialize(`{"event_type":"*", "data":{"level":"test"}}`)
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
 	url := fmt.Sprintf("/api/v1/projects/%s/events", otherProject.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -1144,6 +1242,11 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 	err := endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 
+	originalQueue := s.ConvoyApp.A.Queue
+	recorder := &recordingQueuer{opts: originalQueue.Options()}
+	s.ConvoyApp.A.Queue = recorder
+	defer func() { s.ConvoyApp.A.Queue = originalQueue }()
+
 	body := serialize(`{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`, appID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
@@ -1154,6 +1257,17 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert. app_id addressing must behave like endpoint_id addressing:
+	// the alias reaches the worker and subscription-less endpoints still get a
+	// catch-all subscription auto-provisioned.
+	require.Len(s.T(), recorder.jobs, 1)
+
+	var queuedEvent task.CreateEvent
+	err = msgpack.DecodeMsgPack(recorder.jobs[0].Payload, &queuedEvent)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), appID, queuedEvent.Params.AppID)
+	require.True(s.T(), queuedEvent.CreateSubscription)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {

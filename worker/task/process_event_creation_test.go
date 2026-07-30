@@ -1016,6 +1016,45 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 	}
 }
 
+func TestFindSubscriptionsProvisionsCatchAllForEveryEndpoint(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	args := provideArgs(ctrl)
+	endpointRepo, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
+	subRepo, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+
+	project := &datastore.Project{UID: "project-id-1", Type: datastore.OutgoingProject}
+	event := &datastore.Event{
+		UID:       "event-id-1",
+		ProjectID: project.UID,
+		EventType: "*",
+		Endpoints: []string{"endpoint-1", "endpoint-2"},
+	}
+
+	var provisioned []string
+	for _, endpointID := range event.Endpoints {
+		endpointID := endpointID
+		endpointRepo.EXPECT().FindEndpointByID(gomock.Any(), endpointID, project.UID).Times(1).
+			Return(&datastore.Endpoint{UID: endpointID, Name: endpointID}, nil)
+		subRepo.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), project.UID, endpointID).Times(1).
+			Return([]datastore.Subscription{}, nil)
+	}
+	subRepo.EXPECT().CreateSubscription(gomock.Any(), project.UID, gomock.Any()).Times(2).
+		DoAndReturn(func(_ context.Context, _ string, sub *datastore.Subscription) error {
+			provisioned = append(provisioned, sub.EndpointID)
+			return nil
+		})
+
+	subs, err := findSubscriptions(context.Background(), args.endpointRepo, args.subRepo, args.filterRepo, args.licenser, project, event, true, logger.New("test", logger.LevelInfo))
+
+	require.NoError(t, err)
+	require.Len(t, subs, 2)
+	require.ElementsMatch(t, []string{"endpoint-1", "endpoint-2"}, provisioned)
+	require.Equal(t, "endpoint-1", subs[0].EndpointID)
+	require.Equal(t, "endpoint-2", subs[1].EndpointID)
+}
+
 func TestCompareFilterScopeFlattensPayloadBeforeComparison(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

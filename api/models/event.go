@@ -17,7 +17,8 @@ type CreateEvent struct {
 	// Deprecated but necessary for backward compatibility.
 	AppID string `json:"app_id"` // Deprecated but necessary for backward compatibility
 
-	// Specifies the endpoint to send this event to.
+	// Specifies the endpoint to send this event to. Required unless the
+	// deprecated app_id is provided.
 	EndpointID string `json:"endpoint_id"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
@@ -35,7 +36,20 @@ type CreateEvent struct {
 }
 
 func (e *CreateEvent) Validate() error {
-	return util.Validate(e)
+	if err := util.Validate(e); err != nil {
+		return err
+	}
+
+	// An endpoint event must name its delivery target at intake: endpoint_id, or
+	// the deprecated app_id alias. Without one the worker can never resolve an
+	// endpoint, so the request is rejected here (400) instead of being queued and
+	// silently delivering to nothing. The pubsub single-message path enforces the
+	// same rule.
+	if util.IsStringEmpty(e.EndpointID) && util.IsStringEmpty(e.AppID) {
+		return errors.New("please provide an endpoint ID")
+	}
+
+	return nil
 }
 
 type DynamicEvent struct {

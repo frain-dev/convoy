@@ -12,7 +12,39 @@ var (
 	ErrURLTemplateInvalidToken    = errors.New("endpoint URL template contains an invalid token")
 	ErrURLTemplateUnsupportedPart = errors.New("endpoint URL templates are only supported in the path or query")
 	ErrURLTemplateInvalidURL      = errors.New("endpoint url must include a valid host")
+
+	ErrEndpointURLRequired   = errors.New("please provide the endpoint url")
+	ErrHTTPSOnly             = errors.New("only https endpoints allowed")
+	ErrInvalidEndpointScheme = errors.New("invalid endpoint scheme")
 )
+
+// ValidateEndpointURL validates an endpoint URL's format and scheme without
+// performing a network ping. enforceSecure rejects plain http URLs. It is the
+// single source of truth for endpoint URL validation shared by the API
+// (services) and the bulk-onboard worker, so the security-sensitive scheme rule
+// cannot drift between the two call sites.
+func ValidateEndpointURL(rawURL string, enforceSecure bool) (*url.URL, error) {
+	if strings.TrimSpace(rawURL) == "" {
+		return nil, ErrEndpointURLRequired
+	}
+
+	u, _, err := ValidateEndpointTemplate(rawURL, false)
+	if err != nil {
+		return nil, err
+	}
+
+	switch u.Scheme {
+	case "http":
+		if enforceSecure {
+			return nil, ErrHTTPSOnly
+		}
+	case "https":
+	default:
+		return nil, ErrInvalidEndpointScheme
+	}
+
+	return u, nil
+}
 
 var templateTokenPattern = regexp.MustCompile(`^\{[A-Za-z_][A-Za-z0-9_]*\}`)
 
