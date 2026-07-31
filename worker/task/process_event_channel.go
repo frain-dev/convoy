@@ -109,16 +109,23 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			if err != nil {
 				createErr := err
 				if event != nil && strings.Contains(createErr.Error(), "duplicate key") {
-					// Heal: create already persisted; continue so match can run (and
-					// publish sync-ack). Do not treat this as success without match.
+					// Heal incomplete creates: row exists but match may not have run.
+					// If match already completed (Success), do not re-enqueue match —
+					// Asynq Write deletes+requeues duplicate task IDs and would
+					// fan out deliveries again.
 					found, findErr := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
-					if findErr == nil && found != nil {
-						logger.Error("duplicate event create; continuing to match: "+event.UID, "error", createErr)
-						event = found
-					} else {
+					if findErr != nil || found == nil {
 						writeErr := fmt.Errorf("failed to create event, err: %s", createErr.Error())
 						return &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
 					}
+					event = found
+					if found.Status == datastore.SuccessStatus {
+						if cfg.Channel == "dynamic" {
+							publishDynamicEventAck(ctx, redisClient, logger, found.ProjectID, found.UID, dynamiceventack.Result{OK: true})
+						}
+						return nil
+					}
+					logger.Error("duplicate event create; continuing to match: "+event.UID, "error", createErr)
 				} else {
 					writeErr := fmt.Errorf("failed to create event, err: %s", createErr.Error())
 					return &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}

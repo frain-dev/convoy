@@ -336,10 +336,12 @@ func isDynamicURLTemplateValidationError(err error) bool {
 		return false
 	}
 
+	// Feature-flag / DB lookup failures are retryable infra errors, not client
+	// validation. Keep them out so sync-ack waiters time out fail-closed and
+	// match can retry instead of returning a definitive 400.
 	return errors.Is(endpointErr.Err, errDynamicURLTemplateNotConcrete) ||
 		errors.Is(endpointErr.Err, errDynamicURLTemplateNoMatch) ||
-		errors.Is(endpointErr.Err, errDynamicURLTemplateMultipleMatch) ||
-		errors.Is(endpointErr.Err, errDynamicURLTemplateFeatureLookup)
+		errors.Is(endpointErr.Err, errDynamicURLTemplateMultipleMatch)
 }
 
 func hasValidEndpointURLTemplates(ctx context.Context, args EventChannelArgs, projectID string) (bool, error) {
