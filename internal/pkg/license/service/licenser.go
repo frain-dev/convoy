@@ -620,6 +620,10 @@ func (l *Licenser) EndpointURLTemplates() bool {
 	return l.hasFeature("endpoint_url_templates")
 }
 
+func (l *Licenser) CustomUserAgent() bool {
+	return l.hasFeature("custom_user_agent")
+}
+
 func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	if err := l.ensureValidCache(ctx); err != nil {
 		return nil, err
@@ -721,6 +725,7 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 	featureList["OAuth2EndpointAuth"] = l.OAuth2EndpointAuth()
 	featureList["BasicAuthEndpointAuth"] = l.BasicAuthEndpointAuth()
 	featureList["EndpointURLTemplates"] = l.EndpointURLTemplates()
+	featureList["CustomUserAgent"] = l.CustomUserAgent()
 	featureList["UseForwardProxy"] = l.UseForwardProxy()
 	featureList["AsynqMonitoring"] = l.AsynqMonitoring()
 	featureList["AgentExecutionMode"] = l.AgentExecutionMode()

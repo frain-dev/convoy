@@ -32,6 +32,7 @@ var featureKeys = []struct {
 	{"oauth2_endpoint_auth", "OAuth2EndpointAuth"},
 	{"basic_auth_endpoint_auth", "BasicAuthEndpointAuth"},
 	{"endpoint_url_templates", "EndpointURLTemplates"},
+	{"custom_user_agent", "CustomUserAgent"},
 	{"use_forward_proxy", "UseForwardProxy"},
 	{"asynq_monitoring", "AsynqMonitoring"},
 	{"agent_execution_mode", "AgentExecutionMode"},

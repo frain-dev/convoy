@@ -82,6 +82,10 @@ func (Licenser) EndpointURLTemplates() bool {
 	return true
 }
 
+func (Licenser) CustomUserAgent() bool {
+	return true
+}
+
 func (Licenser) RemoveEnabledProject(_ string) {}
 
 func (Licenser) ProjectEnabled(_ string) bool {

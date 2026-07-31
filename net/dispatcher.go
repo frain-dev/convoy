@@ -732,10 +732,10 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", converter.ContentType())
 	req.Header.Set("Accept-Encoding", "gzip")
-	req.Header.Add("User-Agent", defaultUserAgent())
 
 	header := httpheader.HTTPHeader(req.Header)
 	header.MergeHeaders(headers)
+	ensureUserAgent(header)
 	if isCustomRequestIDHeader(requestIDHeader) && len(idempotencyKey) == 0 {
 		err := ErrMissingIdempotencyKeyForCustomRequestIDHeader
 		d.logger.Error("Dispatcher invalid arguments", "error", err)
@@ -767,6 +767,24 @@ func deleteHeaderCaseInsensitive(header httpheader.HTTPHeader, key string) {
 			delete(header, k)
 		}
 	}
+}
+
+// ensureUserAgent sets Convoy/<version> only when no non-empty User-Agent is present.
+// A configured User-Agent fully replaces the default branding header.
+// Empty values ("" / whitespace) do not count as a custom agent.
+func ensureUserAgent(header httpheader.HTTPHeader) {
+	for k, vals := range header {
+		if !strings.EqualFold(k, "User-Agent") {
+			continue
+		}
+		for _, v := range vals {
+			if strings.TrimSpace(v) != "" {
+				return
+			}
+		}
+		delete(header, k)
+	}
+	header["User-Agent"] = []string{defaultUserAgent()}
 }
 
 func isCustomRequestIDHeader(requestIDHeader string) bool {

@@ -42,6 +42,7 @@ type Licenser interface {
 	OAuth2EndpointAuth() bool
 	BasicAuthEndpointAuth() bool
 	EndpointURLTemplates() bool
+	CustomUserAgent() bool
 	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 
 	RemoveEnabledProject(projectID string)

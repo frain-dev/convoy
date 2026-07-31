@@ -366,6 +366,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 			},
 			nFn: func() func() {
@@ -457,6 +458,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 			},
 			nFn: func() func() {
@@ -548,6 +550,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -642,6 +645,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -733,6 +737,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -824,6 +829,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
+				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -920,6 +926,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -1017,6 +1024,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -1271,6 +1279,7 @@ func TestProcessEventDelivery_SyncsAsynqMaxRetryToRetryLimit(t *testing.T) {
 			licenser.EXPECT().UseForwardProxy().Return(true).AnyTimes()
 			licenser.EXPECT().IpRules().Return(true).AnyTimes()
 			licenser.EXPECT().AdvancedEndpointMgmt().Return(false).AnyTimes()
+			licenser.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			licenser.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 
 			require.NoError(t, config.LoadConfig("./testdata/Config/basic-convoy.json"))
@@ -1461,6 +1470,7 @@ func TestProcessEventDelivery_AttemptTimingReflectsWireDelay(t *testing.T) {
 	licenser.EXPECT().UseForwardProxy().Return(true).AnyTimes()
 	licenser.EXPECT().IpRules().Return(true).AnyTimes()
 	licenser.EXPECT().AdvancedEndpointMgmt().Return(false).AnyTimes()
+	licenser.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 	licenser.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 
 	require.NoError(t, config.LoadConfig("./testdata/Config/basic-convoy.json"))

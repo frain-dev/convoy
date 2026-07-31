@@ -381,6 +381,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		// idempotency_key at publish time (any stable value); that value is sent on the
 		// outbound header below.
 		requestSentAt := time.Now()
+		outboundHeaders := prepareOutboundHeaders(eventDelivery.Headers, deps.Licenser.CustomUserAgent())
 		resp, err := deps.Dispatcher.SendWebhookWithMTLS(
 			ctx,
 			targetURL,
@@ -388,7 +389,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			project.Config.Signature.Header.String(),
 			header,
 			int64(cfg.MaxResponseSize),
-			eventDelivery.Headers,
+			outboundHeaders,
 			project.Config.GetRequestIDHeader().String(),
 			eventDelivery.IdempotencyKey,
 			httpDuration,
