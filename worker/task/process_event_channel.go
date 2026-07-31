@@ -73,20 +73,14 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 		cfg := channel.GetConfig()
 
 		// get or create event
-		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo, logger)
+		var lastEvent, _, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo, logger)
 		if err != nil {
 			logger.Error("failed to get last task info", "error", err)
 			return err
 		}
 
-		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
-			logger.DebugContext(ctx, fmt.Sprintf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey))
-			if cfg.Channel == "dynamic" {
-				// Idempotent replay: prior resolve already completed; unblock sync waiters.
-				publishDynamicEventAck(ctx, redisClient, logger, lastEvent.ProjectID, lastEvent.UID, dynamiceventack.Result{OK: true})
-			}
-			return nil
-		}
+		// Note: getLastTaskInfo only loads lastEvent when lastRunErrored is true, so
+		// an early "duplicate + !lastRunErrored" short-circuit is unreachable.
 
 		var event *datastore.Event
 		if lastEvent != nil {
@@ -110,19 +104,22 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 				createErr := err
 				if event != nil && strings.Contains(createErr.Error(), "duplicate key") {
 					// Heal incomplete creates: row exists but match may not have run.
-					// If match already completed (Success), do not re-enqueue match —
-					// Asynq Write deletes+requeues duplicate task IDs and would
-					// fan out deliveries again.
+					// Failure policy: rematch only when status is still Pending (or Retry).
+					// Success/Processing must not re-Write match — Asynq deletes+requeues
+					// the same task ID and can fan out deliveries again while match runs.
 					found, findErr := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
 					if findErr != nil || found == nil {
 						writeErr := fmt.Errorf("failed to create event, err: %s", createErr.Error())
 						return &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
 					}
 					event = found
-					if found.Status == datastore.SuccessStatus {
+					switch found.Status {
+					case datastore.SuccessStatus:
 						if cfg.Channel == "dynamic" {
 							publishDynamicEventAck(ctx, redisClient, logger, found.ProjectID, found.UID, dynamiceventack.Result{OK: true})
 						}
+						return nil
+					case datastore.ProcessingStatus, datastore.FailureStatus:
 						return nil
 					}
 					logger.Error("duplicate event create; continuing to match: "+event.UID, "error", createErr)
