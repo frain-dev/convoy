@@ -770,19 +770,31 @@ func deleteHeaderCaseInsensitive(header httpheader.HTTPHeader, key string) {
 }
 
 // ensureUserAgent sets Convoy/<version> only when no non-empty User-Agent is present.
-// A configured User-Agent fully replaces the default branding header.
+// A configured User-Agent fully replaces the default branding header and is always
+// stored under the canonical "User-Agent" key. custom_headers may preserve caller
+// casing (e.g. "user-agent"); Go's request writer only treats the canonical key as
+// the special User-Agent path, so leaving a non-canonical key can emit both Go's
+// default agent and the custom value.
 // Empty values ("" / whitespace) do not count as a custom agent.
 func ensureUserAgent(header httpheader.HTTPHeader) {
+	var custom string
 	for k, vals := range header {
 		if !strings.EqualFold(k, "User-Agent") {
 			continue
 		}
-		for _, v := range vals {
-			if strings.TrimSpace(v) != "" {
-				return
+		if custom == "" {
+			for _, v := range vals {
+				if strings.TrimSpace(v) != "" {
+					custom = v
+					break
+				}
 			}
 		}
 		delete(header, k)
+	}
+	if custom != "" {
+		header["User-Agent"] = []string{custom}
+		return
 	}
 	header["User-Agent"] = []string{defaultUserAgent()}
 }

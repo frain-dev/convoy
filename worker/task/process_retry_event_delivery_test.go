@@ -1138,6 +1138,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 			attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
 			l := mocks.NewMockLicenser(ctrl)
 			l.EXPECT().ProjectEnabled(gomock.Any()).Return(true).AnyTimes()
+			l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			mt := mocks.NewMockBackend(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)

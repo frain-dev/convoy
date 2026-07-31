@@ -588,6 +588,54 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "should_canonicalize_lowercase_user_agent_key",
+			args: args{
+				endpoint: "https://google.com",
+				method:   http.MethodPost,
+				jsonData: bytes.NewBufferString("testing").Bytes(),
+				headers: map[string][]string{
+					"user-agent": {"PartnerBot/1"},
+				},
+				project: &datastore.Project{
+					UID: "12345",
+					Config: &datastore.ProjectConfig{
+						Signature: &datastore.SignatureConfiguration{
+							Header: configSignature,
+						},
+						ReplayAttacks: false,
+					},
+				},
+				hmac: "12345",
+			},
+			want: &Response{
+				Status:     "200",
+				StatusCode: http.StatusOK,
+				Method:     http.MethodPost,
+				URL:        nil,
+				RequestHeader: http.Header{
+					"Accept-Encoding":                      []string{"gzip"},
+					"Content-Type":                         []string{constants.ContentTypeJSON},
+					"User-Agent":                           []string{"PartnerBot/1"},
+					config.DefaultSignatureHeader.String(): []string{"12345"},
+				},
+				ResponseHeader: nil,
+				Body:           successBody,
+				IP:             "",
+				Error:          "",
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder(http.MethodPost, "https://google.com",
+					httpmock.NewStringResponder(http.StatusOK, string(successBody)))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
+			},
+			wantErr: false,
+		},
+		{
 			name: "should_use_default_user_agent_when_custom_is_empty",
 			args: args{
 				endpoint: "https://google.com",
