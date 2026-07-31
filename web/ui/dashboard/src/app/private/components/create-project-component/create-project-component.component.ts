@@ -80,6 +80,7 @@ export class CreateProjectComponent implements OnInit {
 			}),
 			disable_endpoint: [false, Validators.required],
 			multiple_endpoint_subscriptions: [false, Validators.required],
+			sync_dynamic_event_ack: [false, Validators.required],
 			meta_event: this.formBuilder.group({
 				is_enabled: [false, Validators.required],
 				type: ['http', Validators.required],
@@ -297,6 +298,8 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
 			this.projectForm.get('config.search_policy')?.patchValue(this.getHours(this.projectDetails.config.search_policy));
+
+			this.projectForm.get('config.sync_dynamic_event_ack')?.patchValue(!!this.projectDetails.config?.sync_dynamic_event_ack);
 
 			// set meta events config
 			this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled

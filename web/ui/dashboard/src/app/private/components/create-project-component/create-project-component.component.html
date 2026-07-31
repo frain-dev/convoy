@@ -251,6 +251,18 @@
             </div>
             <convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle>
           </div>
+          @if (projectDetails.type === 'outgoing') {
+            <hr class="border-t border-neutral-4 my-24px" />
+            <div class="flex justify-between items-start">
+              <div class="max-w-[500px]">
+                <h3 class="font-semibold mb-8px text-12">Verify Dynamic Events Before Accepting</h3>
+                <p class="text-12 text-neutral-11 mt-10px w-full max-w-[460px]">
+                  When enabled, creating a dynamic event only succeeds after its endpoint and subscription are ready. If setup fails or times out, the API returns an error instead of accepting the event early.
+                </p>
+              </div>
+              <convoy-toggle name="sync_dynamic_event_ack" formControlName="sync_dynamic_event_ack" (onChange)="updateProject()"></convoy-toggle>
+            </div>
+          }
         </ng-container>
       }
 

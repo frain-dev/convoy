@@ -193,6 +193,7 @@ func ProcessBroadcastEventCreation(
 		deps.FeatureFlag,
 		deps.FeatureFlagFetcher,
 		deps.EarlyAdopterFeatureFetcher,
+		deps.Redis,
 		deps.Logger,
 	)
 }

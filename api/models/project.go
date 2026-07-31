@@ -111,6 +111,10 @@ type ProjectConfig struct {
 	// can be created for the endpoint in a project
 	MultipleEndpointSubscriptions bool `json:"multiple_endpoint_subscriptions"`
 
+	// SyncDynamicEventAck waits for dynamic endpoint/subscription resolve before
+	// acknowledging POST /events/dynamic. When false, the handler returns 201 after enqueue.
+	SyncDynamicEventAck bool `json:"sync_dynamic_event_ack"`
+
 	// CircuitBreaker is used to configure the project's circuit breaker settings
 	CircuitBreaker *datastore.CircuitBreakerConfiguration `json:"circuit_breaker"`
 }
@@ -126,6 +130,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		DisableEndpoint:               pc.DisableEndpoint,
 		AddEventIDTraceHeaders:        pc.AddEventIDTraceHeaders,
 		MultipleEndpointSubscriptions: pc.MultipleEndpointSubscriptions,
+		SyncDynamicEventAck:           pc.SyncDynamicEventAck,
 		SSL:                           pc.SSL.transform(),
 		SearchPolicy:                  pc.SearchPolicy,
 		RateLimit:                     pc.RateLimit.Transform(),

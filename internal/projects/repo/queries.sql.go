@@ -61,6 +61,7 @@ INSERT INTO convoy.project_configurations (
     disable_endpoint, meta_events_enabled, meta_events_type,
     meta_events_event_type, meta_events_url, meta_events_secret,
     meta_events_pub_sub, ssl_enforce_secure_endpoints,
+    sync_dynamic_event_ack,
     cb_sample_rate, cb_error_timeout, cb_failure_threshold,
     cb_success_threshold, cb_observability_window,
     cb_minimum_request_count, cb_consecutive_failure_threshold
@@ -69,13 +70,14 @@ VALUES (
     $1, $2, $3,
     $4, $5,
     $6, $7, $8,
-    $9, $10, $11,
-    $12, $13, $14,
-    $15, $16, $17,
-    $18, $19,
-    $20, $21, $22,
-    $23, $24,
-    $25, $26, $27
+    $9, $10, $11, $12,
+    $13, $14, $15,
+    $16, $17, $18,
+    $19, $20,
+    $21,
+    $22, $23, $24,
+    $25, $26,
+    $27, $28
 )
 `
 
@@ -100,6 +102,7 @@ type CreateProjectConfigurationParams struct {
 	MetaEventsSecret               pgtype.Text
 	MetaEventsPubSub               []byte
 	SslEnforceSecureEndpoints      pgtype.Bool
+	SyncDynamicEventAck            pgtype.Bool
 	CbSampleRate                   pgtype.Int4
 	CbErrorTimeout                 pgtype.Int4
 	CbFailureThreshold             pgtype.Int4
@@ -132,6 +135,7 @@ func (q *Queries) CreateProjectConfiguration(ctx context.Context, arg CreateProj
 		arg.MetaEventsSecret,
 		arg.MetaEventsPubSub,
 		arg.SslEnforceSecureEndpoints,
+		arg.SyncDynamicEventAck,
 		arg.CbSampleRate,
 		arg.CbErrorTimeout,
 		arg.CbFailureThreshold,
@@ -197,6 +201,7 @@ SELECT
     c.search_policy AS "config_search_policy",
     c.max_payload_read_size AS "config_max_payload_read_size",
     c.multiple_endpoint_subscriptions AS "config_multiple_endpoint_subscriptions",
+    c.sync_dynamic_event_ack AS "config_sync_dynamic_event_ack",
     c.replay_attacks_prevention_enabled AS "config_replay_attacks_prevention_enabled",
     c.ratelimit_count AS "config_ratelimit_count",
     c.ratelimit_duration AS "config_ratelimit_duration",
@@ -242,6 +247,7 @@ type FetchProjectByIDRow struct {
 	ConfigSearchPolicy                   pgtype.Text
 	ConfigMaxPayloadReadSize             int32
 	ConfigMultipleEndpointSubscriptions  bool
+	ConfigSyncDynamicEventAck            bool
 	ConfigReplayAttacksPreventionEnabled bool
 	ConfigRatelimitCount                 int32
 	ConfigRatelimitDuration              int32
@@ -285,6 +291,7 @@ func (q *Queries) FetchProjectByID(ctx context.Context, id pgtype.Text) (FetchPr
 		&i.ConfigSearchPolicy,
 		&i.ConfigMaxPayloadReadSize,
 		&i.ConfigMultipleEndpointSubscriptions,
+		&i.ConfigSyncDynamicEventAck,
 		&i.ConfigReplayAttacksPreventionEnabled,
 		&i.ConfigRatelimitCount,
 		&i.ConfigRatelimitDuration,
@@ -357,6 +364,7 @@ SELECT
     c.search_policy AS "config_search_policy",
     c.max_payload_read_size AS "config_max_payload_read_size",
     c.multiple_endpoint_subscriptions AS "config_multiple_endpoint_subscriptions",
+    c.sync_dynamic_event_ack AS "config_sync_dynamic_event_ack",
     c.replay_attacks_prevention_enabled AS "config_replay_attacks_prevention_enabled",
     c.ratelimit_count AS "config_ratelimit_count",
     c.ratelimit_duration AS "config_ratelimit_duration",
@@ -402,6 +410,7 @@ type FetchProjectsRow struct {
 	ConfigSearchPolicy                   pgtype.Text
 	ConfigMaxPayloadReadSize             int32
 	ConfigMultipleEndpointSubscriptions  bool
+	ConfigSyncDynamicEventAck            bool
 	ConfigReplayAttacksPreventionEnabled bool
 	ConfigRatelimitCount                 int32
 	ConfigRatelimitDuration              int32
@@ -451,6 +460,7 @@ func (q *Queries) FetchProjects(ctx context.Context, orgID pgtype.Text) ([]Fetch
 			&i.ConfigSearchPolicy,
 			&i.ConfigMaxPayloadReadSize,
 			&i.ConfigMultipleEndpointSubscriptions,
+			&i.ConfigSyncDynamicEventAck,
 			&i.ConfigReplayAttacksPreventionEnabled,
 			&i.ConfigRatelimitCount,
 			&i.ConfigRatelimitDuration,
@@ -572,15 +582,16 @@ UPDATE convoy.project_configurations SET
     meta_events_pub_sub = $17,
     search_policy = $18,
     ssl_enforce_secure_endpoints = $19,
-    cb_sample_rate = $20,
-    cb_error_timeout = $21,
-    cb_failure_threshold = $22,
-    cb_success_threshold = $23,
-    cb_observability_window = $24,
-    cb_minimum_request_count = $25,
-    cb_consecutive_failure_threshold = $26,
+    sync_dynamic_event_ack = $20,
+    cb_sample_rate = $21,
+    cb_error_timeout = $22,
+    cb_failure_threshold = $23,
+    cb_success_threshold = $24,
+    cb_observability_window = $25,
+    cb_minimum_request_count = $26,
+    cb_consecutive_failure_threshold = $27,
     updated_at = NOW()
-WHERE id = $27 AND deleted_at IS NULL
+WHERE id = $28 AND deleted_at IS NULL
 `
 
 type UpdateProjectConfigurationParams struct {
@@ -603,6 +614,7 @@ type UpdateProjectConfigurationParams struct {
 	MetaEventsPubSub               []byte
 	SearchPolicy                   pgtype.Text
 	SslEnforceSecureEndpoints      pgtype.Bool
+	SyncDynamicEventAck            pgtype.Bool
 	CbSampleRate                   pgtype.Int4
 	CbErrorTimeout                 pgtype.Int4
 	CbFailureThreshold             pgtype.Int4
@@ -634,6 +646,7 @@ func (q *Queries) UpdateProjectConfiguration(ctx context.Context, arg UpdateProj
 		arg.MetaEventsPubSub,
 		arg.SearchPolicy,
 		arg.SslEnforceSecureEndpoints,
+		arg.SyncDynamicEventAck,
 		arg.CbSampleRate,
 		arg.CbErrorTimeout,
 		arg.CbFailureThreshold,

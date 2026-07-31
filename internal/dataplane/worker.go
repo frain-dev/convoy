@@ -366,6 +366,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		OAuth2TokenService: oauth2TokenService,
 		FeatureFlag:        featureFlag,
 		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(opts.DB),
+		Redis:              rd.Client(),
 		Logger:             lo,
 	}
 
@@ -397,6 +398,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
+		Redis:                      rd.Client(),
 		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)

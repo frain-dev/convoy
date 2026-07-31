@@ -9,9 +9,12 @@ import (
 
 	"github.com/hibiken/asynq"
 
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -42,6 +45,7 @@ type EventChannelArgs struct {
 	featureFlag                *fflag.FFlag
 	featureFlagFetcher         fflag.FeatureFlagFetcher
 	earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	redis                      goredis.UniversalClient
 	logger                     log.Logger
 }
 
@@ -64,21 +68,19 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 	eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
 	licenser license.Licenser, oauth2TokenService OAuth2TokenService, featureFlag *fflag.FFlag,
 	featureFlagFetcher fflag.FeatureFlagFetcher, earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher,
-	logger log.Logger) func(context.Context, *asynq.Task) error {
+	redisClient goredis.UniversalClient, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
 		// get or create event
-		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo, logger)
+		var lastEvent, _, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo, logger)
 		if err != nil {
 			logger.Error("failed to get last task info", "error", err)
 			return err
 		}
 
-		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
-			logger.DebugContext(ctx, fmt.Sprintf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey))
-			return nil
-		}
+		// Note: getLastTaskInfo only loads lastEvent when lastRunErrored is true, so
+		// an early "duplicate + !lastRunErrored" short-circuit is unreachable.
 
 		var event *datastore.Event
 		if lastEvent != nil {
@@ -95,21 +97,36 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 				featureFlag:                featureFlag,
 				featureFlagFetcher:         featureFlagFetcher,
 				earlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
+				redis:                      redisClient,
 				logger:                     logger,
 			})
 			if err != nil {
-				if strings.Contains(err.Error(), "duplicate key") {
-					lastEvent, err = eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
+				createErr := err
+				if event != nil && strings.Contains(createErr.Error(), "duplicate key") {
+					// Heal incomplete creates: row exists but match may not have run.
+					// Failure policy: rematch only when status is still Pending (or Retry).
+					// Success/Processing must not re-Write match — Asynq deletes+requeues
+					// the same task ID and can fan out deliveries again while match runs.
+					found, findErr := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
+					if findErr != nil || found == nil {
+						writeErr := fmt.Errorf("failed to create event, err: %s", createErr.Error())
+						return &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
+					}
+					event = found
+					switch found.Status {
+					case datastore.SuccessStatus:
+						if cfg.Channel == "dynamic" {
+							publishDynamicEventAck(ctx, redisClient, logger, found.ProjectID, found.UID, dynamiceventack.Result{OK: true})
+						}
+						return nil
+					case datastore.ProcessingStatus, datastore.FailureStatus:
+						return nil
+					}
+					logger.Error("duplicate event create; continuing to match: "+event.UID, "error", createErr)
+				} else {
+					writeErr := fmt.Errorf("failed to create event, err: %s", createErr.Error())
+					return &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
 				}
-
-				if lastEvent == nil {
-					writeErr := fmt.Errorf("failed to create event, err: %s", err.Error())
-					err = &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
-					return err
-				}
-
-				logger.Error("skipping duplicated event: "+event.UID, "error", err)
-				return nil
 			}
 			if event == nil {
 				return &EndpointError{Err: fmt.Errorf("CODE: 1009, no response, failed to create event via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
@@ -156,6 +173,7 @@ type MatchSubscriptionsDeps struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	Redis                      goredis.UniversalClient
 	Logger                     log.Logger
 }
 
@@ -197,6 +215,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			featureFlag:                deps.FeatureFlag,
 			featureFlagFetcher:         deps.FeatureFlagFetcher,
 			earlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
+			redis:                      deps.Redis,
 			logger:                     deps.Logger,
 		})
 		if err != nil {
