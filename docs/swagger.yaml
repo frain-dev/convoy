@@ -857,6 +857,11 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.StrategyConfiguration'
         x-nullable: true
+      sync_dynamic_event_ack:
+        description: |-
+          SyncDynamicEventAck waits for endpoint/subscription resolve before
+          returning 2xx from POST /events/dynamic. Default false keeps 201-on-queue.
+        type: boolean
     type: object
   datastore.ProjectStatistics:
     properties:
@@ -2272,6 +2277,11 @@ definitions:
         allOf:
           - $ref: '#/definitions/models.StrategyConfiguration'
         description: Strategy is used to configure the project's retry strategies for failing events.
+      sync_dynamic_event_ack:
+        description: |-
+          SyncDynamicEventAck waits for dynamic endpoint/subscription resolve before
+          acknowledging POST /events/dynamic. When false, the handler returns 201 after enqueue.
+        type: boolean
     type: object
   models.ProjectResponse:
     properties:

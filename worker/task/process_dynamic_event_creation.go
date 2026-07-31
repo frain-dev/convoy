@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -116,7 +117,9 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	err = args.eventRepo.CreateEvent(ctx, event)
 	if err != nil {
 		tracer.AddEvent(ctx, tracer.EventDynamicEventCreationError, attributes)
-		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
+		// Return event with IDs so the channel worker can heal duplicate-key
+		// retries (re-enqueue match) instead of failing closed blindly.
+		return event, &EndpointError{Err: err, delay: 10 * time.Second}
 	}
 
 	tracer.AddEvent(ctx, tracer.EventDynamicEventCreationSuccess, attributes)
@@ -178,8 +181,14 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 			if updateErr := args.eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus); updateErr != nil {
 				return nil, updateErr
 			}
+			// Definitive validation failure: unblock sync waiters with an error.
+			publishDynamicEventAck(ctx, args.redis, args.logger, project.UID, event.UID, dynamiceventack.Result{
+				OK:    false,
+				Error: err.Error(),
+			})
 			return &EventChannelSubResponse{Event: event, Project: project, IsDuplicateEvent: true}, nil
 		}
+		// Retryable resolve errors: do not publish; sync waiters fail closed on timeout.
 		return nil, err
 	}
 
@@ -203,6 +212,7 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		response.TargetURL = dynamicEvent.URL
 	}
 
+	publishDynamicEventAck(ctx, args.redis, args.logger, project.UID, event.UID, dynamiceventack.Result{OK: true})
 	tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingOK, attributes)
 	return &response, nil
 }
@@ -223,6 +233,7 @@ func ProcessDynamicEventCreation(deps EventProcessorDeps) func(context.Context, 
 		deps.FeatureFlag,
 		deps.FeatureFlagFetcher,
 		deps.EarlyAdopterFeatureFetcher,
+		deps.Redis,
 		deps.Logger,
 	)
 }

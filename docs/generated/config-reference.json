@@ -890,6 +890,12 @@
       "default": "/var/convoy/export"
     },
     {
+      "json_path": "sync_dynamic_event_ack_timeout",
+      "env_var": "CONVOY_SYNC_DYNAMIC_EVENT_ACK_TIMEOUT",
+      "go_type": "uint64",
+      "default": "30"
+    },
+    {
       "json_path": "tracer.type",
       "env_var": "CONVOY_TRACER_PROVIDER",
       "go_type": "config.TracerProvider",

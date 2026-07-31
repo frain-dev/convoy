@@ -10785,6 +10785,10 @@
             }
           ],
           "x-nullable": true
+        },
+        "sync_dynamic_event_ack": {
+          "description": "SyncDynamicEventAck waits for endpoint/subscription resolve before\nreturning 2xx from POST /events/dynamic. Default false keeps 201-on-queue.",
+          "type": "boolean"
         }
       }
     },
@@ -12847,6 +12851,10 @@
               "$ref": "#/definitions/models.StrategyConfiguration"
             }
           ]
+        },
+        "sync_dynamic_event_ack": {
+          "description": "SyncDynamicEventAck waits for dynamic endpoint/subscription resolve before\nacknowledging POST /events/dynamic. When false, the handler returns 201 after enqueue.",
+          "type": "boolean"
         }
       }
     },

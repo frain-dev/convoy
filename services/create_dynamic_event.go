@@ -2,16 +2,20 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/oklog/ulid/v2"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -21,6 +25,7 @@ import (
 
 type CreateDynamicEventService struct {
 	Queue queue.Queuer
+	Redis redis.UniversalClient
 
 	DynamicEvent *models.DynamicEvent
 	Project      *datastore.Project
@@ -74,6 +79,39 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) (err error) {
 	if err != nil {
 		e.Logger.ErrorContext(ctx, fmt.Sprintf("Error occurred sending new dynamic event to the queue %s", err))
 		return &ServiceError{ErrMsg: "failed to create dynamic event"}
+	}
+
+	if e.Project.Config == nil || !e.Project.Config.SyncDynamicEventAck {
+		return nil
+	}
+
+	// Failure policy: fail closed. Timeout / redis / resolve errors must not return 201.
+	if e.Redis == nil {
+		return util.NewServiceError(http.StatusServiceUnavailable, dynamiceventack.ErrNilRedis)
+	}
+
+	cfg, cfgErr := config.Get()
+	if cfgErr != nil {
+		return util.NewServiceError(http.StatusInternalServerError, cfgErr)
+	}
+	timeout := time.Duration(cfg.SyncDynamicEventAckTimeout) * time.Second
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+
+	result, waitErr := dynamiceventack.Wait(ctx, e.Redis, e.Project.UID, id, timeout)
+	if waitErr != nil {
+		if errors.Is(waitErr, dynamiceventack.ErrTimeout) {
+			return util.NewServiceError(http.StatusGatewayTimeout, waitErr)
+		}
+		return util.NewServiceError(http.StatusServiceUnavailable, waitErr)
+	}
+	if !result.OK {
+		msg := result.Error
+		if msg == "" {
+			msg = "dynamic event resolve failed"
+		}
+		return util.NewServiceError(http.StatusBadRequest, errors.New(msg))
 	}
 
 	return nil

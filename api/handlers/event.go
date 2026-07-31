@@ -355,6 +355,7 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 
 	cde := services.CreateDynamicEventService{
 		Queue:        h.A.Queue,
+		Redis:        h.A.Redis,
 		DynamicEvent: &newMessage,
 		Project:      project,
 		Logger:       h.A.Logger,

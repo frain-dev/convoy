@@ -10,8 +10,11 @@ import (
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -42,6 +45,7 @@ type EventChannelArgs struct {
 	featureFlag                *fflag.FFlag
 	featureFlagFetcher         fflag.FeatureFlagFetcher
 	earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	redis                      goredis.UniversalClient
 	logger                     log.Logger
 }
 
@@ -64,7 +68,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 	eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
 	licenser license.Licenser, oauth2TokenService OAuth2TokenService, featureFlag *fflag.FFlag,
 	featureFlagFetcher fflag.FeatureFlagFetcher, earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher,
-	logger log.Logger) func(context.Context, *asynq.Task) error {
+	redisClient goredis.UniversalClient, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
@@ -77,6 +81,10 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 
 		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
 			logger.DebugContext(ctx, fmt.Sprintf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey))
+			if cfg.Channel == "dynamic" {
+				// Idempotent replay: prior resolve already completed; unblock sync waiters.
+				publishDynamicEventAck(ctx, redisClient, logger, lastEvent.ProjectID, lastEvent.UID, dynamiceventack.Result{OK: true})
+			}
 			return nil
 		}
 
@@ -95,21 +103,26 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 				featureFlag:                featureFlag,
 				featureFlagFetcher:         featureFlagFetcher,
 				earlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
+				redis:                      redisClient,
 				logger:                     logger,
 			})
 			if err != nil {
-				if strings.Contains(err.Error(), "duplicate key") {
-					lastEvent, err = eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
+				createErr := err
+				if event != nil && strings.Contains(createErr.Error(), "duplicate key") {
+					// Heal: create already persisted; continue so match can run (and
+					// publish sync-ack). Do not treat this as success without match.
+					found, findErr := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
+					if findErr == nil && found != nil {
+						logger.Error("duplicate event create; continuing to match: "+event.UID, "error", createErr)
+						event = found
+					} else {
+						writeErr := fmt.Errorf("failed to create event, err: %s", createErr.Error())
+						return &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
+					}
+				} else {
+					writeErr := fmt.Errorf("failed to create event, err: %s", createErr.Error())
+					return &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
 				}
-
-				if lastEvent == nil {
-					writeErr := fmt.Errorf("failed to create event, err: %s", err.Error())
-					err = &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
-					return err
-				}
-
-				logger.Error("skipping duplicated event: "+event.UID, "error", err)
-				return nil
 			}
 			if event == nil {
 				return &EndpointError{Err: fmt.Errorf("CODE: 1009, no response, failed to create event via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
@@ -156,6 +169,7 @@ type MatchSubscriptionsDeps struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	Redis                      goredis.UniversalClient
 	Logger                     log.Logger
 }
 
@@ -197,6 +211,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			featureFlag:                deps.FeatureFlag,
 			featureFlagFetcher:         deps.FeatureFlagFetcher,
 			earlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
+			redis:                      deps.Redis,
 			logger:                     deps.Logger,
 		})
 		if err != nil {
