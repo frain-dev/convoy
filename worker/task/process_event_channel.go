@@ -9,9 +9,9 @@ import (
 
 	"github.com/hibiken/asynq"
 
-	"github.com/frain-dev/convoy"
 	goredis "github.com/redis/go-redis/v9"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"

@@ -40,8 +40,8 @@ func NewServerWithLogger(port uint32, stopFn func(), logger log.Logger) *Server 
 			ackSecs = 30
 		}
 		ackWait := time.Duration(ackSecs) * time.Second
-		if min := ackWait + 15*time.Second; min > writeTimeout {
-			writeTimeout = min
+		if needed := ackWait + 15*time.Second; needed > writeTimeout {
+			writeTimeout = needed
 		}
 	}
 

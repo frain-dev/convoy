@@ -8,6 +8,7 @@ export interface PROJECT {
 			duration: string;
 		};
 		disable_endpoint: boolean;
+		sync_dynamic_event_ack?: boolean;
 		strategy: {
 			type: string;
 			retry_count: number;
