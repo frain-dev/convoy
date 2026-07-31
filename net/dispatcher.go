@@ -732,10 +732,10 @@ func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, j
 	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", converter.ContentType())
 	req.Header.Set("Accept-Encoding", "gzip")
-	req.Header.Add("User-Agent", defaultUserAgent())
 
 	header := httpheader.HTTPHeader(req.Header)
 	header.MergeHeaders(headers)
+	ensureUserAgent(header)
 	if isCustomRequestIDHeader(requestIDHeader) && len(idempotencyKey) == 0 {
 		err := ErrMissingIdempotencyKeyForCustomRequestIDHeader
 		d.logger.Error("Dispatcher invalid arguments", "error", err)
@@ -767,6 +767,36 @@ func deleteHeaderCaseInsensitive(header httpheader.HTTPHeader, key string) {
 			delete(header, k)
 		}
 	}
+}
+
+// ensureUserAgent sets Convoy/<version> only when no non-empty User-Agent is present.
+// A configured User-Agent fully replaces the default branding header and is always
+// stored under the canonical "User-Agent" key. custom_headers may preserve caller
+// casing (e.g. "user-agent"); Go's request writer only treats the canonical key as
+// the special User-Agent path, so leaving a non-canonical key can emit both Go's
+// default agent and the custom value.
+// Empty values ("" / whitespace) do not count as a custom agent.
+func ensureUserAgent(header httpheader.HTTPHeader) {
+	var custom string
+	for k, vals := range header {
+		if !strings.EqualFold(k, "User-Agent") {
+			continue
+		}
+		if custom == "" {
+			for _, v := range vals {
+				if strings.TrimSpace(v) != "" {
+					custom = v
+					break
+				}
+			}
+		}
+		delete(header, k)
+	}
+	if custom != "" {
+		header["User-Agent"] = []string{custom}
+		return
+	}
+	header["User-Agent"] = []string{defaultUserAgent()}
 }
 
 func isCustomRequestIDHeader(requestIDHeader string) bool {
