@@ -331,7 +331,8 @@ func TestFindEndpoint_TemplateMatching(t *testing.T) {
 				_, err := findEndpoint(context.Background(), project, args, &models.DynamicEvent{URL: concreteURL})
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "endpoint URL template feature lookup failed")
-				require.True(t, isDynamicURLTemplateValidationError(err))
+				// Infra/feature lookup is retryable, not a definitive client validation failure.
+				require.False(t, isDynamicURLTemplateValidationError(err))
 			},
 		},
 		{

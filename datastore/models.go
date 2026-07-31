@@ -632,19 +632,22 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize                 uint64                         `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks                 bool                           `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	AddEventIDTraceHeaders        bool                           `json:"add_event_id_trace_headers"`
-	DisableEndpoint               bool                           `json:"disable_endpoint" db:"disable_endpoint"`
-	MultipleEndpointSubscriptions bool                           `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
-	SearchPolicy                  string                         `json:"search_policy" db:"search_policy"`
-	SSL                           *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`
-	RateLimit                     *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`
-	Strategy                      *StrategyConfiguration         `json:"strategy" db:"strategy" extensions:"x-nullable"`
-	Signature                     *SignatureConfiguration        `json:"signature" db:"signature" extensions:"x-nullable"`
-	RequestIDHeader               config.RequestIDHeaderProvider `json:"request_id_header"`
-	MetaEvent                     *MetaEventConfiguration        `json:"meta_event" db:"meta_event" extensions:"x-nullable"`
-	CircuitBreaker                *CircuitBreakerConfiguration   `json:"circuit_breaker" db:"circuit_breaker" extensions:"x-nullable"`
+	MaxIngestSize                 uint64 `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool   `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	AddEventIDTraceHeaders        bool   `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool   `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool   `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	// SyncDynamicEventAck waits for endpoint/subscription resolve before
+	// returning 2xx from POST /events/dynamic. Default false keeps 201-on-queue.
+	SyncDynamicEventAck bool                           `json:"sync_dynamic_event_ack" db:"sync_dynamic_event_ack"`
+	SearchPolicy        string                         `json:"search_policy" db:"search_policy"`
+	SSL                 *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`
+	RateLimit           *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`
+	Strategy            *StrategyConfiguration         `json:"strategy" db:"strategy" extensions:"x-nullable"`
+	Signature           *SignatureConfiguration        `json:"signature" db:"signature" extensions:"x-nullable"`
+	RequestIDHeader     config.RequestIDHeaderProvider `json:"request_id_header"`
+	MetaEvent           *MetaEventConfiguration        `json:"meta_event" db:"meta_event" extensions:"x-nullable"`
+	CircuitBreaker      *CircuitBreakerConfiguration   `json:"circuit_breaker" db:"circuit_breaker" extensions:"x-nullable"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {

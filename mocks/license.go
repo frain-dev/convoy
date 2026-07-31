@@ -280,6 +280,20 @@ func (mr *MockLicenserMockRecorder) EndpointURLTemplates() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndpointURLTemplates", reflect.TypeOf((*MockLicenser)(nil).EndpointURLTemplates))
 }
 
+// CustomUserAgent mocks base method.
+func (m *MockLicenser) CustomUserAgent() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CustomUserAgent")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CustomUserAgent indicates an expected call of CustomUserAgent.
+func (mr *MockLicenserMockRecorder) CustomUserAgent() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomUserAgent", reflect.TypeOf((*MockLicenser)(nil).CustomUserAgent))
+}
+
 // EnterpriseSSO mocks base method.
 func (m *MockLicenser) EnterpriseSSO() bool {
 	m.ctrl.T.Helper()

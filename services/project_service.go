@@ -288,6 +288,9 @@ func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.Pr
 		if _, ok := present["multiple_endpoint_subscriptions"]; ok {
 			merged.MultipleEndpointSubscriptions = incoming.MultipleEndpointSubscriptions
 		}
+		if _, ok := present["sync_dynamic_event_ack"]; ok {
+			merged.SyncDynamicEventAck = incoming.SyncDynamicEventAck
+		}
 	} else if patch.RequestIDHeader != "" {
 		// Legacy callers without present-key tracking still apply non-empty values.
 		merged.RequestIDHeader = incoming.RequestIDHeader

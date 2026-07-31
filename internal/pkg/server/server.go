@@ -30,10 +30,25 @@ func NewServer(port uint32, stopFn func()) *Server {
 }
 
 func NewServerWithLogger(port uint32, stopFn func(), logger log.Logger) *Server {
+	// WriteTimeout covers the entire handler. Sync-ack waits on POST /events/dynamic
+	// must finish with room to write the response, so raise above the wait when needed.
+	// Match CreateDynamicEventService: zero/negative timeout falls back to 30s.
+	writeTimeout := 30 * time.Second
+	if cfg, err := config.Get(); err == nil {
+		ackSecs := cfg.SyncDynamicEventAckTimeout
+		if ackSecs == 0 {
+			ackSecs = 30
+		}
+		ackWait := time.Duration(ackSecs) * time.Second
+		if needed := ackWait + 15*time.Second; needed > writeTimeout {
+			writeTimeout = needed
+		}
+	}
+
 	srv := &Server{
 		s: &http.Server{
 			ReadTimeout:  time.Second * 30,
-			WriteTimeout: time.Second * 30,
+			WriteTimeout: writeTimeout,
 			Addr:         fmt.Sprintf(":%d", port),
 		},
 		StopFn: stopFn,

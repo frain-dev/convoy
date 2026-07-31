@@ -301,6 +301,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		}
 
 		requestSentAt := time.Now()
+		outboundHeaders := prepareOutboundHeaders(eventDelivery.Headers, deps.Licenser.CustomUserAgent())
 		resp, err := deps.Dispatcher.SendWebhookWithMTLS(
 			ctx,
 			targetURL,
@@ -308,7 +309,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			project.Config.Signature.Header.String(),
 			header,
 			int64(cfg.MaxResponseSize),
-			eventDelivery.Headers,
+			outboundHeaders,
 			project.Config.GetRequestIDHeader().String(),
 			eventDelivery.IdempotencyKey,
 			httpDuration,

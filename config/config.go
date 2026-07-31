@@ -139,9 +139,10 @@ var DefaultConfiguration = Configuration{
 		PingMethods:        []string{"HEAD", "GET", "POST"},
 		SkipPingValidation: false,
 	},
-	InstanceIngestRate:  1000,
-	ApiRateLimit:        1000,
-	WorkerExecutionMode: DefaultExecutionMode,
+	InstanceIngestRate:         1000,
+	ApiRateLimit:               1000,
+	SyncDynamicEventAckTimeout: 30,
+	WorkerExecutionMode:        DefaultExecutionMode,
 	Billing: BillingConfiguration{
 		URL:         "",
 		APIKey:      "",
@@ -510,40 +511,43 @@ const (
 )
 
 type Configuration struct {
-	InstanceId          string                       `json:"instance_id"`
-	APIVersion          string                       `json:"api_version" envconfig:"CONVOY_API_VERSION"`
-	Auth                AuthConfiguration            `json:"auth,omitempty"`
-	Database            DatabaseConfiguration        `json:"database"`
-	Redis               RedisConfiguration           `json:"redis"`
-	Prometheus          PrometheusConfiguration      `json:"prometheus"`
-	Server              ServerConfiguration          `json:"server"`
-	MaxResponseSize     uint64                       `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP                SMTPConfiguration            `json:"smtp"`
-	Environment         string                       `json:"env" envconfig:"CONVOY_ENV"`
-	Logger              LoggerConfiguration          `json:"logger"`
-	Tracer              TracerConfiguration          `json:"tracer"`
-	Host                string                       `json:"host" envconfig:"CONVOY_HOST"`
-	RootPath            string                       `json:"root_path" envconfig:"CONVOY_ROOT_PATH"`
-	Pyroscope           PyroscopeConfiguration       `json:"pyroscope"`
-	CustomDomainSuffix  string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	EnableFeatureFlag   []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
-	RetentionPolicy     RetentionPolicyConfiguration `json:"retention_policy"`
-	CircuitBreaker      CircuitBreakerConfiguration  `json:"circuit_breaker"`
-	Analytics           AnalyticsConfiguration       `json:"analytics"`
-	StoragePolicy       StoragePolicyConfiguration   `json:"storage_policy"`
-	ConsumerPoolSize    int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
-	EnableProfiling     bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
-	Metrics             MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
-	InstanceIngestRate  int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
-	ApiRateLimit        int                          `json:"api_rate_limit" envconfig:"CONVOY_API_RATE_LIMIT"`
-	WorkerExecutionMode ExecutionMode                `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
-	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
-	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
-	LicenseService      LicenseServiceConfiguration  `json:"license_service" envconfig:"CONVOY_LICENSE_SERVICE"`
-	SSOService          SSOServiceConfiguration      `json:"sso_service" envconfig:"CONVOY_SSO_SERVICE"`
-	Dispatcher          DispatcherConfiguration      `json:"dispatcher"`
-	HCPVault            HCPVaultConfig               `json:"hcp_vault"`
-	Billing             BillingConfiguration         `json:"billing"`
+	InstanceId         string                       `json:"instance_id"`
+	APIVersion         string                       `json:"api_version" envconfig:"CONVOY_API_VERSION"`
+	Auth               AuthConfiguration            `json:"auth,omitempty"`
+	Database           DatabaseConfiguration        `json:"database"`
+	Redis              RedisConfiguration           `json:"redis"`
+	Prometheus         PrometheusConfiguration      `json:"prometheus"`
+	Server             ServerConfiguration          `json:"server"`
+	MaxResponseSize    uint64                       `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP               SMTPConfiguration            `json:"smtp"`
+	Environment        string                       `json:"env" envconfig:"CONVOY_ENV"`
+	Logger             LoggerConfiguration          `json:"logger"`
+	Tracer             TracerConfiguration          `json:"tracer"`
+	Host               string                       `json:"host" envconfig:"CONVOY_HOST"`
+	RootPath           string                       `json:"root_path" envconfig:"CONVOY_ROOT_PATH"`
+	Pyroscope          PyroscopeConfiguration       `json:"pyroscope"`
+	CustomDomainSuffix string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	EnableFeatureFlag  []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
+	RetentionPolicy    RetentionPolicyConfiguration `json:"retention_policy"`
+	CircuitBreaker     CircuitBreakerConfiguration  `json:"circuit_breaker"`
+	Analytics          AnalyticsConfiguration       `json:"analytics"`
+	StoragePolicy      StoragePolicyConfiguration   `json:"storage_policy"`
+	ConsumerPoolSize   int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	EnableProfiling    bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
+	Metrics            MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
+	InstanceIngestRate int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
+	ApiRateLimit       int                          `json:"api_rate_limit" envconfig:"CONVOY_API_RATE_LIMIT"`
+	// SyncDynamicEventAckTimeout is the max seconds POST /events/dynamic waits for
+	// endpoint/subscription resolve when project config sync_dynamic_event_ack is true.
+	SyncDynamicEventAckTimeout uint64                      `json:"sync_dynamic_event_ack_timeout" envconfig:"CONVOY_SYNC_DYNAMIC_EVENT_ACK_TIMEOUT"`
+	WorkerExecutionMode        ExecutionMode               `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
+	MaxRetrySeconds            uint64                      `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
+	LicenseKey                 string                      `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
+	LicenseService             LicenseServiceConfiguration `json:"license_service" envconfig:"CONVOY_LICENSE_SERVICE"`
+	SSOService                 SSOServiceConfiguration     `json:"sso_service" envconfig:"CONVOY_SSO_SERVICE"`
+	Dispatcher                 DispatcherConfiguration     `json:"dispatcher"`
+	HCPVault                   HCPVaultConfig              `json:"hcp_vault"`
+	Billing                    BillingConfiguration        `json:"billing"`
 }
 
 func (c Configuration) BillingMode(instanceLicenseKey string) BillingMode {
