@@ -80,6 +80,7 @@ type EventDeliveryProcessorDeps struct {
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 	OAuth2TokenService         OAuth2TokenService
 	Redis                      redis.UniversalClient
+	BlastRadiusRetention       time.Duration
 	Logger                     log.Logger
 }
 
@@ -443,7 +444,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				hllKey := datastore.BlastRadiusKey(project.UID, time.Now())
 				_, pfErr := deps.Redis.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 					pipe.PFAdd(ctx, hllKey, endpoint.UID)
-					pipe.Expire(ctx, hllKey, 24*time.Hour)
+					pipe.Expire(ctx, hllKey, deps.BlastRadiusRetention)
 					return nil
 				})
 				if pfErr != nil {
