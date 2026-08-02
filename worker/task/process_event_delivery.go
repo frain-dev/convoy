@@ -442,9 +442,15 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 			if deps.Redis != nil {
 				hllKey := datastore.BlastRadiusKey(project.UID, time.Now())
+				
+				ttl := deps.BlastRadiusRetention
+				if ttl < 24*time.Hour {
+					ttl = 24 * time.Hour
+				}
+
 				_, pfErr := deps.Redis.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 					pipe.PFAdd(ctx, hllKey, endpoint.UID)
-					pipe.Expire(ctx, hllKey, deps.BlastRadiusRetention)
+					pipe.Expire(ctx, hllKey, ttl)
 					return nil
 				})
 				if pfErr != nil {
