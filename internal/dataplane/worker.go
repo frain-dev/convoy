@@ -350,6 +350,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		FeatureFlagFetcher:         featureFlagFetcher,
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
 		OAuth2TokenService:         oauth2TokenService,
+		Redis:                      opts.Redis.Client(),
 		Logger:                     lo,
 	}
 

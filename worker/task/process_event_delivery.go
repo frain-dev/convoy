@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -78,6 +79,7 @@ type EventDeliveryProcessorDeps struct {
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 	OAuth2TokenService         OAuth2TokenService
+	Redis                      redis.UniversalClient
 	Logger                     log.Logger
 }
 
@@ -436,6 +438,18 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		} else {
 			deps.Logger.ErrorContext(ctx, "event delivery http error", append(logAttrs, "event_delivery_uid", eventDelivery.UID)...)
 			done = false
+
+			if deps.Redis != nil {
+				hllKey := datastore.BlastRadiusKey(project.UID, time.Now())
+				_, pfErr := deps.Redis.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+					pipe.PFAdd(ctx, hllKey, endpoint.UID)
+					pipe.Expire(ctx, hllKey, 24*time.Hour)
+					return nil
+				})
+				if pfErr != nil {
+					deps.Logger.ErrorContext(ctx, "failed to update blast radius hyperloglog", "error", pfErr)
+				}
+			}
 
 			// For at-most-once delivery, only retry on network failures
 			if eventDelivery.DeliveryMode == datastore.AtMostOnceDeliveryMode {

@@ -708,6 +708,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 						projectSubRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 							dashboardRouter.Get("/summary", handler.GetDashboardSummary)
+							dashboardRouter.Get("/blast-radius", handler.GetProjectBlastRadius)
 						})
 					})
 				})
