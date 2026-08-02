@@ -199,12 +199,20 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}()
 
-	_, err = io.Copy(buf, io.LimitReader(r.Body, int64(maxIngestSize)))
+	n, err := io.Copy(buf, io.LimitReader(r.Body, int64(maxIngestSize)+1))
 	if err != nil {
 		a.A.Logger.Error("Failed to read request body", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
+	if n > int64(maxIngestSize) {
+		_ = render.Render(w, r, util.NewErrorResponse("Payload too large", http.StatusRequestEntityTooLarge))
+		return
+	}
+
+	// rawPayload is backed by the pooled buffer's array. It is only valid until this
+	// function returns and the buffer is recycled. Do not let it escape synchronously!
+	// msgpack.EncodeMsgPack performs a deep copy later, making this safe.
 	rawPayload := buf.Bytes()
 
 	// Restore body for subsequent reads
