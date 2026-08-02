@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -31,6 +32,15 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
 )
+
+const defaultBufferCapacity = 16 * 1024
+const maxBufferCapacity = 64 * 1024
+
+var ingestBufferPool = sync.Pool{
+	New: func() interface{} {
+		return bytes.NewBuffer(make([]byte, 0, defaultBufferCapacity))
+	},
+}
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
 	// s.AppService.CountProjectApplications()
@@ -181,12 +191,21 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// 3.1 On Failure
 	// Return 400 Bad Request.
 	// Read raw body for signature verification first (e.g., GitHub signs raw bytes)
-	rawPayload, err := io.ReadAll(io.LimitReader(r.Body, int64(maxIngestSize)))
+	buf := ingestBufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer func() {
+		if buf.Cap() <= maxBufferCapacity {
+			ingestBufferPool.Put(buf)
+		}
+	}()
+
+	_, err = io.Copy(buf, io.LimitReader(r.Body, int64(maxIngestSize)))
 	if err != nil {
 		a.A.Logger.Error("Failed to read request body", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
+	rawPayload := buf.Bytes()
 
 	// Restore body for subsequent reads
 	r.Body = io.NopCloser(bytes.NewReader(rawPayload))
@@ -197,7 +216,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	var payload []byte
 	if rawVerifyErr != nil {
 		// Fallback: extract/convert payload (e.g., form -> JSON) and verify against that for backward compatibility
-		payload, err = extractPayloadFromIngestEventReq(r, maxIngestSize)
+		payload, err = extractPayloadFromIngestEventReq(r, rawPayload, maxIngestSize)
 		if err != nil {
 			a.A.Logger.Error("Failed to extract payload", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -214,7 +233,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	} else {
 		// Raw verification succeeded; now convert for storage
-		payload, err = extractPayloadFromIngestEventReq(r, maxIngestSize)
+		payload, err = extractPayloadFromIngestEventReq(r, rawPayload, maxIngestSize)
 		if err != nil {
 			a.A.Logger.Error("Failed to extract payload", "error", err)
 			_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -325,7 +344,7 @@ const (
 	urlEncodedContentType        = "application/x-www-form-urlencoded"
 )
 
-func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]byte, error) {
+func extractPayloadFromIngestEventReq(r *http.Request, rawPayload []byte, maxIngestSize uint64) ([]byte, error) {
 	var contentType string
 	rawContentType := strings.ToLower(
 		strings.TrimSpace(
@@ -357,7 +376,7 @@ func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]
 	default:
 		// To avoid introducing a breaking change, we are keeping the old behaviour of assuming
 		// the content type is JSON if the content type is not specified/unsupported.
-		return io.ReadAll(io.LimitReader(r.Body, int64(maxIngestSize)))
+		return rawPayload, nil
 	}
 }
 
