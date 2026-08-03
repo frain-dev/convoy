@@ -201,6 +201,8 @@ type StartGuestCheckoutRequest struct {
 	CheckoutNonceHash string `json:"checkout_nonce_hash,omitempty"`
 	// LicenseKey, when set, resubscribes the org for that key (empty = first purchase).
 	LicenseKey string `json:"license_key,omitempty"`
+	// ReferralCode is optional SH referral attribution; Overwatch fail-opens on bad codes.
+	ReferralCode string `json:"referral_code,omitempty"`
 }
 
 type CompleteGuestCheckoutRequest struct {
@@ -227,6 +229,8 @@ type StartSelfHostedTrialRequest struct {
 	Host             string `json:"host,omitempty"`
 	OrganisationName string `json:"organisation_name,omitempty"`
 	AttemptID        string `json:"attempt_id"`
+	// ReferralCode is optional SH referral attribution; Overwatch fail-opens on bad codes.
+	ReferralCode string `json:"referral_code,omitempty"`
 }
 
 type TaxIDType struct {
