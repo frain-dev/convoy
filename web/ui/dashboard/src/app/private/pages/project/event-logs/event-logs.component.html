@@ -252,13 +252,13 @@
     <div class="bg-white-100 border border-new.border rounded-12px p-20px flex flex-col gap-16px">
       @if (isloadingEvents) {
         <div class="flex flex-col gap-16px">
-          <div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
+          <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-80px"></div>
           <div class="flex justify-between">
-            <div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
-            <div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-160px"></div>
+            <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-80px"></div>
+            <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-160px"></div>
           </div>
-          <div class="bg-neutral-a3 rounded-8px animate-pulse h-120px w-full"></div>
-          <div class="bg-neutral-a3 rounded-8px animate-pulse h-120px w-full"></div>
+          <div class="bg-new.surface-muted rounded-8px animate-pulse h-120px w-full"></div>
+          <div class="bg-new.surface-muted rounded-8px animate-pulse h-120px w-full"></div>
         </div>
       } @else if (!displayedEvents.length) {
         <div class="flex flex-col items-center justify-center gap-8px py-40px text-center">
@@ -289,9 +289,9 @@
         @if (eventsDetailsItem?.is_duplicate_event) {
           @if (isFetchingDuplicateEvents) {
             <div class="flex flex-col gap-12px">
-              <div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
-              <div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-full"></div>
-              <div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-full"></div>
+              <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-80px"></div>
+              <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-full"></div>
+              <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-full"></div>
             </div>
           }
           @if (!isFetchingDuplicateEvents && duplicateEvents && duplicateEvents.length > 0) {
@@ -314,8 +314,8 @@
 
             @if (isLoadingSidebarDeliveries) {
               <div class="flex flex-col gap-12px">
-                <div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-full"></div>
-                <div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-full"></div>
+                <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-full"></div>
+                <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-full"></div>
               </div>
             } @else if (!sidebarEventDeliveries.length) {
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">

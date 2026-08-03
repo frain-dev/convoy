@@ -111,7 +111,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Content type</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">JSON sends data as application/json, Form Data sends as application/x-www-form-urlencoded.</p>
             </div>
-            <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('content_type')">Remove setting</button>
+            <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('content_type')">Remove setting</button>
           </div>
           <div class="max-w-[420px] flex flex-col gap-8px">
             <label for="content_type" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Content type *</label>
@@ -153,7 +153,7 @@
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">The event types this endpoint will receive. Add filters to control which events are delivered.</p>
             </div>
             @if (action !== 'view') {
-              <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('events')">Remove setting</button>
+              <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('events')">Remove setting</button>
             }
           </div>
 
@@ -183,7 +183,7 @@
                   </div>
                   <button
                     type="button"
-                    class="shrink-0 px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3 disabled:opacity-40 disabled:pointer-events-none"
+                    class="shrink-0 px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle disabled:opacity-40 disabled:pointer-events-none"
                     (click)="openFilterDialog(i)"
                     [disabled]="action === 'view' || !licenseService.hasPortalLicense('AdvancedSubscriptions') || !selectedEventTypes.includes(eventType.name)">
                     {{ filtersMap.has(eventType.name) ? 'Edit Filter' : 'Add Filter' }}
@@ -207,12 +207,12 @@
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Configure how you want to test and apply transformation logic to webhook events.</p>
             </div>
             @if (action !== 'view') {
-              <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('transform')">Remove setting</button>
+              <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('transform')">Remove setting</button>
             }
           </div>
           <convoy-create-portal-transform-function
             [showTitle]="false"
-            [titleClass]="'font-semibold text-14 capitalize pb-16px'"
+            [titleClass]="'font-heading font-medium text-[14px] leading-[20px] text-new.text-primary capitalize pb-16px'"
             (updatedTransformFunction)="getFunction($event)"
             [defaultOption]="'Select Event Type'"
             [options]="validEventTypes()"
@@ -229,7 +229,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Owner ID</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">A unique id for identifying a group of endpoints.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('owner_id', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('owner_id', true)">Remove setting</button>
           </div>
           <div class="max-w-[420px] flex flex-col gap-8px">
             <label for="owner_id" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Owner ID</label>
@@ -253,7 +253,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Rate limit</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Cap deliveries to this endpoint over a time window.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('rate_limit', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('rate_limit', true)">Remove setting</button>
           </div>
           <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
             <div class="flex flex-col gap-8px">
@@ -297,7 +297,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Endpoint authentication</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Set your provided endpoint authentication if any is required.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('auth', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('auth', true)">Remove setting</button>
           </div>
           <ng-container formGroupName="authentication">
             <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1" formGroupName="api_key">
@@ -348,7 +348,7 @@
               </div>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">How many seconds should Convoy wait for a response from this endpoint before timing out?</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('http_timeout', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('http_timeout', true)">Remove setting</button>
           </div>
           <div class="max-w-[420px] flex flex-col gap-8px">
             <label for="http_timeout" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Timeout value</label>
@@ -388,7 +388,7 @@
               </div>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Get notified when deliveries to this endpoint fail.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('alert_config', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('alert_config', true)">Remove setting</button>
           </div>
           @if (licenseService.hasPortalLicense('AdvancedEndpointMgmt')) {
             <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
@@ -429,7 +429,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Signature format</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">The format used to sign payloads sent to this endpoint.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('signature', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('signature', true)">Remove setting</button>
           </div>
           <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
             <button
@@ -465,7 +465,7 @@
             <button
               convoy-permission="Endpoints|MANAGE"
               type="button"
-              class="flex items-center gap-4px shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3"
+              class="flex items-center gap-4px shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle"
               (click)="toggleConfigForm(config.uid)"
               >
               <svg width="10" height="10" class="fill-new.text-primary">

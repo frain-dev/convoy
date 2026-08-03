@@ -1,31 +1,41 @@
 import {CommonModule} from '@angular/common';
 import {Component, Directive, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {ButtonComponent} from '../button/button.component';
 
 // dialog header
 @Component({
     selector: '[convoy-dialog-header]',
-    imports: [CommonModule, ButtonComponent],
+    imports: [CommonModule],
     template: `
 		<div
-		  class="px-32px pt-32px pb-24px border-y border-y-neutral-4 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
-		  <div class="flex justify-between items-center max-w-[770px] m-auto">
-		    <div class="flex items-center w-full" [ngClass]="{ 'justify-between': fullscreen === 'false' }">
-		      <div class="w-full" [class]="fullscreen !== 'false' ? 'order-2' : 'order-1'">
+		  class="px-24px py-16px border-b border-new.border bg-white-100 w-full"
+		  [class.rounded-t-24px]="fullscreen === 'false'"
+		  [class.sticky]="fullscreen !== 'false'"
+		  [class.top-0]="fullscreen !== 'false'"
+		  [class.z-10]="fullscreen !== 'false'">
+		  <div class="flex justify-between items-center max-w-[770px] m-auto gap-16px">
+		    <div class="flex items-center w-full min-w-0" [ngClass]="{ 'justify-between': fullscreen === 'false' }">
+		      <div class="w-full min-w-0" [class]="fullscreen !== 'false' ? 'order-2' : 'order-1'">
 		        <ng-content></ng-content>
 		      </div>
-		
-		      <button convoy-button size="sm" fill="soft" class="px-8px !py-8px"
-		        [class]="fullscreen !== 'false' ? 'order-1 mr-2' : 'order-2'" (click)="closeDialog.emit()">
-		        <img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon"/>
+
+		      <button
+		        type="button"
+		        class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-opacity hover:opacity-80 shrink-0"
+		        [class]="fullscreen !== 'false' ? 'order-1 mr-12px' : 'order-2'"
+		        (click)="closeDialog.emit()"
+		        aria-label="Close">
+		        <img src="/assets/img/close-icon.svg" class="w-12px h-12px" alt="" />
 		      </button>
 		    </div>
-		
+
 		    @if (fullscreen === 'true') {
-		      <a convoy-button fill="text" target="_blank"
-		        href="https://docs.getconvoy.io" rel="noreferrer">
-		        <img src="/assets/img/doc-icon-primary.svg" alt="doc icon"/>
-		        <span class="font-medium text-12 text-primary-100 ml-2 whitespace-nowrap">Go to docs</span>
+		      <a
+		        target="_blank"
+		        href="https://docs.getconvoy.io"
+		        rel="noreferrer"
+		        class="flex items-center gap-6px font-body font-medium text-[12px] text-new.primary-400 whitespace-nowrap shrink-0 hover:opacity-80">
+		        <img src="/assets/img/doc-icon-primary.svg" alt="" class="w-14px h-14px" />
+		        Go to docs
 		      </a>
 		    }
 		  </div>
@@ -55,7 +65,7 @@ export class DialogDirective implements OnInit, OnDestroy {
 	modalType = {
 		full: ` w-full h-full`,
 		right: ` mr-0 h-full`,
-		center: ` rounded-[16px] mt-40px`
+		center: ` rounded-24px mt-40px`
 	};
 
 	private cancelListener?: (event: Event) => void;
@@ -81,6 +91,6 @@ export class DialogDirective implements OnInit, OnDestroy {
 	}
 
 	get classes(): string {
-		return `${this.modalType[this.position]} bg-white-100 ${this.position === 'full' ? '' : this.modalSizes[this.size]}`;
+		return `${this.modalType[this.position]} bg-new.surface-page ${this.position === 'full' ? '' : this.modalSizes[this.size]}`;
 	}
 }

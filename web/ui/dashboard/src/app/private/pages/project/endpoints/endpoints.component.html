@@ -138,14 +138,14 @@
             @if (circuitBreakerOpen(endpoint)) {
               <convoy-tooltip [withIcon]="false" position="top" [className]="statusTooltipClass">
                 <p>{{ cbStatusTooltip(endpoint) }}</p>
-                <p class="mt-6px text-neutral-10">{{ cbStatusTooltipDetail(endpoint) }}</p>
+                <p class="mt-6px text-new.text-secondary">{{ cbStatusTooltipDetail(endpoint) }}</p>
                 <span tooltipToggle class="inline-flex items-center h-20px px-4px rounded-4px font-body font-medium text-[12px] leading-[14px] text-new.text-primary" [class]="statusPillClass(endpoint)">{{ statusPillLabel(endpoint) }}</span>
               </convoy-tooltip>
             } @else if (endpoint.status) {
               <convoy-tooltip [withIcon]="false" position="top" [className]="statusTooltipClass">
                 <p>{{ statusTooltip(endpoint) }}</p>
                 @if (statusTooltipDetail(endpoint)) {
-                  <p class="mt-6px text-neutral-10">{{ statusTooltipDetail(endpoint) }}</p>
+                  <p class="mt-6px text-new.text-secondary">{{ statusTooltipDetail(endpoint) }}</p>
                 }
                 <span tooltipToggle class="inline-flex items-center h-20px px-4px rounded-4px font-body font-medium text-[12px] leading-[14px] text-new.text-primary" [class]="statusPillClass(endpoint)">{{ statusPillLabel(endpoint) }}</span>
               </convoy-tooltip>
@@ -186,7 +186,7 @@
           <div class="flex items-center justify-end px-12px h-40px">
             <convoy-tooltip [withIcon]="false" position="top" className="!min-w-[240px]">
               <p>{{ periodFailureRateStats(endpoint) }}</p>
-              <p class="mt-6px text-neutral-10">Deliveries still retrying count as failed until they succeed. Discarded and not-yet-attempted deliveries are excluded.</p>
+              <p class="mt-6px text-new.text-secondary">Deliveries still retrying count as failed until they succeed. Discarded and not-yet-attempted deliveries are excluded.</p>
               <span tooltipToggle class="font-body font-normal text-[14px] leading-normal" [class]="(endpoint.period_failure_rate || 0) > 0 ? 'text-new.error-500' : 'text-new.text-secondary'">{{ failureRateLabel(endpoint) }}</span>
             </convoy-tooltip>
           </div>

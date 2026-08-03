@@ -135,8 +135,8 @@
       <!-- Details sidebar -->
       <div class="bg-white-100 border border-new.border rounded-12px p-20px flex flex-col gap-12px">
         @if (isLoadingMetaEvents) {
-          <div class="bg-neutral-a3 rounded-8px animate-pulse h-150px w-full mb-8px"></div>
-          <div class="bg-neutral-a3 rounded-8px animate-pulse h-150px w-full"></div>
+          <div class="bg-new.surface-muted rounded-8px animate-pulse h-150px w-full mb-8px"></div>
+          <div class="bg-new.surface-muted rounded-8px animate-pulse h-150px w-full"></div>
         } @else if (displayedMetaEvents && displayedMetaEvents.length > 0) {
           <h3 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Details</h3>
           <prism language="json" [code]="generalService.getCodeSnippetString('req_header', selectedMetaEvent?.attempt?.request_http_header)" title="Request header"></prism>

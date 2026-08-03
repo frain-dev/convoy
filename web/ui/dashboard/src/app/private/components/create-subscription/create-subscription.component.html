@@ -115,7 +115,7 @@
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Selected event types are delivered by default. Add a filter only when this endpoint should receive a narrower set of matching events.</p>
             </div>
             @if (action !== 'view') {
-              <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('events')">Remove setting</button>
+              <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('events')">Remove setting</button>
             }
           </div>
 
@@ -152,7 +152,7 @@
                   </div>
                   <button
                     type="button"
-                    class="shrink-0 px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3 disabled:opacity-50 disabled:pointer-events-none"
+                    class="shrink-0 px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle disabled:opacity-50 disabled:pointer-events-none"
                     (click)="openFilterDialog(eventType.name)"
                     [disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('AdvancedSubscriptions')"
                     >
@@ -188,9 +188,9 @@
             <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Transform request body of events with a javascript function.</p>
           </div>
           <div class="flex items-center gap-8px shrink-0">
-            <button type="button" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3 disabled:opacity-50 disabled:pointer-events-none" (click)="setupTransformDialog()" [disabled]="!licenseService.hasLicense('Transformations')">Open Editor</button>
+            <button type="button" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle disabled:opacity-50 disabled:pointer-events-none" (click)="setupTransformDialog()" [disabled]="!licenseService.hasLicense('Transformations')">Open Editor</button>
             @if (action !== 'view') {
-              <button type="button" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('tranform_config')">Remove setting</button>
+              <button type="button" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('tranform_config')">Remove setting</button>
             }
           </div>
         </div>
@@ -212,7 +212,7 @@
             <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Controls retry behaviour for this subscription.</p>
           </div>
           @if (action !== 'view') {
-            <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('delivery_mode')">Remove setting</button>
+            <button type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('delivery_mode')">Remove setting</button>
           }
         </div>
         <div class="max-w-[420px] flex flex-col gap-8px">
@@ -238,7 +238,7 @@
       <div class="flex flex-wrap items-center gap-8px">
         @for (config of configurations; track $index) {
           @if (!config.show) {
-            <button type="button" convoy-permission="Subscriptions|MANAGE" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm(config.uid)">+ {{ config.name }}</button>
+            <button type="button" convoy-permission="Subscriptions|MANAGE" class="px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm(config.uid)">+ {{ config.name }}</button>
           }
         }
       </div>

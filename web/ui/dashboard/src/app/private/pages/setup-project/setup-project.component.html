@@ -1,6 +1,9 @@
-<dialog #projectSetupDialog convoy-dialog id="configureProjectForm" position="full" escapeAction="delegate" (escaped)="cancel()">
-  <div convoy-dialog-header fullscreen="true" (closeDialog)="cancel()">
-    <h2 class="font-heading font-medium text-[14px] text-new.text-primary capitalize">{{ projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project' }}</h2>
+<dialog #projectSetupDialog convoy-dialog id="configureProjectForm" position="full" escapeAction="delegate" (escaped)="cancel()" class="!bg-new.surface-page">
+  <div class="px-24px py-16px flex items-center justify-between border-b border-new.border bg-white-100 sticky top-0 z-10">
+    <h2 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary capitalize">{{ projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project' }}</h2>
+    <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-opacity hover:opacity-80" (click)="cancel()" aria-label="Close">
+      <img src="/assets/img/close-icon.svg" class="w-12px h-12px" alt="" />
+    </button>
   </div>
 
   <div class="h-full w-full bg-new.surface-page">

@@ -1,11 +1,10 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ButtonComponent } from '../button/button.component';
 
 @Component({
     selector: '[convoy-copy-button] ,convoy-copy-button',
-    imports: [ButtonComponent],
+    imports: [],
     templateUrl: './copy-button.component.html',
     styleUrls: ['./copy-button.component.scss']
 })
@@ -19,8 +18,8 @@ export class CopyButtonComponent implements OnInit {
 	@Output('copyText') copy = new EventEmitter();
 	colors = {
 		primary: 'stroke-new.primary-400',
-		neutral: 'stroke-neutral-10',
-		gray: 'stroke-neutral-10'
+		neutral: 'stroke-new.text-secondary',
+		gray: 'stroke-new.text-secondary'
 	};
 	constructor(private generalService: GeneralService) {}
 

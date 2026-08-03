@@ -15,17 +15,14 @@
                 <li class="mb-12px last-of-type:mb-0 w-full">
                   <button
                     convoy-dropdown-option
-                    convoy-button
-                    size="sm"
-                    color="neutral"
-                    fill="text"
-                    class="py-8px px-8px w-full text-left hover:bg-new.primary-25 transition-all duration-300 rounded-8px flex justify-between items-center gap-24px"
+                    type="button"
+                    class="py-8px px-8px w-full text-left hover:bg-new.surface-muted transition-colors rounded-8px flex justify-between items-center gap-24px font-body font-normal text-[14px] text-new.text-primary"
                     (click)="getProjectCompleteDetails(project)"
                     >
                     <div class="flex items-center gap-8px max-w-[calc(100%-36px)]">
                       <div class="w-full max-w-[200px] truncate">{{ project.name }}</div>
                       <div tooltipToggle convoy-tag class="py-[1px] px-[3px]" color="primary" fill="soft">
-                        <svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-75" [ngClass]="{ 'rotate-180': project?.type === 'incoming' }">
+                        <svg width="16" height="16" class="fill-new.primary-400 stroke-new.primary-400 scale-75" [ngClass]="{ 'rotate-180': project?.type === 'incoming' }">
                           <use xlink:href="#top-right-icon"></use>
                         </svg>
                       </div>
@@ -41,13 +38,13 @@
             </ul>
 
             @if (projects.length) {
-              <hr class="border-t border-t-new.primary-25" />
+              <hr class="border-t border-new.border" />
             }
 
             <div class="flex items-center">
               <div class="w-full relative">
-                <a [routerLink]="isDisabled ? null : '../new'" convoy-button size="sm" color="neutral" fill="text" class="py-12px px-12px whitespace-nowrap w-full text-left hover:bg-new.primary-25 flex items-center" convoy-permission="Project Settings|MANAGE" [class.pointer-events-none]="isDisabled" [class.opacity-50]="isDisabled">
-                  <svg width="16" height="16" class="mr-4px fill-neutral-12 scale-75">
+                <a [routerLink]="isDisabled ? null : '../new'" convoy-permission="Project Settings|MANAGE" class="py-12px px-12px whitespace-nowrap w-full text-left hover:bg-new.surface-muted flex items-center font-body font-normal text-[14px] text-new.text-primary transition-colors" [class.pointer-events-none]="isDisabled" [class.opacity-50]="isDisabled">
+                  <svg width="16" height="16" class="mr-4px fill-new.text-primary scale-75">
                     <use xlink:href="#plus-icon"></use>
                   </svg>
                   New Project
@@ -75,8 +72,8 @@
                   </div>
                 }
               </div>
-              <div class="h-44px w-2px bg-new.primary-25"></div>
-              <a routerLink="../" convoy-button size="sm" color="neutral" fill="text" class="py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
+              <div class="h-44px w-2px bg-new.border"></div>
+              <a routerLink="../" class="py-12px px-18px w-full text-left hover:bg-new.surface-muted flex items-center font-body font-normal text-[14px] text-new.text-primary transition-colors">
                 <img src="assets/img/svg/projects.svg" class="w-12px mr-8px" alt="plus icon" />
                 All Projects
               </a>
@@ -107,7 +104,7 @@
       @if (projectDetails) {
         <a routerLink="./settings" routerLinkActive="!bg-new.surface-muted" class="flex items-center gap-4px py-4px px-8px rounded-full transition-colors hover:bg-new.surface-muted shrink-0">
           <span class="font-body font-normal text-[14px] leading-normal text-new.text-primary whitespace-nowrap">Project Settings</span>
-          <svg width="16" height="16" class="fill-neutral-10">
+          <svg width="16" height="16" class="fill-new.text-secondary">
             <use xlink:href="#settings-icon"></use>
           </svg>
         </a>

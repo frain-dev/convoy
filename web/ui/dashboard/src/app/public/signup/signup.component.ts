@@ -2,7 +2,6 @@
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
-import {ButtonComponent} from 'src/app/components/button/button.component';
 import {InputErrorComponent} from 'src/app/components/input/input.component';
 import {LoaderModule} from 'src/app/private/components/loader/loader.module';
 import {AuthShellComponent} from '../components/auth-shell/auth-shell.component';
@@ -17,7 +16,7 @@ import {GeneralService} from 'src/app/services/general/general.service';
 
 @Component({
     selector: 'convoy-signup',
-    imports: [ReactiveFormsModule, ButtonComponent, InputErrorComponent, LoaderModule, AuthShellComponent],
+    imports: [ReactiveFormsModule, InputErrorComponent, LoaderModule, AuthShellComponent],
     templateUrl: './signup.component.html',
     styleUrls: ['./signup.component.scss']
 })

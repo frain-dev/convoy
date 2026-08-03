@@ -72,7 +72,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Content type</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">The content type Convoy uses to deliver payloads.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('content_type', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('content_type', true)">Remove setting</button>
           </div>
           <div class="max-w-[420px] flex flex-col gap-8px">
             <label for="content_type" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Content type *</label>
@@ -113,7 +113,7 @@
               </div>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">How long Convoy waits for a response before timing out.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('http_timeout', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('http_timeout', true)">Remove setting</button>
           </div>
           <div class="max-w-[420px] flex flex-col gap-8px">
             <label for="http_timeout" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Timeout value</label>
@@ -144,7 +144,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Owner ID</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Group multiple endpoints under a single owner, useful for fan-out and portal links.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('owner_id', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('owner_id', true)">Remove setting</button>
           </div>
           <div class="max-w-[420px] flex flex-col gap-8px">
             <label for="owner_id" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Owner ID</label>
@@ -168,7 +168,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Rate limits</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Cap deliveries to this endpoint over a time window.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('rate_limit', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('rate_limit', true)">Remove setting</button>
           </div>
           <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
             <div class="flex flex-col gap-8px">
@@ -214,7 +214,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Authentication</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Add credentials sent with each delivery.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('auth', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('auth', true)">Remove setting</button>
           </div>
 
           <ng-container formGroupName="authentication">
@@ -360,28 +360,28 @@
             <!-- Basic Auth Authentication -->
             @if (authChoice === 'basic_auth') {
               @if (!licenseService.hasLicense('BasicAuthEndpointAuth')) {
-                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200">
+                <div class="p-12px bg-new.surface-muted rounded-12px border border-new.border">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
                       <use xlink:href="#lock-icon"></use>
                     </svg>
-                    <p class="text-10 font-semibold text-neutral-12">Basic Auth Endpoint Authentication</p>
+                    <p class="font-heading font-medium text-[10px] text-new.text-primary">Basic Auth Endpoint Authentication</p>
                     <div convoy-tag size="sm" color="primary">
                       Business
                     </div>
                   </div>
-                  <p class="text-10 text-neutral-10">Basic Auth endpoint authentication is a Business plan feature. Please upgrade your license to use this feature.</p>
+                  <p class="font-body font-normal text-[10px] text-new.text-secondary">Basic Auth endpoint authentication is a Premium plan feature. Please upgrade your license to use this feature.</p>
                 </div>
               }
               @if (licenseService.hasLicense('BasicAuthEndpointAuth') && !basicAuthFeatureEnabled) {
-                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200">
+                <div class="p-12px bg-new.surface-muted rounded-12px border border-new.border">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
                       <use xlink:href="#lock-icon"></use>
                     </svg>
-                    <p class="text-10 font-semibold text-neutral-12">Basic Auth Feature Flag Disabled</p>
+                    <p class="font-heading font-medium text-[10px] text-new.text-primary">Basic Auth Feature Flag Disabled</p>
                   </div>
-                  <p class="text-10 text-neutral-10">Basic Auth endpoint authentication feature flag is not enabled for your organization. Please enable it in Early Adopter Features settings.</p>
+                  <p class="font-body font-normal text-[10px] text-new.text-secondary">Basic Auth endpoint authentication feature flag is not enabled for your organization. Please enable it in Early Adopter Features settings.</p>
                 </div>
               }
             }
@@ -416,28 +416,28 @@
             <!-- OAuth2 Authentication -->
             @if (authChoice === 'oauth2') {
               @if (!licenseService.hasLicense('OAuth2EndpointAuth')) {
-                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200">
+                <div class="p-12px bg-new.surface-muted rounded-12px border border-new.border">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
                       <use xlink:href="#lock-icon"></use>
                     </svg>
-                    <p class="text-10 font-semibold text-neutral-12">OAuth2 Endpoint Authentication</p>
+                    <p class="font-heading font-medium text-[10px] text-new.text-primary">OAuth2 Endpoint Authentication</p>
                     <div convoy-tag size="sm" color="primary">
                       Business
                     </div>
                   </div>
-                  <p class="text-10 text-neutral-10">OAuth2 endpoint authentication is a Business plan feature. Please upgrade your license to use this feature.</p>
+                  <p class="font-body font-normal text-[10px] text-new.text-secondary">OAuth2 endpoint authentication is a Premium plan feature. Please upgrade your license to use this feature.</p>
                 </div>
               }
               @if (licenseService.hasLicense('OAuth2EndpointAuth') && !oauth2FeatureEnabled) {
-                <div class="p-12px bg-neutral-50 rounded-8px border border-neutral-200">
+                <div class="p-12px bg-new.surface-muted rounded-12px border border-new.border">
                   <div class="flex items-center gap-8px mb-6px">
                     <svg width="14" height="14" class="fill-new.primary-400">
                       <use xlink:href="#lock-icon"></use>
                     </svg>
-                    <p class="text-10 font-semibold text-neutral-12">OAuth2 Feature Flag Disabled</p>
+                    <p class="font-heading font-medium text-[10px] text-new.text-primary">OAuth2 Feature Flag Disabled</p>
                   </div>
-                  <p class="text-10 text-neutral-10">OAuth2 endpoint authentication feature flag is not enabled for your organization. Please enable it in Early Adopter Features settings.</p>
+                  <p class="font-body font-normal text-[10px] text-new.text-secondary">OAuth2 endpoint authentication feature flag is not enabled for your organization. Please enable it in Early Adopter Features settings.</p>
                 </div>
               }
             }
@@ -564,7 +564,7 @@
                     </convoy-input-field>
                   </div>
                   <div class="flex items-center gap-8px mb-16px">
-                    <p class="text-12 text-neutral-11 font-medium">JWK Signing Key</p>
+                    <p class="font-body font-medium text-[12px] text-new.text-secondary">JWK Signing Key</p>
                     <convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="JSON Web Key (JWK) format signing key for JWT client assertion. Provide your private key in JWK format. For EC keys, provide kty, crv, x, y, d. For RSA keys, provide kty, n, e, d, p, q, dp, dq, qi."></convoy-tooltip>
                   </div>
                   <ng-container formGroupName="signing_key">
@@ -718,8 +718,8 @@
                 }
                 <!-- Field Mapping Configuration -->
                 <div class="mt-24px p-16px bg-neutral-50 rounded-8px">
-                  <p class="text-12 font-semibold text-neutral-12 mb-12px">Response Field Mapping (Optional)</p>
-                  <p class="text-10 text-neutral-10 mb-16px">Configure field names if your OAuth2 provider uses different field names in the token response. If <code class="bg-neutral-100 px-4px py-2px rounded">token_type</code> is missing, we'll default to &quot;Bearer&quot;.</p>
+                  <p class="font-heading font-medium text-[12px] text-new.text-primary mb-12px">Response Field Mapping (Optional)</p>
+                  <p class="font-body font-normal text-[10px] text-new.text-secondary mb-16px">Configure field names if your OAuth2 provider uses different field names in the token response. If <code class="bg-new.surface-muted px-4px py-2px rounded">token_type</code> is missing, we'll default to &quot;Bearer&quot;.</p>
                   <ng-container formGroupName="field_mapping">
                     <div class="grid grid-cols-1 gap-16px">
                       <convoy-input-field>
@@ -768,9 +768,9 @@
                 </div>
                 <!-- OAuth2 Test Connection Button -->
                 <div class="mt-24px">
-                  <button convoy-button color="primary" fill="solid" [disabled]="testingOAuth2" (click)="testOAuth2Connection()" size="sm" class="!w-auto !text-white-100" type="button">
+                  <button type="button" class="px-14px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="testingOAuth2" (click)="testOAuth2Connection()">
                     @if (!testingOAuth2) {
-                      <span class="!text-white-100">Test OAuth2 Connection</span>
+                      <span>Test OAuth2 Connection</span>
                     }
                     @if (testingOAuth2) {
                       <img src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
@@ -785,7 +785,7 @@
                         </span>
                       </div>
                       @if (oauth2TestResult.success) {
-                        <div class="text-12 text-neutral-11 space-y-4px">
+                        <div class="font-body text-[12px] text-new.text-secondary space-y-4px">
                           @if (oauth2TestResult.access_token) {
                             <div>
                               <strong>Access Token:</strong>
@@ -814,9 +814,9 @@
                           <strong>Error:</strong> {{ oauth2TestResult.error }}
                         </div>
                       }
-                      <div class="mt-12px text-10 text-neutral-10">
+                      <div class="mt-12px font-body text-[10px] text-new.text-secondary">
                         <strong>Note:</strong> Configure the field mapping above if your OAuth2 provider uses different field names.
-                        If <code class="bg-neutral-100 px-4px py-2px rounded">token_type</code> or <code class="bg-neutral-100 px-4px py-2px rounded">expires_in</code> are missing, we'll use defaults (Bearer and 3600 seconds).
+                        If <code class="bg-new.surface-muted px-4px py-2px rounded">token_type</code> or <code class="bg-new.surface-muted px-4px py-2px rounded">expires_in</code> are missing, we'll use defaults (Bearer and 3600 seconds).
                       </div>
                     </div>
                   }
@@ -845,7 +845,7 @@
               </div>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Get notified when deliveries to this endpoint fail.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('alert_config', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('alert_config', true)">Remove setting</button>
           </div>
           @if (licenseService.hasLicense('AdvancedEndpointMgmt')) {
             <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
@@ -888,7 +888,7 @@
               <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Signature formats</h3>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">The format used to sign payloads sent to this endpoint.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('signature', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('signature', true)">Remove setting</button>
           </div>
           <div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
             <button
@@ -951,7 +951,7 @@
               </div>
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">PEM-encoded client certificate and private key for mutual TLS.</p>
             </div>
-            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3" (click)="toggleConfigForm('mtls', true)">Remove setting</button>
+            <button convoy-permission="Endpoints|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('mtls', true)">Remove setting</button>
           </div>
           @if (licenseService.hasLicense('MutualTLS')) {
             <ng-container formGroupName="mtls_client_cert">
@@ -1010,7 +1010,7 @@
           <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Additional settings</h3>
           <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px mb-20px">Add only the configuration this endpoint needs.</p>
           <div convoy-dropdown size="md" position="left">
-            <button dropdownTrigger convoy-permission="Endpoints|MANAGE" type="button" class="px-14px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-neutral-a3">+ Add setting</button>
+            <button dropdownTrigger convoy-permission="Endpoints|MANAGE" type="button" class="px-14px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle">+ Add setting</button>
             <ul dropdownOptions class="py-4px max-h-[340px] overflow-y-auto">
               @for (config of addableConfigs; track config.uid) {
                 <li>

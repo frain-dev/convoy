@@ -51,7 +51,7 @@
                         @if (organisation.uid == userOrganization?.uid) {
                           <div class="flex gap-12px items-center">
                             <a class="w-28px h-28px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" convoy-dropdown-option (click)="$event.stopPropagation(); this.showOrgDropdown = false" routerLink="/settings">
-                              <svg width="16" height="16" class="fill-neutral-10">
+                              <svg width="16" height="16" class="fill-new.text-secondary">
                                 <use xlink:href="#settings-icon"></use>
                               </svg>
                             </a>
@@ -108,7 +108,7 @@
         </a>
         @if (isInstanceAdmin) {
           <a class="flex items-center p-4px rounded-full transition-colors hover:bg-new.surface-muted" routerLink="/admin">
-            <svg width="16" height="16" class="fill-neutral-10">
+            <svg width="16" height="16" class="fill-new.text-secondary">
               <use xlink:href="#settings-icon"></use>
             </svg>
           </a>
@@ -165,12 +165,12 @@
   </div>
 
   <!-- Convoy version -->
-  <p class="text-center text-neutral-4 pt-80px pb-20px">Convoy {{ convoyVersion }}</p>
+  <p class="text-center font-body text-new.text-secondary pt-80px pb-20px">Convoy {{ convoyVersion }}</p>
 
   @if (showHelpCard) {
     <div class="fixed left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-10">
       <img src="/assets/img/svg/help-circle.svg" alt="Help image" class="w-24px h-24px mb-10px" />
-      <a target="_blank" href="https://docs.getconvoy.io" rel="noreferrer" class="text-neutral-11 text-14 text-center">Need help? Go to docs</a>
+      <a target="_blank" href="https://docs.getconvoy.io" rel="noreferrer" class="font-body font-normal text-[14px] text-new.text-secondary text-center">Need help? Go to docs</a>
     </div>
   }
 

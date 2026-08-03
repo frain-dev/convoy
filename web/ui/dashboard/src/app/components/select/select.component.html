@@ -6,7 +6,7 @@
       <div
         convoy-input
                 class="
-				peer-disabled:text-neutral-4 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
+				peer-disabled:text-new.text-secondary peer-disabled:border-new.border peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
 				appearance-none
 				bg-[url(/assets/img/angle-down.svg)] bg-no-repeat
 				bg-[right_10px_center]
@@ -22,10 +22,10 @@
         }
         @if (multiple) {
           @for (option of selectedOptions; track $index) {
-            <div class="border border-neutral-5 py-4px px-8px font-medium text-12 text-neutral-10 mr-1 mb-1 rounded-22px flex items-center">
+            <div class="border border-new.border py-4px px-8px font-body font-medium text-12 text-new.text-secondary mr-1 mb-1 rounded-22px flex items-center">
               {{ option.name || option.title || option }}
-              <button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0 ml-4px">
-                <svg width="14" height="14" class="fill-neutral-10">
+              <button type="button" (click)="removeOption(option)" class="py-0 px-0 ml-4px">
+                <svg width="14" height="14" class="fill-new.text-secondary">
                   <use xlink:href="#close-icon-2"></use>
                 </svg>
               </button>
@@ -44,9 +44,9 @@
       <ul>
         @if (searchable) {
           <li>
-            <div class="my-10px mr-20px border border-new.primary-50 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
+            <div class="my-10px mr-20px border border-new.border h-36px px-14px rounded-[10px] flex items-center bg-white-100">
               <img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
-              <input type="search" placeholder="Search here" class="w-full outline-none text-12" #searchFilter />
+              <input type="search" placeholder="Search here" class="w-full outline-none font-body text-[12px] text-new.text-primary placeholder:text-new.text-placeholder bg-transparent" #searchFilter />
             </div>
           </li>
         }

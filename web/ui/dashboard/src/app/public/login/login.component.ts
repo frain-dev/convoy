@@ -2,7 +2,6 @@
 import {AfterViewInit, Component} from '@angular/core';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
-import {ButtonComponent} from 'src/app/components/button/button.component';
 import {InputErrorComponent} from 'src/app/components/input/input.component';
 import {AuthShellComponent} from '../components/auth-shell/auth-shell.component';
 import {LoginService} from './login.service';
@@ -17,7 +16,7 @@ import {GeneralService} from 'src/app/services/general/general.service';
 
 @Component({
     selector: 'app-login',
-    imports: [FormsModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, LoaderModule, AuthShellComponent],
+    imports: [FormsModule, ReactiveFormsModule, InputErrorComponent, LoaderModule, AuthShellComponent],
     templateUrl: './login.component.html',
     styleUrls: ['./login.component.scss']
 })

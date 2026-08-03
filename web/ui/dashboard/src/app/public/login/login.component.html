@@ -32,9 +32,9 @@
 		}
 
 		<div class="flex flex-col gap-8px">
-			<button convoy-button [disabled]="disableLoginBtn" class="w-full !rounded-full !py-12px !px-16px !text-14 font-body font-medium">
+			<button type="submit" [disabled]="disableLoginBtn" class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50">
 				@if (!disableLoginBtn) {
-					<span class="text-14 text-white-100 font-body font-medium">Login with email</span>
+					<span>Login with email</span>
 				}
 				@if (disableLoginBtn) {
 					<img src="assets/img/button-loader.gif" alt="loader" class="h-16px" />
@@ -42,10 +42,10 @@
 			</button>
 
 			@if (authConfigLoaded && isCloudBilling && !showSlugInput) {
-				<button convoy-button type="button" fill="soft" color="neutral" class="w-full !rounded-full !py-12px !px-16px !text-14 font-body font-medium !bg-new.surface-muted !text-new.text-primary" (click)="showSlugInput = true">Login with SAML</button>
+				<button type="button" class="w-full px-16px py-12px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" (click)="showSlugInput = true">Login with SAML</button>
 			}
 			@if (authConfigLoaded && isCloudBilling && showSlugInput) {
-				<button convoy-button type="button" fill="soft" color="neutral" class="w-full !rounded-full !py-12px !px-16px !text-14 font-body font-medium !bg-new.surface-muted !text-new.text-primary disabled:!opacity-100" (click)="loginWithSSO()" [disabled]="isSubmittingSSO">
+				<button type="button" class="w-full px-16px py-12px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" (click)="loginWithSSO()" [disabled]="isSubmittingSSO">
 					@if (!isSubmittingSSO) {
 						Continue with SAML SSO
 					}
@@ -55,11 +55,11 @@
 				</button>
 			}
 			@if (authConfigLoaded && !isCloudBilling && isSSOEnabled) {
-				<button convoy-button type="button" fill="soft" color="neutral" class="w-full !rounded-full !py-12px !px-16px !text-14 font-body font-medium !bg-new.surface-muted !text-new.text-primary" (click)="loginWithSSO()">Login with SAML</button>
+				<button type="button" class="w-full px-16px py-12px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" (click)="loginWithSSO()">Login with SAML</button>
 			}
 
 			@if (authConfigLoaded && isGoogleOAuthEnabled) {
-				<button convoy-button type="button" fill="soft" color="neutral" class="w-full !rounded-full !py-12px !px-16px !text-14 font-body font-medium !bg-new.surface-muted !text-new.text-primary" (click)="loginWithGoogle()" [disabled]="isGoogleSigningIn">
+				<button type="button" class="w-full px-16px py-12px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" (click)="loginWithGoogle()" [disabled]="isGoogleSigningIn">
 					@if (!isGoogleSigningIn) {
 						<img src="/assets/img/svg/google.svg" alt="Google icon" class="w-16px h-16px inline mr-8px" />
 					}

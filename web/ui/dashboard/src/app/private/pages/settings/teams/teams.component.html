@@ -170,14 +170,20 @@
   </div>
 </div>
 
-<dialog #teamsDialog convoy-dialog>
-  <div convoy-dialog-header (closeDialog)="closeInviteModal()">
-    <h2 class="font-heading font-medium text-[14px] text-new.text-primary capitalize">{{ action === 'update' ? 'Update' : 'Add' }} Team Member</h2>
+<dialog #teamsDialog convoy-dialog position="center" class="!rounded-24px !bg-new.surface-page border border-new.border">
+  <div class="flex items-start justify-between gap-16px p-24px pb-0">
+    <div>
+      <h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary capitalize">{{ action === 'update' ? 'Update' : 'Add' }} Team Member</h2>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px">Invite someone to collaborate in this organisation.</p>
+    </div>
+    <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-opacity hover:opacity-80 shrink-0" (click)="closeInviteModal()" aria-label="Close">
+      <img src="/assets/img/close-icon.svg" class="w-12px h-12px" alt="" />
+    </button>
   </div>
 
   <div class="h-full w-full">
     @if (action === 'create') {
-      <form class="p-20px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
+      <form class="p-24px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
         <convoy-input-field>
           <label for="email" convoy-label required="true">Email</label>
           <input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
@@ -216,7 +222,7 @@
         </div>
       </form>
     } @else {
-      <form class="p-20px" [formGroup]="memberForm" (ngSubmit)="updateMember()">
+      <form class="p-24px" [formGroup]="memberForm" (ngSubmit)="updateMember()">
         <convoy-input-field formGroupName="user_metadata">
           <label for="email" convoy-label required="true">Email</label>
           <input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="Enter member email" />

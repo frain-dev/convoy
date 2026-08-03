@@ -22,7 +22,7 @@ export class CreatePortalTransformFunctionComponent implements OnInit {
 	@Input('transformFunction') transformFunction: any;
 	@Input('options') options: EVENT_TYPE[] = [];
 	@Input('defaultOption') defaultOption: any;
-	@Input() titleClass: string = 'font-semibold text-14 capitalize';
+	@Input() titleClass: string = 'font-heading font-medium text-[14px] leading-[20px] text-new.text-primary capitalize';
 	@Input() showTitle: boolean = true;
 
 	@Output('updatedTransformFunction') updatedTransformFunction: EventEmitter<any> = new EventEmitter();

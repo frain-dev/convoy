@@ -297,8 +297,8 @@
               <div class="flex flex-col gap-8px">
                 <label class="font-body font-normal text-[14px] leading-normal text-new.text-secondary" title="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account Key</label>
                 <convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="deleteJsonFile()">
-                  <p class="text-center text-12 text-neutral-11 max-w-[186px] mx-auto">
-                    <span class="text-primary-100 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
+                  <p class="text-center font-body text-[12px] text-new.text-secondary max-w-[186px] mx-auto">
+                    <span class="text-new.primary-400 font-medium">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
                     or drag and drop JSON (max 5kb)
                   </p>
                 </convoy-file-input>
@@ -845,15 +845,19 @@
 <convoy-notification></convoy-notification>
 
 <!-- disable endpoints confirmation prompt -->
-<dialog #disableAuthModal convoy-dialog position="center" size="sm">
-  <div class="flex flex-col p-30px">
-    <h3 class="text-14 font-bold text-black mb-8px">Confirm Action</h3>
-    <p class="text-12 font-medium text-neutral-11 mb-20px">You are about to disable authentication for this Kafka source, this would delete your current configurations.</p>
-
-    <div class="flex gap-16px items-center">
-      <button convoy-button size="sm" (click)="addKafkaAuthentication = false; disableAuthModal.close()">Confirm</button>
-      <button convoy-button fill="text" size="sm" class="font-semibold" (click)="disableAuthModal.close(); addKafkaAuthentication = true">Close</button>
+<dialog #disableAuthModal convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
+  <div class="flex items-start justify-between gap-16px p-24px pb-0">
+    <div>
+      <h3 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Confirm Action</h3>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-8px">You are about to disable authentication for this Kafka source. This will delete your current configurations.</p>
     </div>
+    <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-opacity hover:opacity-80 shrink-0" (click)="disableAuthModal.close(); addKafkaAuthentication = true" aria-label="Close">
+      <img src="/assets/img/close-icon.svg" class="w-12px h-12px" alt="" />
+    </button>
+  </div>
+  <div class="flex gap-12px justify-end p-24px">
+    <button type="button" class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80" (click)="disableAuthModal.close(); addKafkaAuthentication = true">Close</button>
+    <button type="button" class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" (click)="addKafkaAuthentication = false; disableAuthModal.close()">Confirm</button>
   </div>
 </dialog>
 

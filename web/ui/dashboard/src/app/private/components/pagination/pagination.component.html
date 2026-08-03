@@ -1,14 +1,22 @@
 @if (paginationData) {
-  <div class="flex items-center mt-16px mb-24px">
-    <button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" (click)="prev({ prev_page_cursor: paginationData.prev_page_cursor })" [disabled]="!paginationData.has_prev_page">
-      <svg width="24" height="24" class="mr-8px fill-primary-100">
+  <div class="flex items-center gap-12px mt-16px mb-24px">
+    <button
+      type="button"
+      class="flex items-center gap-8px px-14px py-8px rounded-full border border-new.border bg-white-100 font-body font-medium text-[13px] leading-[16px] text-new.text-primary transition-all hover:bg-new.surface-subtle disabled:opacity-40 disabled:pointer-events-none"
+      (click)="prev({ prev_page_cursor: paginationData.prev_page_cursor })"
+      [disabled]="!paginationData.has_prev_page">
+      <svg width="16" height="16" class="fill-new.text-secondary">
         <use xlink:href="#arrow-left-icon"></use>
       </svg>
       Previous
     </button>
-    <button convoy-button fill="outline" size="sm" class="pr-4px pl-16px py-4px border-primary-300 ml-16px" (click)="next({ next_page_cursor: paginationData.next_page_cursor })" [disabled]="!paginationData.has_next_page">
+    <button
+      type="button"
+      class="flex items-center gap-8px px-14px py-8px rounded-full border border-new.border bg-white-100 font-body font-medium text-[13px] leading-[16px] text-new.text-primary transition-all hover:bg-new.surface-subtle disabled:opacity-40 disabled:pointer-events-none"
+      (click)="next({ next_page_cursor: paginationData.next_page_cursor })"
+      [disabled]="!paginationData.has_next_page">
       Next
-      <svg width="24" height="24" class="ml-8px fill-primary-100">
+      <svg width="16" height="16" class="fill-new.text-secondary">
         <use xlink:href="#arrow-right-icon"></use>
       </svg>
     </button>
