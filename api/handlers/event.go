@@ -455,7 +455,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		endpointIDs, innerErr := h.getEndpoints(r, portalLink)
+		endpointIDs, innerErr := h.portalScopedEndpointIDs(r, portalLink, data.Filter.EndpointIDs)
 		if innerErr != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
 			return
@@ -560,7 +560,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		endpointIDs, err := h.getEndpoints(r, portalLink)
+		endpointIDs, err := h.portalScopedEndpointIDs(r, portalLink, data.Filter.EndpointIDs)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
@@ -568,7 +568,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 		if len(endpointIDs) == 0 {
 			_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-				models.PagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+				models.PagedResponse{Content: []models.EventResponse{}, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
 			return
 		}
 
@@ -631,7 +631,7 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		endpointIDs, err := h.getEndpoints(r, portalLink)
+		endpointIDs, err := h.portalScopedEndpointIDs(r, portalLink, data.Filter.EndpointIDs)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return

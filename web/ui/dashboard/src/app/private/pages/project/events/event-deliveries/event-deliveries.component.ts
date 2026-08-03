@@ -189,7 +189,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		this.searchString = '';
 		this.endpointSearchString = '';
 
-		const { sort, ...rest } = this.queryParams;
+		const sort = this.queryParams?.sort;
 		this.queryParams = sort ? { sort } : {};
 		this._location.go(`${location.pathname}${this.portalToken ? `?token=${this.portalToken}` : ''}`);
 		this.refreshDeliveries();
@@ -284,7 +284,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	}
 
 	async refreshTotalCount() {
-		const { next_page_cursor, prev_page_cursor, direction, sort, showLoader, ...countParams } = this.queryParams || {};
+		const countParams = this.queryParamsForCount(this.queryParams);
 
 		try {
 			const response = await this.eventsService.getRetryCount(countParams);
@@ -414,7 +414,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		const day = new Date(groupDate);
 		if (Number.isNaN(day.getTime())) return;
 
-		const { next_page_cursor, prev_page_cursor, direction, sort, showLoader, ...filters } = this.queryParams || {};
+		const filters = this.queryParamsForCount(this.queryParams);
 		this.batchRetryParams = { ...filters, startDate: `${format(day, 'yyyy-MM-dd')}T00:00:00`, endDate: `${format(day, 'yyyy-MM-dd')}T23:59:59` };
 		this.batchRetryDate = groupDate;
 
@@ -444,5 +444,11 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 			this.isRetrying = false;
 			return error;
 		}
+	}
+
+	// Strip pagination/UI-only keys so count and batch-retry share the same filter surface.
+	private queryParamsForCount(params: FILTER_QUERY_PARAM | undefined): FILTER_QUERY_PARAM {
+		const { next_page_cursor: _next, prev_page_cursor: _prev, direction: _direction, sort: _sort, showLoader: _showLoader, ...filters } = params || {};
+		return filters;
 	}
 }
