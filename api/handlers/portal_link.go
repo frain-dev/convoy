@@ -406,6 +406,30 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) datastore.Port
 	}
 }
 
+// filterAllowedEndpointIDs returns the requested endpoint IDs that fall within
+// the portal link's allowed set. If no endpoint IDs were requested, the full
+// allowed set is returned. Requested IDs outside the allowed set are dropped,
+// so a portal token can never widen its scope.
+func filterAllowedEndpointIDs(requested, allowed []string) []string {
+	if len(requested) == 0 {
+		return allowed
+	}
+
+	allowedSet := make(map[string]struct{}, len(allowed))
+	for _, id := range allowed {
+		allowedSet[id] = struct{}{}
+	}
+
+	results := make([]string, 0, len(requested))
+	for _, id := range requested {
+		if _, ok := allowedSet[id]; ok {
+			results = append(results, id)
+		}
+	}
+
+	return results
+}
+
 func (h *Handler) getEndpoints(r *http.Request, pl *datastore.PortalLink) ([]string, error) {
 	results := make([]string, 0)
 	if !util.IsStringEmpty(pl.OwnerID) {
