@@ -123,6 +123,9 @@ export class EventDeliveriesComponent implements OnInit {
             ]);
             this.deliveryCounts = {success: successResponse.data.num, failure: failureResponse.data.num};
         } catch (error) {
+            // Clear stale Successful/Failed cards when the count API fails after a
+            // date/endpoint change — otherwise the previous totals keep showing.
+            this.deliveryCounts = {success: 0, failure: 0};
         } finally {
             this.isLoadingDeliveryCounts = false;
         }

@@ -33,8 +33,9 @@
         />
     </form>
 
-    @if (isLoadingSubscriptions && subscriptions && !subscriptions.content.length) {
-      <!-- Loading state -->
+    @if (isLoadingSubscriptions) {
+      <!-- Loading state — show even when a previous page is still in memory so
+           search/filter changes never flash stale rows under the new query. -->
       <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
         <img src="/assets/img/svg/deliveries-loading.svg" class="w-48px h-48px animate-spin" alt="" />
         <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
@@ -42,7 +43,7 @@
           <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Fetching your subscriptions. This usually takes a moment.</p>
         </div>
       </div>
-    } @else if (!isLoadingSubscriptions && subscriptions?.content?.length === 0) {
+    } @else if (!subscriptions?.content?.length) {
       <!-- Empty state -->
       <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
         <img src="/assets/img/svg/deliveries-empty.svg" class="w-48px h-48px" alt="" />
