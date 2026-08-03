@@ -910,13 +910,8 @@ func (s *PortalEventIntegrationTestSuite) Test_TestSubscriptionFunction_Requires
 }
 
 func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
-	eventID := ulid.Make().String()
+	ownerID := "portal-owner-" + ulid.Make().String()
 	sourceID := ulid.Make().String()
-	expectedStatusCode := http.StatusOK
-
-	// Just Before.
-	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
 
 	vc := &datastore.VerifierConfig{
 		Type: datastore.BasicAuthVerifier,
@@ -925,102 +920,133 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
 			Password: "Convoy",
 		},
 	}
-
-	_, err = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, ulid.Make().String(), "", vc, "", "")
+	_, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, ulid.Make().String(), "", vc, "", "")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, eventID, "*", sourceID, []byte(`{}`))
+	allowedA, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "allowed-a", ownerID, false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+	allowedB, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "allowed-b", ownerID, false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+	outside, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "outside", "other-owner-"+ulid.Make().String(), false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
+	eventA, err := testdb.SeedEvent(s.ConvoyApp.A.DB, allowedA, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
+	require.NoError(s.T(), err)
+	eventB, err := testdb.SeedEvent(s.ConvoyApp.A.DB, allowedB, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, outside, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "test", false, datastore.ActiveEndpointStatus)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerID)
 	require.NoError(s.T(), err)
 
-	e2, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
-	require.NoError(s.T(), err)
+	fetch := func(query string) []datastore.Event {
+		s.T().Helper()
+		url := fmt.Sprintf("/portal-api/events?%ssourceId=%s&token=%s", query, sourceID, portalLink.Token)
+		req := createRequest(http.MethodGet, url, portalLink.Token, nil)
+		w := httptest.NewRecorder()
+		s.Router.ServeHTTP(w, req)
+		require.Equal(s.T(), http.StatusOK, w.Code)
 
-	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint2.OwnerID)
-	require.NoError(s.T(), err)
-
-	url := fmt.Sprintf("/portal-api/events?endpointId=%s&sourceId=%s&token=%s", endpoint1.UID, sourceID, portalLink.Token)
-	req := createRequest(http.MethodGet, url, portalLink.Token, nil)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var respEvents []datastore.Event
-	resp := pagedResponse{Content: &respEvents}
-	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), 1, len(respEvents))
-
-	v := []string{e2.UID}
-	for i := range respEvents {
-		require.Contains(s.T(), v, respEvents[i].UID)
+		var respEvents []datastore.Event
+		resp := pagedResponse{Content: &respEvents}
+		parseResponse(s.T(), w.Result(), &resp)
+		return respEvents
 	}
+
+	unfiltered := fetch("")
+	require.Len(s.T(), unfiltered, 2)
+	unfilteredUIDs := map[string]struct{}{unfiltered[0].UID: {}, unfiltered[1].UID: {}}
+	_, okA := unfilteredUIDs[eventA.UID]
+	_, okB := unfilteredUIDs[eventB.UID]
+	require.True(s.T(), okA && okB)
+
+	filteredAllowed := fetch(fmt.Sprintf("endpointId=%s&", allowedA.UID))
+	require.Len(s.T(), filteredAllowed, 1)
+	require.Equal(s.T(), eventA.UID, filteredAllowed[0].UID)
+
+	filteredOutside := fetch(fmt.Sprintf("endpointId=%s&", outside.UID))
+	require.Len(s.T(), filteredOutside, 0)
 }
 
 func (s *PortalEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
-	eventDeliveryID := ulid.Make().String()
-	expectedStatusCode := http.StatusOK
+	ownerID := "portal-owner-" + ulid.Make().String()
 
-	// Just Before.
-	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	allowedA, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "allowed-a", ownerID, false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
-	subscription, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+	allowedB, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "allowed-b", ownerID, false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	outside, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "outside", "other-owner-"+ulid.Make().String(), false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	subA, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, allowedA, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
 		EventTypes: []string{"*"},
 		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
 	})
 	require.NoError(s.T(), err)
 
-	event1, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	subB, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, allowedB, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
+	subOutside, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, outside, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	eventA, err := testdb.SeedEvent(s.ConvoyApp.A.DB, allowedA, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+	deliveryA, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, eventA, allowedA, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subA)
 	require.NoError(s.T(), err)
 
-	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "test", false, datastore.ActiveEndpointStatus)
+	eventB, err := testdb.SeedEvent(s.ConvoyApp.A.DB, allowedB, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+	deliveryB, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, eventB, allowedB, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subB)
 	require.NoError(s.T(), err)
 
-	event2, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	eventOutside, err := testdb.SeedEvent(s.ConvoyApp.A.DB, outside, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, eventOutside, outside, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subOutside)
 	require.NoError(s.T(), err)
 
-	d2, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event2, endpoint2, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerID)
 	require.NoError(s.T(), err)
 
-	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint2.OwnerID)
-	require.NoError(s.T(), err)
+	fetch := func(query string) []datastore.EventDelivery {
+		s.T().Helper()
+		url := fmt.Sprintf("/portal-api/eventdeliveries?%stoken=%s", query, portalLink.Token)
+		req := createRequest(http.MethodGet, url, portalLink.Token, nil)
+		w := httptest.NewRecorder()
+		s.Router.ServeHTTP(w, req)
+		require.Equal(s.T(), http.StatusOK, w.Code)
 
-	url := fmt.Sprintf("/portal-api/eventdeliveries?endpointId=%s&token=%s", endpoint1.UID, portalLink.Token)
-	req := createRequest(http.MethodGet, url, portalLink.Token, nil)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var respEvents []datastore.EventDelivery
-	resp := pagedResponse{Content: &respEvents}
-	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), 1, len(respEvents))
-
-	v := []*datastore.EventDelivery{d2}
-	for i, delivery := range v {
-		require.Equal(s.T(), respEvents[i].UID, delivery.UID)
+		var respEvents []datastore.EventDelivery
+		resp := pagedResponse{Content: &respEvents}
+		parseResponse(s.T(), w.Result(), &resp)
+		return respEvents
 	}
+
+	// No endpoint filter: every delivery under the portal owner, none outside.
+	unfiltered := fetch("")
+	require.Len(s.T(), unfiltered, 2)
+	unfilteredUIDs := map[string]struct{}{unfiltered[0].UID: {}, unfiltered[1].UID: {}}
+	_, okA := unfilteredUIDs[deliveryA.UID]
+	_, okB := unfilteredUIDs[deliveryB.UID]
+	require.True(s.T(), okA && okB)
+
+	// Filter to an allowed endpoint: only that endpoint's deliveries.
+	filteredAllowed := fetch(fmt.Sprintf("endpointId=%s&", allowedA.UID))
+	require.Len(s.T(), filteredAllowed, 1)
+	require.Equal(s.T(), deliveryA.UID, filteredAllowed[0].UID)
+
+	// Filter to an endpoint outside the portal allowlist: empty, never widened.
+	filteredOutside := fetch(fmt.Sprintf("endpointId=%s&", outside.UID))
+	require.Len(s.T(), filteredOutside, 0)
 }
 
 func TestPortalEventIntegrationTestSuite(t *testing.T) {

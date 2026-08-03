@@ -430,6 +430,17 @@ func filterAllowedEndpointIDs(requested, allowed []string) []string {
 	return results
 }
 
+// portalScopedEndpointIDs resolves the portal allowlist, then intersects it with
+// any caller-supplied endpoint filter. Failure policy: empty intersection means
+// no accessible endpoints (caller should return empty success, not widen scope).
+func (h *Handler) portalScopedEndpointIDs(r *http.Request, portalLink *datastore.PortalLink, requested []string) ([]string, error) {
+	allowed, err := h.getEndpoints(r, portalLink)
+	if err != nil {
+		return nil, err
+	}
+	return filterAllowedEndpointIDs(requested, allowed), nil
+}
+
 func (h *Handler) getEndpoints(r *http.Request, pl *datastore.PortalLink) ([]string, error) {
 	results := make([]string, 0)
 	if !util.IsStringEmpty(pl.OwnerID) {

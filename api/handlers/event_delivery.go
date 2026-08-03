@@ -139,7 +139,7 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		endpointIDs, err := h.getEndpoints(r, portalLink)
+		endpointIDs, err := h.portalScopedEndpointIDs(r, portalLink, data.Filter.EndpointIDs)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
@@ -309,19 +309,15 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		endpointIDs, err := h.getEndpoints(r, portalLink)
+		endpointIDs, err := h.portalScopedEndpointIDs(r, portalLink, data.Filter.EndpointIDs)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
 
-		// Honor any endpoint filter from the query, constrained to the
-		// endpoints this portal link is allowed to see.
-		endpointIDs = filterAllowedEndpointIDs(data.Filter.EndpointIDs, endpointIDs)
-
 		if len(endpointIDs) == 0 {
-			_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-				models.PagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+			_ = render.Render(w, r, util.NewServerResponse("Event deliveries fetched successfully",
+				models.PagedResponse{Content: []models.EventDeliveryResponse{}, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
 			return
 		}
 
@@ -369,15 +365,11 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		endpointIDs, err := h.getEndpoints(r, portalLink)
+		endpointIDs, err := h.portalScopedEndpointIDs(r, portalLink, data.Filter.EndpointIDs)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
-
-		// Honor any endpoint filter from the query, constrained to the
-		// endpoints this portal link is allowed to see.
-		endpointIDs = filterAllowedEndpointIDs(data.Filter.EndpointIDs, endpointIDs)
 
 		if len(endpointIDs) == 0 {
 			_ = render.Render(w, r, util.NewServerResponse("event deliveries count successful", map[string]interface{}{"num": 0}, http.StatusOK))
