@@ -125,6 +125,11 @@ export class EndpointsComponent implements OnInit {
 
 			this.isloadingSubscriptions = false;
 		} catch (_error) {
+			// Drop previous rows so a failed refetch can't leave a stale list
+			// that no longer matches the active status/search filter.
+			this.endpoints = [];
+			this.fetchedEndpoints = undefined;
+			this.displayedEndpoints = [];
 			this.isloadingSubscriptions = false;
 		}
 	}

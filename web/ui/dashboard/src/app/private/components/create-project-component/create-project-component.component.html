@@ -242,6 +242,16 @@
               </div>
               <convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle>
             </div>
+            @if (projectDetails?.type === 'outgoing') {
+              <hr class="border-t border-new.border my-24px" />
+              <div class="flex justify-between items-start gap-24px">
+                <div class="max-w-[500px]">
+                  <h4 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-4px">Verify Dynamic Events Before Accepting</h4>
+                  <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">When enabled, creating a dynamic event only succeeds after its endpoint and subscription are ready. If setup fails or times out, the API returns an error instead of accepting the event early.</p>
+                </div>
+                <convoy-toggle name="sync_dynamic_event_ack" formControlName="sync_dynamic_event_ack" (onChange)="updateProject()"></convoy-toggle>
+              </div>
+            }
           </div>
           @if (projectDetails.type === 'outgoing') {
             <hr class="border-t border-neutral-4 my-24px" />
@@ -491,10 +501,10 @@
                   @for (event of validEventTypes(); track $index; let i = $index) {
                     <tr convoy-table-row [id]="'event' + i">
                       <td convoy-table-cell class="pl-16px">
-                        <div class="flex gap-4px">
-                          <div convoy-tag>{{ event?.name }}</div>
-                          <div convoy-tag size="sm" [color]="event.deprecated_at ? 'error' : 'success'">{{ event.deprecated_at ? 'deprecated' : 'active' }}</div>
-                        </div>
+                        <div convoy-tag>{{ event?.name }}</div>
+                      </td>
+                      <td convoy-table-cell>
+                        <div convoy-tag size="sm" [color]="event.deprecated_at ? 'error' : 'success'">{{ event.deprecated_at ? 'deprecated' : 'active' }}</div>
                       </td>
                       <td convoy-table-cell>{{ event.category || '-' }}</td>
                       <td convoy-table-cell>

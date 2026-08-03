@@ -56,7 +56,7 @@ export class CreateProjectComponent implements OnInit {
 	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
 
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
-	eventTypeTableHead: string[] = ['Event Type', 'Category', 'Description', ''];
+	eventTypeTableHead: string[] = ['Event Type', 'Status', 'Category', 'Description', ''];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		config: this.formBuilder.group({
@@ -298,6 +298,7 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
 			this.projectForm.get('config.search_policy')?.patchValue(this.getHours(this.projectDetails.config.search_policy));
+			this.projectForm.get('config.sync_dynamic_event_ack')?.patchValue(!!this.projectDetails.config?.sync_dynamic_event_ack);
 
 			this.projectForm.get('config.sync_dynamic_event_ack')?.patchValue(!!this.projectDetails.config?.sync_dynamic_event_ack);
 

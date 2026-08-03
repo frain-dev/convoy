@@ -32,15 +32,15 @@
               </svg>
               <span class="capitalize">{{ menu.name }}</span>
             </button>
-            @if (menu.name === 'team' && !licenseService.hasLicense('user_limit') && getUserLimitMessage()) {
-              <convoy-tooltip [withIcon]="false" position="right" className="!min-w-fit whitespace-nowrap">
-                {{ getUserLimitMessage() }}
-                <div tooltipToggle convoy-tag size="sm" color="primary" class="whitespace-nowrap">
+            @if (menu.name === 'team' && !licenseService.hasLicense('user_limit') && getUserLimitPillText()) {
+              <convoy-tooltip [withIcon]="false" position="right" className="!min-w-fit max-w-[220px] whitespace-normal">
+                {{ getTeamUpgradeMessage() }}
+                <button type="button" tooltipToggle convoy-tag size="sm" color="primary" class="whitespace-nowrap cursor-pointer" (click)="onTeamPremiumClick($event)">
                   <svg width="10" height="10" class="fill-new.primary-400 scale-150">
                     <use xlink:href="#lock-icon"></use>
                   </svg>
                   {{ getUserLimitPillText() }}
-                </div>
+                </button>
               </convoy-tooltip>
             }
           </li>

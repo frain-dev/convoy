@@ -292,7 +292,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 		}
 
 		if (this.canShowCloudProjectLimitUpgrade) {
-			return 'Available on Business';
+			return 'Available on Premium';
 		}
 
 		return '';

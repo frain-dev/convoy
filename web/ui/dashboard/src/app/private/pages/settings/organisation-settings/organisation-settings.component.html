@@ -2,14 +2,9 @@
   <!-- Organisation info card -->
   <div class="bg-white-100 border border-new.border rounded-16px p-24px">
     <div class="flex justify-between items-start gap-16px mb-20px">
-      <div class="flex items-center gap-12px">
-        <div>
-          <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Organisation info</h3>
-          <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px">Your organisation&rsquo;s name and identifier.</p>
-        </div>
-        @if (licenseService.hasOrgLicense(currentOrg)) {
-          <span class="org-plan-badge">{{ licenseService.licensedOrgLabel }}</span>
-        }
+      <div>
+        <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Organisation info</h3>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px">Your organisation&rsquo;s name and identifier.</p>
       </div>
       <button
         type="button"
