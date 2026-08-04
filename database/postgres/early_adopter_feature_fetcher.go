@@ -22,8 +22,10 @@ func NewEarlyAdopterFeatureFetcher(db database.Database) fflag.EarlyAdopterFeatu
 func (f *EarlyAdopterFeatureFetcherImpl) FetchEarlyAdopterFeature(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error) {
 	feature, err := FetchEarlyAdopterFeature(ctx, f.db, orgID, featureKey)
 	if err != nil {
+		// Map "no row" onto the fflag sentinel so callers can classify it as a
+		// definitive "off" without importing this package.
 		if errors.Is(err, ErrEarlyAdopterFeatureNotFound) {
-			return nil, err
+			return nil, fflag.ErrEarlyAdopterFeatureNotFound
 		}
 		return nil, err
 	}

@@ -60,6 +60,12 @@ type Querier interface {
 	// Outer sort: always the user-requested sort order (re-reverses backward fetches)
 	LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPagedSearchParams) ([]LoadEventsPagedSearchRow, error)
 	UpdateEventEndpoints(ctx context.Context, arg UpdateEventEndpointsParams) error
+	// failure_reason is written on every transition, not only failures, so a later
+	// success or retry clears the reason left behind by an earlier failed attempt.
+	// convoy.events is authoritative here. events_search is not updated in place: it
+	// is rebuilt by copy_rows when a project's search policy changes, so it holds a
+	// point-in-time copy of status and failure_reason together, the same way it has
+	// always held status.
 	UpdateEventStatus(ctx context.Context, arg UpdateEventStatusParams) error
 }
 

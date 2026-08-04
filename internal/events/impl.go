@@ -271,13 +271,17 @@ func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Eve
 	return tx.Commit(ctx)
 }
 
-// UpdateEventStatus updates event status
-func (s *Service) UpdateEventStatus(ctx context.Context, event *datastore.Event, status datastore.EventStatus) error {
+// UpdateEventStatus updates event status. failureReason is operator facing text
+// shown against a Failure; pass an empty string for every other status so a
+// success or retry clears the reason from an earlier failed attempt.
+func (s *Service) UpdateEventStatus(ctx context.Context, event *datastore.Event, status datastore.EventStatus, failureReason string) error {
 	params := repo.UpdateEventStatusParams{
-		Status:    common.StringToPgTextNullable(string(status)),
-		ProjectID: common.StringToPgTextNullable(event.ProjectID),
-		ID:        common.StringToPgTextNullable(event.UID),
+		Status:        common.StringToPgTextNullable(string(status)),
+		FailureReason: common.StringToPgTextNullable(failureReason),
+		ProjectID:     common.StringToPgTextNullable(event.ProjectID),
+		ID:            common.StringToPgTextNullable(event.UID),
 	}
+
 	return s.repo.UpdateEventStatus(ctx, params)
 }
 
@@ -696,6 +700,7 @@ BEGIN
         acknowledged_at    TIMESTAMPTZ,
         status             TEXT,
         metadata           TEXT,
+        failure_reason     TEXT,
         raw_bytes          BIGINT,
         data_bytes         BIGINT,
         PRIMARY KEY (id, created_at, project_id)
@@ -726,11 +731,11 @@ BEGIN
     INSERT INTO convoy.events_new (
         id, event_type, endpoints, project_id, source_id, headers, raw, data,
         created_at, updated_at, deleted_at, url_query_params, url_path, idempotency_key,
-        is_duplicate_event, acknowledged_at, status, metadata, raw_bytes, data_bytes
+        is_duplicate_event, acknowledged_at, status, metadata, failure_reason, raw_bytes, data_bytes
     )
     SELECT id, event_type, endpoints, project_id, source_id, headers, raw, data,
            created_at, updated_at, deleted_at, url_query_params, COALESCE(url_path, ''), idempotency_key,
-           is_duplicate_event, acknowledged_at, status, metadata, raw_bytes, data_bytes
+           is_duplicate_event, acknowledged_at, status, metadata, failure_reason, raw_bytes, data_bytes
     FROM convoy.events;
 
     -- Manage table renaming
@@ -795,6 +800,7 @@ BEGIN
         acknowledged_at    TIMESTAMP WITH TIME ZONE,
         status             TEXT,
         metadata           TEXT,
+        failure_reason     TEXT,
         raw_bytes          BIGINT,
         data_bytes         BIGINT
     );
@@ -805,11 +811,11 @@ BEGIN
     INSERT INTO convoy.events_new (
         id, event_type, endpoints, project_id, source_id, headers, raw, data,
         created_at, updated_at, deleted_at, url_query_params, url_path, idempotency_key,
-        is_duplicate_event, acknowledged_at, status, metadata, raw_bytes, data_bytes
+        is_duplicate_event, acknowledged_at, status, metadata, failure_reason, raw_bytes, data_bytes
     )
     SELECT id, event_type, endpoints, project_id, source_id, headers, raw, data,
            created_at, updated_at, deleted_at, url_query_params, COALESCE(url_path, ''), idempotency_key,
-           is_duplicate_event, acknowledged_at, status, metadata, raw_bytes, data_bytes
+           is_duplicate_event, acknowledged_at, status, metadata, failure_reason, raw_bytes, data_bytes
     FROM convoy.events;
 
     ALTER TABLE convoy.event_deliveries DROP CONSTRAINT IF EXISTS event_deliveries_event_id_fkey;
@@ -865,6 +871,10 @@ BEGIN
       created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       deleted_at         TIMESTAMP WITH TIME ZONE,
+      acknowledged_at    TIMESTAMP WITH TIME ZONE,
+      status             TEXT,
+      metadata           TEXT,
+      failure_reason     TEXT,
       PRIMARY KEY (id, created_at, project_id)
     ) PARTITION BY RANGE (project_id, created_at);
 
@@ -893,11 +903,13 @@ BEGIN
     INSERT INTO convoy.events_search_new (
         id, event_type, endpoints, project_id, source_id,
         headers, raw, data, url_query_params, url_path, idempotency_key,
-        is_duplicate_event, created_at, updated_at, deleted_at
+        is_duplicate_event, created_at, updated_at, deleted_at,
+        acknowledged_at, status, metadata, failure_reason
     )
     SELECT id, event_type, endpoints, project_id, source_id,
            headers, raw, data, url_query_params, COALESCE(url_path, ''), idempotency_key,
-           is_duplicate_event, created_at, updated_at, deleted_at
+           is_duplicate_event, created_at, updated_at, deleted_at,
+           acknowledged_at, status, metadata, failure_reason
     FROM convoy.events_search;
 
     -- Manage table renaming
@@ -947,7 +959,11 @@ BEGIN
         search_token       TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', raw)) STORED,
         created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        deleted_at         TIMESTAMP WITH TIME ZONE
+        deleted_at         TIMESTAMP WITH TIME ZONE,
+        acknowledged_at    TIMESTAMP WITH TIME ZONE,
+        status             TEXT,
+        metadata           TEXT,
+        failure_reason     TEXT
     );
 
     ALTER TABLE convoy.events_search ADD COLUMN IF NOT EXISTS url_path VARCHAR NOT NULL DEFAULT '';
@@ -957,11 +973,13 @@ BEGIN
         (id, event_type, endpoints, project_id,
          source_id, headers, raw, data, url_query_params, url_path,
          idempotency_key, is_duplicate_event,
-         created_at, updated_at, deleted_at)
+         created_at, updated_at, deleted_at,
+         acknowledged_at, status, metadata, failure_reason)
     SELECT id, event_type, endpoints, project_id,
            source_id, headers, raw, data, url_query_params, COALESCE(url_path, ''),
            idempotency_key, is_duplicate_event,
-           created_at, updated_at, deleted_at
+           created_at, updated_at, deleted_at,
+           acknowledged_at, status, metadata, failure_reason
     FROM convoy.events_search;
 
     ALTER TABLE convoy.events_search RENAME TO events_search_old;

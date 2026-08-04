@@ -17,6 +17,11 @@ var ErrMTLSNotEnabled = errors.New("[feature flag] mTLS is not enabled")
 var ErrOAuthTokenExchangeNotEnabled = errors.New("[feature flag] OAuth token exchange is not enabled")
 var ErrEndpointURLTemplatesNotEnabled = errors.New("[feature flag] endpoint URL templates is not enabled")
 
+// ErrEarlyAdopterFeatureNotFound reports that an organisation has no row for an
+// early adopter feature. Fetchers must return this (or wrap it) so callers can
+// tell "the org never enabled this" apart from "the lookup itself failed".
+var ErrEarlyAdopterFeatureNotFound = errors.New("[feature flag] early adopter feature not found")
+
 type (
 	FeatureFlagKey string
 )
@@ -129,11 +134,13 @@ func (c *FFlag) CanAccessOrgFeature(ctx context.Context, key FeatureFlagKey, fet
 			return c.CanAccessFeature(key)
 		}
 
-		feature, err := earlyAdopterFetcher.FetchEarlyAdopterFeature(ctx, orgID, string(key))
+		enabled, err := ResolveEarlyAdopterFeature(ctx, key, earlyAdopterFetcher, orgID)
 		if err != nil {
+			// Fail closed: a lookup we could not complete must not grant access.
+			// Callers that can retry should use ResolveEarlyAdopterFeature directly.
 			return false
 		}
-		return feature.Enabled
+		return enabled
 	}
 	if fetcher == nil {
 		return c.CanAccessFeature(key)
@@ -190,6 +197,31 @@ type EarlyAdopterFeatureInfo struct {
 // EarlyAdopterFeatureFetcher is an interface for fetching early adopter features from the database
 type EarlyAdopterFeatureFetcher interface {
 	FetchEarlyAdopterFeature(ctx context.Context, orgID, featureKey string) (*EarlyAdopterFeatureInfo, error)
+}
+
+// ResolveEarlyAdopterFeature reports whether an early adopter feature is enabled
+// for an organisation.
+//
+// The read is deliberately three-valued. An organisation with no row has simply
+// never enabled the feature, so that is a definitive "off" and returns
+// (false, nil), identical to a row with enabled = false. Only a genuine lookup
+// failure returns an error, letting async callers retry instead of acting on a
+// verdict the database never gave. Every caller must resolve the feature through
+// here so the sync and async paths cannot disagree about what a missing row means.
+func ResolveEarlyAdopterFeature(ctx context.Context, key FeatureFlagKey, earlyAdopterFetcher EarlyAdopterFeatureFetcher, orgID string) (bool, error) {
+	feature, err := earlyAdopterFetcher.FetchEarlyAdopterFeature(ctx, orgID, string(key))
+	if err != nil {
+		if errors.Is(err, ErrEarlyAdopterFeatureNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	if feature == nil {
+		return false, nil
+	}
+
+	return feature.Enabled, nil
 }
 
 func CanAccessFeatureWithOrg(systemFFlag *FFlag, key FeatureFlagKey, data *FeatureFlagData) bool {

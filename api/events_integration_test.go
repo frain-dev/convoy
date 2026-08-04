@@ -77,7 +77,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithoutEndpoints() {
 	require.NoError(s.T(), err)
 
 	// Update status to Failure (events without subscriptions get Failure status)
-	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
+	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus, "no subscription matched this event")
 	require.NoError(s.T(), err)
 
 	// Query without endpoint filter - should return the event
@@ -145,7 +145,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithEndpointFilter() {
 	require.NoError(s.T(), err)
 
 	// Update status to Failure (events without subscriptions get Failure status)
-	err = eventRepo.UpdateEventStatus(ctx, eventWithoutEndpoint, datastore.FailureStatus)
+	err = eventRepo.UpdateEventStatus(ctx, eventWithoutEndpoint, datastore.FailureStatus, "no subscription matched this event")
 	require.NoError(s.T(), err)
 
 	// Query with endpoint filter - should only return event with matching endpoint
@@ -208,7 +208,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_SearchWithoutEndpoints
 	require.NoError(s.T(), err)
 
 	// Update status to Failure (events without subscriptions get Failure status)
-	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
+	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus, "no subscription matched this event")
 	require.NoError(s.T(), err)
 
 	// Copy to search table for text search
@@ -232,8 +232,10 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_SearchWithoutEndpoints
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 1, len(events))
 	require.Equal(s.T(), event.UID, events[0].UID)
-	// Note: events_search table doesn't have metadata or status columns,
-	// so we don't check status for search results
+	// The reason has to survive the copy into events_search, otherwise the
+	// dashboard would explain a failure on the unfiltered list but not in
+	// search results for the same event.
+	require.Equal(s.T(), "no subscription matched this event", events[0].FailureReason)
 }
 
 func TestEventsIntegrationTestSuite(t *testing.T) {

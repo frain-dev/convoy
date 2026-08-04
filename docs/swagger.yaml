@@ -417,14 +417,18 @@ definitions:
         type: array
       event_type:
         type: string
+      failure_reason:
+        description: |-
+          FailureReason explains a Failure status to whoever is looking at the
+          dashboard. It carries operator facing text only, never endpoint
+          credentials, headers, or payload content.
+        type: string
       headers:
         $ref: '#/definitions/httpheader.HTTPHeader'
       idempotency_key:
         type: string
       is_duplicate_event:
         type: boolean
-      metadata:
-        type: string
       project_id:
         type: string
       raw:
@@ -1825,14 +1829,18 @@ definitions:
         type: array
       event_type:
         type: string
+      failure_reason:
+        description: |-
+          FailureReason explains a Failure status to whoever is looking at the
+          dashboard. It carries operator facing text only, never endpoint
+          credentials, headers, or payload content.
+        type: string
       headers:
         $ref: '#/definitions/httpheader.HTTPHeader'
       idempotency_key:
         type: string
       is_duplicate_event:
         type: boolean
-      metadata:
-        type: string
       project_id:
         type: string
       raw:

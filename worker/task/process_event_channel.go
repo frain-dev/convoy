@@ -25,6 +25,11 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
+// reasonNoMatchingSubscriptions is shown against a failed event in the
+// dashboard. It is deliberately static operator facing text, so no event
+// payload, URL, or credential can reach a user visible field.
+const reasonNoMatchingSubscriptions = "no subscription matched this event"
+
 type EventChannelConfig struct {
 	Channel      string
 	DefaultDelay time.Duration
@@ -240,7 +245,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			err = &EndpointError{Err: fmt.Errorf("CODE: 1011, empty subscriptions via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
 			deps.Logger.Error(fmt.Sprintf("failed to send %s: %v", event.UID, err))
 			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
-			return deps.EventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
+			return deps.EventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus, reasonNoMatchingSubscriptions)
 		}
 
 		var endpointIDs []string
@@ -277,12 +282,12 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			deps.Logger.Error(ErrFailedToWriteToQueue.Error(), "error", err)
 			writeErr := fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error())
 			err = &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
-			_ = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.RetryStatus)
+			_ = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.RetryStatus, "")
 			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
 			return err
 		}
 
-		err = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.SuccessStatus)
+		err = deps.EventRepo.UpdateEventStatus(ctx, event, datastore.SuccessStatus, "")
 		if err != nil {
 			deps.Logger.Error(fmt.Sprintf("failed to update event status: %s: %v", event.UID, err))
 			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)

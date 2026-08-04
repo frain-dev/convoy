@@ -134,7 +134,7 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
-	err = args.eventRepo.UpdateEventStatus(ctx, broadcastEvent, datastore.ProcessingStatus)
+	err = args.eventRepo.UpdateEventStatus(ctx, broadcastEvent, datastore.ProcessingStatus, "")
 	if err != nil {
 		tracer.AddEvent(ctx, tracer.EventBroadcastSubscriptionMatchingErr, attributes)
 		return nil, err

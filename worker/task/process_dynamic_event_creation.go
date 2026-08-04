@@ -152,7 +152,7 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
-	err = args.eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus)
+	err = args.eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus, "")
 	if err != nil {
 		tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 		return nil, err
@@ -178,7 +178,7 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	if err != nil {
 		tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 		if isDynamicURLTemplateValidationError(err) {
-			if updateErr := args.eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus); updateErr != nil {
+			if updateErr := args.eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus, dynamicURLTemplateFailureReason(err)); updateErr != nil {
 				return nil, updateErr
 			}
 			// Definitive validation failure: unblock sync waiters with an error.
@@ -252,6 +252,9 @@ func findEndpoint(ctx context.Context, project *datastore.Project, args EventCha
 	case errors.Is(err, datastore.ErrEndpointNotFound):
 		endpointURLTemplatesEnabled, featureErr := endpointURLTemplatesEnabled(ctx, args, project)
 		if featureErr != nil {
+			// Only a genuine lookup failure lands here; a missing early adopter
+			// row already resolved to "off". Retry rather than auto-create, since
+			// auto-creating would bypass templates the project may still enforce.
 			foundTemplates, templateErr := hasValidEndpointURLTemplates(ctx, args, project.UID)
 			if templateErr != nil {
 				return nil, &EndpointError{Err: templateErr, delay: 10 * time.Second}
@@ -323,25 +326,44 @@ func endpointURLTemplatesEnabled(ctx context.Context, args EventChannelArgs, pro
 		return args.featureFlag.CanAccessFeature(fflag.EndpointURLTemplates), nil
 	}
 
-	feature, err := args.earlyAdopterFeatureFetcher.FetchEarlyAdopterFeature(ctx, project.OrganisationID, string(fflag.EndpointURLTemplates))
-	if err != nil {
-		return false, err
-	}
-	return feature.Enabled, nil
+	// Shared with the endpoint create/update path, so an org with no early
+	// adopter row resolves to "off" here too instead of retrying forever.
+	return fflag.ResolveEarlyAdopterFeature(ctx, fflag.EndpointURLTemplates, args.earlyAdopterFeatureFetcher, project.OrganisationID)
 }
 
 func isDynamicURLTemplateValidationError(err error) bool {
+	return dynamicURLTemplateFailureReason(err) != ""
+}
+
+// dynamicURLTemplateFailureReason returns the operator facing text stored against
+// a failed event, or "" when err is not a definitive template validation failure.
+// It is the single place that classifies these errors, so the retry decision and
+// the persisted reason cannot disagree.
+//
+// EndpointError does not implement Unwrap, so the inner error is read directly
+// rather than through errors.Is on the wrapper.
+//
+// The message comes from the sentinel instead of err, so the reason can never
+// pick up a dynamic URL, secret, or header that a future caller wraps into the
+// error chain. Feature-flag and DB lookup failures are deliberately absent: they
+// are retryable infra errors, so sync-ack waiters time out fail-closed and match
+// retries instead of returning a definitive 400.
+func dynamicURLTemplateFailureReason(err error) string {
 	endpointErr, ok := err.(*EndpointError)
 	if !ok {
-		return false
+		return ""
 	}
 
-	// Feature-flag / DB lookup failures are retryable infra errors, not client
-	// validation. Keep them out so sync-ack waiters time out fail-closed and
-	// match can retry instead of returning a definitive 400.
-	return errors.Is(endpointErr.Err, errDynamicURLTemplateNotConcrete) ||
-		errors.Is(endpointErr.Err, errDynamicURLTemplateNoMatch) ||
-		errors.Is(endpointErr.Err, errDynamicURLTemplateMultipleMatch)
+	switch {
+	case errors.Is(endpointErr.Err, errDynamicURLTemplateNotConcrete):
+		return errDynamicURLTemplateNotConcrete.Error()
+	case errors.Is(endpointErr.Err, errDynamicURLTemplateNoMatch):
+		return errDynamicURLTemplateNoMatch.Error()
+	case errors.Is(endpointErr.Err, errDynamicURLTemplateMultipleMatch):
+		return errDynamicURLTemplateMultipleMatch.Error()
+	default:
+		return ""
+	}
 }
 
 func hasValidEndpointURLTemplates(ctx context.Context, args EventChannelArgs, projectID string) (bool, error) {
