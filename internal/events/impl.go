@@ -271,13 +271,17 @@ func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Eve
 	return tx.Commit(ctx)
 }
 
-// UpdateEventStatus updates event status
-func (s *Service) UpdateEventStatus(ctx context.Context, event *datastore.Event, status datastore.EventStatus) error {
+// UpdateEventStatus updates event status. failureReason is operator facing text
+// shown against a Failure; pass an empty string for every other status so a
+// success or retry clears the reason from an earlier failed attempt.
+func (s *Service) UpdateEventStatus(ctx context.Context, event *datastore.Event, status datastore.EventStatus, failureReason string) error {
 	params := repo.UpdateEventStatusParams{
-		Status:    common.StringToPgTextNullable(string(status)),
-		ProjectID: common.StringToPgTextNullable(event.ProjectID),
-		ID:        common.StringToPgTextNullable(event.UID),
+		Status:        common.StringToPgTextNullable(string(status)),
+		FailureReason: common.StringToPgTextNullable(failureReason),
+		ProjectID:     common.StringToPgTextNullable(event.ProjectID),
+		ID:            common.StringToPgTextNullable(event.UID),
 	}
+
 	return s.repo.UpdateEventStatus(ctx, params)
 }
 

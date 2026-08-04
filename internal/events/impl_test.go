@@ -562,13 +562,41 @@ func TestUpdateEventStatus(t *testing.T) {
 
 		// Update status
 		newStatus := datastore.ProcessingStatus
-		err := service.UpdateEventStatus(ctx, event, newStatus)
+		err := service.UpdateEventStatus(ctx, event, newStatus, "")
 		require.NoError(t, err)
 
 		// Verify update
 		found, err := service.FindEventByID(ctx, project.UID, event.UID)
 		require.NoError(t, err)
 		require.Equal(t, newStatus, found.Status)
+		require.Empty(t, found.FailureReason)
+	})
+
+	t.Run("UpdateEventStatus_PersistsFailureReason", func(t *testing.T) {
+		event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		require.NoError(t, service.CreateEvent(ctx, event))
+
+		reason := "dynamic URL does not match any configured endpoint URL template"
+		require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.FailureStatus, reason))
+
+		found, err := service.FindEventByID(ctx, project.UID, event.UID)
+		require.NoError(t, err)
+		require.Equal(t, datastore.FailureStatus, found.Status)
+		require.Equal(t, reason, found.FailureReason)
+	})
+
+	// A retry that succeeds must not keep showing why the previous attempt failed.
+	t.Run("UpdateEventStatus_ClearsStaleFailureReason", func(t *testing.T) {
+		event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		require.NoError(t, service.CreateEvent(ctx, event))
+
+		require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.FailureStatus, "no subscription matched this event"))
+		require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.SuccessStatus, ""))
+
+		found, err := service.FindEventByID(ctx, project.UID, event.UID)
+		require.NoError(t, err)
+		require.Equal(t, datastore.SuccessStatus, found.Status)
+		require.Empty(t, found.FailureReason)
 	})
 }
 

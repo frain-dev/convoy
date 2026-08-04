@@ -387,6 +387,7 @@ SELECT ev.id,
        ev.acknowledged_at,
        ev.metadata,
        ev.status,
+       COALESCE(ev.failure_reason, '')   AS failure_reason,
        COALESCE(s.id, '')                AS "source_metadata.id",
        COALESCE(s.name, '')              AS "source_metadata.name"
 FROM convoy.events ev
@@ -419,6 +420,7 @@ type FindEventByIDRow struct {
 	AcknowledgedAt     pgtype.Timestamptz
 	Metadata           pgtype.Text
 	Status             pgtype.Text
+	FailureReason      pgtype.Text
 	SourceMetadataID   pgtype.Text
 	SourceMetadataName pgtype.Text
 }
@@ -444,6 +446,7 @@ func (q *Queries) FindEventByID(ctx context.Context, arg FindEventByIDParams) (F
 		&i.AcknowledgedAt,
 		&i.Metadata,
 		&i.Status,
+		&i.FailureReason,
 		&i.SourceMetadataID,
 		&i.SourceMetadataName,
 	)
@@ -700,6 +703,7 @@ WITH filtered_events AS (
            ev.acknowledged_at,
            ev.metadata,
            ev.status,
+           COALESCE(ev.failure_reason, '')   AS failure_reason,
            COALESCE(s.id, '')                AS "source_metadata.id",
            COALESCE(s.name, '')              AS "source_metadata.name"
     FROM convoy.events ev
@@ -751,7 +755,7 @@ WITH filtered_events AS (
 )
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
        headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
-       updated_at, deleted_at, acknowledged_at, metadata, status,
+       updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
        "source_metadata.id", "source_metadata.name"
 FROM filtered_events
 ORDER BY
@@ -799,6 +803,7 @@ type LoadEventsPagedExistsRow struct {
 	AcknowledgedAt     pgtype.Timestamptz
 	Metadata           pgtype.Text
 	Status             pgtype.Text
+	FailureReason      pgtype.Text
 	SourceMetadataID   pgtype.Text
 	SourceMetadataName pgtype.Text
 }
@@ -858,6 +863,7 @@ func (q *Queries) LoadEventsPagedExists(ctx context.Context, arg LoadEventsPaged
 			&i.AcknowledgedAt,
 			&i.Metadata,
 			&i.Status,
+			&i.FailureReason,
 			&i.SourceMetadataID,
 			&i.SourceMetadataName,
 		); err != nil {
@@ -890,6 +896,7 @@ WITH events AS (SELECT ev.id,
                        ev.acknowledged_at,
                        ev.metadata                       AS metadata,
                        ev.status                         AS status,
+                       COALESCE(ev.failure_reason, '')   AS failure_reason,
                        COALESCE(s.id, '')                AS "source_metadata.id",
                        COALESCE(s.name, '')              AS "source_metadata.name"
                 FROM convoy.events_search ev
@@ -938,7 +945,7 @@ WITH events AS (SELECT ev.id,
 )
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
        headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
-       updated_at, deleted_at, acknowledged_at, metadata, status,
+       updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
        "source_metadata.id", "source_metadata.name"
 FROM events
 ORDER BY
@@ -985,6 +992,7 @@ type LoadEventsPagedSearchRow struct {
 	AcknowledgedAt     pgtype.Timestamptz
 	Metadata           pgtype.Text
 	Status             pgtype.Text
+	FailureReason      pgtype.Text
 	SourceMetadataID   pgtype.Text
 	SourceMetadataName pgtype.Text
 }
@@ -1040,6 +1048,7 @@ func (q *Queries) LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPaged
 			&i.AcknowledgedAt,
 			&i.Metadata,
 			&i.Status,
+			&i.FailureReason,
 			&i.SourceMetadataID,
 			&i.SourceMetadataName,
 		); err != nil {
@@ -1073,18 +1082,31 @@ func (q *Queries) UpdateEventEndpoints(ctx context.Context, arg UpdateEventEndpo
 
 const updateEventStatus = `-- name: UpdateEventStatus :exec
 UPDATE convoy.events
-SET status = $1
-WHERE project_id = $2
-  AND id = $3
+SET status         = $1,
+    failure_reason = NULLIF($2, '')
+WHERE project_id = $3
+  AND id = $4
 `
 
 type UpdateEventStatusParams struct {
-	Status    pgtype.Text
-	ProjectID pgtype.Text
-	ID        pgtype.Text
+	Status        pgtype.Text
+	FailureReason pgtype.Text
+	ProjectID     pgtype.Text
+	ID            pgtype.Text
 }
 
+// failure_reason is written on every transition, not only failures, so a later
+// success or retry clears the reason left behind by an earlier failed attempt.
+// convoy.events is authoritative here. events_search is not updated in place: it
+// is rebuilt by copy_rows when a project's search policy changes, so it holds a
+// point-in-time copy of status and failure_reason together, the same way it has
+// always held status.
 func (q *Queries) UpdateEventStatus(ctx context.Context, arg UpdateEventStatusParams) error {
-	_, err := q.db.Exec(ctx, updateEventStatus, arg.Status, arg.ProjectID, arg.ID)
+	_, err := q.db.Exec(ctx, updateEventStatus,
+		arg.Status,
+		arg.FailureReason,
+		arg.ProjectID,
+		arg.ID,
+	)
 	return err
 }

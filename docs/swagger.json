@@ -10130,6 +10130,10 @@
         "event_type": {
           "type": "string"
         },
+        "failure_reason": {
+          "description": "FailureReason explains a Failure status to whoever is looking at the\ndashboard. It carries operator facing text only, never endpoint\ncredentials, headers, or payload content.",
+          "type": "string"
+        },
         "headers": {
           "$ref": "#/definitions/httpheader.HTTPHeader"
         },
@@ -10138,9 +10142,6 @@
         },
         "is_duplicate_event": {
           "type": "boolean"
-        },
-        "metadata": {
-          "type": "string"
         },
         "project_id": {
           "type": "string"
@@ -12176,6 +12177,10 @@
         "event_type": {
           "type": "string"
         },
+        "failure_reason": {
+          "description": "FailureReason explains a Failure status to whoever is looking at the\ndashboard. It carries operator facing text only, never endpoint\ncredentials, headers, or payload content.",
+          "type": "string"
+        },
         "headers": {
           "$ref": "#/definitions/httpheader.HTTPHeader"
         },
@@ -12184,9 +12189,6 @@
         },
         "is_duplicate_event": {
           "type": "boolean"
-        },
-        "metadata": {
-          "type": "string"
         },
         "project_id": {
           "type": "string"

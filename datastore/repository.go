@@ -40,7 +40,10 @@ type EventRepository interface {
 	ExportRepository
 	CreateEvent(context.Context, *Event) error
 	UpdateEventEndpoints(context.Context, *Event, []string) error
-	UpdateEventStatus(context.Context, *Event, EventStatus) error
+	// UpdateEventStatus sets the status and the operator facing failure reason.
+	// Pass an empty reason for non-failure statuses so a later success clears
+	// the reason recorded by an earlier failed attempt.
+	UpdateEventStatus(context.Context, *Event, EventStatus, string) error
 	FindEventByID(ctx context.Context, projectID string, id string) (*Event, error)
 	FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]Event, error)
 	CountProjectMessages(ctx context.Context, projectID string) (int64, error)

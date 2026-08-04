@@ -359,4 +359,13 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	getRouteStatus(event: EVENT): string {
 		return this.hasMatchedSubscription(event) ? 'Delivered' : 'Unmatched';
 	}
+
+	// Prefer the server's reason. Without it we can only guess, and the guess is
+	// wrong for events that failed before any endpoint was resolved, such as a
+	// dynamic URL that matched no endpoint URL template.
+	noDeliveriesReason(event?: EVENT): string {
+		if (event?.failure_reason) return event.failure_reason;
+		if (this.hasMatchedSubscription(event)) return 'No event delivery attempt for this event yet.';
+		return 'No matching subscription. This event was accepted but did not match any subscription event type or filter.';
+	}
 }

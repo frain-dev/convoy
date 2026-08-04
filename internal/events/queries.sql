@@ -29,8 +29,15 @@ WHERE project_id = @project_id
   AND id = @id;
 
 -- name: UpdateEventStatus :exec
+-- failure_reason is written on every transition, not only failures, so a later
+-- success or retry clears the reason left behind by an earlier failed attempt.
+-- convoy.events is authoritative here. events_search is not updated in place: it
+-- is rebuilt by copy_rows when a project's search policy changes, so it holds a
+-- point-in-time copy of status and failure_reason together, the same way it has
+-- always held status.
 UPDATE convoy.events
-SET status = @status
+SET status         = @status,
+    failure_reason = NULLIF(@failure_reason, '')
 WHERE project_id = @project_id
   AND id = @id;
 
@@ -52,6 +59,7 @@ SELECT ev.id,
        ev.acknowledged_at,
        ev.metadata,
        ev.status,
+       COALESCE(ev.failure_reason, '')   AS failure_reason,
        COALESCE(s.id, '')                AS "source_metadata.id",
        COALESCE(s.name, '')              AS "source_metadata.name"
 FROM convoy.events ev
@@ -174,6 +182,7 @@ WITH filtered_events AS (
            ev.acknowledged_at,
            ev.metadata,
            ev.status,
+           COALESCE(ev.failure_reason, '')   AS failure_reason,
            COALESCE(s.id, '')                AS "source_metadata.id",
            COALESCE(s.name, '')              AS "source_metadata.name"
     FROM convoy.events ev
@@ -226,7 +235,7 @@ WITH filtered_events AS (
 -- Outer sort: always the user-requested sort order (re-reverses backward fetches)
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
        headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
-       updated_at, deleted_at, acknowledged_at, metadata, status,
+       updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
        "source_metadata.id", "source_metadata.name"
 FROM filtered_events
 ORDER BY
@@ -256,6 +265,7 @@ WITH events AS (SELECT ev.id,
                        ev.acknowledged_at,
                        ev.metadata                       AS metadata,
                        ev.status                         AS status,
+                       COALESCE(ev.failure_reason, '')   AS failure_reason,
                        COALESCE(s.id, '')                AS "source_metadata.id",
                        COALESCE(s.name, '')              AS "source_metadata.name"
                 FROM convoy.events_search ev
@@ -305,7 +315,7 @@ WITH events AS (SELECT ev.id,
 -- Outer sort: always the user-requested sort order (re-reverses backward fetches)
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
        headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
-       updated_at, deleted_at, acknowledged_at, metadata, status,
+       updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
        "source_metadata.id", "source_metadata.name"
 FROM events
 ORDER BY

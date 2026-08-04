@@ -878,8 +878,18 @@ type Event struct {
 	Data json.RawMessage `json:"data,omitempty" db:"data" swaggertype:"object"`
 	Raw  string          `json:"raw,omitempty" db:"raw"`
 
-	Status   EventStatus `json:"status" db:"status"`
-	Metadata string      `json:"metadata,omitempty" db:"metadata"`
+	Status EventStatus `json:"status" db:"status"`
+
+	// Metadata is internal worker routing state (channel, delay and, for dynamic
+	// events, the original payload including the endpoint secret and custom
+	// authorization headers). It is never serialized: it has no API consumer and
+	// emitting it would hand those credentials back over GET /events.
+	Metadata string `json:"-" db:"metadata"`
+
+	// FailureReason explains a Failure status to whoever is looking at the
+	// dashboard. It carries operator facing text only, never endpoint
+	// credentials, headers, or payload content.
+	FailureReason string `json:"failure_reason,omitempty" db:"failure_reason"`
 
 	AcknowledgedAt null.Time `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 	CreatedAt      time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`

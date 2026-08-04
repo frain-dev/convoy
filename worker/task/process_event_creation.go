@@ -201,7 +201,7 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
-	err = args.eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus)
+	err = args.eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus, "")
 	if err != nil {
 		return nil, err
 	}

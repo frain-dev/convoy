@@ -279,6 +279,14 @@
           </button>
         </div>
 
+        <!-- Why this event failed. Only present when the server recorded a reason. -->
+        @if (eventsDetailsItem?.failure_reason) {
+          <div class="flex flex-col gap-4px p-12px rounded-8px bg-new.error-25 border border-new.error-100">
+            <p class="font-heading font-medium text-[13px] text-new.error-700">Event failed</p>
+            <p class="font-body font-normal text-[13px] leading-normal text-new.text-primary">{{ eventsDetailsItem?.failure_reason }}</p>
+          </div>
+        }
+
         <!-- Idempotency key -->
         <div class="flex items-center justify-between gap-16px pb-16px border-b border-new.border">
           <span class="font-body font-normal text-[13px] text-new.text-secondary shrink-0">Idempotency key</span>
@@ -319,7 +327,7 @@
               </div>
             } @else if (!sidebarEventDeliveries.length) {
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">
-                {{ hasMatchedSubscription(eventsDetailsItem) ? 'No event delivery attempt for this event yet.' : 'No matching subscription. This event was accepted but did not match any subscription event type or filter.' }}
+                {{ noDeliveriesReason(eventsDetailsItem) }}
               </p>
             } @else {
               @for (delivery of sidebarEventDeliveries; track delivery.uid) {

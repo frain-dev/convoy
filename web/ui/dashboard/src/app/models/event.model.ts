@@ -6,6 +6,9 @@ export interface EVENT {
 	created_at: Date;
 	provider_id: string;
 	status?: string;
+	// Set by the server only when an event failed, explaining why it never
+	// reached an endpoint (for example no matching URL template).
+	failure_reason?: string;
 	uid: string;
 	updated_at: string;
 	app_id?: string;
