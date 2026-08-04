@@ -1,9 +1,15 @@
-<dialog #dialog convoy-dialog position="center" size="lg" class="plan-catalog-dialog">
-  <div convoy-dialog-header (closeDialog)="close()">
-    <h2 class="font-semibold text-14">{{ trialPlanName || 'Plans' }}</h2>
-  </div>
+<dialog #dialog convoy-dialog position="center" size="lg" class="!rounded-24px !bg-new.surface-page border border-new.border">
+	<div class="flex items-start justify-between gap-16px p-24px pb-0">
+		<div>
+			<h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">{{ trialPlanName || 'Plans' }}</h2>
+			<p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px">Compare what’s included on each plan.</p>
+		</div>
+		<button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-opacity hover:opacity-80" (click)="close()" aria-label="Close">
+			<img src="/assets/img/close-icon.svg" class="w-12px h-12px" alt="" />
+		</button>
+	</div>
 
-  <div class="plan-catalog-dialog-content">
-    <convoy-plan-catalog-preview [mode]="mode" [trialPlanName]="trialPlanName"></convoy-plan-catalog-preview>
-  </div>
+	<div class="p-24px max-h-[calc(100vh-160px)] overflow-y-auto">
+		<convoy-plan-catalog-preview [mode]="mode" [trialPlanName]="trialPlanName"></convoy-plan-catalog-preview>
+	</div>
 </dialog>

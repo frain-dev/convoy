@@ -2,8 +2,6 @@ import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { DialogHeaderComponent, DialogDirective } from 'src/app/components/dialog/dialog.directive';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreateSourceModule } from '../../components/create-source/create-source.module';
 import { CreateSubscriptionModule } from '../../components/create-subscription/create-subscription.module';
 import { CreateEndpointComponent } from '../../components/create-endpoint/create-endpoint.component';
@@ -23,7 +21,7 @@ import { SelectComponent } from 'src/app/components/select/select.component';
 
 @Component({
     selector: 'convoy-setup-project',
-    imports: [CommonModule, ReactiveFormsModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective, NotificationComponent, SourceURLComponent, SelectComponent],
+    imports: [CommonModule, ReactiveFormsModule, DialogHeaderComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, DialogDirective, NotificationComponent, SourceURLComponent, SelectComponent],
     templateUrl: './setup-project.component.html',
     styleUrls: ['./setup-project.component.scss']
 })

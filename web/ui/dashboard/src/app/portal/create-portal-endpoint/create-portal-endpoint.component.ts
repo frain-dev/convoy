@@ -9,7 +9,6 @@ import {
     ViewChild,
     ViewEncapsulation
 } from '@angular/core';
-import { NgOptimizedImage } from '@angular/common';
 import {
     ControlContainer,
     FormBuilder,
@@ -28,16 +27,6 @@ import {PrivateService} from '../../private/private.service';
 import {CreateEndpointService} from '../../private/components/create-endpoint/create-endpoint.service';
 import {CreateSubscriptionService} from '../../private/components/create-subscription/create-subscription.service';
 
-import {
-    InputDirective,
-    InputErrorComponent,
-    InputFieldDirective,
-    LabelComponent
-} from '../../components/input/input.component';
-import {ButtonComponent} from '../../components/button/button.component';
-import {RadioComponent} from '../../components/radio/radio.component';
-import {TooltipComponent} from '../../components/tooltip/tooltip.component';
-import {CardComponent} from '../../components/card/card.component';
 import {FormLoaderComponent} from '../../components/form-loader/form-loader.component';
 import {PermissionDirective} from '../../private/components/permission/permission.directive';
 import {
@@ -53,37 +42,22 @@ import {FILTER} from '../../models/filter.model';
 import {SUBSCRIPTION} from '../../models/subscription';
 import {EndpointsService} from '../../private/pages/project/endpoints/endpoints.service';
 import {NotificationComponent} from '../../components/notification/notification.component';
-import {ConfigButtonComponent} from '../../private/components/config-button/config-button.component';
 import {LoaderModule} from '../../private/components/loader/loader.module';
-import {TagComponent} from '../../components/tag/tag.component';
 import {DialogDirective} from '../../components/dialog/dialog.directive';
 import {CopyButtonComponent} from '../../components/copy-button/copy-button.component';
-import {SelectComponent} from '../../components/select/select.component';
 
 @Component({
     selector: 'convoy-create-portal-endpoint',
     imports: [
-    NgOptimizedImage,
     ReactiveFormsModule,
-    InputDirective,
-    InputFieldDirective,
-    InputErrorComponent,
-    LabelComponent,
-    ButtonComponent,
-    RadioComponent,
-    TooltipComponent,
-    CardComponent,
     FormLoaderComponent,
     PermissionDirective,
     CreateSubscriptionFilterComponent,
     CreatePortalTransformFunctionComponent,
     NotificationComponent,
-    ConfigButtonComponent,
     LoaderModule,
-    TagComponent,
     DialogDirective,
-    CopyButtonComponent,
-    SelectComponent
+    CopyButtonComponent
 ],
     providers: [
         {

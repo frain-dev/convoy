@@ -1,0 +1,74 @@
+<div class="min-h-screen w-full flex items-stretch">
+	<!-- Form panel -->
+	<div class="flex-1 min-w-0 bg-new.surface-page flex flex-col items-center p-40px mobile:p-20px">
+		<div class="w-full max-w-[420px] flex flex-col flex-1">
+			<img src="/assets/img/logo-mark.png" alt="Convoy" class="h-32px w-32px self-start" />
+
+			<div class="flex-1 min-h-40px"></div>
+
+			<div class="flex flex-col gap-24px w-full">
+				<div class="flex flex-col gap-4px">
+					<h1 class="font-heading font-medium text-[24px] leading-[32px] text-new.text-primary">{{ heading }}</h1>
+					@if (subheading) {
+						<p class="font-body font-normal text-[20px] leading-[24px] text-new.text-secondary">{{ subheading }}</p>
+					}
+				</div>
+
+				<div class="bg-new.surface-default border border-new.border rounded-24px p-24px w-full">
+					<ng-content select="[authCard]"></ng-content>
+				</div>
+
+				<ng-content select="[authFooter]"></ng-content>
+			</div>
+
+			<div class="flex-1 min-h-40px"></div>
+		</div>
+	</div>
+
+	<!-- Brand panel: grid + referral promo (Figma Brand / Pattern / Grid) -->
+	<div class="flex-1 min-w-0 desktop:hidden bg-new.primary-400 flex flex-col overflow-hidden relative">
+		<div class="absolute inset-0 auth-brand-grid">
+			@for (cell of accentCells; track $index) {
+				<div class="absolute w-36px h-36px bg-new.brand-grid-accent" [style.top.px]="cell.r * 36" [style.left]="cellLeft(cell.k)"></div>
+			}
+		</div>
+
+		<div class="relative z-[1] flex-1 flex items-center justify-center p-40px">
+			<div class="w-full max-w-[600px] min-h-[min(760px,calc(100vh-80px))] bg-[#1f6ed2] flex flex-col justify-between px-40px py-40px">
+				<!-- Decorative dual 5×5 dot matrices -->
+				<div class="flex items-start justify-center">
+					@for (grid of [0, 1]; track grid) {
+						<div class="auth-dot-matrix">
+							@for (dot of referralDots; track $index) {
+								<span class="rounded-full bg-white-40" [style.width.px]="dot.size" [style.height.px]="dot.size"></span>
+							}
+						</div>
+					}
+				</div>
+
+				<div class="font-heading font-medium text-[48px] leading-none my-32px">
+					<p class="text-white-64 mb-0">Share Convoy,</p>
+					<p>
+						<span class="text-white-64">Earn up to</span>
+						<span class="text-white-100"> $1,000.</span>
+					</p>
+				</div>
+
+				<div class="flex flex-col gap-8px items-end w-full">
+					<p class="w-full font-body font-normal text-[22px] leading-[1.5] text-white-100">
+						Know a team that needs reliable webhook infrastructure? Refer them to Convoy and earn up to $1,000 when they become a customer.
+					</p>
+					<a
+						href="https://getconvoy.io/referrals"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center justify-center gap-4px min-w-[100px] px-16px py-12px rounded-full bg-white-100 font-body font-medium text-[14px] leading-[16px] text-new.primary-400 transition-opacity hover:opacity-90"
+					>
+						Learn more
+						<img src="/assets/img/arrow-right-primary.svg" alt="" class="w-16px h-16px" />
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

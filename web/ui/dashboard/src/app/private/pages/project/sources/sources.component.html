@@ -1,163 +1,217 @@
-<!-- empty state  -->
-@if (!isLoadingSources && sources.content.length == 0) {
-  <div class="py-80px">
-    <div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state">
-      <button convoy-permission="Sources|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">
-        <svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
-          <use xlink:href="#plus-icon"></use>
-        </svg>
-        Connect a source
-      </button>
+<div class="pb-40px">
+  <!-- Section header -->
+  <div class="flex items-start justify-between gap-16px">
+    <div class="flex flex-col gap-4px">
+      <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Sources</h2>
+      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary min-h-[21px]">
+        @if (!isLoadingSources && sources) {
+          {{ sourceCountLabel() }}
+        }
+      </p>
     </div>
+    <button
+      type="button"
+      convoy-permission="Sources|MANAGE"
+      class="flex items-center gap-4px min-w-[100px] px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+      routerLink="./new"
+      >
+      <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
+      Create source
+    </button>
   </div>
-}
 
-<!-- loader  -->
-@if (isLoadingSources) {
-  <div class="relative min-h-[500px] flex items-center justify-center">
-    <convoy-loader position="relative"></convoy-loader>
-  </div>
-}
+  <div class="h-[1px] w-full bg-new.border mt-16px"></div>
 
-@if (!isLoadingSources && sources.content.length) {
-  <div class="flex justify-between items-end mb-24px">
-    <div class="flex items-center">
-      <h1 class="text-18 font-bold text-neutral-12 mr-10px">Sources</h1>
-      <!-- <convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right" class="scale-90"></convoy-tooltip> -->
+  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary mt-20px">View and manage event sources</p>
+
+  <!-- Table card -->
+  <div class="bg-white-100 border border-new.border rounded-12px mt-16px overflow-hidden">
+    <!-- Search -->
+    <div class="flex items-center gap-8px px-12px h-40px border-b border-new.border">
+      <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px" alt="search" />
+      <input
+        type="search"
+        placeholder="Search by name, owner id..."
+        [(ngModel)]="sourceSearchString"
+        (input)="onSearch()"
+        [ngModelOptions]="{ standalone: true }"
+        class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+        />
     </div>
-  </div>
-  <!-- list of sources  -->
-  <div class="min-h-[600px]">
-    <div class="flex flex-wrap gap-24px">
-      <a
-        convoy-permission="Sources|MANAGE"
-        routerLink="./new"
-        class="w-full max-w-[440px] min-w-[300px] mobile:min-w-0 rounded-8px border border-dashed border-new.primary-400 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]"
-        >
-        <svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
-          <use xlink:href="#plus-icon"></use>
-        </svg>
-        <span class="text-primary-100 font-medium text-12">Create new Source</span>
-      </a>
-      @for (source of sources.content; track $index; let i = $index) {
-        <div convoy-card [id]="'source' + i" class="w-full max-w-[440px] min-w-[300px] mobile:min-w-0 py-20px h-fit">
-          <!-- outgoing project sources -->
-          @if (privateService.getProjectDetails?.type === 'outgoing') {
-            <div class="flex items-center justify-between px-24px">
-              <div class="flex items-center">
-                <img [src]="'assets/img/' + source.pub_sub.type + '.png'" alt="icon" class="mr-12px" />
-                <div>
-                  <p class="text-10 text-neutral-11 capitalize mb-4px">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</p>
-                  <p class="text-14 font-medium">{{ source.name }}</p>
-                </div>
-              </div>
-              <div convoy-dropdown position="left" size="md" class="ml-4px">
-                <button dropdownTrigger convoy-button size="sm" fill="text" class="!p-0">
-                  <img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
-                </button>
-                <ul dropdownOptions class="p-10px">
-                  <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                    <button convoy-dropdown-option convoy-button color="neutral" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
-                      <svg width="17" height="16" class="fill-neutral-10 mr-8px">
-                        <use xlink:href="#edit-icon"></use>
-                      </svg>
-                      Edit
-                    </button>
-                  </li>
-                  <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                    <button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="error" class="w-full !justify-start" (click)="activeSource = source; deleteDialog.showModal()">
-                      <svg width="16" height="16" class="mr-8px fill-error-9">
-                        <use xlink:href="#delete-icon"></use>
-                      </svg>
-                      Delete
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          }
-          <!-- incoming project sources -->
-          @if (privateService.getProjectDetails?.type === 'incoming') {
-            <div class="px-24px pb-12px border-b border-b-neutral-a3">
-              <div class="text-neutral-11 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
-              <div class="flex justify-between items-center">
-                <div class="text-14 text-neutral-12 font-medium">{{ source.name }}</div>
-                <div convoy-dropdown #incomingSourceDropdown position="left" size="md" class="ml-4px">
-                  <button dropdownTrigger convoy-button size="sm" fill="text" class="!p-0">
-                    <img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
-                  </button>
-                  <ul dropdownOptions class="p-10px">
-                    <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                      <div convoy-copy-button show-icon="false" class="w-full" color="neutral" size="sm" (copyText)="hideIncomingSourceDropdown()" [notificationText]="source.name + ' ID has been copied to clipboard'" [text]="source?.uid || ''">
-                        <svg width="16" height="16" class="stroke-neutral-10">
-                          <use xlink:href="#copy-icon-3"></use>
-                        </svg>
-                        <span class="pl-8px text-neutral-10">Copy ID</span>
-                      </div>
-                    </li>
-                    <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                      <button convoy-dropdown-option convoy-button color="neutral" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
-                        <svg width="17" height="16" class="fill-neutral-10 mr-8px">
-                          <use xlink:href="#edit-icon"></use>
-                        </svg>
-                        Edit
-                      </button>
-                    </li>
-                    <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                      <button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="error" class="w-full !justify-start" (click)="activeSource = source; deleteDialog.showModal()">
-                        <svg width="16" height="16" class="mr-8px fill-error-9">
-                          <use xlink:href="#delete-icon"></use>
-                        </svg>
-                        Delete
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-            <div class="mt-16px mx-24px">
-              <convoy-copy-button [text]="source.url" color="primary" show-icon="false" [notificationText]="source.name + ' URL has been copied to clipboard'">
-                <div convoy-tag color="primary" class="flex items-center !gap-12px">
-                  <span class="max-w-[230px] truncate">{{ source.url }}</span>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="scale-[.6]" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 12.2002H15" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M8 16.2002H12.38" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M10 6H14C16 6 16 5 16 4C16 2 15 2 14 2H10C9 2 8 2 8 4C8 6 9 6 10 6Z" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-                    <path
-                      d="M16 4.01953C19.33 4.19953 21 5.42953 21 9.99953V15.9995C21 19.9995 20 21.9995 15 21.9995H9C4 21.9995 3 19.9995 3 15.9995V9.99953C3 5.43953 4.67 4.19953 8 4.01953"
-                      stroke="#292D32"
-                      stroke-width="1.5"
-                      stroke-miterlimit="10"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      />
-                  </svg>
-                </div>
-              </convoy-copy-button>
-            </div>
-          }
+
+    @if (isLoadingSources) {
+      <!-- Loading state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-loading.svg" class="w-48px h-48px animate-spin" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Loading sources</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Fetching your sources. This usually takes a moment.</p>
+        </div>
+      </div>
+    } @else if (fetchError) {
+      <!-- Error state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-error.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">We couldn&rsquo;t load sources</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Check your connection and try again.</p>
+        </div>
+        <button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="getSources()">Try again</button>
+      </div>
+    } @else if (!sources.content.length && sourceSearchString) {
+      <!-- No results state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-no-results.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No sources match</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Adjust your search to see more results.</p>
+        </div>
+        <button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="clearSearch()">Clear search</button>
+      </div>
+    } @else if (!sources.content.length) {
+      <!-- Empty state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px" id="sources-empty-state">
+        <img src="/assets/img/svg/deliveries-empty.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No sources yet</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Sources are how your webhook events are routed into Convoy.</p>
+        </div>
+        <button
+          type="button"
+          convoy-permission="Sources|MANAGE"
+          class="flex items-center gap-4px min-w-[100px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+          routerLink="./new"
+          >
+          <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
+          Create source
+        </button>
+      </div>
+    } @else {
+      <!-- Header row -->
+      <div class="grid w-full grid-cols-[minmax(0,1.3fr)_140px_minmax(0,2fr)_minmax(0,1.5fr)_132px] bg-new.surface-subtle border-b border-new.border">
+        <div class="flex items-center px-20px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Source</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Verification</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">URL</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">ID</span>
+        </div>
+        <div class="h-36px"></div>
+      </div>
+
+      <!-- Rows -->
+      @for (source of sources.content; track source.uid) {
+        <div class="grid w-full grid-cols-[minmax(0,1.3fr)_140px_minmax(0,2fr)_minmax(0,1.5fr)_132px] items-center border-b border-new.border last:border-b-0 transition-colors hover:bg-new.surface-subtle group">
+          <!-- Name -->
+          <div class="flex items-center px-20px h-40px min-w-0">
+            <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-primary truncate">{{ source.name }}</span>
+          </div>
+
+          <!-- Verification / broker type -->
+          <div class="flex items-center px-12px h-40px min-w-0">
+            @if (privateService.getProjectDetails?.type === 'incoming') {
+              <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary capitalize truncate">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</span>
+            } @else {
+              <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary truncate">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</span>
+            }
+          </div>
+
+          <!-- URL -->
+          <div class="flex items-center gap-8px px-12px h-40px min-w-0">
+            @if (source.url) {
+              <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary truncate">{{ source.url }}</span>
+              <button type="button" class="w-24px h-24px shrink-0 flex items-center justify-center rounded-[6px] opacity-0 group-hover:opacity-100 transition-all hover:bg-new.surface-muted" title="Copy ingest URL" (click)="copyText(source.url, 'Ingest URL', $event)">
+                <img src="/assets/img/svg/external-link-gray.svg" class="w-14px h-14px" alt="copy url" />
+              </button>
+            } @else {
+              <span class="font-body font-normal text-[14px] leading-normal text-new.text-placeholder">-</span>
+            }
+          </div>
+
+          <!-- ID -->
+          <div class="flex items-center px-12px h-40px min-w-0">
+            <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary truncate">{{ source.uid }}</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end gap-8px px-12px h-40px">
+            <button type="button" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" title="Copy ID" (click)="copyText(source.uid, source.name + ' ID', $event)">
+              <img src="/assets/img/svg/copy-gray.svg" class="w-16px h-16px" alt="copy id" />
+            </button>
+            <button type="button" convoy-permission="Sources|MANAGE" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" title="Edit" [routerLink]="'./' + source.uid">
+              <img src="/assets/img/svg/edit-gray.svg" class="w-16px h-16px" alt="edit" />
+            </button>
+            <button type="button" convoy-permission="Sources|MANAGE" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" title="Delete" (click)="activeSource = source; deleteDialog.showModal()">
+              <img src="/assets/img/svg/trash-gray.svg" class="w-16px h-16px" alt="delete" />
+            </button>
+          </div>
         </div>
       }
-    </div>
-  </div>
-  <!-- Pagination -->
-  @if (sources.pagination?.has_next_page || sources.pagination?.has_prev_page) {
-    <convoy-pagination [pagination]="sources.pagination" (paginate)="getSources($event)"></convoy-pagination>
-  }
-}
 
+      <!-- Pagination footer -->
+      <div class="flex items-center justify-between px-20px h-56px bg-white-100">
+        <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ pageRangeLabel }}</span>
+        <div class="flex items-center gap-8px">
+          <button
+            type="button"
+            class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none"
+            [disabled]="!sources.pagination?.has_prev_page"
+            (click)="paginateSources('prev')"
+            >
+            <img src="/assets/img/svg/chevron-left-small.svg" class="w-16px h-16px" alt="previous page" />
+          </button>
+          <span class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page font-body font-medium text-[14px] leading-[16px] text-new.text-primary">{{ currentPage }}</span>
+          <button
+            type="button"
+            class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none"
+            [disabled]="!sources.pagination?.has_next_page"
+            (click)="paginateSources('next')"
+            >
+            <img src="/assets/img/svg/chevron-right-small.svg" class="w-16px h-16px" alt="next page" />
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- create / edit source modal -->
 <dialog #sourceDialog convoy-dialog id="sourceForm" position="full">
-  <div convoy-dialog-header fullscreen="true" (closeDialog)="closeCreateSourceModal({ action: 'close' })">
-    <h2 class="font-semibold text-14 capitalize ml-10px">{{ action === 'update' ? 'Update Source' : 'Create source' }}</h2>
-  </div>
+  <div class="w-full h-full overflow-y-auto bg-new.surface-page">
+    <!-- Top bar -->
+    <div class="sticky top-0 z-10 h-56px flex items-center justify-between px-24px bg-white-100 border-b border-new.border">
+      <div class="flex items-center gap-16px">
+        <button type="button" class="w-24px h-24px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" (click)="closeCreateSourceModal({ action: 'close' })">
+          <img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close" />
+        </button>
+        <div class="flex items-center gap-8px">
+          <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Sources</span>
+          <span class="font-body font-normal text-[14px] leading-normal text-new.text-placeholder">/</span>
+          <span class="font-body font-medium text-[14px] leading-normal text-new.text-primary">{{ action === 'update' ? 'Update source' : 'Create source' }}</span>
+        </div>
+      </div>
+      <button
+        type="submit"
+        form="create-source-form"
+        convoy-permission="Sources|MANAGE"
+        class="min-w-[100px] px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50"
+        [disabled]="createSourceComp.isloading || createSourceComp.sourceForm.disabled"
+        >
+        {{ action === 'update' ? 'Update Source' : 'Create Source' }}
+      </button>
+    </div>
 
-  <div class="w-full h-full">
-    <div class="max-w-[770px] pt-24px m-auto desktop:px-24px">
-      <convoy-create-source [showModal]="privateService.getProjectDetails?.type === 'incoming' ? 'true' : 'false'" showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
+    <div class="max-w-[1100px] mx-auto pt-32px px-24px pb-80px">
+      <convoy-create-source #createSourceComp [showModal]="privateService.getProjectDetails?.type === 'incoming' ? 'true' : 'false'" showAction="false" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
     </div>
   </div>
 </dialog>
 
-<dialog #deleteDialog convoy-dialog position="center" size="sm">
+<dialog #deleteDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
   <app-delete-modal [isLoading]="isDeletingSource" [deleteText]="'delete “' + activeSource?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteSource()"></app-delete-modal>
 </dialog>

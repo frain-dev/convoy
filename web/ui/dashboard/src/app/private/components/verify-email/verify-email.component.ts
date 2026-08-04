@@ -1,12 +1,11 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { VerifyEmailService } from './verify-email.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
     selector: 'convoy-verify-email',
-    imports: [ButtonComponent],
+    imports: [],
     templateUrl: './verify-email.component.html',
     styleUrls: ['./verify-email.component.scss']
 })

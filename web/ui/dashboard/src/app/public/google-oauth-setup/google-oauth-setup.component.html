@@ -1,39 +1,45 @@
-<div class="bg-[url('/assets/img/Pattern.svg')] bg-center min-h-screen flex flex-col items-center justify-center bg-cover">
+<div class="min-h-screen flex flex-col items-center justify-center bg-new.surface-page px-24px">
   <img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
-  <h2 class="font-semibold text-20 mb-10px text-neutral-12">Complete your setup to start managing webhooks</h2>
-  <p class="text-neutral-11 text-center text-16px max-w-[445px] mb-32px">Please provide your business name to complete your account setup</p>
+  <h2 class="font-heading font-medium text-[24px] leading-[32px] text-new.text-primary mb-8px text-center">Complete your setup to start managing webhooks</h2>
+  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary text-center max-w-[445px] mb-32px">Please provide your business name to complete your account setup</p>
 
-  <section class="max-w-[445px] mx-auto px-24px py-24px w-full bg-white-100 shadow-default rounded-8px">
+  <section class="max-w-[445px] mx-auto p-24px w-full bg-white-100 border border-new.border rounded-16px">
     <!-- User Info Display -->
     @if (userInfo) {
-      <div class="bg-gray-50 p-16px rounded-8px mb-20px">
+      <div class="bg-new.surface-subtle border border-new.border p-16px rounded-12px mb-20px">
         <div class="flex items-center">
           @if (userInfo.picture) {
             <img [src]="userInfo.picture" alt="Profile" class="w-32px h-32px rounded-full mr-12px" />
           }
-          <div>
-            <p class="text-14 font-medium text-gray-900">{{ userInfo.name }}</p>
-            <p class="text-12 text-gray-600">{{ userInfo.email }}</p>
+          <div class="flex flex-col gap-2px">
+            <p class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary">{{ userInfo.name }}</p>
+            <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">{{ userInfo.email }}</p>
           </div>
         </div>
       </div>
     }
 
     <form [formGroup]="setupForm" (ngSubmit)="completeSetup()">
-      <convoy-input-field>
-        <label for="business_name" convoy-label required="true">Business Name</label>
-        <input id="business_name" convoy-input autocomplete="organization" formControlName="business_name" placeholder="Enter your business name" />
+      <div class="flex flex-col gap-8px">
+        <label for="business_name" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Business name *</label>
+        <input
+          id="business_name"
+          autocomplete="organization"
+          formControlName="business_name"
+          placeholder="Enter your business name"
+          class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+          />
         @if (setupForm.get('business_name')?.touched && setupForm.get('business_name')?.invalid) {
-          <convoy-input-error>Business name is required</convoy-input-error>
+          <span class="font-body text-[12px] text-new.error-500">Business name is required</span>
         }
-      </convoy-input-field>
+      </div>
 
-      <button convoy-button [disabled]="loading" size="lg" class="mt-40px w-full">
+      <button type="submit" class="mt-32px w-full flex items-center justify-center px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="loading">
         @if (!loading) {
-          <span class="text-14 text-white-100">Complete Setup</span>
+          Complete Setup
         }
         @if (loading) {
-          <img src="assets/img/button-loader.gif" alt="loader" />
+          <img src="assets/img/button-loader.gif" alt="loader" class="h-20px" />
         }
       </button>
     </form>

@@ -1,4 +1,5 @@
 import {EventEmitter, Injectable} from '@angular/core';
+import {ENDPOINT} from 'src/app/models/endpoint.model';
 import {HTTP_RESPONSE} from 'src/app/models/global.model';
 import {HttpService} from 'src/app/services/http/http.service';
 import {FLIPT_API_RESPONSE} from '../models/flipt.model';
@@ -458,11 +459,14 @@ export class PrivateService {
 		});
 	}
 
-	getEndpoints(requestDetails?: CURSOR & { q?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
+	getEndpoints(requestDetails?: CURSOR & { q?: string; startDate?: string; endDate?: string; perPage?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const dateRange = { startDate: requestDetails?.startDate, endDate: requestDetails?.endDate };
-				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next', q: requestDetails?.q, ...dateRange };
+				const perPage = requestDetails?.perPage;
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) {
+					requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next', q: requestDetails?.q, perPage, ...dateRange };
+				}
 
 				const response = await this.http.request({
 					url: `/endpoints`,
@@ -476,6 +480,29 @@ export class PrivateService {
 				return reject(error);
 			}
 		});
+	}
+
+	// Walks cursor pages until exhausted. Used when a UI control needs the full
+	// portal/project endpoint set (status filters, summary dropdowns).
+	async getAllEndpoints(requestDetails?: { q?: string; perPage?: number }): Promise<ENDPOINT[]> {
+		const all: ENDPOINT[] = [];
+		let nextCursor = 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF';
+		let hasNext = true;
+
+		while (hasNext) {
+			const response = await this.getEndpoints({
+				next_page_cursor: nextCursor,
+				direction: 'next',
+				q: requestDetails?.q,
+				perPage: requestDetails?.perPage ?? 100
+			});
+			const page: ENDPOINT[] = response.data?.content || [];
+			all.push(...page);
+			hasNext = !!response.data?.pagination?.has_next_page && !!response.data?.pagination?.next_page_cursor && page.length > 0;
+			nextCursor = response.data?.pagination?.next_page_cursor;
+		}
+
+		return all;
 	}
 
 	getSources(requestDetails?: CURSOR & { q?: string }): Promise<HTTP_RESPONSE> {

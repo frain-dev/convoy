@@ -3,7 +3,7 @@
     <div class="flex justify-between h-100px">
       @for (size of loaderSizes; track $index) {
         <div class="loader mr-2px last-of-type:mr-0 flex items-end relative w-full h-full">
-          <div class="min-h-[4px] w-full bg-neutral-a3 rounded-4px animate-pulse hover:cursor-pointer transition-all duration-300" [ngStyle]="{ height: size + 'px' }"></div>
+          <div class="min-h-[4px] w-full bg-new.surface-muted rounded-4px animate-pulse hover:cursor-pointer transition-all duration-300" [ngStyle]="{ height: size + 'px' }"></div>
         </div>
       }
     </div>
@@ -14,7 +14,7 @@
       @for (data of paginatedData; track $index; let i = $index) {
         <div class="mr-2px last-of-type:mr-0 w-full group">
           <div class="flex items-end h-100px hover:cursor-pointer">
-            <div [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70 rounded-tl-8px rounded-tr-8px' : 'bg-neutral-a3 rounded-4px group-hover:bg-neutral-10'" class="min-h-[4px] w-full transition-all duration-300 relative" [ngStyle]="{ height: data.size }">
+            <div [class]="data.data > 0 ? 'bg-new.primary-100 bg-opacity-70 rounded-tl-8px rounded-tr-8px' : 'bg-new.surface-muted rounded-4px group-hover:bg-new.text-secondary'" class="min-h-[4px] w-full transition-all duration-300 relative" [ngStyle]="{ height: data.size }">
               <div
 							class="
 								absolute
@@ -43,38 +43,38 @@
 								before:shadow-[0px_2.66667px_2.66667px_rgba(50,50,71,0.06),0px_2.66667px_5.33333px_rgba(50,50,71,0.06)]
 								before:h-12px
 								before:w-12px
-								before:bg-primary-100
+								before:bg-new.primary-100
 								after:content-['']
 								after:absolute
 								after:-bottom-[20px]
 								after:left-1/2
 								after:-translate-x-1/2
 								after:border-[12px] after:border-t-white-100 after:border-b-transparent after:border-x-transparent
-								after:outline-1 after:outline-neutral-4
+								after:outline-1 after:outline-new.border
 							"
                 [ngClass]="{ 'before:hidden': data.data === 0 }"
                 >
-                <h3 class="font-semibold text-12">{{ data.label }}</h3>
-                <p class="text-12">Events: {{ data.data | number }}</p>
+                <h3 class="font-heading font-medium text-[12px] text-new.text-primary">{{ data.label }}</h3>
+                <p class="font-body text-[12px] text-new.text-secondary">Events: {{ data.data | number }}</p>
               </div>
             </div>
           </div>
         </div>
       }
     </div>
-    <div class="line flex items-center justify-between mt-14px border-t border-neutral-a3 pt-4px">
-      <div class="text-neutral-11 text-10">{{ paginatedData[0].label }}</div>
-      <div class="text-neutral-11 text-10">{{ paginatedData[15].label }}</div>
-      <div class="text-neutral-11 text-10">{{ paginatedData[paginatedData.length - 1].label }}</div>
+    <div class="line flex items-center justify-between mt-14px border-t border-new.border pt-4px">
+      <div class="font-body text-[10px] text-new.text-secondary">{{ paginatedData[0].label }}</div>
+      <div class="font-body text-[10px] text-new.text-secondary">{{ paginatedData[15].label }}</div>
+      <div class="font-body text-[10px] text-new.text-secondary">{{ paginatedData[paginatedData.length - 1].label }}</div>
     </div>
-    <div class="flex items-center justify-end mt-16px" [class]="pages === 1 ? 'hidden' : 'flex'">
-      <button convoy-button fill="outline" size="sm" class="px-4px py-4px border-primary-300" [disabled]="pageNumber === 1" (click)="prevPage()">
-        <svg width="24" height="24" class="fill-primary-100">
+    <div class="flex items-center justify-end gap-12px mt-16px" [class]="pages === 1 ? 'hidden' : 'flex'">
+      <button type="button" class="w-32px h-32px flex items-center justify-center rounded-full border border-new.border bg-white-100 transition-all hover:bg-new.surface-subtle disabled:opacity-40 disabled:pointer-events-none" [disabled]="pageNumber === 1" (click)="prevPage()" aria-label="Previous">
+        <svg width="16" height="16" class="fill-new.text-secondary">
           <use xlink:href="#arrow-left-icon"></use>
         </svg>
       </button>
-      <button convoy-button fill="outline" size="sm" class="px-4px py-4px border-primary-300 ml-16px" [disabled]="pageNumber === pages" (click)="nextPage()">
-        <svg width="24" height="24" class="fill-primary-100">
+      <button type="button" class="w-32px h-32px flex items-center justify-center rounded-full border border-new.border bg-white-100 transition-all hover:bg-new.surface-subtle disabled:opacity-40 disabled:pointer-events-none" [disabled]="pageNumber === pages" (click)="nextPage()" aria-label="Next">
+        <svg width="16" height="16" class="fill-new.text-secondary">
           <use xlink:href="#arrow-right-icon"></use>
         </svg>
       </button>

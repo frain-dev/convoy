@@ -1,28 +1,16 @@
-import {Component, inject, Input, OnInit} from '@angular/core';
+import { Component, inject, Input, OnInit } from '@angular/core';
 
-import {DialogHeaderComponent} from 'src/app/components/dialog/dialog.directive';
-import {
-    InputDirective,
-    InputErrorComponent,
-    InputFieldDirective,
-    LabelComponent
-} from 'src/app/components/input/input.component';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {CardComponent} from 'src/app/components/card/card.component';
-import {PrivateService} from '../../private.service';
-import {GeneralService} from 'src/app/services/general/general.service';
-import {ActivatedRoute, Router} from '@angular/router';
-import {ButtonComponent} from 'src/app/components/button/button.component';
-import {CreatePortalLinkService} from './create-portal-link.service';
-import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
-import {RbacService} from 'src/app/services/rbac/rbac.service';
-import {RadioComponent} from 'src/app/components/radio/radio.component';
-import {ToggleComponent} from 'src/app/components/toggle/toggle.component';
-import {NotificationComponent} from 'src/app/components/notification/notification.component';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { PrivateService } from '../../private.service';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CreatePortalLinkService } from './create-portal-link.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { NotificationComponent } from 'src/app/components/notification/notification.component';
 
 @Component({
     selector: 'convoy-create-portal-link',
-    imports: [DialogHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent, NotificationComponent],
+    imports: [ReactiveFormsModule, NotificationComponent],
     templateUrl: './create-portal-link.component.html',
     styleUrls: ['./create-portal-link.component.scss']
 })
@@ -31,10 +19,13 @@ export class CreatePortalLinkComponent implements OnInit {
 	portalLinkForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
 		owner_id: [null, Validators.required],
-		can_manage_endpoint: [false, Validators.required],
-		auth_type: [null, Validators.required],
-		type: [null, Validators.required]
+		can_manage_endpoint: [false],
+		auth_type: ['refresh_token', Validators.required]
 	});
+	authTypeOptions = [
+		{ value: 'static_token', label: 'Static Token', description: 'Default authentication type for existing portal links.' },
+		{ value: 'refresh_token', label: 'Refresh Token', description: 'Short-lived token that can be used to access the portal link.' }
+	];
 	isCreatingPortalLink = false;
 	fetchingLinkDetails = false;
 	portalLink!: string;
@@ -49,12 +40,15 @@ export class CreatePortalLinkComponent implements OnInit {
 	}
 
 	async savePortalLink() {
+		if (this.portalLinkForm.invalid) {
+			this.portalLinkForm.markAllAsTouched();
+			return;
+		}
+
 		this.isCreatingPortalLink = true;
 
 		try {
-			this.portalLinkForm.patchValue(this.portalLinkForm.value.type == 'endpoint' ? { owner_id: null } : { endpoints: null });
 			const portalDetails = structuredClone(this.portalLinkForm.value);
-			delete portalDetails.type;
 
 			const response = this.action === 'update' ? await this.createPortalLinkService.updatePortalLink({ linkId: this.linkUid, data: portalDetails }) : await this.createPortalLinkService.createPortalLink({ data: portalDetails });
 
@@ -81,6 +75,13 @@ export class CreatePortalLinkComponent implements OnInit {
 		} catch {
 			this.fetchingLinkDetails = false;
 		}
+	}
+
+	copyLink() {
+		if (!this.portalLink) return;
+		navigator.clipboard.writeText(this.portalLink).then(() => {
+			this.generalService.showNotification({ message: 'URL has been copied to clipboard', style: 'info' });
+		});
 	}
 
 	goBack() {

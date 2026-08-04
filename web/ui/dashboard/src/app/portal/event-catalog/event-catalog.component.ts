@@ -1,16 +1,11 @@
 import { Component, EventEmitter, Input, type OnInit, Output } from '@angular/core';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { ButtonComponent } from '../../components/button/button.component';
-import {
-    EventDeliveryDetailsModule
-} from '../../private/pages/project/events/event-delivery-details/event-delivery-details.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PrivateService } from '../../private/private.service';
 import { PrismModule } from '../../private/components/prism/prism.module';
 import { TagComponent } from '../../components/tag/tag.component';
 import { GeneralService } from '../../services/general/general.service';
-import { CardComponent } from '../../components/card/card.component';
 
 export interface EventType {
     uid: string
@@ -42,14 +37,10 @@ interface Field {
     imports: [
         CommonModule,
         RouterModule,
-        ButtonComponent,
-        EventDeliveryDetailsModule,
         FormsModule,
         ReactiveFormsModule,
         PrismModule,
         TagComponent,
-        CardComponent,
-        NgOptimizedImage,
     ],
     styleUrls: ["./event-catalog.component.scss"]
 })

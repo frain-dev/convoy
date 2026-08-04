@@ -7,12 +7,10 @@ import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { PrivateService } from '../../private.service';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-
 @Component({
     selector: 'convoy-endpoint-filter',
     templateUrl: './endpoints-filter.component.html',
-    imports: [CommonModule, DropdownComponent, DropdownOptionDirective, ListItemComponent, SkeletonLoaderComponent, ButtonComponent]
+    imports: [CommonModule, DropdownComponent, DropdownOptionDirective, ListItemComponent, SkeletonLoaderComponent]
 })
 export class EndpointFilterComponent implements OnInit {
 	@ViewChild('endpoint', { static: true }) eventDelsEndpointFilter!: ElementRef;

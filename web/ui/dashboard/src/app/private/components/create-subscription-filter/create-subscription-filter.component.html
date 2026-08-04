@@ -1,37 +1,37 @@
 <div convoy-dialog-header fullscreen="custom" (closeDialog)="close.emit()">
   <div class="flex items-center justify-between w-full">
-    <h2 class="font-semibold text-14">{{dialogName}}</h2>
-    <div class="flex items-center justify-end">
-      <button convoy-button size="sm" fill="outline" class="mr-16px" (click)="testFilter()">
+    <h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">{{dialogName}}</h2>
+    <div class="flex items-center justify-end gap-12px">
+      <button type="button" class="flex items-center gap-6px px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80" (click)="testFilter()">
         Test Filter
-        <svg width="16" height="16" class="ml-8px" class="ml-6px">
+        <svg width="16" height="16">
           <use xlink:href="#test-icon"></use>
         </svg>
       </button>
-      <button convoy-button size="sm" type="button" class="" [disabled]="!isFilterTestPassed" (click)="setSubscriptionFilter()">Save</button>
+      <button type="button" class="min-w-[80px] px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="!isFilterTestPassed" (click)="setSubscriptionFilter()">Save</button>
     </div>
   </div>
 </div>
 
-<div class="max-w-[1312px] m-auto mt-40px" convoy-card>
+<div class="max-w-[1312px] m-auto mt-40px bg-white-100 border border-new.border rounded-12px overflow-hidden">
   <div class="rounded-8px pt-20px">
-    <ul class="flex flex-row justify-center w-full border-b-[.5px] border-neutral-4">
+    <ul class="flex flex-row justify-center w-full border-b-[.5px] border-new.border">
       @for (tab of tabs; track $index) {
         <li class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
-          <button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
-            <span class="text-14 text-left capitalize text-neutral-11 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+          <button type="button" class="pb-12px pt-10px flex items-center border-b-2 transition-colors" [class]="activeTab === tab ? 'border-new.primary-400' : 'border-transparent'" (click)="toggleActiveTab(tab)">
+            <span class="font-body font-medium text-[14px] text-left capitalize tracking-[0.02em] mobile:min-w-[80px]" [class]="activeTab === tab ? 'text-new.text-primary' : 'text-new.text-secondary'">{{ tab }}</span>
           </button>
         </li>
       }
     </ul>
     <div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'body' }">
       <div class="flex">
-        <div class="flex flex-col w-full border-r border-r-neutral-4">
-          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Payload</div>
+        <div class="flex flex-col w-full border-r border-r-new.border">
+          <div class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary border-b border-b-new.border pl-28px pt-16px pb-16px rounded-tl-8px">Event Payload</div>
           <convoy-monaco [editorValue]="payload" #requestEditor></convoy-monaco>
         </div>
         <div class="flex flex-col w-full">
-          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
+          <div class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary border-b border-b-new.border pl-28px pt-16px pb-16px rounded-tr-8px">Filter Schema</div>
           <convoy-monaco [editorValue]="schema?.raw_body ?? schema?.body ?? {}" #schemaEditor></convoy-monaco>
         </div>
       </div>
@@ -40,11 +40,11 @@
     <div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'headers' }">
       <div class="flex">
         <div class="flex flex-col w-full">
-          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Headers</div>
+          <div class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary border-b border-b-new.border pl-28px pt-16px pb-16px rounded-tl-8px">Event Headers</div>
           <convoy-monaco [editorValue]="header" #requestHeaderEditor></convoy-monaco>
         </div>
         <div class="flex flex-col w-full">
-          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
+          <div class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary border-b border-b-new.border pl-28px pt-16px pb-16px rounded-tr-8px">Filter Schema</div>
           <convoy-monaco [editorValue]="schema?.raw_headers ?? schema?.headers ?? schema?.header ?? {}" #headerSchemaEditor></convoy-monaco>
         </div>
       </div>
@@ -52,12 +52,12 @@
 
     <div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'query' }">
       <div class="flex">
-        <div class="flex flex-col w-full border-r border-r-neutral-4">
-          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Query</div>
+        <div class="flex flex-col w-full border-r border-r-new.border">
+          <div class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary border-b border-b-new.border pl-28px pt-16px pb-16px rounded-tl-8px">Event Query</div>
           <convoy-monaco [editorValue]="query" #requestQueryEditor></convoy-monaco>
         </div>
         <div class="flex flex-col w-full">
-          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
+          <div class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary border-b border-b-new.border pl-28px pt-16px pb-16px rounded-tr-8px">Filter Schema</div>
           <convoy-monaco [editorValue]="schema?.raw_query ?? schema?.query ?? {}" #querySchemaEditor></convoy-monaco>
         </div>
       </div>
@@ -65,12 +65,12 @@
 
     <div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'path' }">
       <div class="flex">
-        <div class="flex flex-col w-full border-r border-r-neutral-4">
-          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Path</div>
+        <div class="flex flex-col w-full border-r border-r-new.border">
+          <div class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary border-b border-b-new.border pl-28px pt-16px pb-16px rounded-tl-8px">Event Path</div>
           <convoy-monaco [editorValue]="path" #requestPathEditor></convoy-monaco>
         </div>
         <div class="flex flex-col w-full">
-          <div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
+          <div class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary border-b border-b-new.border pl-28px pt-16px pb-16px rounded-tr-8px">Filter Schema</div>
           <convoy-monaco [editorValue]="schema?.raw_path ?? schema?.path ?? {}" #pathSchemaEditor></convoy-monaco>
         </div>
       </div>

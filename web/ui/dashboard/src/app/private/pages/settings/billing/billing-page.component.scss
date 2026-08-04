@@ -48,7 +48,7 @@
   margin-bottom: 8px;
 }
 
-.billing-details-display .text-12.text-neutral-11 {
+.billing-details-display .font-body {
   color: #6b7280;
   font-size: 12px;
   font-weight: 400;
@@ -56,7 +56,7 @@
   margin-bottom: 4px;
 }
 
-.billing-details-display .text-12.text-neutral-11:last-child {
+.billing-details-display .font-body:last-child {
   margin-bottom: 0;
 }
 
@@ -116,7 +116,6 @@ button.text-primary-600 {
 // Manage Plan Modal Styles
 .manage-plan-content {
   width: 100%;
-  padding: 32px;
   max-height: calc(100vh - 160px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -125,23 +124,24 @@ button.text-primary-600 {
 .plan-card {
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: 16px;
   gap: 12px;
   background: #FFFFFF;
-  border: 1px solid #E7E7E7;
-  border-radius: 6px;
+  border: 1px solid #E7E7E7; /* new.border */
+  border-radius: 12px;
   position: relative;
   cursor: pointer;
   transition: border-color 0.2s ease;
-  
+
   &:hover:not(.plan-card-selected) {
     border-color: #D4D4D8;
   }
 }
 
 .plan-card-selected {
-  border-color: #2780F1;
-  
+  border-color: #2780F1; /* new.primary-400 */
+  background: #edf2f7; /* new.primary-25 */
+
   &:hover {
     border-color: #2780F1;
   }
@@ -156,8 +156,6 @@ button.text-primary-600 {
 }
 
 .plan-card-title {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
@@ -193,8 +191,6 @@ button.text-primary-600 {
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    font-family: 'Open Sauce Sans';
-    font-style: normal;
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
@@ -253,8 +249,8 @@ button.text-primary-600 {
 .plan-unavailable-state {
   padding: 24px;
   border: 1px solid #E7E7E7;
-  border-radius: 8px;
-  background: #FAFAFA;
+  border-radius: 12px;
+  background: #F7F7F7;
 }
 
 .compare-plans-section {
@@ -262,18 +258,16 @@ button.text-primary-600 {
 }
 
 .compare-plans-title {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
-  font-weight: 500;
-  font-size: 20px;
-  line-height: 28px;
-  color: #09090B;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #010618;
   margin: 0 0 16px 0;
 }
 
 .comparison-table {
   border: 1px solid #E7E7E7;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   // With three cloud plans the row (384px label + N plan columns via fit-content)
   // can exceed the modal width; scroll horizontally instead of clipping columns,
@@ -293,8 +287,6 @@ button.text-primary-600 {
 
 .comparison-table-cell {
   padding: 8px 12px;
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
   
   &.header-category {
     background: #F3F4F6;
@@ -336,8 +328,6 @@ button.text-primary-600 {
 }
 
 .comparison-section-title {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
   font-weight: 700;
   font-size: 14px;
   line-height: 20px;
@@ -368,8 +358,6 @@ button.text-primary-600 {
   justify-content: center;
   padding: 2px 4px;
   border-radius: 4px;
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
   font-weight: 500;
   font-size: 12px;
   line-height: 16px;

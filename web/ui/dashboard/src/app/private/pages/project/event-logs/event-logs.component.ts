@@ -2,27 +2,20 @@ import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
-import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
-import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
-import { TagComponent } from 'src/app/components/tag/tag.component';
-import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { EventLogsService } from './event-logs.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { SOURCE } from 'src/app/models/source.model';
 import { EVENT, EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { PrismModule } from 'src/app/private/components/prism/prism.module';
-import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { FormsModule } from '@angular/forms';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { EventsService } from '../events/events.service';
-import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
-import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { EventDeliveryFilterComponent } from 'src/app/private/components/event-delivery-filter/event-delivery-filter.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
+import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
     selector: 'convoy-event-logs',
@@ -32,46 +25,29 @@ import { EventDeliveryFilterComponent } from 'src/app/private/components/event-d
         FormsModule,
         StatusColorModule,
         PrismModule,
-        LoaderModule,
-        CardComponent,
-        ButtonComponent,
-        EmptyStateComponent,
         TagComponent,
-        TableLoaderModule,
-        TableComponent,
-        TableHeadComponent,
-        TableRowComponent,
-        TableHeadCellComponent,
-        TableCellComponent,
-        PaginationComponent,
-        CopyButtonComponent,
-        ListItemComponent,
         DialogDirective,
-        EventDeliveryFilterComponent
+        DatePickerComponent,
+        DropdownComponent,
+        DropdownOptionDirective
     ],
     templateUrl: './event-logs.component.html',
     styleUrls: ['./event-logs.component.scss']
 })
 export class EventLogsComponent implements OnInit, OnDestroy {
 	@ViewChild('batchDialog', { static: true }) batchDialog!: ElementRef<HTMLDialogElement>;
-	eventsDateFilterFromURL: { startDate: string; endDate: string } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Route', 'Time', ''];
-	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
-	eventSource?: string;
+	@ViewChild('datePicker') datePicker?: DatePickerComponent;
+
 	isloadingEvents: boolean = false;
-	eventDetailsTabs = [
-		{ id: 'data', label: 'Event' },
-		{ id: 'response', label: 'Response' },
-		{ id: 'request', label: 'Request' }
-	];
+	fetchError = false;
 	displayedEvents: { date: string; content: EVENT[] }[] = [];
 	events?: { pagination: PAGINATION; content: EVENT[] };
 	duplicateEvents!: EVENT[];
-	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
+	selectedSourceData?: SOURCE;
 	isLoadingSidebarDeliveries = true;
 	fetchingCount = false;
 	isRetrying = false;
@@ -80,39 +56,135 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	getEventsInterval: any;
 	queryParams: FILTER_QUERY_PARAM = {};
 	enableTailMode = false;
-	sortOrder: 'asc' | 'desc' = 'desc';
+	sortOrder: 'asc' | 'desc' | string = 'desc';
+	searchString = '';
+	currentPage = 1;
 
-	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService) {}
+	private searchTimeout: any;
 
-	ngOnInit() {}
+	constructor(
+		private eventsLogService: EventLogsService,
+		public generalService: GeneralService,
+		public route: ActivatedRoute,
+		private router: Router,
+		public privateService: PrivateService,
+		private eventsService: EventsService,
+		public licenseService: LicensesService
+	) {}
+
+	ngOnInit() {
+		this.queryParams = { ...this.route.snapshot.queryParams };
+		this.searchString = this.queryParams.query || '';
+		this.sortOrder = this.queryParams.sort || 'desc';
+
+		this.enableTailMode = this.checkIfTailModeIsEnabled();
+		if (this.enableTailMode) this.getEventsAtInterval();
+
+		if (this.privateService.getProjectDetails?.type === 'incoming') this.getSourcesForFilter();
+
+		this.getEventLogs({ showLoader: true });
+	}
 
 	ngOnDestroy() {
 		clearInterval(this.getEventsInterval);
+		clearTimeout(this.searchTimeout);
 	}
 
-	fetchEventLogs(requestDetails: FILTER_QUERY_PARAM) {
-		const data = requestDetails;
-		this.queryParams = data;
-		this.getEventLogs({ ...data, showLoader: true });
+	get isIncomingProject(): boolean {
+		return this.privateService.getProjectDetails?.type === 'incoming';
 	}
 
-	handleTailing(tailDetails: { data: FILTER_QUERY_PARAM; tailModeConfig: boolean }) {
-		this.queryParams = tailDetails.data;
+	// ------- filters -------
+
+	get hasActiveFilters(): boolean {
+		const keys = Object.keys(this.queryParams || {}).filter(k => !['sort', 'token', 'next_page_cursor', 'prev_page_cursor', 'direction', 'showLoader'].includes(k));
+		return keys.length > 0;
+	}
+
+	get dateRangeLabel(): string {
+		if (!this.queryParams.startDate || !this.queryParams.endDate) return 'All time';
+		const format = (value: string) => new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+		return `${format(this.queryParams.startDate)} - ${format(this.queryParams.endDate)}`;
+	}
+
+	refreshEvents(showLoader = false) {
+		this.currentPage = 1;
+		delete this.queryParams.next_page_cursor;
+		delete this.queryParams.prev_page_cursor;
+		delete this.queryParams.direction;
+		this.getEventLogs({ showLoader });
+	}
+
+	onSearch() {
+		clearTimeout(this.searchTimeout);
+		this.searchTimeout = setTimeout(() => {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: this.searchString.trim() });
+			this.refreshEvents();
+		}, 400);
+	}
+
+	getSelectedDateRange(dateRange?: { startDate: string; endDate: string }) {
+		if (dateRange) {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...dateRange });
+		} else {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, startDate: '', endDate: '' });
+		}
+		this.refreshEvents();
+	}
+
+	setSortOrder(order: 'asc' | 'desc') {
+		this.sortOrder = order;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, sort: order });
+		this.refreshEvents();
+	}
+
+	async getSourcesForFilter() {
+		try {
+			const response = await this.privateService.getSources();
+			this.filterSources = response.data.content || [];
+			if (this.queryParams.sourceId && !this.selectedSourceData) {
+				this.selectedSourceData = this.filterSources.find(source => source.uid === this.queryParams.sourceId);
+			}
+		} catch {
+			this.filterSources = [];
+		}
+	}
+
+	updateSourceFilter(source: SOURCE) {
+		this.selectedSourceData = source;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, sourceId: source.uid });
+		this.refreshEvents();
+	}
+
+	clearSourceFilter() {
+		this.selectedSourceData = undefined;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, sourceId: '' });
+		this.refreshEvents();
+	}
+
+	clearAllFilters() {
+		this.searchString = '';
+		this.selectedSourceData = undefined;
+		this.datePicker?.clearDate();
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '', sourceId: '', startDate: '', endDate: '', eventId: '', idempotencyKey: '' });
+		this.refreshEvents();
+	}
+
+	// ------- tail mode -------
+
+	toggleTailMode(event: any) {
+		const tailModeConfig = event?.target ? event.target.checked : !!event;
+		this.enableTailMode = tailModeConfig;
+		localStorage.setItem('EVENT_LOGS_TAIL_MODE', JSON.stringify(tailModeConfig));
 
 		clearInterval(this.getEventsInterval);
-		if (tailDetails.tailModeConfig) this.getEventsAtInterval(tailDetails.data);
+		if (tailModeConfig) this.getEventsAtInterval();
 	}
 
-	getEventsAtInterval(data: FILTER_QUERY_PARAM) {
+	getEventsAtInterval() {
 		this.getEventsInterval = setInterval(() => {
-			this.getEventLogs(data);
+			this.getEventLogs();
 		}, 5000);
-	}
-
-	paginateEvents(event: CURSOR) {
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...event });
-		this.handleTailing({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
-		this.getEventLogs({ ...this.queryParams, showLoader: true });
 	}
 
 	checkIfTailModeIsEnabled() {
@@ -120,11 +192,14 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		return tailModeConfig ? JSON.parse(tailModeConfig) : false;
 	}
 
-	async getEventLogs(requestDetails?: FILTER_QUERY_PARAM) {
+	// ------- data fetching -------
+
+	async getEventLogs(requestDetails?: { showLoader?: boolean }) {
 		if (requestDetails?.showLoader) this.isloadingEvents = true;
+		this.fetchError = false;
 
 		try {
-			const cleanedQuery = JSON.parse(JSON.stringify(requestDetails));
+			const cleanedQuery: any = JSON.parse(JSON.stringify(this.queryParams));
 			delete cleanedQuery.showLoader;
 			const eventsResponse = await this.eventsService.getEvents(cleanedQuery);
 			this.events = eventsResponse.data;
@@ -144,6 +219,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 			return eventsResponse;
 		} catch (error: any) {
 			this.isloadingEvents = false;
+			this.fetchError = true;
 			return error;
 		}
 	}
@@ -179,13 +255,42 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	async fetchRetryCount(data: FILTER_QUERY_PARAM) {
-		this.queryParams = data;
+	// ------- pagination -------
 
-		if (!data) return;
+	paginateEvents(direction: 'next' | 'prev') {
+		const pagination = this.events?.pagination;
+		if (!pagination) return;
+
+		const cursor: CURSOR =
+			direction === 'next' ? { next_page_cursor: pagination.next_page_cursor, prev_page_cursor: '', direction: 'next' } : { prev_page_cursor: pagination.prev_page_cursor, next_page_cursor: '', direction: 'prev' };
+
+		this.currentPage = Math.max(1, this.currentPage + (direction === 'next' ? 1 : -1));
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...cursor });
+		this.getEventLogs();
+	}
+
+	get pageRangeLabel(): string {
+		const contentLength = this.events?.content?.length || 0;
+		if (!contentLength) return '0 events';
+
+		const perPage = this.events?.pagination?.per_page || contentLength;
+		const start = (this.currentPage - 1) * perPage + 1;
+		const end = start + contentLength - 1;
+		const total = this.events?.pagination?.total;
+
+		return total ? `${start}-${end} of ${total}` : `${start}-${end}`;
+	}
+
+	groupDateLabel(date: string): string {
+		return date.replace(',', '');
+	}
+
+	// ------- retries -------
+
+	async fetchRetryCount() {
 		this.fetchingCount = true;
 		try {
-			const response = await this.eventsLogService.getRetryCount(data);
+			const response = await this.eventsLogService.getRetryCount(this.queryParams);
 
 			this.batchRetryCount = response.data.num;
 			this.fetchingCount = false;
@@ -203,7 +308,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 			this.isRetrying = false;
 			return;
 		} catch (error) {
-			this.isRetrying = true;
+			this.isRetrying = false;
 			return error;
 		}
 	}
@@ -222,6 +327,8 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		}
 	}
 
+	// ------- misc -------
+
 	viewSource(sourceId?: string) {
 		if (!sourceId || this.portalToken) return;
 		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/sources/${sourceId}`]);
@@ -235,6 +342,14 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 
 		const url = this.router.serializeUrl(this.router.createUrlTree([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams }));
 		window.open(url, '_blank');
+	}
+
+	copyText(text: string | undefined, label: string, event: Event) {
+		event.stopPropagation();
+		if (!text) return;
+		navigator.clipboard?.writeText(text).then(() => {
+			this.generalService.showNotification({ message: `${label} copied to clipboard`, style: 'info' });
+		});
 	}
 
 	hasMatchedSubscription(event?: EVENT): boolean {

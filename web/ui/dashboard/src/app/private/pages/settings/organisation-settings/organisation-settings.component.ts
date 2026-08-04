@@ -68,10 +68,6 @@ export class OrganisationSettingsComponent implements OnInit {
 		}
 	}
 
-	get currentOrg() {
-		return this.privateService.getOrganisation;
-	}
-
 	getOrganisationDetails() {
 		const organisationDetails = this.httpService.getOrganisation();
 		if (organisationDetails) {

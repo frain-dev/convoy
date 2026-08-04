@@ -1,12 +1,12 @@
 <div class="relative min-h-[200px]">
   @if (billingProvisioning) {
-    <div class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white bg-opacity-80 rounded-8px">
+    <div class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white-100/80 rounded-12px">
       @if (isActivatingBilling) {
         <convoy-loader [isTransparent]="true"></convoy-loader>
-        <p class="text-14 text-neutral-11 mt-8px text-center max-w-[320px]">{{ billingProvisioningMessage }}</p>
+        <p class="font-body font-normal text-[14px] text-new.text-secondary mt-8px text-center max-w-[320px]">{{ billingProvisioningMessage }}</p>
       } @else {
-        <p class="text-12 text-neutral-11 text-center max-w-[320px]">Your subscription is active and finishing setup.</p>
-        <button type="button" convoy-button size="sm" class="mt-12px" (click)="retryBillingActivation()">Refresh</button>
+        <p class="font-body font-normal text-[14px] text-new.text-secondary text-center max-w-[320px]">Your subscription is active and finishing setup.</p>
+        <button type="button" class="mt-12px px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80" (click)="retryBillingActivation()">Refresh</button>
       }
     </div>
   }
@@ -16,18 +16,14 @@
        shimmer placeholder flashes before the resolved (cloud/self-hosted) view paints. -->
 } @else if (canShowBillingPanels) {
   @if (canStartTrial) {
-    <div convoy-card class="p-24px mb-24px">
-      <div class="flex items-start justify-between gap-24px">
-        <div class="flex-1 min-w-0">
-          <h4 class="text-14 font-semibold mb-6px">Start your free trial</h4>
-          <p class="text-12 text-neutral-10 mt-4px max-w-[640px]">{{ trialIntro }}</p>
-        </div>
-        <div class="flex shrink-0 items-center gap-8px">
-          <button type="button" convoy-button size="sm" (click)="openTrialModal()">
-            Start free trial
-          </button>
-        </div>
+    <div class="bg-white-100 border border-new.border rounded-16px p-24px mb-24px flex items-start justify-between gap-24px">
+      <div class="flex-1 min-w-0">
+        <h4 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Start your free trial</h4>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px max-w-[640px]">{{ trialIntro }}</p>
       </div>
+      <button type="button" class="shrink-0 px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" (click)="openTrialModal()">
+        Start free trial
+      </button>
     </div>
   }
   <app-billing-overview
@@ -40,55 +36,69 @@
     (startTrialConversion)="convertTrialToPaid()"
     (payPastDue)="payPastDueInvoice()">
   </app-billing-overview>
+  @if (hasReferralShare) {
+    <div class="bg-white-100 border border-new.border rounded-16px p-24px mt-24px mb-0 flex flex-col gap-16px">
+      <div class="flex flex-col gap-2px">
+        <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Refer a friend</h3>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Share your link. You and your referral both earn account credit when they become a paid customer.</p>
+      </div>
+      <div class="flex flex-col gap-8px max-w-[640px]">
+        <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Your referral link</span>
+        <div class="h-40px w-full flex items-center gap-8px px-12px bg-new.surface-muted border border-new.border rounded-8px">
+          <span class="flex-1 truncate font-menlo text-[13px] text-new.text-primary">{{ referralShareUrl }}</span>
+          <convoy-copy-button class="shrink-0" [text]="referralShareUrl" notificationText="Referral link copied to clipboard"></convoy-copy-button>
+        </div>
+        @if (referralCode) {
+          <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary">Code: <span class="font-menlo">{{ referralCode }}</span></p>
+        }
+      </div>
+    </div>
+  }
   <app-billing-usage
     [usageRows]="usageRows"
     [isFetchingUsage]="isLoadingUsage">
   </app-billing-usage>
   <app-billing-invoices></app-billing-invoices>
 } @else {
-  <div class="flex justify-between items-center mb-28px">
-    <div>
-      <h3 class="font-semibold">Usage and Billing</h3>
-      <p class="text-12 text-neutral-10">Manage billing for this self-hosted instance.</p>
-    </div>
+  <div class="flex flex-col gap-2px mb-20px">
+    <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Usage and Billing</h3>
+    <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Manage billing for this self-hosted instance.</p>
   </div>
 
-  <div convoy-card class="p-24px mb-24px">
-    <div class="flex items-start justify-between gap-24px">
-      <div class="flex-1 min-w-0">
-        <h4 class="text-12 font-medium text-neutral-11 mb-6px">{{ selfHostedSetupTitle }}</h4>
-        <p class="text-12 text-neutral-10 mt-4px max-w-[640px]">{{ selfHostedSetupMessage }}</p>
-        @if (hasActiveSelfHostedCheckout) {
-          <p class="text-12 text-neutral-10 mt-8px max-w-[640px]">A checkout is already in progress. Continue payment to reopen the checkout page, or start a new checkout to replace it.</p>
-        }
-        @if (selfHostedBillingConfig?.license_configured) {
-          <p class="text-12 text-neutral-10 mt-8px">Instance license is configured.</p>
-        }
-        @if (canStartSelfHostedTrial) {
-          <p class="text-12 text-neutral-10 mt-8px max-w-[640px]">{{ trialIntro }}</p>
-        }
-      </div>
-      <div class="flex shrink-0 items-center gap-8px">
-        @if (canStartSelfHostedTrial) {
-          <button type="button" convoy-button size="sm" (click)="openTrialModal()">
-            Start free trial
-          </button>
-        }
-        @if (hasActiveSelfHostedCheckout) {
-          <button type="button" convoy-button size="sm" [disabled]="isLoadingCheckout" (click)="resumeSelfHostedCheckout()">
-            Continue payment
-          </button>
-        }
-        <button type="button" class="text-12 font-medium text-neutral-11 hover:text-neutral-12 px-8px py-6px" [disabled]="isLoadingCheckout" (click)="openManagePlan()">
-          {{ hasActiveSelfHostedCheckout ? 'Start new checkout' : 'Start checkout' }}
+  <div class="bg-white-100 border border-new.border rounded-16px p-24px mb-16px flex items-start justify-between gap-24px">
+    <div class="flex-1 min-w-0">
+      <h4 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-4px">{{ selfHostedSetupTitle }}</h4>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary max-w-[640px]">{{ selfHostedSetupMessage }}</p>
+      @if (hasActiveSelfHostedCheckout) {
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-8px max-w-[640px]">A checkout is already in progress. Continue payment to reopen the checkout page, or start a new checkout to replace it.</p>
+      }
+      @if (selfHostedBillingConfig?.license_configured) {
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-8px">Instance license is configured.</p>
+      }
+      @if (canStartSelfHostedTrial) {
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-8px max-w-[640px]">{{ trialIntro }}</p>
+      }
+    </div>
+    <div class="flex shrink-0 items-center gap-8px">
+      @if (canStartSelfHostedTrial) {
+        <button type="button" class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" (click)="openTrialModal()">
+          Start free trial
         </button>
-      </div>
+      }
+      @if (hasActiveSelfHostedCheckout) {
+        <button type="button" class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" [disabled]="isLoadingCheckout" (click)="resumeSelfHostedCheckout()">
+          Continue payment
+        </button>
+      }
+      <button type="button" class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" [disabled]="isLoadingCheckout" (click)="openManagePlan()">
+        {{ hasActiveSelfHostedCheckout ? 'Start new checkout' : 'Start checkout' }}
+      </button>
     </div>
   </div>
 
-  <div class="p-24px bg-neutral-a2 rounded-8px">
-    <h4 class="text-12 font-medium text-neutral-11 mb-6px">Billing data</h4>
-    <p class="text-12 text-neutral-10 mt-4px">Subscription, usage, payment, and invoice data will appear after checkout is confirmed.</p>
+  <div class="bg-new.surface-muted border border-new.border rounded-12px p-20px">
+    <h4 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-4px">Billing data</h4>
+    <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Subscription, usage, payment, and invoice data will appear after checkout is confirmed.</p>
   </div>
 }
 
@@ -100,20 +110,28 @@
   (subscribeNow)="onSubscribeInsteadOfTrial()">
 </convoy-trial-modal>
 
-<dialog #paymentDetailsDialog convoy-dialog>
-  <div convoy-dialog-header (closeDialog)="closePaymentDetails()">
-    <h2 class="font-semibold text-14">Update payment details</h2>
+<dialog #paymentDetailsDialog convoy-dialog position="center" class="!w-[560px] !max-w-[92vw] !rounded-24px !bg-new.surface-page border border-new.border">
+  <div class="flex items-start justify-between gap-16px p-24px pb-0">
+    <div>
+      <h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Update payment details</h2>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px">Manage your card, billing address, and VAT.</p>
+    </div>
+    <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-opacity hover:opacity-80" (click)="closePaymentDetails()" aria-label="Close">
+      <img src="/assets/img/close-icon.svg" class="w-12px h-12px" alt="" />
+    </button>
   </div>
 
   <div class="h-full w-full">
-    <div class="p-20px">
-      <div class="mb-32px">
-        <div class="flex items-center justify-between mb-16px">
-          <h3 class="billing-section-title">Payment method</h3>
+    <div class="p-24px">
+      <div class="mb-24px">
+        <div class="flex items-center justify-between mb-12px">
+          <h3 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Payment method</h3>
           @if (!isEditingPaymentMethod) {
             <button
-              class="text-primary-600 hover:text-primary-700"
-              (click)="startEditingPaymentMethod()">
+              type="button"
+              class="w-28px h-28px flex items-center justify-center rounded-[6px] text-new.primary-400 transition-colors hover:bg-new.surface-muted"
+              (click)="startEditingPaymentMethod()"
+              aria-label="Add payment method">
               <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>
@@ -126,31 +144,31 @@
           <div class="mb-16px">
             <div class="flex flex-col gap-12px">
               @for (pm of paymentMethods; track $index) {
-                <div data-payment-method-card class="border border-neutral-4 rounded-8px p-12px">
+                <div data-payment-method-card class="border border-new.border rounded-12px p-16px">
                   <div class="flex items-center justify-between">
-                    <label class="flex items-center gap-12px cursor-pointer flex-1">
+                    <label class="flex items-center gap-12px cursor-pointer flex-1 min-w-0">
                       <input
                         type="radio"
                         name="defaultPaymentMethod"
                         [checked]="isDefaultPaymentMethod(pm)"
                         [disabled]="isDefaultPaymentMethod(pm)"
-                        class="w-16px h-16px text-primary-600 focus:ring-primary-500 focus:ring-2"
+                        class="w-16px h-16px text-new.primary-400 focus:ring-new.primary-400 focus:ring-2"
                         (change)="setDefaultPaymentMethod(pm.id)">
                       <div [innerHTML]="getCardIconForMethod(pm)"></div>
-                      <div>
+                      <div class="min-w-0">
                         <div class="flex items-center gap-8px">
-                          <span class="text-14 font-medium">{{ pm.card_type | titlecase }} •••• {{ pm.last4 }}</span>
+                          <span class="font-body font-medium text-[14px] text-new.text-primary">{{ pm.card_type | titlecase }} •••• {{ pm.last4 }}</span>
                           @if (isDefaultPaymentMethod(pm)) {
-                            <span class="text-10 px-6px py-2px bg-primary-100 text-white-100 rounded-4px font-medium">Default</span>
+                            <span class="px-6px py-2px rounded-full bg-new.primary-25 font-body font-medium text-[11px] text-new.primary-400">Default</span>
                           }
                         </div>
-                        <div class="text-12 text-neutral-11">Expires {{ pm.exp_month }}/{{ pm.exp_year }}</div>
+                        <div class="font-body font-normal text-[13px] text-new.text-secondary">Expires {{ pm.exp_month }}/{{ pm.exp_year }}</div>
                       </div>
                     </label>
                     @if (!isDefaultPaymentMethod(pm)) {
                       <button
                         type="button"
-                        class="p-8px text-neutral-10 hover:text-error-600 hover:bg-error-50 rounded-4px transition-colors"
+                        class="p-8px text-new.text-secondary hover:text-new.error-500 hover:bg-new.surface-muted rounded-[6px] transition-colors"
                         (click)="deletePaymentMethod(pm.id)"
                         title="Delete payment method">
                         <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,21 +179,21 @@
                   </div>
                   <!-- Confirmation UI for Set Default -->
                   @if (confirmingDefaultFor === pm.id) {
-                    <div class="confirmation-ui mt-12px p-12px border border-neutral-4 rounded-8px bg-neutral-1" (click)="$event.stopPropagation()">
-                      <div class="text-12 text-neutral-11 mb-8px">Set this payment method as your default?</div>
+                    <div class="confirmation-ui mt-12px p-12px border border-new.border rounded-8px bg-new.surface-muted" (click)="$event.stopPropagation()">
+                      <div class="font-body text-[13px] text-new.text-secondary mb-8px">Set this payment method as your default?</div>
                       <div class="flex items-center gap-8px justify-end">
-                        <button type="button" convoy-button variant="outline" size="sm" (click)="cancelSetDefault()">Cancel</button>
-                        <button type="button" convoy-button fill="outline" size="sm" (click)="confirmSetDefault()">Confirm</button>
+                        <button type="button" class="px-12px py-8px rounded-full bg-white-100 border border-new.border font-body font-medium text-[13px] text-new.text-primary" (click)="cancelSetDefault()">Cancel</button>
+                        <button type="button" class="px-12px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] text-white-100" (click)="confirmSetDefault()">Confirm</button>
                       </div>
                     </div>
                   }
                   <!-- Confirmation UI for Delete -->
                   @if (confirmingDeleteFor === pm.id) {
-                    <div class="confirmation-ui mt-12px p-12px border border-neutral-4 rounded-8px bg-neutral-1" (click)="$event.stopPropagation()">
-                      <div class="text-12 text-neutral-11 mb-8px">Are you sure you want to delete this payment method?</div>
+                    <div class="confirmation-ui mt-12px p-12px border border-new.border rounded-8px bg-new.surface-muted" (click)="$event.stopPropagation()">
+                      <div class="font-body text-[13px] text-new.text-secondary mb-8px">Are you sure you want to delete this payment method?</div>
                       <div class="flex items-center gap-8px justify-end">
-                        <button type="button" convoy-button variant="outline" size="sm" (click)="cancelDelete()">Cancel</button>
-                        <button type="button" convoy-button variant="error" fill="outline" size="sm" (click)="confirmDelete()">Delete</button>
+                        <button type="button" class="px-12px py-8px rounded-full bg-white-100 border border-new.border font-body font-medium text-[13px] text-new.text-primary" (click)="cancelDelete()">Cancel</button>
+                        <button type="button" class="px-12px py-8px rounded-full bg-new.error-500 font-body font-medium text-[13px] text-white-100" (click)="confirmDelete()">Delete</button>
                       </div>
                     </div>
                   }
@@ -187,7 +205,7 @@
 
         @if (!isEditingPaymentMethod && !isLoadingPaymentMethod && paymentMethods.length === 0) {
           <div class="billing-details-display">
-            <div class="text-12 text-neutral-11">No payment method set</div>
+            <div class="font-body text-[13px] text-new.text-secondary">No payment method set</div>
           </div>
         }
 
@@ -206,7 +224,7 @@
             @if (isPaymentProviderLoading) {
               <div class="text-center py-20px">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-                <p class="text-14 text-neutral-11 mt-8px">Loading payment form...</p>
+                <p class="font-body font-normal text-[14px] text-new.text-secondary mt-8px">Loading payment form...</p>
               </div>
             }
             @if (!isPaymentProviderLoading && setupIntentSecret) {
@@ -222,10 +240,10 @@
                   </app-stripe-elements>
                 </div>
                 <div class="flex gap-12px justify-end pt-24px">
-                  <button type="button" convoy-button variant="secondary" (click)="cancelEditingPaymentMethod()" [disabled]="isSavingPaymentMethod">
+                  <button type="button" class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" (click)="cancelEditingPaymentMethod()" [disabled]="isSavingPaymentMethod">
                     Cancel
                   </button>
-                  <button type="button" convoy-button fill="outline" (click)="onUpdatePaymentMethodWithProvider(stripeElements, $event)" [disabled]="isSavingPaymentMethod">
+                  <button type="button" class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" (click)="onUpdatePaymentMethodWithProvider(stripeElements, $event)" [disabled]="isSavingPaymentMethod">
                     @if (!isSavingPaymentMethod) {
                       <span>Update payment method</span>
                     }
@@ -241,12 +259,12 @@
             }
             @if (!isPaymentProviderLoading && !setupIntentSecret) {
               <div class="text-center py-20px">
-                <p class="text-14 text-neutral-11">Failed to initialize payment form.</p>
+                <p class="font-body font-normal text-[14px] text-new.text-secondary">Failed to initialize payment form.</p>
                 <div class="flex gap-12px justify-center mt-16px">
-                  <button type="button" convoy-button variant="secondary" (click)="cancelEditingPaymentMethod()">
+                  <button type="button" class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80" (click)="cancelEditingPaymentMethod()">
                     Cancel
                   </button>
-                  <button type="button" convoy-button fill="outline" (click)="getSetupIntent()">
+                  <button type="button" class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" (click)="getSetupIntent()">
                     Retry
                   </button>
                 </div>
@@ -257,12 +275,12 @@
       </div>
     </div>
 
-    <div class="border-b border-neutral-4"></div>
+    <div class="border-b border-new.border"></div>
 
     <div class="p-20px">
       <div class="mb-32px">
         <div class="flex items-center justify-between mb-16px">
-          <h3 class="billing-section-title">Billing address</h3>
+          <h3 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Billing address</h3>
           @if (!isEditingBillingAddress) {
             <button
               class="text-primary-600 hover:text-primary-700"
@@ -277,11 +295,11 @@
         @if (!isEditingBillingAddress && !isLoadingBillingAddress && billingAddressDetails && hasBillingAddress()) {
           <div class="billing-details-display">
             <div class="text-14 font-medium mb-8px">{{ billingAddressDetails.name }}</div>
-            <div class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine1 }}</div>
+            <div class="font-body font-normal text-[12px] text-new.text-secondary mb-4px">{{ billingAddressDetails.addressLine1 }}</div>
             @if (billingAddressDetails.addressLine2) {
-              <div class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine2 }}</div>
+              <div class="font-body font-normal text-[12px] text-new.text-secondary mb-4px">{{ billingAddressDetails.addressLine2 }}</div>
             }
-            <div class="text-12 text-neutral-11">
+            <div class="font-body font-normal text-[12px] text-new.text-secondary">
               @if (billingAddressDetails.city) {
                 <span>{{ billingAddressDetails.city }}</span>
               }
@@ -312,7 +330,7 @@
 
               @if (!isEditingBillingAddress && !isLoadingBillingAddress && (!billingAddressDetails || !hasBillingAddress())) {
                 <div class="billing-details-display">
-                  <div class="text-12 text-neutral-11">No billing address set</div>
+                  <div class="font-body text-[13px] text-new.text-secondary">No billing address set</div>
                 </div>
               }
 
@@ -439,10 +457,10 @@
                     </convoy-input-field>
                   </div>
                   <div class="flex gap-12px justify-end pt-24px">
-                    <button type="button" convoy-button variant="secondary" (click)="cancelEditingBillingAddress()" [disabled]="isSavingBillingAddress">
+                    <button type="button" class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50" (click)="cancelEditingBillingAddress()" [disabled]="isSavingBillingAddress">
                       Cancel
                     </button>
-                    <button convoy-button fill="outline" [disabled]="!billingAddressForm.valid || isSavingBillingAddress || isLoadingStates || isLoadingCities" (click)="onUpdateBillingAddress()">
+                    <button type="button" class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="!billingAddressForm.valid || isSavingBillingAddress || isLoadingStates || isLoadingCities" (click)="onUpdateBillingAddress()">
                       @if (!isSavingBillingAddress) {
                         <span>Update</span>
                       }
@@ -459,12 +477,12 @@
             </div>
           </div>
 
-          <div class="border-b border-neutral-4"></div>
+          <div class="border-b border-new.border"></div>
 
           <div class="p-20px">
             <div class="mb-32px">
               <div class="flex items-center justify-between mb-16px">
-                <h3 class="billing-section-title">VAT</h3>
+                <h3 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">VAT</h3>
                 @if (!isEditingVat) {
                   <button
                     class="text-primary-600 hover:text-primary-700"
@@ -479,14 +497,14 @@
               @if (!isEditingVat && !isLoadingVat && vatInfoDetails && hasVatInfo()) {
                 <div class="billing-details-display">
                   <div class="text-14 font-medium mb-8px">{{ vatInfoDetails.businessName }}</div>
-                  <div class="text-12 text-neutral-11 mb-4px">{{ getCountryName(vatInfoDetails.country) }}</div>
-                  <div class="text-12 text-neutral-11">{{ vatInfoDetails.vatNumber }}</div>
+                  <div class="font-body font-normal text-[12px] text-new.text-secondary mb-4px">{{ getCountryName(vatInfoDetails.country) }}</div>
+                  <div class="font-body font-normal text-[12px] text-new.text-secondary">{{ vatInfoDetails.vatNumber }}</div>
                 </div>
               }
 
               @if (!isEditingVat && !isLoadingVat && (!vatInfoDetails || !hasVatInfo())) {
                 <div class="billing-details-display">
-                  <div class="text-12 text-neutral-11">No VAT information set</div>
+                  <div class="font-body text-[13px] text-new.text-secondary">No VAT information set</div>
                 </div>
               }
 
@@ -548,10 +566,10 @@
                     </convoy-input-field>
                   </div>
                   <div class="flex gap-12px justify-end pt-24px pb-40px">
-                    <button type="button" convoy-button variant="secondary" (click)="cancelEditingVat()">
+                    <button type="button" class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80" (click)="cancelEditingVat()">
                       Cancel
                     </button>
-                    <button convoy-button fill="outline" [disabled]="!vatForm.valid" (click)="onUpdateVatInfo()">
+                    <button type="button" class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="!vatForm.valid" (click)="onUpdateVatInfo()">
                       Update
                     </button>
                   </div>
@@ -562,19 +580,25 @@
         </div>
       </dialog>
 
-      <dialog #managePlanDialog convoy-dialog position="center" size="lg">
-        <div convoy-dialog-header (closeDialog)="closeManagePlan()">
-          <h2 class="font-semibold text-14">Plan</h2>
+      <dialog #managePlanDialog convoy-dialog position="center" size="lg" class="!rounded-24px !bg-new.surface-page border border-new.border">
+        <div class="flex items-start justify-between gap-16px p-24px pb-0">
+          <div>
+            <h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Plan</h2>
+            <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px">Choose a plan that fits your team.</p>
+          </div>
+          <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-opacity hover:opacity-80" (click)="closeManagePlan()" aria-label="Close">
+            <img src="/assets/img/close-icon.svg" class="w-12px h-12px" alt="" />
+          </button>
         </div>
 
-        <div class="manage-plan-content" (click)="clearPlanSelection()">
-          <h3 class="text-20 font-medium mb-24px">Manage your plan</h3>
-          <p class="text-14 text-neutral-11 mb-16px">Click a plan card or the Select button to choose a plan. Contact-only plans open a sales request instead of checkout.</p>
+        <div class="manage-plan-content p-24px" (click)="clearPlanSelection()">
+          <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary mb-8px">Manage your plan</h3>
+          <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mb-20px">Click a plan card or Select to choose a plan. Contact-only plans open a sales request instead of checkout.</p>
 
           @if (showSelfHostedCheckoutForm()) {
             <form [formGroup]="selfHostedCheckoutForm" class="mb-24px" (click)="$event.stopPropagation()">
               @if (isSelfHostedResubscribe) {
-                <p class="text-12 text-neutral-11">
+                <p class="font-body font-normal text-[12px] text-new.text-secondary">
                   Resubscribing to your existing billing account.
                 </p>
               } @else {
@@ -591,8 +615,20 @@
                   }
                 </convoy-input-field>
               }
+              <convoy-input-field>
+                <label for="selfHostedReferralCode" convoy-label>Referral code (optional)</label>
+                <input
+                  id="selfHostedReferralCode"
+                  type="text"
+                  convoy-input
+                  formControlName="referral_code"
+                  autocomplete="off"
+                  placeholder="e.g. abcdef12"
+                  spellcheck="false" />
+                <p class="font-body font-normal text-[12px] text-new.text-secondary mt-6px">Have a referral link? Enter the code from it here.</p>
+              </convoy-input-field>
               @if (selfHostedBillingConfig?.active_checkout) {
-                <p class="text-12 text-neutral-11 mt-8px">
+                <p class="font-body font-normal text-[12px] text-new.text-secondary mt-8px">
                   Starting checkout again will replace the active checkout on this instance.
                 </p>
               }
@@ -612,9 +648,9 @@
                     <div class="flex items-center gap-8px">
                       <h4 class="plan-card-title">{{ plan.name }}</h4>
                       @if (isTrialConvertPlan(plan.id)) {
-                        <span class="text-10 px-6px py-2px bg-primary-100 text-white-100 rounded-4px font-medium">On trial</span>
+                        <span class="px-6px py-2px rounded-full bg-new.primary-25 font-body font-medium text-[11px] text-new.primary-400">On trial</span>
                       } @else if (isCurrentPlan(plan.id)) {
-                        <span class="text-10 px-6px py-2px bg-neutral-1 border border-neutral-4 text-neutral-11 rounded-4px font-medium">Current plan</span>
+                        <span class="px-6px py-2px rounded-full bg-new.surface-muted font-body font-medium text-[11px] text-new.text-secondary">Current plan</span>
                       }
                     </div>
                     @if (isCurrentPlan(plan.id)) {
@@ -655,11 +691,9 @@
                     }
                     <button
                       type="button"
-                      convoy-button
-                      [fill]="selectedPlan === plan.id ? 'solid' : 'outline'"
-                      [color]="selectedPlan === plan.id ? 'primary' : 'neutral'"
                       [disabled]="(isCurrentPlan(plan.id) && !isTrialConvertPlan(plan.id)) || !canUsePlan(plan) || (selectedPlan === plan.id && isLoadingCheckout)"
-                      class="plan-card-button"
+                      class="w-full px-16px py-10px rounded-full font-body font-medium text-[14px] leading-[16px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      [class]="selectedPlan === plan.id ? 'bg-new.primary-400 text-white-100 hover:opacity-90' : 'bg-new.surface-muted text-new.text-primary hover:opacity-80'"
                       (click)="onPlanCardButtonClick(plan.id); $event.stopPropagation()">
                       {{ getButtonText(plan.id) }}
                     </button>
@@ -684,7 +718,7 @@
           @if (hasPlanUnavailableState) {
             <div class="plan-unavailable-state mb-40px">
               <h4 class="text-14 font-medium mb-8px">Plans unavailable</h4>
-              <p class="text-12 text-neutral-10">{{ plansUnavailableMessage }}</p>
+              <p class="font-body font-normal text-[12px] text-new.text-secondary">{{ plansUnavailableMessage }}</p>
             </div>
           }
 
@@ -767,13 +801,12 @@
               </div>
               <!-- Cancel Subscription Section - Visible for testing -->
               @if (currentSubscription && currentSubscription.id) {
-                <div class="mt-40px pt-40px border-t border-neutral-4">
-                  <h4 class="text-16 font-medium mb-16px text-red-600">Danger Zone</h4>
-                  <p class="text-14 text-neutral-7 mb-16px">Cancel your subscription. This action cannot be undone.</p>
+                <div class="mt-40px pt-40px border-t border-new.border">
+                  <h4 class="font-heading font-medium text-[16px] leading-[24px] mb-8px text-new.error-500">Danger Zone</h4>
+                  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary mb-16px">Cancel your subscription. This action cannot be undone.</p>
                   <button
-                    convoy-button
-                    fill="outline"
-                    color="error"
+                    type="button"
+                    class="px-16px py-10px rounded-full bg-new.error-25 font-body font-medium text-[14px] leading-[16px] text-new.error-500 transition-all hover:opacity-80 disabled:opacity-50"
                     [disabled]="isCancellingSubscription"
                     (click)="onCancelPlan()">
                     {{ getCancelButtonText() }}
@@ -785,31 +818,33 @@
         </div>
       </dialog>
 
-      <dialog #cancelConfirmDialog convoy-dialog position="center" size="md">
-        <div convoy-dialog-header (closeDialog)="closeCancelConfirm()">
-          <h2 class="font-semibold text-14">Cancel Subscription</h2>
+      <dialog #cancelConfirmDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
+        <div class="flex items-start justify-between gap-16px p-24px pb-0">
+          <div>
+            <h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Cancel Subscription</h2>
+            <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-8px">
+              Are you sure you want to cancel your subscription? This action cannot be undone.
+            </p>
+          </div>
+          <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-opacity hover:opacity-80 shrink-0" (click)="closeCancelConfirm()" aria-label="Close">
+            <img src="/assets/img/close-icon.svg" class="w-12px h-12px" alt="" />
+          </button>
         </div>
 
-        <div class="p-24px">
-          <p class="text-14 text-neutral-7 mb-24px">
-            Are you sure you want to cancel your subscription? This action cannot be undone.
-          </p>
-
-          <div class="flex gap-12px justify-end">
-            <button
-              convoy-button
-              fill="outline"
-              (click)="closeCancelConfirm()">
-              Cancel
-            </button>
-            <button
-              convoy-button
-              color="error"
-              [disabled]="isCancellingSubscription"
-              (click)="confirmCancelSubscription()">
-              {{ getCancelButtonText() }}
-            </button>
-          </div>
+        <div class="flex gap-12px justify-end p-24px">
+          <button
+            type="button"
+            class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
+            (click)="closeCancelConfirm()">
+            Keep subscription
+          </button>
+          <button
+            type="button"
+            class="px-16px py-10px rounded-full bg-new.error-25 font-body font-medium text-[14px] leading-[16px] text-new.error-500 transition-all hover:opacity-80 disabled:opacity-50"
+            [disabled]="isCancellingSubscription"
+            (click)="confirmCancelSubscription()">
+            {{ getCancelButtonText() }}
+          </button>
         </div>
       </dialog>
 </div>

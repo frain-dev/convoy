@@ -1,260 +1,359 @@
-<!-- empty state  -->
-@if (!userSearch && !isLoadindingSubscriptions && subscriptions?.content?.length === 0) {
-  <div class="py-80px">
-    <div
-      convoy-empty-state
-      imgSrc="/assets/img/subscriptions-empty-state.png"
-      heading="You currently do not have any subscriptions"
-      description="Webhook subscriptions lets you define the source of your webhook and the destination where any webhook event should be sent. It is what allows Convoy to identify and proxy your webhooks."
-      id="subscriptions-empty-state"
-      >
-      <button convoy-permission="Subscriptions|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">
-        <svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
-          <use xlink:href="#plus-icon"></use>
-        </svg>
-        Create a subscription
-      </button>
-    </div>
-  </div>
-}
-
-@if (isLoadindingSubscriptions) {
-  <div class="relative min-h-[500px] flex items-center justify-center">
-    <convoy-loader position="relative"></convoy-loader>
-  </div>
-}
-
-@if (userSearch || (!isLoadindingSubscriptions && subscriptions?.content?.length)) {
-  <div>
-    <h1 class="text-18 font-bold text-neutral-12 mb-24px">Subscriptions</h1>
-    <div class="flex justify-between items-end mb-24px">
-      <div class="flex items-center gap-24px">
-        <form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getSubscriptions({ name: subscriptionSearchString })">
-          <img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-          <input type="search" placeholder="Search subscriptions" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="subscriptionSearchString" [ngModelOptions]="{ standalone: true }" />
-          @if (subscriptionSearchString && subscriptionSearchString.length > 0) {
-            <div class="flex gap-8px">
-              <button convoy-button class="transition-all duration-200 min-w-20px" fill="text" type="submit" size="sm">
-                <img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
-              </button>
-              <button convoy-button class="transition-all duration-200" fill="text" type="button" size="sm" (click)="clearSearch()">
-                <svg width="10" height="10" class="fill-primary-100">
-                  <use xlink:href="#close-icon"></use>
-                </svg>
-              </button>
-            </div>
-          }
-        </form>
-        <convoy-endpoint-filter [endpoint]="linkEndpoint" (set)="updateEndpointFilter($event)">
-          <button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 whitespace-nowrap justify-between" [ngClass]="{ 'text-primary-100 !bg-primary-500': linkEndpoint }">
-            <div class="flex items-center gap-10px">
-              <svg width="18" height="18" class="transition-all scale-75" [class]="linkEndpoint ? 'stroke-new.primary-400' : 'stroke-neutral-10'">
-                <use xlink:href="#endpoints-icon"></use>
-              </svg>
-              <span class="text-neutral-11">Endpoints</span>
-              @if (linkEndpoint) {
-                <button type="button" (click)="clearEndpointFilter()">
-                  <svg width="10" height="10" class="fill-primary-100">
-                    <use xlink:href="#close-icon"></use>
-                  </svg>
-                </button>
-              }
-            </div>
-          </button>
-        </convoy-endpoint-filter>
-      </div>
-      @if (!isLoadindingSubscriptions && subscriptions?.content?.length) {
-        <button convoy-permission="Subscriptions|MANAGE" class="!px-14px" convoy-button size="sm" routerLink="./new">
-          <svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
-            <use xlink:href="#plus-icon"></use>
-          </svg>
-          Subscription
-        </button>
-      }
-    </div>
-    <ul convoy-card class="mb-40px min-h-[70vh] pb-24px">
-      <div class="flex items-center gap-50px py-10px text-12 uppercase mb-16px text-neutral-10 border-b border-b-new.primary-25">
-        <div [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'w-356px' : 'w-270px') + ' ml-16px'">Subscription {{ projectDetails?.type === 'incoming' ? '' : 'Name' }}</div>
-        <div class="w-252px">Configs</div>
-      </div>
-      @for (subscriptionGroup of displayedSubscriptions; track $index; let i = $index) {
-        <li class="pb-16px">
-          <div class="text-neutral-10 text-12 pl-16px">{{ subscriptionGroup.date }}</div>
-        </li>
-        @for (subscription of subscriptionGroup?.content; track $index; let j = $index) {
-          <li
-            class="border-b border-b-new.primary-25 pb-16px flex justify-between hover:bg-new.primary-25 transition-all duration-300 py-12px"
-            [class]="subscriptionGroup.content.length === j + 1 ? '!mb-16px' : ''"
-            >
-            <div class="flex gap-50px text-12 text-neutral-10 max-w-[790px] w-full items-center min-h-[28px]">
-              @if (privateService.getProjectDetails?.type === 'outgoing') {
-                <div class="w-280px truncate pl-16px">{{ subscription.name }}</div>
-              }
-              @if (privateService.getProjectDetails?.type === 'incoming') {
-                <div class="flex items-center pl-16px min-w-[370px]">
-                  <div class="flex items-center">
-                    <span class="max-w-[150px] truncate">{{ subscription.source_metadata?.name }}</span>
-                    @if (subscription.source_metadata?.verifier?.type !== 'noop') {
-                      <div convoy-tag class="flex items-center ml-8px bg-neutral-4 !py-2px !px-8px text-10">
-                        {{ subscription.source_metadata?.provider || ((subscription.source_metadata?.verifier?.type ?? '') | sourceValue : 'verifier') }}
-                      </div>
-                    }
-                  </div>
-                  <span class="px-16px font-light">→</span>
-                  <span class="max-w-[150px] truncate">
-                    {{ subscription.endpoint_metadata?.name }}
-                  </span>
-                </div>
-              }
-              <div class="whitespace-nowrap flex">
-                <div convoy-tag [color]="hasFilter(subscription.filter_config?.filter) ? 'primary' : 'neutral'" class="mr-8px py-2px">Filter</div>
-                @if (privateService.getProjectDetails?.type === 'incoming') {
-                  <div convoy-tag [color]="subscription.function ? 'primary' : 'neutral'" class="mr-8px py-2px">Transform</div>
-                }
-                <!-- <div convoy-tag [color]="subscription.retry_config ? 'primary' : 'neutral'" class="mr-8px py-2px">Retry Logic</div> -->
-                @if (privateService.getProjectDetails?.type === 'outgoing') {
-                  <div convoy-tag [color]="((subscription.filter_config?.event_types?.length ?? 0) > 1 || (subscription.filter_config?.event_types?.[0] ?? '*') !== '*') ? 'primary' : 'neutral'" class="py-2px">Event Types</div>
-                }
-              </div>
-            </div>
-            <div class="flex items-center">
-              <div convoy-dropdown #subscriptionDropdown position="right" size="md" class="ml-4px pr-24px">
-                <button dropdownTrigger convoy-button size="sm" fill="text" class="!p-0 items-center">
-                  <img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
-                </button>
-                <ul dropdownOptions class="p-10px">
-                  <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                    <button convoy-dropdown-option convoy-button size="sm" color="neutral" class="w-full !justify-start" fill="text" routerLink="./" [queryParams]="{ id: subscription.uid }">
-                      <svg width="16" height="16" class="mr-8px">
-                        <use xlink:href="#shield-icon"></use>
-                      </svg>
-                      View Details
-                    </button>
-                  </li>
-                  <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                    <button convoy-dropdown-option convoy-button size="sm" color="neutral" fill="text" class="w-full !justify-start" [routerLink]="'./' + subscription?.uid">
-                      <svg width="17" height="16" class="fill-neutral-10 mr-8px">
-                        <use xlink:href="#edit-icon"></use>
-                      </svg>
-                      Edit
-                    </button>
-                  </li>
-                  <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                    <button convoy-dropdown-option convoy-button size="sm" color="error" class="w-full !justify-start" fill="text" (click)="activeSubscription = subscription; deleteDialog.showModal()">
-                      <svg width="14" height="14" class="fill-transparent stroke-error-9 mr-8px">
-                        <use xlink:href="#delete-icon2"></use>
-                      </svg>
-                      Delete
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </li>
+<div class="pb-40px">
+  <!-- Section header -->
+  <div class="flex items-start justify-between gap-16px">
+    <div class="flex flex-col gap-4px">
+      <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Subscriptions</h2>
+      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary min-h-[21px]">
+        @if (!isLoadingSubscriptions && subscriptions) {
+          {{ subscriptionCountLabel() }}
         }
-      }
-    </ul>
+      </p>
+    </div>
+    <button
+      type="button"
+      convoy-permission="Subscriptions|MANAGE"
+      class="flex items-center gap-4px min-w-[100px] px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+      routerLink="./new"
+      >
+      <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
+      Create Subscription
+    </button>
   </div>
-}
 
-<!-- Pagination -->
-@if (subscriptions?.pagination?.has_next_page || subscriptions?.pagination?.has_prev_page) {
-  <convoy-pagination [pagination]="subscriptions?.pagination" (paginate)="getSubscriptions($event)"></convoy-pagination>
-}
+  <div class="h-[1px] w-full bg-new.border mt-16px"></div>
+
+  <!-- Filter group -->
+  <div class="flex items-center gap-4px mt-20px">
+    <div convoy-dropdown size="sm" position="left">
+      <button dropdownTrigger type="button" class="h-44px min-w-[120px] max-w-[220px] flex items-center justify-between gap-8px pl-12px pr-8px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary">
+        <span class="truncate">{{ selectedEndpointData?.title || selectedEndpointData?.name || 'Endpoint' }}</span>
+        <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px shrink-0" alt="" />
+      </button>
+      <ng-container dropdownOptions>
+        <div class="flex items-center gap-8px px-12px h-40px border-b border-new.border">
+          <img src="/assets/img/svg/search-gray.svg" class="w-14px h-14px" alt="" />
+          <input
+            type="search"
+            placeholder="Search endpoints"
+            [(ngModel)]="endpointSearchString"
+            (input)="onEndpointSearch()"
+            [ngModelOptions]="{ standalone: true }"
+            class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+            />
+        </div>
+        <ul class="py-4px max-h-[220px] overflow-y-auto">
+          @if (loadingFilterEndpoints) {
+            <li class="px-12px py-8px font-body text-[14px] text-new.text-secondary">Loading endpoints...</li>
+          } @else {
+            <li>
+              <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="clearEndpointFilter()">All endpoints</button>
+            </li>
+            @for (endpoint of filterEndpoints; track endpoint.uid) {
+              <li>
+                <button
+                  convoy-dropdown-option
+                  type="button"
+                  class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary truncate transition-colors hover:bg-new.surface-muted"
+                  [class.!font-medium]="selectedEndpointData?.uid === endpoint.uid"
+                  (click)="updateEndpointFilter(endpoint)"
+                  >
+                  {{ endpoint.title || endpoint.name }}
+                </button>
+              </li>
+            }
+            @if (!filterEndpoints.length) {
+              <li class="px-12px py-8px font-body text-[14px] text-new.text-secondary">No endpoints found</li>
+            }
+          }
+        </ul>
+      </ng-container>
+    </div>
+
+    @if (hasActiveFilters) {
+      <button type="button" class="h-44px px-12px font-body font-medium text-[14px] text-new.text-secondary rounded-8px transition-colors hover:bg-new.surface-muted" (click)="clearAllFilters()">Clear filters</button>
+    }
+  </div>
+
+  <!-- Table card -->
+  <div class="bg-white-100 border border-new.border rounded-12px mt-16px">
+    <!-- Search -->
+    <div class="flex items-center gap-8px px-12px h-40px border-b border-new.border">
+      <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px" alt="search" />
+      <input
+        type="search"
+        placeholder="Search by subscription name..."
+        [(ngModel)]="subscriptionSearchString"
+        (input)="onSearch()"
+        [ngModelOptions]="{ standalone: true }"
+        class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+        />
+    </div>
+
+    @if (isLoadingSubscriptions) {
+      <!-- Loading state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-loading.svg" class="w-48px h-48px animate-spin" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Loading subscriptions</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Fetching your subscriptions. This usually takes a moment.</p>
+        </div>
+      </div>
+    } @else if (fetchError) {
+      <!-- Error state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-error.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">We couldn&rsquo;t load subscriptions</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Check your connection and try again.</p>
+        </div>
+        <button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="getSubscriptions()">Try again</button>
+      </div>
+    } @else if (!subscriptions?.content?.length && hasActiveFilters) {
+      <!-- No results state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-no-results.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No subscriptions match</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Adjust the filters or search to see more results.</p>
+        </div>
+        <button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="clearAllFilters()">Clear filters</button>
+      </div>
+    } @else if (!subscriptions?.content?.length) {
+      <!-- Empty state -->
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px" id="subscriptions-empty-state">
+        <img src="/assets/img/svg/deliveries-empty.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No subscriptions yet</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Subscriptions connect your webhook sources to endpoints and control which events get delivered.</p>
+        </div>
+        <button
+          type="button"
+          convoy-permission="Subscriptions|MANAGE"
+          class="flex items-center gap-4px min-w-[100px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+          routerLink="./new"
+          >
+          <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
+          Create Subscription
+        </button>
+      </div>
+    } @else {
+      <!-- Header row -->
+      <div class="grid w-full grid-cols-[minmax(0,1.8fr)_minmax(0,1.6fr)_minmax(0,1.8fr)_120px_56px] bg-new.surface-subtle border-b border-new.border">
+        <div class="flex items-center px-20px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">{{ projectType === 'incoming' ? 'Source' : 'Subscription' }}</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Endpoint</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Configs</span>
+        </div>
+        <div class="flex items-center px-12px h-36px">
+          <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Created on</span>
+        </div>
+        <div class="h-36px"></div>
+      </div>
+
+      <!-- Rows -->
+      @for (subscription of subscriptions?.content; track subscription.uid) {
+        <div class="grid w-full grid-cols-[minmax(0,1.8fr)_minmax(0,1.6fr)_minmax(0,1.8fr)_120px_56px] items-center border-b border-new.border last:border-b-0 transition-colors hover:bg-new.surface-subtle group">
+          <!-- Subscription / Source -->
+          <div class="flex items-center gap-8px px-20px h-40px min-w-0">
+            @if (projectType === 'incoming') {
+              <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-primary truncate">{{ subscription.source_metadata?.name || '-' }}</span>
+              @if (subscription.source_metadata?.verifier?.type !== 'noop') {
+                <span class="inline-flex items-center h-20px px-6px shrink-0 rounded-4px bg-new.surface-muted font-body font-medium text-[12px] leading-[14px] text-new.text-secondary">
+                  {{ subscription.source_metadata?.provider || ((subscription.source_metadata?.verifier?.type ?? '') | sourceValue : 'verifier') }}
+                </span>
+              }
+            } @else {
+              <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-primary truncate">{{ subscription.name }}</span>
+            }
+          </div>
+
+          <!-- Endpoint -->
+          <div class="flex items-center px-12px h-40px min-w-0">
+            <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary truncate">{{ subscription.endpoint_metadata?.title || subscription.endpoint_metadata?.name || '-' }}</span>
+          </div>
+
+          <!-- Configs -->
+          <div class="flex items-center gap-6px px-12px h-40px min-w-0">
+            <span class="inline-flex items-center h-20px px-6px rounded-4px font-body font-medium text-[12px] leading-[14px]" [class]="hasFilter(subscription.filter_config?.filter) ? 'bg-new.primary-25 text-new.primary-400' : 'bg-new.surface-muted text-new.text-secondary'">Filter</span>
+            @if (projectType === 'incoming') {
+              <span class="inline-flex items-center h-20px px-6px rounded-4px font-body font-medium text-[12px] leading-[14px]" [class]="subscription.function ? 'bg-new.primary-25 text-new.primary-400' : 'bg-new.surface-muted text-new.text-secondary'">Transform</span>
+            }
+            @if (projectType === 'outgoing') {
+              <span class="inline-flex items-center h-20px px-6px rounded-4px font-body font-medium text-[12px] leading-[14px]" [class]="hasEventTypes(subscription) ? 'bg-new.primary-25 text-new.primary-400' : 'bg-new.surface-muted text-new.text-secondary'">Event types</span>
+            }
+          </div>
+
+          <!-- Created on -->
+          <div class="flex items-center px-12px h-40px">
+            <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary whitespace-nowrap">{{ subscription.created_at | date: 'd MMM y' }}</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end px-12px h-40px">
+            <div convoy-dropdown position="right" size="md">
+              <button dropdownTrigger type="button" class="w-32px h-32px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" (click)="activeSubscription = subscription">
+                <img src="assets/img/more-icon-vertical.svg" class="h-16px" alt="more actions" />
+              </button>
+              <ul dropdownOptions class="py-4px">
+                <li>
+                  <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" routerLink="./" [queryParams]="{ id: subscription.uid }">View Details</button>
+                </li>
+                <li>
+                  <button convoy-permission="Subscriptions|MANAGE" convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" [routerLink]="'./' + subscription.uid">Edit</button>
+                </li>
+                <li>
+                  <button convoy-permission="Subscriptions|MANAGE" convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.error-500 transition-colors hover:bg-new.surface-muted" (click)="activeSubscription = subscription; deleteDialog.showModal()">Delete</button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Pagination footer -->
+      <div class="flex items-center justify-between px-20px h-56px bg-white-100">
+        <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ pageRangeLabel }}</span>
+        <div class="flex items-center gap-8px">
+          <button
+            type="button"
+            class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none"
+            [disabled]="!subscriptions?.pagination?.has_prev_page"
+            (click)="paginateSubscriptions('prev')"
+            >
+            <img src="/assets/img/svg/chevron-left-small.svg" class="w-16px h-16px" alt="previous page" />
+          </button>
+          <span class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page font-body font-medium text-[14px] leading-[16px] text-new.text-primary">{{ currentPage }}</span>
+          <button
+            type="button"
+            class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-new.surface-page transition-colors hover:bg-new.surface-muted disabled:opacity-40 disabled:pointer-events-none"
+            [disabled]="!subscriptions?.pagination?.has_next_page"
+            (click)="paginateSubscriptions('next')"
+            >
+            <img src="/assets/img/svg/chevron-right-small.svg" class="w-16px h-16px" alt="next page" />
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
 
 <!-- subscription form  -->
 <dialog #subscriptionDialog convoy-dialog id="subscriptionForm" position="full">
-  <div convoy-dialog-header fullscreen="true" (closeDialog)="createSubscription('cancel')">
-    <h2 class="font-semibold text-14 capitalize">{{ action === 'update' ? 'Update Subscription' : 'Create Subscription' }}</h2>
-  </div>
+  <div class="w-full h-full overflow-y-auto bg-new.surface-page">
+    <!-- Top bar -->
+    <div class="sticky top-0 z-10 h-56px flex items-center justify-between px-24px bg-white-100 border-b border-new.border">
+      <div class="flex items-center gap-16px">
+        <button type="button" class="w-24px h-24px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" (click)="createSubscription('cancel')">
+          <img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close" />
+        </button>
+        <div class="flex items-center gap-8px">
+          <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Subscriptions</span>
+          <span class="font-body font-normal text-[14px] leading-normal text-new.text-placeholder">/</span>
+          <span class="font-body font-medium text-[14px] leading-normal text-new.text-primary">{{ action === 'update' ? 'Edit subscription' : 'Create subscription' }}</span>
+        </div>
+      </div>
+    </div>
 
-  <div class="w-full h-full">
-    <div class="max-w-[770px] m-auto desktop:px-24px">
+    <div class="max-w-[800px] mx-auto pt-16px px-24px pb-80px">
       <convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="action === 'update' ? 'update' : 'create'"></convoy-create-subscription>
     </div>
   </div>
 </dialog>
 
 <!-- subscription details dialog  -->
-<dialog #detailsDialog convoy-dialog id="subscription-details">
-  <div convoy-dialog-header (closeDialog)="closeModal()">
-    <h2 class="font-semibold text-14 capitalize max-w-[356px] overflow-ellipsis overflow-hidden whitespace-nowrap">{{ activeSubscription?.name || 'Subscription Details' }}</h2>
+<dialog #detailsDialog convoy-dialog id="subscription-details" position="center" class="!rounded-24px !bg-new.surface-page border border-new.border">
+  <div class="flex items-start justify-between gap-16px p-24px pb-0">
+    <div class="min-w-0">
+      <h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary capitalize truncate max-w-[360px]">{{ activeSubscription?.name || 'Subscription Details' }}</h2>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px">Source, endpoint, and delivery settings for this subscription.</p>
+    </div>
+    <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-opacity hover:opacity-80 shrink-0" (click)="closeModal()" aria-label="Close">
+      <img src="/assets/img/close-icon.svg" class="w-12px h-12px" alt="" />
+    </button>
   </div>
 
-  <div class="p-20px h-full">
+  <div class="p-24px h-full">
     @if (privateService.getProjectDetails?.type === 'incoming') {
-      <h2 class="font-medium mb-10px text-14 text-neutral-11">Source</h2>
-      <div convoy-card hover="true" class="w-full cursor-pointer py-20px mb-24px">
-        <div class="px-24px pb-12px border-b border-b-neutral-a3" [routerLink]="['/projects/' + privateService.getProjectDetails?.uid + '/sources']" [queryParams]="{ id: activeSubscription?.source_metadata?.uid }">
-          <div class="text-neutral-11 text-10 mb-4px">{{ activeSubscription?.source_metadata?.provider || (activeSubscription?.source_metadata?.verifier?.type || '' | sourceValue : 'verifier') }}</div>
+      <h2 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-8px">Source</h2>
+      <div class="w-full bg-white-100 border border-new.border rounded-12px py-16px mb-20px transition-colors hover:bg-new.surface-subtle cursor-pointer">
+        <div class="px-20px pb-12px border-b border-new.border" [routerLink]="['/projects/' + privateService.getProjectDetails?.uid + '/sources']" [queryParams]="{ id: activeSubscription?.source_metadata?.uid }">
+          <div class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mb-4px">{{ activeSubscription?.source_metadata?.provider || (activeSubscription?.source_metadata?.verifier?.type || '' | sourceValue : 'verifier') }}</div>
           <div class="flex justify-between items-center">
-            <div class="text-14 font-medium">{{ activeSubscription?.source_metadata?.name }}</div>
-            <svg width="18" height="18" class="fill-neutral-11">
+            <div class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary">{{ activeSubscription?.source_metadata?.name }}</div>
+            <svg width="18" height="18" class="fill-new.text-secondary">
               <use xlink:href="#arrow-right-icon"></use>
             </svg>
           </div>
         </div>
-        <div class="mt-12px mx-24px">
+        <div class="mt-12px mx-20px">
           <convoy-copy-button [text]="activeSubscription?.source_metadata?.url || ''" color="primary" className="ml-2px" [notificationText]="activeSubscription?.source_metadata?.name + ' URL has been copied to clipboard'">
-            <span class="text-14 ml-8px font-medium">Copy URL</span>
+            <span class="font-body font-medium text-[14px] text-new.primary-400 ml-8px">Copy URL</span>
           </convoy-copy-button>
         </div>
       </div>
     }
 
     @if (activeSubscription?.endpoint_metadata?.uid) {
-      <h2 class="font-medium mb-10px text-14 text-neutral-11">Endpoint</h2>
-      <div convoy-card hover="true" class="w-full cursor-pointer py-20px">
-        <div class="px-24px pb-12px border-b border-b-neutral-a3" [routerLink]="['/projects/' + privateService.getProjectDetails?.uid + '/endpoints/' + activeSubscription?.endpoint_metadata?.uid]">
+      <h2 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-8px">Endpoint</h2>
+      <div class="w-full bg-white-100 border border-new.border rounded-12px py-16px transition-colors hover:bg-new.surface-subtle cursor-pointer">
+        <div class="px-20px pb-12px border-b border-new.border" [routerLink]="['/projects/' + privateService.getProjectDetails?.uid + '/endpoints/' + activeSubscription?.endpoint_metadata?.uid]">
           <div class="flex justify-between items-center">
-            <div class="text-14 font-medium">{{ activeSubscription?.endpoint_metadata?.name }}</div>
-            <svg width="18" height="18" class="fill-neutral-11">
+            <div class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary">{{ activeSubscription?.endpoint_metadata?.name }}</div>
+            <svg width="18" height="18" class="fill-new.text-secondary">
               <use xlink:href="#arrow-right-icon"></use>
             </svg>
           </div>
         </div>
-        <div class="mt-12px mx-24px">
+        <div class="mt-12px mx-20px">
           <convoy-copy-button [text]="activeSubscription?.endpoint_metadata?.url || ''" color="primary" className="ml-2px" [notificationText]="activeSubscription?.endpoint_metadata?.name + ' URL has been copied to clipboard'">
-            <span class="text-14 ml-8px font-medium">Copy URL</span>
+            <span class="font-body font-medium text-[14px] text-new.primary-400 ml-8px">Copy URL</span>
           </convoy-copy-button>
         </div>
       </div>
     }
 
     @if (activeSubscription?.device_metadata?.uid) {
-      <h2 class="font-medium mb-10px text-14 text-neutral-11">CLI Device</h2>
-      <div convoy-card hover="true" class="w-full py-20px">
-        <div class="px-24px">
-          <div class="text-14 font-medium flex items-center">
+      <h2 class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-8px">CLI Device</h2>
+      <div class="w-full bg-white-100 border border-new.border rounded-12px py-16px">
+        <div class="px-20px">
+          <div class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary flex items-center">
             <span class="max-w-[200px] overflow-ellipsis overflow-hidden whitespace-nowrap block">{{ activeSubscription?.device_metadata?.host_name }}</span>
-            <span convoy-tag [color]="activeSubscription?.device_metadata?.status == 'online' ? 'success' : 'neutral'" class="ml-8px">{{ activeSubscription?.device_metadata?.status }}</span>
+            <span convoy-tag size="sm" [color]="activeSubscription?.device_metadata?.status == 'online' ? 'success' : 'neutral'" class="ml-8px">{{ activeSubscription?.device_metadata?.status }}</span>
           </div>
         </div>
       </div>
     }
 
     @if (!activeSubscription?.device_metadata?.uid) {
-      <hr class="border-t border-neutral-4 mt-24px mb-4px" />
+      <div class="h-[1px] w-full bg-new.border mt-24px mb-4px"></div>
       <convoy-create-subscription action="view" [subscriptionId]="activeSubscription?.uid"></convoy-create-subscription>
-      <hr class="border-t border-neutral-4 my-24px" />
-      <div class="flex items-center justify-end mt-40px mr-24px">
-        <button convoy-permission="Subscriptions|MANAGE" convoy-button size="sm" color="error" fill="outline" class="py-8px px-12px text-12" (click)="showDeleteSubscriptionModal = true">
+      <div class="h-[1px] w-full bg-new.border my-24px"></div>
+      <div class="flex items-center justify-end gap-12px mt-40px mr-24px">
+        <button
+          type="button"
+          convoy-permission="Subscriptions|MANAGE"
+          class="px-16px py-10px rounded-full bg-new.error-25 font-body font-medium text-[14px] leading-[16px] text-new.error-500 transition-all hover:opacity-80"
+          (click)="detailsDialog.close(); deleteDialog.showModal()"
+          >
           Delete
-          <svg width="18" height="18" class="ml-2 fill-danger-100">
-            <use xlink:href="#delete-icon"></use>
-          </svg>
         </button>
-        <button convoy-permission="Subscriptions|MANAGE" convoy-button size="sm" class="py-8px px-12px text-12 ml-24px" [routerLink]="'./' + activeSubscription?.uid">
+        <button
+          type="button"
+          convoy-permission="Subscriptions|MANAGE"
+          class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+          [routerLink]="'./' + activeSubscription?.uid"
+          >
           Edit
-          <svg width="18" height="18" class="ml-8px" fill="currentColor">
-            <use xlink:href="#edit-icon"></use>
-          </svg>
         </button>
       </div>
     }
   </div>
 </dialog>
 
-<dialog #deleteDialog convoy-dialog position="center" size="sm">
+<dialog #deleteDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
   <app-delete-modal [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteSubscripton()"></app-delete-modal>
 </dialog>

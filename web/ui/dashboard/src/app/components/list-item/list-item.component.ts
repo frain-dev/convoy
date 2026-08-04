@@ -3,7 +3,7 @@ import { Component, Input, OnInit } from '@angular/core';
 
 @Component({
     selector: 'convoy-list-item, [convoy-list-item]',
-    host: { class: 'flex items-center justify-between py-10px transition-all duration-300 hover:bg-primary-500', '[class]': 'class' },
+    host: { class: 'flex items-center justify-between py-10px transition-all duration-300 hover:bg-new.surface-muted', '[class]': 'class' },
     imports: [],
     template: `
 		<ng-content></ng-content>
@@ -18,6 +18,6 @@ export class ListItemComponent implements OnInit {
 	ngOnInit(): void {}
 
 	get class() {
-		return `${this.hasBorder ? 'border-neutral-a3 border-b' : ''} ${this.active === 'true' ? 'bg-primary-500' : ''}`;
+		return `${this.hasBorder ? 'border-new.border border-b' : ''} ${this.active === 'true' ? 'bg-new.surface-muted' : ''}`;
 	}
 }

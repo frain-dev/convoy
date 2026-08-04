@@ -1,12 +1,11 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ButtonComponent } from '../button/button.component';
 import { DialogDirective } from '../dialog/dialog.directive';
 
 @Component({
     selector: 'convoy-notification-modal',
-    imports: [ButtonComponent, DialogDirective],
+    imports: [DialogDirective],
     templateUrl: './notification-modal.component.html',
     styleUrls: ['./notification-modal.component.scss']
 })

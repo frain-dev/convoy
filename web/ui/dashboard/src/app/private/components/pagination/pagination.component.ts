@@ -2,11 +2,10 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { RouterModule } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 
 @Component({
     selector: 'convoy-pagination',
-    imports: [RouterModule, ButtonComponent],
+    imports: [RouterModule],
     templateUrl: './pagination.component.html',
     styleUrls: ['./pagination.component.scss']
 })

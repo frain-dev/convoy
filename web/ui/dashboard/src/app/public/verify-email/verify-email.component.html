@@ -2,22 +2,22 @@
   <convoy-loader></convoy-loader>
 }
 @if (!loading) {
-  <div class="min-h-screen flex flex-col items-center justify-center w-full">
+  <div class="min-h-screen flex flex-col items-center justify-center w-full bg-new.surface-page px-24px">
     <img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
     @if (!showError) {
-      <h1 class="font-bold text-20 mb-30px text-center">Your email has been verified! 💻</h1>
-      <section class="max-w-[445px] mx-auto my-0 px-34px py-64px w-full bg-white-100 shadow-default rounded-8px flex items-center justify-center flex-col">
-        <p class="text-center text-16 text-neutral-11 mb-48px">You can now go ahead to easily send/receive webhook events.</p>
-        <img src="/assets/img/new-success.gif" loop="1" alt="Succes gif" class="h-150px mb-70px" />
-        <button convoy-button class="w-320px" routerLink="/">Done</button>
+      <h1 class="font-heading font-medium text-[24px] leading-[32px] text-new.text-primary mb-24px text-center">Your email has been verified!</h1>
+      <section class="max-w-[445px] mx-auto my-0 px-32px py-48px w-full bg-white-100 border border-new.border rounded-16px flex items-center justify-center flex-col">
+        <p class="text-center font-body font-normal text-[14px] leading-normal text-new.text-secondary mb-32px">You can now go ahead to easily send/receive webhook events.</p>
+        <img src="/assets/img/new-success.gif" loop="1" alt="Success gif" class="h-150px mb-40px" />
+        <button type="button" class="w-full max-w-[320px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" routerLink="/">Done</button>
       </section>
     }
     @if (showError) {
-      <h1 class="font-bold text-20 mb-30px text-center">Your email verification failed! 💻</h1>
-      <section class="max-w-[445px] mx-auto my-0 px-34px py-64px w-full bg-white-100 shadow-default rounded-8px flex items-center justify-center flex-col">
-        <p class="text-center text-16 text-neutral-11 mb-48px">An error occured while trying to verify your email, please try again!</p>
-        <img src="/assets/img/warning.gif" loop="1" alt="warning gif" class="h-150px mb-70px" />
-        <button convoy-button class="w-320px" routerLink="/">Resend Email</button>
+      <h1 class="font-heading font-medium text-[24px] leading-[32px] text-new.text-primary mb-24px text-center">Your email verification failed</h1>
+      <section class="max-w-[445px] mx-auto my-0 px-32px py-48px w-full bg-white-100 border border-new.border rounded-16px flex items-center justify-center flex-col">
+        <p class="text-center font-body font-normal text-[14px] leading-normal text-new.text-secondary mb-32px">An error occurred while trying to verify your email, please try again!</p>
+        <img src="/assets/img/warning.gif" loop="1" alt="warning gif" class="h-150px mb-40px" />
+        <button type="button" class="w-full max-w-[320px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" routerLink="/">Resend Email</button>
       </section>
     }
   </div>

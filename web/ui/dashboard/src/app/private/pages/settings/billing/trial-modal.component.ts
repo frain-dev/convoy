@@ -54,6 +54,8 @@ export class TrialModalComponent implements OnDestroy {
 	// Fail closed for cloud until profile refresh proves verified (matches server gate).
 	emailVerified = false;
 	billingEmail = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] });
+	// Optional referee attribution; Overwatch fail-opens on unknown codes.
+	referralCode = new FormControl('', { nonNullable: true });
 	formatTrialLimitLine = formatTrialLimitLine;
 	trialFeaturesLead = trialFeaturesLead;
 
@@ -124,6 +126,7 @@ export class TrialModalComponent implements OnDestroy {
 		}
 		if (this.mode === 'self_hosted') {
 			this.billingEmail.reset('');
+			this.referralCode.reset('');
 		}
 		this.dialog?.nativeElement.showModal();
 	}
@@ -181,7 +184,8 @@ export class TrialModalComponent implements OnDestroy {
 			if (this.mode === 'self_hosted') {
 				await this.planService.startSelfHostedTrial(
 					this.billingEmail.value.trim(),
-					window.location.origin
+					window.location.origin,
+					this.referralCode.value
 				);
 			} else {
 				await this.planService.startTrial(this.orgId);

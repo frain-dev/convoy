@@ -1,0 +1,21 @@
+/* The global stylesheet sets appearance: none on all checkboxes, so the tail
+   toggle checkbox needs its box and checkmark drawn explicitly. */
+.table-checkbox {
+	appearance: none;
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	border-radius: 2px;
+	border: 1px solid #e7e7e7; /* new.border */
+	background-color: #ffffff;
+	cursor: pointer;
+	transition: all 0.2s ease;
+
+	&:checked {
+		background-color: #2780f1; /* new.primary-400 */
+		border-color: #2780f1;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 6.2L5 8.7L9.5 3.7' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E");
+		background-position: center;
+		background-repeat: no-repeat;
+	}
+}

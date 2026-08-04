@@ -1,28 +1,19 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
-import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
-import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
-import { TagComponent } from 'src/app/components/tag/tag.component';
-import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { ProjectService } from '../project.service';
-import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
-import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.component';
 import { EndpointsService } from './endpoints.service';
-import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { LicensesService } from '../../../../services/licenses/licenses.service';
 import { SettingsService } from '../../settings/settings.service';
 import { UrlTemplatePartsPipe } from 'src/app/pipes/url-template-parts/url-template-parts.pipe';
@@ -32,29 +23,14 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
     selector: 'convoy-endpoints',
     imports: [
         CommonModule,
-        ButtonComponent,
-        TableCellComponent,
-        TableHeadComponent,
-        TableHeadCellComponent,
-        TableRowComponent,
-        TableCellComponent,
-        TableComponent,
-        CardComponent,
-        EmptyStateComponent,
         DropdownComponent,
         DropdownOptionDirective,
-        DialogHeaderComponent,
         CreateEndpointComponent,
-        TagComponent,
         FormsModule,
         RouterModule,
-        StatusColorModule,
-        PaginationComponent,
-        CopyButtonComponent,
         PermissionDirective,
         EndpointSecretComponent,
         DeleteModalComponent,
-        LoaderModule,
         DialogDirective,
         UrlTemplatePartsPipe,
         TooltipComponent
@@ -62,7 +38,7 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
     templateUrl: './endpoints.component.html',
     styleUrls: ['./endpoints.component.scss']
 })
-export class EndpointsComponent implements OnInit {
+export class EndpointsComponent implements OnInit, OnDestroy {
 	@ViewChild('endpointDialog', { static: true }) endpointDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('secretDialog', { static: true }) secretDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
@@ -72,7 +48,6 @@ export class EndpointsComponent implements OnInit {
 	// The failure-rate column covers a fixed window (failureRateWindowDays), named in the
 	// header so the covered range is never hidden. Circuit breaker state is reflected on
 	// the Status column instead of a separate live lens.
-	endpointsTableHead = ['Name', 'Status', 'Url', 'ID', 'Failure rate (30d)', ''];
 	// Fixed window (days) for the failure-rate column.
 	readonly failureRateWindowDays = 30;
 	// The circuit breaker rolling rate covers the project's observability window
@@ -83,19 +58,22 @@ export class EndpointsComponent implements OnInit {
 	// panel grows to the right; a centered/right-anchored panel overflows this
 	// left-hugging column off the viewport.
 	readonly statusTooltipClass = '!min-w-[280px] !left-0 !translate-x-0 after:!left-[24px] after:!translate-x-0';
-	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
 	isLoadingEndpoints = true;
+	fetchError = false;
 	isDeletingEndpoint = false;
 	showDeleteModal = false;
 	isTogglingEndpoint = false;
 	isSendingTestEvent = false;
-	endpointSearchString!: string;
+	endpointSearchString = '';
+	statusFilter = '';
+	readonly endpointStatuses = ['active', 'paused', 'inactive'];
+	currentPage = 1;
 	action: 'create' | 'update' = 'create';
-	userSearch = false;
 	endpointURLTemplatesFeatureEnabled = false;
 	private featureFlagReady?: Promise<void>;
+	private searchTimeout: any;
 
 	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute, public licenseService: LicensesService, private settingsService: SettingsService) {}
 
@@ -109,6 +87,10 @@ export class EndpointsComponent implements OnInit {
 
 		this.featureFlagReady = this.checkEndpointURLTemplatesFeatureFlag();
 		this.getEndpoints();
+	}
+
+	ngOnDestroy() {
+		clearTimeout(this.searchTimeout);
 	}
 
 	// Fixed window for the failure-rate column.
@@ -187,6 +169,126 @@ export class EndpointsComponent implements OnInit {
 		}
 	}
 
+	// ------- table data / presentation -------
+
+	get filteredEndpoints(): ENDPOINT[] {
+		const content = this.endpoints?.content || [];
+		if (!this.statusFilter) return content;
+		return content.filter(endpoint => endpoint.status === this.statusFilter);
+	}
+
+	get hasActiveFilters(): boolean {
+		return !!this.statusFilter || !!this.endpointSearchString;
+	}
+
+	endpointCountLabel(): string {
+		const total = this.endpoints?.pagination?.total ?? this.endpoints?.content?.length ?? 0;
+		return `${total} endpoint${total === 1 ? '' : 's'}`;
+	}
+
+	statusPillLabel(endpoint: ENDPOINT): string {
+		if (this.circuitBreakerOpen(endpoint)) return endpoint.cb_state === 'half-open' ? 'Recovering' : 'Failing';
+		return endpoint.status ? endpoint.status.charAt(0).toUpperCase() + endpoint.status.slice(1) : '-';
+	}
+
+	statusPillClass(endpoint: ENDPOINT): string {
+		if (this.circuitBreakerOpen(endpoint)) return 'bg-[#F5C6C6]';
+		switch (endpoint.status) {
+			case 'active':
+				return 'bg-[#C6F5CE]';
+			case 'paused':
+				return 'bg-[#E3EBF2]';
+			case 'inactive':
+				return 'bg-[#F5C6C6]';
+			default:
+				return 'bg-new.surface-muted';
+		}
+	}
+
+	failureRateLabel(endpoint: ENDPOINT): string {
+		if (endpoint.period_failure_rate === null || endpoint.period_failure_rate === undefined) return '-';
+		const rate = endpoint.period_failure_rate * 100;
+		return `${Number.isInteger(rate) ? rate : rate.toFixed(2)}%`;
+	}
+
+	copyText(text: string | undefined, label: string, event: Event) {
+		event.stopPropagation();
+		if (!text) return;
+		navigator.clipboard?.writeText(text).then(() => {
+			this.generalService.showNotification({ message: `${label} copied to clipboard`, style: 'info' });
+		});
+	}
+
+	// ------- data fetching -------
+
+	async getEndpoints(requestDetails?: CURSOR & { search?: string; hideLoader?: boolean }) {
+		this.isLoadingEndpoints = !requestDetails?.hideLoader;
+		this.fetchError = false;
+
+		const range = this.failureRateRange;
+		try {
+			const response = await this.privateService.getEndpoints({
+				...requestDetails,
+				q: requestDetails?.search ?? this.endpointSearchString,
+				startDate: range.startDate,
+				endDate: range.endDate
+			});
+			this.endpoints = response.data;
+			this.isLoadingEndpoints = false;
+		} catch {
+			this.fetchError = true;
+			this.isLoadingEndpoints = false;
+		}
+	}
+
+	onSearch() {
+		clearTimeout(this.searchTimeout);
+		this.searchTimeout = setTimeout(() => {
+			this.currentPage = 1;
+			this.getEndpoints({ search: this.endpointSearchString, hideLoader: true });
+		}, 400);
+	}
+
+	setStatusFilter(status = '') {
+		this.statusFilter = status;
+	}
+
+	clearAllFilters() {
+		this.statusFilter = '';
+		if (this.endpointSearchString) {
+			this.endpointSearchString = '';
+			this.currentPage = 1;
+			this.getEndpoints({ hideLoader: true });
+		}
+	}
+
+	// ------- pagination -------
+
+	paginateEndpoints(direction: 'next' | 'prev') {
+		const pagination = this.endpoints?.pagination;
+		if (!pagination) return;
+
+		const cursor =
+			direction === 'next' ? { next_page_cursor: pagination.next_page_cursor, prev_page_cursor: '', direction: 'next' as const } : { prev_page_cursor: pagination.prev_page_cursor, next_page_cursor: '', direction: 'prev' as const };
+
+		this.currentPage = Math.max(1, this.currentPage + (direction === 'next' ? 1 : -1));
+		this.getEndpoints({ ...cursor, hideLoader: true });
+	}
+
+	get pageRangeLabel(): string {
+		const contentLength = this.endpoints?.content?.length || 0;
+		if (!contentLength) return '0 endpoints';
+
+		const perPage = this.endpoints?.pagination?.per_page || contentLength;
+		const start = (this.currentPage - 1) * perPage + 1;
+		const end = start + contentLength - 1;
+		const total = this.endpoints?.pagination?.total;
+
+		return total ? `${start}-${end} of ${total}` : `${start}-${end}`;
+	}
+
+	// ------- feature flags -------
+
 	async checkEndpointURLTemplatesFeatureFlag() {
 		// Only the org-scoped early-adopter feature flag is checked here; the license
 		// side is verified separately in sendTestEvent. Both must hold for the backend
@@ -203,30 +305,7 @@ export class EndpointsComponent implements OnInit {
 		}
 	}
 
-	async getEndpoints(requestDetails?: CURSOR & { search?: string; hideLoader?: boolean }) {
-		this.isLoadingEndpoints = !requestDetails?.hideLoader;
-		this.userSearch = !!requestDetails?.search;
-
-		const range = this.failureRateRange;
-		try {
-			const response = await this.privateService.getEndpoints({
-				...requestDetails,
-				q: requestDetails?.search || this.endpointSearchString,
-				startDate: range.startDate,
-				endDate: range.endDate
-			});
-			this.endpoints = response.data;
-			if (response.data.content) this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content, 'desc');
-			this.isLoadingEndpoints = false;
-		} catch {
-			this.isLoadingEndpoints = false;
-		}
-	}
-
-	searchEndpoint(searchDetails: { searchInput?: any }) {
-		const searchString: string = searchDetails?.searchInput?.target?.value || this.endpointSearchString;
-		this.getEndpoints({ search: searchString, hideLoader: true });
-	}
+	// ------- endpoint actions -------
 
 	async deleteEndpoint() {
 		if (!this.selectedEndpoint) return;
@@ -250,10 +329,8 @@ export class EndpointsComponent implements OnInit {
 
 		try {
 			const response = await this.endpointService.toggleEndpoint(this.selectedEndpoint?.uid);
-			this.displayedEndpoints?.forEach(item => {
-				item.content.forEach(endpoint => {
-					if (response.data.uid === endpoint.uid) endpoint.status = response.data.status;
-				});
+			this.endpoints?.content?.forEach(endpoint => {
+				if (response.data.uid === endpoint.uid) endpoint.status = response.data.status;
 			});
 			this.generalService.showNotification({ message: `${this.selectedEndpoint?.name} status updated successfully`, style: 'success' });
 			this.isTogglingEndpoint = false;
@@ -271,13 +348,11 @@ export class EndpointsComponent implements OnInit {
 			// Patch the cached row from the response first so the tag can't show stale
 			// state even if the refetch below fails. Activation also resets the circuit
 			// breaker server-side, so cb_state is cleared alongside status.
-			this.displayedEndpoints?.forEach(item => {
-				item.content.forEach(endpoint => {
-					if (response.data.uid === endpoint.uid) {
-						endpoint.status = response.data.status;
-						endpoint.cb_state = null;
-					}
-				});
+			this.endpoints?.content?.forEach(endpoint => {
+				if (response.data.uid === endpoint.uid) {
+					endpoint.status = response.data.status;
+					endpoint.cb_state = null;
+				}
 			});
 			if (this.selectedEndpoint?.uid === response.data.uid) this.selectedEndpoint = { ...this.selectedEndpoint, status: response.data.status, cb_state: null };
 			this.generalService.showNotification({ message: `${this.selectedEndpoint?.name} activated successfully`, style: 'success' });

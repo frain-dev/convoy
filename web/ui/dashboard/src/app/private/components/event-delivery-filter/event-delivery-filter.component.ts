@@ -1,6 +1,5 @@
 import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import {ButtonComponent} from 'src/app/components/button/button.component';
 import {DatePickerComponent} from 'src/app/components/date-picker/date-picker.component';
 import {EndpointFilterComponent} from '../endpoints-filter/endpoints-filter.component';
 import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
@@ -18,7 +17,7 @@ import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
     selector: 'convoy-event-delivery-filter',
-    imports: [CommonModule, ButtonComponent, DatePickerComponent, EndpointFilterComponent, DropdownComponent, DropdownOptionDirective, ListItemComponent, SkeletonLoaderComponent, FormsModule],
+    imports: [CommonModule, DatePickerComponent, EndpointFilterComponent, DropdownComponent, DropdownOptionDirective, ListItemComponent, SkeletonLoaderComponent, FormsModule],
     templateUrl: './event-delivery-filter.component.html',
     styleUrls: ['./event-delivery-filter.component.scss']
 })

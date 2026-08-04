@@ -5,9 +5,7 @@ import {RouterModule, Routes} from '@angular/router';
 import {ReactiveFormsModule} from '@angular/forms';
 import {EventDeliveriesModule} from './event-deliveries/event-deliveries.module';
 import {ButtonComponent} from 'src/app/components/button/button.component';
-import {ListItemComponent} from 'src/app/components/list-item/list-item.component';
 import {CardComponent} from 'src/app/components/card/card.component';
-import {ChartComponent} from 'src/app/components/chart/chart.component';
 import {SkeletonLoaderComponent} from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
 import {EmptyStateComponent} from 'src/app/components/empty-state/empty-state.component';
@@ -29,9 +27,7 @@ const routes: Routes = [{ path: '', component: EventsComponent }];
         EventDeliveriesModule,
         DropdownComponent,
         ButtonComponent,
-        ListItemComponent,
         CardComponent,
-        ChartComponent,
         SkeletonLoaderComponent,
         EmptyStateComponent,
         LoaderModule,

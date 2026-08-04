@@ -7,75 +7,84 @@
 @if (!isPageLoading) {
   @if (!hasEvents) {
     <div class="flex items-center justify-center flex-col py-82px h-full text-center px-40px">
-      <img src="/assets/img/events-empty-state-image.svg" alt="events empty state image" class="mb-48px" />
-      <h3 class="mb-10px text-14 font-bold">{{ privateService.getProjectDetails?.type === 'incoming' ? 'You have no incoming events.' : 'You have no outgoing events yet' }}</h3>
+      <img src="/assets/img/events-empty-state-image.svg" alt="events empty state image" class="mb-40px" />
+      <h3 class="mb-8px font-heading font-medium text-[18px] leading-[26px] text-new.text-primary">{{ privateService.getProjectDetails?.type === 'incoming' ? 'You have no incoming events.' : 'You have no outgoing events yet' }}</h3>
       @if (isProjectConfigurationComplete) {
-        <p class="text-12 text-neutral-11 max-w-[428px]">
+        <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary max-w-[428px]">
           {{ privateService.getProjectDetails?.type === 'incoming' ? 'Start receiving webhooks by adding your webhook URL into your webhook sender platform "' + lastestSource?.name + '"' : 'You have not sent any webhook events yet. Learn how to do that in our docs' }}
         </p>
       }
       @if (!isProjectConfigurationComplete) {
-        <p class="text-12 text-neutral-11 max-w-[428px]">
+        <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary max-w-[428px]">
           {{ privateService.getProjectDetails?.type === 'incoming' ? 'You need to create an endpoint subscribe it to an event source (sender of your webhooks) to start receiving events' : 'You need to create an endpoint and subscribe it to listen to events' }}
         </p>
       }
       @if (privateService.getProjectDetails?.type === 'incoming' && isProjectConfigurationComplete) {
-        <div class="flex items-center justify-between w-full h-50px border border-neutral-a3 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px max-w-[400px] mt-42px">
-          <span class="text-12 text-neutral-11 font-normal whitespace-nowrap w-[440px] overflow-hidden text-ellipsis">{{ lastestSource?.url }}</span>
+        <div class="flex items-center justify-between gap-8px w-full h-48px border border-new.border bg-white-100 rounded-8px px-16px mb-32px max-w-[400px] mt-40px">
+          <span class="font-body font-normal text-[14px] text-new.text-secondary whitespace-nowrap overflow-hidden text-ellipsis">{{ lastestSource?.url }}</span>
           <convoy-copy-button [text]="lastestSource?.url || ''" notificationText="Source URL copied to clipboard"></convoy-copy-button>
         </div>
         @if (lastestEventDeliveries.length === 0) {
-          <div convoy-card class="flex py-10px px-20px items-center">
-            <img src="/assets/img/time-icon.svg" alt="timer icon" class="mr-20px w-30px" />
-            <p class="mr-12px text-12 text-neutral-12">Waiting on your first web-hook event</p>
+          <div class="flex items-center py-12px px-20px bg-white-100 border border-new.border rounded-12px">
+            <img src="/assets/img/time-icon.svg" alt="timer icon" class="mr-16px w-28px" />
+            <p class="font-body font-normal text-[14px] text-new.text-primary">Waiting on your first webhook event</p>
           </div>
-          <a href="https://docs.getconvoy.io/guides/receiving-webhook-example" target="_blank" referrerpolicy="no-referrer" convoy-button fill="text" class="mt-48px font-medium">Don't See Your Events Yet?</a>
+          <a href="https://docs.getconvoy.io/guides/receiving-webhook-example" target="_blank" referrerpolicy="no-referrer" class="mt-40px font-body font-medium text-[14px] text-new.primary-400">Don't See Your Events Yet?</a>
         }
         @if (lastestEventDeliveries.length > 0) {
-          <div class="w-full max-w-[500px]" convoy-card>
-            <div class="flex w-full border-b border-b-neutral-a3 text-neutral-11 text-14 p-10px">
-              <div class="w-1/5 text-left">Status</div>
-              <div class="w-1/3 text-left ml-2px">Subscription</div>
-              <div class="w-1/5 text-left ml-2px">Event Time</div>
-              <div class="w-1/5 text-left ml-2px">Retry Time</div>
+          <div class="w-full max-w-[560px] bg-white-100 border border-new.border rounded-12px overflow-hidden text-left">
+            <div class="flex w-full bg-new.surface-subtle border-b border-new.border px-16px h-36px items-center">
+              <div class="w-1/5 font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Status</div>
+              <div class="w-1/3 font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Subscription</div>
+              <div class="w-1/5 font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Event Time</div>
+              <div class="w-1/5 font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Retry Time</div>
             </div>
             @for (event of lastestEventDeliveries; track event.uid) {
-              <div class="flex text-left text-14 p-10px cursor-pointer hover:bg-neutral-a3" [routerLink]="['./event-deliveries/' + event.uid]">
+              <div class="flex items-center px-16px h-44px cursor-pointer border-b border-new.border last:border-b-0 transition-colors hover:bg-new.surface-subtle" [routerLink]="['./event-deliveries/' + event.uid]">
                 <div class="w-1/5">
-                  <div convoy-tag [color]="event.status | statuscolor">{{ event?.status }}</div>
+                  <div convoy-tag size="sm" [color]="event.status | statuscolor">{{ event?.status }}</div>
                 </div>
-                <div class="w-1/3">
+                <div class="w-1/3 flex items-center font-body font-normal text-[14px] text-new.text-primary min-w-0">
                   @if (privateService.getProjectDetails?.type === 'incoming') {
-                    <span class="max-w-[146px] overflow-hidden overflow-ellipsis">
+                    <span class="max-w-[120px] truncate">
                       {{ event?.source_metadata?.name || 'Rest API' }}
                     </span>
-                    <span class="px-20px font-light">→</span>
+                    <span class="px-8px text-new.text-placeholder">→</span>
                   }
-                  <span [class]="privateService.getProjectDetails?.type === 'incoming' ? 'max-w-[140px] overflow-hidden overflow-ellipsis' : 'w-156px' + ' overflow-hidden overflow-ellipsis'">
+                  <span class="truncate">
                     {{ event.endpoint_metadata.title || event.endpoint_metadata.name }}
                   </span>
                 </div>
-                <!-- <div class="w-1/3 ml-2px max-w-[159px] whitespace-nowrap overflow-hidden text-ellipsis">{{ event?.endpoint_metadata?.name || event?.endpoint_metadata?.title }}</div> -->
-                <div class="w-1/5 ml-2px">{{ event.created_at | date : 'mediumTime' }}</div>
-                <div class="w-1/5 ml-2px">{{ event.updated_at | date : 'mediumTime' }}</div>
+                <div class="w-1/5 font-body font-normal text-[14px] text-new.text-secondary">{{ event.created_at | date : 'mediumTime' }}</div>
+                <div class="w-1/5 font-body font-normal text-[14px] text-new.text-secondary">{{ event.updated_at | date : 'mediumTime' }}</div>
               </div>
             }
           </div>
-          <button (click)="continueToDashboard()" convoy-button class="mt-48px font-medium">Continue to Dashboard</button>
+          <button type="button" (click)="continueToDashboard()" class="mt-40px px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90">Continue to Dashboard</button>
         }
       }
       @if (!isProjectConfigurationComplete) {
-        <button convoy-button size="sm" class="!py-12px mt-48px" convoy-permission="Project Setup|MANAGE" (click)="router.navigateByUrl('/projects/' + privateService.getProjectDetails?.uid + '/setup')">
+        <button
+          type="button"
+          convoy-permission="Project Setup|MANAGE"
+          class="flex items-center gap-8px mt-40px px-20px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+          (click)="router.navigateByUrl('/projects/' + privateService.getProjectDetails?.uid + '/setup')"
+          >
           Complete project setup
-          <svg width="24" height="24" class="ml-8px fill-white-100">
+          <svg width="24" height="24" class="fill-white-100 scale-75">
             <use xlink:href="#arrow-right-icon"></use>
           </svg>
         </button>
       }
       @if (privateService.getProjectDetails?.type === 'outgoing' && isProjectConfigurationComplete) {
-        <a href="https://docs.getconvoy.io/guides/sending-webhook-example" convoy-button target="_blank" referrerpolicy="no-referrer" fill="outline" class="mt-48px">
+        <a
+          href="https://docs.getconvoy.io/guides/sending-webhook-example"
+          target="_blank"
+          referrerpolicy="no-referrer"
+          class="flex items-center gap-8px mt-40px px-20px py-12px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
+          >
           Go to documentation
-          <svg class="ml-8px fill-primary-100 w-20px h-20px">
+          <svg class="fill-new.text-primary w-16px h-16px">
             <use xlink:href="#external-link-icon"></use>
           </svg>
         </a>
@@ -83,88 +92,125 @@
     </div>
   }
   @if (hasEvents) {
-    <h2 class="text-12 font-medium text-neutral-10 mb-16px">Events Summary</h2>
-    <div class="pb-24px flex items-center">
-      <convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()">
-        <button dropdownTrigger convoy-button fill="outline" size="sm" class="px-10px !border-primary-400 justify-between gap-10px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!dateRangeValue?.startDate && !!dateRangeValue?.endDate }">
-          <svg width="18" height="18" class="transition-all fill-none scale-75" [class]="!!dateRangeValue?.startDate && !!dateRangeValue?.endDate ? 'stroke-new.primary-300' : 'stroke-neutral-11'">
-            <use xlink:href="#calendar-icon"></use>
-          </svg>
-          <span class="text-neutral-11 mr-4px">Date</span>
-          @if (dateRangeValue?.startDate && dateRangeValue?.endDate) {
-            <button type="button" (click)="getSelectedDateRange()">
-              <svg width="10" height="10" class="fill-primary-100">
-                <use xlink:href="#close-icon"></use>
-              </svg>
-            </button>
-          }
-        </button>
-      </convoy-date-picker>
-      <div convoy-dropdown size="sm" position="left">
-        <button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px">
-          <span class="text-neutral-11 mr-4px">Filter By:</span>
-          <span class="text-primary-100 capitalize">{{ dashboardFrequency }}</span>
-          <img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-14px h-14px ml-10px" />
-        </button>
-        <ul dropdownOptions>
-          @for (filterOption of filterOptions; track $index) {
-            <li convoy-dropdown-option convoy-list-item class="text-14 px-20px" [active]="dashboardFrequency == filterOption ? 'true' : 'false'" [hasBorder]="true">
-              <button convoy-button color="neutral" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData()" class="capitalize font-normal text-left w-full !justify-start text-12">
+    <div class="pb-64px">
+      <h1 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Event Deliveries</h1>
+
+      <!-- Summary controls -->
+      <div class="flex items-center justify-between gap-16px mt-40px flex-wrap">
+        <div class="flex items-center gap-16px flex-wrap">
+          <!-- Interval segmented control -->
+          <div class="flex items-stretch h-44px drop-shadow-[0px_2px_1px_rgba(0,0,0,0.04)]">
+            @for (filterOption of filterOptions; track $index; let first = $first; let last = $last) {
+              <button
+                type="button"
+                (click)="dashboardFrequency = filterOption; fetchDashboardData()"
+                class="px-12px font-body font-medium text-[14px] leading-[16px] border transition-colors capitalize"
+                [class]="
+                  (first ? 'rounded-l-8px ' : '-ml-[1px] ') +
+                  (last ? 'rounded-r-8px ' : '') +
+                  (dashboardFrequency === filterOption ? 'bg-new.primary-400 border-new.primary-400 text-white-100 z-[1] relative' : 'bg-white-100 border-new.border text-new.text-primary hover:bg-new.surface-muted')
+                "
+                >
                 {{ filterOption }}
               </button>
+            }
+          </div>
+
+          <!-- Date range -->
+          <convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()">
+            <button dropdownTrigger type="button" class="h-44px flex items-center gap-12px px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-colors hover:bg-new.surface-muted">
+              {{ dateRangeLabel }}
+              <img src="/assets/img/svg/calendar-small.svg" class="w-16px h-16px" alt="" />
+            </button>
+          </convoy-date-picker>
+        </div>
+
+        <!-- Endpoint scope for delivery counts -->
+        <div convoy-dropdown size="md" position="right">
+          <button dropdownTrigger type="button" class="w-[160px] h-44px flex items-center justify-between pl-12px pr-8px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary">
+            <span class="truncate">{{ selectedSummaryEndpoint?.title || selectedSummaryEndpoint?.name || 'All endpoints' }}</span>
+            <img src="/assets/img/svg/chevron-down-small.svg" class="w-16px h-16px shrink-0" alt="" />
+          </button>
+          <ul dropdownOptions class="py-4px max-h-[240px] overflow-y-auto">
+            <li>
+              <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="selectSummaryEndpoint()">All endpoints</button>
             </li>
-          }
-        </ul>
+            @for (endpoint of summaryEndpoints; track endpoint.uid) {
+              <li>
+                <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary truncate transition-colors hover:bg-new.surface-muted" (click)="selectSummaryEndpoint(endpoint)">
+                  {{ endpoint.title || endpoint.name }}
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
       </div>
-    </div>
-    <div convoy-card class="relative mb-22px">
-      <ul class="flex flex-wrap items-center min-h-[76px] metrics">
-        <li class="bg-[url(/assets/img/message-icon-transparent.svg)] bg-[length:30px_30px] bg-no-repeat flex items-center px-30px py-16px border-r border-neutral-a3 [background-position-x:185px] [background-position-y:46px] min-w-[220px]">
-          <img src="/assets/img/message-icon.svg" class="mr-30px" alt="message icon" />
+
+      <!-- Metric cards -->
+      <div class="grid grid-cols-4 desktop:grid-cols-2 mobile:!grid-cols-1 gap-20px mt-24px max-w-[860px]">
+        <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
           @if (isloadingDashboardData) {
-            <div>
-              <convoy-skeleton-loader className="w-60px h-16px mb-10px"></convoy-skeleton-loader>
-              <convoy-skeleton-loader className="w-120px h-16px"></convoy-skeleton-loader>
-            </div>
+            <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
+          } @else {
+            <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ dashboardData.events_sent | number }}</span>
           }
-          @if (!isloadingDashboardData) {
-            <div>
-              <div class="text-16 font-medium">{{ dashboardData.events_sent | number }}</div>
-              <div class="text-neutral-11 text-14">
-                <span class="font-normal">Event</span>
-                @if (dashboardData.events_sent > 1) {
-                  <span class="font-normal">s</span>
-                }
-                {{ privateService.getProjectDetails?.type === 'incoming' ? 'Ingested' : 'Sent' }}
-              </div>
-            </div>
+          <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Events sent</span>
+        </div>
+        <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
+          @if (isLoadingDeliveryCounts) {
+            <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
+          } @else {
+            <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.success | number }}</span>
           }
-        </li>
-        <li class="bg-[url(/assets/img/apps-icon-transparent.svg)] bg-[length:30px_30px] bg-no-repeat flex items-center px-30px py-16px border-r border-neutral-a3 [background-position-x:185px] [background-position-y:46px] min-w-[220px]">
-          <img src="/assets/img/apps-icon.svg" class="mr-30px" alt="apps icon" />
+          <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Successful deliveries</span>
+        </div>
+        <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
+          @if (isLoadingDeliveryCounts) {
+            <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
+          } @else {
+            <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.failure | number }}</span>
+          }
+          <span class="font-body font-normal text-[14px] leading-normal" [class]="deliveryCounts.failure > 0 ? 'text-[#df3520]' : 'text-new.text-secondary'">Failed deliveries</span>
+        </div>
+        <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
           @if (isloadingDashboardData) {
-            <div>
-              <convoy-skeleton-loader className="w-60px h-16px mb-10px"></convoy-skeleton-loader>
-              <convoy-skeleton-loader className="w-100px h-16px"></convoy-skeleton-loader>
-            </div>
+            <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
+          } @else {
+            <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ dashboardData.apps | number }}</span>
           }
-          @if (!isloadingDashboardData) {
-            <div>
-              <div class="text-16 font-medium">{{ dashboardData.apps | number }}</div>
-              <div class="text-neutral-11 text-14">
-                <span class="font-normal">Endpoint</span>
-                @if (dashboardData.apps > 1) {
-                  <span class="font-normal">s</span>
-                }
-              </div>
-            </div>
-          }
-        </li>
-      </ul>
-      <div class="border-t border-neutral-a3 p-16px">
-        <convoy-chart [chartData]="chartData" [isLoading]="isloadingDashboardData"></convoy-chart>
+          <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Active endpoints</span>
+        </div>
       </div>
+
+      <!-- Chart -->
+      <div class="bg-white-100 border border-new.border rounded-12px mt-20px p-16px">
+        <h2 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Event Deliveries over time</h2>
+        @if (isloadingDashboardData) {
+          <div class="h-[200px] flex items-end gap-14px mt-24px">
+            <convoy-skeleton-loader className="w-full h-120px"></convoy-skeleton-loader>
+          </div>
+        } @else {
+          <div class="mt-32px flex items-end gap-8px overflow-x-auto pb-4px min-h-[200px]">
+            @for (bucket of chartData; track $index) {
+              <div class="flex flex-col items-center gap-8px flex-1 min-w-[26px] max-w-[48px] group relative self-stretch justify-end">
+                <div class="w-full max-w-[32px] bg-[#40cf8e] rounded-[2px] transition-opacity group-hover:opacity-80" [style.height.px]="barHeight(bucket.data) * 1.6"></div>
+                <span class="font-body font-normal text-[12px] leading-normal text-new.text-placeholder whitespace-nowrap">{{ bucket.label }}</span>
+
+                <!-- Hover tooltip -->
+                <div class="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1c1c1c] rounded-8px px-12px py-8px z-10 whitespace-nowrap flex flex-col gap-4px">
+                  <span class="font-body font-medium text-[12px] text-white-100">{{ bucket.label }}</span>
+                  <span class="font-body font-normal text-[12px] text-white-100 flex items-center gap-6px">
+                    <span class="w-8px h-8px rounded-[2px] bg-[#40cf8e] inline-block"></span>
+                    Events: {{ bucket.data | number }}
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <app-event-deliveries [dateRange]="statsDateRangeForRequest" (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
     </div>
-    <app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
   }
 }

@@ -2,11 +2,10 @@ import { Component, OnInit } from '@angular/core';
 
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { EventDeliveryDetailsModule } from 'src/app/private/pages/project/events/event-delivery-details/event-delivery-details.module';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 
 @Component({
     selector: 'convoy-event-delivery',
-    imports: [EventDeliveryDetailsModule, RouterModule, ButtonComponent],
+    imports: [EventDeliveryDetailsModule, RouterModule],
     templateUrl: './event-delivery.component.html',
     styleUrls: ['./event-delivery.component.scss']
 })

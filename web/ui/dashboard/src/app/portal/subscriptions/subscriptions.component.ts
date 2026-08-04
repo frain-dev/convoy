@@ -6,23 +6,18 @@ import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ActivatedRoute } from '@angular/router';
-import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
-import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { FormsModule } from '@angular/forms';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { PortalService } from '../portal.service';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
-import { TagComponent } from 'src/app/components/tag/tag.component';
 import { LicensesService } from '../../services/licenses/licenses.service';
 import {CreatePortalEndpointComponent} from "../create-portal-endpoint/create-portal-endpoint.component";
 
 @Component({
     selector: 'convoy-subscriptions',
-    imports: [CreateSubscriptionModule, DeleteModalComponent, PaginationComponent, CopyButtonComponent, FormsModule, CardComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, DialogDirective, TagComponent, CreatePortalEndpointComponent],
+    imports: [DeleteModalComponent, CopyButtonComponent, FormsModule, DropdownComponent, DropdownOptionDirective, DialogDirective, CreatePortalEndpointComponent],
     templateUrl: './subscriptions.component.html',
     styleUrls: ['./subscriptions.component.scss']
 })
@@ -33,6 +28,7 @@ export class SubscriptionsComponent implements OnInit {
 	portalDetails?: PORTAL_LINK;
 
 	isLoadingSubscriptions = false;
+	subscriptionsLoadFailed = false;
 	isDeletingSubscription = false;
 	showSubscriptionForm = false;
 	subscriptionSearchString!: string;
@@ -41,6 +37,9 @@ export class SubscriptionsComponent implements OnInit {
 	activeSubscription?: SUBSCRIPTION;
 	subscriptions?: { content: SUBSCRIPTION[]; pagination?: PAGINATION };
 	displayedSubscriptions?: { date: string; content: SUBSCRIPTION[] }[];
+	// Bumps on every getSubscriptions call so a late error/success from an
+	// older search/refetch cannot wipe or restore stale rows.
+	private subscriptionsRequestToken = 0;
 
 	token: string = this.route.snapshot.queryParams.token;
 
@@ -59,16 +58,30 @@ export class SubscriptionsComponent implements OnInit {
 
 	async getSubscriptions(requestDetails?: CURSOR & { name?: string }) {
 		const endpointId = this.endpointId;
+		const requestToken = ++this.subscriptionsRequestToken;
 		this.isLoadingSubscriptions = true;
+		this.subscriptionsLoadFailed = false;
 
 		try {
 			const subscriptions = await this.privateService.getSubscriptions({ endpointId, ...requestDetails });
+			if (requestToken !== this.subscriptionsRequestToken) return;
 
 			this.subscriptions = subscriptions.data;
 			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptions.data.content, 'desc');
-
-			this.isLoadingSubscriptions = false;
-		} catch {}
+			this.subscriptionsLoadFailed = false;
+		} catch {
+			if (requestToken !== this.subscriptionsRequestToken) return;
+			// Fail closed on display: drop spinner and prior rows so a failed search
+			// or refetch cannot leave stale results under the current query. Distinct
+			// from empty success so the template does not claim "No subscriptions yet".
+			this.subscriptions = undefined;
+			this.displayedSubscriptions = [];
+			this.subscriptionsLoadFailed = true;
+		} finally {
+			if (requestToken === this.subscriptionsRequestToken) {
+				this.isLoadingSubscriptions = false;
+			}
+		}
 	}
 
 	openSubsriptionForm(action: 'create' | 'update') {

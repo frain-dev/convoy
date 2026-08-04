@@ -1,5 +1,5 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
-import { Location, NgOptimizedImage } from '@angular/common';
+import { DatePipe, Location } from '@angular/common';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
 import {ENDPOINT, PORTAL_LINK} from 'src/app/models/endpoint.model';
@@ -12,18 +12,11 @@ import {
 } from 'src/app/private/pages/project/endpoints/endpoint-secret/endpoint-secret.component';
 import {PortalService} from '../portal.service';
 import {PrivateService} from 'src/app/private/private.service';
-import {TagComponent} from 'src/app/components/tag/tag.component';
-import {StatusColorModule} from 'src/app/pipes/status-color/status-color.module';
-import {CardComponent} from 'src/app/components/card/card.component';
-import {ButtonComponent} from 'src/app/components/button/button.component';
-import {PaginationComponent} from 'src/app/private/components/pagination/pagination.component';
 import {CURSOR, PAGINATION} from 'src/app/models/global.model';
-import {ControlContainer, FormBuilder, FormGroupDirective, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {ControlContainer, FormBuilder, FormGroupDirective, FormsModule} from '@angular/forms';
 import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
 import {CreatePortalEndpointComponent} from '../create-portal-endpoint/create-portal-endpoint.component';
 import {EventCatalogComponent, EventType} from '../event-catalog/event-catalog.component';
-import {ListItemComponent} from '../../components/list-item/list-item.component';
-import {PrismModule} from '../../private/components/prism/prism.module';
 import {LicensesService} from "../../services/licenses/licenses.service";
 
 interface PORTAL_ENDPOINT extends ENDPOINT {
@@ -32,23 +25,15 @@ interface PORTAL_ENDPOINT extends ENDPOINT {
 @Component({
     selector: 'convoy-endpoints',
     imports: [
+    DatePipe,
     DialogDirective,
     EndpointSecretComponent,
-    TagComponent,
-    StatusColorModule,
-    CardComponent,
     DropdownComponent,
     DropdownOptionDirective,
-    ButtonComponent,
     CreatePortalEndpointComponent,
-    PaginationComponent,
     FormsModule,
-    ReactiveFormsModule,
     CopyButtonComponent,
-    EventCatalogComponent,
-    ListItemComponent,
-    PrismModule,
-    NgOptimizedImage
+    EventCatalogComponent
 ],
     providers: [{ provide: ControlContainer, useValue: null }, FormGroupDirective],
     templateUrl: './endpoints.component.html',
@@ -71,6 +56,8 @@ export class EndpointsComponent implements OnInit {
 	endpoints: PORTAL_ENDPOINT[] = [];
 	action: 'create' | 'update' = 'create';
 	endpointSearchString = '';
+	statusFilter: 'all' | 'active' | 'paused' | 'inactive' = 'all';
+	statusFilterOptions: ('all' | 'active' | 'paused' | 'inactive')[] = ['all', 'active', 'paused', 'inactive'];
 
     selectedEventType: EventType | null = null;
     endpointUid: string | null = null; // Store the selected endpoint UID
@@ -120,19 +107,65 @@ export class EndpointsComponent implements OnInit {
 	async getEndpoints(requestDetails?: CURSOR & { q?: string }) {
 		this.isloadingSubscriptions = true;
 		try {
-			const endpoints = await this.privateService.getEndpoints(requestDetails);
-			this.fetchedEndpoints = endpoints.data;
-			this.endpoints = endpoints.data.content;
-			this.displayedEndpoints = this.generalService.setContentDisplayed(endpoints.data.content, 'desc');
+			const search = requestDetails?.q ?? this.endpointSearchString;
+
+			// Status is not a server-side filter, so when a status is selected we
+			// walk all pages and filter client-side. Otherwise use normal pagination.
+			if (this.statusFilter !== 'all') {
+				const all = await this.privateService.getAllEndpoints({ q: search || undefined, perPage: 100 });
+				this.endpoints = all.filter(endpoint => endpoint.status === this.statusFilter);
+				this.fetchedEndpoints = { content: this.endpoints };
+				this.displayedEndpoints = this.generalService.setContentDisplayed(this.endpoints as any, 'desc');
+			} else {
+				const endpoints = await this.privateService.getEndpoints({ ...requestDetails, q: search || undefined });
+				this.fetchedEndpoints = endpoints.data;
+				this.endpoints = endpoints.data.content;
+				this.displayedEndpoints = this.generalService.setContentDisplayed(endpoints.data.content as any, 'desc');
+			}
 
 			this.isloadingSubscriptions = false;
 		} catch (_error) {
+			// Drop previous rows so a failed refetch can't leave a stale list
+			// that no longer matches the active status/search filter.
+			this.endpoints = [];
+			this.fetchedEndpoints = undefined;
+			this.displayedEndpoints = [];
 			this.isloadingSubscriptions = false;
 		}
 	}
 
+	setStatusFilter(status: 'all' | 'active' | 'paused' | 'inactive') {
+		this.statusFilter = status;
+		this.getEndpoints({ q: this.endpointSearchString });
+	}
+
+	// period_failure_rate is attached by the list API (same field as the project
+	// endpoints table); null means no counted deliveries in the window.
+	failureRateLabel(endpoint: ENDPOINT): string {
+		if (endpoint.period_failure_rate === null || endpoint.period_failure_rate === undefined) return '—';
+		const rate = endpoint.period_failure_rate * 100;
+		return `${Number.isInteger(rate) ? rate : rate.toFixed(2)}%`;
+	}
+
 	hasFilter(filterObject: { headers: Object; body: Object }): boolean {
 		return Object.keys(filterObject.body).length > 0 || Object.keys(filterObject.headers).length > 0;
+	}
+
+	statusPillLabel(endpoint: ENDPOINT): string {
+		return endpoint.status ? endpoint.status.charAt(0).toUpperCase() + endpoint.status.slice(1) : '-';
+	}
+
+	statusPillClass(endpoint: ENDPOINT): string {
+		switch (endpoint.status) {
+			case 'active':
+				return 'bg-[#C6F5CE]';
+			case 'paused':
+				return 'bg-[#E3EBF2]';
+			case 'inactive':
+				return 'bg-[#F5C6C6]';
+			default:
+				return 'bg-new.surface-muted';
+		}
 	}
 
 	async sendTestEvent(endpointId?: string) {
@@ -156,10 +189,24 @@ export class EndpointsComponent implements OnInit {
 		if (!endpointDetails?.uid) return;
 		this.isTogglingEndpoint = true;
 
+		// The list rendered can be status-filtered, so resolve the index by uid.
+		const endpointIndex = this.endpoints.findIndex(endpoint => endpoint.uid === endpointDetails.uid);
+		if (endpointIndex === -1) {
+			this.isTogglingEndpoint = false;
+			return;
+		}
+
 		try {
 			const response = await this.endpointService.toggleEndpoint(endpointDetails?.uid);
-			this.endpoints[subscriptionIndex] = { ...this.endpoints[subscriptionIndex], ...response.data };
 			this.generalService.showNotification({ message: `${endpointDetails?.name || endpointDetails?.title} status updated successfully`, style: 'success' });
+
+			// When a status filter is active, refetch so the row drops out if it
+			// no longer matches (e.g. pause while viewing Active).
+			if (this.statusFilter !== 'all') {
+				await this.getEndpoints({ q: this.endpointSearchString });
+			} else {
+				this.endpoints[endpointIndex] = { ...this.endpoints[endpointIndex], ...response.data };
+			}
 			this.isTogglingEndpoint = false;
 		} catch {
 			this.isTogglingEndpoint = false;

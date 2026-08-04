@@ -191,6 +191,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
 			return;
 		}
 
+		if (requestedPage === SETTINGS_PAGE.TEAM && !this.licenseService.hasLicense('user_limit')) {
+			this.generalService.showNotification({ message: this.getTeamUpgradeMessage(), style: 'warning' });
+			this.toggleActivePage(SETTINGS_PAGE.ORGANISATION);
+			return;
+		}
+
 		this.toggleActivePage(requestedPage as SETTINGS);
 	}
 
@@ -206,13 +212,26 @@ export class SettingsComponent implements OnInit, OnDestroy {
 		});
 	}
 
-	getUserLimitMessage(): string {
-		return this.licenseService.limitMessage('user_limit');
+	getTeamUpgradeMessage(): string {
+		const pill = this.getUserLimitPillText();
+		if (pill && pill !== 'Premium') {
+			return `You've reached your user limit (${pill}). Upgrade to Premium for more team seats.`;
+		}
+		return 'Upgrade to Premium to use team features.';
 	}
 
 	// Compact pill text so the tag fits the 200px sidebar: "1/1" for a reached limit,
-	// the upsell label unchanged. Full message stays available as the tooltip.
+	// or "Premium" for the upsell. Full message stays available as the tooltip.
 	getUserLimitPillText(): string {
 		return this.licenseService.limitPillText('user_limit');
+	}
+
+	onTeamPremiumClick(event: Event) {
+		event.preventDefault();
+		event.stopPropagation();
+		this.generalService.showNotification({ message: this.getTeamUpgradeMessage(), style: 'warning' });
+		if (this.canAccessBilling) {
+			this.toggleActivePage(SETTINGS_PAGE.BILLING);
+		}
 	}
 }

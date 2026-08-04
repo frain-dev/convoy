@@ -6,8 +6,6 @@ import {HTTP_RESPONSE} from 'src/app/models/global.model';
 	providedIn: 'root'
 })
 export class LicensesService {
-	readonly licensedOrgLabel = 'Pro';
-
 	// Two license sets are kept side by side. The instance set is the deployment
 	// license (self-hosted CONVOY_LICENSE_KEY or the cloud operator license); the
 	// org set is the current org's plan entitlements. In cloud both carry real
@@ -262,11 +260,11 @@ export class LicensesService {
 	}
 
 	// Pill text for tight surfaces: compact "current/limit" when the limit is reached,
-	// the upsell label ("Business") unchanged, '' when nothing to show. Pair with
+	// the upsell label ("Premium") unchanged, '' when nothing to show. Pair with
 	// limitMessage as the tooltip so the full copy is still reachable.
 	limitPillText(limitKey: string): string {
 		const message = this.limitMessage(limitKey);
-		if (message && message !== 'Business') {
+		if (message && message !== 'Premium') {
 			return this.limitReachedCompact(limitKey);
 		}
 		return message;
@@ -274,10 +272,11 @@ export class LicensesService {
 
 	// Shared project/user limit gating copy: upsell label when the plan does not
 	// include the limit, the reached message when it is included and exhausted.
+	// "Premium" matches getconvoy.io/pricing (Community / Premium / Enterprise).
 	limitMessage(limitKey: string): string {
 		if (!this.hasLicense(limitKey)) {
 			if (!this.isLimitAvailable(limitKey)) {
-				return 'Business';
+				return 'Premium';
 			}
 			if (this.isLimitAvailable(limitKey) && this.isLimitReached(limitKey)) {
 				return this.limitReachedMessage(limitKey);

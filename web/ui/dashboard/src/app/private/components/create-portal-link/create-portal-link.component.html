@@ -1,89 +1,118 @@
-<div convoy-dialog-header fullscreen="true" (closeDialog)="goBack()">
-  <h2 class="font-semibold text-14 capitalize">Portal Link</h2>
-</div>
-
-<div class="max-w-[770px] m-auto desktop:px-24px">
-  <h2 class="font-semibold mb-8px mt-30px">{{ action === 'update' ? 'Update' : 'Create' }} Portal Link</h2>
-  <p class="text-neutral-10 font-normal text-14 max-w-max">A portal link is a dashboard for your for your
-  customers to view and debug their webhooks sent from you.</p>
-
-  <form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
-    <div convoy-card class="p-24px mt-24px">
-      <convoy-input-field>
-        <label for="link-name" convoy-label required="true">Link Name</label>
-        <input id="link-name" convoy-input autocomplete="name" formControlName="name" placeholder="Link name"
-          [readonly]="portalLink"/>
-        @if (portalLinkForm.get('name')?.touched && portalLinkForm.get('name')?.invalid) {
-          <convoy-input-error>
-            Please provide a name for your link.
-          </convoy-input-error>
-        }
-      </convoy-input-field>
-
-      <convoy-input-field class="mb-24px">
-        <label for="owner_id_value"
-          tooltip="An arbitrary string that represents the ID of the reources in your system" convoy-label
-        required="true">Owner ID</label>
-        <input id="owner_id_value" convoy-input autocomplete="name" formControlName="owner_id"
-          placeholder="Enter owner id"/>
-      </convoy-input-field>
-
-      <div class="max-w-[500px] mb-12px">
-        <label class="text-14 font-semibold">Authentication Type</label>
-      </div>
-      <div class="grid grid-cols-2 gap-24px mb-24px">
-        <convoy-radio formControlName="auth_type"
-          description="Default authentication type for existing portal links. (Deprecated)"
-          label="Static Token"
-          _name="type"
-          value="static_token"
-        _id="incoming"></convoy-radio>
-        <convoy-radio
-          formControlName="auth_type"
-          description="Short-lived token that can be used to access the portal link. (Recommended)"
-          label="Refresh Token"
-          [checked]="true"
-          _name="type"
-          value="refresh_token"
-        _id="owner_id"></convoy-radio>
-      </div>
-
-
-      <div class="flex justify-between items-start">
-        <div class="max-w-full">
-          <label class="text-14 font-semibold">Allow Endpoint Management</label>
-          <p class="text-12 font-normal text-neutral-11 mt-10px">Endpoint management enables portal link user
-          to update and create (if set up with owner id) endpoints.</p>
-        </div>
-        <convoy-toggle [class]="portalLink ? 'disabled' : ''"
-        formControlName="can_manage_endpoint"></convoy-toggle>
-      </div>
-
-      @if (portalLink) {
-        <hr class="my-24px border border-new.primary-25"/>
-      }
-
-      @if (portalLink) {
-        <p class="text-neutral-11 text-12 mt-20px">Portal Link</p>
-        <div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
-          <span class="text-14 font-normal whitespace-nowrap w-450px overflow-hidden text-ellipsis">{{ portalLink || '' }}</span>
-          <convoy-copy-button [text]="portalLink || ''"
-          notificationText="URL has been copied to clipboard!"></convoy-copy-button>
-        </div>
-      }
-    </div>
-
-    <div class="flex justify-end items-center my-60px">
-      <button convoy-button [disabled]="isCreatingPortalLink || portalLink || portalLinkForm.disabled">
-        {{ action === 'update' ? 'Update Portal Link' : 'Create Portal Link' }}
-      </button>
-      @if (portalLink) {
-        <button convoy-button class="ml-16px text-14" type="button" fill="outline"
-          (click)="goBack()">Done
+<div class="p-24px flex flex-col gap-24px w-full">
+  @if (!portalLink) {
+    <!-- Form state -->
+    <div class="flex flex-col gap-8px">
+      <div class="flex items-center justify-between">
+        <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">{{ action === 'update' ? 'Edit portal link' : 'Create a portal link' }}</h2>
+        <button type="button" class="w-24px h-24px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" (click)="goBack()">
+          <img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close" />
         </button>
-      }
+      </div>
+      <p class="font-body font-normal text-[16px] leading-[20px] text-new.text-secondary">A portal link is a dashboard for your customers to view and debug their webhooks sent from you.</p>
     </div>
-  </form>
+
+    <form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()" class="flex flex-col gap-24px">
+      <div class="flex flex-col gap-12px">
+        <!-- Name + Owner ID -->
+        <div class="flex gap-16px mobile:flex-col">
+          <div class="flex-1 flex flex-col gap-8px">
+            <label for="link-name" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Link Name</label>
+            <input
+              id="link-name"
+              formControlName="name"
+              autocomplete="off"
+              placeholder="Enter link name"
+              class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+              />
+            @if (portalLinkForm.get('name')?.touched && portalLinkForm.get('name')?.invalid) {
+              <span class="font-body text-[12px] text-new.error-500">Please provide a name for your link.</span>
+            }
+          </div>
+
+          <div class="flex-1 flex flex-col gap-8px">
+            <label for="owner-id" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary" title="An arbitrary string that represents the ID of the resources in your system">Owner ID</label>
+            <input
+              id="owner-id"
+              formControlName="owner_id"
+              autocomplete="off"
+              placeholder="Enter owner ID"
+              class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+              />
+            @if (portalLinkForm.get('owner_id')?.touched && portalLinkForm.get('owner_id')?.invalid) {
+              <span class="font-body text-[12px] text-new.error-500">Please provide an owner ID.</span>
+            }
+          </div>
+        </div>
+
+        <!-- Auth type selection cards -->
+        <div class="flex gap-16px mobile:flex-col">
+          @for (option of authTypeOptions; track option.value) {
+            <button
+              type="button"
+              class="flex-1 flex items-start gap-8px p-16px rounded-12px text-left bg-white-100 transition-all"
+              [class]="portalLinkForm.value.auth_type === option.value ? 'border border-new.primary-400 ring-1 ring-new.primary-400' : 'border border-new.border'"
+              [disabled]="portalLinkForm.disabled"
+              (click)="portalLinkForm.patchValue({ auth_type: option.value })"
+              >
+              <span class="flex-1 flex flex-col gap-4px">
+                <span class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">{{ option.label }}</span>
+                <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ option.description }}</span>
+              </span>
+              @if (portalLinkForm.value.auth_type === option.value) {
+                <span class="w-22px h-22px shrink-0 rounded-full bg-new.primary-400 flex items-center justify-center">
+                  <img src="/assets/img/svg/check-white.svg" class="w-14px h-14px" alt="" />
+                </span>
+              } @else {
+                <span class="w-22px h-22px shrink-0 rounded-full border border-new.border"></span>
+              }
+            </button>
+          }
+        </div>
+
+        <!-- Endpoint management toggle row -->
+        <div class="flex items-center gap-16px p-16px bg-white-100 border border-new.border rounded-12px">
+          <div class="flex-1 flex flex-col gap-4px">
+            <span class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Allow Endpoint Management</span>
+            <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Endpoint management enables portal link user to update and create (if set up with owner id) endpoints.</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer shrink-0">
+            <input type="checkbox" formControlName="can_manage_endpoint" class="sr-only peer" />
+            <span class="w-40px h-24px rounded-full bg-neutral-6 peer-checked:bg-[#16A34A] transition-colors"></span>
+            <span class="absolute left-2px top-2px w-20px h-20px rounded-full bg-white-100 transition-transform peer-checked:translate-x-[16px]"></span>
+          </label>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="w-full min-w-[100px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50"
+        [disabled]="isCreatingPortalLink || portalLinkForm.disabled"
+        >
+        {{ action === 'update' ? 'Save Changes' : 'Create Portal Link' }}
+      </button>
+    </form>
+  } @else {
+    <!-- Result state: link created -->
+    <div class="flex flex-col gap-8px">
+      <div class="flex items-center justify-between">
+        <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Here&rsquo;s your link</h2>
+        <button type="button" class="w-24px h-24px flex items-center justify-center rounded-[6px] transition-colors hover:bg-new.surface-muted" (click)="goBack()">
+          <img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close" />
+        </button>
+      </div>
+      <p class="font-body font-normal text-[16px] leading-[20px] text-new.text-secondary">Share this link to your customers for viewing and debugging their webhooks sent from you.</p>
+    </div>
+
+    <div class="flex flex-col gap-8px">
+      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Your Link</span>
+      <div class="h-40px w-full flex items-center gap-8px px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)]">
+        <span class="flex-1 truncate font-body font-normal text-[14px] text-new.text-secondary">{{ portalLink }}</span>
+        <button type="button" class="shrink-0 font-body font-normal text-[12px] text-new.text-secondary transition-colors hover:text-new.text-primary" (click)="copyLink()">copy link</button>
+      </div>
+    </div>
+
+    <button type="button" class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90" (click)="goBack()">Done</button>
+  }
 </div>
 
 <convoy-notification></convoy-notification>

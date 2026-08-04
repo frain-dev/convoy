@@ -1,39 +1,39 @@
 <div class="flex justify-between items-center mb-28px">
-  <h3 class="font-semibold">Configurations</h3>
+  <h3 class="font-heading font-semibold text-[18px] leading-[26px] text-new.text-primary">Configurations</h3>
 
-  <button convoy-button size="sm" [disabled]="isUpdatingConfig" (click)="updateConfigSettings()">Save Changes</button>
+  <button type="button" class="px-14px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="isUpdatingConfig" (click)="updateConfigSettings()">Save Changes</button>
 </div>
 
 <form [formGroup]="configForm">
   <div class="flex justify-between items-start">
     <div class="w-3/4">
-      <h4 class="font-semibold">Analytics</h4>
-      <p class="text-12 text-neutral-11">Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.</p>
+      <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Analytics</h4>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.</p>
     </div>
     <convoy-toggle formControlName="is_analytics_enabled"></convoy-toggle>
   </div>
 
-  <hr class="border-t border-t-neutral-a3 my-20px" />
+  <hr class="border-t border-new.border my-20px" />
 
   <div class="flex justify-between items-start">
     <div class="w-3/4">
-      <h4 class="font-semibold">Allow Signup</h4>
-      <p class="text-12 text-neutral-11">Allow anyone with your instance URL signup and create an organisation on your Convoy application</p>
+      <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Allow Signup</h4>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Allow anyone with your instance URL signup and create an organisation on your Convoy application</p>
     </div>
     <convoy-toggle name="is_signup_enabled" formControlName="is_signup_enabled"></convoy-toggle>
   </div>
 
-  <hr class="border-t border-t-neutral-a3 my-20px" />
+  <hr class="border-t border-new.border my-20px" />
 
   @if (configForm.get('retention_policy_enabled')?.value && showConfig('retention_policy')) {
-    <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+    <div class="border-l-2 border-new.primary-400 pl-16px mb-40px">
       <div class="flex justify-between items-center mb-24px">
-        <p class="flex items-center text-12 font-medium text-neutral-11">
+        <p class="flex items-center font-body font-medium text-[13px] text-new.text-secondary">
           Retention Period
           <convoy-tooltip size="sm" position="top-right" class="ml-4px">This is the interval at which events would be reviewed and retained for this project. E.g 720h, 20m, 30s</convoy-tooltip>
         </p>
-        <button convoy-button type="button" size="xs" fill="soft-outline" convoy-permission="Project Settings|MANAGE" color="neutral" (click)="toggleConfigForm('retention_policy')">
-          <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+        <button type="button" convoy-permission="Project Settings|MANAGE" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-colors hover:opacity-80" (click)="toggleConfigForm('retention_policy')">
+          <svg width="14" height="14" class="fill-transparent stroke-new.text-secondary">
             <use xlink:href="#delete-icon2"></use>
           </svg>
         </button>
@@ -42,7 +42,7 @@
         <convoy-input-field>
           <div class="relative">
             <input type="number" id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 720" />
-            <div class="absolute top-[50%] right-14px text-12 text-neutral-a30 opacity-40 translate-y-[-50%]">hour(s)</div>
+            <div class="absolute top-[50%] right-14px font-body text-[12px] text-new.text-placeholder translate-y-[-50%]">hour(s)</div>
           </div>
           @if (configForm.get('retention_policy.policy')?.touched && configForm.get('retention_policy.policy')?.invalid) {
             <convoy-input-error>Enter retention policy value</convoy-input-error>
@@ -53,16 +53,15 @@
   }
 
   @if (showConfig('storage_policy')) {
-    <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+    <div class="border-l-2 border-new.primary-400 pl-16px mb-40px">
       <div class="flex justify-between items-center mb-24px">
-        <p class="text-12 font-medium text-neutral-11">Storage Policy</p>
-        <button convoy-button type="button" size="xs" fill="soft-outline" convoy-permission="Project Settings|MANAGE" color="neutral" (click)="toggleConfigForm('storage_policy')">
-          <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+        <p class="font-body font-medium text-[13px] text-new.text-secondary">Storage Policy</p>
+        <button type="button" convoy-permission="Project Settings|MANAGE" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-colors hover:opacity-80" (click)="toggleConfigForm('storage_policy')">
+          <svg width="14" height="14" class="fill-transparent stroke-new.text-secondary">
             <use xlink:href="#delete-icon2"></use>
           </svg>
         </button>
       </div>
-      <!-- <h2 class="font-semibold mb-12px mt-24px">Storage Policy</h2> -->
       <div formGroupName="storage_policy">
         <div class="grid grid-cols-2 gap-24px mb-24px">
           <convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Retain events in a specified path on your device"></convoy-radio>
