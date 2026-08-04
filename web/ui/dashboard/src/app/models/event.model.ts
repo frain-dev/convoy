@@ -19,13 +19,6 @@ export interface EVENT {
 	data: any;
 	matched_endpoints: number;
 	endpoint_metadata: ENDPOINT[];
-	metadata?: {
-		interval_seconds: number;
-		next_send_time: Date;
-		num_trials: number;
-		retry_limit: number;
-		strategy: string;
-	};
 	app_metadata: APP;
 	source_metadata: SOURCE;
 }

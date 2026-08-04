@@ -356,7 +356,7 @@
 
         <!-- Payload + headers -->
         <div class="flex flex-col gap-12px">
-          <prism title="Event" language="json" [code]="generalService.getCodeSnippetString('event_data', eventsDetailsItem?.data || eventsDetailsItem?.metadata?.data)"></prism>
+          <prism title="Event" language="json" [code]="generalService.getCodeSnippetString('event_data', eventsDetailsItem?.data)"></prism>
           @if (eventsDetailsItem?.headers) {
             <prism title="Headers" language="json" type="headers" [code]="eventsDetailsItem?.headers"></prism>
           }

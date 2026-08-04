@@ -600,6 +600,93 @@ func TestUpdateEventStatus(t *testing.T) {
 	})
 }
 
+// The partition helpers rebuild convoy.events from an explicit column list, so a
+// column added to the migration but not to those lists is silently dropped the
+// first time an operator partitions. Round-trip a row with every mutable column
+// set to catch that drift.
+func TestPartitionEventsTableRoundTripsFailureReason(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+
+	event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+	require.NoError(t, service.CreateEvent(ctx, event))
+
+	reason := "dynamic URL does not match any configured endpoint URL template"
+	require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.FailureStatus, reason))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+
+	found, err := service.FindEventByID(ctx, project.UID, event.UID)
+	require.NoError(t, err)
+	require.Equal(t, datastore.FailureStatus, found.Status)
+	require.Equal(t, reason, found.FailureReason)
+
+	require.NoError(t, service.UnPartitionEventsTable(ctx))
+
+	found, err = service.FindEventByID(ctx, project.UID, event.UID)
+	require.NoError(t, err)
+	require.Equal(t, datastore.FailureStatus, found.Status)
+	require.Equal(t, reason, found.FailureReason)
+
+	// Writes must still work against the rebuilt table.
+	require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.SuccessStatus, ""))
+	found, err = service.FindEventByID(ctx, project.UID, event.UID)
+	require.NoError(t, err)
+	require.Empty(t, found.FailureReason)
+}
+
+// events_search partitioning had drifted further than events: it also dropped
+// acknowledged_at, status and metadata, which copy_rows writes on every
+// tokenization run. Assert the whole mirrored column set survives a round trip.
+func TestPartitionEventsSearchTableRoundTripsMirroredColumns(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+
+	event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+	require.NoError(t, service.CreateEvent(ctx, event))
+
+	reason := "dynamic URL does not match any configured endpoint URL template"
+	require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.FailureStatus, reason))
+
+	require.NoError(t, service.CopyRows(ctx, project.UID, config.DefaultSearchTokenizationInterval))
+
+	requireSearchRow := func(stage string) {
+		t.Helper()
+
+		var status, failureReason string
+		err := db.GetDB().QueryRowx(
+			`SELECT COALESCE(status, ''), COALESCE(failure_reason, '') FROM convoy.events_search WHERE id = $1`,
+			event.UID,
+		).Scan(&status, &failureReason)
+		require.NoError(t, err, stage)
+		require.Equal(t, string(datastore.FailureStatus), status, stage)
+		require.Equal(t, reason, failureReason, stage)
+	}
+
+	requireSearchRow("before partitioning")
+
+	require.NoError(t, service.PartitionEventsSearchTable(ctx))
+	requireSearchRow("after partitioning")
+
+	require.NoError(t, service.UnPartitionEventsSearchTable(ctx))
+	requireSearchRow("after un-partitioning")
+
+	// A non-default interval is the search-policy-change path: it purges the
+	// project's tokenized rows and re-runs copy_rows, which writes
+	// status/metadata/failure_reason and so fails outright if the rebuilt table
+	// lost a column.
+	require.NoError(t, service.CopyRows(ctx, project.UID, config.DefaultSearchTokenizationInterval+1))
+	requireSearchRow("after re-tokenizing")
+}
+
 func TestCountProjectMessages(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
