@@ -36,6 +36,24 @@
     (startTrialConversion)="convertTrialToPaid()"
     (payPastDue)="payPastDueInvoice()">
   </app-billing-overview>
+  @if (hasReferralShare) {
+    <div class="bg-white-100 border border-new.border rounded-16px p-24px mt-24px mb-0 flex flex-col gap-16px">
+      <div class="flex flex-col gap-2px">
+        <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Refer a friend</h3>
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Share your link. You and your referral both earn account credit when they become a paid customer.</p>
+      </div>
+      <div class="flex flex-col gap-8px max-w-[640px]">
+        <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Your referral link</span>
+        <div class="h-40px w-full flex items-center gap-8px px-12px bg-new.surface-muted border border-new.border rounded-8px">
+          <span class="flex-1 truncate font-menlo text-[13px] text-new.text-primary">{{ referralShareUrl }}</span>
+          <convoy-copy-button class="shrink-0" [text]="referralShareUrl" notificationText="Referral link copied to clipboard"></convoy-copy-button>
+        </div>
+        @if (referralCode) {
+          <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary">Code: <span class="font-menlo">{{ referralCode }}</span></p>
+        }
+      </div>
+    </div>
+  }
   <app-billing-usage
     [usageRows]="usageRows"
     [isFetchingUsage]="isLoadingUsage">
@@ -597,6 +615,18 @@
                   }
                 </convoy-input-field>
               }
+              <convoy-input-field>
+                <label for="selfHostedReferralCode" convoy-label>Referral code (optional)</label>
+                <input
+                  id="selfHostedReferralCode"
+                  type="text"
+                  convoy-input
+                  formControlName="referral_code"
+                  autocomplete="off"
+                  placeholder="e.g. abcdef12"
+                  spellcheck="false" />
+                <p class="font-body font-normal text-[12px] text-new.text-secondary mt-6px">Have a referral link? Enter the code from it here.</p>
+              </convoy-input-field>
               @if (selfHostedBillingConfig?.active_checkout) {
                 <p class="font-body font-normal text-[12px] text-new.text-secondary mt-8px">
                   Starting checkout again will replace the active checkout on this instance.

@@ -43,6 +43,14 @@
           <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Fetching your subscriptions. This usually takes a moment.</p>
         </div>
       </div>
+    } @else if (subscriptionsLoadFailed) {
+      <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
+        <img src="/assets/img/svg/deliveries-empty.svg" class="w-48px h-48px" alt="" />
+        <div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Could not load subscriptions</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Something went wrong fetching subscriptions. Refresh the page or try your search again.</p>
+        </div>
+      </div>
     } @else if (!subscriptions?.content?.length) {
       <!-- Empty state -->
       <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">

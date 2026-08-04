@@ -67,11 +67,16 @@ export class PlanService {
     });
   }
 
-  startSelfHostedTrial(email: string, host: string): Promise<{ status: boolean; message: string; data: any }> {
+  startSelfHostedTrial(email: string, host: string, referralCode?: string): Promise<{ status: boolean; message: string; data: any }> {
+    const body: { email: string; host: string; referral_code?: string } = { email, host };
+    const code = typeof referralCode === 'string' ? referralCode.trim() : '';
+    if (code.length > 0) {
+      body.referral_code = code;
+    }
     return this.httpService.request({
       url: '/billing/sh_trial/start',
       method: 'post',
-      body: { email, host }
+      body
     });
   }
 
