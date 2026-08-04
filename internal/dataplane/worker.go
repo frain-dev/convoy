@@ -335,6 +335,11 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		services.WithOAuth2Context(oauth2Dispatcher.ContextWithRules),
 	)
 
+	retentionHours := cfg.Analytics.BlastRadiusRetentionHours
+	if retentionHours == 0 {
+		retentionHours = 24
+	}
+
 	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
 		EndpointRepo:               endpointRepo,
 		EventDeliveryRepo:          eventDeliveryRepo,
@@ -350,6 +355,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		FeatureFlagFetcher:         featureFlagFetcher,
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
 		OAuth2TokenService:         oauth2TokenService,
+		Redis:                      opts.Redis.Client(),
+		BlastRadiusRetention:       time.Duration(retentionHours) * time.Hour,
 		Logger:                     lo,
 	}
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
+	"github.com/redis/go-redis/v9"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
@@ -351,6 +352,22 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		} else {
 			deps.Logger.ErrorContext(ctx, eventDelivery.UID, logAttrs...)
 			done = false
+
+			if deps.Redis != nil {
+				hllKey := datastore.BlastRadiusKey(project.UID, time.Now())
+				ttl := deps.BlastRadiusRetention
+				if ttl < 24*time.Hour {
+					ttl = 24 * time.Hour
+				}
+				_, pfErr := deps.Redis.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+					pipe.PFAdd(ctx, hllKey, endpoint.UID)
+					pipe.Expire(ctx, hllKey, ttl)
+					return nil
+				})
+				if pfErr != nil {
+					deps.Logger.ErrorContext(ctx, "failed to update blast radius hyperloglog", "error", pfErr)
+				}
+			}
 
 			// For at-most-once delivery, only retry on network failures
 			if eventDelivery.DeliveryMode == datastore.AtMostOnceDeliveryMode {

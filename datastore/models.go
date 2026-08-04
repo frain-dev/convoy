@@ -2338,3 +2338,7 @@ type UpdateOrganisationCircuitBreakerConfig struct {
 	MinimumRequestCount         uint64 `json:"minimum_request_count" valid:"required,min(0)"`
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" valid:"required,min(0)"`
 }
+
+func BlastRadiusKey(projectUID string, t time.Time) string {
+	return fmt.Sprintf("project:%s:blast_radius:%s", projectUID, t.UTC().Format("2006-01-02"))
+}
