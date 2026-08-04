@@ -45,6 +45,11 @@
 					<convoy-input-error>Please enter a valid billing email</convoy-input-error>
 				}
 			</convoy-input-field>
+			<convoy-input-field>
+				<label for="trialReferralCode" convoy-label>Referral code (optional)</label>
+				<input id="trialReferralCode" type="text" convoy-input placeholder="e.g. abcdef12" autocomplete="off" spellcheck="false" [formControl]="referralCode" />
+				<p class="font-body font-normal text-[12px] text-new.text-secondary mt-6px">Have a referral link? Enter the code from it here.</p>
+			</convoy-input-field>
 		}
 
 		@if (mode === 'cloud' && !emailVerified) {

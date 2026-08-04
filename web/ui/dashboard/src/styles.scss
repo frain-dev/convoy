@@ -27,7 +27,13 @@
 /* Firefox */
 * {
 	scrollbar-width: 5px;
-    @apply text-neutral-12;
+}
+
+/* Default text color on the root only so utilities like text-white-100 on a
+   parent (primary buttons) can inherit into child spans. A universal * color
+   painted every nested span dark and broke primary CTA labels. */
+body {
+	@apply text-neutral-12;
 }
 
 /* Chrome, Edge, and Safari */

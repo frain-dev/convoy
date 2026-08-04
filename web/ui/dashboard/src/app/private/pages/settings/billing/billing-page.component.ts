@@ -155,6 +155,11 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
   // strategy (e.g. cloud "Manage plan") is known. Render a loader until this is true.
   billingConfigLoaded = false;
 
+  // Self-hosted get-referral: set only when SH org GET returns a real share_url.
+  // Absent/empty → hide the Refer block (no client re-gate on a separate flags call).
+  referralCode = '';
+  referralShareUrl = '';
+
   constructor(
     private fb: FormBuilder,
     private billingPaymentDetailsService: BillingPaymentDetailsService,
@@ -256,6 +261,7 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
       this.overviewService.setBootstrapPromise(null);
       void this.trialStatusService.refresh();
       await this.loadBillingData();
+      void this.loadReferralShare();
     } else {
       this.bootstrapSubscriptionPromise = null;
       this.overviewService.setBootstrapPromise(null);
@@ -292,6 +298,10 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
 
   get canShowBillingPanels(): boolean {
     return this.billingStrategy === 'cloud' || this.billingStrategy === 'licensed_self_hosted';
+  }
+
+  get hasReferralShare(): boolean {
+    return typeof this.referralShareUrl === 'string' && this.referralShareUrl.length > 0;
   }
 
   get selfHostedSetupTitle(): string {
@@ -545,6 +555,35 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
     // Invalidate any in-flight usage response so a late resolve from a cancelled
     // chain cannot repopulate rows after idle/destroy.
     this.usageRequestToken++;
+  }
+
+  // SH-only. Trusts server presence of share_url after lazy ensure; transport/mint
+  // errors leave the section hidden (fail closed on display).
+  private async loadReferralShare() {
+    if (this.billingStrategy !== 'licensed_self_hosted') {
+      this.referralCode = '';
+      this.referralShareUrl = '';
+      return;
+    }
+
+    try {
+      const response = await this.httpService.request({
+        url: BillingEndpoints.billingUrl(this.billingStrategy, 'organisation', ''),
+        method: 'get',
+        hideNotification: true
+      });
+      const data = response?.data;
+      const shareUrl = data?.share_url;
+      const code = data?.referral_code;
+      this.referralShareUrl = typeof shareUrl === 'string' ? shareUrl.trim() : '';
+      this.referralCode = typeof code === 'string' ? code.trim() : '';
+      this.cdr.markForCheck();
+    } catch (error) {
+      console.warn('Failed to load referral share link:', error);
+      this.referralCode = '';
+      this.referralShareUrl = '';
+      this.cdr.markForCheck();
+    }
   }
 
   private async loadOrganisationData() {
@@ -963,7 +1002,9 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
 
   private initializeForms() {
     this.selfHostedCheckoutForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]]
+      email: ['', [Validators.required, Validators.email]],
+      // Optional referee attribution; Overwatch fail-opens on unknown codes.
+      referral_code: ['']
     });
 
     this.billingAddressForm = this.fb.group({
@@ -1157,13 +1198,17 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
       return false;
     }
 
-    const body: { plan_id: string; interval: string; host: string; email?: string } = {
+    const body: { plan_id: string; interval: string; host: string; email?: string; referral_code?: string } = {
       plan_id: planIdForApi,
       interval,
       host: window.location.origin
     };
     if (!this.isSelfHostedResubscribe) {
       body.email = this.selfHostedCheckoutForm.value.email;
+    }
+    const checkoutReferralCode = String(this.selfHostedCheckoutForm.value.referral_code || '').trim();
+    if (checkoutReferralCode.length > 0) {
+      body.referral_code = checkoutReferralCode;
     }
 
     const response = await this.httpService.request({

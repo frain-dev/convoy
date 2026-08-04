@@ -455,19 +455,22 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		endpointIDs, innerErr := h.portalScopedEndpointIDs(r, portalLink, data.Filter.EndpointIDs)
+		// Filter may narrow to the caller's endpointId; ownership must stay the full
+		// portal allowlist so multi-endpoint events that only touch owned endpoints still replay.
+		allowed, innerErr := h.getEndpoints(r, portalLink)
 		if innerErr != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
 			return
 		}
 
+		endpointIDs := filterAllowedEndpointIDs(data.Filter.EndpointIDs, allowed)
 		if len(endpointIDs) == 0 {
 			_ = render.Render(w, r, util.NewServerResponse("0 successful, 0 failed", nil, http.StatusOK))
 			return
 		}
 
 		data.Filter.EndpointIDs = endpointIDs
-		ownedEndpointIDs = endpointIDs
+		ownedEndpointIDs = allowed
 	}
 
 	ep := datastore.Pageable{}

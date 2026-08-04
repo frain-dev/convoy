@@ -34,9 +34,13 @@ type BillingOrganisation struct {
 	// through so the dashboard renders the real offer in the "Start trial" CTA
 	// instead of hardcoding copy. Nil when an older billing service omits it.
 	TrialOffer *TrialOffer `json:"trial_offer,omitempty"`
-	CreatedAt  string      `json:"created_at,omitempty"`
-	UpdatedAt  string      `json:"updated_at,omitempty"`
-	DeletedAt  string      `json:"deleted_at,omitempty"`
+	// ReferralCode / ShareURL come from Overwatch SH organisation GET (lazy
+	// ensure). Absent when the billing service omits them or mint failed.
+	ReferralCode string `json:"referral_code,omitempty"`
+	ShareURL     string `json:"share_url,omitempty"`
+	CreatedAt    string `json:"created_at,omitempty"`
+	UpdatedAt    string `json:"updated_at,omitempty"`
+	DeletedAt    string `json:"deleted_at,omitempty"`
 }
 
 // TrialOffer mirrors the billing service's trial_offer payload. Value is sent
