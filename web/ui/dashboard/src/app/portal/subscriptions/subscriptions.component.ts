@@ -28,6 +28,7 @@ export class SubscriptionsComponent implements OnInit {
 	portalDetails?: PORTAL_LINK;
 
 	isLoadingSubscriptions = false;
+	subscriptionsLoadFailed = false;
 	isDeletingSubscription = false;
 	showSubscriptionForm = false;
 	subscriptionSearchString!: string;
@@ -36,6 +37,9 @@ export class SubscriptionsComponent implements OnInit {
 	activeSubscription?: SUBSCRIPTION;
 	subscriptions?: { content: SUBSCRIPTION[]; pagination?: PAGINATION };
 	displayedSubscriptions?: { date: string; content: SUBSCRIPTION[] }[];
+	// Bumps on every getSubscriptions call so a late error/success from an
+	// older search/refetch cannot wipe or restore stale rows.
+	private subscriptionsRequestToken = 0;
 
 	token: string = this.route.snapshot.queryParams.token;
 
@@ -54,16 +58,30 @@ export class SubscriptionsComponent implements OnInit {
 
 	async getSubscriptions(requestDetails?: CURSOR & { name?: string }) {
 		const endpointId = this.endpointId;
+		const requestToken = ++this.subscriptionsRequestToken;
 		this.isLoadingSubscriptions = true;
+		this.subscriptionsLoadFailed = false;
 
 		try {
 			const subscriptions = await this.privateService.getSubscriptions({ endpointId, ...requestDetails });
+			if (requestToken !== this.subscriptionsRequestToken) return;
 
 			this.subscriptions = subscriptions.data;
 			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptions.data.content, 'desc');
-
-			this.isLoadingSubscriptions = false;
-		} catch {}
+			this.subscriptionsLoadFailed = false;
+		} catch {
+			if (requestToken !== this.subscriptionsRequestToken) return;
+			// Fail closed on display: drop spinner and prior rows so a failed search
+			// or refetch cannot leave stale results under the current query. Distinct
+			// from empty success so the template does not claim "No subscriptions yet".
+			this.subscriptions = undefined;
+			this.displayedSubscriptions = [];
+			this.subscriptionsLoadFailed = true;
+		} finally {
+			if (requestToken === this.subscriptionsRequestToken) {
+				this.isLoadingSubscriptions = false;
+			}
+		}
 	}
 
 	openSubsriptionForm(action: 'create' | 'update') {

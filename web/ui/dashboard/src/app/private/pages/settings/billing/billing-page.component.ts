@@ -190,6 +190,7 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
   private cityLoadingRequestToken: number | null = null;
   private usagePollHandle: ReturnType<typeof setTimeout> | null = null;
   private usageRequestToken = 0;
+  private referralShareRequestToken = 0;
   private billingActivationPollToken = 0;
 
   billingProvisioning = false;
@@ -558,9 +559,12 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
   }
 
   // SH-only. Trusts server presence of share_url after lazy ensure; transport/mint
-  // errors leave the section hidden (fail closed on display).
+  // errors leave the section hidden (fail closed on display). Stale-response guard
+  // so a late ngOnInit fetch cannot wipe a newer post-activation result.
   private async loadReferralShare() {
+    const requestToken = ++this.referralShareRequestToken;
     if (this.billingStrategy !== 'licensed_self_hosted') {
+      if (requestToken !== this.referralShareRequestToken) return;
       this.referralCode = '';
       this.referralShareUrl = '';
       return;
@@ -572,6 +576,7 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
         method: 'get',
         hideNotification: true
       });
+      if (requestToken !== this.referralShareRequestToken) return;
       const data = response?.data;
       const shareUrl = data?.share_url;
       const code = data?.referral_code;
@@ -579,6 +584,7 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
       this.referralCode = typeof code === 'string' ? code.trim() : '';
       this.cdr.markForCheck();
     } catch (error) {
+      if (requestToken !== this.referralShareRequestToken) return;
       console.warn('Failed to load referral share link:', error);
       this.referralCode = '';
       this.referralShareUrl = '';
@@ -1309,6 +1315,9 @@ export class BillingPageComponent implements OnInit, AfterViewInit {
 
     this.isActivatingBilling = false;
     this.isLoadingCheckout = false;
+    // Strategy may have flipped oss → licensed_self_hosted during reloadBillingConfig
+    // (trial/checkout). Fetch share link here so Refer shows without a full page reload.
+    void this.loadReferralShare();
     if (activated || this.hasActiveSubscription(this.currentSubscription)) {
       this.billingProvisioning = false;
       void this.trialStatusService.refresh();
