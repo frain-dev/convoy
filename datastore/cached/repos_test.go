@@ -27,7 +27,7 @@ func TestCachedProjectRepo_FetchProjectByID_CacheHit(t *testing.T) {
 	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 	project := &datastore.Project{UID: "proj-123", Name: "test"}
-	mockCache.EXPECT().Get(gomock.Any(), "projects:proj-123", gomock.Any()).
+	mockCache.EXPECT().Get(gomock.Any(), ProjectCacheKey("proj-123"), gomock.Any()).
 		DoAndReturn(func(_ context.Context, _ string, data interface{}) error {
 			*data.(*datastore.Project) = *project
 			return nil
@@ -49,9 +49,9 @@ func TestCachedProjectRepo_FetchProjectByID_CacheMiss(t *testing.T) {
 	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 	project := &datastore.Project{UID: "proj-123"}
-	mockCache.EXPECT().Get(gomock.Any(), "projects:proj-123", gomock.Any()).Return(nil)
+	mockCache.EXPECT().Get(gomock.Any(), ProjectCacheKey("proj-123"), gomock.Any()).Return(nil)
 	mockRepo.EXPECT().FetchProjectByID(gomock.Any(), "proj-123").Return(project, nil)
-	mockCache.EXPECT().Set(gomock.Any(), "projects:proj-123", project, 5*time.Minute).Return(nil)
+	mockCache.EXPECT().Set(gomock.Any(), ProjectCacheKey("proj-123"), project, 5*time.Minute).Return(nil)
 
 	repo := NewCachedProjectRepository(mockRepo, mockCache, 5*time.Minute, logger)
 	result, err := repo.FetchProjectByID(context.Background(), "proj-123")
@@ -70,7 +70,7 @@ func TestCachedProjectRepo_UpdateProject_Invalidates(t *testing.T) {
 
 	project := &datastore.Project{UID: "proj-123"}
 	mockRepo.EXPECT().UpdateProject(gomock.Any(), project).Return(nil)
-	mockCache.EXPECT().Delete(gomock.Any(), "projects:proj-123").Return(nil)
+	mockCache.EXPECT().Delete(gomock.Any(), ProjectCacheKey("proj-123")).Return(nil)
 
 	repo := NewCachedProjectRepository(mockRepo, mockCache, 5*time.Minute, logger)
 	require.NoError(t, repo.UpdateProject(context.Background(), project))
@@ -86,7 +86,7 @@ func TestCachedProjectRepo_DeleteProject_Invalidates(t *testing.T) {
 	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 	mockRepo.EXPECT().DeleteProject(gomock.Any(), "proj-123").Return(nil)
-	mockCache.EXPECT().Delete(gomock.Any(), "projects:proj-123").Return(nil)
+	mockCache.EXPECT().Delete(gomock.Any(), ProjectCacheKey("proj-123")).Return(nil)
 
 	repo := NewCachedProjectRepository(mockRepo, mockCache, 5*time.Minute, logger)
 	require.NoError(t, repo.DeleteProject(context.Background(), "proj-123"))

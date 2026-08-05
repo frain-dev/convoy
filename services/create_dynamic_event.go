@@ -81,7 +81,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) (err error) {
 		return &ServiceError{ErrMsg: "failed to create dynamic event"}
 	}
 
-	if e.Project.Config == nil || !e.Project.Config.SyncDynamicEventAck {
+	if e.Project.Config == nil || !e.Project.Config.VerifyDynamicEvents {
 		return nil
 	}
 
@@ -94,7 +94,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) (err error) {
 	if cfgErr != nil {
 		return util.NewServiceError(http.StatusInternalServerError, cfgErr)
 	}
-	timeout := time.Duration(cfg.SyncDynamicEventAckTimeout) * time.Second
+	timeout := time.Duration(cfg.VerifyDynamicEventsTimeout) * time.Second
 	if timeout <= 0 {
 		timeout = 30 * time.Second
 	}

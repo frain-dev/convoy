@@ -825,6 +825,12 @@ definitions:
     properties:
       add_event_id_trace_headers:
         type: boolean
+      allow_unmatched_dynamic_urls:
+        description: |-
+          AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the
+          project's endpoint URL templates auto-create an endpoint. Default false
+          rejects unmatched URLs.
+        type: boolean
       circuit_breaker:
         allOf:
           - $ref: '#/definitions/datastore.CircuitBreakerConfiguration'
@@ -861,9 +867,9 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.StrategyConfiguration'
         x-nullable: true
-      sync_dynamic_event_ack:
+      verify_dynamic_events:
         description: |-
-          SyncDynamicEventAck waits for endpoint/subscription resolve before
+          VerifyDynamicEvents waits for endpoint/subscription resolve before
           returning 2xx from POST /events/dynamic. Default false keeps 201-on-queue.
         type: boolean
     type: object
@@ -2238,6 +2244,12 @@ definitions:
       add_event_id_trace_headers:
         description: Controls of the Event ID and Event Delivery ID Headers are added to the request when events are dispatched to endpoints
         type: boolean
+      allow_unmatched_dynamic_urls:
+        description: |-
+          AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the project's
+          endpoint URL templates auto-create an endpoint instead of failing. When false (the
+          default), a project with templates configured rejects unmatched URLs.
+        type: boolean
       circuit_breaker:
         allOf:
           - $ref: '#/definitions/datastore.CircuitBreakerConfiguration'
@@ -2285,9 +2297,9 @@ definitions:
         allOf:
           - $ref: '#/definitions/models.StrategyConfiguration'
         description: Strategy is used to configure the project's retry strategies for failing events.
-      sync_dynamic_event_ack:
+      verify_dynamic_events:
         description: |-
-          SyncDynamicEventAck waits for dynamic endpoint/subscription resolve before
+          VerifyDynamicEvents waits for dynamic endpoint/subscription resolve before
           acknowledging POST /events/dynamic. When false, the handler returns 201 after enqueue.
         type: boolean
     type: object
