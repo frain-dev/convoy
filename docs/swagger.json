@@ -10722,7 +10722,7 @@
           "type": "boolean"
         },
         "allow_unmatched_dynamic_urls": {
-          "description": "AllowUnmatchedDynamicURLs lets a dynamic event whose concrete URL matches no\nconfigured endpoint URL template fall back to auto-creating an endpoint,\ninstead of being rejected. Default false is the strict behaviour, so the zero\nvalue cannot silently loosen a project that relies on templates being enforced.\nAn ambiguous URL matching several templates stays rejected either way, since\nauto-creating there would hide a template misconfiguration.",
+          "description": "AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the\nproject's endpoint URL templates auto-create an endpoint. Default false\nrejects unmatched URLs.",
           "type": "boolean"
         },
         "circuit_breaker": {

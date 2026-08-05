@@ -6562,17 +6562,11 @@ components:
           type: boolean
         allow_unmatched_dynamic_urls:
           description: >-
-            AllowUnmatchedDynamicURLs lets a dynamic event whose concrete URL matches no
+            AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the
 
-            configured endpoint URL template fall back to auto-creating an endpoint,
+            project's endpoint URL templates auto-create an endpoint. Default false
 
-            instead of being rejected. Default false is the strict behaviour, so the zero
-
-            value cannot silently loosen a project that relies on templates being enforced.
-
-            An ambiguous URL matching several templates stays rejected either way, since
-
-            auto-creating there would hide a template misconfiguration.
+            rejects unmatched URLs.
           type: boolean
         circuit_breaker:
           allOf:

@@ -640,12 +640,9 @@ type ProjectConfig struct {
 	// VerifyDynamicEvents waits for endpoint/subscription resolve before
 	// returning 2xx from POST /events/dynamic. Default false keeps 201-on-queue.
 	VerifyDynamicEvents bool `json:"verify_dynamic_events" db:"verify_dynamic_events"`
-	// AllowUnmatchedDynamicURLs lets a dynamic event whose concrete URL matches no
-	// configured endpoint URL template fall back to auto-creating an endpoint,
-	// instead of being rejected. Default false is the strict behaviour, so the zero
-	// value cannot silently loosen a project that relies on templates being enforced.
-	// An ambiguous URL matching several templates stays rejected either way, since
-	// auto-creating there would hide a template misconfiguration.
+	// AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the
+	// project's endpoint URL templates auto-create an endpoint. Default false
+	// rejects unmatched URLs.
 	AllowUnmatchedDynamicURLs bool                           `json:"allow_unmatched_dynamic_urls" db:"allow_unmatched_dynamic_urls"`
 	SearchPolicy              string                         `json:"search_policy" db:"search_policy"`
 	SSL                       *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`

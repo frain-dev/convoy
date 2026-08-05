@@ -20,11 +20,23 @@ import (
 
 const errBillingRequired = "complete billing setup to create projects: add a subscription or payment method"
 
+// projectDecodeErrMessage keeps decode failures generic so parser detail and
+// request content are never echoed back. The renamed-field error is the one
+// exception: it names its replacement, and returning it verbatim is the only way
+// a caller still sending sync_dynamic_event_ack learns why the setting did not
+// apply. Rejecting the old key is pointless if the reason never reaches them.
+func projectDecodeErrMessage(err error) string {
+	if errors.Is(err, models.ErrRenamedSyncDynamicEventAck) {
+		return err.Error()
+	}
+	return "Invalid request format"
+}
+
 func createProjectService(h *Handler) *services.ProjectService {
 	apiKeyRepo := api_keys.New(h.A.Logger, h.A.DB)
 	// Must be the cache-invalidating repository: ProjectService.UpdateProject
 	// persists config changes (meta events URL, signature versions, etc.) that
-	// the API and dataplane read through the "projects:<id>" cache.
+	// the API and dataplane read through the project cache (cached.ProjectCacheKey).
 	projectRepo := h.projectRepo()
 	eventRepo := events.New(h.A.Logger, h.A.DB)
 	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
@@ -139,7 +151,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	err := util.ReadJSON(r, &newProject)
 	if err != nil {
 		h.A.Logger.Error("Failed to parse project creation request", "error", err)
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(projectDecodeErrMessage(err), http.StatusBadRequest))
 		return
 	}
 
@@ -230,7 +242,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	err := util.ReadJSON(r, &update)
 	if err != nil {
 		h.A.Logger.Error("Failed to parse project update request", "error", err)
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse(projectDecodeErrMessage(err), http.StatusBadRequest))
 		return
 	}
 
