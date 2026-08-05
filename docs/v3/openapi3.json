@@ -11891,6 +11891,10 @@
           "add_event_id_trace_headers": {
             "type": "boolean"
           },
+          "allow_unmatched_dynamic_urls": {
+            "description": "AllowUnmatchedDynamicURLs lets a dynamic event whose concrete URL matches no\nconfigured endpoint URL template fall back to auto-creating an endpoint,\ninstead of being rejected. Default false is the strict behaviour, so the zero\nvalue cannot silently loosen a project that relies on templates being enforced.\nAn ambiguous URL matching several templates stays rejected either way, since\nauto-creating there would hide a template misconfiguration.",
+            "type": "boolean"
+          },
           "circuit_breaker": {
             "allOf": [
               {
@@ -11957,8 +11961,8 @@
             ],
             "nullable": true
           },
-          "sync_dynamic_event_ack": {
-            "description": "SyncDynamicEventAck waits for endpoint/subscription resolve before\nreturning 2xx from POST /events/dynamic. Default false keeps 201-on-queue.",
+          "verify_dynamic_events": {
+            "description": "VerifyDynamicEvents waits for endpoint/subscription resolve before\nreturning 2xx from POST /events/dynamic. Default false keeps 201-on-queue.",
             "type": "boolean"
           }
         },
@@ -13948,6 +13952,10 @@
             "description": "Controls of the Event ID and Event Delivery ID Headers are added to the request when events are dispatched to endpoints",
             "type": "boolean"
           },
+          "allow_unmatched_dynamic_urls": {
+            "description": "AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the project's\nendpoint URL templates auto-create an endpoint instead of failing. When false (the\ndefault), a project with templates configured rejects unmatched URLs.",
+            "type": "boolean"
+          },
           "circuit_breaker": {
             "allOf": [
               {
@@ -14024,8 +14032,8 @@
             ],
             "description": "Strategy is used to configure the project's retry strategies for failing events."
           },
-          "sync_dynamic_event_ack": {
-            "description": "SyncDynamicEventAck waits for dynamic endpoint/subscription resolve before\nacknowledging POST /events/dynamic. When false, the handler returns 201 after enqueue.",
+          "verify_dynamic_events": {
+            "description": "VerifyDynamicEvents waits for dynamic endpoint/subscription resolve before\nacknowledging POST /events/dynamic. When false, the handler returns 201 after enqueue.",
             "type": "boolean"
           }
         },

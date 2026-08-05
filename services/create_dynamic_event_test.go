@@ -103,7 +103,7 @@ func TestCreateDynamicEventService_Run(t *testing.T) {
 				g: &datastore.Project{
 					UID: "sync-nil-redis",
 					Config: &datastore.ProjectConfig{
-						SyncDynamicEventAck: true,
+						VerifyDynamicEvents: true,
 					},
 				},
 			},
@@ -163,7 +163,7 @@ func TestCreateDynamicEventService_SyncAckWaitSuccess(t *testing.T) {
 	project := &datastore.Project{
 		UID: "sync-ok-project",
 		Config: &datastore.ProjectConfig{
-			SyncDynamicEventAck: true,
+			VerifyDynamicEvents: true,
 		},
 	}
 	de := &models.DynamicEvent{
@@ -198,7 +198,7 @@ func TestCreateDynamicEventService_SyncAckWaitResolveError(t *testing.T) {
 	project := &datastore.Project{
 		UID: "sync-err-project",
 		Config: &datastore.ProjectConfig{
-			SyncDynamicEventAck: true,
+			VerifyDynamicEvents: true,
 		},
 	}
 	de := &models.DynamicEvent{
@@ -238,13 +238,13 @@ func TestCreateDynamicEventService_SyncAckWaitTimeout(t *testing.T) {
 	require.NoError(t, config.LoadConfig("./testdata/basic-config.json"))
 	cfg, err := config.Get()
 	require.NoError(t, err)
-	cfg.SyncDynamicEventAckTimeout = 1
+	cfg.VerifyDynamicEventsTimeout = 1
 	require.NoError(t, config.Override(&cfg))
 
 	project := &datastore.Project{
 		UID: "sync-timeout-project",
 		Config: &datastore.ProjectConfig{
-			SyncDynamicEventAck: true,
+			VerifyDynamicEvents: true,
 		},
 	}
 	de := &models.DynamicEvent{

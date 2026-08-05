@@ -23,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	internalconfiguration "github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/endpoints"
@@ -2146,7 +2147,7 @@ func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation_CascadesKeysS
 	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, project, "", "", "http", nil, "", "")
 	require.NoError(s.T(), err)
 
-	cacheKey := "projects:" + project.UID
+	cacheKey := cached.ProjectCacheKey(project.UID)
 	require.NoError(s.T(), s.ConvoyApp.A.Cache.Set(context.Background(), cacheKey, project, 5*time.Minute))
 	apiKeyCacheKey := "apikeys_by_mask:" + apiKey.MaskID
 	require.NoError(s.T(), s.ConvoyApp.A.Cache.Set(context.Background(), apiKeyCacheKey, apiKey, 5*time.Minute))

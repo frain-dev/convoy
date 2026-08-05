@@ -288,8 +288,11 @@ func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.Pr
 		if _, ok := present["multiple_endpoint_subscriptions"]; ok {
 			merged.MultipleEndpointSubscriptions = incoming.MultipleEndpointSubscriptions
 		}
-		if _, ok := present["sync_dynamic_event_ack"]; ok {
-			merged.SyncDynamicEventAck = incoming.SyncDynamicEventAck
+		if _, ok := present["verify_dynamic_events"]; ok {
+			merged.VerifyDynamicEvents = incoming.VerifyDynamicEvents
+		}
+		if _, ok := present["allow_unmatched_dynamic_urls"]; ok {
+			merged.AllowUnmatchedDynamicURLs = incoming.AllowUnmatchedDynamicURLs
 		}
 	} else if patch.RequestIDHeader != "" {
 		// Legacy callers without present-key tracking still apply non-empty values.
