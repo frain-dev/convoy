@@ -2,11 +2,11 @@
   #toast
   popover="manual"
   class="convoy-toast"
-  [class.is-visible]="notification?.show && notification?.type === 'alert'"
-  [attr.data-tone]="notification?.style || 'info'"
+  [class.is-visible]="notification.show && notification.type === 'alert'"
+  [attr.data-tone]="notification.style || 'info'"
   role="status"
   >
-  @if (notification?.show && notification?.type === 'alert') {
+  @if (notification.show && notification.type === 'alert') {
     <!-- Central Icons round-filled — bold cutout glyphs, brand-colored -->
     <span class="convoy-toast__icon" aria-hidden="true">
       @switch (notification.style) {

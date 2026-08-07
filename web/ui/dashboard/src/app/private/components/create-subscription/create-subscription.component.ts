@@ -893,8 +893,10 @@ export class CreateSubscriptionComponent implements OnInit {
 				}
 
 				// Keep at least the wildcard selected so the subscription always has a scope.
-				this.selectedEventTypes = next.length === 0 && !isWildcard && !isAutoSelect ? ['*'] : next;
-				if (this.selectedEventTypes.includes('*') && !this.filtersMap.has('*')) {
+				const fellBackToWildcard = next.length === 0 && !isWildcard && !isAutoSelect;
+				this.selectedEventTypes = fellBackToWildcard ? ['*'] : next;
+				// Re-enable * even if it already exists disabled (e.g. after a prior specific-type selection).
+				if (fellBackToWildcard) {
 					this.filtersMap.set('*', this._enabledFilterForEventType('*'));
 				}
 			} else if (isWildcard) {

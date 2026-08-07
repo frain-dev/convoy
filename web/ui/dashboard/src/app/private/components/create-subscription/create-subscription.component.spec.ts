@@ -106,6 +106,38 @@ describe('CreateSubscriptionComponent', () => {
     expect(component.filtersMap.get('*')?.enabled_at).toEqual(jasmine.any(String));
   });
 
+  it('re-enables the existing wildcard filter when the last specific type is unchecked', () => {
+    component.action = 'update';
+    component.subscriptionId = 'sub-id';
+    component.selectedEventTypes = ['invoice.created'];
+    component.filtersMap.set('*', {
+      uid: 'wildcard-filter-id',
+      subscription_id: 'sub-id',
+      event_type: '*',
+      enabled_at: null,
+      headers: {},
+      body: {},
+      query: {},
+      path: {}
+    });
+    component.filtersMap.set('invoice.created', {
+      uid: 'filter-id',
+      subscription_id: 'sub-id',
+      event_type: 'invoice.created',
+      enabled_at: '2026-05-28T00:00:00.000Z',
+      headers: {},
+      body: { kind: 'invoice' },
+      query: {},
+      path: {}
+    });
+
+    component.toggleEventType('invoice.created');
+
+    expect(component.selectedEventTypes).toEqual(['*']);
+    expect(component.filtersMap.get('invoice.created')?.enabled_at).toBeNull();
+    expect(component.filtersMap.get('*')?.enabled_at).toEqual(jasmine.any(String));
+  });
+
   it('updates the selected filter index after creating a new filter entry', () => {
     component.subscriptionId = 'sub-id';
     component.selectedEventTypes = ['invoice.created'];

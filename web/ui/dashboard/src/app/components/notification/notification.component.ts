@@ -49,7 +49,7 @@ export class NotificationComponent implements OnInit, OnDestroy {
 			return;
 		}
 
-		const shouldShow = !!(this.notification?.show && this.notification?.type === 'alert');
+		const shouldShow = !!(this.notification.show && this.notification.type === 'alert');
 		if (shouldShow) {
 			try {
 				el.showPopover();
