@@ -1,5 +1,73 @@
 # Convoy Changes
 
+## 26.7.1
+
+### Breaking Changes
+
+- The project config field `sync_dynamic_event_ack`, released in 26.7.0, is renamed to `verify_dynamic_events`. `POST /projects` and `PUT /projects/{id}` reject the old key with a 400 naming the new field rather than ignoring it (#2773)
+- `CONVOY_SYNC_DYNAMIC_EVENT_ACK_TIMEOUT` is renamed to `CONVOY_VERIFY_DYNAMIC_EVENTS_TIMEOUT`. The old variable is no longer read and warns at boot; the same key in a config file falls back to the 30s default silently (#2773)
+
+### Features
+
+- feat(dataplane): allow dynamic urls that match no endpoint template (#2773)
+
+### Bug Fixes
+
+- fix(dashboard): correct subscription event type selection and redesign alert toasts (#2775)
+
+## 26.7.0
+
+### Features
+
+- feat(dataplane): optional sync ack for dynamic event resolve (#2766)
+- feat(dashboard): Redesign Convoy dashboard (#2764)
+
+### Bug Fixes
+
+- fix(dataplane): surface dynamic url template failures without leaking event metadata (#2771)
+
+## 26.6.10
+
+### Features
+
+- feat(dataplane): custom user-agent replaces convoy branding header (#2765)
+
+## 26.6.9
+
+### Improvements
+
+- refactor(dataplane): remove delete-query retention and its feature flag (#2753)
+
+### Bug Fixes
+
+- fix(controlplane): swap transactional email header logo (#2761)
+- fix(build): refactor docker install script (#2711)
+- fix(controlplane): harden ingest verifier fallback, retry scoping, bulk onboard and billing update (#2754)
+
+## 26.6.8
+
+### Improvements
+
+- chore(deps): bump golang.org/x/crypto to v0.52.0 and golang.org/x/net to v0.55.0 (#2757)
+
+### Bug Fixes
+
+- fix(controlplane): scope source lookups by project and canonicalize jwt blacklist keys (#2755)
+- fix(dataplane): block cloud metadata and link-local targets on default webhook egress (#2756)
+- fix(controlplane): scope portal-link and org authorization to close cross-tenant access (#2760)
+
+## 26.6.7
+
+### Bug Fixes
+
+- fix: agent ingest honors instance ingest rate limit (#2744)
+- fix: return empty endpoints_metadata for portal links with no endpoints (#2745)
+- fix: close idempotency dedup race on concurrent event creation (#2747)
+- fix(dataplane): reject events without a delivery target and honor app_id fanout (#2746)
+- fix(controlplane): close jul 20-21 vulnerability audit findings (#2749)
+- fix(dashboard): clarify unverified-email copy for dialog and trial modal (#2751)
+- fix: render current year in email template footers (#2750)
+
 ## 26.6.6
 
 ### Features
