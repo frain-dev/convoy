@@ -35,7 +35,7 @@
 
 	&[data-tone='info'],
 	&:not([data-tone]) {
-		--toast-icon: #2780f1;
+		--toast-icon: #1d2939; /* new.text-primary — distinct from success blue */
 	}
 }
 
