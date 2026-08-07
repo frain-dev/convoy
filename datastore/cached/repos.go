@@ -15,8 +15,22 @@ import (
 
 // DefaultProjectTTL is the shared read-through TTL for project cache entries.
 // Writers must go through CachedProjectRepository so updates and deletes
-// invalidate the "projects:<id>" key instead of waiting out this TTL.
+// invalidate the project key instead of waiting out this TTL.
 const DefaultProjectTTL = 5 * time.Minute
+
+// projectCacheKeyPrefix is versioned because cache entries are encoded from the
+// shape of datastore.Project. Renaming or retyping a field there makes entries
+// written by the previous release decode with that field missing, which reads as
+// a zero value rather than a cache miss. Bumping the version retires those
+// entries at deploy instead of serving them for a TTL; the cost is one cold read
+// per project. v2 retires entries holding the pre-rename sync_dynamic_event_ack.
+const projectCacheKeyPrefix = "projects:v2:"
+
+// ProjectCacheKey is the single source of truth for the key, since reads and
+// every invalidation site must agree or an update silently fails to evict.
+func ProjectCacheKey(projectID string) string {
+	return projectCacheKeyPrefix + projectID
+}
 
 type CachedProjectRepository struct {
 	inner  datastore.ProjectRepository
@@ -30,7 +44,7 @@ func NewCachedProjectRepository(inner datastore.ProjectRepository, c cachedrepo.
 }
 
 func (r *CachedProjectRepository) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {
-	return cachedrepo.FetchOne(ctx, r.cache, r.logger, "projects:"+id, r.ttl,
+	return cachedrepo.FetchOne(ctx, r.cache, r.logger, ProjectCacheKey(id), r.ttl,
 		func(p *datastore.Project) bool { return p.UID != "" },
 		func() (*datastore.Project, error) { return r.inner.FetchProjectByID(ctx, id) })
 }
@@ -38,7 +52,7 @@ func (r *CachedProjectRepository) FetchProjectByID(ctx context.Context, id strin
 func (r *CachedProjectRepository) UpdateProject(ctx context.Context, project *datastore.Project) error {
 	err := r.inner.UpdateProject(ctx, project)
 	if err == nil {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "projects:"+project.UID)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, ProjectCacheKey(project.UID))
 	}
 	return err
 }
@@ -46,7 +60,7 @@ func (r *CachedProjectRepository) UpdateProject(ctx context.Context, project *da
 func (r *CachedProjectRepository) DeleteProject(ctx context.Context, uid string) error {
 	err := r.inner.DeleteProject(ctx, uid)
 	if err == nil {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "projects:"+uid)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, ProjectCacheKey(uid))
 	}
 	return err
 }

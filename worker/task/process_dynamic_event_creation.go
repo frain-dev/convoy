@@ -270,7 +270,12 @@ func findEndpoint(ctx context.Context, project *datastore.Project, args EventCha
 			if endpoint != nil {
 				return endpoint, nil
 			}
-			if foundTemplates {
+			// A nil config resolves to strict, so a project whose config did not load
+			// cannot silently start auto-creating endpoints that bypass its templates.
+			// An ambiguous URL matching several templates never reaches here: it is
+			// returned as an error above and stays strict either way.
+			allowUnmatched := project.Config != nil && project.Config.AllowUnmatchedDynamicURLs
+			if foundTemplates && !allowUnmatched {
 				return nil, &EndpointError{Err: errDynamicURLTemplateNoMatch, delay: 10 * time.Second}
 			}
 		}

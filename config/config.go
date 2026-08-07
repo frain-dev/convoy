@@ -141,7 +141,7 @@ var DefaultConfiguration = Configuration{
 	},
 	InstanceIngestRate:         1000,
 	ApiRateLimit:               1000,
-	SyncDynamicEventAckTimeout: 30,
+	VerifyDynamicEventsTimeout: 30,
 	WorkerExecutionMode:        DefaultExecutionMode,
 	Billing: BillingConfiguration{
 		URL:         "",
@@ -537,9 +537,9 @@ type Configuration struct {
 	Metrics            MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
 	InstanceIngestRate int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
 	ApiRateLimit       int                          `json:"api_rate_limit" envconfig:"CONVOY_API_RATE_LIMIT"`
-	// SyncDynamicEventAckTimeout is the max seconds POST /events/dynamic waits for
-	// endpoint/subscription resolve when project config sync_dynamic_event_ack is true.
-	SyncDynamicEventAckTimeout uint64                      `json:"sync_dynamic_event_ack_timeout" envconfig:"CONVOY_SYNC_DYNAMIC_EVENT_ACK_TIMEOUT"`
+	// VerifyDynamicEventsTimeout is the max seconds POST /events/dynamic waits for
+	// endpoint/subscription resolve when project config verify_dynamic_events is true.
+	VerifyDynamicEventsTimeout uint64                      `json:"verify_dynamic_events_timeout" envconfig:"CONVOY_VERIFY_DYNAMIC_EVENTS_TIMEOUT"`
 	WorkerExecutionMode        ExecutionMode               `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 	MaxRetrySeconds            uint64                      `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 	LicenseKey                 string                      `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
@@ -823,12 +823,29 @@ func LoadConfig(p string, opts ...ConfigFunc) error {
 		}
 	}
 
+	warnRenamedEnvVars()
+
 	if err := validate(&c); err != nil {
 		return err
 	}
 
 	cfgSingleton.Store(&c)
 	return nil
+}
+
+// The old name is deliberately not read, so an operator whose deployment still
+// sets it would otherwise get the 30s default with no indication why their
+// configured wait stopped applying. Warn rather than fail: a stale timeout
+// variable is not worth refusing to boot over.
+func warnRenamedEnvVars() {
+	renamed := map[string]string{
+		"CONVOY_SYNC_DYNAMIC_EVENT_ACK_TIMEOUT": "CONVOY_VERIFY_DYNAMIC_EVENTS_TIMEOUT",
+	}
+	for old, current := range renamed {
+		if _, ok := os.LookupEnv(old); ok {
+			fmt.Fprintf(os.Stderr, "warning: %s is no longer read, use %s instead\n", old, current)
+		}
+	}
 }
 
 func ensureSSL(s ServerConfiguration) error {
