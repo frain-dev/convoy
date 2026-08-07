@@ -864,63 +864,61 @@ export class CreateSubscriptionComponent implements OnInit {
 		return this.selectedEventTypes.includes(eventTypeName);
 	}
 
-	// Toggle an event type on/off with special handling for wildcard (*)
-	toggleEventType(eventTypeName: string, isAutoSelect = false): void {
-		// Prevent toggling if subscription is being created/updated
-		if (this.isCreatingSubscription) {
-			console.warn('Cannot toggle event type while subscription is being saved');
+	onEventTypeRowClick(eventTypeName: string, event: Event): void {
+		const target = event.target as HTMLElement | null;
+		// Checkbox / label / filter button handle their own events.
+		if (target?.closest('input, label, button')) {
 			return;
 		}
+		this.toggleEventType(eventTypeName);
+	}
 
-		// Prevent recursive calls
-		if (this._isTogglingEventType) {
-			console.warn('Already toggling an event type, skipping');
+	// Toggle an event type on/off with special handling for wildcard (*)
+	toggleEventType(eventTypeName: string, isAutoSelect = false): void {
+		if (this.action === 'view' || this.isCreatingSubscription || this._isTogglingEventType) {
 			return;
 		}
 
 		try {
 			this._isTogglingEventType = true;
 
-			const index = this.selectedEventTypes.indexOf(eventTypeName);
+			const isSelected = this.selectedEventTypes.includes(eventTypeName);
 			const isWildcard = eventTypeName === '*';
 
-			if (index !== -1) {
-				// If already selected, just remove it
-				this.removeEventType(index, isAutoSelect);
-				return;
-			}
+			if (isSelected) {
+				const next = this.selectedEventTypes.filter(type => type !== eventTypeName);
+				const filter = this.filtersMap.get(eventTypeName);
+				if (filter) {
+					this.filtersMap.set(eventTypeName, { ...filter, enabled_at: null, is_modified: true });
+				}
 
-			// If selecting the wildcard (*) event type, remove all other event types
-			if (isWildcard) {
-				console.log('Selecting wildcard (*) event type - removing all other event types');
-
-				// Store all event types that need to be removed
-				const eventTypesToRemove = [...this.selectedEventTypes];
-
-				// Clear all selected event types and their filters
-				eventTypesToRemove.forEach(type => {
-					const typeIndex = this.selectedEventTypes.indexOf(type);
-					if (typeIndex !== -1) {
-						this.removeEventType(typeIndex, true);
+				// Keep at least the wildcard selected so the subscription always has a scope.
+				this.selectedEventTypes = next.length === 0 && !isWildcard && !isAutoSelect ? ['*'] : next;
+				if (this.selectedEventTypes.includes('*') && !this.filtersMap.has('*')) {
+					this.filtersMap.set('*', this._enabledFilterForEventType('*'));
+				}
+			} else if (isWildcard) {
+				// Selecting * replaces every specific type.
+				this.selectedEventTypes.forEach(type => {
+					const filter = this.filtersMap.get(type);
+					if (filter) {
+						this.filtersMap.set(type, { ...filter, enabled_at: null, is_modified: true });
 					}
 				});
+				this.selectedEventTypes = ['*'];
+				this.filtersMap.set('*', this._enabledFilterForEventType('*'));
+			} else {
+				// Selecting a specific type clears *.
+				const withoutWildcard = this.selectedEventTypes.filter(type => type !== '*');
+				const wildcardFilter = this.filtersMap.get('*');
+				if (wildcardFilter) {
+					this.filtersMap.set('*', { ...wildcardFilter, enabled_at: null, is_modified: true });
+				}
+				this.selectedEventTypes = [...withoutWildcard, eventTypeName];
+				this.filtersMap.set(eventTypeName, this._enabledFilterForEventType(eventTypeName));
 			}
-			// If selecting a specific event type, remove the wildcard (*) if it's selected
-			else if (this.selectedEventTypes.includes('*')) {
-				console.log(`Selecting specific event type '${eventTypeName}' - removing wildcard (*) event type`);
-				const wildcardIndex = this.selectedEventTypes.indexOf('*');
-				this.removeEventType(wildcardIndex, true);
-			}
 
-			// Add the newly selected event type
-			this.selectedEventTypes.push(eventTypeName);
-
-			this.filtersMap.set(eventTypeName, this._enabledFilterForEventType(eventTypeName));
-
-			// Sync with filters array for compatibility
 			this._syncFiltersArrayWithMap();
-
-			// Force UI update
 			this.cdr.detectChanges();
 		} finally {
 			this._isTogglingEventType = false;

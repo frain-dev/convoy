@@ -158,40 +158,44 @@
           </div>
 
           @if (licenseService.hasPortalLicense('AdvancedSubscriptions')) {
-            <div class="border border-new.border rounded-12px overflow-hidden">
-              @for (eventType of validEventTypes(); track $index; let i = $index) {
-                <div class="flex items-center justify-between gap-16px px-16px py-12px border-b border-new.border last:border-b-0">
+            <div class="flex flex-col gap-8px">
+              @for (eventType of validEventTypes(); track eventType.name; let i = $index) {
+                <div
+                  class="flex items-center justify-between gap-16px border rounded-8px px-16px py-12px transition-colors"
+                  [class]="
+                    'flex items-center justify-between gap-16px border rounded-8px px-16px py-12px transition-colors ' +
+                    (isEventTypeSelected(eventType.name) ? 'border-new.primary-200 bg-new.primary-25 ' : 'border-new.border bg-white-100 ') +
+                    (action !== 'view' ? 'cursor-pointer' : '')
+                  "
+                  (click)="onEventTypeRowClick(eventType.name, $event)"
+                  >
                   <div class="flex items-center min-w-0">
-                    <div class="relative mr-12px shrink-0">
-                      <div class="border border-new.border w-16px h-16px flex items-center justify-center rounded-4px transition-colors"
-                        [class.!border-new.primary-400]="isEventTypeSelected(eventType.name)"
-                        [class.bg-new.primary-25]="isEventTypeSelected(eventType.name)">
-                        @if (isEventTypeSelected(eventType.name)) {
-                          <span class="text-new.primary-400 text-12 font-bold leading-none">✓</span>
-                        }
-                      </div>
-                      <input type="checkbox"
-                        [id]="'event_type_' + eventType.name + '_box'"
-                        [checked]="selectedEventTypes.includes(eventType.name)"
-                        (change)="toggleEventTypeSelection(eventType.name)"
-                        [disabled]="action === 'view'"
-                        class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"/>
-                    </div>
-                    <label [for]="'event_type_' + eventType.name + '_box'" class="font-body font-normal text-[14px] text-new.text-primary cursor-pointer truncate">
+                    <input
+                      type="checkbox"
+                      class="event-type-checkbox mr-12px shrink-0"
+                      [id]="'portal_event_type_' + eventType.name + '_box'"
+                      [checked]="isEventTypeSelected(eventType.name)"
+                      [disabled]="action === 'view'"
+                      (click)="$event.stopPropagation()"
+                      (change)="toggleEventTypeSelection(eventType.name)"
+                      />
+                    <label [for]="'portal_event_type_' + eventType.name + '_box'" class="font-body font-normal text-[14px] text-new.text-primary cursor-pointer truncate" (click)="$event.stopPropagation()">
                       {{ eventType.name }}
                     </label>
                   </div>
-                  <button
-                    type="button"
-                    class="shrink-0 px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle disabled:opacity-40 disabled:pointer-events-none"
-                    (click)="openFilterDialog(i)"
-                    [disabled]="action === 'view' || !licenseService.hasPortalLicense('AdvancedSubscriptions') || !selectedEventTypes.includes(eventType.name)">
-                    {{ filtersMap.has(eventType.name) ? 'Edit Filter' : 'Add Filter' }}
-                  </button>
+                  @if (action !== 'view') {
+                    <button
+                      type="button"
+                      class="shrink-0 px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle disabled:opacity-40 disabled:pointer-events-none"
+                      (click)="openFilterDialog(i); $event.stopPropagation()"
+                      [disabled]="!licenseService.hasPortalLicense('AdvancedSubscriptions') || !selectedEventTypes.includes(eventType.name)">
+                      {{ filtersMap.has(eventType.name) ? 'Edit Filter' : 'Add Filter' }}
+                    </button>
+                  }
                 </div>
               }
-              @if (eventTypes.length === 0) {
-                <p class="font-body text-[13px] text-new.text-secondary italic px-16px py-12px">No event types available</p>
+              @if (validEventTypes().length === 0) {
+                <p class="font-body text-[13px] text-new.text-secondary italic px-4px py-8px">No event types available</p>
               }
             </div>
           }
@@ -500,8 +504,8 @@
 
 <!-- subscription filters form  -->
 @if (showFilterDialog) {
-  <dialog open convoy-dialog position="full">
-    <div class="w-full h-full">
+  <dialog open convoy-dialog position="full" class="!z-[150]">
+    <div class="w-full h-full overflow-y-auto bg-new.surface-page">
       <convoy-create-subscription-filter
         [action]="action"
         [selectedEventType]="selectedEventType"
@@ -512,5 +516,3 @@
     </div>
   </dialog>
 }
-
-<convoy-notification></convoy-notification>

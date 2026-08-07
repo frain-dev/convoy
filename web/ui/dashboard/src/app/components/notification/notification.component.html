@@ -1,14 +1,49 @@
-@if (notification.show && notification.type === 'alert') {
-  <div
-    class="flex items-center justify-between font-body font-medium text-[14px] capitalize p-8px rounded-12px fixed bottom-50px left-1/2 -translate-x-1/2 -translate-y-0 w-full max-w-[500px] z-[100]"
-    [class]="statusTypes[notification.style]"
-    >
-    <div class="flex items-center">
-      <img [src]="'assets/img/' + notification.style + '-icon.svg'" class="mr-10px" alt="toast icon" />
-      {{ notification.message }}
-    </div>
-    <button type="button" class="mr-6px w-24px h-24px flex items-center justify-center rounded-full hover:opacity-80" (click)="dismissNotification()" aria-label="Dismiss">
-      <img src="assets/img/close icon.svg" alt="" />
+<div
+  #toast
+  popover="manual"
+  class="convoy-toast"
+  [class.is-visible]="notification?.show && notification?.type === 'alert'"
+  [attr.data-tone]="notification?.style || 'info'"
+  role="status"
+  >
+  @if (notification?.show && notification?.type === 'alert') {
+    <span class="convoy-toast__icon" aria-hidden="true">
+      @switch (notification.style) {
+        @case ('success') {
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="8" fill="#22C55E" />
+            <path d="M4.75 8.15L6.9 10.3L11.25 5.7" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        }
+        @case ('error') {
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="8" fill="#EF4444" />
+            <path d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" stroke="white" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        }
+        @case ('warning') {
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="8" fill="#F59E0B" />
+            <path d="M8 4.75V8.25" stroke="white" stroke-width="1.5" stroke-linecap="round" />
+            <circle cx="8" cy="10.75" r="0.85" fill="white" />
+          </svg>
+        }
+        @default {
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="8" fill="#1E3A5F" />
+            <path d="M8 7.25V11" stroke="white" stroke-width="1.5" stroke-linecap="round" />
+            <circle cx="8" cy="5.1" r="0.85" fill="white" />
+          </svg>
+        }
+      }
+    </span>
+
+    <p class="convoy-toast__message">{{ notification.message }}</p>
+
+    <button type="button" class="convoy-toast__dismiss" (click)="dismissNotification()" aria-label="Dismiss">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <path d="M3 3L9 9M9 3L3 9" stroke="#A1A1AA" stroke-width="1.4" stroke-linecap="round" />
+      </svg>
     </button>
-  </div>
-}
+  }
+</div>

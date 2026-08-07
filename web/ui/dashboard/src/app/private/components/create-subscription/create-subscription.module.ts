@@ -18,7 +18,6 @@ import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.comp
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
 import { PermissionDirective } from '../permission/permission.directive';
 import { MultiInputComponent } from 'src/app/components/multi-input/multi-input.component';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { CreateTransformFunctionComponent } from '../create-transform-function/create-transform-function.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { SourceURLComponent } from '../create-source/source-url/source-url.component';
@@ -49,7 +48,6 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 		MultiInputComponent,
 		PermissionDirective,
 		DialogDirective,
-		NotificationComponent,
 		CreateTransformFunctionComponent,
 		ConfigButtonComponent,
 		SourceURLComponent,

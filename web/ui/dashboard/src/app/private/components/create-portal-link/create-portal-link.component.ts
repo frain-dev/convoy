@@ -6,11 +6,9 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CreatePortalLinkService } from './create-portal-link.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
-
 @Component({
     selector: 'convoy-create-portal-link',
-    imports: [ReactiveFormsModule, NotificationComponent],
+    imports: [ReactiveFormsModule],
     templateUrl: './create-portal-link.component.html',
     styleUrls: ['./create-portal-link.component.scss']
 })

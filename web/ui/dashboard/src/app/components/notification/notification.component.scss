@@ -1,0 +1,71 @@
+/* Clean design-system toast — single source of truth for all alert popups.
+   Uses the Popover API so this root host paints above <dialog> top-layer too. */
+.convoy-toast {
+	margin: 0;
+	inset: unset;
+	position: fixed;
+	top: 24px;
+	right: 24px;
+	left: auto;
+	bottom: auto;
+	box-sizing: border-box;
+	display: none;
+	align-items: center;
+	gap: 8px;
+	width: min(360px, calc(100vw - 48px));
+	padding: 10px 12px;
+	border-radius: 4px;
+	border: 1px solid #e7e7e7; /* new.border */
+	background: #ffffff;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	color: #71717a; /* new.text-secondary */
+	font-family: inherit;
+	overflow: visible;
+
+	&.is-visible,
+	&:popover-open {
+		display: flex;
+	}
+}
+
+.convoy-toast__icon {
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.convoy-toast__message {
+	flex: 1 1 auto;
+	min-width: 0;
+	margin: 0;
+	font-family: 'Archivo', 'Archivo Variable', sans-serif;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 1.5;
+	color: #71717a;
+	word-break: break-word;
+	text-transform: none;
+}
+
+.convoy-toast__dismiss {
+	flex-shrink: 0;
+	width: 20px;
+	height: 20px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	cursor: pointer;
+	opacity: 1;
+	transition: opacity 0.15s ease;
+
+	&:hover {
+		opacity: 0.7;
+	}
+}
