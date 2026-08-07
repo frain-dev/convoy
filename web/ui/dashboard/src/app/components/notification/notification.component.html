@@ -7,32 +7,47 @@
   role="status"
   >
   @if (notification?.show && notification?.type === 'alert') {
+    <!-- Central Icons round-filled — bold cutout glyphs, brand-colored -->
     <span class="convoy-toast__icon" aria-hidden="true">
       @switch (notification.style) {
         @case ('success') {
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="8" fill="#22C55E" />
-            <path d="M4.75 8.15L6.9 10.3L11.25 5.7" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM15.667 8.12695C15.3228 7.89661 14.8574 7.98889 14.627 8.33301L10.4482 14.5723L8.28125 12.3945C7.98911 12.1009 7.51434 12.0995 7.2207 12.3916C6.92733 12.6838 6.9267 13.1586 7.21875 13.4521L10.0312 16.2793C10.1897 16.4384 10.4112 16.5177 10.6348 16.4961C10.8584 16.4744 11.0605 16.3537 11.1855 16.167L15.873 9.16699C16.1034 8.82283 16.0111 8.35739 15.667 8.12695Z"
+              fill="currentColor"
+              />
           </svg>
         }
         @case ('error') {
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="8" fill="#EF4444" />
-            <path d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" stroke="white" stroke-width="1.5" stroke-linecap="round" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM9.53033 8.46967C9.23744 8.17678 8.76256 8.17678 8.46967 8.46967C8.17678 8.76256 8.17678 9.23744 8.46967 9.53033L10.9393 12L8.46967 14.4697C8.17678 14.7626 8.17678 15.2374 8.46967 15.5303C8.76256 15.8232 9.23744 15.8232 9.53033 15.5303L12 13.0607L14.4697 15.5303C14.7626 15.8232 15.2374 15.8232 15.5303 15.5303C15.8232 15.2374 15.8232 14.7626 15.5303 14.4697L13.0607 12L15.5303 9.53033C15.8232 9.23744 15.8232 8.76256 15.5303 8.46967C15.2374 8.17678 14.7626 8.17678 14.4697 8.46967L12 10.9393L9.53033 8.46967Z"
+              fill="currentColor"
+              />
           </svg>
         }
         @case ('warning') {
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="8" fill="#F59E0B" />
-            <path d="M8 4.75V8.25" stroke="white" stroke-width="1.5" stroke-linecap="round" />
-            <circle cx="8" cy="10.75" r="0.85" fill="white" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 15C11.4477 15 11 15.4477 11 16C11 16.5523 11.4477 17 12 17C12.5523 17 13 16.5523 13 16C13 15.4477 12.5523 15 12 15ZM12 7C11.5858 7 11.25 7.33579 11.25 7.75V12.25C11.25 12.6642 11.5858 13 12 13C12.4142 13 12.75 12.6642 12.75 12.25V7.75C12.75 7.33579 12.4142 7 12 7Z"
+              fill="currentColor"
+              />
           </svg>
         }
         @default {
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="8" fill="#1E3A5F" />
-            <path d="M8 7.25V11" stroke="white" stroke-width="1.5" stroke-linecap="round" />
-            <circle cx="8" cy="5.1" r="0.85" fill="white" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM10 11C10 10.5858 10.3358 10.25 10.75 10.25H12C12.4142 10.25 12.75 10.5858 12.75 11L12.75 16.25C12.75 16.6642 12.4142 17 12 17C11.5858 17 11.25 16.6642 11.25 16.25L11.25 11.75H10.75C10.3358 11.75 10 11.4142 10 11ZM12 7.25C11.5858 7.25 11.25 7.58579 11.25 8C11.25 8.41421 11.5858 8.75 12 8.75C12.4142 8.75 12.75 8.41421 12.75 8C12.75 7.58579 12.4142 7.25 12 7.25Z"
+              fill="currentColor"
+              />
           </svg>
         }
       }
@@ -41,8 +56,8 @@
     <p class="convoy-toast__message">{{ notification.message }}</p>
 
     <button type="button" class="convoy-toast__dismiss" (click)="dismissNotification()" aria-label="Dismiss">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-        <path d="M3 3L9 9M9 3L3 9" stroke="#A1A1AA" stroke-width="1.4" stroke-linecap="round" />
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6.25 6.25L17.75 17.75M17.75 6.25L6.25 17.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
       </svg>
     </button>
   }

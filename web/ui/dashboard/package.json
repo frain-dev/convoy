@@ -24,6 +24,8 @@
     "@angular/platform-browser-dynamic": "^21.2.12",
     "@angular/router": "^21.2.12",
     "@auth0/angular-jwt": "^5.1.2",
+    "@central-icons-react/round-filled-radius-2-stroke-1.5": "^1.1.305",
+    "@central-icons-react/round-outlined-radius-2-stroke-1.5": "^1.1.305",
     "@markdoc/markdoc": "^0.1.12",
     "@radix-ui/colors": "^3.0.0",
     "@stripe/react-stripe-js": "^4.0.2",
