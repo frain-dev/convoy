@@ -5,11 +5,9 @@ import {CreateSubscriptionService} from '../create-subscription/create-subscript
 import {GeneralService} from 'src/app/services/general/general.service';
 import {MonacoComponent} from '../monaco/monaco.component';
 import {ActivatedRoute} from '@angular/router';
-import {DialogHeaderComponent} from 'src/app/components/dialog/dialog.directive';
-
 @Component({
     selector: 'convoy-create-subscription-filter',
-    imports: [CommonModule, ReactiveFormsModule, MonacoComponent, DialogHeaderComponent],
+    imports: [CommonModule, ReactiveFormsModule, MonacoComponent],
     templateUrl: './create-subscription-filter.component.html',
     styleUrls: ['./create-subscription-filter.component.scss']
 })

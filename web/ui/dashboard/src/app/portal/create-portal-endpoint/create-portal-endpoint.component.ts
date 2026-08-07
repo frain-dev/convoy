@@ -41,7 +41,6 @@ import {EVENT_TYPE} from '../../models/event.model';
 import {FILTER} from '../../models/filter.model';
 import {SUBSCRIPTION} from '../../models/subscription';
 import {EndpointsService} from '../../private/pages/project/endpoints/endpoints.service';
-import {NotificationComponent} from '../../components/notification/notification.component';
 import {LoaderModule} from '../../private/components/loader/loader.module';
 import {DialogDirective} from '../../components/dialog/dialog.directive';
 import {CopyButtonComponent} from '../../components/copy-button/copy-button.component';
@@ -54,7 +53,6 @@ import {CopyButtonComponent} from '../../components/copy-button/copy-button.comp
     PermissionDirective,
     CreateSubscriptionFilterComponent,
     CreatePortalTransformFunctionComponent,
-    NotificationComponent,
     LoaderModule,
     DialogDirective,
     CopyButtonComponent
@@ -605,6 +603,8 @@ function transform(payload) {
     }
 
     toggleEventTypeSelection(eventType: string) {
+        if (this.action === 'view') return;
+
         const isWildcard = eventType === '*';
         const index = this.selectedEventTypes.indexOf(eventType);
 
@@ -1029,6 +1029,14 @@ function transform(payload) {
     // Check if an event type is selected
     isEventTypeSelected(eventTypeName: string): boolean {
         return this.selectedEventTypes.includes(eventTypeName);
+    }
+
+    onEventTypeRowClick(eventTypeName: string, event: Event): void {
+        const target = event.target as HTMLElement | null;
+        if (target?.closest('input, label, button') || this.action === 'view') {
+            return;
+        }
+        this.toggleEventTypeSelection(eventTypeName);
     }
 
     // Helper method to sync the filters array with filtersMap

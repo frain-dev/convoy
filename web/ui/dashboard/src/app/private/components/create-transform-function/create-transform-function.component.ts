@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angu
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MonacoComponent } from '../monaco/monaco.component';
-import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 import { CreateSubscriptionService } from '../create-subscription/create-subscription.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrismModule } from '../prism/prism.module';
@@ -10,7 +9,7 @@ import { CreateSourceService } from '../create-source/create-source.service';
 
 @Component({
     selector: 'convoy-create-transform-function',
-    imports: [CommonModule, ReactiveFormsModule, MonacoComponent, DialogHeaderComponent, PrismModule],
+    imports: [CommonModule, ReactiveFormsModule, MonacoComponent, PrismModule],
     templateUrl: './create-transform-function.component.html',
     styleUrls: ['./create-transform-function.component.scss']
 })

@@ -18,7 +18,6 @@ import {PermissionDirective} from '../permission/permission.directive';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {ENDPOINT, SECRET} from 'src/app/models/endpoint.model';
 import {EndpointsService} from '../../pages/project/endpoints/endpoints.service';
-import {NotificationComponent} from 'src/app/components/notification/notification.component';
 import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
 import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
@@ -66,7 +65,6 @@ function mtlsKeyValidator(): ValidatorFn {
         TooltipComponent,
         FormLoaderComponent,
         PermissionDirective,
-        NotificationComponent,
         DropdownComponent,
         DropdownOptionDirective,
         CopyButtonComponent,

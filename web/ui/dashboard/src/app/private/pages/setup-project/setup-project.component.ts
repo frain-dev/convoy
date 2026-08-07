@@ -15,13 +15,12 @@ import { CreateSourceComponent } from '../../components/create-source/create-sou
 import { CreateSubscriptionComponent } from '../../components/create-subscription/create-subscription.component';
 import { CreateSubscriptionService } from '../../components/create-subscription/create-subscription.service';
 import { LoaderModule } from '../../components/loader/loader.module';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { SourceURLComponent } from '../../components/create-source/source-url/source-url.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 
 @Component({
     selector: 'convoy-setup-project',
-    imports: [CommonModule, ReactiveFormsModule, DialogHeaderComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, DialogDirective, NotificationComponent, SourceURLComponent, SelectComponent],
+    imports: [CommonModule, ReactiveFormsModule, DialogHeaderComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, DialogDirective, SourceURLComponent, SelectComponent],
     templateUrl: './setup-project.component.html',
     styleUrls: ['./setup-project.component.scss']
 })

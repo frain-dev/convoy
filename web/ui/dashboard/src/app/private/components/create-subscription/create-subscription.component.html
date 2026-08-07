@@ -120,48 +120,54 @@
           </div>
 
           @if (licenseService.hasLicense('AdvancedSubscriptions')) {
-            <div>
-              @for (eventType of subscriptionEventTypes(); track $index) {
-                <div class="flex items-center justify-between gap-12px border border-new.border rounded-8px px-12px py-10px mb-8px last:mb-0">
+            <div class="flex flex-col gap-8px">
+              @for (eventType of subscriptionEventTypes(); track eventType.name) {
+                <div
+                  class="flex items-center justify-between gap-12px border rounded-8px px-12px py-10px transition-colors"
+                  [ngClass]="
+                    isEventTypeSelected(eventType.name)
+                      ? 'border-new.primary-200 bg-new.primary-25'
+                      : 'border-new.border bg-white-100'
+                  "
+                  [class.cursor-pointer]="action !== 'view'"
+                  (click)="onEventTypeRowClick(eventType.name, $event)"
+                  >
                   <div class="flex items-center min-w-0">
-                    <div class="relative mr-12px shrink-0">
-                      <div
-                        class="border border-new.border w-16px h-16px flex items-center justify-center rounded-4px transition-colors"
-                        [class.!border-new.primary-400]="isEventTypeSelected(eventType.name)"
-                        [class.bg-new.primary-25]="isEventTypeSelected(eventType.name)"
-                        >
-                        @if (isEventTypeSelected(eventType.name)) {
-                          <span class="text-new.primary-400 text-12 font-bold leading-none">✓</span>
-                        }
-                      </div>
-                      <input
-                        type="checkbox"
-                        [id]="'event_type_' + eventType.name + '_box'"
-                        [checked]="isEventTypeSelected(eventType.name)"
-                        (change)="toggleEventType(eventType.name)"
-                        [disabled]="action === 'view'"
-                        class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"
-                        />
-                    </div>
-                    <label [for]="'event_type_' + eventType.name + '_box'" class="font-body font-normal text-[14px] text-new.text-primary cursor-pointer truncate">
+                    <input
+                      type="checkbox"
+                      class="event-type-checkbox mr-12px shrink-0"
+                      [id]="'event_type_' + eventType.name + '_box'"
+                      [checked]="isEventTypeSelected(eventType.name)"
+                      [disabled]="action === 'view'"
+                      (click)="$event.stopPropagation()"
+                      (change)="toggleEventType(eventType.name)"
+                      />
+                    <label [for]="'event_type_' + eventType.name + '_box'" class="font-body font-normal text-[14px] text-new.text-primary cursor-pointer truncate" (click)="$event.stopPropagation()">
                       {{ eventTypeDisplayName(eventType.name) }}
                     </label>
                     @if (hasFilterForEventType(eventType.name)) {
                       <span class="ml-10px shrink-0 inline-flex items-center h-20px px-6px rounded-4px bg-new.primary-25 font-body font-medium text-[12px] leading-[14px] text-new.primary-400">{{ getFilterIndicator(eventType.name) }}</span>
                     }
                   </div>
-                  <button
-                    type="button"
-                    class="shrink-0 px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle disabled:opacity-50 disabled:pointer-events-none"
-                    (click)="openFilterDialog(eventType.name)"
-                    [disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('AdvancedSubscriptions')"
-                    >
-                    {{ hasFilterForEventType(eventType.name) ? 'Edit Filter' : 'Add Filter' }}
-                  </button>
+                  @if (action !== 'view') {
+                    <button
+                      type="button"
+                      class="shrink-0 px-12px py-6px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle disabled:opacity-50 disabled:pointer-events-none"
+                      (click)="openFilterDialog(eventType.name); $event.stopPropagation()"
+                      [disabled]="!isEventTypeSelected(eventType.name) || !licenseService.hasLicense('AdvancedSubscriptions')"
+                      >
+                      {{ hasFilterForEventType(eventType.name) ? 'Edit Filter' : 'Add Filter' }}
+                    </button>
+                  } @else if (hasFilterForEventType(eventType.name)) {
+                    <span class="shrink-0 font-body font-medium text-[12px] text-new.text-secondary">Filtered</span>
+                  }
                 </div>
               }
               @if (subscriptionEventTypes().length === 0) {
-                <p class="font-body text-[13px] text-new.text-placeholder italic">No event types available</p>
+                <p class="font-body text-[13px] text-new.text-placeholder italic">No event types available. Create event types in project settings to select them here.</p>
+              }
+              @if (action === 'view') {
+                <p class="font-body font-normal text-[12px] text-new.text-secondary mt-4px">Open Edit to change event types or filters.</p>
               }
             </div>
           }
@@ -263,8 +269,8 @@
 
 <!-- subscription filters form   -->
 @if (showFilterDialog) {
-  <dialog open convoy-dialog position="full">
-    <div class="w-full h-full">
+  <dialog open convoy-dialog position="full" class="!z-[150]">
+    <div class="w-full h-full overflow-y-auto bg-new.surface-page">
       <convoy-create-subscription-filter
         [action]="action"
         [selectedEventType]="selectedEventType"
@@ -278,14 +284,12 @@
 
 <!-- subscription tranform form   -->
 @if (showTransformDialog) {
-  <dialog open convoy-dialog position="full">
-    <div class="w-full h-full overflow-y-auto">
+  <dialog open convoy-dialog position="full" class="!z-[150]">
+    <div class="w-full h-full overflow-y-auto bg-new.surface-page">
       <convoy-create-transform-function (close)="showTransformDialog = false" (updatedTransformFunction)="getFunction($event)" [transformFunction]="subscriptionForm.get('function')?.value"></convoy-create-transform-function>
     </div>
   </dialog>
 }
-
-<convoy-notification></convoy-notification>
 
 <!-- source url modal  -->
 <dialog #sourceURLDialog convoy-dialog position="center">

@@ -16,12 +16,20 @@ export class GeneralService {
 	constructor(private route: ActivatedRoute, private _location: Location) {}
 
 	showNotification(details: { message: string; style: NOTIFICATION_STATUS; type?: string }) {
-		this.alertStatus.next({ message: details.message, style: details.style, show: true, type: details.type ? details.type : 'alert' });
+		const message = this.capitalizeMessage(details.message);
+		this.alertStatus.next({ message, style: details.style, show: true, type: details.type ? details.type : 'alert' });
 		if (details.type === 'modal') return;
 
 		setTimeout(() => {
 			this.dismissNotification();
 		}, 7000);
+	}
+
+	/** Ensure toast/API copy always starts with a capital letter. */
+	private capitalizeMessage(message: string): string {
+		const text = (message ?? '').trim();
+		if (!text) return message ?? '';
+		return text.charAt(0).toUpperCase() + text.slice(1);
 	}
 
 	dismissNotification() {
