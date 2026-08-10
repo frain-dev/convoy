@@ -28,7 +28,7 @@ type CreateEndpoint struct {
 	Description string `json:"description"`
 
 	// Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
-	// -- simple or advanced. If left unspecified, we default to false.
+	// -- simple or advanced. If left unspecified, we default to true.
 	AdvancedSignatures *bool `json:"advanced_signatures"`
 
 	// Endpoint name.
@@ -91,7 +91,7 @@ type UpdateEndpoint struct {
 	Description string `json:"description"`
 
 	// Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
-	// -- simple or advanced. If left unspecified, we default to false.
+	// -- simple or advanced. If left unspecified, the current value is retained.
 	AdvancedSignatures *bool `json:"advanced_signatures"`
 
 	// Endpoint name.

@@ -7084,7 +7084,7 @@ components:
           description: >-
             Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
 
-            -- simple or advanced. If left unspecified, we default to false.
+            -- simple or advanced. If left unspecified, we default to true.
           type: boolean
         appID:
           description: Deprecated but necessary for backward compatibility
@@ -8388,7 +8388,7 @@ components:
           description: >-
             Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
 
-            -- simple or advanced. If left unspecified, we default to false.
+            -- simple or advanced. If left unspecified, the current value is retained.
           type: boolean
         authentication:
           allOf:
