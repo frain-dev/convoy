@@ -1342,7 +1342,7 @@ definitions:
       advanced_signatures:
         description: |-
           Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
-          -- simple or advanced. If left unspecified, we default to true.
+          -- simple or advanced. Only applies to outgoing projects, where it defaults to true when omitted. Incoming projects always use advanced signatures.
         type: boolean
       appID:
         description: Deprecated but necessary for backward compatibility
@@ -2598,7 +2598,7 @@ definitions:
       advanced_signatures:
         description: |-
           Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
-          -- simple or advanced. If left unspecified, the current value is retained.
+          -- simple or advanced. Only applies to outgoing projects; omit it to keep the current value. Incoming projects always use advanced signatures.
         type: boolean
       authentication:
         allOf:
