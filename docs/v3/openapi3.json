@@ -12663,7 +12663,7 @@
       "models.CreateEndpoint": {
         "properties": {
           "advanced_signatures": {
-            "description": "Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+            "description": "Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)\n-- simple or advanced. Only applies to outgoing projects, where it defaults to true when omitted. Incoming projects always use advanced signatures.",
             "type": "boolean"
           },
           "appID": {
@@ -14513,7 +14513,7 @@
       "models.UpdateEndpoint": {
         "properties": {
           "advanced_signatures": {
-            "description": "Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+            "description": "Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)\n-- simple or advanced. Only applies to outgoing projects; omit it to keep the current value. Incoming projects always use advanced signatures.",
             "type": "boolean"
           },
           "authentication": {
