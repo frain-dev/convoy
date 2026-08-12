@@ -357,6 +357,11 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			deliveryStatus = datastore.DiscardedEventStatus
 		}
 
+		var endpointURL string
+		if s.Endpoint != nil {
+			endpointURL = s.Endpoint.Url
+		}
+
 		eventDelivery := &datastore.EventDelivery{
 			UID:            ulid.Make().String(),
 			SubscriptionID: s.UID,
@@ -365,6 +370,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			ProjectID:      opts.Project.UID,
 			EventID:        opts.Event.UID,
 			EndpointID:     s.EndpointID,
+			EndpointURL:    endpointURL,
 			DeviceID:       s.DeviceID,
 			Headers:        headers,
 			TargetURL:      opts.TargetURL,

@@ -1135,6 +1135,7 @@ type EventDelivery struct {
 	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	TargetURL      string                `json:"target_url,omitempty" db:"target_url"`
+	EndpointURL    string                `json:"endpoint_url,omitempty" db:"endpoint_url"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 

@@ -25,6 +25,7 @@ type eventDeliveryFields struct {
 	Metadata       []byte
 	CliMetadata    []byte
 	TargetUrl      pgtype.Text
+	EndpointUrl    pgtype.Text
 	UrlQueryParams pgtype.Text
 	IdempotencyKey pgtype.Text
 	Description    string
@@ -51,6 +52,7 @@ func buildEventDelivery(f eventDeliveryFields) *datastore.EventDelivery {
 		Metadata:         jsonbToMetadata(f.Metadata),
 		CLIMetadata:      jsonbToCLIMetadata(f.CliMetadata),
 		TargetURL:        common.PgTextToString(f.TargetUrl),
+		EndpointURL:      common.PgTextToString(f.EndpointUrl),
 		URLQueryParams:   common.PgTextToString(f.UrlQueryParams),
 		IdempotencyKey:   common.PgTextToString(f.IdempotencyKey),
 		Description:      f.Description,
@@ -122,7 +124,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 		d := buildEventDelivery(eventDeliveryFields{
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
-			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
+			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, EndpointUrl: r.EndpointUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
 			Description: r.Description, EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
 			DeliveryMode: r.DeliveryMode, LatencySeconds: r.LatencySeconds,
 			CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, AcknowledgedAt: r.AcknowledgedAt,
@@ -142,7 +144,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 		return buildEventDelivery(eventDeliveryFields{
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
-			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
+			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, EndpointUrl: r.EndpointUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
 			Description: r.Description, EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
 			DeliveryMode: r.DeliveryMode,
 			CreatedAt:    r.CreatedAt, UpdatedAt: r.UpdatedAt, AcknowledgedAt: r.AcknowledgedAt,
@@ -152,7 +154,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 		return buildEventDelivery(eventDeliveryFields{
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
-			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
+			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, EndpointUrl: r.EndpointUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
 			Description: r.Description, EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
 			DeliveryMode: r.DeliveryMode,
 			CreatedAt:    r.CreatedAt, UpdatedAt: r.UpdatedAt, AcknowledgedAt: r.AcknowledgedAt,
@@ -162,7 +164,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 		return buildEventDelivery(eventDeliveryFields{
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
-			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
+			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, EndpointUrl: r.EndpointUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
 			Description: r.Description, EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
 			DeliveryMode: r.DeliveryMode,
 			CreatedAt:    r.CreatedAt, UpdatedAt: r.UpdatedAt, AcknowledgedAt: r.AcknowledgedAt,
@@ -172,7 +174,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 		return buildEventDelivery(eventDeliveryFields{
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
-			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
+			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, EndpointUrl: r.EndpointUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
 			Description: r.Description, EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
 			DeliveryMode: r.DeliveryMode,
 			CreatedAt:    r.CreatedAt, UpdatedAt: r.UpdatedAt, AcknowledgedAt: r.AcknowledgedAt,
@@ -188,7 +190,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 		d := buildEventDelivery(eventDeliveryFields{
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
-			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
+			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, EndpointUrl: r.EndpointUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
 			Description: r.Description, EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
 			DeliveryMode: r.DeliveryMode, LatencySeconds: r.LatencySeconds,
 			CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, AcknowledgedAt: r.AcknowledgedAt,

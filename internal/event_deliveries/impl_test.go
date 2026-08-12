@@ -307,6 +307,7 @@ func TestCreateEventDelivery(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		delivery.EndpointURL = "https://old.example.com/webhook"
 
 		err := service.CreateEventDelivery(ctx, delivery)
 		require.NoError(t, err)
@@ -320,6 +321,7 @@ func TestCreateEventDelivery(t *testing.T) {
 		require.Equal(t, delivery.SubscriptionID, found.SubscriptionID)
 		require.Equal(t, delivery.Status, found.Status)
 		require.Equal(t, delivery.Description, found.Description)
+		require.Equal(t, delivery.EndpointURL, found.EndpointURL)
 	})
 
 	t.Run("WithCLIMetadata", func(t *testing.T) {

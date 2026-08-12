@@ -52,6 +52,7 @@ export interface EVENT_DELIVERY {
 	endpoint_id: string;
 	latency_seconds?: number;
 	target_url?: string;
+	endpoint_url?: string;
 	delivery_mode?: 'at_least_once' | 'at_most_once';
 }
 

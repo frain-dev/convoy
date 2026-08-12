@@ -12,11 +12,11 @@
 -- to a join-time fallback.
 INSERT INTO convoy.event_deliveries (
     id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
-	metadata, cli_metadata, description, target_url, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode,
+	metadata, cli_metadata, description, target_url, endpoint_url, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode,
 	event_bytes
 )
 VALUES (@id, @project_id, @event_id, @endpoint_id, @device_id, @subscription_id, @headers, @status,
-		@metadata, @cli_metadata, @description, @target_url, @url_query_params, @idempotency_key, @event_type, @acknowledged_at, @delivery_mode,
+		@metadata, @cli_metadata, @description, @target_url, @endpoint_url, @url_query_params, @idempotency_key, @event_type, @acknowledged_at, @delivery_mode,
 		(SELECT e.raw_bytes + e.data_bytes FROM convoy.events e WHERE e.id = @event_id_lookup AND e.project_id = @project_id_lookup));
 
 -- name: UpdateEventDeliveryMetadata :exec
@@ -40,6 +40,7 @@ SELECT
     ed.id, ed.project_id, ed.event_id, ed.subscription_id,
     ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
 	COALESCE(ed.target_url, '') AS target_url,
+	COALESCE(ed.endpoint_url, '') AS endpoint_url,
     COALESCE(ed.url_query_params, '') AS url_query_params,
     COALESCE(ed.idempotency_key, '') AS idempotency_key,
     ed.description, ed.created_at, ed.updated_at, ed.acknowledged_at,
@@ -80,6 +81,7 @@ SELECT
     id, project_id, event_id, subscription_id,
     headers, attempts, status, metadata, cli_metadata, description,
 	COALESCE(target_url, '') AS target_url,
+	COALESCE(endpoint_url, '') AS endpoint_url,
     COALESCE(url_query_params, '') AS url_query_params,
     COALESCE(idempotency_key, '') AS idempotency_key,
     created_at, updated_at,
@@ -97,6 +99,7 @@ SELECT
     id, project_id, event_id, subscription_id,
     headers, attempts, status, metadata, cli_metadata,
 	COALESCE(target_url, '') AS target_url,
+	COALESCE(endpoint_url, '') AS endpoint_url,
     COALESCE(idempotency_key, '') AS idempotency_key,
     COALESCE(url_query_params, '') AS url_query_params,
     description, created_at, updated_at,
@@ -115,6 +118,7 @@ SELECT
     id, project_id, event_id, subscription_id,
     headers, attempts, status, metadata, cli_metadata,
 	COALESCE(target_url, '') AS target_url,
+	COALESCE(endpoint_url, '') AS endpoint_url,
     COALESCE(idempotency_key, '') AS idempotency_key,
     COALESCE(url_query_params, '') AS url_query_params,
     description, created_at, updated_at,
@@ -133,6 +137,7 @@ SELECT
     id, project_id, event_id, subscription_id,
     headers, attempts, status, metadata, cli_metadata,
 	COALESCE(target_url, '') AS target_url,
+	COALESCE(endpoint_url, '') AS endpoint_url,
     COALESCE(idempotency_key, '') AS idempotency_key,
     COALESCE(url_query_params, '') AS url_query_params,
     description, created_at, updated_at,
@@ -209,6 +214,7 @@ WITH filtered_deliveries AS (
         ed.id, ed.project_id, ed.event_id, ed.subscription_id,
         ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
         COALESCE(ed.target_url, '') AS target_url,
+        COALESCE(ed.endpoint_url, '') AS endpoint_url,
         COALESCE(ed.url_query_params, '') AS url_query_params,
         COALESCE(ed.idempotency_key, '') AS idempotency_key,
         ed.description, ed.created_at, ed.updated_at, ed.acknowledged_at,
@@ -272,7 +278,7 @@ WITH filtered_deliveries AS (
 )
 SELECT id, project_id, event_id, subscription_id,
        headers, attempts, status, metadata, cli_metadata,
-       target_url, url_query_params, idempotency_key, description,
+       target_url, endpoint_url, url_query_params, idempotency_key, description,
        created_at, updated_at, acknowledged_at,
        event_type, device_id, endpoint_id, delivery_mode, latency_seconds,
        "endpoint_metadata.id", "endpoint_metadata.name", "endpoint_metadata.project_id",
@@ -389,6 +395,7 @@ SELECT ed.id,
            'cli_metadata', ed.cli_metadata,
            'description', ed.description,
            'target_url', ed.target_url,
+           'endpoint_url', ed.endpoint_url,
            'url_query_params', ed.url_query_params,
            'idempotency_key', ed.idempotency_key,
            'event_type', ed.event_type,

@@ -219,14 +219,14 @@
         }
       </div>
 
-      <convoy-copy-button [text]="eventDelsDetails?.target_url || eventDelsDetails?.endpoint_metadata?.url || ''" show-icon="false" notificationText="Endpoint URL copied to clipboard">
+      <convoy-copy-button [text]="eventDelsDetails?.target_url || eventDelsDetails?.endpoint_url || ''" show-icon="false" notificationText="Endpoint URL copied to clipboard">
         <span class="relative inline-flex items-center max-w-[370px] group cursor-pointer">
-          <span class="truncate font-body text-[13px] text-new.text-secondary">{{ eventDelsDetails?.target_url || eventDelsDetails?.endpoint_metadata?.url || '-' }}</span>
+          <span class="truncate font-body text-[13px] text-new.text-secondary">{{ eventDelsDetails?.target_url || eventDelsDetails?.endpoint_url || '-' }}</span>
           <svg class="ml-6px h-12px w-12px shrink-0 opacity-0 transition-opacity group-hover:opacity-100 stroke-neutral-10">
             <use xlink:href="#copy-icon-3"></use>
           </svg>
           <span class="pointer-events-none absolute left-0 bottom-[calc(100%+8px)] z-50 max-w-[560px] truncate whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-            {{ eventDelsDetails?.target_url || eventDelsDetails?.endpoint_metadata?.url }}
+            {{ eventDelsDetails?.target_url || eventDelsDetails?.endpoint_url || '-' }}
           </span>
         </span>
       </convoy-copy-button>

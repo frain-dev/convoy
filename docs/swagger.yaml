@@ -1765,6 +1765,8 @@ definitions:
         allOf:
           - $ref: '#/definitions/datastore.Endpoint'
         x-nullable: true
+      endpoint_url:
+        type: string
       event_id:
         type: string
       event_metadata:

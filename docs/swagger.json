@@ -12076,6 +12076,9 @@
           ],
           "x-nullable": true
         },
+        "endpoint_url": {
+          "type": "string"
+        },
         "event_id": {
           "type": "string"
         },

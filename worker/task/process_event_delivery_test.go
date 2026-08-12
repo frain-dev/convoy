@@ -61,6 +61,14 @@ func TestResolveEventDeliveryTargetURL(t *testing.T) {
 			wantURL: "https://example.com/callback?source=mobile",
 		},
 		{
+			name:     "ignores historical endpoint URL for routing",
+			endpoint: &datastore.Endpoint{Url: "https://current.example.com/callback"},
+			eventDelivery: &datastore.EventDelivery{
+				EndpointURL: "https://historical.example.com/callback",
+			},
+			wantURL: "https://current.example.com/callback",
+		},
+		{
 			name:          "fails closed for templated endpoint without target URL",
 			endpoint:      &datastore.Endpoint{Url: "https://example.com/orders/{reference}/callback"},
 			eventDelivery: &datastore.EventDelivery{},
