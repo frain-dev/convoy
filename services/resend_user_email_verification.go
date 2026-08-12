@@ -19,12 +19,20 @@ const emailVerificationTokenTTL = 2 * time.Hour
 // emailVerificationResendCooldown is the minimum gap between verification emails.
 const emailVerificationResendCooldown = time.Minute
 
+// compare-and-delete so a late Release cannot clear a newer claim after TTL expiry.
+var resendClaimReleaseScript = redis.NewScript(`
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+end
+return 0
+`)
+
 // ResendClaimStore serializes verification-email resends per user.
-// TryClaim returns false when another claim is held (cooldown active).
-// Release clears a claim after a failed resend so the user can retry immediately.
+// TryClaim returns (true, token, nil) when the claim is acquired.
+// Release must use the same token (compare-and-delete).
 type ResendClaimStore interface {
-	TryClaim(ctx context.Context, userUID string) (bool, error)
-	Release(ctx context.Context, userUID string) error
+	TryClaim(ctx context.Context, userUID string) (ok bool, token string, err error)
+	Release(ctx context.Context, userUID, token string) error
 }
 
 type redisResendClaimStore struct {
@@ -42,12 +50,20 @@ func (s *redisResendClaimStore) claimKey(userUID string) string {
 	return fmt.Sprintf("email_verification_resend:%s", userUID)
 }
 
-func (s *redisResendClaimStore) TryClaim(ctx context.Context, userUID string) (bool, error) {
-	return s.rdb.SetNX(ctx, s.claimKey(userUID), "1", emailVerificationResendCooldown).Result()
+func (s *redisResendClaimStore) TryClaim(ctx context.Context, userUID string) (bool, string, error) {
+	token := ulid.Make().String()
+	ok, err := s.rdb.SetNX(ctx, s.claimKey(userUID), token, emailVerificationResendCooldown).Result()
+	if err != nil {
+		return false, "", err
+	}
+	if !ok {
+		return false, "", nil
+	}
+	return true, token, nil
 }
 
-func (s *redisResendClaimStore) Release(ctx context.Context, userUID string) error {
-	return s.rdb.Del(ctx, s.claimKey(userUID)).Err()
+func (s *redisResendClaimStore) Release(ctx context.Context, userUID, token string) error {
+	return resendClaimReleaseScript.Run(ctx, s.rdb, []string{s.claimKey(userUID)}, token).Err()
 }
 
 type ResendEmailVerificationTokenService struct {
@@ -74,9 +90,9 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 		}
 	}
 
-	claimed := false
+	claimToken := ""
 	if u.ClaimStore != nil {
-		ok, err := u.ClaimStore.TryClaim(ctx, u.User.UID)
+		ok, token, err := u.ClaimStore.TryClaim(ctx, u.User.UID)
 		if err != nil {
 			// Failure policy: Redis transport errors fail open to soft cooldown
 			// (already passed) so an outage does not block a legitimate resend.
@@ -86,7 +102,7 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 		} else if !ok {
 			return &ServiceError{ErrMsg: "please wait before requesting another verification email"}
 		} else {
-			claimed = true
+			claimToken = token
 		}
 	}
 
@@ -98,7 +114,7 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 
 	err := u.UserRepo.UpdateUser(ctx, u.User)
 	if err != nil {
-		u.releaseClaim(ctx, claimed)
+		u.releaseClaim(ctx, claimToken)
 		if u.Logger != nil {
 			u.Logger.ErrorContext(ctx, "failed to update user", "error", err)
 		}
@@ -115,18 +131,18 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 		if restoreErr := u.UserRepo.UpdateUser(ctx, u.User); restoreErr != nil && u.Logger != nil {
 			u.Logger.ErrorContext(ctx, "failed to restore previous verification token after queue error", "error", restoreErr)
 		}
-		u.releaseClaim(ctx, claimed)
+		u.releaseClaim(ctx, claimToken)
 		return &ServiceError{ErrMsg: "failed to queue user verification email", Err: err}
 	}
 
 	return nil
 }
 
-func (u *ResendEmailVerificationTokenService) releaseClaim(ctx context.Context, claimed bool) {
-	if !claimed || u.ClaimStore == nil {
+func (u *ResendEmailVerificationTokenService) releaseClaim(ctx context.Context, token string) {
+	if token == "" || u.ClaimStore == nil {
 		return
 	}
-	if err := u.ClaimStore.Release(ctx, u.User.UID); err != nil && u.Logger != nil {
+	if err := u.ClaimStore.Release(ctx, u.User.UID, token); err != nil && u.Logger != nil {
 		u.Logger.ErrorContext(ctx, "failed to release verification resend claim", "error", err)
 	}
 }

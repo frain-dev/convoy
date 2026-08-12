@@ -14,22 +14,27 @@ import (
 )
 
 type stubResendClaimStore struct {
-	ok      bool
+	ok       bool
 	claimErr error
-	claimed  bool
-	released bool
+	token    string
+	released string
 }
 
-func (s *stubResendClaimStore) TryClaim(ctx context.Context, userUID string) (bool, error) {
+func (s *stubResendClaimStore) TryClaim(ctx context.Context, userUID string) (bool, string, error) {
 	if s.claimErr != nil {
-		return false, s.claimErr
+		return false, "", s.claimErr
 	}
-	s.claimed = s.ok
-	return s.ok, nil
+	if !s.ok {
+		return false, "", nil
+	}
+	if s.token == "" {
+		s.token = "claim-token"
+	}
+	return true, s.token, nil
 }
 
-func (s *stubResendClaimStore) Release(ctx context.Context, userUID string) error {
-	s.released = true
+func (s *stubResendClaimStore) Release(ctx context.Context, userUID, token string) error {
+	s.released = token
 	return nil
 }
 
@@ -52,12 +57,12 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 		claim   *stubResendClaimStore
 	}
 	tests := []struct {
-		name       string
-		args       args
-		dbFn       func(u *ResendEmailVerificationTokenService)
-		wantErr    bool
-		wantErrMsg string
-		wantRelease bool
+		name            string
+		args            args
+		dbFn            func(u *ResendEmailVerificationTokenService)
+		wantErr         bool
+		wantErrMsg      string
+		wantReleaseTok  string
 	}{
 		{
 			name: "should_resend_verification_email",
@@ -65,7 +70,7 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				ctx:     ctx,
 				baseURL: "localhost",
 				user:    &datastore.User{UID: "user-1", EmailVerified: false, EmailVerificationExpiresAt: time.Now().Add(-time.Hour)},
-				claim:   &stubResendClaimStore{ok: true},
+				claim:   &stubResendClaimStore{ok: true, token: "tok-1"},
 			},
 			dbFn: func(u *ResendEmailVerificationTokenService) {
 				q, _ := u.Queue.(*mocks.MockQueuer)
@@ -82,7 +87,7 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				ctx:     ctx,
 				baseURL: "localhost",
 				user:    &datastore.User{UID: "user-2", EmailVerified: false, EmailVerificationExpiresAt: time.Now().Add(90 * time.Minute)},
-				claim:   &stubResendClaimStore{ok: true},
+				claim:   &stubResendClaimStore{ok: true, token: "tok-2"},
 			},
 			dbFn: func(u *ResendEmailVerificationTokenService) {
 				q, _ := u.Queue.(*mocks.MockQueuer)
@@ -132,15 +137,15 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				ctx:     ctx,
 				baseURL: "localhost",
 				user:    &datastore.User{UID: "user-6", EmailVerified: false, EmailVerificationExpiresAt: time.Now().Add(90 * time.Minute)},
-				claim:   &stubResendClaimStore{ok: true},
+				claim:   &stubResendClaimStore{ok: true, token: "tok-6"},
 			},
 			dbFn: func(u *ResendEmailVerificationTokenService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
 				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("db down"))
 			},
-			wantErr:     true,
-			wantErrMsg:  "failed to update user",
-			wantRelease: true,
+			wantErr:        true,
+			wantErrMsg:     "failed to update user",
+			wantReleaseTok: "tok-6",
 		},
 		{
 			name: "should_restore_token_and_release_claim_when_queue_fails",
@@ -148,7 +153,7 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				ctx:     ctx,
 				baseURL: "localhost",
 				user:    &datastore.User{UID: "user-7", EmailVerified: false, EmailVerificationToken: "prev-token", EmailVerificationExpiresAt: time.Now().Add(90 * time.Minute)},
-				claim:   &stubResendClaimStore{ok: true},
+				claim:   &stubResendClaimStore{ok: true, token: "tok-7"},
 			},
 			dbFn: func(u *ResendEmailVerificationTokenService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
@@ -164,9 +169,9 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				q, _ := u.Queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("queue down"))
 			},
-			wantErr:     true,
-			wantErrMsg:  "failed to queue user verification email",
-			wantRelease: true,
+			wantErr:        true,
+			wantErrMsg:     "failed to queue user verification email",
+			wantReleaseTok: "tok-7",
 		},
 	}
 	for _, tc := range tests {
@@ -188,7 +193,7 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				require.Nil(t, err)
 			}
 			if tc.args.claim != nil {
-				require.Equal(t, tc.wantRelease, tc.args.claim.released)
+				require.Equal(t, tc.wantReleaseTok, tc.args.claim.released)
 			}
 		})
 	}
