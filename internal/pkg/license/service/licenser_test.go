@@ -88,7 +88,10 @@ type communityUserRepo struct {
 
 func (r communityUserRepo) CreateUser(context.Context, *datastore.User) error { return nil }
 func (r communityUserRepo) UpdateUser(context.Context, *datastore.User) error { return nil }
-func (r communityUserRepo) CountUsers(context.Context) (int64, error)         { return r.count, nil }
+func (r communityUserRepo) RotateEmailVerificationToken(context.Context, string, string, time.Time) error {
+	return nil
+}
+func (r communityUserRepo) CountUsers(context.Context) (int64, error) { return r.count, nil }
 func (r communityUserRepo) FindUserByEmail(context.Context, string) (*datastore.User, error) {
 	return nil, nil
 }
