@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import posthog from 'posthog-js';
 import { environment } from 'src/environments/environment';
+import { isConvoyCloud } from './utils/cloud.util';
 
 @Component({
     selector: 'app-root',
@@ -10,6 +11,6 @@ import { environment } from 'src/environments/environment';
 })
 export class AppComponent {
 	constructor() {
-		if (window.location.hostname === 'dashboard.getconvoy.io') posthog.init(environment.posthog, { api_host: 'https://app.posthog.com', ui_host: 'https://dashboard.getconvoy.io' });
+		if (isConvoyCloud()) posthog.init(environment.posthog, { api_host: 'https://app.posthog.com' });
 	}
 }

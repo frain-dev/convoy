@@ -5,7 +5,6 @@ import {Router} from '@angular/router';
 import {InputErrorComponent} from 'src/app/components/input/input.component';
 import {LoaderModule} from 'src/app/private/components/loader/loader.module';
 import {AuthShellComponent} from '../components/auth-shell/auth-shell.component';
-import {HubspotService} from 'src/app/services/hubspot/hubspot.service';
 import {SignupService} from './signup.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {ConfigService} from 'src/app/services/config/config.service';
@@ -39,7 +38,6 @@ export class SignupComponent implements OnInit {
 		private formBuilder: FormBuilder,
 		private signupService: SignupService,
 		public router: Router,
-		private hubspotService: HubspotService,
 		private licenseService: LicensesService,
 		private configService: ConfigService,
 		private googleOAuthService: GoogleOAuthService,
@@ -67,8 +65,6 @@ export class SignupComponent implements OnInit {
 			localStorage.removeItem('CONVOY_ORG');
 			localStorage.removeItem('CONVOY_PROJECT');
 			this.licenseService.clearLicenses();
-
-			if (window.location.hostname === 'dashboard.getconvoy.io') await this.hubspotService.sendWelcomeEmail({ email: this.signupForm.value.email, firstname: this.signupForm.value.first_name, lastname: this.signupForm.value.last_name });
 
 			// Email signups land on the verify-email holding page before the
 			// dashboard; the emailed link itself is handled by /verify-email.
