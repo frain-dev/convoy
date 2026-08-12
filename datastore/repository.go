@@ -276,6 +276,9 @@ type JobRepository interface {
 type UserRepository interface {
 	CreateUser(context.Context, *User) error
 	UpdateUser(ctx context.Context, user *User) error
+	// RotateEmailVerificationToken updates token fields only while email_verified
+	// is still false. 0 rows means the account verified concurrently.
+	RotateEmailVerificationToken(ctx context.Context, userID, token string, expiresAt time.Time) error
 	CountUsers(ctx context.Context) (int64, error)
 	FindUserByEmail(context.Context, string) (*User, error)
 	FindUserByID(context.Context, string) (*User, error)

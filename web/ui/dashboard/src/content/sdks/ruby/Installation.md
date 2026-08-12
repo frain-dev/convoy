@@ -26,5 +26,5 @@ require 'convoy'
 Convoy.ssl = true
 Convoy.api_key = "CO.M0aBe..."
 Convoy.path_version = "v1"
-Convoy.base_uri = "https://dashboard.getconvoy.io/api"
+Convoy.base_uri = "https://us.getconvoy.cloud/api"
 ```

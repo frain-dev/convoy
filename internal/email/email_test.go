@@ -68,6 +68,7 @@ func Test_Build_FooterRendersCurrentYear(t *testing.T) {
 		"reset.password.html",
 		"organisation.invite.html",
 		"endpoint.update.html",
+		"twitter.source.html",
 	}
 
 	params := map[string]string{
@@ -83,6 +84,8 @@ func Test_Build_FooterRendersCurrentYear(t *testing.T) {
 		"target_url":             "https://example.com/endpoint",
 		"response_body":          "",
 		"failure_msg":            "connection refused",
+		"source_name":            "twitter-source",
+		"crc_verified_at":        "2026-01-01",
 	}
 
 	for _, glob := range templates {
@@ -96,6 +99,11 @@ func Test_Build_FooterRendersCurrentYear(t *testing.T) {
 			body := e.body.String()
 			require.Contains(t, body, fmt.Sprintf("© %d Frain Technologies", time.Now().Year()))
 			require.NotContains(t, body, "© 2024")
+			require.Contains(t, body, "#0082F9")
+			require.Contains(t, body, "#F7F7F7")
+			require.Contains(t, body, "https://www.getconvoy.io/images/email/email-logo-white.png")
+			require.Contains(t, body, "https://www.getconvoy.io/images/email/email-dots-left.png")
+			require.Contains(t, body, "https://www.getconvoy.io/images/email/email-dots-right.png")
 		})
 	}
 }

@@ -278,6 +278,26 @@ func (q *Queries) FindUserByToken(ctx context.Context, resetPasswordToken pgtype
 	return i, err
 }
 
+const rotateEmailVerificationToken = `-- name: RotateEmailVerificationToken :execresult
+UPDATE convoy.users SET
+    email_verification_token = $1,
+    email_verification_expires_at = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $3 AND deleted_at IS NULL AND email_verified = false
+`
+
+type RotateEmailVerificationTokenParams struct {
+	EmailVerificationToken     pgtype.Text
+	EmailVerificationExpiresAt pgtype.Timestamptz
+	ID                         pgtype.Text
+}
+
+// Rotate verification token only while the account is still unverified.
+// Prevents a stale resend UpdateUser from undoing VerifyEmailService.
+func (q *Queries) RotateEmailVerificationToken(ctx context.Context, arg RotateEmailVerificationTokenParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, rotateEmailVerificationToken, arg.EmailVerificationToken, arg.EmailVerificationExpiresAt, arg.ID)
+}
+
 const updateUser = `-- name: UpdateUser :execresult
 
 UPDATE convoy.users SET
