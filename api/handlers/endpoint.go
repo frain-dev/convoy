@@ -345,6 +345,11 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	util.WriteResponse(w, r, finalBytes, http.StatusOK)
 }
 
+// periodFailureRateTimeout bounds the display-only COUNT on event_deliveries so a
+// slow query cannot sit until WriteTimeout or the ingress idle timeout and 504
+// the endpoint list.
+const periodFailureRateTimeout = 2 * time.Second
+
 // enrichEndpointsWithPeriodFailureRate attaches the history failure rate
 // ((Failure+Retry)/(Success+Failure+Retry)) and the underlying counts to each endpoint
 // over the given range. Retry deliveries are in-flight but have failed at least once,
@@ -353,9 +358,11 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 // deliveries stay excluded. It mutates the slice in place, mirroring the circuit
 // breaker enrichment.
 //
-// Failure policy: this is a display-only enrichment, so it fails open. A query error is
-// logged and the endpoints keep nil rate/counts (rendered as an em dash), rather than
-// failing the whole list response.
+// Failure policy: this is a display-only enrichment, so it fails open. A query error
+// or a count that exceeds periodFailureRateTimeout is logged and the endpoints keep
+// nil rate/counts (rendered as an em dash), rather than failing the whole list
+// response. The timeout must stay well under WriteTimeout and typical ingress idle
+// timeouts so a slow COUNT cannot 504 the list.
 func (h *Handler) enrichEndpointsWithPeriodFailureRate(ctx context.Context, projectID string,
 	endpoints []datastore.Endpoint, params datastore.SearchParams) {
 	endpointIDs := make([]string, len(endpoints))
@@ -364,14 +371,27 @@ func (h *Handler) enrichEndpointsWithPeriodFailureRate(ctx context.Context, proj
 	}
 
 	statuses := []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.FailureEventStatus, datastore.RetryEventStatus}
-	counts, err := event_deliveries.New(h.A.Logger, h.A.DB).
-		CountDeliveriesByEndpointAndStatus(ctx, projectID, endpointIDs, statuses, params)
+	err := loadPeriodFailureRates(ctx, periodFailureRateTimeout, endpoints, func(ctx context.Context) ([]datastore.EndpointStatusDeliveryCount, error) {
+		return event_deliveries.New(h.A.Logger, h.A.DB).
+			CountDeliveriesByEndpointAndStatus(ctx, projectID, endpointIDs, statuses, params)
+	})
 	if err != nil {
 		h.A.Logger.Error("failed to load period failure rate for endpoints", "error", err)
-		return
+	}
+}
+
+func loadPeriodFailureRates(ctx context.Context, timeout time.Duration, endpoints []datastore.Endpoint,
+	countFn func(context.Context) ([]datastore.EndpointStatusDeliveryCount, error)) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	counts, err := countFn(ctx)
+	if err != nil {
+		return err
 	}
 
 	applyPeriodFailureRates(endpoints, counts)
+	return nil
 }
 
 // applyPeriodFailureRates folds per-status delivery counts into the endpoints'

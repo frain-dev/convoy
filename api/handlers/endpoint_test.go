@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -114,6 +116,49 @@ func TestApplyPeriodFailureRates_MultipleEndpoints(t *testing.T) {
 	// ep3 had no deliveries; it keeps nil rate/counts.
 	require.Nil(t, endpoints[2].PeriodFailureRate)
 	require.Nil(t, endpoints[2].SuccessCount)
+}
+
+func TestLoadPeriodFailureRates_CancelledContextFailOpen(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	endpoints := []datastore.Endpoint{{UID: "ep1"}}
+	err := loadPeriodFailureRates(ctx, periodFailureRateTimeout, endpoints, func(ctx context.Context) ([]datastore.EndpointStatusDeliveryCount, error) {
+		return []datastore.EndpointStatusDeliveryCount{
+			{EndpointID: "ep1", Status: datastore.SuccessEventStatus, Count: 10},
+		}, ctx.Err()
+	})
+
+	require.ErrorIs(t, err, context.Canceled)
+	require.Nil(t, endpoints[0].PeriodFailureRate)
+}
+
+func TestLoadPeriodFailureRates_DeadlineFailOpen(t *testing.T) {
+	endpoints := []datastore.Endpoint{{UID: "ep1"}}
+	err := loadPeriodFailureRates(context.Background(), 10*time.Millisecond, endpoints, func(ctx context.Context) ([]datastore.EndpointStatusDeliveryCount, error) {
+		<-ctx.Done()
+		return []datastore.EndpointStatusDeliveryCount{
+			{EndpointID: "ep1", Status: datastore.SuccessEventStatus, Count: 10},
+		}, ctx.Err()
+	})
+
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.Nil(t, endpoints[0].PeriodFailureRate)
+}
+
+func TestLoadPeriodFailureRates_SuccessAppliesRates(t *testing.T) {
+	endpoints := []datastore.Endpoint{{UID: "ep1"}}
+	err := loadPeriodFailureRates(context.Background(), periodFailureRateTimeout, endpoints, func(ctx context.Context) ([]datastore.EndpointStatusDeliveryCount, error) {
+		require.NoError(t, ctx.Err())
+		return []datastore.EndpointStatusDeliveryCount{
+			{EndpointID: "ep1", Status: datastore.SuccessEventStatus, Count: 9},
+			{EndpointID: "ep1", Status: datastore.FailureEventStatus, Count: 1},
+		}, nil
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, endpoints[0].PeriodFailureRate)
+	require.InDelta(t, 0.1, *endpoints[0].PeriodFailureRate, 1e-9)
 }
 
 func f64(v float64) *float64 { return &v }
