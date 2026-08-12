@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -77,6 +78,22 @@ func (s *Service) UpdateUser(ctx context.Context, user *datastore.User) error {
 		return ErrUserNotUpdated
 	}
 
+	return nil
+}
+
+func (s *Service) RotateEmailVerificationToken(ctx context.Context, userID, token string, expiresAt time.Time) error {
+	result, err := s.repo.RotateEmailVerificationToken(ctx, repo.RotateEmailVerificationTokenParams{
+		EmailVerificationToken:     common.StringToPgText(token),
+		EmailVerificationExpiresAt: common.TimeToPgTimestamptz(expiresAt),
+		ID:                         common.StringToPgText(userID),
+	})
+	if err != nil {
+		s.logger.Error("failed to rotate email verification token", "error", err)
+		return err
+	}
+	if result.RowsAffected() < 1 {
+		return ErrUserNotUpdated
+	}
 	return nil
 }
 

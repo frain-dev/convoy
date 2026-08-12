@@ -28,6 +28,9 @@ type Querier interface {
 	// ============================================================================
 	FindUserByID(ctx context.Context, id pgtype.Text) (FindUserByIDRow, error)
 	FindUserByToken(ctx context.Context, resetPasswordToken pgtype.Text) (FindUserByTokenRow, error)
+	// Rotate verification token only while the account is still unverified.
+	// Prevents a stale resend UpdateUser from undoing VerifyEmailService.
+	RotateEmailVerificationToken(ctx context.Context, arg RotateEmailVerificationTokenParams) (pgconn.CommandTag, error)
 	// ============================================================================
 	// UPDATE Operations
 	// ============================================================================

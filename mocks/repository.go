@@ -2700,6 +2700,20 @@ func (mr *MockUserRepositoryMockRecorder) FindUserByToken(arg0, arg1 any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByToken", reflect.TypeOf((*MockUserRepository)(nil).FindUserByToken), arg0, arg1)
 }
 
+// RotateEmailVerificationToken mocks base method.
+func (m *MockUserRepository) RotateEmailVerificationToken(ctx context.Context, userID, token string, expiresAt time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RotateEmailVerificationToken", ctx, userID, token, expiresAt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RotateEmailVerificationToken indicates an expected call of RotateEmailVerificationToken.
+func (mr *MockUserRepositoryMockRecorder) RotateEmailVerificationToken(ctx, userID, token, expiresAt any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RotateEmailVerificationToken", reflect.TypeOf((*MockUserRepository)(nil).RotateEmailVerificationToken), ctx, userID, token, expiresAt)
+}
+
 // UpdateUser mocks base method.
 func (m *MockUserRepository) UpdateUser(ctx context.Context, user *datastore.User) error {
 	m.ctrl.T.Helper()

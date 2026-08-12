@@ -77,7 +77,7 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
-				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				us.EXPECT().RotateEmailVerificationToken(gomock.Any(), "user-1", gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -94,7 +94,7 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
-				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				us.EXPECT().RotateEmailVerificationToken(gomock.Any(), "user-2", gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -141,11 +141,29 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 			},
 			dbFn: func(u *ResendEmailVerificationTokenService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
-				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("db down"))
+				us.EXPECT().RotateEmailVerificationToken(gomock.Any(), "user-6", gomock.Any(), gomock.Any()).Times(1).Return(errors.New("db down"))
+				us.EXPECT().FindUserByID(gomock.Any(), "user-6").Times(1).Return(&datastore.User{UID: "user-6", EmailVerified: false}, nil)
 			},
 			wantErr:        true,
 			wantErrMsg:     "failed to update user",
 			wantReleaseTok: "tok-6",
+		},
+		{
+			name: "should_error_already_verified_when_rotate_loses_race",
+			args: args{
+				ctx:     ctx,
+				baseURL: "localhost",
+				user:    &datastore.User{UID: "user-8", EmailVerified: false, EmailVerificationExpiresAt: time.Now().Add(90 * time.Minute)},
+				claim:   &stubResendClaimStore{ok: true, token: "tok-8"},
+			},
+			dbFn: func(u *ResendEmailVerificationTokenService) {
+				us, _ := u.UserRepo.(*mocks.MockUserRepository)
+				us.EXPECT().RotateEmailVerificationToken(gomock.Any(), "user-8", gomock.Any(), gomock.Any()).Times(1).Return(errors.New("user could not be updated"))
+				us.EXPECT().FindUserByID(gomock.Any(), "user-8").Times(1).Return(&datastore.User{UID: "user-8", EmailVerified: true}, nil)
+			},
+			wantErr:        true,
+			wantErrMsg:     "user email already verified",
+			wantReleaseTok: "tok-8",
 		},
 		{
 			name: "should_restore_token_and_release_claim_when_queue_fails",
@@ -157,14 +175,12 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 			},
 			dbFn: func(u *ResendEmailVerificationTokenService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
-				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(_ context.Context, user *datastore.User) error {
-					require.NotEqual(t, "prev-token", user.EmailVerificationToken)
+				us.EXPECT().RotateEmailVerificationToken(gomock.Any(), "user-7", gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(_ context.Context, _ string, token string, _ time.Time) error {
+					require.NotEqual(t, "prev-token", token)
 					return nil
 				})
-				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(_ context.Context, user *datastore.User) error {
-					require.Equal(t, "prev-token", user.EmailVerificationToken)
-					return nil
-				})
+				us.EXPECT().FindUserByID(gomock.Any(), "user-7").Times(1).Return(&datastore.User{UID: "user-7", EmailVerified: false}, nil)
+				us.EXPECT().RotateEmailVerificationToken(gomock.Any(), "user-7", "prev-token", gomock.Any()).Times(1).Return(nil)
 
 				q, _ := u.Queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("queue down"))

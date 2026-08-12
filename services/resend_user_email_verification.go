@@ -109,33 +109,58 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 	prevToken := u.User.EmailVerificationToken
 	prevExpiresAt := u.User.EmailVerificationExpiresAt
 
-	u.User.EmailVerificationExpiresAt = time.Now().Add(emailVerificationTokenTTL)
-	u.User.EmailVerificationToken = ulid.Make().String()
+	newToken := ulid.Make().String()
+	newExpiresAt := time.Now().Add(emailVerificationTokenTTL)
 
-	err := u.UserRepo.UpdateUser(ctx, u.User)
+	// Token-only rotate with email_verified=false gate. Avoids full-row UpdateUser
+	// racing VerifyEmailService (stale EmailVerified=false would undo verify).
+	err := u.UserRepo.RotateEmailVerificationToken(ctx, u.User.UID, newToken, newExpiresAt)
 	if err != nil {
 		u.releaseClaim(ctx, claimToken)
+		if u.alreadyVerified(ctx) {
+			return &ServiceError{ErrMsg: "user email already verified"}
+		}
 		if u.Logger != nil {
-			u.Logger.ErrorContext(ctx, "failed to update user", "error", err)
+			u.Logger.ErrorContext(ctx, "failed to rotate email verification token", "error", err)
 		}
 		return &ServiceError{ErrMsg: "failed to update user", Err: err}
 	}
+
+	u.User.EmailVerificationToken = newToken
+	u.User.EmailVerificationExpiresAt = newExpiresAt
 
 	err = sendUserVerificationEmail(ctx, u.BaseURL, u.User, u.Queue, u.Logger)
 	if err != nil {
 		// Restore the previous token so a still-valid link is not orphaned when
 		// the new mail never left the queue. Failure policy: best-effort restore;
-		// always release the claim so the user can retry immediately.
-		u.User.EmailVerificationToken = prevToken
-		u.User.EmailVerificationExpiresAt = prevExpiresAt
-		if restoreErr := u.UserRepo.UpdateUser(ctx, u.User); restoreErr != nil && u.Logger != nil {
-			u.Logger.ErrorContext(ctx, "failed to restore previous verification token after queue error", "error", restoreErr)
+		// skip restore if the user verified concurrently; always release the claim
+		// so the user can retry immediately.
+		if !u.alreadyVerified(ctx) {
+			if restoreErr := u.UserRepo.RotateEmailVerificationToken(ctx, u.User.UID, prevToken, prevExpiresAt); restoreErr != nil && u.Logger != nil {
+				u.Logger.ErrorContext(ctx, "failed to restore previous verification token after queue error", "error", restoreErr)
+			} else {
+				u.User.EmailVerificationToken = prevToken
+				u.User.EmailVerificationExpiresAt = prevExpiresAt
+			}
 		}
 		u.releaseClaim(ctx, claimToken)
 		return &ServiceError{ErrMsg: "failed to queue user verification email", Err: err}
 	}
 
 	return nil
+}
+
+// alreadyVerified re-reads the user after a rotate that affected 0 rows (verify won).
+func (u *ResendEmailVerificationTokenService) alreadyVerified(ctx context.Context) bool {
+	fresh, err := u.UserRepo.FindUserByID(ctx, u.User.UID)
+	if err != nil {
+		return false
+	}
+	if fresh.EmailVerified {
+		u.User.EmailVerified = true
+		return true
+	}
+	return false
 }
 
 func (u *ResendEmailVerificationTokenService) releaseClaim(ctx context.Context, token string) {
