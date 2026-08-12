@@ -57,12 +57,12 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 		claim   *stubResendClaimStore
 	}
 	tests := []struct {
-		name            string
-		args            args
-		dbFn            func(u *ResendEmailVerificationTokenService)
-		wantErr         bool
-		wantErrMsg      string
-		wantReleaseTok  string
+		name           string
+		args           args
+		dbFn           func(u *ResendEmailVerificationTokenService)
+		wantErr        bool
+		wantErrMsg     string
+		wantReleaseTok string
 	}{
 		{
 			name: "should_resend_verification_email",
