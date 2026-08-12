@@ -17,6 +17,7 @@ var templateDir embed.FS
 
 const (
 	templatePath = "templates/"
+	layoutPath   = "templates/_layout.html"
 	fileSuffix   = ".html"
 )
 
@@ -70,16 +71,15 @@ var templateFuncs = template.FuncMap{
 // TODO(subomi): glob pattern must not match more than one template
 func (e *Email) Build(glob string, params interface{}) error {
 	pattern := e.buildGlob(glob)
+	base := path.Base(pattern)
 
-	// The root template must share the parsed file's base name so that
-	// Execute runs the parsed template.
-	templ, err := template.New(path.Base(pattern)).Funcs(templateFuncs).ParseFS(templateDir, pattern)
+	templ, err := template.New(base).Funcs(templateFuncs).ParseFS(templateDir, layoutPath, pattern)
 	if err != nil {
 		return fmt.Errorf("failed to parse template fs: %v", err)
 	}
 	e.templ = templ
 
-	err = e.templ.Execute(&e.body, params)
+	err = e.templ.ExecuteTemplate(&e.body, base, params)
 	if err != nil {
 		return fmt.Errorf("failed to execute template: %v", err)
 	}

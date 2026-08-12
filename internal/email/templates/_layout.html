@@ -1,0 +1,52 @@
+{{define "email_header"}}
+<tr>
+    <td style="padding: 0; background-color: #ffffff;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border: none; border-spacing: 0;">
+            <tr>
+                <td align="center" style="padding: 36px 37px 0 37px;">
+                    <table role="presentation" width="582" cellpadding="0" cellspacing="0" style="width: 582px; max-width: 100%; border: none; border-spacing: 0;">
+                        <tr>
+                            <td background="https://www.getconvoy.io/images/email/email-dots-left.png" bgcolor="#0082F9" valign="middle" align="center" style="
+                                    height: 134px;
+                                    background-color: #0082F9;
+                                    background-image: url('https://www.getconvoy.io/images/email/email-dots-left.png'), url('https://www.getconvoy.io/images/email/email-dots-right.png');
+                                    background-repeat: no-repeat, no-repeat;
+                                    background-position: left top, right top;
+                                    background-size: 203px 203px, 176px 176px;
+                                ">
+                                <!--[if gte mso 9]>
+                                <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:582px;height:134px;">
+                                    <v:fill type="frame" src="https://www.getconvoy.io/images/email/email-dots-left.png" color="#0082F9" />
+                                    <v:textbox inset="0,0,0,0">
+                                <![endif]-->
+                                <img src="https://www.getconvoy.io/images/email/email-logo-white.png"
+                                     alt="Convoy"
+                                     width="216"
+                                     height="44"
+                                     style="display: block; margin: 0 auto; border: 0; height: 44px; width: 216px;">
+                                <!--[if gte mso 9]>
+                                    </v:textbox>
+                                </v:rect>
+                                <![endif]-->
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+{{end}}
+
+{{define "email_footer"}}
+<tr>
+    <td style="padding: 24px 37px 36px 37px; background-color: #ffffff; text-align: center;">
+        <p style="margin: 0; font-family: 'Inter', Arial, sans-serif; font-weight: 400; font-size: 12px; line-height: 22px; color: #46586B;">
+            2261 Market Street, San Francisco, CA 94114
+        </p>
+        <p style="margin: 8px 0 0 0; font-family: 'Inter', Arial, sans-serif; font-weight: 400; font-size: 12px; line-height: 22px; color: #46586B;">
+            © {{ currentYear }} Frain Technologies
+        </p>
+    </td>
+</tr>
+{{end}}

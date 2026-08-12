@@ -1,117 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
     <title>Convoy</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;500;700&display=swap" rel="stylesheet"/>
-
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
     <style>
-        * {
-            font-weight: 400;
-            color: #333333;
-        }
-
-        body {
-            background: rgba(115, 122, 145, 0.03);
-            font-family: "Quicksand", sans-serif;
-        }
-
-        .card {
-            width: 700px;
-            background: #fff;
-            box-shadow: 0px 3px 8px -1px rgba(50, 50, 71, 0.05);
-            filter: drop-shadow(0px 0px 1px rgba(12, 26, 75, 0.24));
-            padding: 48px 32px;
-            text-align: left;
-            border-radius: 10px;
-        }
-
-        .card p,
-        .card li {
-            color: #737a91;
-            font-size: 16px;
-            line-height: 25px;
-        }
-
-        .card li {
-            margin-top: 10px;
-            font-size: 15px;
-        }
-
-        .card ul {
-            margin: 30px 0;
-        }
-
-        .card p strong {
-            color: #333333;
-            font-weight: 700;
-        }
-
-        .card p.issue-text {
-            opacity: 0.5;
-            font-size: 0.8rem;
-            margin: 60px 0 -30px;
-        }
-
-        .card h1 {
-            font-size: 25px;
-            line-height: 40px;
-            margin-bottom: 24px;
-        }
-
-        a {
-            color: #3a6da6;
-        }
-
-        .head {
-            margin-bottom: 24px;
-        }
-
-        .footer {
-            margin-top: 30px;
-        }
-
-        .footer p {
-            font-size: 12px;
-            margin: 0;
-            text-align: center;
-        }
-
-        .footer p:last-of-type {
-            margin-top: 5px;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+        body, table, td, p, a {
+            font-family: 'Inter', Arial, sans-serif;
         }
     </style>
 </head>
-<body>
-<table width="100%" border="0" cellspacing="0" cellpadding="0">
-    <tbody>
+<body style="margin: 0; padding: 0; background-color: #FFFFFF;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border: none; border-spacing: 0; background-color: #FFFFFF;">
     <tr>
         <td align="center">
-            <div class="card">
-                <h3>Hi there,</h3>
-
-                <p>
-                    <strong>Important:</strong> You're receiving this email because the Challenge Response Check (CRC) for your custom Twitter source with name: {{ .source_name }} has
-                    not been done recently and needs to be checked. </p>
-
-                  <p>The Last time your source URL was verified: <strong>{{ .crc_verified_at }}</strong></p>
-
-                <p class="issue-text">
-                    For any enquiry or complaint, you can reply to this email.
-                </p>
-            </div>
-
-            <div class="center footer">
-                <p>© <a href="https://getconvoy.io">Convoy</a></p>
-                <p>A Cloud native Webhook Service</p>
-            </div>
+            <table role="presentation" width="656" cellpadding="0" cellspacing="0" style="width: 656px; max-width: 100%; border: none; border-spacing: 0; background-color: #FFFFFF;">
+                {{template "email_header" .}}
+                <tr>
+                    <td style="padding: 0 37px; background-color: #FFFFFF;">
+                        <table role="presentation" width="582" cellpadding="0" cellspacing="0" style="width: 582px; max-width: 100%; border: none; border-spacing: 0; background-color: #F7F7F7;">
+                            <tr>
+                                <td style="padding: 40px 32px; font-family: 'Inter', Arial, sans-serif; font-size: 14px; line-height: 22px; color: #46586B;">
+                                    <p style="margin: 0 0 14px 0; font-weight: 600; font-size: 14px; line-height: 22px; color: #46586B;">
+                                        Hi there,
+                                    </p>
+                                    <p style="margin: 0 0 14px 0; font-weight: 400; font-size: 14px; line-height: 22px; color: #46586B;">
+                                        <strong style="font-weight: 600;">Important:</strong> You're receiving this email because the Challenge Response Check (CRC) for your custom Twitter source with name: {{ .source_name }} has not been done recently and needs to be checked.
+                                    </p>
+                                    <p style="margin: 0 0 14px 0; font-weight: 400; font-size: 14px; line-height: 22px; color: #46586B;">
+                                        The last time your source URL was verified: <strong style="font-weight: 600;">{{ .crc_verified_at }}</strong>
+                                    </p>
+                                    <p style="margin: 0; font-weight: 400; font-size: 14px; line-height: 22px; color: #46586B;">
+                                        For any enquiry or complaint, you can reply to this email.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                {{template "email_footer" .}}
+            </table>
         </td>
     </tr>
-    </tbody>
 </table>
 </body>
 </html>

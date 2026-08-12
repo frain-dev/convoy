@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light dark" />
-    <meta name="supported-color-schemes" content="light dark" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
     <title>Convoy - Team Invitation</title>
     <!--[if mso]>
     <noscript>
@@ -16,138 +16,68 @@
     </noscript>
     <![endif]-->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-        :root {
-            color-scheme: light dark;
-            supported-color-schemes: light dark;
-        }
-
-        body {
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+        body, table, td, p, a {
             font-family: 'Inter', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            width: 100% !important;
-            -webkit-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-            background-color: #f3f4f6;
-        }
-
-        h1, h3 {
-            color: #1f2937;
-            font-size: 24px;
-            line-height: 32px;
-            font-weight: 700;
-            margin-bottom: 24px;
-        }
-
-        p {
-            color: #4b5563;
-            font-size: 16px;
-            line-height: 24px;
-            margin-bottom: 16px;
-        }
-
-        a {
-            color: #3b82f6;
-            text-decoration: none;
-        }
-
-        .button {
-            display: inline-block;
-            background-color: #3b82f6;
-            color: #ffffff !important;
-            text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 4px;
-            font-weight: 600;
-            margin-top: 24px;
-        }
-
-        body, table, td {
-            font-family: 'Inter', Arial, sans-serif;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            body, .email-wrapper { background-color: #1f2937; }
-            .email-content { background-color: #1f2937; }
-            h1, h3 { color: #f3f4f6; }
-            p { color: #d1d5db; }
-            a { color: #60a5fa; }
-
-            body {
-                background-color: #1a202c !important;
-            }
-            .email-wrapper {
-                background-color: #2d3748 !important;
-                width: 100%;
-                table-layout: fixed;
-                padding-bottom: 40px;
-            }
-            .email-content {
-                background-color: #1a202c !important;
-                padding: 40px;
-            }
-            .email-header, .email-footer {
-                background-color: #2d3748 !important;
-            }
-            h1, p {
-                color: #e2e8f0 !important;
-            }
-            .button {
-                background-color: #4299e1 !important;
-                border-color: #4299e1 !important;
-            }
-            .footer-text {
-                color: #a0aec0 !important;
-            }
         }
     </style>
 </head>
-<body>
-<center class="email-wrapper" style="max-width: 600px; margin: auto; background-color: #edf2f7; border-radius: 8px; overflow: hidden;">
-    <table class="email-header" width="100%" cellpadding="0" cellspacing="0" role="presentation">
-        <tr>
-            <td class="email-header" style="padding: 24px 40px; background-color: #ffffff;">
-                <img src="https://res.cloudinary.com/elo9deig/image/upload/f_png,q_auto/blue_kjg9j7"
-                     alt="Convoy logo" style="height: 36px; display: block;">
-            </td>
-        </tr>
-        <tr>
-            <td class="email-content" style="padding: 24px 40px;">
-                <h3>Hi there,</h3>
-                <p>
-                    You have been invited to {{ .inviter_name }}'s team. You can accept it by clicking the button below or copying the link into your browser.
-                </p>
-
-                <p>
-                    <a href="{{ .invite_url }}" class="button">Accept Invitation</a>
-                </p>
-
-                <p>
-                    Or copy this link: <a href="{{ .invite_url }}">{{ .invite_url }}</a>
-                </p>
-
-                <p>
-                    <strong>Important:</strong> This invite link will expire at {{ .expires_at }}.
-                </p>
-
-                <p style="font-size: 14px; color: #6b7280; margin-top: 40px;">
-                    For any enquiry or complaint, you can reply to this email.
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td class="email-footer" style="padding: 24px 40px; background-color: #edf2f7; text-align: center;">
-                <p class="footer-text" style="color: #718096; font-size: 14px; line-height: 24px; margin: 0 0 8px 0;">
-                    2261 Market Street, San Francisco, CA 94114
-                </p>
-                <p class="footer-text" style="color: #718096; font-size: 14px; line-height: 24px; margin: 0;">
-                    © {{ currentYear }} Frain Technologies
-                </p>
-            </td>
-        </tr>
-    </table>
-</center>
+<body style="margin: 0; padding: 0; background-color: #FFFFFF;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border: none; border-spacing: 0; background-color: #FFFFFF;">
+    <tr>
+        <td align="center">
+            <table role="presentation" width="656" cellpadding="0" cellspacing="0" style="width: 656px; max-width: 100%; border: none; border-spacing: 0; background-color: #FFFFFF;">
+                {{template "email_header" .}}
+                <tr>
+                    <td style="padding: 0 37px; background-color: #FFFFFF;">
+                        <table role="presentation" width="582" cellpadding="0" cellspacing="0" style="width: 582px; max-width: 100%; border: none; border-spacing: 0; background-color: #F7F7F7;">
+                            <tr>
+                                <td style="padding: 40px 32px; font-family: 'Inter', Arial, sans-serif; font-size: 14px; line-height: 22px; color: #46586B;">
+                                    <p style="margin: 0 0 14px 0; font-weight: 600; font-size: 14px; line-height: 22px; color: #46586B;">
+                                        Hi there,
+                                    </p>
+                                    <p style="margin: 0 0 14px 0; font-weight: 400; font-size: 14px; line-height: 22px; color: #46586B;">
+                                        You have been invited to {{ .inviter_name }}'s team. You can accept it by clicking the button below or copying the link into your browser.
+                                    </p>
+                                    <table role="presentation" cellpadding="0" cellspacing="0" style="border: none; border-spacing: 0; margin: 24px 0;">
+                                        <tr>
+                                            <td>
+                                                <a href="{{ .invite_url }}" target="_blank" style="
+                                                        display: inline-block;
+                                                        color: #ffffff;
+                                                        font-family: 'Inter', Arial, sans-serif;
+                                                        font-size: 14px;
+                                                        font-weight: 600;
+                                                        line-height: 22px;
+                                                        text-decoration: none;
+                                                        text-align: center;
+                                                        padding: 12px 24px;
+                                                        background-color: #0082F9;
+                                                        border-radius: 4px;
+                                                    ">
+                                                    Accept Invitation
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <p style="margin: 0 0 14px 0; font-weight: 400; font-size: 14px; line-height: 22px; color: #46586B; word-break: break-all;">
+                                        Or copy this link: <a href="{{ .invite_url }}" style="color: #0082F9; text-decoration: underline;">{{ .invite_url }}</a>
+                                    </p>
+                                    <p style="margin: 0 0 14px 0; font-weight: 600; font-size: 14px; line-height: 22px; color: #46586B;">
+                                        Important: This invite link will expire at {{ .expires_at }}.
+                                    </p>
+                                    <p style="margin: 0; font-weight: 400; font-size: 14px; line-height: 22px; color: #46586B;">
+                                        For any enquiry or complaint, you can reply to this email.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                {{template "email_footer" .}}
+            </table>
+        </td>
+    </tr>
+</table>
 </body>
 </html>
