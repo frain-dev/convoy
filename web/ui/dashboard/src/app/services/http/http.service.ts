@@ -1,10 +1,24 @@
 import {Injectable} from '@angular/core';
 import {apiOrigin} from 'src/app/services/api-origin';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import {ActivatedRoute, Router} from '@angular/router';
 import {GeneralService} from '../general/general.service';
 import {ProjectService} from 'src/app/private/pages/project/project.service';
 import {HTTP_RESPONSE} from 'src/app/models/global.model';
+
+function axiosErrorMessage(error: AxiosError): string {
+	const data = error.response?.data as { message?: unknown } | string | undefined;
+	const fromApi = typeof data === 'object' && data && typeof data.message === 'string' ? data.message.trim() : '';
+	if (fromApi) return fromApi;
+
+	const status = error.response?.status;
+	const timedOut =
+		error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT' || status === 504 || status === 408;
+	if (timedOut) return 'This request took too long. Try again.';
+	if (!error.response) return 'Could not reach the server. Try again.';
+
+	return (error.message || '').trim() || 'An unexpected error occurred';
+}
 
 @Injectable({
 	providedIn: 'root'
@@ -225,16 +239,14 @@ export class HttpService {
                 resolve(data);
             } catch (error) {
                 if (axios.isAxiosError(error)) {
-                    const msg = error.response?.data?.message;
-                    if ('project not found' === msg) {
+                    const msg = axiosErrorMessage(error);
+                    if ('project not found' === error.response?.data?.message) {
                         localStorage.removeItem('CONVOY_PROJECT');
                     }
                     if (requestDetails.returnFullError) {
                         return reject(error);
                     } else {
-                        // Return the API error message if available, otherwise fall back to error.message
-                        const errorMessage = msg || error.message || 'An unexpected error occurred';
-                        return reject(errorMessage);
+                        return reject(msg);
                     }
 				} else {
 					console.log('unexpected error: ', error);
@@ -254,9 +266,6 @@ export class HttpService {
 			},
 			error => {
 				if (axios.isAxiosError(error)) {
-					const errorResponse: any = error.response;
-					let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
-
 					if (error.response?.status == 401 && !this.router.url.split('/')[1].includes('portal')) {
 						this.logUserOut();
 						return Promise.reject(error);
@@ -264,7 +273,7 @@ export class HttpService {
 
 					if (!requestDetails.hideNotification) {
 						this.generalService.showNotification({
-							message: errorMessage,
+							message: axiosErrorMessage(error),
 							style: 'error'
 						});
 					}
