@@ -100,8 +100,14 @@ func Test_Build_FooterRendersCurrentYear(t *testing.T) {
 			require.NoError(t, e.Build(glob, emailParams()))
 
 			body := e.body.String()
-			require.Contains(t, body, fmt.Sprintf("© %d Frain Technologies", time.Now().Year()))
+			require.Contains(t, body, fmt.Sprintf(
+				"© %d Frain Technologies | 2261 Market Street, San Francisco, CA 94114",
+				time.Now().Year()))
 			require.NotContains(t, body, "© 2024")
+			// The footer sits inside the card on the same layer as the copy, in a
+			// lighter grey than the body text.
+			require.Contains(t, body, `class="card-foot"`)
+			require.Contains(t, body, "color: #9B9B9B")
 			require.Contains(t, body, "#0082F9")
 			require.Contains(t, body, "#F7F7F7")
 			require.Contains(t, body, "https://www.getconvoy.io/images/email/email-logo-white.png")

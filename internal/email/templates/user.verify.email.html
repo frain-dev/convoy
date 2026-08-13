@@ -28,7 +28,7 @@
                     <td class="gutter" style="padding: 0 37px; background-color: #FFFFFF;">
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border: none; border-spacing: 0; background-color: #F7F7F7;">
                             <tr>
-                                <td class="card-pad" style="padding: 40px 32px; font-family: 'Inter', Arial, sans-serif; font-weight: 600; font-size: 14px; line-height: 22px; color: #46586B;">
+                                <td class="card-pad" style="padding: 40px 32px 20px 32px; font-family: 'Inter', Arial, sans-serif; font-weight: 600; font-size: 14px; line-height: 22px; color: #46586B;">
                                     <p style="margin: 0 0 14px 0; font-weight: 600; font-size: 14px; line-height: 22px; color: #46586B;">
                                         Hi {{ .recipient_name }},
                                     </p>
@@ -64,10 +64,10 @@
                                     </p>
                                 </td>
                             </tr>
+                            {{template "email_footer" .}}
                         </table>
                     </td>
                 </tr>
-                {{template "email_footer" .}}
             </table>
             {{ outlookShellClose }}
         </td>

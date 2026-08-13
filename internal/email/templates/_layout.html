@@ -14,7 +14,10 @@
             padding-right: 16px !important;
         }
         .card-pad {
-            padding: 24px 20px !important;
+            padding: 24px 20px 16px 20px !important;
+        }
+        .card-foot {
+            padding: 0 20px 24px 20px !important;
         }
     }
 </style>
@@ -62,12 +65,9 @@
 
 {{define "email_footer"}}
 <tr>
-    <td class="gutter" style="padding: 24px 37px 36px 37px; background-color: #ffffff; text-align: center;">
-        <p style="margin: 0; font-family: 'Inter', Arial, sans-serif; font-weight: 400; font-size: 12px; line-height: 22px; color: #46586B;">
-            2261 Market Street, San Francisco, CA 94114
-        </p>
-        <p style="margin: 8px 0 0 0; font-family: 'Inter', Arial, sans-serif; font-weight: 400; font-size: 12px; line-height: 22px; color: #46586B;">
-            © {{ currentYear }} Frain Technologies
+    <td class="card-foot" style="padding: 0 32px 32px 32px; background-color: #F7F7F7;">
+        <p style="margin: 0; font-family: 'Inter', Arial, sans-serif; font-weight: 400; font-size: 11px; line-height: 22px; color: #9B9B9B;">
+            © {{ currentYear }} Frain Technologies | 2261 Market Street, San Francisco, CA 94114
         </p>
     </td>
 </tr>
