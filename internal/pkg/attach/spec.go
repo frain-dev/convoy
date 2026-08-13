@@ -28,10 +28,12 @@ type Spec struct {
 	CopyUnpartition string
 }
 
-// Cutoff is the instant that divides adopted history from partitioned future.
-// A NOT VALID CHECK still applies to rows written after it is added, so a
-// cutoff of "tomorrow" chosen near midnight UTC can be crossed while VALIDATE
-// is still running.
+// Cutoff is the UTC instant that divides adopted history from partitioned
+// future. Forward partition DATE math must use this instant in UTC, not the
+// session time zone: `'…'::TIMESTAMPTZ::DATE` follows TimeZone and will not
+// line up with the CHECK. A NOT VALID CHECK still applies to rows written
+// after it is added, so a cutoff of "tomorrow" chosen near midnight UTC can
+// be crossed while VALIDATE is still running.
 func Cutoff(now time.Time) time.Time {
 	return now.UTC().Truncate(24*time.Hour).AddDate(0, 0, 2)
 }

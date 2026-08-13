@@ -327,7 +327,7 @@ func createForwardPartitions(ctx context.Context, db *pgxpool.Pool, spec Spec, b
             d        DATE;
             proj     TEXT;
             name     TEXT;
-            from_day DATE := '%s'::TIMESTAMPTZ::DATE;
+            from_day DATE := ('%s'::TIMESTAMPTZ AT TIME ZONE 'UTC')::DATE;
         BEGIN
             FOR proj IN SELECT id FROM convoy.projects WHERE deleted_at IS NULL LOOP
                 FOR d IN SELECT generate_series(from_day, from_day + %d, '1 day')::DATE
@@ -337,7 +337,7 @@ func createForwardPartitions(ctx context.Context, db *pgxpool.Pool, spec Spec, b
                             || '_' || pg_catalog.REPLACE(d::TEXT, '-', '');
                     EXECUTE FORMAT(
                         'CREATE TABLE IF NOT EXISTS convoy.%%I PARTITION OF convoy.%s FOR VALUES FROM (%%L, %%L) TO (%%L, %%L)',
-                        name, proj, d, proj, d + 1
+                        name, proj, d::timestamp AT TIME ZONE 'UTC', proj, (d + 1)::timestamp AT TIME ZONE 'UTC'
                     );
                 END LOOP;
             END LOOP;

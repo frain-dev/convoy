@@ -157,6 +157,28 @@ func TestPartitionEventDeliveriesTableRejectsRowsBeyondTheLastPartition(t *testi
 // it. On the adopted heap the difference is between a catalog change and reading
 // the whole table, once per partition per project, so the constraint doing the
 // refuting is load-bearing rather than an optimisation.
+// The history CHECK is a UTC timestamptz. Deriving the first forward day with
+// `'…'::TIMESTAMPTZ::DATE` follows the session TimeZone and lands on the
+// previous calendar day in America/New_York, so CREATE PARTITION cannot refute
+// overlap from the CHECK and scans the adopted heap.
+func TestForwardPartitionDayFollowsUTCCutoff(t *testing.T) {
+	_, db := setupTestDB(t)
+	ctx := context.Background()
+
+	bound := attach.Cutoff(time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC)).Format(time.RFC3339)
+	_, err := db.GetDB().ExecContext(ctx, `SET TIME ZONE 'America/New_York'`)
+	require.NoError(t, err)
+
+	var naive, utc string
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT
+            ($1::TIMESTAMPTZ)::DATE::TEXT,
+            ($1::TIMESTAMPTZ AT TIME ZONE 'UTC')::DATE::TEXT`, bound).Scan(&naive, &utc))
+
+	require.Equal(t, "2026-08-16", naive)
+	require.Equal(t, "2026-08-17", utc)
+}
+
 func TestCreatingPartitionsDoesNotScanTheAdoptedTable(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
