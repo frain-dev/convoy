@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
-export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring';
+export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions';
 
 @Component({
     selector: 'app-admin',
@@ -15,7 +15,8 @@ export class AdminComponent implements OnInit {
 		{ name: 'feature flags', icon: 'settings', svg: 'fill' },
 		{ name: 'circuit breaker config', icon: 'shield', svg: 'fill' },
 		{ name: 'resend events', icon: 'retry', svg: 'fill' },
-		{ name: 'queue monitoring', icon: 'logs', svg: 'stroke' }
+		{ name: 'queue monitoring', icon: 'logs', svg: 'stroke' },
+		{ name: 'table partitions', icon: 'logs', svg: 'stroke' }
 	];
 
 	constructor(private route: ActivatedRoute) {}
@@ -31,7 +32,8 @@ export class AdminComponent implements OnInit {
 			page === 'feature flags' ||
 			page === 'circuit breaker config' ||
 			page === 'resend events' ||
-			page === 'queue monitoring'
+			page === 'queue monitoring' ||
+			page === 'table partitions'
 		) {
 			this.activePage = page as ADMIN_PAGE;
 		} else {
