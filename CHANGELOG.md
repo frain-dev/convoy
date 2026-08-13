@@ -9,7 +9,10 @@
 ### Bug Fixes
 
 - fix(dataplane): correct partition naming, retention adoption and event-id enforcement (#2781)
+<<<<<<< HEAD
 - fix(controlplane): fit transactional emails to mobile and move the footer inside the card (#2783)
+=======
+>>>>>>> 680e2a08 (docs(release): add the 26.7.2 changelog entry)
 
 ## 26.7.1
 
