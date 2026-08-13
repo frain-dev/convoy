@@ -16,7 +16,7 @@ import (
 )
 
 // RetentionTables are the tables the partition retention policy manages.
-// They must be converted to partitioned parents (`convoy partition`) before
+// They must be converted to partitioned parents (`convoy utils partition`) before
 // retention can run.
 var RetentionTables = []string{"events", "events_search", "event_deliveries", "delivery_attempts"}
 
@@ -71,7 +71,7 @@ type Retentioner interface {
 
 // LicensedRetentionPolicy is installed when the license includes retention.
 // It re-reads partition state on Start, on a reconcile ticker, and on every
-// Perform so `convoy partition` can activate retention without a worker
+// Perform so `convoy utils partition` can activate retention without a worker
 // restart. Until all RetentionTables are partitioned parents it never
 // deletes; each skip logs the actionable error so the asynq job stays healthy.
 type LicensedRetentionPolicy struct {
@@ -143,7 +143,7 @@ func (l *LicensedRetentionPolicy) Perform(ctx context.Context) error {
 	l.mu.Unlock()
 
 	if inner == nil {
-		l.logger.Error(fmt.Sprintf("retention is licensed but skipped: tables are not partitioned: %v. Run `convoy partition`", missing))
+		l.logger.Error(fmt.Sprintf("retention is licensed but skipped: tables are not partitioned: %v. Run `convoy utils partition`", missing))
 		return nil
 	}
 	return inner.Perform(ctx)

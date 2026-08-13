@@ -291,7 +291,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	// Retention is paid-only and partition-based; the license is the single
 	// gate (the delete-query retention system and its feature flag were
 	// removed). LicensedRetentionPolicy re-reads partition state at job time
-	// so `convoy partition` activates retention without a worker restart.
+	// so `convoy utils partition` activates retention without a worker restart.
 	// Until tables are partitioned it deletes nothing and logs the action.
 	var ret retention.Retentioner
 	if opts.Licenser.RetentionPolicy() {
