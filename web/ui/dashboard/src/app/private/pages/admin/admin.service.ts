@@ -321,4 +321,18 @@ export class AdminService {
 			}
 		});
 	}
+
+	listPartitionTables(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/partitions/tables`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

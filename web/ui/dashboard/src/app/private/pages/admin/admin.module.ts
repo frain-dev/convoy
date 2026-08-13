@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { AdminComponent } from './admin.component';
 import { FeatureFlagsComponent } from './feature-flags/feature-flags.component';
 import { OrganisationOverridesComponent } from './organisation-overrides/organisation-overrides.component';
@@ -15,6 +15,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { LoaderModule } from '../../components/loader/loader.module';
 import { LabelComponent, InputFieldDirective, InputErrorComponent, InputDirective } from 'src/app/components/input/input.component';
 import { CardComponent } from 'src/app/components/card/card.component';
+import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { QueueMonitoringComponent } from '../queue-monitoring/queue-monitoring.component';
 
 const routes: Routes = [{ path: '', component: AdminComponent }];
@@ -31,13 +32,13 @@ const routes: Routes = [{ path: '', component: AdminComponent }];
 	imports: [
 		CommonModule,
 		RouterModule.forChild(routes),
-		FormsModule,
 		ReactiveFormsModule,
 		QueueMonitoringComponent,
 		CardComponent,
 		SelectComponent,
 		ToggleComponent,
 		TagComponent,
+		StatusColorModule,
 		ButtonComponent,
 		LoaderModule,
 		LabelComponent,

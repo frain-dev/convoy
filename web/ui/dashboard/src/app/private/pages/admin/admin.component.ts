@@ -16,7 +16,7 @@ export class AdminComponent implements OnInit {
 		{ name: 'circuit breaker config', icon: 'shield', svg: 'fill' },
 		{ name: 'resend events', icon: 'retry', svg: 'fill' },
 		{ name: 'queue monitoring', icon: 'logs', svg: 'stroke' },
-		{ name: 'table partitions', icon: 'logs', svg: 'stroke' }
+		{ name: 'table partitions', icon: 'view-data', svg: 'fill' }
 	];
 
 	constructor(private route: ActivatedRoute) {}

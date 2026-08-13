@@ -1,6 +1,6 @@
 <div class="flex flex-col gap-4px mb-16px">
   <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary">Table partitions</h3>
-  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Partition the tables retention deletes from, so old data is dropped a partition at a time instead of row by row. Converting rewrites the table and reports progress here as it runs.</p>
+  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Partition the tables retention deletes from, so old data is dropped a partition at a time instead of row by row. A conversion takes minutes to hours on a large table and reports progress here as it runs.</p>
 </div>
 
 <div class="h-[1px] w-full bg-new.border mb-20px"></div>
@@ -12,14 +12,37 @@
 }
 
 @if (hasRetentionLicense) {
-  <div class="bg-warning-500/5 border border-warning-500/20 rounded-12px p-16px mb-24px">
-    <p class="font-body font-semibold text-[14px] leading-normal text-new.text-primary mb-4px">Run this in a maintenance window</p>
-    <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary">
-      Conversion copies the table into a partitioned one and swaps it in. Rows written while the copy runs are not carried over, so pause ingestion before starting. On a large table this takes hours and cannot be safely interrupted once it begins.
-    </p>
-  </div>
+  @if (!keepsIngestionRunning) {
+    <div class="bg-warning-500/5 border border-warning-500/20 rounded-12px p-16px mb-24px">
+      <p class="font-body font-semibold text-[14px] leading-normal text-new.text-primary mb-4px">Run this in a maintenance window</p>
+      <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary">
+        Conversion copies the table into a partitioned one and swaps it in. Rows written while the copy runs are not carried over, so pause ingestion before starting. On a large table this takes hours and cannot be safely interrupted once it begins.
+      </p>
+    </div>
+  }
 
-  <div class="mb-24px">
+  @if (keepsIngestionRunning) {
+    <div class="bg-new.primary-400/5 border border-new.primary-400/20 rounded-12px p-16px mb-24px">
+      <p class="font-body font-semibold text-[14px] leading-normal text-new.text-primary mb-4px">Keep ingestion running</p>
+
+      @if (isAttachConversion) {
+        <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary">
+          This attaches the existing table as a partition rather than copying it, so no row is moved and none is lost. The bulk of the work is a scan that runs alongside normal traffic; only a brief final step takes an exclusive lock. It is safe to interrupt before that step.
+        </p>
+        <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary mt-8px">
+          Existing rows stay in one partition holding all history up to the day after tomorrow, rather than being split by day. Retention does not expire that partition day by day; it is dropped in full once every row in it is older than your retention window. Rows are partitioned by day from then on.
+        </p>
+      }
+
+      @if (isDetachConversion) {
+        <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary">
+          This table was converted by attaching, so it converts back by detaching. The partition holding everything written before that conversion becomes the table again where it stands, and only the rows written since are moved, under a brief exclusive lock. Nothing written during the run is lost.
+        </p>
+      }
+    </div>
+  }
+
+  <div class="mb-24px" [formGroup]="partitionForm">
     <div class="bg-white-100 border border-new.border rounded-12px p-20px">
       <div class="grid grid-cols-2 gap-24px">
         <convoy-input-field>
@@ -27,8 +50,7 @@
           <convoy-select
             [options]="tables"
             name="table"
-            [value]="selectedTable"
-            (selectedOption)="selectedTable = $event"
+            formControlName="table"
             placeholder="Select table"
             [searchable]="false"
           ></convoy-select>
@@ -39,24 +61,31 @@
           <convoy-select
             [options]="operations"
             name="operation"
-            [value]="selectedOperation"
-            (selectedOption)="selectedOperation = $event"
+            formControlName="operation"
             placeholder="Select operation"
             [searchable]="false"
           ></convoy-select>
         </convoy-input-field>
       </div>
 
-      <convoy-input-field class="mt-8px">
-        <label for="confirmation" convoy-label>Type <span class="font-medium text-new.text-primary">{{ selectedTable }}</span> to confirm</label>
+      @if (operationHint) {
+        <!-- Close to the selects it describes, and clearly separated from the
+             confirmation field below, which is a different step. -->
+        <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary mt-4px">{{ operationHint }}</p>
+      }
+
+      <convoy-input-field class="mt-24px">
+        <!-- convoy-label lays its content out with flex, so each element is a flex
+             item and the spaces around an inline <span> collapse. Keep the phrase in
+             one inline node so it reads as a sentence. -->
+        <label for="confirmation" convoy-label><span>Type <span class="font-medium text-new.text-primary">{{ selectedTable }}</span> to confirm</span></label>
         <input
           id="confirmation"
           convoy-input
           type="text"
           autocomplete="off"
           placeholder="{{ selectedTable }}"
-          [(ngModel)]="confirmation"
-          [ngModelOptions]="{ standalone: true }"
+          formControlName="confirmation"
         />
       </convoy-input-field>
 
@@ -68,7 +97,9 @@
           (click)="startRun()"
           >
           @if (!isStarting) {
-            <span class="capitalize">{{ selectedOperation }} {{ selectedTable }}</span>
+            <!-- The operation alone: capitalizing a snake_case table name reads as
+                 "Event_deliveries", and the table is already named above. -->
+            <span class="capitalize">{{ selectedOperation }}</span>
           }
           @if (isStarting) {
             <span>Starting...</span>
@@ -107,23 +138,35 @@
       <div class="bg-white-100 border border-new.border rounded-12px p-16px">
         <div class="flex items-center justify-between gap-12px">
           <div class="flex items-center gap-8px min-w-0">
-            <convoy-tag [color]="statusColor(run.status)" fill="soft" size="sm">{{ run.status }}</convoy-tag>
-            <span class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary truncate">{{ run.operation }} {{ run.table_name }}</span>
+            <convoy-tag [color]="run.status | statuscolor" size="sm" class="capitalize">{{ run.status }}</convoy-tag>
+            <span class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary truncate">{{ runTitle(run) }}</span>
           </div>
           <span class="font-body font-normal text-[13px] leading-[18px] text-new.text-secondary shrink-0">{{ elapsed(run) }}</span>
         </div>
 
-        @if (run.phase) {
-          <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary mt-8px break-words">{{ run.phase }}</p>
+        @if (showsSteps(run)) {
+          <ol class="mt-8px flex flex-col gap-4px">
+            @for (step of run.steps; track $index) {
+              <li class="flex items-start justify-between gap-12px">
+                <span class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary break-words">{{ step.message }}</span>
+                <span class="font-body font-normal text-[12px] leading-[20px] text-new.text-secondary shrink-0">{{ step.at | date: 'mediumTime' }}</span>
+              </li>
+            }
+          </ol>
         }
 
         @if (run.error) {
           <p class="font-body font-normal text-[13px] leading-[20px] text-error-500 mt-8px break-words">{{ run.error }}</p>
         }
 
-        <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-8px">
-          {{ run.notice_count }} step(s) reported, started {{ run.started_at | date: 'medium' }}
-        </p>
+        <div class="flex items-center gap-8px mt-8px">
+          <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary">Started {{ run.started_at | date: 'medium' }}</p>
+          @if (run.status !== 'running' && stepCount(run) > 0) {
+            <button type="button" class="font-body text-[12px] leading-normal text-new.primary-400" (click)="toggleSteps(run)">
+              {{ showsSteps(run) ? 'Hide steps' : 'Show ' + stepCount(run) + ' steps' }}
+            </button>
+          }
+        </div>
       </div>
     }
   </div>
