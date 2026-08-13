@@ -1278,6 +1278,35 @@ func TestPartitionEventDeliveriesTableKeepsEventIDEnforcement(t *testing.T) {
 	}
 }
 
+// UnPartition rebuilds convoy.event_deliveries too, so it owes the same
+// event-id enforcement the partition path owes. Unpartitioning deliveries says
+// nothing about convoy.events, which may still be partitioned.
+func TestUnPartitionEventDeliveriesTableKeepsEventIDEnforcement(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	require.NoError(t, service.CreateEventDelivery(ctx,
+		createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)))
+
+	// events stays partitioned, so the trigger is the only form available.
+	require.NoError(t, events.New(log.New("convoy", log.LevelInfo), db).PartitionEventsTable(ctx))
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+	require.NoError(t, service.UnPartitionEventDeliveriesTable(ctx))
+
+	orphan := createTestEventDelivery(t, project.UID, ulid.Make().String(), endpoint.UID, subscription.UID)
+	require.Error(t, service.CreateEventDelivery(ctx, orphan),
+		"delivery referencing a nonexistent event was accepted after unpartitioning")
+
+	require.NoError(t, service.CreateEventDelivery(ctx,
+		createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)))
+}
+
 // Partitions must be named so retention can adopt them. See
 // testenv.RequirePartitionsAddressableByRetention for why that is not automatic.
 func TestPartitionEventDeliveriesTableNamesForRetention(t *testing.T) {

@@ -910,6 +910,26 @@ begin
     create index idx_event_deliveries_status on convoy.event_deliveries (status);
     create index idx_event_deliveries_status_key on convoy.event_deliveries (status);
 
+    -- Same reason as partition_event_deliveries_table: this function also
+    -- rebuilds convoy.event_deliveries, so it also has to put event-id
+    -- enforcement back. Unpartitioning event deliveries says nothing about
+    -- convoy.events, which may still be partitioned and can therefore still only
+    -- be enforced by the trigger.
+    IF EXISTS (
+        SELECT 1
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events' AND c.relkind = 'p'
+    ) THEN
+        CREATE OR REPLACE TRIGGER event_fk_check
+        BEFORE INSERT ON convoy.event_deliveries
+        FOR EACH ROW EXECUTE FUNCTION convoy.enforce_event_fk();
+    ELSE
+        ALTER TABLE convoy.event_deliveries
+            ADD CONSTRAINT event_deliveries_event_id_fkey
+                FOREIGN KEY (event_id) REFERENCES convoy.events (id);
+    END IF;
+
 	RAISE NOTICE 'Successfully un-partitioned events table...';
 end $$ language plpgsql;
 select convoy.un_partition_event_deliveries_table()

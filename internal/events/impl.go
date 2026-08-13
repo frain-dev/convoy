@@ -825,6 +825,12 @@ BEGIN
         ADD CONSTRAINT event_deliveries_event_id_fkey
             FOREIGN KEY (event_id) REFERENCES convoy.events_new (id);
 
+    -- The constraint above is the enforcement the trigger stood in for while
+    -- events was partitioned. Leaving the trigger installed would make every
+    -- delivery insert pay a second existence query, and would report a violation
+    -- through whichever of the two fires first.
+    DROP TRIGGER IF EXISTS event_fk_check ON convoy.event_deliveries;
+
     ALTER TABLE convoy.events RENAME TO events_old;
     ALTER TABLE convoy.events_new RENAME TO events;
     DROP TABLE IF EXISTS convoy.events_old;
