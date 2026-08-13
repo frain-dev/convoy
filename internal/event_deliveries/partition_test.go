@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/attach"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
@@ -175,8 +176,8 @@ func TestForwardPartitionDayFollowsUTCCutoff(t *testing.T) {
             ($1::TIMESTAMPTZ)::DATE::TEXT,
             ($1::TIMESTAMPTZ AT TIME ZONE 'UTC')::DATE::TEXT`, bound).Scan(&naive, &utc))
 
-	require.Equal(t, "2026-08-16", naive)
-	require.Equal(t, "2026-08-17", utc)
+	require.Equal(t, "2026-08-28", naive)
+	require.Equal(t, "2026-08-29", utc)
 }
 
 func TestCreatingPartitionsDoesNotScanTheAdoptedTable(t *testing.T) {
@@ -293,6 +294,121 @@ func TestPartitionEventDeliveriesTableDropsAdoptedAttemptFK(t *testing.T) {
 	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
 	require.Zero(t, countNamedConstraint(t, db, "delivery_attempts_default", "delivery_attempts_event_delivery_id_fkey"),
 		"partitioning event_deliveries left the attempt FK on delivery_attempts_default")
+}
+
+// Detach swaps the adopted heap back under the live name before it copies
+// rows written since conversion. Those rows sit on <table>_partitioned for
+// the whole drain. The stand-in must find them there, or a delivery for a
+// post-conversion event is rejected until drain finishes.
+func TestEventFKAcceptsEventOnlyOnPartitionedDuringDrain(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx,
+		createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)))
+
+	require.NoError(t, events.New(log.New("convoy", log.LevelError), db).PartitionEventsTable(ctx))
+
+	recentID := ulid.Make().String()
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.events (id, event_type, project_id, source_id, raw, data, created_at, updated_at)
+        VALUES ($1, 'test.event', $2, $3, '{}', '{}', $4, $4)`,
+		recentID, project.UID, source.UID, attach.Cutoff(time.Now()))
+	require.NoError(t, err)
+
+	simulateDetachSwap(t, db, "events")
+	_, err = db.GetDB().ExecContext(ctx, attach.EventFKSQL)
+	require.NoError(t, err)
+
+	var home string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT tableoid::regclass::TEXT FROM convoy.events_partitioned WHERE id = $1`, recentID).Scan(&home))
+	require.NotEqual(t, "convoy.events", home)
+
+	require.NoError(t, service.CreateEventDelivery(ctx,
+		createTestEventDelivery(t, project.UID, recentID, endpoint.UID, subscription.UID)),
+		"delivery for an event that only exists on events_partitioned was rejected")
+	require.Error(t, service.CreateEventDelivery(ctx,
+		createTestEventDelivery(t, project.UID, ulid.Make().String(), endpoint.UID, subscription.UID)),
+		"delivery referencing a nonexistent event was accepted during drain")
+}
+
+// Same drain window on event_deliveries: an attempt for a post-conversion
+// delivery must land, and the live table must reject an orphan.
+func TestAttemptFKAcceptsDeliveryOnlyOnPartitionedDuringDrain(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+
+	recentID := ulid.Make().String()
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.event_deliveries
+            (id, status, description, project_id, event_id, endpoint_id, subscription_id, metadata, created_at, delivery_mode)
+        VALUES ($1, 'Success', '', $2, $3, $4, $5, '{}'::jsonb, $6, 'at_least_once')`,
+		recentID, project.UID, event.UID, endpoint.UID, subscription.UID, attach.Cutoff(time.Now()))
+	require.NoError(t, err)
+
+	simulateDetachSwap(t, db, "event_deliveries")
+	_, err = db.GetDB().ExecContext(ctx, attach.EventFKSQL)
+	require.NoError(t, err)
+	_, err = db.GetDB().ExecContext(ctx, attach.AttemptFKSQL)
+	require.NoError(t, err)
+
+	require.NoError(t, insertAttempt(t, db, project.UID, endpoint.UID, recentID),
+		"attempt for a delivery that only exists on event_deliveries_partitioned was rejected")
+	require.Error(t, insertAttempt(t, db, project.UID, endpoint.UID, ulid.Make().String()),
+		"attempt referencing a nonexistent delivery was accepted during drain")
+}
+
+func simulateDetachSwap(t *testing.T, db database.Database, table string) {
+	t.Helper()
+
+	_, err := db.GetDB().ExecContext(context.Background(), fmt.Sprintf(`
+        ALTER TABLE convoy.%[1]s RENAME TO %[1]s_partitioned;
+        ALTER TABLE convoy.%[1]s_partitioned DETACH PARTITION convoy.%[1]s_default;
+        ALTER TABLE convoy.%[1]s_default RENAME TO %[1]s;
+        ALTER TABLE convoy.%[1]s DROP CONSTRAINT IF EXISTS %[1]s_default_bounds;`, table))
+	require.NoError(t, err)
+}
+
+func TestUnPartitionEventDeliveriesTableKeepsPostConversionDelivery(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx,
+		createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)))
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+
+	recentID := ulid.Make().String()
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.event_deliveries
+            (id, status, description, project_id, event_id, endpoint_id, subscription_id, metadata, created_at, delivery_mode)
+        VALUES ($1, 'Success', '', $2, $3, $4, $5, '{}'::jsonb, $6, 'at_least_once')`,
+		recentID, project.UID, event.UID, endpoint.UID, subscription.UID, attach.Cutoff(time.Now()))
+	require.NoError(t, err)
+
+	require.NoError(t, service.UnPartitionEventDeliveriesTable(ctx))
+	require.NoError(t, insertAttempt(t, db, project.UID, endpoint.UID, recentID))
+	require.Error(t, insertAttempt(t, db, project.UID, endpoint.UID, ulid.Make().String()))
 }
 
 func TestUnPartitionEventDeliveriesTableRecoversInvalidIdIndex(t *testing.T) {

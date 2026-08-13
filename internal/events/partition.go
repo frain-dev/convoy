@@ -33,6 +33,7 @@ var eventsSpec = attach.Spec{
 		attach.DropConstraintSQL("event_deliveries", "event_deliveries_event_id_fkey"),
 		attach.EventFKSQL,
 	),
+	DuringDetach:    []string{attach.EventFKSQL},
 	AfterDetach:     []string{attach.RestoreEventFKSQL},
 	CopyUnpartition: unPartitionEventsTableSQL,
 }

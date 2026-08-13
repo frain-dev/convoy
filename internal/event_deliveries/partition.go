@@ -30,6 +30,7 @@ var deliveriesSpec = attach.Spec{
 		attach.AttemptFKSQL,
 	),
 	AfterAttach:     []string{attach.EventFKSQL},
+	DuringDetach:    []string{attach.EventFKSQL, attach.AttemptFKSQL},
 	AfterDetach:     []string{attach.RestoreAttemptFKSQL, attach.RestoreEventFKSQL},
 	CopyUnpartition: unPartitionEventDeliveriesTableSQL,
 }

@@ -22,14 +22,18 @@ const EventFKSQL = `
 CREATE OR REPLACE FUNCTION convoy.enforce_event_fk()
     RETURNS TRIGGER AS $$
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM convoy.events
-        WHERE id = NEW.event_id
-    ) THEN
-        RAISE EXCEPTION 'Foreign key violation: event_id % does not exist in events', NEW.event_id;
+    IF EXISTS (SELECT 1 FROM convoy.events WHERE id = NEW.event_id) THEN
+        RETURN NEW;
     END IF;
-    RETURN NEW;
+    -- Detach renames the partitioned parent to events_partitioned and only
+    -- copies those rows back after the swap. Look there too, or a delivery
+    -- for a post-conversion event is rejected for the whole drain.
+    IF to_regclass('convoy.events_partitioned') IS NOT NULL THEN
+        IF EXISTS (SELECT 1 FROM convoy.events_partitioned WHERE id = NEW.event_id) THEN
+            RETURN NEW;
+        END IF;
+    END IF;
+    RAISE EXCEPTION 'Foreign key violation: event_id % does not exist in events', NEW.event_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -44,14 +48,15 @@ const AttemptFKSQL = `
 CREATE OR REPLACE FUNCTION convoy.enforce_event_delivery_fk()
     RETURNS TRIGGER AS $$
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM convoy.event_deliveries
-        WHERE id = NEW.event_delivery_id
-    ) THEN
-        RAISE EXCEPTION 'Foreign key violation: event_delivery_id % does not exist in event deliveries', NEW.event_delivery_id;
+    IF EXISTS (SELECT 1 FROM convoy.event_deliveries WHERE id = NEW.event_delivery_id) THEN
+        RETURN NEW;
     END IF;
-    RETURN NEW;
+    IF to_regclass('convoy.event_deliveries_partitioned') IS NOT NULL THEN
+        IF EXISTS (SELECT 1 FROM convoy.event_deliveries_partitioned WHERE id = NEW.event_delivery_id) THEN
+            RETURN NEW;
+        END IF;
+    END IF;
+    RAISE EXCEPTION 'Foreign key violation: event_delivery_id % does not exist in event deliveries', NEW.event_delivery_id;
 END;
 $$ LANGUAGE plpgsql;
 

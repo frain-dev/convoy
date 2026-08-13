@@ -65,6 +65,20 @@ func detach(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
 		return err
 	}
 
+	// Swap renames the partitioned parent to _partitioned and takes its
+	// stand-in triggers with it. AfterDetach restores a real FK only after
+	// drain, when both names hold the full row set. Reinstall the stand-in
+	// on the live name now, or the drain window writes orphans and child
+	// lookups miss rows that still live only on _partitioned.
+	if len(spec.DuringDetach) > 0 {
+		notice(ctx, db, "Keeping enforcement during the drain...")
+		for _, stmt := range spec.DuringDetach {
+			if _, err := db.Exec(ctx, stmt); err != nil {
+				return fmt.Errorf("table is unpartitioned but enforcement was not restored: %w", err)
+			}
+		}
+	}
+
 	notice(ctx, db, "Migrating rows written since the conversion...")
 	if err := drainPartitioned(ctx, db, spec); err != nil {
 		return err

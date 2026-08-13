@@ -19,6 +19,7 @@ var attemptsSpec = attach.Spec{
 	ParentForeignKeys: `FOREIGN KEY (project_id) REFERENCES convoy.projects,
     FOREIGN KEY (endpoint_id) REFERENCES convoy.endpoints`,
 	SwapEnd:         []string{attach.AttemptFKSQL},
+	DuringDetach:    []string{attach.AttemptFKSQL},
 	AfterDetach:     []string{attach.RestoreAttemptFKSQL},
 	CopyUnpartition: unPartitionDeliveryAttemptsTableSQL,
 }
