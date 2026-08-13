@@ -345,6 +345,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 						endpointSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateEndpoint)
 						endpointSubRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+						endpointSubRouter.Get("/period-failure-rates", handler.GetEndpointPeriodFailureRates)
 						endpointSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/oauth2/test", handler.TestOAuth2Connection)
 
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
@@ -598,6 +599,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 							endpointSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateEndpoint)
 							endpointSubRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+							endpointSubRouter.Get("/period-failure-rates", handler.GetEndpointPeriodFailureRates)
 							endpointSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/oauth2/test", handler.TestOAuth2Connection)
 
 							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
@@ -814,6 +816,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
 			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+			endpointRouter.Get("/period-failure-rates", handler.GetEndpointPeriodFailureRates)
 			endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Post("/", handler.CreateEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}", handler.UpdateEndpoint)

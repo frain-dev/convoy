@@ -16,7 +16,12 @@ export class GeneralService {
 	constructor(private route: ActivatedRoute, private _location: Location) {}
 
 	showNotification(details: { message: string; style: NOTIFICATION_STATUS; type?: string }) {
-		const message = this.capitalizeMessage(details.message);
+		let message = this.capitalizeMessage(details.message);
+		// A 504/timeout body often has no `message`, so the interceptor used to
+		// toast an empty red bar. Error toasts always need readable copy.
+		if (details.style === 'error' && !message.trim()) {
+			message = 'Something went wrong. Try again.';
+		}
 		this.alertStatus.next({ message, style: details.style, show: true, type: details.type ? details.type : 'alert' });
 		if (details.type === 'modal') return;
 

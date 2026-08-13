@@ -690,6 +690,95 @@ paths:
         description: OAuth2 Configuration
         required: true
       summary: Test OAuth2 connection
+  '/v1/projects/{projectID}/endpoints/period-failure-rates':
+    get:
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          schema:
+            type: string
+        - description: Endpoint IDs
+          in: query
+          name: endpointId
+          schema:
+            items:
+              type: string
+            type: array
+          style: form
+        - description: Start date
+          in: query
+          name: startDate
+          schema:
+            type: string
+        - description: End date
+          in: query
+          name: endDate
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        items:
+                          $ref: >-
+                            #/components/schemas/models.EndpointPeriodFailureRate
+                        type: array
+                    type: object
+          description: OK
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Unauthorized
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Endpoints
+      description: >-
+        Display-only delivery rates for the given endpoint ids over a date range (default last 7 days). Independent of the list so a slow COUNT cannot delay the table.
+      operationId: GetEndpointPeriodFailureRates
+      summary: Endpoint period failure rates
   '/v1/projects/{projectID}/endpoints/{endpointID}':
     delete:
       parameters:
@@ -7410,6 +7499,19 @@ components:
           $ref: '#/components/schemas/models.OAuth2'
         type:
           $ref: '#/components/schemas/datastore.EndpointAuthenticationType'
+      type: object
+    models.EndpointPeriodFailureRate:
+      properties:
+        failure_count:
+          type: integer
+        period_failure_rate:
+          type: number
+        retry_count:
+          type: integer
+        success_count:
+          type: integer
+        uid:
+          type: string
       type: object
     models.EndpointResponse:
       properties:

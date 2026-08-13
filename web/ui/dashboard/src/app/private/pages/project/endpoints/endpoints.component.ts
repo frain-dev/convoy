@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
+import { ENDPOINT, ENDPOINT_PERIOD_FAILURE_RATE } from 'src/app/models/endpoint.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
@@ -74,6 +74,8 @@ export class EndpointsComponent implements OnInit, OnDestroy {
 	endpointURLTemplatesFeatureEnabled = false;
 	private featureFlagReady?: Promise<void>;
 	private searchTimeout: any;
+	private ratesRequestSeq = 0;
+	private rateCache = new Map<string, ENDPOINT_PERIOD_FAILURE_RATE>();
 
 	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute, public licenseService: LicensesService, private settingsService: SettingsService) {}
 
@@ -224,20 +226,57 @@ export class EndpointsComponent implements OnInit, OnDestroy {
 	async getEndpoints(requestDetails?: CURSOR & { search?: string; hideLoader?: boolean }) {
 		this.isLoadingEndpoints = !requestDetails?.hideLoader;
 		this.fetchError = false;
+		this.ratesRequestSeq++;
+		const seq = this.ratesRequestSeq;
 
-		const range = this.failureRateRange;
 		try {
 			const response = await this.privateService.getEndpoints({
 				...requestDetails,
-				q: requestDetails?.search ?? this.endpointSearchString,
-				startDate: range.startDate,
-				endDate: range.endDate
+				q: requestDetails?.search ?? this.endpointSearchString
 			});
 			this.endpoints = response.data;
+			this.applyCachedRates(this.endpoints?.content);
 			this.isLoadingEndpoints = false;
+			this.loadPeriodFailureRates(seq);
 		} catch {
 			this.fetchError = true;
 			this.isLoadingEndpoints = false;
+		}
+	}
+
+	private applyCachedRates(endpoints?: ENDPOINT[]) {
+		if (!endpoints?.length) return;
+		for (const endpoint of endpoints) {
+			const cached = this.rateCache.get(endpoint.uid);
+			if (!cached) continue;
+			endpoint.period_failure_rate = cached.period_failure_rate;
+			endpoint.success_count = cached.success_count;
+			endpoint.failure_count = cached.failure_count;
+			endpoint.retry_count = cached.retry_count;
+		}
+	}
+
+	private async loadPeriodFailureRates(seq: number) {
+		const ids = (this.endpoints?.content || []).map(endpoint => endpoint.uid).filter(Boolean);
+		if (!ids.length) return;
+
+		try {
+			const response = await this.privateService.getEndpointPeriodFailureRates({
+				endpointId: ids,
+				...this.failureRateRange
+			});
+			if (seq !== this.ratesRequestSeq) return;
+
+			for (const row of response.data ?? []) {
+				this.rateCache.set(row.uid, row);
+			}
+			this.applyCachedRates(this.endpoints?.content);
+			if (this.endpoints?.content) {
+				this.endpoints = { ...this.endpoints, content: [...this.endpoints.content] };
+			}
+		} catch {
+			// Keep whatever the pills already show. Timeout and query errors are
+			// fail-open on this display-only request.
 		}
 	}
 

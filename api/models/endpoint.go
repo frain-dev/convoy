@@ -356,3 +356,13 @@ type TestOAuth2Response struct {
 	Error       string    `json:"error,omitempty"`
 	Message     string    `json:"message,omitempty"`
 }
+
+// EndpointPeriodFailureRate is the display-only history rate for one endpoint.
+// Nil rate/counts mean no counted deliveries in the window (rendered as a dash).
+type EndpointPeriodFailureRate struct {
+	UID               string   `json:"uid"`
+	PeriodFailureRate *float64 `json:"period_failure_rate"`
+	SuccessCount      *int64   `json:"success_count"`
+	FailureCount      *int64   `json:"failure_count"`
+	RetryCount        *int64   `json:"retry_count"`
+}

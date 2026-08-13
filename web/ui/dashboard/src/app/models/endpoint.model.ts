@@ -86,6 +86,14 @@ export interface ENDPOINT {
 	};
 }
 
+export interface ENDPOINT_PERIOD_FAILURE_RATE {
+	uid: string;
+	period_failure_rate: number | null;
+	success_count?: number | null;
+	failure_count?: number | null;
+	retry_count?: number | null;
+}
+
 export interface DEVICE {
 	uid: string;
 	group_id: string;

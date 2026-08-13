@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
+import { GeneralService } from 'src/app/services/general/general.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class EventsService {
-	constructor(private http: HttpService) {}
+	constructor(private http: HttpService, private generalService: GeneralService) {}
 
 	getEvents(requestDetails?: { page?: number; idempotencyKey?: string; startDate?: string; endDate?: string; query?: string; sourceId?: string; endpointId?: string; next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
@@ -49,11 +50,18 @@ export class EventsService {
 					url: `/dashboard/summary`,
 					method: 'get',
 					level: 'org_project',
-					query: requestDetails
+					query: requestDetails,
+					hideNotification: true
 				});
 
 				return resolve(response);
 			} catch (error) {
+				const raw = typeof error === 'string' ? error : '';
+				const timedOut = /took too long|timed out|timeout|504/i.test(raw);
+				this.generalService.showNotification({
+					message: timedOut ? "Couldn't load the chart in time. Try a shorter date range." : raw || 'Could not load the chart. Try again.',
+					style: 'error'
+				});
 				return reject(error);
 			}
 		});

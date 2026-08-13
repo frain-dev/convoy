@@ -161,6 +161,17 @@ func TestLoadPeriodFailureRates_SuccessAppliesRates(t *testing.T) {
 	require.InDelta(t, 0.1, *endpoints[0].PeriodFailureRate, 1e-9)
 }
 
+func TestParseEndpointIDs(t *testing.T) {
+	require.Empty(t, parseEndpointIDs(nil, 100))
+	require.Equal(t, []string{"a", "b"}, parseEndpointIDs([]string{" a ", "", "a", "b"}, 100))
+	require.Equal(t, []string{"a"}, parseEndpointIDs([]string{"a", "b"}, 1))
+}
+
+func TestIntersectIDs(t *testing.T) {
+	require.Equal(t, []string{"b"}, intersectIDs([]string{"a", "b", "c"}, []string{"b", "d"}))
+	require.Empty(t, intersectIDs([]string{"a"}, nil))
+}
+
 func f64(v float64) *float64 { return &v }
 
 func i64(v int64) *int64 { return &v }
