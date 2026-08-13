@@ -548,6 +548,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Delete("/retry-event-deliveries/batch/{batchID}", handler.DeleteBatchProgress)
 			adminRouter.Post("/partitions", handler.StartPartitionRun)
 			adminRouter.Get("/partitions", handler.ListPartitionRuns)
+			adminRouter.Get("/partitions/tables", handler.ListPartitionTables)
 			adminRouter.Get("/partitions/{runID}", handler.GetPartitionRun)
 		})
 

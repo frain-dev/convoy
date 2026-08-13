@@ -18,6 +18,13 @@ CREATE TABLE IF NOT EXISTS convoy.partition_runs (
     operation     TEXT NOT NULL,
     status        TEXT NOT NULL,
     phase         TEXT,
+    -- Every step the conversion reported, in order, each with the time it
+    -- arrived. phase is the newest of these, kept as a column because the list
+    -- view reads it on its own; both are written by the same statement, so they
+    -- cannot disagree. The list is capped in that statement: a conversion
+    -- reports on the order of ten steps, and a row is not the place to
+    -- accumulate an unbounded stream.
+    steps         JSONB NOT NULL DEFAULT '[]'::JSONB,
     notice_count  BIGINT NOT NULL DEFAULT 0,
     error         TEXT,
     triggered_by  TEXT NOT NULL,

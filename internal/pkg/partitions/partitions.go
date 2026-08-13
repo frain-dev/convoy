@@ -1,22 +1,31 @@
 // Package partitions records the progress of partition conversions.
 //
-// Converting a table rewrites it, which takes minutes to hours on a large
-// instance. The DDL runs as a single statement, so it cannot report progress by
-// writing to a table: nothing it wrote would be visible to another session until
-// the whole conversion committed, which is the exact window that needs
-// reporting. What does escape the statement is its RAISE NOTICE stream, which
-// pgx delivers as each notice arrives. This package turns that stream into a row
-// other sessions can read, so progress survives the process and reaches a UI.
+// A conversion takes minutes to hours on a large instance, and progress has to
+// reach a session other than the one running it. Writing to a table directly
+// does not achieve that for every conversion: unpartitioning still runs as a
+// single statement, so nothing it wrote would be visible until the whole thing
+// committed, which is the exact window that needs reporting. What does escape a
+// running statement is its RAISE NOTICE stream, which pgx delivers as each
+// notice arrives.
+//
+// Partitioning event_deliveries is no longer one statement. It attaches the
+// existing table as a partition instead of copying it, and its phases are
+// separate committed steps, so its notices mark real boundaries rather than
+// points inside an uncommitted rewrite. Both directions still report the same
+// way, so this package has one mechanism to maintain rather than two.
 package partitions
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/database"
@@ -50,6 +59,11 @@ const (
 	StatusFailed    Status = "failed"
 )
 
+// maxSteps bounds the step list a run carries. A conversion reports around ten,
+// so this is only reached by a loop nobody intended, and it keeps one row from
+// growing without limit.
+const maxSteps = 200
+
 var (
 	// ErrRunInProgress is returned when a conversion is already running. One at a
 	// time is deliberate: each conversion rewrites a table and saturates disk
@@ -60,6 +74,12 @@ var (
 	ErrRunNotFound = errors.New("partition run not found")
 
 	ErrUnknownTable = errors.New("unknown table")
+
+	// ErrAlreadyPartitioned and ErrNotPartitioned are returned when the table is
+	// already in the shape the operation would produce, so the conversion has
+	// nothing to do.
+	ErrAlreadyPartitioned = errors.New("table is already partitioned")
+	ErrNotPartitioned     = errors.New("table is not partitioned")
 )
 
 // Tables lists what can be converted, in the order the CLI converts them when
@@ -77,18 +97,69 @@ func ParseTable(s string) (Table, error) {
 	return "", fmt.Errorf("%w %q", ErrUnknownTable, s)
 }
 
+// TableState is a table's current shape. It decides which operation is valid:
+// an ordinary table can be partitioned, a partitioned parent can be
+// unpartitioned, and neither can be asked to become what it already is.
+type TableState struct {
+	Name        Table `json:"name" db:"name"`
+	Partitioned bool  `json:"partitioned" db:"partitioned"`
+
+	// Adopted reports that the table was converted by attaching rather than
+	// copying, which is what decides whether unpartitioning it has to copy.
+	// Partitioned says which operation applies; this says what that operation
+	// will cost, and whether ingestion has to stop for it.
+	Adopted bool `json:"adopted" db:"adopted"`
+}
+
+// ValidOperation is the only operation that changes this table.
+func (t TableState) ValidOperation() Operation {
+	if t.Partitioned {
+		return OperationUnpartition
+	}
+	return OperationPartition
+}
+
 type Run struct {
 	UID         string     `json:"uid" db:"id"`
 	TableName   Table      `json:"table_name" db:"table_name"`
 	Operation   Operation  `json:"operation" db:"operation"`
 	Status      Status     `json:"status" db:"status"`
 	Phase       *string    `json:"phase" db:"phase"`
+	Steps       Steps      `json:"steps" db:"steps"`
 	NoticeCount int64      `json:"notice_count" db:"notice_count"`
 	Error       *string    `json:"error" db:"error"`
 	TriggeredBy string     `json:"triggered_by" db:"triggered_by"`
 	StartedAt   time.Time  `json:"started_at" db:"started_at"`
 	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
 	CompletedAt *time.Time `json:"completed_at" db:"completed_at"`
+}
+
+// Step is one line of a conversion's progress, with the time it arrived. The
+// stream is otherwise only in the server log, which an operator watching the
+// dashboard during a multi-hour conversion cannot see.
+type Step struct {
+	Message string    `json:"message"`
+	At      time.Time `json:"at"`
+}
+
+type Steps []Step
+
+// Scan reads the jsonb column. Without it the driver hands the field raw bytes
+// and the scan fails.
+func (s *Steps) Scan(src any) error {
+	var data []byte
+	switch v := src.(type) {
+	case nil:
+		*s = nil
+		return nil
+	case []byte:
+		data = v
+	case string:
+		data = []byte(v)
+	default:
+		return fmt.Errorf("cannot read partition run steps from %T", src)
+	}
+	return json.Unmarshal(data, s)
 }
 
 // noticeObserver is implemented by the Postgres database. It is asserted rather
@@ -125,6 +196,40 @@ func New(db database.Database, logger log.Logger) *Service {
 // the conversion outlives any request that asked for it. The returned run is the
 // handle a caller polls.
 func (s *Service) Start(ctx context.Context, table Table, op Operation, triggeredBy string) (*Run, error) {
+	run, err := s.record(ctx, table, op, triggeredBy)
+	if err != nil {
+		return nil, err
+	}
+
+	// The conversion is detached from the request that started it, so it keeps
+	// running after the response is written. Cancelling it midway would leave a
+	// half-converted table, which is worse than letting it finish.
+	go s.convert(context.WithoutCancel(ctx), run)
+
+	return run, nil
+}
+
+// Run converts on the caller's own goroutine, for the CLI, which has nothing to
+// poll with and exits when the command returns.
+//
+// It goes through the same record step as Start rather than calling the
+// repository directly. That record is what takes the instance-wide single-active
+// lock, so a CLI conversion that skipped it could run beside one started from
+// the dashboard, each rewriting a table while the other holds locks on it. It
+// also means a conversion run from a shell shows up in the same history.
+func (s *Service) Run(ctx context.Context, table Table, op Operation, triggeredBy string) error {
+	run, err := s.record(ctx, table, op, triggeredBy)
+	if err != nil {
+		return err
+	}
+	return s.convert(ctx, run)
+}
+
+func (s *Service) record(ctx context.Context, table Table, op Operation, triggeredBy string) (*Run, error) {
+	if err := s.checkOperation(ctx, table, op); err != nil {
+		return nil, err
+	}
+
 	run := &Run{
 		UID:         ulid.Make().String(),
 		TableName:   table,
@@ -139,7 +244,7 @@ func (s *Service) Start(ctx context.Context, table Table, op Operation, triggere
 	err := s.db.GetDB().QueryRowxContext(ctx, `
         INSERT INTO convoy.partition_runs (id, table_name, operation, status, triggered_by)
         VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, table_name, operation, status, phase, notice_count, error,
+        RETURNING id, table_name, operation, status, phase, steps, notice_count, error,
                   triggered_by, started_at, updated_at, completed_at`,
 		run.UID, run.TableName, run.Operation, run.Status, run.TriggeredBy).StructScan(run)
 	if err != nil {
@@ -150,12 +255,108 @@ func (s *Service) Start(ctx context.Context, table Table, op Operation, triggere
 		return nil, err
 	}
 
-	// The conversion is detached from the request that started it, so it keeps
-	// running after the response is written. Cancelling it midway would leave a
-	// half-converted table, which is worse than letting it finish.
-	go s.convert(context.WithoutCancel(ctx), run)
-
 	return run, nil
+}
+
+// TableStates reads the shape of every convertible table from Postgres, so a
+// caller can offer the operation that applies to each one.
+func (s *Service) TableStates(ctx context.Context) ([]TableState, error) {
+	tables := Tables()
+	names := make([]string, 0, len(tables))
+	for _, t := range tables {
+		names = append(names, string(t))
+	}
+
+	partitioned := make([]string, 0, len(tables))
+	err := s.db.GetDB().SelectContext(ctx, &partitioned, `
+        SELECT c.relname
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relkind = 'p' AND c.relname = ANY($1)`, pq.Array(names))
+	if err != nil {
+		return nil, err
+	}
+
+	isPartitioned := make(map[string]bool, len(partitioned))
+	for _, name := range partitioned {
+		isPartitioned[name] = true
+	}
+
+	isAdopted, err := s.adoptedTables(ctx, tables)
+	if err != nil {
+		return nil, err
+	}
+
+	states := make([]TableState, 0, len(tables))
+	for _, t := range tables {
+		states = append(states, TableState{
+			Name:        t,
+			Partitioned: isPartitioned[string(t)],
+			Adopted:     isAdopted[string(t)],
+		})
+	}
+	return states, nil
+}
+
+// adoptedTables reports which parents hold the table they were converted from,
+// rather than a copy of it.
+//
+// The marker is the bounds constraint the attach conversion writes on the
+// partition it adopts, the same one the unpartition path reads to decide which
+// way to convert back. A partition named <table>_default is not enough on its
+// own: gopartman provisions its own default, and that one is an empty catch-all.
+func (s *Service) adoptedTables(ctx context.Context, tables []Table) (map[string]bool, error) {
+	defaults := make([]string, 0, len(tables))
+	for _, t := range tables {
+		defaults = append(defaults, string(t)+"_default")
+	}
+
+	adopted := make([]string, 0, len(tables))
+	err := s.db.GetDB().SelectContext(ctx, &adopted, `
+        SELECT c.relname
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy'
+          AND c.relname = ANY($1)
+          AND con.conname = c.relname || '_bounds'`, pq.Array(defaults))
+	if err != nil {
+		return nil, err
+	}
+
+	isAdopted := make(map[string]bool, len(adopted))
+	for _, name := range adopted {
+		isAdopted[strings.TrimSuffix(name, "_default")] = true
+	}
+	return isAdopted, nil
+}
+
+// checkOperation rejects an operation whose result the table already has.
+// Conversion is a table rewrite that runs for hours and blocks every other
+// conversion while it does, so an operation that cannot change anything must be
+// refused before a run is recorded. The state is read here, at the decision, and
+// a read that fails rejects the start: beginning a rewrite without knowing the
+// table's shape is the worse outcome.
+func (s *Service) checkOperation(ctx context.Context, table Table, op Operation) error {
+	states, err := s.TableStates(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, state := range states {
+		if state.Name != table {
+			continue
+		}
+		if state.ValidOperation() == op {
+			return nil
+		}
+		if state.Partitioned {
+			return fmt.Errorf("%w: %s", ErrAlreadyPartitioned, table)
+		}
+		return fmt.Errorf("%w: %s", ErrNotPartitioned, table)
+	}
+
+	return fmt.Errorf("%w %q", ErrUnknownTable, table)
 }
 
 // convert runs the DDL with this run observing the notice stream.
@@ -166,19 +367,42 @@ func (s *Service) Start(ctx context.Context, table Table, op Operation, triggere
 // phase and notice_count are display fields. Attributing notices exactly needs
 // the DDL pinned to a known connection, which means the repository exposing the
 // statement it runs rather than only a method that runs it.
-func (s *Service) convert(ctx context.Context, run *Run) {
+func (s *Service) convert(ctx context.Context, run *Run) error {
 	if observer, ok := s.db.(noticeObserver); ok {
 		observer.OnNotice(func(n *pgconn.Notice) { s.recordPhase(ctx, run.UID, n) })
 		defer observer.OnNotice(nil)
 	}
 
+	// A panic here would otherwise leave the row at running forever, and one
+	// running row blocks every later conversion, so an operator would have to
+	// find and clear it by hand before the instance could convert anything
+	// again. Recorded as failed with the panic, then rethrown so it still
+	// reaches the process's handler and the stack is not swallowed.
+	defer func() {
+		if p := recover(); p != nil {
+			s.finish(ctx, run.UID, fmt.Errorf("conversion panicked: %v", p))
+			panic(p)
+		}
+	}()
+
 	err := s.converter.run(ctx, run.TableName, run.Operation)
 	s.finish(ctx, run.UID, err)
+	return err
 }
 
-// recordPhase writes the latest notice to the run. Only the newest phase is kept
-// because the full stream is already in the log; this row exists so another
-// session can see where a conversion has reached.
+// recordPhase appends the notice to the run's step list and keeps it as the
+// current phase, so another session can see both where a conversion has reached
+// and how it got there.
+//
+// Any notice raised on the pool while a run is open is recorded, not only the
+// conversion's own: a notice carries no way to tell which statement raised it.
+// In practice the conversion is the only thing raising them, and the alternative
+// is reporting nothing.
+//
+// The list is capped by dropping its oldest entry, rather than by refusing to
+// append. A conversion reports around ten steps, so the cap is only reached by
+// something unexpected, and in that case the recent steps are the ones worth
+// keeping.
 func (s *Service) recordPhase(ctx context.Context, id string, n *pgconn.Notice) {
 	if n == nil {
 		return
@@ -186,9 +410,13 @@ func (s *Service) recordPhase(ctx context.Context, id string, n *pgconn.Notice) 
 
 	_, err := s.db.GetDB().ExecContext(ctx, `
         UPDATE convoy.partition_runs
-        SET phase = $2, notice_count = notice_count + 1, updated_at = NOW()
+        SET phase = $2,
+            steps = CASE WHEN jsonb_array_length(steps) >= $4 THEN steps - 0 ELSE steps END
+                    || jsonb_build_object('message', $2::TEXT, 'at', NOW()),
+            notice_count = notice_count + 1,
+            updated_at = NOW()
         WHERE id = $1 AND status = $3`,
-		id, n.Message, StatusRunning)
+		id, n.Message, StatusRunning, maxSteps)
 	if err != nil {
 		// Losing a progress update must not affect the conversion, which is the
 		// thing that matters and is still reporting to the log.
@@ -204,6 +432,13 @@ func (s *Service) finish(ctx context.Context, id string, runErr error) {
 		text := runErr.Error()
 		message = &text
 	}
+
+	// Closing out survives the cancellation that ended the run. A CLI
+	// conversion runs on the command's context, and interrupting it cancels the
+	// conversion and this write together, which would leave the row at running.
+	// One running row blocks every later conversion, so the interrupt an
+	// operator meant to stop one table would lock the instance out of all four.
+	ctx = context.WithoutCancel(ctx)
 
 	_, err := s.db.GetDB().ExecContext(ctx, `
         UPDATE convoy.partition_runs
@@ -228,7 +463,7 @@ func (s *Service) finish(ctx context.Context, id string, runErr error) {
 func (s *Service) Get(ctx context.Context, id string) (*Run, error) {
 	var run Run
 	err := s.db.GetDB().QueryRowxContext(ctx, `
-        SELECT id, table_name, operation, status, phase, notice_count, error,
+        SELECT id, table_name, operation, status, phase, steps, notice_count, error,
                triggered_by, started_at, updated_at, completed_at
         FROM convoy.partition_runs WHERE id = $1`, id).StructScan(&run)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -249,7 +484,7 @@ func (s *Service) List(ctx context.Context, limit int) ([]Run, error) {
 
 	runs := make([]Run, 0)
 	err := s.db.GetDB().SelectContext(ctx, &runs, `
-        SELECT id, table_name, operation, status, phase, notice_count, error,
+        SELECT id, table_name, operation, status, phase, steps, notice_count, error,
                triggered_by, started_at, updated_at, completed_at
         FROM convoy.partition_runs ORDER BY started_at DESC LIMIT $1`, limit)
 	if err != nil {

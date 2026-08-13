@@ -1,15 +1,19 @@
 package utils
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/internal/delivery_attempts"
-	"github.com/frain-dev/convoy/internal/event_deliveries"
-	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/partitions"
 )
+
+// triggeredByCLI marks runs started from a shell, to tell them apart from the
+// dashboard's, which record the user who asked.
+const triggeredByCLI = "cli"
 
 func AddPartitionCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
@@ -22,64 +26,7 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !a.Licenser.RetentionPolicy() {
-				return fmt.Errorf("partitioning is only available with a license key")
-			}
-
-			eventsRepo := events.New(a.Logger, a.DB)
-			eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
-			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
-
-			var err error
-			// if the table name isn't supplied, then we will run all of them at the same time
-			if len(args) == 0 {
-				err = eventsRepo.PartitionEventsTable(cmd.Context())
-				if err != nil {
-					return err
-				}
-
-				err = eventsRepo.PartitionEventsSearchTable(cmd.Context())
-				if err != nil {
-					return err
-				}
-
-				err = eventDeliveryRepo.PartitionEventDeliveriesTable(cmd.Context())
-				if err != nil {
-					return err
-				}
-
-				err = deliveryAttemptsRepo.PartitionDeliveryAttemptsTable(cmd.Context())
-				if err != nil {
-					return err
-				}
-			} else {
-				switch args[0] {
-				case "events":
-					err = eventsRepo.PartitionEventsTable(cmd.Context())
-					if err != nil {
-						return err
-					}
-				case "events_search":
-					err = eventsRepo.PartitionEventsSearchTable(cmd.Context())
-					if err != nil {
-						return err
-					}
-				case "event_deliveries":
-					err = eventDeliveryRepo.PartitionEventDeliveriesTable(cmd.Context())
-					if err != nil {
-						return err
-					}
-				case "delivery_attempts":
-					err = deliveryAttemptsRepo.PartitionDeliveryAttemptsTable(cmd.Context())
-					if err != nil {
-						return err
-					}
-				default:
-					return fmt.Errorf("unknown table %s", args[0])
-				}
-			}
-
-			return nil
+			return convert(cmd.Context(), a, args, partitions.OperationPartition)
 		},
 	}
 
@@ -97,66 +44,45 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !a.Licenser.RetentionPolicy() {
-				return fmt.Errorf("partitioning is only available with a license key")
-			}
-
-			eventsRepo := events.New(a.Logger, a.DB)
-			eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
-			deliveryAttemptsRepo := delivery_attempts.New(a.Logger, a.DB)
-
-			var err error
-			// if the table name isn't supplied, then we will run all of them at the same time
-			if len(args) == 0 {
-				err = eventsRepo.UnPartitionEventsTable(cmd.Context())
-				if err != nil {
-					return err
-				}
-
-				err = eventsRepo.UnPartitionEventsSearchTable(cmd.Context())
-				if err != nil {
-					return err
-				}
-
-				err = eventDeliveryRepo.UnPartitionEventDeliveriesTable(cmd.Context())
-				if err != nil {
-					return err
-				}
-
-				err = deliveryAttemptsRepo.UnPartitionDeliveryAttemptsTable(cmd.Context())
-				if err != nil {
-					return err
-				}
-			} else {
-				switch args[0] {
-				case "events":
-					err = eventsRepo.UnPartitionEventsTable(cmd.Context())
-					if err != nil {
-						return err
-					}
-				case "events_search":
-					err = eventsRepo.UnPartitionEventsSearchTable(cmd.Context())
-					if err != nil {
-						return err
-					}
-				case "event_deliveries":
-					err = eventDeliveryRepo.UnPartitionEventDeliveriesTable(cmd.Context())
-					if err != nil {
-						return err
-					}
-				case "delivery_attempts":
-					err = deliveryAttemptsRepo.UnPartitionDeliveryAttemptsTable(cmd.Context())
-					if err != nil {
-						return err
-					}
-				default:
-					return fmt.Errorf("unknown table %s", args[0])
-				}
-			}
-
-			return nil
+			return convert(cmd.Context(), a, args, partitions.OperationUnpartition)
 		},
 	}
 
 	return cmd
+}
+
+// convert runs the conversion through the same service the dashboard uses.
+//
+// Going through it, rather than calling the repositories directly, is what puts
+// a CLI conversion under the instance-wide single-active lock: two conversions
+// rewriting tables at once, one from a shell and one from the dashboard, would
+// otherwise hold two sets of locks and saturate the same disk. It also records
+// the run, so a conversion started here shows its progress and its outcome in
+// the same history.
+func convert(ctx context.Context, a *cli.App, args []string, op partitions.Operation) error {
+	if !a.Licenser.RetentionPolicy() {
+		return fmt.Errorf("partitioning is only available with a license key")
+	}
+
+	tables := partitions.Tables()
+	if len(args) > 0 {
+		table, err := partitions.ParseTable(args[0])
+		if err != nil {
+			return err
+		}
+		tables = []partitions.Table{table}
+	}
+
+	service := partitions.New(a.DB, a.Logger)
+	for _, table := range tables {
+		if err := service.Run(ctx, table, op, triggeredByCLI); err != nil {
+			if errors.Is(err, partitions.ErrRunInProgress) {
+				return fmt.Errorf("%w. If it was left behind by a killed process, close it with "+
+					"UPDATE convoy.partition_runs SET status = 'failed', completed_at = NOW() WHERE status = 'running'", err)
+			}
+			return err
+		}
+	}
+
+	return nil
 }
