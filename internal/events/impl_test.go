@@ -600,10 +600,8 @@ func TestUpdateEventStatus(t *testing.T) {
 	})
 }
 
-// The partition helpers rebuild convoy.events from an explicit column list, so a
-// column added to the migration but not to those lists is silently dropped the
-// first time an operator partitions. Round-trip a row with every mutable column
-// set to catch that drift.
+// Round-trip a row with every mutable column set. Attach keeps the heap; copy
+// unpartition still lists columns and will drop any that are missing from it.
 func TestPartitionEventsTableRoundTripsFailureReason(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
@@ -639,9 +637,8 @@ func TestPartitionEventsTableRoundTripsFailureReason(t *testing.T) {
 	require.Empty(t, found.FailureReason)
 }
 
-// events_search partitioning had drifted further than events: it also dropped
-// acknowledged_at, status and metadata, which copy_rows writes on every
-// tokenization run. Assert the whole mirrored column set survives a round trip.
+// copy_rows writes acknowledged_at, status and metadata on every tokenization
+// run. Assert the whole mirrored column set survives a round trip.
 func TestPartitionEventsSearchTableRoundTripsMirroredColumns(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
@@ -1212,6 +1209,53 @@ func TestCopyRows(t *testing.T) {
 	})
 }
 
+func TestPartitionEventsTableAdoptsTheExistingTable(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	var original int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events'`).Scan(&original))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+
+	var adopted int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_default'`).Scan(&adopted))
+	require.Equal(t, original, adopted, "the adopted partition has a different relfilenode, so the table was rewritten, not attached")
+}
+
+func TestPartitionEventsSearchTableAdoptsTheExistingTable(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.events_search (id, event_type, project_id, raw, data, url_path)
+        VALUES ($1, 'test.event', $2, '{}', '{}'::bytea, '/')`, ulid.Make().String(), project.UID)
+	require.NoError(t, err)
+
+	var original int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_search'`).Scan(&original))
+
+	require.NoError(t, service.PartitionEventsSearchTable(ctx))
+
+	var adopted int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_search_default'`).Scan(&adopted))
+	require.Equal(t, original, adopted, "the adopted partition has a different relfilenode, so the table was rewritten, not attached")
+}
+
 func TestPartitionFunctions(t *testing.T) {
 	service, _ := setupTestDB(t)
 	ctx := context.Background()
@@ -1237,9 +1281,6 @@ func TestPartitionFunctions(t *testing.T) {
 	})
 }
 
-// Both events tables must name their partitions so retention can adopt them.
-// See testenv.RequirePartitionsAddressableByRetention for why that is not
-// automatic.
 // Unpartitioning events restores event_deliveries_event_id_fkey, which is the
 // enforcement event_fk_check stood in for while events was partitioned. The
 // trigger must go, or every delivery insert pays a second existence query and a

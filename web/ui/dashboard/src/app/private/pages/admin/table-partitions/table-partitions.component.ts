@@ -64,6 +64,10 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 
 	runs: PartitionRun[] = [];
 	tableStates: PartitionTable[] = [];
+	// Distinguishes "fetch failed" from "fetch returned no rows". Clearing
+	// tableStates on error must not make adopted read as false; that would show
+	// the copy-unpartition warning for a table the server will detach.
+	tableStatesKnown = false;
 	isStarting = false;
 	isLoadingRuns = false;
 	hasRetentionLicense = false;
@@ -93,21 +97,18 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 		return this.partitionForm.value.operation;
 	}
 
-	// Partitioning event_deliveries attaches the existing table as a partition
-	// instead of copying it, so it neither loses writes nor needs ingestion
-	// paused. Every other conversion still copies.
 	get isAttachConversion(): boolean {
-		return this.selectedTable === 'event_deliveries' && this.selectedOperation === 'partition';
+		return this.selectedOperation === 'partition';
 	}
 
-	// Unpartitioning avoids the copy only for a table that was converted by
-	// attaching, because only that one has an original table to hand back. The
-	// server reports which those are; an unknown state reads as false here, which
-	// keeps the maintenance warning. The two mistakes are not symmetric: a pause
-	// that was not needed costs a maintenance window, while telling an operator
-	// not to pause when the run does drop writes loses acknowledged webhooks.
 	get isDetachConversion(): boolean {
 		return this.selectedOperation === 'unpartition' && !!this.stateOf(this.selectedTable)?.adopted;
+	}
+
+	get isCopyUnpartition(): boolean {
+		if (this.selectedOperation !== 'unpartition' || !this.tableStatesKnown) return false;
+		const state = this.stateOf(this.selectedTable);
+		return !!state && state.partitioned && !state.adopted;
 	}
 
 	get keepsIngestionRunning(): boolean {
@@ -134,11 +135,13 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 		try {
 			const response = await this.adminService.listPartitionTables();
 			this.tableStates = response.data ?? [];
+			this.tableStatesKnown = true;
 		} catch {
-			// Fail open: without states the form offers both operations, and the
-			// server, which reads the table's shape at the decision, is the one that
-			// refuses an operation that cannot change it.
+			// Fail open on the form: both operations stay available, and the server
+			// refuses one that cannot change the table. Do not treat the empty list
+			// as adopted=false; that is unknown, not a definitive copy-unpartition.
 			this.tableStates = [];
+			this.tableStatesKnown = false;
 		}
 
 		this.applyOperations();

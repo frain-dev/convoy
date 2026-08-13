@@ -381,7 +381,7 @@ func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 // dropExpiredAdoptedPartitions reclaims history that Maintain structurally
 // cannot.
 //
-// Converting event_deliveries adopts the pre-conversion table as the parent's
+// Converting a table adopts the pre-conversion heap as the parent's
 // DEFAULT partition rather than copying it into daily children. gopartman
 // selects expired partitions with is_default = false, deliberately, because a
 // default is normally a catch-all that must never be dropped on a schedule. The

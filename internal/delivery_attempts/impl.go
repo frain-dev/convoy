@@ -270,125 +270,13 @@ func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.
 	return numDocs, nil
 }
 
-func (s *Service) PartitionDeliveryAttemptsTable(ctx context.Context) error {
-	// This executes a complex PL/pgSQL function that partitions the table
-	// We keep this as raw SQL execution since it's a DDL operation
-	const partitionSQL = `
-CREATE OR REPLACE FUNCTION partition_delivery_attempts_table()
-    RETURNS VOID AS $$
-DECLARE
-    r RECORD;
-BEGIN
-    RAISE NOTICE 'Creating partitioned delivery attempts table...';
-
-    -- Drop old partitioned table
-    DROP TABLE IF EXISTS convoy.delivery_attempts_new;
-
-    -- Create partitioned table
-   create table convoy.delivery_attempts_new
-    (
-        id                   VARCHAR not null,
-        url                  TEXT    not null,
-        method               VARCHAR not null,
-        api_version          VARCHAR not null,
-        project_id           VARCHAR not null references convoy.projects,
-        endpoint_id          VARCHAR not null references convoy.endpoints,
-        event_delivery_id    VARCHAR not null,
-        ip_address           VARCHAR,
-        request_http_header  jsonb,
-        response_http_header jsonb,
-        http_status          VARCHAR,
-        response_data        BYTEA,
-        error                TEXT,
-        status               BOOLEAN,
-        requested_at         TIMESTAMP WITH TIME ZONE,
-        responded_at         TIMESTAMP WITH TIME ZONE,
-        created_at           TIMESTAMP WITH TIME ZONE default now() not null,
-        updated_at           TIMESTAMP WITH TIME ZONE default now() not null,
-        deleted_at           TIMESTAMP WITH TIME ZONE,
-        PRIMARY KEY (id, created_at, project_id)
-    ) PARTITION BY RANGE (project_id, created_at);
-
-    RAISE NOTICE 'Creating partitions...';
-    FOR r IN
-        WITH dates AS (
-            SELECT project_id, created_at::DATE
-            FROM convoy.delivery_attempts
-            GROUP BY created_at::DATE, project_id
-            order by created_at::DATE
-        )
-        SELECT project_id,
-               created_at::TEXT AS start_date,
-               (created_at + 1)::TEXT AS stop_date,
-               'delivery_attempts_' || pg_catalog.UPPER(pg_catalog.REPLACE(project_id::TEXT, '-', '')) || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
-        FROM dates
-    LOOP
-        -- %I, not %s: an unquoted identifier folds to lower case. Retention names
-        -- the partitions it creates for later days with an upper-case tenant
-        -- segment, so folding here spells one table two ways. Adoption itself
-        -- tolerates either since gopartman v0.2.0.
-        EXECUTE FORMAT(
-            'CREATE TABLE IF NOT EXISTS convoy.%I PARTITION OF convoy.delivery_attempts_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
-            r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
-        );
-    END LOOP;
-
-    RAISE NOTICE 'Migrating data...';
-    INSERT INTO convoy.delivery_attempts_new (
-        id, url, method, api_version, project_id, endpoint_id,
-        event_delivery_id, ip_address, request_http_header, response_http_header,
-        http_status, response_data, error, status, requested_at, responded_at, created_at,
-        updated_at, deleted_at
-    )
-    SELECT id, url, method, api_version, project_id, endpoint_id,
-        event_delivery_id, ip_address, request_http_header, response_http_header,
-        http_status, response_data, error, status, requested_at, responded_at, created_at,
-        updated_at, deleted_at
-    FROM convoy.delivery_attempts;
-
-    -- Manage table renaming
-    ALTER TABLE convoy.delivery_attempts RENAME TO delivery_attempts_old;
-    ALTER TABLE convoy.delivery_attempts_new RENAME TO delivery_attempts;
-    DROP TABLE IF EXISTS convoy.delivery_attempts_old;
-
-    RAISE NOTICE 'Recreating indexes...';
-    create index idx_delivery_attempts_created_at on convoy.delivery_attempts (created_at);
-    create index idx_delivery_attempts_created_at_id_event_delivery_id
-        on convoy.delivery_attempts using brin (created_at, id, project_id, event_delivery_id)
-        where (deleted_at IS NULL);
-    create index idx_delivery_attempts_event_delivery_id
-        on convoy.delivery_attempts (event_delivery_id);
-    create index idx_delivery_attempts_event_delivery_id_created_at
-        on convoy.delivery_attempts (event_delivery_id, created_at);
-    create index idx_delivery_attempts_event_delivery_id_created_at_desc
-        on convoy.delivery_attempts (event_delivery_id asc, created_at desc);
-
-    RAISE NOTICE 'Migration complete!';
-END;
-$$ LANGUAGE plpgsql;
-select partition_delivery_attempts_table();
-`
-
-	_, err := s.db.Exec(ctx, partitionSQL)
-	if err != nil {
-		s.logger.Error("failed to partition delivery attempts table", "error", err)
-		return util.NewServiceError(500, fmt.Errorf("failed to partition table: %w", err))
-	}
-
-	return nil
-}
-
-func (s *Service) UnPartitionDeliveryAttemptsTable(ctx context.Context) error {
-	// This executes a complex PL/pgSQL function that unpartitions the table
-	const unPartitionSQL = `
+const unPartitionDeliveryAttemptsTableSQL = `
 create or replace function convoy.un_partition_delivery_attempts_table() returns VOID as $$
 begin
 	RAISE NOTICE 'Starting un-partitioning of delivery attempts table...';
 
-	-- Drop old partitioned table
     DROP TABLE IF EXISTS convoy.delivery_attempts_new;
 
-    -- Create partitioned table
     create table convoy.delivery_attempts_new
     (
         id                   VARCHAR not null primary key,
@@ -445,15 +333,6 @@ begin
 end $$ language plpgsql;
 select convoy.un_partition_delivery_attempts_table()
 `
-
-	_, err := s.db.Exec(ctx, unPartitionSQL)
-	if err != nil {
-		s.logger.Error("failed to unpartition delivery attempts table", "error", err)
-		return util.NewServiceError(500, fmt.Errorf("failed to unpartition table: %w", err))
-	}
-
-	return nil
-}
 
 // Helper function to convert database row to datastore.DeliveryAttempt
 func rowToDeliveryAttempt(row interface{}) (*datastore.DeliveryAttempt, error) {

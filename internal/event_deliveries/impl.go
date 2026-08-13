@@ -686,10 +686,8 @@ create or replace function convoy.un_partition_event_deliveries_table() returns 
 begin
 	RAISE NOTICE 'Starting un-partitioning of event deliveries table...';
 
-	-- Drop old partitioned table
     DROP TABLE IF EXISTS convoy.event_deliveries_new;
 
-    -- Create partitioned table
     CREATE TABLE convoy.event_deliveries_new
     (
         id               VARCHAR not null primary key ,

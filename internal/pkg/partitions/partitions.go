@@ -2,17 +2,16 @@
 //
 // A conversion takes minutes to hours on a large instance, and progress has to
 // reach a session other than the one running it. Writing to a table directly
-// does not achieve that for every conversion: unpartitioning still runs as a
-// single statement, so nothing it wrote would be visible until the whole thing
-// committed, which is the exact window that needs reporting. What does escape a
-// running statement is its RAISE NOTICE stream, which pgx delivers as each
-// notice arrives.
+// does not achieve that for every conversion: copy-based unpartitioning still
+// runs as a single statement, so nothing it wrote would be visible until the
+// whole thing committed, which is the exact window that needs reporting. What
+// does escape a running statement is its RAISE NOTICE stream, which pgx
+// delivers as each notice arrives.
 //
-// Partitioning event_deliveries is no longer one statement. It attaches the
-// existing table as a partition instead of copying it, and its phases are
-// separate committed steps, so its notices mark real boundaries rather than
-// points inside an uncommitted rewrite. Both directions still report the same
-// way, so this package has one mechanism to maintain rather than two.
+// Attach conversions commit per phase, so their notices mark real boundaries
+// rather than points inside an uncommitted rewrite. Both directions still
+// report the same way, so this package has one mechanism to maintain rather
+// than two.
 package partitions
 
 import (

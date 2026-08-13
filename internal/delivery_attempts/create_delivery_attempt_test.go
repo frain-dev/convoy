@@ -193,6 +193,65 @@ func TestPartitionDeliveryAttemptsTableNamesForRetention(t *testing.T) {
 	testenv.RequirePartitionsAddressableByRetention(t, db, "delivery_attempts", project.UID)
 }
 
+func TestPartitionDeliveryAttemptsTableAdoptsTheExistingTable(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db, ctx)
+	endpoint := seedEndpoint(t, db, ctx, project)
+	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
+	service := New(log.New("convoy", log.LevelError), db)
+
+	require.NoError(t, service.CreateDeliveryAttempt(ctx, &datastore.DeliveryAttempt{
+		UID:              ulid.Make().String(),
+		URL:              "https://example.com/webhook",
+		Method:           "POST",
+		APIVersion:       "2023.12.25",
+		EndpointID:       endpoint.UID,
+		EventDeliveryId:  eventDelivery.UID,
+		ProjectId:        project.UID,
+		HttpResponseCode: "200",
+		Status:           true,
+	}))
+
+	var original int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'delivery_attempts'`).Scan(&original))
+
+	require.NoError(t, service.PartitionDeliveryAttemptsTable(ctx))
+
+	var adopted int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'delivery_attempts_default'`).Scan(&adopted))
+	require.Equal(t, original, adopted, "the adopted partition has a different relfilenode, so the table was rewritten, not attached")
+}
+
+func TestPartitionDeliveryAttemptsTableKeepsEventDeliveryEnforcement(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db, ctx)
+	endpoint := seedEndpoint(t, db, ctx, project)
+	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
+	service := New(log.New("convoy", log.LevelError), db)
+
+	require.NoError(t, service.PartitionDeliveryAttemptsTable(ctx))
+
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.delivery_attempts (id, url, method, api_version, project_id, endpoint_id, event_delivery_id)
+        VALUES ($1, 'https://example.com', 'POST', '2024-04-01', $2, $3, $4)`,
+		ulid.Make().String(), project.UID, endpoint.UID, ulid.Make().String())
+	require.Error(t, err, "an attempt referencing a nonexistent delivery was accepted, so the conversion left delivery_attempts unenforced")
+
+	_, err = db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.delivery_attempts (id, url, method, api_version, project_id, endpoint_id, event_delivery_id)
+        VALUES ($1, 'https://example.com', 'POST', '2024-04-01', $2, $3, $4)`,
+		ulid.Make().String(), project.UID, endpoint.UID, eventDelivery.UID)
+	require.NoError(t, err)
+}
+
 func TestPartitionRoundTrip_PreservesRequestedAndRespondedAt(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
@@ -221,7 +280,6 @@ func TestPartitionRoundTrip_PreservesRequestedAndRespondedAt(t *testing.T) {
 	}
 	require.NoError(t, service.CreateDeliveryAttempt(ctx, attempt))
 
-	// Partition rebuild must carry the new columns over.
 	require.NoError(t, service.PartitionDeliveryAttemptsTable(ctx))
 
 	fetched, err := service.FindDeliveryAttemptById(ctx, eventDelivery.UID, attempt.UID)
@@ -231,7 +289,6 @@ func TestPartitionRoundTrip_PreservesRequestedAndRespondedAt(t *testing.T) {
 	require.True(t, fetched.RequestedAt.Time.Equal(requestedAt))
 	require.True(t, fetched.RespondedAt.Time.Equal(respondedAt))
 
-	// Un-partition rebuild must also carry them over.
 	require.NoError(t, service.UnPartitionDeliveryAttemptsTable(ctx))
 
 	fetched, err = service.FindDeliveryAttemptById(ctx, eventDelivery.UID, attempt.UID)

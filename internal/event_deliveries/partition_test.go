@@ -10,6 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/pkg/attach"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 // The conversion's whole claim is that it does not copy the table. relfilenode
@@ -141,7 +144,7 @@ func TestPartitionEventDeliveriesTableRejectsRowsBeyondTheLastPartition(t *testi
 	projectID := seedProjectWithDelivery(t, db, service)
 	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
 
-	beyond := attachCutoff(time.Now()).AddDate(0, 0, attachPremakeDays+5)
+	beyond := attach.Cutoff(time.Now()).AddDate(0, 0, attach.PremakeDays+5)
 	_, err := db.GetDB().ExecContext(ctx, `
         INSERT INTO convoy.event_deliveries
             (id, status, description, project_id, event_id, subscription_id, metadata, created_at)
@@ -163,7 +166,7 @@ func TestCreatingPartitionsDoesNotScanTheAdoptedTable(t *testing.T) {
 
 	before := seqScans(t, db, "event_deliveries_default")
 
-	day := attachCutoff(time.Now()).AddDate(0, 0, attachPremakeDays+1)
+	day := attach.Cutoff(time.Now()).AddDate(0, 0, attach.PremakeDays+1)
 	_, err := db.GetDB().ExecContext(ctx, fmt.Sprintf(`
         CREATE TABLE convoy.%s PARTITION OF convoy.event_deliveries
             FOR VALUES FROM ('%s', '%s') TO ('%s', '%s')`,
@@ -200,6 +203,31 @@ func TestPartitionEventDeliveriesTableKeepsDeliveryAttemptEnforcement(t *testing
 
 	// A real one still goes in, so the test cannot pass on a mechanism that
 	// rejects everything.
+	require.NoError(t, insertAttempt(t, db, project.UID, endpoint.UID, delivery.UID))
+}
+
+// Operators convert tables one at a time. Unpartitioning event_deliveries while
+// delivery_attempts is still a partitioned parent cannot restore a real FK on
+// (event_delivery_id) alone; that ALTER fails, and the run is stuck.
+func TestUnPartitionEventDeliveriesTableWhileAttemptsArePartitioned(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+	require.NoError(t, delivery_attempts.New(log.New("convoy", log.LevelError), db).PartitionDeliveryAttemptsTable(ctx))
+	require.NoError(t, service.UnPartitionEventDeliveriesTable(ctx))
+
+	require.Error(t, insertAttempt(t, db, project.UID, endpoint.UID, ulid.Make().String()),
+		"an attempt referencing a nonexistent delivery was accepted after unpartitioning event_deliveries")
 	require.NoError(t, insertAttempt(t, db, project.UID, endpoint.UID, delivery.UID))
 }
 
