@@ -15,24 +15,20 @@
         </xml>
     </noscript>
     <![endif]-->
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-        body, table, td, p, a {
-            font-family: 'Inter', Arial, sans-serif;
-        }
-    </style>
+    {{template "email_styles" .}}
 </head>
 <body style="margin: 0; padding: 0; background-color: #FFFFFF;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border: none; border-spacing: 0; background-color: #FFFFFF;">
     <tr>
         <td align="center">
-            <table role="presentation" width="656" cellpadding="0" cellspacing="0" style="width: 656px; max-width: 100%; border: none; border-spacing: 0; background-color: #FFFFFF;">
+            {{ outlookShellOpen }}
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 656px; border: none; border-spacing: 0; background-color: #FFFFFF;">
                 {{template "email_header" .}}
                 <tr>
-                    <td style="padding: 0 37px; background-color: #FFFFFF;">
-                        <table role="presentation" width="582" cellpadding="0" cellspacing="0" style="width: 582px; max-width: 100%; border: none; border-spacing: 0; background-color: #F7F7F7;">
+                    <td class="gutter" style="padding: 0 37px; background-color: #FFFFFF;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border: none; border-spacing: 0; background-color: #F7F7F7;">
                             <tr>
-                                <td style="padding: 40px 32px; font-family: 'Inter', Arial, sans-serif; font-size: 14px; line-height: 22px; color: #46586B;">
+                                <td class="card-pad" style="padding: 40px 32px; font-family: 'Inter', Arial, sans-serif; font-size: 14px; line-height: 22px; color: #46586B;">
                                     <p style="margin: 0 0 14px 0; font-weight: 600; font-size: 14px; line-height: 22px; color: #46586B;">
                                         Hi there,
                                     </p>
@@ -52,6 +48,7 @@
                 </tr>
                 {{template "email_footer" .}}
             </table>
+            {{ outlookShellClose }}
         </td>
     </tr>
 </table>
