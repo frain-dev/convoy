@@ -1227,3 +1227,101 @@ func TestPartitionFunctions(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+// event_deliveries_new declares event_id with no references clause, so
+// partitioning rebuilds the table without event-id enforcement unless the
+// function restores it. Both orders of the two partition commands are reachable
+// from `convoy utils partition <table>`, and the enforcement that is correct
+// differs between them: a foreign key cannot reference a partitioned events, so
+// that case admits only the trigger.
+//
+// Asserting the behaviour rather than the catalog: what matters is that a
+// delivery naming an event that does not exist is rejected, not which mechanism
+// rejects it.
+func TestPartitionEventDeliveriesTableKeepsEventIDEnforcement(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		wantMechanism   string
+		partitionEvents bool
+	}{
+		{name: "events partitioned first", wantMechanism: "event_fk_check trigger", partitionEvents: true},
+		{name: "events left unpartitioned", wantMechanism: "event_deliveries_event_id_fkey", partitionEvents: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			service, db := setupTestDB(t)
+			ctx := context.Background()
+
+			project := seedTestProject(t, db)
+			endpoint := seedTestEndpoint(t, db, project.UID)
+			source := seedTestSource(t, db, project.UID)
+			subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+			event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+			// The partition helpers only build children for days that hold rows.
+			require.NoError(t, service.CreateEventDelivery(ctx,
+				createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)))
+
+			if tc.partitionEvents {
+				require.NoError(t, events.New(log.New("convoy", log.LevelInfo), db).PartitionEventsTable(ctx))
+			}
+			require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+
+			orphan := createTestEventDelivery(t, project.UID, ulid.Make().String(), endpoint.UID, subscription.UID)
+			require.Error(t, service.CreateEventDelivery(ctx, orphan),
+				"delivery referencing a nonexistent event was accepted: %s is missing", tc.wantMechanism)
+
+			// A valid delivery must still be accepted, so the test cannot pass on a
+			// mechanism that rejects everything.
+			require.NoError(t, service.CreateEventDelivery(ctx,
+				createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)))
+		})
+	}
+}
+
+// UnPartition rebuilds convoy.event_deliveries too, so it owes the same
+// event-id enforcement the partition path owes. Unpartitioning deliveries says
+// nothing about convoy.events, which may still be partitioned.
+func TestUnPartitionEventDeliveriesTableKeepsEventIDEnforcement(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	require.NoError(t, service.CreateEventDelivery(ctx,
+		createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)))
+
+	// events stays partitioned, so the trigger is the only form available.
+	require.NoError(t, events.New(log.New("convoy", log.LevelInfo), db).PartitionEventsTable(ctx))
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+	require.NoError(t, service.UnPartitionEventDeliveriesTable(ctx))
+
+	orphan := createTestEventDelivery(t, project.UID, ulid.Make().String(), endpoint.UID, subscription.UID)
+	require.Error(t, service.CreateEventDelivery(ctx, orphan),
+		"delivery referencing a nonexistent event was accepted after unpartitioning")
+
+	require.NoError(t, service.CreateEventDelivery(ctx,
+		createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)))
+}
+
+// Partitions must be named so retention can adopt them. See
+// testenv.RequirePartitionsAddressableByRetention for why that is not automatic.
+func TestPartitionEventDeliveriesTableNamesForRetention(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+	testenv.RequirePartitionsAddressableByRetention(t, db, "event_deliveries", project.UID)
+}

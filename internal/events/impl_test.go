@@ -1236,3 +1236,65 @@ func TestPartitionFunctions(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+// Both events tables must name their partitions so retention can adopt them.
+// See testenv.RequirePartitionsAddressableByRetention for why that is not
+// automatic.
+// Unpartitioning events restores event_deliveries_event_id_fkey, which is the
+// enforcement event_fk_check stood in for while events was partitioned. The
+// trigger must go, or every delivery insert pays a second existence query and a
+// violation is reported by whichever of the two fires first.
+func TestUnPartitionEventsTableRemovesTheStandInTrigger(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+	require.NoError(t, service.UnPartitionEventsTable(ctx))
+
+	var triggers int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT count(*)
+        FROM pg_catalog.pg_trigger t
+        JOIN pg_catalog.pg_class c ON c.oid = t.tgrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy'
+          AND c.relname = 'event_deliveries'
+          AND t.tgname = 'event_fk_check'`).Scan(&triggers))
+	require.Zero(t, triggers, "event_fk_check outlived the constraint it stood in for")
+
+	var constraints int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT count(*)
+        FROM pg_catalog.pg_constraint
+        WHERE conname = 'event_deliveries_event_id_fkey'`).Scan(&constraints))
+	require.NotZero(t, constraints, "dropping the trigger left no event-id enforcement at all")
+}
+
+func TestPartitionEventsTablesNameForRetention(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+	testenv.RequirePartitionsAddressableByRetention(t, db, "events", project.UID)
+
+	// The partition helpers only create children for days that already hold rows,
+	// and no application write path in this package populates events_search, so
+	// seed it directly rather than leaving the second naming site uncovered.
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.events_search (id, event_type, project_id, raw, data, url_path)
+        VALUES ($1, 'test.event', $2, '{}', '{}'::bytea, '/')`, ulid.Make().String(), project.UID)
+	require.NoError(t, err)
+
+	require.NoError(t, service.PartitionEventsSearchTable(ctx))
+	testenv.RequirePartitionsAddressableByRetention(t, db, "events_search", project.UID)
+}

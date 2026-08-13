@@ -716,11 +716,15 @@ BEGIN
         SELECT project_id,
                created_at::TEXT AS start_date,
                (created_at + 1)::TEXT AS stop_date,
-               'events_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
+               'events_' || pg_catalog.UPPER(pg_catalog.REPLACE(project_id::TEXT, '-', '')) || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
         FROM dates
     LOOP
+        -- %I, not %s: an unquoted identifier folds to lower case. Retention names
+        -- the partitions it creates for later days with an upper-case tenant
+        -- segment, so folding here spells one table two ways. Adoption itself
+        -- tolerates either since gopartman v0.2.0.
         EXECUTE FORMAT(
-            'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.events_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
+            'CREATE TABLE IF NOT EXISTS convoy.%I PARTITION OF convoy.events_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
             r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
         );
     END LOOP;
@@ -823,6 +827,12 @@ BEGIN
         ADD CONSTRAINT event_deliveries_event_id_fkey
             FOREIGN KEY (event_id) REFERENCES convoy.events_new (id);
 
+    -- The constraint above is the enforcement the trigger stood in for while
+    -- events was partitioned. Leaving the trigger installed would make every
+    -- delivery insert pay a second existence query, and would report a violation
+    -- through whichever of the two fires first.
+    DROP TRIGGER IF EXISTS event_fk_check ON convoy.event_deliveries;
+
     ALTER TABLE convoy.events RENAME TO events_old;
     ALTER TABLE convoy.events_new RENAME TO events;
     DROP TABLE IF EXISTS convoy.events_old;
@@ -888,11 +898,15 @@ BEGIN
         SELECT project_id,
                created_at::TEXT AS start_date,
                (created_at + 1)::TEXT AS stop_date,
-               'events_search_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
+               'events_search_' || pg_catalog.UPPER(pg_catalog.REPLACE(project_id::TEXT, '-', '')) || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
         FROM dates
         LOOP
+            -- %I, not %s: an unquoted identifier folds to lower case. Retention
+            -- names the partitions it creates for later days with an upper-case
+            -- tenant segment, so folding here spells one table two ways. Adoption
+            -- itself tolerates either since gopartman v0.2.0.
             EXECUTE FORMAT(
-                    'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.events_search_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
+                    'CREATE TABLE IF NOT EXISTS convoy.%I PARTITION OF convoy.events_search_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
                     r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
                     );
         END LOOP;

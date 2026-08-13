@@ -320,11 +320,15 @@ BEGIN
         SELECT project_id,
                created_at::TEXT AS start_date,
                (created_at + 1)::TEXT AS stop_date,
-               'delivery_attempts_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
+               'delivery_attempts_' || pg_catalog.UPPER(pg_catalog.REPLACE(project_id::TEXT, '-', '')) || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
         FROM dates
     LOOP
+        -- %I, not %s: an unquoted identifier folds to lower case. Retention names
+        -- the partitions it creates for later days with an upper-case tenant
+        -- segment, so folding here spells one table two ways. Adoption itself
+        -- tolerates either since gopartman v0.2.0.
         EXECUTE FORMAT(
-            'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.delivery_attempts_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
+            'CREATE TABLE IF NOT EXISTS convoy.%I PARTITION OF convoy.delivery_attempts_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
             r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
         );
     END LOOP;

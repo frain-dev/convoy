@@ -758,11 +758,15 @@ BEGIN
         SELECT project_id,
                created_at::TEXT AS start_date,
                (created_at + 1)::TEXT AS stop_date,
-               'event_deliveries_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
+               'event_deliveries_' || pg_catalog.UPPER(pg_catalog.REPLACE(project_id::TEXT, '-', '')) || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
         FROM dates
     LOOP
+        -- %I, not %s: an unquoted identifier folds to lower case. Retention names
+        -- the partitions it creates for later days with an upper-case tenant
+        -- segment, so folding here spells one table two ways. Adoption itself
+        -- tolerates either since gopartman v0.2.0.
         EXECUTE FORMAT(
-            'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.event_deliveries_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
+            'CREATE TABLE IF NOT EXISTS convoy.%I PARTITION OF convoy.event_deliveries_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
             r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
         );
     END LOOP;
@@ -802,6 +806,34 @@ BEGIN
     CREATE OR REPLACE TRIGGER event_delivery_fk_check
     BEFORE INSERT ON convoy.delivery_attempts
     FOR EACH ROW EXECUTE FUNCTION enforce_event_delivery_fk();
+
+    -- event_deliveries_new declares event_id with no references clause, so
+    -- dropping the old table above took event_id enforcement with it: either the
+    -- original constraint, or the event_fk_check trigger partition_events_table()
+    -- leaves behind. Restore whichever form is correct for the current state of
+    -- convoy.events, because both orders of the two partition commands are
+    -- reachable from convoy utils partition <table>.
+    --
+    -- A foreign key cannot reference a partitioned table, so a partitioned events
+    -- admits only the trigger. convoy.enforce_event_fk() is guaranteed to exist in
+    -- that branch: the only thing that partitions events also defines it.
+    IF EXISTS (
+        SELECT 1
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events' AND c.relkind = 'p'
+    ) THEN
+        CREATE OR REPLACE TRIGGER event_fk_check
+        BEFORE INSERT ON convoy.event_deliveries
+        FOR EACH ROW EXECUTE FUNCTION convoy.enforce_event_fk();
+    ELSE
+        -- Validated rather than NOT VALID: every row here was just copied from a
+        -- table the same constraint already held on, and the scan is small beside
+        -- the copy it follows.
+        ALTER TABLE convoy.event_deliveries
+            ADD CONSTRAINT event_deliveries_event_id_fkey
+                FOREIGN KEY (event_id) REFERENCES convoy.events (id);
+    END IF;
 
     RAISE NOTICE 'Migration complete!';
 END;
@@ -879,6 +911,26 @@ begin
     create index idx_event_deliveries_project_id_key on convoy.event_deliveries (project_id);
     create index idx_event_deliveries_status on convoy.event_deliveries (status);
     create index idx_event_deliveries_status_key on convoy.event_deliveries (status);
+
+    -- Same reason as partition_event_deliveries_table: this function also
+    -- rebuilds convoy.event_deliveries, so it also has to put event-id
+    -- enforcement back. Unpartitioning event deliveries says nothing about
+    -- convoy.events, which may still be partitioned and can therefore still only
+    -- be enforced by the trigger.
+    IF EXISTS (
+        SELECT 1
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events' AND c.relkind = 'p'
+    ) THEN
+        CREATE OR REPLACE TRIGGER event_fk_check
+        BEFORE INSERT ON convoy.event_deliveries
+        FOR EACH ROW EXECUTE FUNCTION convoy.enforce_event_fk();
+    ELSE
+        ALTER TABLE convoy.event_deliveries
+            ADD CONSTRAINT event_deliveries_event_id_fkey
+                FOREIGN KEY (event_id) REFERENCES convoy.events (id);
+    END IF;
 
 	RAISE NOTICE 'Successfully un-partitioned events table...';
 end $$ language plpgsql;
