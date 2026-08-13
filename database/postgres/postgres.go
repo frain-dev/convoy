@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -39,6 +41,7 @@ type Postgres struct {
 	replicas []*Postgres
 	randGen  *rand.Rand
 	logger   log.Logger
+	notices  *noticeSink
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
@@ -48,7 +51,10 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 func NewDBWithLogger(cfg config.Configuration, logger log.Logger) (*Postgres, error) {
 	dbConfig := cfg.Database
 
-	primary, err := parseDBConfig(dbConfig)
+	primary, err := parseDBConfig(dbConfig, logger)
+	if err != nil {
+		return nil, err
+	}
 	primary.id = 0
 	primary.logger = logger
 	replicas := make([]*Postgres, 0)
@@ -59,7 +65,7 @@ func NewDBWithLogger(cfg config.Configuration, logger log.Logger) (*Postgres, er
 			if replica.Scheme == "" {
 				replica.Scheme = dbConfig.Scheme
 			}
-			r, e := parseDBConfig(replica, "replica ")
+			r, e := parseDBConfig(replica, logger, "replica ")
 			if e != nil {
 				return nil, e
 			}
@@ -86,7 +92,80 @@ func NewFromConnection(pool *pgxpool.Pool) *Postgres {
 	return &Postgres{dbx: db, pool: pool, conn: pool}
 }
 
-func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postgres, error) {
+// noticeSink lets one caller observe server notices for the duration of an
+// operation. Notices are the only progress a long DDL statement emits that
+// escapes its transaction, so anything recording progress to a table has to read
+// them from here rather than from inside the statement.
+type noticeSink struct {
+	mu sync.RWMutex
+	fn func(*pgconn.Notice)
+}
+
+func (s *noticeSink) set(fn func(*pgconn.Notice)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.fn = fn
+}
+
+func (s *noticeSink) get() func(*pgconn.Notice) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.fn
+}
+
+// OnNotice routes server notices to fn until it is called again with nil. Only
+// one observer is supported, which matches the one-conversion-at-a-time rule the
+// partition_runs table enforces.
+func (p *Postgres) OnNotice(fn func(*pgconn.Notice)) {
+	if p.notices == nil {
+		return
+	}
+	p.notices.set(fn)
+}
+
+// noticeHandler forwards server notices to the Convoy log. Partition conversion
+// is a single statement that runs for minutes to hours and reports each phase
+// with RAISE NOTICE. pgx discards notices unless a handler is installed, so
+// without this an operator sees nothing between issuing the command and it
+// returning, and nothing at all if the process is killed midway.
+func noticeHandler(logger log.Logger, sink *noticeSink) pgconn.NoticeHandler {
+	if logger == nil {
+		return nil
+	}
+
+	return func(_ *pgconn.PgConn, n *pgconn.Notice) {
+		if n == nil {
+			return
+		}
+
+		if sink != nil {
+			if fn := sink.get(); fn != nil {
+				fn(n)
+			}
+		}
+
+		args := []any{"postgres notice", "severity", n.Severity, "code", n.Code, "message", n.Message}
+		if n.Detail != "" {
+			args = append(args, "detail", n.Detail)
+		}
+		if n.Hint != "" {
+			args = append(args, "hint", n.Hint)
+		}
+
+		// SeverityUnlocalized, because Severity is translated by the server's
+		// lc_messages and would not match on a non-English instance. WARNING is
+		// the only severity routed here that reports a problem rather than
+		// progress.
+		if n.SeverityUnlocalized == "WARNING" {
+			logger.Warn(args...)
+			return
+		}
+
+		logger.Info(args...)
+	}
+}
+
+func parseDBConfig(dbConfig config.DatabaseConfiguration, logger log.Logger, src ...string) (*Postgres, error) {
 	pgxCfg, err := pgxpool.ParseConfig(dbConfig.BuildDsn())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create %sconnection pool: %w", src, err)
@@ -107,6 +186,8 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 
 	pgxCfg.MaxConnLifetime = time.Second * time.Duration(dbConfig.SetConnMaxLifetime)
 	pgxCfg.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName())
+	sink := &noticeSink{}
+	pgxCfg.ConnConfig.OnNotice = noticeHandler(logger, sink)
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), pgxCfg)
 	if err != nil {
@@ -129,7 +210,7 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 	db.SetMaxIdleConns(maxIdleConns)
 	db.SetConnMaxLifetime(time.Second * time.Duration(dbConfig.SetConnMaxLifetime))
 
-	return &Postgres{dbx: db, pool: pool, conn: pool}, nil
+	return &Postgres{dbx: db, pool: pool, conn: pool, notices: sink}, nil
 }
 
 func (p *Postgres) GetDB() *sqlx.DB {
