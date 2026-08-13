@@ -36,6 +36,13 @@ CREATE TABLE IF NOT EXISTS convoy.partition_runs (
     CONSTRAINT partition_runs_status_check CHECK (status IN ('running', 'completed', 'failed'))
 );
 
+RESET lock_timeout;
+RESET statement_timeout;
+
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+
 -- One conversion at a time for the whole instance, which is what the CLI already
 -- does when it is given no table name. Each conversion rewrites a table and
 -- saturates disk doing it, so overlapping two makes both slower and holds two
@@ -46,13 +53,23 @@ CREATE TABLE IF NOT EXISTS convoy.partition_runs (
 -- resolves it. That is deliberate: the server cannot tell a crashed conversion
 -- from one still running on another pod, and guessing wrong starts a second
 -- rewrite of a table the first is still holding.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_partition_runs_single_active
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_partition_runs_single_active
     ON convoy.partition_runs ((status))
     WHERE status = 'running';
 
 -- The UI lists most recent first.
-CREATE INDEX IF NOT EXISTS idx_partition_runs_started_at
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_partition_runs_started_at
     ON convoy.partition_runs (started_at DESC);
+
+RESET lock_timeout;
+RESET statement_timeout;
+
+-- +migrate Down notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+
+DROP INDEX CONCURRENTLY IF EXISTS idx_partition_runs_started_at;
+DROP INDEX CONCURRENTLY IF EXISTS idx_partition_runs_single_active;
 
 RESET lock_timeout;
 RESET statement_timeout;
