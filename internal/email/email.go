@@ -66,6 +66,16 @@ var templateFuncs = template.FuncMap{
 	"currentYear": func() int {
 		return time.Now().Year()
 	},
+
+	// Outlook ignores max-width, so the fluid shell needs a fixed-width ghost
+	// table to keep its 656px column. html/template strips comments out of
+	// template source, so the conditionals have to be emitted at render time.
+	"outlookShellOpen": func() template.HTML {
+		return `<!--[if mso]><table role="presentation" width="656" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td width="656"><![endif]-->`
+	},
+	"outlookShellClose": func() template.HTML {
+		return `<!--[if mso]></td></tr></table><![endif]-->`
+	},
 }
 
 // TODO(subomi): glob pattern must not match more than one template

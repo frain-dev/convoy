@@ -2,6 +2,7 @@ package email
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -62,16 +63,16 @@ func Test_Build(t *testing.T) {
 	}
 }
 
-func Test_Build_FooterRendersCurrentYear(t *testing.T) {
-	templates := []string{
-		"user.verify.email.html",
-		"reset.password.html",
-		"organisation.invite.html",
-		"endpoint.update.html",
-		"twitter.source.html",
-	}
+var emailTemplates = []string{
+	"user.verify.email.html",
+	"reset.password.html",
+	"organisation.invite.html",
+	"endpoint.update.html",
+	"twitter.source.html",
+}
 
-	params := map[string]string{
+func emailParams() map[string]string {
+	return map[string]string{
 		"recipient_name":         "Jon",
 		"email":                  "jon@example.com",
 		"email_verification_url": "https://example.com/verify",
@@ -87,23 +88,64 @@ func Test_Build_FooterRendersCurrentYear(t *testing.T) {
 		"source_name":            "twitter-source",
 		"crc_verified_at":        "2026-01-01",
 	}
+}
 
-	for _, glob := range templates {
+func Test_Build_FooterRendersCurrentYear(t *testing.T) {
+	for _, glob := range emailTemplates {
 		t.Run(glob, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			e := NewEmail(buildClient(ctrl))
-			require.NoError(t, e.Build(glob, params))
+			require.NoError(t, e.Build(glob, emailParams()))
 
 			body := e.body.String()
-			require.Contains(t, body, fmt.Sprintf("© %d Frain Technologies", time.Now().Year()))
+			require.Contains(t, body, fmt.Sprintf(
+				"© %d Frain Technologies | 2261 Market Street, San Francisco, CA 94114",
+				time.Now().Year()))
 			require.NotContains(t, body, "© 2024")
+			// The footer sits inside the card on the same layer as the copy, in a
+			// lighter grey than the body text.
+			require.Contains(t, body, `class="card-foot"`)
+			require.Contains(t, body, "color: #9B9B9B")
 			require.Contains(t, body, "#0082F9")
 			require.Contains(t, body, "#F7F7F7")
 			require.Contains(t, body, "https://www.getconvoy.io/images/email/email-logo-white.png")
 			require.Contains(t, body, "https://www.getconvoy.io/images/email/email-dots-left.png")
 			require.Contains(t, body, "https://www.getconvoy.io/images/email/email-dots-right.png")
+		})
+	}
+}
+
+var msoConditional = regexp.MustCompile(`(?s)<!--\[if [^\]]*]>.*?<!\[endif]-->`)
+
+// Gmail's Android app drops max-width on tables and honours the HTML width
+// attribute instead, so a fixed pixel width there overflows the viewport and
+// the message gets clipped. Everything outside the MSO conditionals has to stay
+// fluid; Outlook keeps a fixed width through the ghost table inside them.
+func Test_Build_LayoutIsFluid(t *testing.T) {
+	for _, glob := range emailTemplates {
+		t.Run(glob, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			e := NewEmail(buildClient(ctrl))
+			require.NoError(t, e.Build(glob, emailParams()))
+
+			body := e.body.String()
+			fluid := msoConditional.ReplaceAllString(body, "")
+			require.NotContains(t, fluid, `width="656"`)
+			require.NotContains(t, fluid, `width="582"`)
+			require.NotContains(t, fluid, `style="width: 656px`)
+			require.NotContains(t, fluid, `style="width: 582px`)
+			require.Contains(t, fluid, "max-width: 656px")
+			require.Contains(t, fluid, "@media only screen and (max-width: 600px)")
+			require.Contains(t, fluid, `class="gutter"`)
+			require.Contains(t, fluid, `class="card-pad"`)
+
+			// Outlook ignores max-width, so it needs the ghost table to hold the
+			// 656px column its VML header band is cut for.
+			require.Contains(t, body, `<table role="presentation" width="656"`)
 		})
 	}
 }
