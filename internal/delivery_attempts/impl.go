@@ -441,7 +441,7 @@ begin
     create index idx_delivery_attempts_event_delivery_id_created_at_desc
         on convoy.delivery_attempts (event_delivery_id asc, created_at desc);
 
-	RAISE NOTICE 'Successfully un-partitioned delivery attempts table...';
+	RAISE NOTICE 'Successfully un-partitioned delivery_attempts table...';
 end $$ language plpgsql;
 select convoy.un_partition_delivery_attempts_table()
 `

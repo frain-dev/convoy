@@ -1228,12 +1228,16 @@ func TestPartitionFunctions(t *testing.T) {
 	})
 }
 
-// event_deliveries_new declares event_id with no references clause, so
-// partitioning rebuilds the table without event-id enforcement unless the
-// function restores it. Both orders of the two partition commands are reachable
-// from `convoy utils partition <table>`, and the enforcement that is correct
-// differs between them: a foreign key cannot reference a partitioned events, so
-// that case admits only the trigger.
+// Partitioning must not drop event-id enforcement. Both orders of the two
+// partition commands are reachable from `convoy utils partition <table>`, and
+// the state of convoy.events differs between them.
+//
+// Attaching enforces with the trigger either way, where the copy path used a
+// real foreign key when events was unpartitioned. A validated foreign key on a
+// partitioned parent scans every partition while holding SHARE ROW EXCLUSIVE,
+// and Postgres 16 rejects NOT VALID here, so the foreign key would block writes
+// for as long as the scan takes. Both cases are kept because both are still
+// reachable and both must reject an orphan.
 //
 // Asserting the behaviour rather than the catalog: what matters is that a
 // delivery naming an event that does not exist is rejected, not which mechanism
@@ -1245,7 +1249,7 @@ func TestPartitionEventDeliveriesTableKeepsEventIDEnforcement(t *testing.T) {
 		partitionEvents bool
 	}{
 		{name: "events partitioned first", wantMechanism: "event_fk_check trigger", partitionEvents: true},
-		{name: "events left unpartitioned", wantMechanism: "event_deliveries_event_id_fkey", partitionEvents: false},
+		{name: "events left unpartitioned", wantMechanism: "event_fk_check trigger", partitionEvents: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			service, db := setupTestDB(t)
