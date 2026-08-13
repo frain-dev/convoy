@@ -1,5 +1,15 @@
 # Convoy Changes
 
+## 26.7.2
+
+### Breaking Changes
+
+- Partition retention now manages the partitions `convoy utils partition` creates, which it previously ignored because their names were folded to lower case. On a licensed instance, history kept only because those partitions were unmanaged is dropped at `CONVOY_RETENTION_POLICY` on the next maintenance run. Confirm that duration before upgrading (#2781)
+
+### Bug Fixes
+
+- fix(dataplane): correct partition naming, retention adoption and event-id enforcement (#2781)
+
 ## 26.7.1
 
 ### Breaking Changes
