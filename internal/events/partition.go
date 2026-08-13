@@ -29,10 +29,10 @@ var eventsSpec = attach.Spec{
 	Prepare: []string{
 		`ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS url_path VARCHAR NOT NULL DEFAULT ''`,
 	},
-	Swap: []string{
-		`ALTER TABLE convoy.event_deliveries DROP CONSTRAINT IF EXISTS event_deliveries_event_id_fkey`,
+	Swap: append(
+		attach.DropConstraintSQL("event_deliveries", "event_deliveries_event_id_fkey"),
 		attach.EventFKSQL,
-	},
+	),
 	AfterDetach:     []string{attach.RestoreEventFKSQL},
 	CopyUnpartition: unPartitionEventsTableSQL,
 }

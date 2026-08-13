@@ -200,6 +200,25 @@ func TestCreatingPartitionsDoesNotScanTheAdoptedTable(t *testing.T) {
 		"adding a partition scanned the adopted table, so the bounds constraint stopped refuting the new range")
 }
 
+func TestPartitionEventDeliveriesTableInstallsEventStandIn(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	seedProjectWithDelivery(t, db, service)
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+
+	var triggers int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT count(*)
+        FROM pg_catalog.pg_trigger t
+        JOIN pg_catalog.pg_class c ON c.oid = t.tgrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy'
+          AND c.relname = 'event_deliveries'
+          AND t.tgname = 'event_fk_check'`).Scan(&triggers))
+	require.Equal(t, 1, triggers, "event_fk_check was not installed after attach")
+}
+
 // The swap drops delivery_attempts' foreign key, because it points at a primary
 // key that a partitioned table cannot keep, and installs a trigger in its place
 // in the same transaction. Any gap between the two is a window where an attempt
@@ -251,6 +270,61 @@ func TestUnPartitionEventDeliveriesTableWhileAttemptsArePartitioned(t *testing.T
 	require.Error(t, insertAttempt(t, db, project.UID, endpoint.UID, ulid.Make().String()),
 		"an attempt referencing a nonexistent delivery was accepted after unpartitioning event_deliveries")
 	require.NoError(t, insertAttempt(t, db, project.UID, endpoint.UID, delivery.UID))
+}
+
+// Same one-at-a-time order as events-after-deliveries: attach keeps the real
+// FK on delivery_attempts_default, so Swap has to drop that child too.
+func TestPartitionEventDeliveriesTableDropsAdoptedAttemptFK(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+
+	require.NoError(t, delivery_attempts.New(log.New("convoy", log.LevelError), db).PartitionDeliveryAttemptsTable(ctx))
+	require.Equal(t, 1, countNamedConstraint(t, db, "delivery_attempts_default", "delivery_attempts_event_delivery_id_fkey"),
+		"precondition: attach left the attempt FK on the adopted child")
+
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+	require.Zero(t, countNamedConstraint(t, db, "delivery_attempts_default", "delivery_attempts_event_delivery_id_fkey"),
+		"partitioning event_deliveries left the attempt FK on delivery_attempts_default")
+}
+
+func TestUnPartitionEventDeliveriesTableRecoversInvalidIdIndex(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	seedProjectWithDelivery(t, db, service)
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+
+	_, err := db.GetDB().ExecContext(ctx, `
+        CREATE UNIQUE INDEX event_deliveries_id_key ON convoy.event_deliveries_default (id)`)
+	require.NoError(t, err)
+	_, err = db.GetDB().ExecContext(ctx, `
+        UPDATE pg_index SET indisvalid = false
+        WHERE indexrelid = 'convoy.event_deliveries_id_key'::regclass`)
+	require.NoError(t, err)
+
+	require.NoError(t, service.UnPartitionEventDeliveriesTable(ctx))
+}
+
+func countNamedConstraint(t *testing.T, db database.Database, table, name string) int {
+	t.Helper()
+
+	var n int
+	require.NoError(t, db.GetDB().QueryRowContext(context.Background(), `
+        SELECT count(*)
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        JOIN pg_namespace ns ON ns.oid = c.relnamespace
+        WHERE ns.nspname = 'convoy' AND c.relname = $1 AND con.conname = $2`,
+		table, name).Scan(&n))
+	return n
 }
 
 func insertAttempt(t *testing.T, db database.Database, projectID, endpointID, deliveryID string) error {

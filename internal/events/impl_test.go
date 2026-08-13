@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/endpoints"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -1314,6 +1315,44 @@ func TestUnPartitionEventsTableRemovesTheStandInTrigger(t *testing.T) {
         FROM pg_catalog.pg_constraint
         WHERE conname = 'event_deliveries_event_id_fkey'`).Scan(&constraints))
 	require.NotZero(t, constraints, "dropping the trigger left no event-id enforcement at all")
+}
+
+// Operators convert tables one at a time. After event_deliveries is attached,
+// event_deliveries_event_id_fkey lives on the adopted child. Dropping it only
+// from the parent name leaves a stale FK that still points at events_default
+// after events is converted, and blocks retention from dropping that child.
+func TestPartitionEventsTableDropsAdoptedDeliveryFK(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, event_deliveries.New(log.New("convoy", log.LevelError), db).PartitionEventDeliveriesTable(ctx))
+
+	require.Equal(t, 1, countNamedConstraint(t, db, "event_deliveries_default", "event_deliveries_event_id_fkey"),
+		"precondition: attach left the event FK on the adopted child")
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+
+	require.Zero(t, countNamedConstraint(t, db, "event_deliveries_default", "event_deliveries_event_id_fkey"),
+		"partitioning events left the event FK on event_deliveries_default")
+}
+
+func countNamedConstraint(t *testing.T, db database.Database, table, name string) int {
+	t.Helper()
+
+	var n int
+	require.NoError(t, db.GetDB().QueryRowContext(context.Background(), `
+        SELECT count(*)
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        JOIN pg_namespace ns ON ns.oid = c.relnamespace
+        WHERE ns.nspname = 'convoy' AND c.relname = $1 AND con.conname = $2`,
+		table, name).Scan(&n))
+	return n
 }
 
 func TestPartitionEventsTablesNameForRetention(t *testing.T) {

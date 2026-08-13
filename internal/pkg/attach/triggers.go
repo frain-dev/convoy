@@ -1,5 +1,19 @@
 package attach
 
+import "fmt"
+
+// DropConstraintSQL drops a named constraint from table and from table_default
+// if that adopted child exists. After attach conversion the real FK lives on
+// the child; DROP on the parent name is a no-op.
+func DropConstraintSQL(table, constraint string) []string {
+	return []string{
+		fmt.Sprintf(`ALTER TABLE convoy.%s DROP CONSTRAINT IF EXISTS %s`,
+			quoteIdent(table), quoteIdent(constraint)),
+		fmt.Sprintf(`ALTER TABLE IF EXISTS convoy.%s DROP CONSTRAINT IF EXISTS %s`,
+			quoteIdent(table+"_default"), quoteIdent(constraint)),
+	}
+}
+
 // EventFKSQL stands in for event_deliveries.event_id → events while events or
 // event_deliveries is partitioned. Postgres 16 rejects NOT VALID foreign keys
 // on a partitioned parent, and a validated key scans every partition under

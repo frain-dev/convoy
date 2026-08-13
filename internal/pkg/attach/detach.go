@@ -50,6 +50,9 @@ func detach(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
 	}
 
 	notice(ctx, db, "Rebuilding the unpartitioned primary key...")
+	if err := dropInvalidIndex(ctx, db, spec.idIndex()); err != nil {
+		return err
+	}
 	if _, err := db.Exec(ctx, fmt.Sprintf(`
         CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS %s
             ON convoy.%s (id)`,

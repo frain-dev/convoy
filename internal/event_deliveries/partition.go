@@ -25,11 +25,10 @@ var deliveriesSpec = attach.Spec{
 		"UPDATE convoy.event_deliveries SET created_at = COALESCE(created_at, NOW()), " +
 		"delivery_mode = COALESCE(delivery_mode, 'at_least_once') " +
 		"WHERE created_at IS NULL OR delivery_mode IS NULL, then run the conversion again",
-	Swap: []string{
-		`ALTER TABLE convoy.delivery_attempts
-            DROP CONSTRAINT IF EXISTS delivery_attempts_event_delivery_id_fkey`,
+	Swap: append(
+		attach.DropConstraintSQL("delivery_attempts", "delivery_attempts_event_delivery_id_fkey"),
 		attach.AttemptFKSQL,
-	},
+	),
 	AfterAttach:     []string{attach.EventFKSQL},
 	AfterDetach:     []string{attach.RestoreAttemptFKSQL, attach.RestoreEventFKSQL},
 	CopyUnpartition: unPartitionEventDeliveriesTableSQL,

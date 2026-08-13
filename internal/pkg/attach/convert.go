@@ -62,11 +62,9 @@ func Convert(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
 		return err
 	}
 
-	notice(ctx, db, "Creating partitions...")
-	if err := createForwardPartitions(ctx, db, spec, bound); err != nil {
-		return err
-	}
-
+	// Enforcement has to land before createForwardPartitions. That step is the
+	// one that can fail after the table is already partitioned; AfterAttach is
+	// a trigger/function and does not depend on the new children existing.
 	if len(spec.AfterAttach) > 0 {
 		notice(ctx, db, "Restoring enforcement...")
 		for _, stmt := range spec.AfterAttach {
@@ -74,6 +72,11 @@ func Convert(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
 				return fmt.Errorf("table is partitioned but a follow-up step failed: %w", err)
 			}
 		}
+	}
+
+	notice(ctx, db, "Creating partitions...")
+	if err := createForwardPartitions(ctx, db, spec, bound); err != nil {
+		return err
 	}
 
 	notice(ctx, db, "Migration complete!")
@@ -343,6 +346,25 @@ func createForwardPartitions(ctx context.Context, db *pgxpool.Pool, spec Spec, b
             END LOOP;
         END $$;`, bound, PremakeDays, pgLit(spec.Table+"_"), spec.Table)); err != nil {
 		return fmt.Errorf("table is partitioned but forward partitions were not created, writes will fail after the cutoff: %w", err)
+	}
+	return nil
+}
+
+func dropInvalidIndex(ctx context.Context, db *pgxpool.Pool, name string) error {
+	_, err := db.Exec(ctx, fmt.Sprintf(`
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                JOIN pg_index i ON i.indexrelid = c.oid
+                WHERE n.nspname = 'convoy' AND c.relname = %s AND NOT i.indisvalid
+            ) THEN
+                DROP INDEX convoy.%s;
+            END IF;
+        END $$;`, pgLit(name), quoteIdent(name)))
+	if err != nil {
+		return fmt.Errorf("dropping invalid index %s: %w", name, err)
 	}
 	return nil
 }
