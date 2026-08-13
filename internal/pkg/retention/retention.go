@@ -269,9 +269,46 @@ func (r *PartitionRetentionPolicy) registerParents(ctx context.Context) {
 		}
 
 		ref := partman.ParentRef{SchemaName: retentionSchema, TableName: table}
-		if _, err := r.manager.ImportExisting(ctx, ref); err != nil {
+		report, err := r.manager.ImportExisting(ctx, ref)
+		if err != nil {
 			r.logger.Errorf("failed to import existing partitions for convoy.%s: %v", table, err)
+			continue
 		}
+		r.logImportReport(table, report)
+	}
+}
+
+// logImportReport surfaces the outcome of ImportExisting. gopartman reports
+// drifted and skipped children without returning an error, and only adopted
+// partitions reach partman.partitions, so an unread report means retention can
+// silently manage nothing while the table keeps growing. Logged at error level
+// because every unadopted partition is one the nightly job will never drop.
+// Names are capped: a mismatch is usually systematic and affects every child.
+func (r *PartitionRetentionPolicy) logImportReport(table string, report partman.ReconcileReport) {
+	const maxNamed = 3
+
+	if len(report.Drifted) == 0 && len(report.Skipped) == 0 {
+		r.logger.Info(fmt.Sprintf("imported %d existing partitions for convoy.%s", len(report.Imported), table))
+		return
+	}
+
+	r.logger.Error(fmt.Sprintf(
+		"convoy.%s has partitions retention cannot drop: %d adopted, %d drifted, %d skipped",
+		table, len(report.Imported), len(report.Drifted), len(report.Skipped)))
+
+	for i, d := range report.Drifted {
+		if i == maxNamed {
+			r.logger.Errorf("... and %d more drifted partitions on convoy.%s", len(report.Drifted)-maxNamed, table)
+			break
+		}
+		r.logger.Errorf("drifted partition %s: %s", d.Name, d.Reason)
+	}
+	for i, s := range report.Skipped {
+		if i == maxNamed {
+			r.logger.Errorf("... and %d more skipped partitions on convoy.%s", len(report.Skipped)-maxNamed, table)
+			break
+		}
+		r.logger.Errorf("skipped partition %s: %s", s.Name, s.Reason)
 	}
 }
 
