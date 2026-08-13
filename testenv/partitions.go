@@ -16,11 +16,15 @@ import (
 // tenantID.
 //
 // Retention adopts a partition only if it can parse the name back into a tenant
-// and a single day, and it requires the tenant segment to be upper-case
-// alphanumeric. Postgres folds unquoted identifiers to lower case, so partition
-// DDL has to both upper-case the tenant id and quote the resulting identifier.
-// Get either half wrong and the partitions are created outside retention's
-// view, so no history is ever dropped and the table grows without bound.
+// and a single day, and it builds the partitions it creates for later days with
+// an upper-case tenant segment. Postgres folds unquoted identifiers to lower
+// case, so partition DDL has to both upper-case the tenant id and quote the
+// resulting identifier, or one table ends up spelled two ways.
+//
+// gopartman v0.2.0 adopts a folded name too, which is what lets an instance
+// partitioned before that fix heal on upgrade rather than needing every child
+// renamed. This asserts the name we mean to write, not the widest name adoption
+// happens to accept.
 //
 // This reads pg_class rather than the generated SQL because the folding happens
 // inside Postgres: the statement can look correct while the stored name is not.

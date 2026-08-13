@@ -761,8 +761,10 @@ BEGIN
                'event_deliveries_' || pg_catalog.UPPER(pg_catalog.REPLACE(project_id::TEXT, '-', '')) || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
         FROM dates
     LOOP
-        -- %I, not %s: an unquoted identifier folds to lower case, and retention
-        -- only adopts partitions whose name carries an upper-case tenant segment.
+        -- %I, not %s: an unquoted identifier folds to lower case. Retention names
+        -- the partitions it creates for later days with an upper-case tenant
+        -- segment, so folding here spells one table two ways. Adoption itself
+        -- tolerates either since gopartman v0.2.0.
         EXECUTE FORMAT(
             'CREATE TABLE IF NOT EXISTS convoy.%I PARTITION OF convoy.event_deliveries_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
             r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date

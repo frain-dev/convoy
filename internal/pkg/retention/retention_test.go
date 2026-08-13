@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -106,6 +107,62 @@ func TestRegisterParentsAdoptsExistingPartitions(t *testing.T) {
 	require.NotZero(t, adopted,
 		"retention adopted no partitions for convoy.events tenant %s, so it will never drop anything",
 		projectID)
+}
+
+// Instances partitioned before the naming fix carry children whose tenant
+// segment PostgreSQL folded to lower case. gopartman v0.2.0 parses a child name
+// against its parent instead of guessing where the tenant starts, so those names
+// are adopted as they are. This is what lets an existing instance heal on upgrade
+// rather than needing every partition renamed by hand, so it is asserted here and
+// not left as a property of the dependency.
+func TestRegisterParentsAdoptsFoldedPartitionNames(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedProjectWithEvent(t, db)
+
+	eventsRepo := events.New(log.New("convoy", log.LevelInfo), db)
+	require.NoError(t, eventsRepo.PartitionEventsTable(ctx))
+
+	// Reproduce the pre-fix state by folding a child's name back down.
+	var current string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT c.relname
+        FROM pg_catalog.pg_inherits i
+        JOIN pg_catalog.pg_class c ON c.oid = i.inhrelid
+        JOIN pg_catalog.pg_class p ON p.oid = i.inhparent
+        JOIN pg_catalog.pg_namespace n ON n.oid = p.relnamespace
+        WHERE n.nspname = 'convoy' AND p.relname = 'events'
+        ORDER BY c.relname
+        LIMIT 1`).Scan(&current))
+
+	folded := strings.ToLower(current)
+	require.NotEqual(t, current, folded, "partition name held no upper case, so this test proves nothing")
+
+	_, err := db.GetDB().ExecContext(ctx,
+		fmt.Sprintf(`ALTER TABLE convoy.%q RENAME TO %q`, current, folded))
+	require.NoError(t, err)
+
+	policy, err := NewPartitionRetentionPolicy(db, log.New("convoy", log.LevelInfo), 24*time.Hour)
+	require.NoError(t, err)
+
+	policy.registerParents(ctx)
+
+	// Metadata stores the schema-qualified name exactly as PostgreSQL holds it,
+	// so the recorded name must still resolve to a real relation: retention drops
+	// by this value, and a canonicalised copy would name a table that is not there.
+	var tenant string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT p.tenant_id
+        FROM partman.partitions p
+        JOIN partman.parent_tables t ON t.id = p.parent_table_id
+        WHERE t.table_name = 'events' AND p.name = $1`, "convoy."+folded).Scan(&tenant),
+		"convoy.%s was not adopted, so retention will never drop it and instances partitioned before the naming fix still need manual renames",
+		folded)
+
+	// Tenant identity comes from the partition bound, not the folded name, so one
+	// tenant keeps one form in metadata however its children happen to be spelled.
+	require.Equal(t, strings.ToUpper(tenant), tenant,
+		"tenant recorded as %q from a folded child name, so the same tenant now has two identities in metadata", tenant)
 }
 
 // seedProjectWithEvent inserts the minimum chain convoy.events requires
