@@ -1227,3 +1227,22 @@ func TestPartitionFunctions(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+// Partitions must be named so retention can adopt them. See
+// testenv.RequirePartitionsAddressableByRetention for why that is not automatic.
+func TestPartitionEventDeliveriesTableNamesForRetention(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+	testenv.RequirePartitionsAddressableByRetention(t, db, "event_deliveries", project.UID)
+}

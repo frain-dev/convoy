@@ -164,6 +164,35 @@ func TestCreateDeliveryAttempt_NoResponseLeavesRespondedAtNull(t *testing.T) {
 	require.False(t, fetched.RespondedAt.Valid)
 }
 
+// Partitions must be named so retention can adopt them. See
+// testenv.RequirePartitionsAddressableByRetention for why that is not automatic.
+func TestPartitionDeliveryAttemptsTableNamesForRetention(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db, ctx)
+	endpoint := seedEndpoint(t, db, ctx, project)
+	eventDelivery := seedEventDelivery(t, db, ctx, project, endpoint)
+
+	service := New(log.New("convoy", log.LevelError), db)
+
+	require.NoError(t, service.CreateDeliveryAttempt(ctx, &datastore.DeliveryAttempt{
+		UID:              ulid.Make().String(),
+		URL:              "https://example.com/webhook",
+		Method:           "POST",
+		APIVersion:       "2023.12.25",
+		EndpointID:       endpoint.UID,
+		EventDeliveryId:  eventDelivery.UID,
+		ProjectId:        project.UID,
+		HttpResponseCode: "200",
+		Status:           true,
+		RequestedAt:      null.TimeFrom(time.Now().UTC()),
+	}))
+
+	require.NoError(t, service.PartitionDeliveryAttemptsTable(ctx))
+	testenv.RequirePartitionsAddressableByRetention(t, db, "delivery_attempts", project.UID)
+}
+
 func TestPartitionRoundTrip_PreservesRequestedAndRespondedAt(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()

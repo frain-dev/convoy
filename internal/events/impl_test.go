@@ -1236,3 +1236,30 @@ func TestPartitionFunctions(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+// Both events tables must name their partitions so retention can adopt them.
+// See testenv.RequirePartitionsAddressableByRetention for why that is not
+// automatic.
+func TestPartitionEventsTablesNameForRetention(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+	testenv.RequirePartitionsAddressableByRetention(t, db, "events", project.UID)
+
+	// The partition helpers only create children for days that already hold rows,
+	// and no application write path in this package populates events_search, so
+	// seed it directly rather than leaving the second naming site uncovered.
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.events_search (id, event_type, project_id, raw, data, url_path)
+        VALUES ($1, 'test.event', $2, '{}', '{}'::bytea, '/')`, ulid.Make().String(), project.UID)
+	require.NoError(t, err)
+
+	require.NoError(t, service.PartitionEventsSearchTable(ctx))
+	testenv.RequirePartitionsAddressableByRetention(t, db, "events_search", project.UID)
+}

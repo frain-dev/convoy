@@ -716,11 +716,13 @@ BEGIN
         SELECT project_id,
                created_at::TEXT AS start_date,
                (created_at + 1)::TEXT AS stop_date,
-               'events_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
+               'events_' || pg_catalog.UPPER(pg_catalog.REPLACE(project_id::TEXT, '-', '')) || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
         FROM dates
     LOOP
+        -- %I, not %s: an unquoted identifier folds to lower case, and retention
+        -- only adopts partitions whose name carries an upper-case tenant segment.
         EXECUTE FORMAT(
-            'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.events_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
+            'CREATE TABLE IF NOT EXISTS convoy.%I PARTITION OF convoy.events_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
             r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
         );
     END LOOP;
@@ -888,11 +890,13 @@ BEGIN
         SELECT project_id,
                created_at::TEXT AS start_date,
                (created_at + 1)::TEXT AS stop_date,
-               'events_search_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
+               'events_search_' || pg_catalog.UPPER(pg_catalog.REPLACE(project_id::TEXT, '-', '')) || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
         FROM dates
         LOOP
+            -- %I, not %s: an unquoted identifier folds to lower case, and retention
+            -- only adopts partitions whose name carries an upper-case tenant segment.
             EXECUTE FORMAT(
-                    'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.events_search_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
+                    'CREATE TABLE IF NOT EXISTS convoy.%I PARTITION OF convoy.events_search_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
                     r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
                     );
         END LOOP;
