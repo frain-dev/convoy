@@ -6,10 +6,15 @@
 
 - Partition retention now manages the partitions `convoy utils partition` creates, which it previously ignored because their names were folded to lower case. On a licensed instance, history kept only because those partitions were unmanaged is dropped at `CONVOY_RETENTION_POLICY` on the next maintenance run. Confirm that duration before upgrading (#2781)
 
+### Features
+
+- feat(controlplane): partition tables by attaching with an admin UI (#2784)
+
 ### Bug Fixes
 
 - fix(dataplane): correct partition naming, retention adoption and event-id enforcement (#2781)
 - fix(controlplane): fit transactional emails to mobile and move the footer inside the card (#2783)
+- fix(controlplane): load endpoint failure rates after the list (#2785)
 
 ## 26.7.1
 
