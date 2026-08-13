@@ -57,9 +57,9 @@ export class EventsService {
 				return resolve(response);
 			} catch (error) {
 				const raw = typeof error === 'string' ? error : '';
-				const timedOut = !raw || /took too long|timeout|timed out|504|reach the server/i.test(raw);
+				const timedOut = /took too long|timed out|timeout|504/i.test(raw);
 				this.generalService.showNotification({
-					message: timedOut ? "Couldn't load the chart in time. Try a shorter date range." : raw,
+					message: timedOut ? "Couldn't load the chart in time. Try a shorter date range." : raw || 'Could not load the chart. Try again.',
 					style: 'error'
 				});
 				return reject(error);
