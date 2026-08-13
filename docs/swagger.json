@@ -1171,6 +1171,150 @@
         }
       }
     },
+    "/v1/projects/{projectID}/endpoints/period-failure-rates": {
+      "get": {
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "description": "Display-only delivery rates for the given endpoint ids over a date range (default last 7 days). Independent of the list so a slow COUNT cannot delay the table.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Endpoints"
+        ],
+        "summary": "Endpoint period failure rates",
+        "operationId": "GetEndpointPeriodFailureRates",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Project ID",
+            "name": "projectID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "csv",
+            "description": "Endpoint IDs",
+            "name": "endpointId",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Start date",
+            "name": "startDate",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "End date",
+            "name": "endDate",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/models.EndpointPeriodFailureRate"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
     "/v1/projects/{projectID}/endpoints/{endpointID}": {
       "get": {
         "security": [
@@ -11913,6 +12057,26 @@
         },
         "type": {
           "$ref": "#/definitions/datastore.EndpointAuthenticationType"
+        }
+      }
+    },
+    "models.EndpointPeriodFailureRate": {
+      "type": "object",
+      "properties": {
+        "failure_count": {
+          "type": "integer"
+        },
+        "period_failure_rate": {
+          "type": "number"
+        },
+        "retry_count": {
+          "type": "integer"
+        },
+        "success_count": {
+          "type": "integer"
+        },
+        "uid": {
+          "type": "string"
         }
       }
     },

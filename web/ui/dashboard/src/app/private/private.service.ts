@@ -459,6 +459,41 @@ export class PrivateService {
 		});
 	}
 
+	// Must stay at or under the server's maxPeriodFailureRateIDs. A silent
+	// truncate leaves later rows as a dash after getAllEndpoints walks every page.
+	private static readonly periodFailureRateIdChunk = 100;
+
+	async getEndpointPeriodFailureRates(requestDetails: { endpointId: string[]; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
+		const ids = requestDetails.endpointId ?? [];
+		const rows: unknown[] = [];
+		let last: HTTP_RESPONSE | undefined;
+		let lastError: unknown;
+		for (let i = 0; i < ids.length; i += PrivateService.periodFailureRateIdChunk) {
+			const chunk = ids.slice(i, i + PrivateService.periodFailureRateIdChunk);
+			try {
+				last = await this.http.request({
+					url: `/endpoints/period-failure-rates`,
+					method: 'get',
+					query: { ...requestDetails, endpointId: chunk },
+					level: 'org_project',
+					hideNotification: true
+				});
+				rows.push(...(last.data ?? []));
+			} catch (error) {
+				// Display-only: keep rows from chunks that succeeded. A later
+				// timeout must not wipe pills that already came back.
+				lastError = error;
+			}
+		}
+		if (last) {
+			return { ...last, data: rows };
+		}
+		if (lastError) {
+			throw lastError;
+		}
+		return { status: true, message: 'Endpoint period failure rates fetched successfully', data: [] };
+	}
+
 	getEndpoints(requestDetails?: CURSOR & { q?: string; startDate?: string; endDate?: string; perPage?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

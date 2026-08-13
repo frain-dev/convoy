@@ -304,20 +304,6 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Period (history) failure rate: independent of the circuit breaker (no license or
-	// flag gate). Computed from event_deliveries over the requested range (default last
-	// 7d), counting terminal deliveries (Success+Failure) plus in-flight Retry
-	// deliveries, which have failed at least once. Attached as transient fields for
-	// the list UI.
-	if len(endpoints) > 0 {
-		searchParams, perr := models.GetSearchParams(r)
-		if perr != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(perr.Error(), http.StatusBadRequest))
-			return
-		}
-		h.enrichEndpointsWithPeriodFailureRate(r.Context(), project.UID, endpoints, searchParams)
-	}
-
 	resp := models.NewListResponse(endpoints, func(endpoint datastore.Endpoint) models.EndpointResponse {
 		return models.EndpointResponse{Endpoint: &endpoint}
 	})
@@ -345,9 +331,111 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	util.WriteResponse(w, r, finalBytes, http.StatusOK)
 }
 
+// Clients that walk every page (portal status filter) must chunk to this cap.
+const maxPeriodFailureRateIDs = 100
+
+// GetEndpointPeriodFailureRates
+//
+//	@Summary		Endpoint period failure rates
+//	@Description	Display-only delivery rates for the given endpoint ids over a date range (default last 7 days). Independent of the list so a slow COUNT cannot delay the table.
+//	@Id				GetEndpointPeriodFailureRates
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string		true	"Project ID"
+//	@Param			endpointId	query		[]string	false	"Endpoint IDs"
+//	@Param			startDate	query		string		false	"Start date"
+//	@Param			endDate		query		string		false	"End date"
+//	@Success		200			{object}	util.ServerResponse{data=[]models.EndpointPeriodFailureRate}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/period-failure-rates [get]
+func (h *Handler) GetEndpointPeriodFailureRates(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	ids := parseEndpointIDs(r.URL.Query()["endpointId"], maxPeriodFailureRateIDs)
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	ownedIDs, isPortal, ok := h.portalLinkOwnedEndpointIDs(w, r, authUser)
+	if !ok {
+		return
+	}
+	if isPortal {
+		ids = intersectIDs(ids, ownedIDs)
+	}
+
+	if len(ids) == 0 {
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint period failure rates fetched successfully",
+			[]models.EndpointPeriodFailureRate{}, http.StatusOK))
+		return
+	}
+
+	searchParams, perr := models.GetSearchParams(r)
+	if perr != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(perr.Error(), http.StatusBadRequest))
+		return
+	}
+
+	endpoints := make([]datastore.Endpoint, len(ids))
+	for i, id := range ids {
+		endpoints[i].UID = id
+	}
+	h.enrichEndpointsWithPeriodFailureRate(r.Context(), project.UID, endpoints, searchParams)
+
+	out := make([]models.EndpointPeriodFailureRate, len(endpoints))
+	for i := range endpoints {
+		out[i] = models.EndpointPeriodFailureRate{
+			UID:               endpoints[i].UID,
+			PeriodFailureRate: endpoints[i].PeriodFailureRate,
+			SuccessCount:      endpoints[i].SuccessCount,
+			FailureCount:      endpoints[i].FailureCount,
+			RetryCount:        endpoints[i].RetryCount,
+		}
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint period failure rates fetched successfully", out, http.StatusOK))
+}
+
+func parseEndpointIDs(values []string, limit int) []string {
+	out := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		id := strings.TrimSpace(value)
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+		if len(out) == limit {
+			break
+		}
+	}
+	return out
+}
+
+func intersectIDs(requested, allowed []string) []string {
+	allow := make(map[string]struct{}, len(allowed))
+	for _, id := range allowed {
+		allow[id] = struct{}{}
+	}
+	out := make([]string, 0, len(requested))
+	for _, id := range requested {
+		if _, ok := allow[id]; ok {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
 // periodFailureRateTimeout bounds the display-only COUNT on event_deliveries so a
 // slow query cannot sit until WriteTimeout or the ingress idle timeout and 504
-// the endpoint list.
+// the rates request. The endpoint list no longer waits on this COUNT.
 const periodFailureRateTimeout = 2 * time.Second
 
 // enrichEndpointsWithPeriodFailureRate attaches the history failure rate
@@ -360,9 +448,9 @@ const periodFailureRateTimeout = 2 * time.Second
 //
 // Failure policy: this is a display-only enrichment, so it fails open. A query error
 // or a count that exceeds periodFailureRateTimeout is logged and the endpoints keep
-// nil rate/counts (rendered as an em dash), rather than failing the whole list
-// response. The timeout must stay well under WriteTimeout and typical ingress idle
-// timeouts so a slow COUNT cannot 504 the list.
+// nil rate/counts (rendered as an em dash), rather than failing the rates response.
+// The timeout must stay well under WriteTimeout and typical ingress idle timeouts
+// so a slow COUNT cannot 504 the request.
 func (h *Handler) enrichEndpointsWithPeriodFailureRate(ctx context.Context, projectID string,
 	endpoints []datastore.Endpoint, params datastore.SearchParams) {
 	endpointIDs := make([]string, len(endpoints))

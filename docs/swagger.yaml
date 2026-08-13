@@ -1652,6 +1652,19 @@ definitions:
       type:
         $ref: '#/definitions/datastore.EndpointAuthenticationType'
     type: object
+  models.EndpointPeriodFailureRate:
+    properties:
+      failure_count:
+        type: integer
+      period_failure_rate:
+        type: number
+      retry_count:
+        type: integer
+      success_count:
+        type: integer
+      uid:
+        type: string
+    type: object
   models.EndpointResponse:
     properties:
       advanced_signatures:
@@ -3869,6 +3882,85 @@ paths:
       security:
         - ApiKeyAuth: []
       summary: Test OAuth2 connection
+      tags:
+        - Endpoints
+  /v1/projects/{projectID}/endpoints/period-failure-rates:
+    get:
+      consumes:
+        - application/json
+      description: Display-only delivery rates for the given endpoint ids over a date range (default last 7 days). Independent of the list so a slow COUNT cannot delay the table.
+      operationId: GetEndpointPeriodFailureRates
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          type: string
+        - collectionFormat: csv
+          description: Endpoint IDs
+          in: query
+          items:
+            type: string
+          name: endpointId
+          type: array
+        - description: Start date
+          in: query
+          name: startDate
+          type: string
+        - description: End date
+          in: query
+          name: endDate
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    items:
+                      $ref: '#/definitions/models.EndpointPeriodFailureRate'
+                    type: array
+                type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
+      security:
+        - ApiKeyAuth: []
+      summary: Endpoint period failure rates
       tags:
         - Endpoints
   /v1/projects/{projectID}/event-types:

@@ -2,7 +2,7 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import { DatePipe, Location } from '@angular/common';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
-import {ENDPOINT, PORTAL_LINK} from 'src/app/models/endpoint.model';
+import {ENDPOINT, ENDPOINT_PERIOD_FAILURE_RATE, PORTAL_LINK} from 'src/app/models/endpoint.model';
 import {SUBSCRIPTION} from 'src/app/models/subscription';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {EndpointsService} from 'src/app/private/pages/project/endpoints/endpoints.service';
@@ -62,6 +62,8 @@ export class EndpointsComponent implements OnInit {
     selectedEventType: EventType | null = null;
     endpointUid: string | null = null; // Store the selected endpoint UID
     eventTypes: EventType[] = [];
+	private ratesRequestSeq = 0;
+	private rateCache = new Map<string, ENDPOINT_PERIOD_FAILURE_RATE>();
 
 	constructor(private route: ActivatedRoute, protected generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, public licenseService: LicensesService, private location: Location, private router: Router, private formBuilder: FormBuilder) {
 		// Listen to route changes to handle browser back/forward
@@ -106,6 +108,8 @@ export class EndpointsComponent implements OnInit {
 
 	async getEndpoints(requestDetails?: CURSOR & { q?: string }) {
 		this.isloadingSubscriptions = true;
+		this.ratesRequestSeq++;
+		const seq = this.ratesRequestSeq;
 		try {
 			const search = requestDetails?.q ?? this.endpointSearchString;
 
@@ -123,7 +127,9 @@ export class EndpointsComponent implements OnInit {
 				this.displayedEndpoints = this.generalService.setContentDisplayed(endpoints.data.content as any, 'desc');
 			}
 
+			this.applyCachedRates(this.endpoints);
 			this.isloadingSubscriptions = false;
+			this.loadPeriodFailureRates(seq);
 		} catch (_error) {
 			// Drop previous rows so a failed refetch can't leave a stale list
 			// that no longer matches the active status/search filter.
@@ -139,8 +145,38 @@ export class EndpointsComponent implements OnInit {
 		this.getEndpoints({ q: this.endpointSearchString });
 	}
 
-	// period_failure_rate is attached by the list API (same field as the project
-	// endpoints table); null means no counted deliveries in the window.
+	private applyCachedRates(endpoints?: ENDPOINT[]) {
+		if (!endpoints?.length) return;
+		for (const endpoint of endpoints) {
+			const cached = this.rateCache.get(endpoint.uid);
+			if (!cached) continue;
+			endpoint.period_failure_rate = cached.period_failure_rate;
+			endpoint.success_count = cached.success_count;
+			endpoint.failure_count = cached.failure_count;
+			endpoint.retry_count = cached.retry_count;
+		}
+	}
+
+	private async loadPeriodFailureRates(seq: number) {
+		const ids = (this.endpoints || []).map(endpoint => endpoint.uid).filter(Boolean);
+		if (!ids.length) return;
+
+		try {
+			const response = await this.privateService.getEndpointPeriodFailureRates({ endpointId: ids });
+			if (seq !== this.ratesRequestSeq) return;
+
+			for (const row of response.data ?? []) {
+				this.rateCache.set(row.uid, row);
+			}
+			this.applyCachedRates(this.endpoints);
+			this.displayedEndpoints = this.generalService.setContentDisplayed(this.endpoints as any, 'desc');
+		} catch {
+			// Keep whatever the pills already show.
+		}
+	}
+
+	// period_failure_rate is filled after the list returns; null means no counted
+	// deliveries in the window, or the rates request has not finished / failed open.
 	failureRateLabel(endpoint: ENDPOINT): string {
 		if (endpoint.period_failure_rate === null || endpoint.period_failure_rate === undefined) return '—';
 		const rate = endpoint.period_failure_rate * 100;
