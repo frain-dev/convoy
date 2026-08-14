@@ -2,15 +2,14 @@ import { Component, OnInit } from '@angular/core';
 
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { VerifyEmailService } from './verify-email.service';
-import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { PrivateService } from 'src/app/private/private.service';
 import { AuthShellComponent } from 'src/app/public/components/auth-shell/auth-shell.component';
 
 @Component({
-    selector: 'convoy-verify-email',
-    imports: [RouterModule, LoaderModule, AuthShellComponent],
-    templateUrl: './verify-email.component.html',
-    styleUrls: ['./verify-email.component.scss']
+	selector: 'convoy-verify-email',
+	imports: [RouterModule, AuthShellComponent],
+	templateUrl: './verify-email.component.html',
+	styleUrls: ['./verify-email.component.scss']
 })
 export class VerifyEmailComponent implements OnInit {
 	token = this.route.snapshot.queryParams['verification-token'];
@@ -25,6 +24,13 @@ export class VerifyEmailComponent implements OnInit {
 
 	async verifyEmail() {
 		this.showError = false;
+
+		if (!this.token) {
+			this.loading = false;
+			this.showError = true;
+			return;
+		}
+
 		try {
 			await this.verifyEmailService.verifyEmail(this.token);
 			// Sync CONVOY_AUTH and drop the cached profile so dashboard surfaces

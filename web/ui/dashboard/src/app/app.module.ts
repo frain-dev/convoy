@@ -8,7 +8,9 @@ import {NotificationModalComponent} from './components/notification-modal/notifi
 import {ConfigService} from './services/config/config.service';
 
 export function initializeGoogleOAuth(configService: ConfigService) {
-	return () => configService.getConfig();
+	return () => {
+		void configService.getConfig();
+	};
 }
 
 @NgModule({

@@ -1,36 +1,26 @@
-@if (loading) {
-	<convoy-loader></convoy-loader>
-} @else {
-	<convoy-auth-shell
-		[heading]="showError ? 'Your email verification failed' : 'Your email has been verified!'"
-		[subheading]="showError ? 'Please try again' : 'You are all set'"
-		>
-		<div authCard class="flex flex-col items-center gap-24px text-center">
-			@if (!showError) {
-				<p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
-					You can now go ahead to easily send/receive webhook events.
-				</p>
-				<img src="/assets/img/new-success.gif" loop="1" alt="Success" class="h-120px" />
-				<button
-					type="button"
-					class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
-					routerLink="/"
-					>
-					Done
-				</button>
-			} @else {
-				<p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
-					An error occurred while trying to verify your email, please try again!
-				</p>
-				<img src="/assets/img/warning.gif" loop="1" alt="Warning" class="h-120px" />
-				<button
-					type="button"
-					class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
-					routerLink="/"
-					>
-					Resend Email
-				</button>
-			}
-		</div>
-	</convoy-auth-shell>
-}
+<convoy-auth-shell>
+	<div authCard class="flex flex-col gap-24px py-8px">
+		@if (loading) {
+			<p class="font-body font-normal text-[20px] leading-[24px] text-new.text-secondary">Verifying your email…</p>
+			<img src="/assets/img/page-loader.gif" alt="Loading" class="h-48px self-start" />
+		} @else if (!showError) {
+			<p class="font-body font-normal text-[20px] leading-[24px] text-new.text-secondary">Your email has been verified!</p>
+			<button
+				type="button"
+				class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+				routerLink="/"
+				>
+				Done
+			</button>
+		} @else {
+			<p class="font-body font-normal text-[20px] leading-[24px] text-new.text-secondary">Your email verification failed</p>
+			<button
+				type="button"
+				class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+				routerLink="/"
+				>
+				Resend Email
+			</button>
+		}
+	</div>
+</convoy-auth-shell>

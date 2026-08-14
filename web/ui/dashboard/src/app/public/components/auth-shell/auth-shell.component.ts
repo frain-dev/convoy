@@ -13,7 +13,7 @@ import { Component, Input } from '@angular/core';
 	styleUrls: ['./auth-shell.component.scss']
 })
 export class AuthShellComponent {
-	@Input('heading') heading!: string;
+	@Input('heading') heading?: string;
 	@Input('subheading') subheading?: string;
 
 	// Darker accent cells scattered on the brand grid, echoing the Figma pattern.

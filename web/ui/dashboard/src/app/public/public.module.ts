@@ -36,10 +36,6 @@ const routes: Routes = [
 		component: PublicComponent,
 		children: [
 			{
-				path: 'verify-email',
-				loadComponent: () => import('./verify-email/verify-email.component').then(mod => mod.VerifyEmailComponent)
-			},
-			{
 				path: 'saml',
 				loadComponent: () => import('./saml/saml.component').then(mod => mod.SamlComponent)
 			},

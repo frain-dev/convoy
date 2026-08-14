@@ -7,12 +7,16 @@
 			<div class="flex-1 min-h-40px"></div>
 
 			<div class="flex flex-col gap-24px w-full">
-				<div class="flex flex-col gap-4px">
-					<h1 class="font-heading font-medium text-[24px] leading-[32px] text-new.text-primary">{{ heading }}</h1>
-					@if (subheading) {
-						<p class="font-body font-normal text-[20px] leading-[24px] text-new.text-secondary">{{ subheading }}</p>
-					}
-				</div>
+				@if (heading || subheading) {
+					<div class="flex flex-col gap-4px">
+						@if (heading) {
+							<h1 class="font-heading font-medium text-[24px] leading-[32px] text-new.text-primary">{{ heading }}</h1>
+						}
+						@if (subheading) {
+							<p class="font-body font-normal text-[20px] leading-[24px] text-new.text-secondary">{{ subheading }}</p>
+						}
+					</div>
+				}
 
 				<div class="bg-new.surface-default border border-new.border rounded-24px p-24px w-full">
 					<ng-content select="[authCard]"></ng-content>

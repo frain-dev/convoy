@@ -12,6 +12,10 @@ const routes: Routes = [
 		loadComponent: () => import('./public/saml/saml.component').then(mod => mod.SamlComponent)
 	},
 	{
+		path: 'verify-email',
+		loadComponent: () => import('./public/verify-email/verify-email.component').then(mod => mod.VerifyEmailComponent)
+	},
+	{
 		path: '',
 		loadChildren: () => import('./private/private.module').then(m => m.PrivateModule),
 		canActivate: [IframeGuard]
