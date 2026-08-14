@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -29,6 +30,12 @@ import (
 // dashboard. It is deliberately static operator facing text, so no event
 // payload, URL, or credential can reach a user visible field.
 const reasonNoMatchingSubscriptions = "no subscription matched this event"
+
+// reasonMissingEndpointID is shown against a failed event in the dashboard.
+// Failure policy: a NOT NULL insert with a null endpoint_id is a deterministic
+// validation failure. Persist Failure and return nil so the worker completes
+// instead of retrying forever.
+const reasonMissingEndpointID = "subscription matched without an endpoint_id"
 
 type EventChannelConfig struct {
 	Channel      string
@@ -248,17 +255,21 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			return deps.EventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus, reasonNoMatchingSubscriptions)
 		}
 
-		var endpointIDs []string
-		for _, s := range subscriptions {
-			if s.Type != datastore.SubscriptionTypeCLI {
-				endpointIDs = append(endpointIDs, s.EndpointID)
-			}
+		endpointIDs, err := collectAPIEndpointIDs(subscriptions)
+		if err != nil {
+			deps.Logger.Error(fmt.Sprintf("failed to send %s: %v", event.UID, err))
+			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
+			return deps.EventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus, reasonMissingEndpointID)
 		}
 		event.Endpoints = endpointIDs
 
 		err = deps.EventRepo.UpdateEventEndpoints(ctx, event, event.Endpoints)
 		if err != nil {
 			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)
+			if errors.Is(err, datastore.ErrEventEndpointIDRequired) {
+				deps.Logger.Error(fmt.Sprintf("failed to send %s: %v", event.UID, err))
+				return deps.EventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus, reasonMissingEndpointID)
+			}
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
@@ -297,6 +308,21 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingSuccess, attributes)
 		return err
 	}
+}
+
+func collectAPIEndpointIDs(subscriptions []datastore.Subscription) ([]string, error) {
+	ids := make([]string, 0, len(subscriptions))
+	for i := range subscriptions {
+		s := &subscriptions[i]
+		if s.Type == datastore.SubscriptionTypeCLI {
+			continue
+		}
+		if util.IsStringEmpty(s.EndpointID) {
+			return nil, datastore.ErrEventEndpointIDRequired
+		}
+		ids = append(ids, s.EndpointID)
+	}
+	return ids, nil
 }
 
 func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQueue queue.Queuer, eventRepo datastore.EventRepository, logger log.Logger) (*datastore.Event, bool, error) {
