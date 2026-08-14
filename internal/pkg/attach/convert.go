@@ -269,8 +269,7 @@ func swap(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
 	}, spec.Swap...)
 
 	statements = append(statements,
-		fmt.Sprintf(`ALTER TABLE convoy.%s DROP CONSTRAINT IF EXISTS %s`,
-			quoteIdent(spec.defaultName()), quoteIdent(spec.Table+"_pkey")),
+		dropExistingPrimaryKeySQL(spec.defaultName()),
 		fmt.Sprintf(`ALTER TABLE convoy.%s ADD CONSTRAINT %s PRIMARY KEY USING INDEX %s`,
 			quoteIdent(spec.defaultName()), quoteIdent(spec.defaultName()+"_pkey"), quoteIdent(spec.pkIndex())),
 		fmt.Sprintf(`
@@ -367,6 +366,31 @@ func dropInvalidIndex(ctx context.Context, db *pgxpool.Pool, name string) error 
 		return fmt.Errorf("dropping invalid index %s: %w", name, err)
 	}
 	return nil
+}
+
+// dropExistingPrimaryKeySQL drops whatever primary key the heap still carries.
+// Copy-unpartition creates {table}_new with PRIMARY KEY, then renames the table;
+// RENAME TABLE does not rename the constraint, so the leftover name is
+// {table}_new_pkey, not {table}_pkey. Dropping only the latter leaves two
+// primary keys when swap promotes {table}_pk_part.
+func dropExistingPrimaryKeySQL(relname string) string {
+	return fmt.Sprintf(`
+DO $drop_pk$
+DECLARE
+    pk TEXT;
+BEGIN
+    SELECT con.conname INTO pk
+    FROM pg_constraint con
+    JOIN pg_class c ON c.oid = con.conrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'convoy'
+      AND c.relname = %s
+      AND con.contype = 'p';
+    IF pk IS NOT NULL THEN
+        EXECUTE format('ALTER TABLE convoy.%s DROP CONSTRAINT %%I', pk);
+    END IF;
+END
+$drop_pk$`, pgLit(relname), quoteIdent(relname))
 }
 
 func notice(ctx context.Context, db *pgxpool.Pool, message string) {

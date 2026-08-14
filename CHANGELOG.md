@@ -15,6 +15,9 @@
 - fix(dataplane): correct partition naming, retention adoption and event-id enforcement (#2781)
 - fix(controlplane): fit transactional emails to mobile and move the footer inside the card (#2783)
 - fix(controlplane): load endpoint failure rates after the list (#2785)
+- fix(dataplane): drop leftover primary key when attaching after a copy unpartition (#2786)
+- fix(dashboard): keep instance admins on admin after a full reload (#2786)
+- fix(dashboard): start the partition operation the selected table allows (#2786)
 
 ## 26.7.1
 

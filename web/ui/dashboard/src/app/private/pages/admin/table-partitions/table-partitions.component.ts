@@ -97,17 +97,30 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 		return this.partitionForm.value.operation;
 	}
 
+	// The table's current shape, not the form or the select. Switching tables
+	// can leave both of those on the previous operation.
+	get resolvedOperation(): PartitionOperation {
+		const state = this.stateOf(this.selectedTable);
+		if (state) {
+			return state.partitioned ? 'unpartition' : 'partition';
+		}
+		return this.selectedOperation;
+	}
+
 	get isAttachConversion(): boolean {
-		return this.selectedOperation === 'partition';
+		return this.resolvedOperation === 'partition';
 	}
 
 	get isDetachConversion(): boolean {
-		return this.selectedOperation === 'unpartition' && !!this.stateOf(this.selectedTable)?.adopted;
+		return this.resolvedOperation === 'unpartition' && !!this.stateOf(this.selectedTable)?.adopted;
 	}
 
 	get isCopyUnpartition(): boolean {
-		if (this.selectedOperation !== 'unpartition' || !this.tableStatesKnown) return false;
+		if (this.resolvedOperation !== 'unpartition' || !this.tableStatesKnown) return false;
 		const state = this.stateOf(this.selectedTable);
+		// !adopted is also true after retention drops the attach-converted
+		// _default: there is no heap to detach, so unpartition copies. The
+		// banner describes that copy, not how the table was first converted.
 		return !!state && state.partitioned && !state.adopted;
 	}
 
@@ -151,13 +164,18 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 		return this.tableStates.find(state => state.name === table);
 	}
 
-	private applyOperations() {
+	applyOperations() {
 		const state = this.stateOf(this.selectedTable);
-		this.operations = state ? [state.partitioned ? UNPARTITION : PARTITION] : ALL_OPERATIONS;
+		const next = state ? [state.partitioned ? UNPARTITION : PARTITION] : ALL_OPERATIONS;
 
-		if (!this.operations.some(operation => operation.uid === this.selectedOperation)) {
-			this.partitionForm.patchValue({ operation: this.operations[0].uid });
+		// Patch before replacing options so writeValue can still find the new
+		// uid in the previous list. Assigning options first leaves the select
+		// showing Unpartition on a heap.
+		if (next.length === 1 && this.selectedOperation !== next[0].uid) {
+			this.partitionForm.patchValue({ operation: next[0].uid });
 		}
+
+		this.operations = next;
 	}
 
 	// The sentence under the selects: what the table is now, and what the
@@ -216,9 +234,9 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 
 		this.isStarting = true;
 		try {
-			await this.adminService.startPartitionRun({ table: this.selectedTable, operation: this.selectedOperation });
+			await this.adminService.startPartitionRun({ table: this.selectedTable, operation: this.resolvedOperation });
 			this.partitionForm.patchValue({ confirmation: '' });
-			const outcome = this.selectedOperation === 'partition' ? `${this.selectedTable} to a partitioned table` : `${this.selectedTable} back to a plain table`;
+			const outcome = this.resolvedOperation === 'partition' ? `${this.selectedTable} to a partitioned table` : `${this.selectedTable} back to a plain table`;
 			this.generalService.showNotification({ message: `Started converting ${outcome}`, style: 'success' });
 			await this.loadRuns();
 		} catch (error: any) {
