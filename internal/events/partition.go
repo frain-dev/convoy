@@ -33,9 +33,12 @@ var eventsSpec = attach.Spec{
 		attach.DropConstraintSQL("event_deliveries", "event_deliveries_event_id_fkey"),
 		attach.EventFKSQL,
 	),
-	DuringDetach:    []string{attach.EventFKSQL},
-	AfterDetach:     []string{attach.RestoreEventFKSQL},
-	CopyUnpartition: unPartitionEventsTableSQL,
+	DuringDetach: []string{attach.EventFKSQL},
+	AfterDetach:  []string{attach.RestoreEventFKSQL},
+	// Stand-in is part of the copy script so the rewrite cannot commit
+	// without enforcement. AfterDetach then upgrades to a real FK when
+	// event_deliveries is also a heap.
+	CopyUnpartition: unPartitionEventsTableSQL + attach.EventFKSQL,
 }
 
 var eventsSearchSpec = attach.Spec{

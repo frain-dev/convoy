@@ -39,7 +39,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER event_fk_check
     BEFORE INSERT ON convoy.event_deliveries
-    FOR EACH ROW EXECUTE FUNCTION convoy.enforce_event_fk()`
+    FOR EACH ROW EXECUTE FUNCTION convoy.enforce_event_fk();`
 
 // AttemptFKSQL stands in for delivery_attempts.event_delivery_id → event_deliveries
 // for the same reason. Deliveries install it in Swap (attempts still has its
@@ -62,7 +62,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER event_delivery_fk_check
     BEFORE INSERT ON convoy.delivery_attempts
-    FOR EACH ROW EXECUTE FUNCTION convoy.enforce_event_delivery_fk()`
+    FOR EACH ROW EXECUTE FUNCTION convoy.enforce_event_delivery_fk();`
 
 // RestoreEventFKSQL keeps the stand-in trigger while either table is still
 // partitioned, and restores the real FK once both are ordinary tables.

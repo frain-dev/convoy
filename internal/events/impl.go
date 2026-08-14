@@ -679,16 +679,12 @@ BEGIN
            is_duplicate_event, acknowledged_at, status, metadata, failure_reason, raw_bytes, data_bytes
     FROM convoy.events;
 
+    -- Drop the inbound FK so events_old can go. Do not add a real FK onto
+    -- event_deliveries here: that table may already be partitioned, and
+    -- Postgres rejects a key that omits the partition columns. Revert runs
+    -- AfterDetach (RestoreEventFKSQL) after this function returns.
     ALTER TABLE convoy.event_deliveries DROP CONSTRAINT IF EXISTS event_deliveries_event_id_fkey;
-    ALTER TABLE convoy.event_deliveries
-        ADD CONSTRAINT event_deliveries_event_id_fkey
-            FOREIGN KEY (event_id) REFERENCES convoy.events_new (id);
-
-    -- The constraint above is the enforcement the trigger stood in for while
-    -- events was partitioned. Leaving the trigger installed would make every
-    -- delivery insert pay a second existence query, and would report a violation
-    -- through whichever of the two fires first.
-    DROP TRIGGER IF EXISTS event_fk_check ON convoy.event_deliveries;
+    ALTER TABLE IF EXISTS convoy.event_deliveries_default DROP CONSTRAINT IF EXISTS event_deliveries_event_id_fkey;
 
     ALTER TABLE convoy.events RENAME TO events_old;
     ALTER TABLE convoy.events_new RENAME TO events;

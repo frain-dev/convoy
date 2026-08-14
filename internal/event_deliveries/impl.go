@@ -727,10 +727,11 @@ begin
            latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode, event_bytes
     FROM convoy.event_deliveries;
 
+    -- Drop the inbound FK so event_deliveries_old can go. Do not add a real
+    -- FK onto delivery_attempts here: that table may already be partitioned.
+    -- Revert runs AfterDetach after this function returns.
     ALTER TABLE convoy.delivery_attempts DROP CONSTRAINT if exists delivery_attempts_event_delivery_id_fkey;
-    ALTER TABLE convoy.delivery_attempts
-        ADD CONSTRAINT delivery_attempts_event_delivery_id_fkey
-            FOREIGN KEY (event_delivery_id) REFERENCES convoy.event_deliveries_new (id);
+    ALTER TABLE IF EXISTS convoy.delivery_attempts_default DROP CONSTRAINT IF EXISTS delivery_attempts_event_delivery_id_fkey;
 
     ALTER TABLE convoy.event_deliveries RENAME TO event_deliveries_old;
     ALTER TABLE convoy.event_deliveries_new RENAME TO event_deliveries;
@@ -750,27 +751,7 @@ begin
     create index idx_event_deliveries_status on convoy.event_deliveries (status);
     create index idx_event_deliveries_status_key on convoy.event_deliveries (status);
 
-    -- Same reason as partition_event_deliveries_table: this function also
-    -- rebuilds convoy.event_deliveries, so it also has to put event-id
-    -- enforcement back. Unpartitioning event deliveries says nothing about
-    -- convoy.events, which may still be partitioned and can therefore still only
-    -- be enforced by the trigger.
-    IF EXISTS (
-        SELECT 1
-        FROM pg_catalog.pg_class c
-        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-        WHERE n.nspname = 'convoy' AND c.relname = 'events' AND c.relkind = 'p'
-    ) THEN
-        CREATE OR REPLACE TRIGGER event_fk_check
-        BEFORE INSERT ON convoy.event_deliveries
-        FOR EACH ROW EXECUTE FUNCTION convoy.enforce_event_fk();
-    ELSE
-        ALTER TABLE convoy.event_deliveries
-            ADD CONSTRAINT event_deliveries_event_id_fkey
-                FOREIGN KEY (event_id) REFERENCES convoy.events (id);
-    END IF;
-
 	RAISE NOTICE 'Successfully un-partitioned event_deliveries table...';
 end $$ language plpgsql;
-select convoy.un_partition_event_deliveries_table()
+select convoy.un_partition_event_deliveries_table();
 `
