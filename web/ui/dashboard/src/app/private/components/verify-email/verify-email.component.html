@@ -3,10 +3,9 @@
         <img src="assets/img/svg/lock-open.svg" alt="lock icon" class="h-24px" />
     </div>
     <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary mt-16px mb-12px">Verify email</h3>
-    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Please verify your email.</p>
-    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">If you didn't receive a verification email, please try resending your verification email below.</p>
+    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Check your inbox for a confirmation link, or resend it below.</p>
     <div class="flex items-center gap-12px mt-28px">
-        <button type="button" class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="isResendingEmail" (click)="resendVerificationEmail()">Resend Verification</button>
+        <button type="button" class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="isResendingEmail" (click)="resendVerificationEmail()">Resend email</button>
         <button type="button" class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80" (click)="closeModal.emit()">Maybe Later</button>
     </div>
 </div>

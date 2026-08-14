@@ -4,10 +4,11 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { VerifyEmailService } from './verify-email.service';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { PrivateService } from 'src/app/private/private.service';
+import { AuthShellComponent } from 'src/app/public/components/auth-shell/auth-shell.component';
 
 @Component({
     selector: 'convoy-verify-email',
-    imports: [RouterModule, LoaderModule],
+    imports: [RouterModule, LoaderModule, AuthShellComponent],
     templateUrl: './verify-email.component.html',
     styleUrls: ['./verify-email.component.scss']
 })

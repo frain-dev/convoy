@@ -118,7 +118,7 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				claim:   &stubResendClaimStore{ok: true},
 			},
 			wantErr:    true,
-			wantErrMsg: "please wait before requesting another verification email",
+			wantErrMsg: "please wait 1 minute before requesting another email",
 		},
 		{
 			name: "should_error_when_claim_held",
@@ -129,7 +129,7 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 				claim:   &stubResendClaimStore{ok: false},
 			},
 			wantErr:    true,
-			wantErrMsg: "please wait before requesting another verification email",
+			wantErrMsg: "please wait 1 minute before requesting another email",
 		},
 		{
 			name: "should_release_claim_when_update_fails",
