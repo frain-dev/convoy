@@ -27,7 +27,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -163,8 +162,8 @@ func RateLimiterHandler(rateLimiter limiter.RateLimiter, httpApiRateLimit int) f
 
 			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", rateLimit))
 			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", 0))
-			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%f", rlimiter.GetRetryAfter(err).Seconds()))
-			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(rlimiter.GetRetryAfter(err)).Unix()))
+			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%f", limiter.GetRetryAfter(err).Seconds()))
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(limiter.GetRetryAfter(err)).Unix()))
 
 			_ = render.Render(w, r, util.NewErrorResponse("exceeded rate limit", http.StatusTooManyRequests))
 		})

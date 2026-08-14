@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/hibiken/asynq"
@@ -25,26 +26,86 @@ type JobTracker interface {
 }
 
 type Consumer struct {
-	queue      queue.Queuer
 	mux        *asynq.ServeMux
-	srv        *asynq.Server
+	runner     runner
 	log        log.Logger
 	jobTracker JobTracker // optional, used only in E2E tests
 }
 
-func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.Logger, level log.Level) *Consumer {
+// ConsumerBackend constructs the provider-specific runner behind Consumer.
+// Composition selects one backend and consumers never inspect its provider.
+type ConsumerBackend interface {
+	newRunner(context.Context, int, map[string]int, *asynq.ServeMux, log.Logger, log.Level) (runner, error)
+}
+
+type runner interface {
+	Start() error
+	Stop()
+}
+
+type redisConsumerBackend struct {
+	opts queue.QueueOptions
+}
+
+type asynqRunner struct {
+	srv *asynq.Server
+	mux *asynq.ServeMux
+}
+
+func (r *asynqRunner) Start() error {
+	if err := r.srv.Start(r.mux); err != nil {
+		return fmt.Errorf("error starting worker: %w", err)
+	}
+	return nil
+}
+
+func (r *asynqRunner) Stop() {
+	r.srv.Stop()
+	r.srv.Shutdown()
+}
+
+func NewRedisConsumerBackend(opts queue.QueueOptions) ConsumerBackend {
+	return &redisConsumerBackend{opts: opts}
+}
+
+func NewPostgresConsumerBackend(q PostgresConsumerQueue) ConsumerBackend {
+	return &postgresConsumerBackend{queue: q}
+}
+
+func NewConsumer(ctx context.Context, consumerPoolSize int, queueNames map[string]int, backend ConsumerBackend, lo log.Logger, level log.Level) (*Consumer, error) {
+	if backend == nil {
+		return nil, errors.New("consumer backend is required")
+	}
 	lo.Infof("The consumer pool size has been set to %d.", consumerPoolSize)
 
+	mux := asynq.NewServeMux()
+	r, err := backend.newRunner(ctx, consumerPoolSize, queueNames, mux, lo, level)
+	if err != nil {
+		return nil, err
+	}
+	c := &Consumer{
+		log:    lo,
+		mux:    mux,
+		runner: r,
+	}
+
+	return c, nil
+}
+
+func (b *redisConsumerBackend) newRunner(ctx context.Context, consumerPoolSize int, queueNames map[string]int, mux *asynq.ServeMux, lo log.Logger, level log.Level) (runner, error) {
+	queueOpts := b.opts
 	var opts asynq.RedisConnOpt
 
-	if q.Options().RedisFailoverOpt != nil {
-		opts = *q.Options().RedisFailoverOpt
-	} else if len(q.Options().RedisAddress) == 1 {
-		opts = q.Options().RedisClient
-	} else {
+	if queueOpts.RedisFailoverOpt != nil {
+		opts = *queueOpts.RedisFailoverOpt
+	} else if len(queueOpts.RedisAddress) == 1 && queueOpts.RedisClient != nil {
+		opts = queueOpts.RedisClient
+	} else if len(queueOpts.RedisAddress) > 1 {
 		opts = asynq.RedisClusterClientOpt{
-			Addrs: q.Options().RedisAddress,
+			Addrs: queueOpts.RedisAddress,
 		}
+	} else {
+		return nil, errors.New("redis consumer connection is required")
 	}
 
 	srv := asynq.NewServer(
@@ -54,7 +115,7 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo l
 			BaseContext: func() context.Context {
 				return ctx
 			},
-			Queues: q.Options().Names,
+			Queues: queueNames,
 			IsFailure: func(err error) bool {
 				if _, ok := err.(*task.RateLimitError); ok {
 					return false
@@ -71,22 +132,11 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo l
 			LogLevel:       getLogLevel(level),
 		},
 	)
-
-	mux := asynq.NewServeMux()
-
-	return &Consumer{
-		queue: q,
-		log:   lo,
-		mux:   mux,
-		srv:   srv,
-	}
+	return &asynqRunner{srv: srv, mux: mux}, nil
 }
 
 func (c *Consumer) Start() error {
-	if err := c.srv.Start(c.mux); err != nil {
-		return fmt.Errorf("error starting worker: %w", err)
-	}
-	return nil
+	return c.runner.Start()
 }
 
 func (c *Consumer) RegisterHandlers(taskName convoy.TaskName, handlerFn func(context.Context, *asynq.Task) error, tel *telemetry.Telemetry) {
@@ -94,8 +144,7 @@ func (c *Consumer) RegisterHandlers(taskName convoy.TaskName, handlerFn func(con
 }
 
 func (c *Consumer) Stop() {
-	c.srv.Stop()
-	c.srv.Shutdown()
+	c.runner.Stop()
 }
 
 // SetJobTracker sets an optional job tracker for E2E tests

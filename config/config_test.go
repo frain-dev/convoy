@@ -120,6 +120,7 @@ func TestLoadConfig(t *testing.T) {
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
+				QueueProvider:    RedisQueueProvider,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -229,6 +230,7 @@ func TestLoadConfig(t *testing.T) {
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
+				QueueProvider:    RedisQueueProvider,
 				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
@@ -336,6 +338,7 @@ func TestLoadConfig(t *testing.T) {
 				Host:             "localhost:5005",
 				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
 				ConsumerPoolSize: 100,
+				QueueProvider:    RedisQueueProvider,
 				CircuitBreaker: CircuitBreakerConfiguration{
 					SampleRate:                  30,
 					ErrorTimeout:                30,
@@ -835,4 +838,20 @@ func TestBillingUsageSource(t *testing.T) {
 	invalid := DefaultConfiguration
 	invalid.Billing.UsageSource = "clickhouse"
 	require.Error(t, invalid.Billing.Validate())
+}
+
+func Test_PostgresQueueProviderSkipsRedisDSN(t *testing.T) {
+	c := DefaultConfiguration
+	c.QueueProvider = PostgresQueueProvider
+	c.Redis = RedisConfiguration{}
+	c.Auth.Jwt.Secret = "test-access-secret"
+	c.Auth.Jwt.RefreshSecret = "test-refresh-secret"
+	require.NoError(t, validate(&c))
+}
+
+func Test_RedisQueueProviderRequiresDSN(t *testing.T) {
+	c := DefaultConfiguration
+	c.QueueProvider = RedisQueueProvider
+	c.Redis = RedisConfiguration{}
+	require.EqualError(t, validate(&c), "redis queue dsn is empty")
 }

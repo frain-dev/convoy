@@ -7,60 +7,38 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redsync/redsync/v4"
-	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, redis *rdb.Redis, logger log.Logger) func(context.Context, *asynq.Task) error {
+func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, locker JobLocker, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		pool := goredis.NewPool(redis.Client())
-		rs := redsync.New(pool)
-
-		const mutexName = "convoy:general_tokenizer:mutex"
-		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
-
-		tctx, cancel := context.WithTimeout(ctx, time.Second*2)
-		defer cancel()
-
-		err := mutex.LockContext(tctx)
-		if err != nil {
-			return fmt.Errorf("failed to obtain lock: %v", err)
-		}
-
-		defer func() {
-			tctx, cancel := context.WithTimeout(ctx, time.Second*2)
-			defer cancel()
-
-			ok, err := mutex.UnlockContext(tctx)
-			if !ok || err != nil {
-				logger.Error("failed to release lock", "error", err)
-			}
-		}()
-
-		projectEvents, err := projectRepository.GetProjectsWithEventsInTheInterval(ctx, config.DefaultSearchTokenizationInterval)
-		if err != nil {
-			return err
-		}
-
-		for _, p := range projectEvents {
-			err = tokenize(ctx, eventRepo, jobRepo, p.Id, config.DefaultSearchTokenizationInterval)
+		// Copies an interval of events into the search table for every project
+		// with activity, one project at a time; 30m matches the other
+		// full-table maintenance jobs.
+		return locker.WithLock(ctx, "convoy:general_tokenizer:mutex", 30*time.Minute, func(ctx context.Context) error {
+			projectEvents, err := projectRepository.GetProjectsWithEventsInTheInterval(ctx, config.DefaultSearchTokenizationInterval)
 			if err != nil {
-				logger.Error(fmt.Sprintf("failed to tokenize events for project with id %s: %v", p.Id, err))
-				continue
+				return err
 			}
-			logger.Debug(fmt.Sprintf("done tokenizing events for %+v with %v events", p.Id, p.EventsCount))
-		}
-		logger.Debug("done tokenizing events in the interval")
 
-		return nil
+			for _, p := range projectEvents {
+				err = tokenize(ctx, eventRepo, jobRepo, p.Id, config.DefaultSearchTokenizationInterval)
+				if err != nil {
+					logger.Error(fmt.Sprintf("failed to tokenize events for project with id %s: %v", p.Id, err))
+					continue
+				}
+				logger.Debug(fmt.Sprintf("done tokenizing events for %+v with %v events", p.Id, p.EventsCount))
+			}
+			logger.Debug("done tokenizing events in the interval")
+
+			return nil
+		})
 	}
 }
 

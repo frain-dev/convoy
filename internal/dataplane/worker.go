@@ -4,11 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -28,15 +25,14 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/backup_collector"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
+	"github.com/frain-dev/convoy/internal/pkg/broker"
 	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -47,8 +43,6 @@ import (
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/queue"
-	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
@@ -84,10 +78,10 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		return nil, err
 	}
 
-	redis, err := rdb.NewClientFromRedisConfig(cfg.Redis)
-	if err != nil {
-		return nil, err
+	if opts.Broker == nil {
+		return nil, fmt.Errorf("broker dependencies are required")
 	}
+	dynamicEventAcker := opts.Broker.Acker
 
 	if !opts.Licenser.AgentExecutionMode() {
 		cfg.WorkerExecutionMode = config.DefaultExecutionMode
@@ -98,19 +92,19 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		return nil, err
 	}
 
-	queueOpts, err := getQueueOptions(&cfg, redis)
-	if err != nil {
-		return nil, err
-	}
-
-	q := redisQueue.NewQueue(queueOpts)
-
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
 		return nil, err
 	}
+	queueNames, err := broker.QueueNames(cfg.WorkerExecutionMode)
+	if err != nil {
+		return nil, err
+	}
 
-	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo, lvl)
+	consumer, err := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, queueNames, opts.Broker.ConsumerBackend, lo, lvl)
+	if err != nil {
+		return nil, err
+	}
 
 	if opts.JobTracker != nil {
 		if tracker, ok := opts.JobTracker.(worker.JobTracker); ok {
@@ -132,15 +126,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	filterRepo := cached.NewCachedFilterRepository(filters.New(opts.Logger, opts.DB), opts.Cache, cached.DefaultFilterTTL, lo)
 	batchRetryRepo := batch_retries.New(lo, opts.DB)
 
-	rd, err := rdb.NewClientFromRedisConfig(cfg.Redis)
-	if err != nil {
-		return nil, err
-	}
-
-	rateLimiter, err := limiter.NewLimiter(cfg)
-	if err != nil {
-		return nil, err
-	}
+	rateLimiter := opts.Broker.RateLimiter
 
 	counter := &telemetry.EventsCounter{}
 	pb := telemetry.NewposthogBackend()
@@ -236,7 +222,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 				ConsecutiveFailureThreshold: project.Config.CircuitBreaker.ConsecutiveFailureThreshold,
 			}
 		}),
-		cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
+		cb.StoreOption(opts.Broker.CircuitBreakerStore),
 		cb.ClockOption(clock.NewRealClock()),
 		cb.LoggerOption(lo),
 		cb.EnabledFuncOption(cbEnablement.EnabledAnywhere),
@@ -335,6 +321,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		services.WithOAuth2Context(oauth2Dispatcher.ContextWithRules),
 	)
 
+	locker := opts.Broker.JobLocker
+
 	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
 		EndpointRepo:               endpointRepo,
 		EventDeliveryRepo:          eventDeliveryRepo,
@@ -360,13 +348,14 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		EventRepo:          eventRepo,
 		ProjectRepo:        projectRepo,
 		EventQueue:         opts.Queue,
+		TaskErrors:         opts.Broker.TaskErrors,
 		SubRepo:            subRepo,
 		FilterRepo:         filterRepo,
 		Licenser:           opts.Licenser,
 		OAuth2TokenService: oauth2TokenService,
 		FeatureFlag:        featureFlag,
 		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(opts.DB),
-		Redis:              rd.Client(),
+		Acker:              dynamicEventAcker,
 		Logger:             lo,
 	}
 
@@ -376,7 +365,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
 
 	if opts.Licenser.RetentionPolicy() {
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret, lo), nil)
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, ret, lo), nil)
 		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo), nil)
 		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, lo), nil)
 	}
@@ -398,25 +387,25 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
-		Redis:                      rd.Client(),
+		Acker:                      dynamicEventAcker,
 		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(opts.DB, opts.Queue, rd, lo), nil)
+	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(opts.DB, opts.Queue, locker, lo), nil)
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
-	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, opts.DB, rd), nil)
-	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, rd), nil)
+	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, opts.DB, locker), nil)
+	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, opts.Cache, locker), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
 	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && opts.Licenser.AdvancedWebhookFiltering() {
-		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd, lo), nil)
+		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, locker, lo), nil)
 		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo, lo), nil)
 	}
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc, dispatcher), nil)
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, lo), nil)
-	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(opts.Queue, rd, lo), nil)
+	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(opts.Queue, locker, lo), nil)
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, opts.Queue, lo), nil)
 
@@ -435,7 +424,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	var billingClient billing.Client
 	if cfg.UsesOrgBilling() {
 		billingClient = billing.NewClient(cfg.Billing)
-		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, rd, lo), nil)
+		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, locker, lo), nil)
 	}
 
 	err = metrics.RegisterQueueMetrics(opts.Queue, opts.DB, circuitBreakerManager)
@@ -500,66 +489,4 @@ func (w *Worker) Run(ctx context.Context, workerReady chan struct{}) error {
 	w.logger.Printf("Convoy Consumer Pool stopped")
 
 	return ctx.Err()
-}
-
-func getQueueOptions(cfg *config.Configuration, redis *rdb.Redis) (queue.QueueOptions, error) {
-	events := map[string]int{
-		string(convoy.EventQueue):         5,
-		string(convoy.CreateEventQueue):   5,
-		string(convoy.EventWorkflowQueue): 5,
-	}
-
-	retry := map[string]int{
-		string(convoy.RetryEventQueue):    7,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.MetaEventQueue):     1,
-		string(convoy.BatchRetryQueue):    5,
-		string(convoy.EventWorkflowQueue): 4,
-	}
-
-	both := map[string]int{
-		string(convoy.EventQueue):         4,
-		string(convoy.CreateEventQueue):   4,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.RetryEventQueue):    1,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.MetaEventQueue):     1,
-		string(convoy.BatchRetryQueue):    1,
-	}
-
-	var queueNames map[string]int
-	switch cfg.WorkerExecutionMode {
-	case config.RetryExecutionMode:
-		queueNames = retry
-	case config.EventsExecutionMode:
-		queueNames = events
-	case config.DefaultExecutionMode:
-		queueNames = both
-	default:
-		return queue.QueueOptions{}, fmt.Errorf("unknown execution mode: %s", cfg.WorkerExecutionMode)
-	}
-
-	opts := queue.QueueOptions{
-		Names:             queueNames,
-		RedisClient:       redis,
-		RedisAddress:      cfg.Redis.BuildDsn(),
-		Type:              string(config.RedisQueueProvider),
-		PrometheusAddress: cfg.Prometheus.Dsn,
-	}
-
-	if cfg.Redis.IsSentinel() {
-		db, _ := strconv.Atoi(cfg.Redis.Database)
-		opts.RedisFailoverOpt = &asynq.RedisFailoverClientOpt{
-			MasterName:       cfg.Redis.MasterName,
-			SentinelAddrs:    cfg.Redis.SentinelAddresses(),
-			Username:         cfg.Redis.Username,
-			Password:         cfg.Redis.Password,
-			SentinelPassword: cfg.Redis.SentinelPassword,
-			DB:               db,
-		}
-	}
-
-	return opts, nil
 }

@@ -2,11 +2,8 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/go-redsync/redsync/v4"
-	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/database"
@@ -14,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/organisations"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -22,75 +18,47 @@ import (
 
 const perPage = 50
 
-func PushDailyTelemetry(lo log.Logger, db database.Database, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
-	// Create a pool with go-redis
-	pool := goredis.NewPool(rd.Client())
-	rs := redsync.New(pool)
-
-	// Do your work that requires the lock.
-
+func PushDailyTelemetry(lo log.Logger, db database.Database, locker JobLocker) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		// Obtain a new mutex by using the same name for all instances wanting the
-		// same lock.
-		const mutexName = "convoy:analytics:mutex"
-		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
-
-		tctx, cancel := context.WithTimeout(ctx, time.Second*2)
-		defer cancel()
-
-		// Obtain a lock for our given mutex. After this is successful, no one else
-		// can obtain the same lock (the same mutex name) until we unlock it.
-		err := mutex.LockContext(tctx)
-		if err != nil {
-			return fmt.Errorf("failed to obtain lock: %v", err)
-		}
-
-		defer func() {
-			tctx, cancel := context.WithTimeout(ctx, time.Second*2)
-			defer cancel()
-
-			// Release the lock so other processes or threads can obtain a lock.
-			ok, err := mutex.UnlockContext(tctx)
-			if !ok || err != nil {
-				lo.Error("failed to release lock", "error", err)
+		// Pages every organisation, counts events per project, then posts to two
+		// external telemetry backends; 15m covers the scan plus network waits.
+		return locker.WithLock(ctx, "convoy:analytics:mutex", 15*time.Minute, func(ctx context.Context) error {
+			orgRepo := organisations.New(lo, db)
+			orgs, err := getAllOrganisations(ctx, orgRepo)
+			if err != nil {
+				return err
 			}
-		}()
 
-		orgRepo := organisations.New(lo, db)
-		orgs, err := getAllOrganisations(ctx, orgRepo)
-		if err != nil {
-			return err
-		}
+			configRepo := configuration.New(lo, db)
+			loadConfiguration, err := configRepo.LoadConfiguration(context.Background())
+			if err != nil {
+				return err
+			}
+			eventRepo := events.New(lo, db)
+			projectRepo := projects.New(lo, db)
 
-		configRepo := configuration.New(lo, db)
-		loadConfiguration, err := configRepo.LoadConfiguration(context.Background())
-		if err != nil {
-			return err
-		}
-		eventRepo := events.New(lo, db)
-		projectRepo := projects.New(lo, db)
+			totalEventsTracker := &telemetry.TotalEventsTracker{
+				Orgs:        orgs,
+				EventRepo:   eventRepo,
+				ProjectRepo: projectRepo,
+				Logger:      lo,
+			}
 
-		totalEventsTracker := &telemetry.TotalEventsTracker{
-			Orgs:        orgs,
-			EventRepo:   eventRepo,
-			ProjectRepo: projectRepo,
-			Logger:      lo,
-		}
+			pb := telemetry.NewposthogBackend()
+			mb := telemetry.NewmixpanelBackend()
 
-		pb := telemetry.NewposthogBackend()
-		mb := telemetry.NewmixpanelBackend()
+			newTelemetry := telemetry.NewTelemetry(lo, loadConfiguration,
+				telemetry.OptionTracker(totalEventsTracker),
+				telemetry.OptionBackend(pb),
+				telemetry.OptionBackend(mb))
 
-		newTelemetry := telemetry.NewTelemetry(lo, loadConfiguration,
-			telemetry.OptionTracker(totalEventsTracker),
-			telemetry.OptionBackend(pb),
-			telemetry.OptionBackend(mb))
+			err = newTelemetry.Capture(ctx)
+			if err != nil {
+				return err
+			}
 
-		err = newTelemetry.Capture(ctx)
-		if err != nil {
-			return err
-		}
-
-		return nil
+			return nil
+		})
 	}
 }
 

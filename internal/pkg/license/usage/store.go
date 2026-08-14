@@ -2,30 +2,29 @@ package usage
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
 	licenseservice "github.com/frain-dev/convoy/internal/pkg/license/service"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
 const (
-	redisKey = "convoy:usage:snapshot"
+	cacheKey = "convoy:usage:snapshot:v2"
 	// Must outlive SnapshotUsage (nightly ~02:15). 48h leaves headroom if a
 	// cron tick is missed; after expiry LoadCached omits usage (fail open).
-	redisTTL = 48 * time.Hour
+	cacheTTL = 48 * time.Hour
 )
 
-// Store materializes anonymized instance counts into Redis for license validate.
+// Store materializes anonymized instance counts into the active broker cache.
 type Store struct {
 	db    database.Database
-	redis *rdb.Redis
+	cache cache.Cache
 }
 
-func NewStore(db database.Database, redis *rdb.Redis) *Store {
-	return &Store{db: db, redis: redis}
+func NewStore(db database.Database, cache cache.Cache) *Store {
+	return &Store{db: db, cache: cache}
 }
 
 // Refresh runs cheap instance-wide COUNT(*) queries and caches the snapshot.
@@ -66,30 +65,25 @@ func (s *Store) Refresh(ctx context.Context) (*licenseservice.UsageSnapshot, err
 	return snap, nil
 }
 
-// Save writes the snapshot to Redis. No-op without redis.
+// Save writes the snapshot to the active cache. No-op without a cache.
 func (s *Store) Save(ctx context.Context, snap *licenseservice.UsageSnapshot) error {
-	if s == nil || s.redis == nil || snap == nil {
+	if s == nil || s.cache == nil || snap == nil {
 		return nil
 	}
-	b, err := json.Marshal(snap)
-	if err != nil {
-		return err
-	}
-	return s.redis.Client().Set(ctx, redisKey, b, redisTTL).Err()
+	return s.cache.Set(ctx, cacheKey, snap, cacheTTL)
 }
 
 // LoadCached implements licenseservice.UsageLoader. Returns nil,nil on miss.
 func (s *Store) LoadCached(ctx context.Context) (*licenseservice.UsageSnapshot, error) {
-	if s == nil || s.redis == nil {
-		return nil, nil
-	}
-	b, err := s.redis.Client().Get(ctx, redisKey).Bytes()
-	if err != nil {
-		// miss or redis error: omit usage (fail open for validate)
+	if s == nil || s.cache == nil {
 		return nil, nil
 	}
 	var snap licenseservice.UsageSnapshot
-	if err := json.Unmarshal(b, &snap); err != nil {
+	if err := s.cache.Get(ctx, cacheKey, &snap); err != nil {
+		// Cache errors omit optional usage from license validation.
+		return nil, nil
+	}
+	if snap.AsOf == "" {
 		return nil, nil
 	}
 	return &snap, nil

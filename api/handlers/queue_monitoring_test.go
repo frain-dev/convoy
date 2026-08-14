@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"encoding/hex"
+	"errors"
 	"testing"
 	"time"
 
@@ -66,4 +68,55 @@ func TestDecodeSigningKey(t *testing.T) {
 
 	_, ok = decodeSigningKey(hex.EncodeToString([]byte{0x01, 0x02}))
 	require.False(t, ok)
+}
+
+type fakeSigningCache struct {
+	val       []byte
+	strictErr error
+}
+
+func (f *fakeSigningCache) Set(context.Context, string, interface{}, time.Duration) error {
+	return nil
+}
+func (f *fakeSigningCache) Get(context.Context, string, interface{}) error { return nil }
+func (f *fakeSigningCache) Delete(context.Context, string) error           { return nil }
+func (f *fakeSigningCache) GetStrict(context.Context, string, interface{}) error {
+	return f.strictErr
+}
+func (f *fakeSigningCache) GetOrCreateBytes(_ context.Context, _ string, value []byte) ([]byte, error) {
+	if f.val == nil {
+		f.val = append([]byte(nil), value...)
+	}
+	out := make([]byte, len(f.val))
+	copy(out, f.val)
+	return out, nil
+}
+
+func TestGetOrCreateSigningKeyCacheConverges(t *testing.T) {
+	c := &fakeSigningCache{}
+	ctx := context.Background()
+
+	first, ok := getOrCreateSigningKey(ctx, c)
+	require.True(t, ok)
+	require.Len(t, first, signingKeyLen)
+
+	second, ok := getOrCreateSigningKey(ctx, c)
+	require.True(t, ok)
+	require.Equal(t, first, second)
+}
+
+func TestGetOrCreateSigningKeyFailsClosedWithoutStore(t *testing.T) {
+	_, ok := getOrCreateSigningKey(context.Background(), nil)
+	require.False(t, ok)
+}
+
+func TestValidateQueueSessionCookieFailsClosedOnStrictReadError(t *testing.T) {
+	key := testSigningKey(0x11)
+	c := &fakeSigningCache{
+		val:       []byte(hex.EncodeToString(key)),
+		strictErr: errors.New("decode cache value"),
+	}
+	cookie := signWithKey(key, time.Now().Add(queueMonitoringCookieTTL))
+
+	require.False(t, ValidateQueueSessionCookie(c)(context.Background(), cookie))
 }

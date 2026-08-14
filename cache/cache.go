@@ -3,10 +3,6 @@ package cache
 import (
 	"context"
 	"time"
-
-	rcache "github.com/frain-dev/convoy/cache/redis"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
 type Cache interface {
@@ -15,11 +11,8 @@ type Cache interface {
 	Delete(ctx context.Context, key string) error
 }
 
-func NewCache(cfg config.RedisConfiguration) (Cache, error) {
-	client, err := rdb.NewClientFromRedisConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return rcache.NewRedisCacheFromClient(client.Client()), nil
+type AuthoritativeCache interface {
+	Cache
+	GetStrict(ctx context.Context, key string, data interface{}) error
+	GetOrCreateBytes(ctx context.Context, key string, value []byte) ([]byte, error)
 }

@@ -2,28 +2,23 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/go-redsync/redsync/v4"
-	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
 
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/pkg/license/usage"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
-// SnapshotUsage materializes anonymized instance counts into Redis for the
+// SnapshotUsage materializes anonymized instance counts into the active cache for the
 // license-validate ping. Licensed instances only: no effective license → no-op.
-func SnapshotUsage(lo log.Logger, db database.Database, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
-	pool := goredis.NewPool(rd.Client())
-	rs := redsync.New(pool)
-	store := usage.NewStore(db, rd)
+func SnapshotUsage(lo log.Logger, db database.Database, brokerCache cache.Cache, locker JobLocker) func(context.Context, *asynq.Task) error {
+	store := usage.NewStore(db, brokerCache)
 	configRepo := configuration.New(lo, db)
 
 	return func(ctx context.Context, t *asynq.Task) error {
@@ -37,37 +32,22 @@ func SnapshotUsage(lo log.Logger, db database.Database, rd *rdb.Redis) func(cont
 			return nil
 		}
 
-		const mutexName = "convoy:usage:mutex"
-		// 30m matches other nightly schedule locks (retention, org status). COUNT(*)
-		// on large events tables can exceed 1m; expired lock allows overlapping refreshes.
-		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(30*time.Minute), redsync.WithTries(1))
-		tctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-		if err := mutex.LockContext(tctx); err != nil {
-			return fmt.Errorf("failed to obtain lock: %v", err)
-		}
-		defer func() {
-			uctx, ucancel := context.WithTimeout(ctx, 2*time.Second)
-			defer ucancel()
-			if ok, err := mutex.UnlockContext(uctx); !ok || err != nil {
-				lo.Error("failed to release usage snapshot lock", "error", err)
+		return locker.WithLock(ctx, "convoy:usage:mutex", 30*time.Minute, func(ctx context.Context) error {
+			rctx, rcancel := context.WithTimeout(ctx, 25*time.Minute)
+			defer rcancel()
+			snap, err := store.Refresh(rctx)
+			if err != nil {
+				return err
 			}
-		}()
-
-		rctx, rcancel := context.WithTimeout(ctx, 25*time.Minute)
-		defer rcancel()
-		snap, err := store.Refresh(rctx)
-		if err != nil {
-			return err
-		}
-		lo.Info("refreshed usage snapshot",
-			"endpoint_count", snap.EndpointCount,
-			"event_count", snap.EventCount,
-			"project_count", snap.ProjectCount,
-			"org_count", snap.OrgCount,
-			"user_count", snap.UserCount,
-		)
-		return nil
+			lo.Info("refreshed usage snapshot",
+				"endpoint_count", snap.EndpointCount,
+				"event_count", snap.EventCount,
+				"project_count", snap.ProjectCount,
+				"org_count", snap.OrgCount,
+				"user_count", snap.UserCount,
+			)
+			return nil
+		})
 	}
 }
 

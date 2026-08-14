@@ -26,7 +26,6 @@ import (
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker"
 )
 
 func AddServerCommand(a *cli.App) *cobra.Command {
@@ -136,6 +135,9 @@ func StartConvoyServer(a *cli.App) error {
 	}
 
 	lo := a.Logger
+	if a.Broker == nil {
+		return errors.New("broker dependencies are required")
+	}
 
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 
@@ -146,10 +148,17 @@ func StartConvoyServer(a *cli.App) error {
 			EarlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
 			DB:                         a.DB,
 			Queue:                      a.Queue,
+			QueueMonitor:               a.Broker.QueueMonitor,
 			Logger:                     lo,
-			Redis:                      a.Redis,
 			Cache:                      a.Cache,
+			QueueSessionStore:          a.Broker.Cache,
 			Rate:                       a.Rate,
+			CircuitBreakerStore:        a.Broker.CircuitBreakerStore,
+			TrialEvents:                a.Broker.TrialEvents,
+			Acker:                      a.Broker.Acker,
+			ResendClaims:               a.Broker.ResendClaims,
+			UsageLocker:                a.Broker.JobLocker,
+			BatchTracker:               a.Broker.BatchTracker,
 			Licenser:                   a.Licenser,
 			Cfg:                        cfg,
 			TracerBackend:              a.TracerBackend,
@@ -167,7 +176,7 @@ func StartConvoyServer(a *cli.App) error {
 	srv.SetHandler(handler.BuildControlPlaneRoutes())
 
 	// initialize scheduler
-	s := worker.NewScheduler(a.Queue, lo)
+	s := a.Broker.Scheduler
 
 	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)

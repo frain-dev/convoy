@@ -186,6 +186,7 @@ func ProcessBroadcastEventCreation(
 		deps.EventRepo,
 		deps.ProjectRepo,
 		deps.EventQueue,
+		deps.TaskErrors,
 		deps.SubRepo,
 		deps.FilterRepo,
 		deps.Licenser,
@@ -193,7 +194,7 @@ func ProcessBroadcastEventCreation(
 		deps.FeatureFlag,
 		deps.FeatureFlagFetcher,
 		deps.EarlyAdopterFeatureFetcher,
-		deps.Redis,
+		deps.Acker,
 		deps.Logger,
 	)
 }

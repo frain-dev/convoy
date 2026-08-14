@@ -531,13 +531,13 @@ func waitForServer(t *testing.T, url string, timeout time.Duration) {
 func dataplaneOpts(app *cli.App) dataplane.RuntimeOpts {
 	return dataplane.RuntimeOpts{
 		DB:            app.DB,
-		Redis:         app.Redis,
 		Queue:         app.Queue,
 		Logger:        app.Logger,
 		Cache:         app.Cache,
 		Rate:          app.Rate,
 		Licenser:      app.Licenser,
 		TracerBackend: app.TracerBackend,
+		Broker:        app.Broker,
 		JobTracker:    app.JobTracker,
 		SetSubscriptionLoader: func(loader interface{}) {
 			app.SubscriptionLoader = loader

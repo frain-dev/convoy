@@ -182,7 +182,7 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 				return nil, updateErr
 			}
 			// Definitive validation failure: unblock sync waiters with an error.
-			publishDynamicEventAck(ctx, args.redis, args.logger, project.UID, event.UID, dynamiceventack.Result{
+			publishDynamicEventAck(ctx, args.acker, args.logger, project.UID, event.UID, dynamiceventack.Result{
 				OK:    false,
 				Error: err.Error(),
 			})
@@ -212,7 +212,7 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		response.TargetURL = dynamicEvent.URL
 	}
 
-	publishDynamicEventAck(ctx, args.redis, args.logger, project.UID, event.UID, dynamiceventack.Result{OK: true})
+	publishDynamicEventAck(ctx, args.acker, args.logger, project.UID, event.UID, dynamiceventack.Result{OK: true})
 	tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingOK, attributes)
 	return &response, nil
 }
@@ -226,6 +226,7 @@ func ProcessDynamicEventCreation(deps EventProcessorDeps) func(context.Context, 
 		deps.EventRepo,
 		deps.ProjectRepo,
 		deps.EventQueue,
+		deps.TaskErrors,
 		deps.SubRepo,
 		deps.FilterRepo,
 		deps.Licenser,
@@ -233,7 +234,7 @@ func ProcessDynamicEventCreation(deps EventProcessorDeps) func(context.Context, 
 		deps.FeatureFlag,
 		deps.FeatureFlagFetcher,
 		deps.EarlyAdopterFeatureFetcher,
-		deps.Redis,
+		deps.Acker,
 		deps.Logger,
 	)
 }

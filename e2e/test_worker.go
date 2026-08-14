@@ -85,7 +85,10 @@ func NewTestWorker(ctx context.Context, t *testing.T, q queue.Queuer, validator 
 
 	workerCtx, cancel := context.WithCancel(ctx)
 
-	consumer := worker.NewConsumer(workerCtx, 3, q, logger, log.LevelError)
+	consumer, err := worker.NewConsumer(workerCtx, 3, q.Options().Names, worker.NewRedisConsumerBackend(q.Options()), logger, log.LevelError)
+	if err != nil {
+		t.Fatalf("create worker consumer: %v", err)
+	}
 
 	tw := &TestWorker{
 		consumer:  consumer,

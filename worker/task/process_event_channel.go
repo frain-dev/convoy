@@ -10,8 +10,6 @@ import (
 
 	"github.com/hibiken/asynq"
 
-	goredis "github.com/redis/go-redis/v9"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -22,7 +20,6 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -36,6 +33,10 @@ const reasonNoMatchingSubscriptions = "no subscription matched this event"
 // validation failure. Persist Failure and return nil so the worker completes
 // instead of retrying forever.
 const reasonMissingEndpointID = "subscription matched without an endpoint_id"
+
+type TaskErrorReader interface {
+	LastTaskError(queueName, jobID string) (string, error)
+}
 
 type EventChannelConfig struct {
 	Channel      string
@@ -57,7 +58,7 @@ type EventChannelArgs struct {
 	featureFlag                *fflag.FFlag
 	featureFlagFetcher         fflag.FeatureFlagFetcher
 	earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
-	redis                      goredis.UniversalClient
+	acker                      dynamiceventack.Acker
 	logger                     log.Logger
 }
 
@@ -77,15 +78,15 @@ type EventChannel interface {
 
 func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository,
 	eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
-	eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
+	eventQueue queue.Queuer, taskErrors TaskErrorReader, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
 	licenser license.Licenser, oauth2TokenService OAuth2TokenService, featureFlag *fflag.FFlag,
 	featureFlagFetcher fflag.FeatureFlagFetcher, earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher,
-	redisClient goredis.UniversalClient, logger log.Logger) func(context.Context, *asynq.Task) error {
+	acker dynamiceventack.Acker, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
 		// get or create event
-		var lastEvent, _, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo, logger)
+		var lastEvent, _, err = getLastTaskInfo(ctx, t, channel, taskErrors, eventRepo, logger)
 		if err != nil {
 			logger.Error("failed to get last task info", "error", err)
 			return err
@@ -109,7 +110,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 				featureFlag:                featureFlag,
 				featureFlagFetcher:         featureFlagFetcher,
 				earlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
-				redis:                      redisClient,
+				acker:                      acker,
 				logger:                     logger,
 			})
 			if err != nil {
@@ -128,7 +129,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 					switch found.Status {
 					case datastore.SuccessStatus:
 						if cfg.Channel == "dynamic" {
-							publishDynamicEventAck(ctx, redisClient, logger, found.ProjectID, found.UID, dynamiceventack.Result{OK: true})
+							publishDynamicEventAck(ctx, acker, logger, found.ProjectID, found.UID, dynamiceventack.Result{OK: true})
 						}
 						return nil
 					case datastore.ProcessingStatus, datastore.FailureStatus:
@@ -185,7 +186,7 @@ type MatchSubscriptionsDeps struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
-	Redis                      goredis.UniversalClient
+	Acker                      dynamiceventack.Acker
 	Logger                     log.Logger
 }
 
@@ -227,7 +228,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			featureFlag:                deps.FeatureFlag,
 			featureFlagFetcher:         deps.FeatureFlagFetcher,
 			earlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
-			redis:                      deps.Redis,
+			acker:                      deps.Acker,
 			logger:                     deps.Logger,
 		})
 		if err != nil {
@@ -325,7 +326,7 @@ func collectAPIEndpointIDs(subscriptions []datastore.Subscription) ([]string, er
 	return ids, nil
 }
 
-func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQueue queue.Queuer, eventRepo datastore.EventRepository, logger log.Logger) (*datastore.Event, bool, error) {
+func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, taskErrors TaskErrorReader, eventRepo datastore.EventRepository, logger log.Logger) (*datastore.Event, bool, error) {
 	var jobID string
 	switch ch.GetConfig().Channel {
 	case "broadcast":
@@ -355,24 +356,22 @@ func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQ
 		return nil, false, &EndpointError{Err: fmt.Errorf("cannot deduce jobID: %s", jobID)}
 	}
 
-	q, ok := eventQueue.(*redis.RedisQueue)
-	if !ok {
-		// For non-Redis queues (e.g., in tests), skip the task info check
+	if taskErrors == nil {
 		return nil, false, nil
 	}
 
-	ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), jobID)
+	lastTaskError, err := taskErrors.LastTaskError(string(convoy.CreateEventQueue), jobID)
 	if err != nil {
 		logger.Error("failed to get task from queue", "error", err)
 		return nil, false, &EndpointError{Err: fmt.Errorf("failed to get task from queue, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 
-	lastRunErrored := ti != nil && strings.Contains(ti.LastErr, ErrFailedToWriteToQueue.Error())
+	lastRunErrored := strings.Contains(lastTaskError, ErrFailedToWriteToQueue.Error())
 
 	var lastEvent *datastore.Event
 
 	if lastRunErrored {
-		split := strings.Split(ti.LastErr, ":")
+		split := strings.Split(lastTaskError, ":")
 		if len(split) == 3 {
 			projectId, eventId := split[1], split[2]
 			if !util.IsStringEmpty(projectId) && !util.IsStringEmpty(eventId) {

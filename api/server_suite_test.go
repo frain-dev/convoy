@@ -190,9 +190,9 @@ func buildServer(t *testing.T) *ApplicationHandler {
 		&types.APIOptions{
 			DB:                         db,
 			Queue:                      newQueue,
-			Redis:                      tl.Redis,
 			Logger:                     tl.Logger,
 			Cache:                      noopCache,
+			QueueSessionStore:          noopCache,
 			FFlag:                      fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
 			FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(db),
 			EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(db),

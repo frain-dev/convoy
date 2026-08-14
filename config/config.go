@@ -116,6 +116,7 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	ConsumerPoolSize: 100,
+	QueueProvider:    RedisQueueProvider,
 	Tracer: TracerConfiguration{
 		OTel: OTelConfiguration{
 			SampleRate:         1.0,
@@ -462,6 +463,7 @@ const (
 
 const (
 	RedisQueueProvider       QueueProvider           = "redis"
+	PostgresQueueProvider    QueueProvider           = "postgres"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
 	DefaultRequestIDHeader   RequestIDHeaderProvider = "X-Convoy-Idempotency-Key"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
@@ -533,6 +535,7 @@ type Configuration struct {
 	Analytics          AnalyticsConfiguration       `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration   `json:"storage_policy"`
 	ConsumerPoolSize   int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	QueueProvider      QueueProvider                `json:"queue_provider" envconfig:"CONVOY_QUEUE_PROVIDER"`
 	EnableProfiling    bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 	Metrics            MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
 	InstanceIngestRate int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
@@ -888,8 +891,17 @@ func ensureMaxResponseSize(c *Configuration) {
 func validate(c *Configuration) error {
 	ensureMaxResponseSize(c)
 
-	if err := ensureQueueConfig(c.Redis); err != nil {
-		return err
+	switch c.QueueProvider {
+	case "", RedisQueueProvider:
+		c.QueueProvider = RedisQueueProvider
+		if err := ensureQueueConfig(c.Redis); err != nil {
+			return err
+		}
+	case PostgresQueueProvider:
+		// Postgres owns queue, cache, limiter, circuit breaker, locks, and
+		// queue monitoring. Redis DSN is not required.
+	default:
+		return fmt.Errorf("unknown queue_provider %q (want redis or postgres)", c.QueueProvider)
 	}
 
 	if err := ensureSSL(c.Server); err != nil {

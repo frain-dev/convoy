@@ -17,6 +17,13 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
+func circuitBreakerStore(a *cli.App) (cb.CircuitBreakerStore, error) {
+	if a.Broker == nil || a.Broker.CircuitBreakerStore == nil {
+		return nil, fmt.Errorf("circuit breaker store is required")
+	}
+	return a.Broker.CircuitBreakerStore, nil
+}
+
 func AddCircuitBreakersCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "circuit-breakers",
@@ -46,7 +53,11 @@ func AddCircuitBreakersGetCommand(a *cli.App) *cobra.Command {
 			// Remove the "breaker:" prefix if present
 			breakerID = strings.TrimPrefix(breakerID, "breaker:")
 
-			// Create circuit breaker manager with config provider
+			store, err := circuitBreakerStore(a)
+			if err != nil {
+				return fmt.Errorf("failed to create circuit breaker store: %v", err)
+			}
+
 			cbManager, err := cb.NewCircuitBreakerManager(
 				cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
 					// For get command, we don't have projectID yet, so use defaults
@@ -61,7 +72,7 @@ func AddCircuitBreakersGetCommand(a *cli.App) *cobra.Command {
 						ConsecutiveFailureThreshold: datastore.DefaultCircuitBreakerConfiguration.ConsecutiveFailureThreshold,
 					}
 				}),
-				cb.StoreOption(cb.NewRedisStore(a.Redis, clock.NewRealClock())),
+				cb.StoreOption(store),
 				cb.ClockOption(clock.NewRealClock()),
 				cb.LoggerOption(log.New("convoy", log.LevelInfo)),
 			)
@@ -209,19 +220,19 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 					return fmt.Errorf("failed to update project configuration: %v", err)
 				}
 
-				// Reset all circuit breakers for this project in Redis so new config takes immediate effect
-				// Get all breaker keys and filter by project ID
-				store := cb.NewRedisStore(a.Redis, clock.NewRealClock())
+				// Reset breakers for this project so new config takes immediate effect.
+				store, storeErr := circuitBreakerStore(a)
+				if storeErr != nil {
+					return fmt.Errorf("failed to create circuit breaker store: %v", storeErr)
+				}
 				keys, err := store.Keys(context.Background(), "breaker:")
 				if err == nil {
 					for _, key := range keys {
-						// Get breaker to check TenantId
 						breakerData, err := store.GetOne(context.Background(), key)
 						if err == nil {
 							breaker, err := cb.NewCircuitBreakerFromStore([]byte(breakerData), log.New("convoy", log.LevelInfo))
 							if err == nil && breaker.TenantId == projectID {
-								// Ignore errors here; it's best-effort
-								_ = a.Redis.Del(context.Background(), key).Err()
+								_ = store.Delete(context.Background(), key)
 							}
 						}
 					}

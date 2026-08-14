@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -138,6 +139,66 @@ func TestMatchSubscriptionsMissingEndpointIDFailsClosed(t *testing.T) {
 
 	err = fn(context.Background(), asynq.NewTask("match-subscriptions", payload))
 	require.NoError(t, err)
+}
+
+type taskErrorQueueStub struct {
+	lastError string
+	err       error
+}
+
+func (s taskErrorQueueStub) LastTaskError(string, string) (string, error) {
+	return s.lastError, s.err
+}
+
+func TestGetLastTaskInfoAcceptsTaskErrorReader(t *testing.T) {
+	payload, err := msgpack.EncodeMsgPack(CreateEvent{JobID: "create:job"})
+	require.NoError(t, err)
+
+	lastEvent, lastRunErrored, err := getLastTaskInfo(
+		context.Background(),
+		asynq.NewTask("create-event", payload),
+		&duplicateWithoutSubscriptionsChannel{cfg: &EventChannelConfig{Channel: "default"}},
+		taskErrorQueueStub{},
+		nil,
+		log.New("test", log.LevelError),
+	)
+	require.NoError(t, err)
+	require.Nil(t, lastEvent)
+	require.False(t, lastRunErrored)
+}
+
+func TestGetLastTaskInfoReturnsReaderError(t *testing.T) {
+	payload, err := msgpack.EncodeMsgPack(CreateEvent{JobID: "create:job"})
+	require.NoError(t, err)
+
+	lastEvent, lastRunErrored, err := getLastTaskInfo(
+		context.Background(),
+		asynq.NewTask("create-event", payload),
+		&duplicateWithoutSubscriptionsChannel{cfg: &EventChannelConfig{Channel: "default"}},
+		taskErrorQueueStub{err: errors.New("inspect failed")},
+		nil,
+		log.New("test", log.LevelError),
+	)
+	require.Nil(t, lastEvent)
+	require.False(t, lastRunErrored)
+	require.ErrorContains(t, err, "inspect failed")
+}
+
+func TestGetLastTaskInfoSkipsMissingTaskErrorReader(t *testing.T) {
+	payload, err := msgpack.EncodeMsgPack(CreateEvent{JobID: "create:job"})
+	require.NoError(t, err)
+
+	lastEvent, lastRunErrored, err := getLastTaskInfo(
+		context.Background(),
+		asynq.NewTask("create-event", payload),
+		&duplicateWithoutSubscriptionsChannel{cfg: &EventChannelConfig{Channel: "default"}},
+		nil,
+		nil,
+		log.New("test", log.LevelError),
+	)
+	require.NoError(t, err)
+	require.Nil(t, lastEvent)
+	require.False(t, lastRunErrored)
 }
 
 type duplicateWithoutSubscriptionsChannel struct {

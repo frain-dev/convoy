@@ -30,7 +30,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -194,10 +194,6 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		return nil, fmt.Errorf("api options is required")
 	}
 	ensureAPIRepositories(a)
-
-	if a.TrialEvents == nil {
-		a.TrialEvents = license.NewTrialEventLimiter(a.Redis, a.Logger)
-	}
 
 	appHandler := &ApplicationHandler{A: a}
 
@@ -900,17 +896,17 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			sessionRouter.Delete("/monitoring/session", handler.RevokeQueueMonitoringSession)
 		})
 
-		rq, ok := a.A.Queue.(*redisqueue.RedisQueue)
-		if !ok {
+		embedHandler, monitorHandler := queueMonitorHandlers(a.A.QueueMonitor)
+		if embedHandler == nil {
 			return
 		}
 		asynqRouter.Group(func(embedRouter chi.Router) {
-			embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.Redis, handler.A.Cache)))
-			embedRouter.Handle("/monitoring/embed/*", rq.MonitorWithRootPath("/queue/monitoring/embed"))
+			embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.QueueSessionStore)))
+			embedRouter.Handle("/monitoring/embed/*", embedHandler)
 		})
 		asynqRouter.Group(func(monitorRouter chi.Router) {
 			monitorRouter.Use(middleware.RequireAuth(handler.A.Logger))
-			monitorRouter.Handle("/monitoring/*", rq.Monitor())
+			monitorRouter.Handle("/monitoring/*", monitorHandler)
 		})
 	})
 
@@ -928,6 +924,13 @@ func (a *ApplicationHandler) metricsHandler() http.HandlerFunc {
 		Registry: metrics.Reg(),
 	})
 	return h.ServeHTTP
+}
+
+func queueMonitorHandlers(m queue.Monitor) (http.Handler, http.Handler) {
+	if m == nil {
+		return nil, nil
+	}
+	return m.MonitorWithRootPath("/queue/monitoring/embed"), m.Monitor()
 }
 
 func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {

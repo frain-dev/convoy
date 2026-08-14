@@ -14,12 +14,13 @@ import (
 const cacheSize = 128000
 
 type RedisCache struct {
-	cache *cache.Cache
+	cache  *cache.Cache
+	client redis.UniversalClient
 }
 
 func NewRedisCacheFromClient(rediser redis.UniversalClient) *RedisCache {
 	c := cache.New(&cache.Options{Redis: rediser})
-	return &RedisCache{cache: c}
+	return &RedisCache{cache: c, client: rediser}
 }
 
 func NewRedisCache(addresses []string) (*RedisCache, error) {
@@ -33,7 +34,7 @@ func NewRedisCache(addresses []string) (*RedisCache, error) {
 		LocalCache: cache.NewTinyLFU(cacheSize, 1*time.Minute),
 	})
 
-	r := &RedisCache{cache: c}
+	r := &RedisCache{cache: c, client: client.Client()}
 
 	return r, nil
 }
@@ -49,7 +50,7 @@ func NewRedisCacheFromConfig(addresses []string, tlsSkipVerify bool, caCertFile,
 		LocalCache: cache.NewTinyLFU(cacheSize, 1*time.Minute),
 	})
 
-	r := &RedisCache{cache: c}
+	r := &RedisCache{cache: c, client: client.Client()}
 
 	return r, nil
 }
@@ -75,6 +76,25 @@ func (r *RedisCache) Get(ctx context.Context, key string, data interface{}) erro
 	}
 
 	return nil
+}
+
+func (r *RedisCache) GetStrict(ctx context.Context, key string, data interface{}) error {
+	err := r.cache.Get(ctx, key, data)
+	if errors.Is(err, cache.ErrCacheMiss) {
+		return nil
+	}
+	return err
+}
+
+func (r *RedisCache) GetOrCreateBytes(ctx context.Context, key string, value []byte) ([]byte, error) {
+	created, err := r.client.SetNX(ctx, key, value, 0).Result()
+	if err != nil {
+		return nil, err
+	}
+	if created {
+		return value, nil
+	}
+	return r.client.Get(ctx, key).Bytes()
 }
 
 func (r *RedisCache) Delete(ctx context.Context, key string) error {

@@ -6,14 +6,12 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/go-chi/render"
-	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
@@ -26,9 +24,8 @@ const (
 	queueMonitoringCookiePath = "/queue/monitoring"
 	queueMonitoringCookieTTL  = 15 * time.Minute
 	revokedKeyPrefix          = "convoy:queue_session:revoked:"
-	// Cluster-wide HMAC key for queue monitoring session cookies, stored in
-	// Redis so every replica signs and validates with the same key.
-	signingKeyRedisKey = "convoy:queue_monitoring:cookie_signing_key"
+	// Cluster-wide HMAC key for queue monitoring session cookies.
+	signingKeyStoreKey = "convoy:queue_monitoring:cookie_signing_key"
 	signingKeyLen      = 32
 )
 
@@ -46,43 +43,24 @@ func shouldSetSecureCookie(r *http.Request) bool {
 }
 
 // getOrCreateSigningKey returns the cluster-wide HMAC key for queue monitoring
-// session cookies. It is a random 32-byte value stored in Redis so every
-// replica signs and validates with the same key; a per-process key breaks
-// multi-replica deployments because the pod that signs a cookie and the pod
-// that later validates it differ, so HMAC verification fails and the embed
-// proxy returns "Authentication required". SetNX makes the first writer win, so
-// concurrent replicas converge on one key. Fail closed (ok=false) on a nil
-// client, any Redis error, or a corrupt value rather than fall back to a
-// per-pod key that other replicas cannot verify.
-func getOrCreateSigningKey(ctx context.Context, rc redis.UniversalClient) ([]byte, bool) {
-	if rc == nil {
+// session cookies. Redis mode stores it in Redis; postgres mode stores the
+// hex-encoded key in kv_cache. SetNX / ON CONFLICT DO NOTHING makes the first
+// writer win so replicas converge. Fail closed on a missing store, any error,
+// or a corrupt value rather than mint a per-pod key other replicas cannot
+// verify.
+func getOrCreateSigningKey(ctx context.Context, c cache.AuthoritativeCache) ([]byte, bool) {
+	if c == nil {
 		return nil, false
 	}
-
-	if v, err := rc.Get(ctx, signingKeyRedisKey).Result(); err == nil {
-		return decodeSigningKey(v)
-	} else if !errors.Is(err, redis.Nil) {
-		return nil, false
-	}
-
 	newKey := make([]byte, signingKeyLen)
 	if _, err := rand.Read(newKey); err != nil {
 		return nil, false
 	}
-	created, err := rc.SetNX(ctx, signingKeyRedisKey, hex.EncodeToString(newKey), 0).Result()
+	raw, err := c.GetOrCreateBytes(ctx, signingKeyStoreKey, []byte(hex.EncodeToString(newKey)))
 	if err != nil {
 		return nil, false
 	}
-	if created {
-		return newKey, true
-	}
-
-	// Another replica created the key first; read the winner.
-	v, err := rc.Get(ctx, signingKeyRedisKey).Result()
-	if err != nil {
-		return nil, false
-	}
-	return decodeSigningKey(v)
+	return decodeSigningKey(string(raw))
 }
 
 func decodeSigningKey(encoded string) ([]byte, bool) {
@@ -124,26 +102,26 @@ func verifyWithKey(key []byte, cookieValue string) (expiryUnix int64, ok bool) {
 	return expiryUnix, true
 }
 
-func signCookieValue(ctx context.Context, rc redis.UniversalClient, expiry time.Time) (string, bool) {
-	key, ok := getOrCreateSigningKey(ctx, rc)
+func signCookieValue(ctx context.Context, c cache.AuthoritativeCache, expiry time.Time) (string, bool) {
+	key, ok := getOrCreateSigningKey(ctx, c)
 	if !ok {
 		return "", false
 	}
 	return signWithKey(key, expiry), true
 }
 
-func parseAndVerifyCookie(ctx context.Context, rc redis.UniversalClient, cookieValue string) (int64, bool) {
-	key, ok := getOrCreateSigningKey(ctx, rc)
+func parseAndVerifyCookie(ctx context.Context, c cache.AuthoritativeCache, cookieValue string) (int64, bool) {
+	key, ok := getOrCreateSigningKey(ctx, c)
 	if !ok {
 		return 0, false
 	}
 	return verifyWithKey(key, cookieValue)
 }
 
-// ValidateQueueSessionCookie checks HMAC signature, expiry, and Redis revocation list.
-func ValidateQueueSessionCookie(rc redis.UniversalClient, c cache.Cache) func(context.Context, string) bool {
+// ValidateQueueSessionCookie checks HMAC signature, expiry, and revocation.
+func ValidateQueueSessionCookie(c cache.AuthoritativeCache) func(context.Context, string) bool {
 	return func(ctx context.Context, cookieValue string) bool {
-		if _, ok := parseAndVerifyCookie(ctx, rc, cookieValue); !ok {
+		if _, ok := parseAndVerifyCookie(ctx, c, cookieValue); !ok {
 			return false
 		}
 
@@ -152,7 +130,7 @@ func ValidateQueueSessionCookie(rc redis.UniversalClient, c cache.Cache) func(co
 		// session. A cache miss returns no error and leaves revoked=false.
 		var revoked bool
 		key := revokedKeyPrefix + cookieValue
-		if err := c.Get(ctx, key, &revoked); err != nil {
+		if err := c.GetStrict(ctx, key, &revoked); err != nil {
 			return false
 		}
 
@@ -181,7 +159,7 @@ func (h *Handler) CreateQueueMonitoringSession(w http.ResponseWriter, r *http.Re
 	}
 
 	expiry := time.Now().Add(queueMonitoringCookieTTL)
-	value, ok := signCookieValue(r.Context(), h.A.Redis, expiry)
+	value, ok := signCookieValue(r.Context(), h.A.QueueSessionStore, expiry)
 	if !ok {
 		_ = render.Render(w, r, util.NewErrorResponse("queue monitoring session unavailable", http.StatusInternalServerError))
 		return
@@ -212,10 +190,10 @@ func (h *Handler) RevokeQueueMonitoringSession(w http.ResponseWriter, r *http.Re
 	// still clear the browser cookie below; the cookie self-expires within the
 	// mint TTL and the embed path fails closed while Redis is unavailable.
 	if cookie, err := r.Cookie(queueMonitoringCookieName); err == nil && cookie.Value != "" {
-		if expiryUnix, ok := parseAndVerifyCookie(r.Context(), h.A.Redis, cookie.Value); ok {
+		if expiryUnix, ok := parseAndVerifyCookie(r.Context(), h.A.QueueSessionStore, cookie.Value); ok {
 			if remaining := time.Until(time.Unix(expiryUnix, 0)); remaining > 0 {
 				key := revokedKeyPrefix + cookie.Value
-				_ = h.A.Cache.Set(r.Context(), key, true, remaining)
+				_ = h.A.QueueSessionStore.Set(r.Context(), key, true, remaining)
 			}
 		}
 	}

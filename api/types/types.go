@@ -1,7 +1,9 @@
 package types
 
 import (
-	"github.com/redis/go-redis/v9"
+	"context"
+	"time"
+
 	"go.opentelemetry.io/otel/trace"
 
 	authz "github.com/Subomi/go-authz"
@@ -11,24 +13,41 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 )
+
+type ResendClaimStore interface {
+	TryClaim(ctx context.Context, userUID string) (ok bool, token string, err error)
+	Release(ctx context.Context, userUID, token string) error
+}
+
+// Locker mirrors task.JobLocker for API-side singleton work. maxRuntime bounds
+// how long the critical section may run: fn's context is cancelled once it
+// elapses and the lock is held until fn returns.
+type Locker interface {
+	WithLock(ctx context.Context, name string, maxRuntime time.Duration, fn func(context.Context) error) error
+}
 
 type APIOptions struct {
 	FFlag                      *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 	DB                         database.Database
-	Redis                      redis.UniversalClient
+	CircuitBreakerStore        circuit_breaker.CircuitBreakerStore
 	Queue                      queue.Queuer
+	QueueMonitor               queue.Monitor
 	Logger                     logger.Logger
 	Cache                      cache.Cache
+	QueueSessionStore          cache.AuthoritativeCache
 	Authz                      *authz.Authz
 	Rate                       limiter.RateLimiter
 	Licenser                   license.Licenser
@@ -41,9 +60,12 @@ type APIOptions struct {
 	ProjectRepo                datastore.ProjectRepository
 	EventRepo                  datastore.EventRepository
 	// TrialEvents enforces the cloud-trial daily event cap at ingestion. It is
-	// wired at boot in NewApplicationHandler; a nil value (e.g. in tests) makes
-	// the cap a no-op.
-	TrialEvents *license.TrialEventLimiter
+	// wired to the active broker at boot in NewApplicationHandler.
+	TrialEvents  *license.TrialEventLimiter
+	Acker        dynamiceventack.Acker
+	ResendClaims ResendClaimStore
+	UsageLocker  Locker
+	BatchTracker batch_tracker.Tracker
 }
 
 // TracerProvider returns the trace.TracerProvider used to mint span tracers.

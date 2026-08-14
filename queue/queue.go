@@ -3,13 +3,56 @@ package queue
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"sort"
 	"time"
 
 	"github.com/hibiken/asynq"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
+
+const (
+	ProviderRedis    = "redis"
+	ProviderPostgres = "postgres"
+)
+
+func PriorityCycle(weights map[string]int) []string {
+	names := make([]string, 0, len(weights))
+	for name := range weights {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	total := 0
+	for _, name := range names {
+		if weights[name] > 0 {
+			total += weights[name]
+		}
+	}
+	if total == 0 {
+		return names
+	}
+	current := make(map[string]int, len(names))
+	cycle := make([]string, 0, total)
+	for range total {
+		best := ""
+		for _, name := range names {
+			weight := weights[name]
+			if weight <= 0 {
+				continue
+			}
+			current[name] += weight
+			if best == "" || current[name] > current[best] {
+				best = name
+			}
+		}
+		current[best] -= total
+		cycle = append(cycle, best)
+	}
+	return cycle
+}
 
 // Queuer enqueues asynq tasks. The driver injects the active OTel trace
 // context from ctx into the task's headers so worker spans become children
@@ -18,6 +61,17 @@ type Queuer interface {
 	Write(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *Job) error
 	WriteWithoutTimeout(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *Job) error
 	Options() QueueOptions
+}
+
+// Monitor is the queue dashboard (asynqmon or the postgres HTML/JSON UI).
+type Monitor interface {
+	Monitor() http.Handler
+	MonitorWithRootPath(rootPath string) http.Handler
+}
+
+// Archiver deletes completed/archived jobs. Both drivers implement it.
+type Archiver interface {
+	DeleteArchived(ctx context.Context) error
 }
 
 type Job struct {
@@ -39,6 +93,17 @@ type Job struct {
 	Headers map[string]string `json:"-"`
 }
 
+// ClaimedJob is a broker-neutral job claimed by a queue consumer.
+type ClaimedJob struct {
+	ID         string
+	TaskName   string
+	QueueName  string
+	Payload    []byte
+	Headers    map[string]string
+	MaxRetry   int
+	RetryCount int
+}
+
 type QueueOptions struct {
 	Names             map[string]int
 	Type              string
@@ -46,6 +111,8 @@ type QueueOptions struct {
 	RedisAddress      []string
 	RedisFailoverOpt  *asynq.RedisFailoverClientOpt
 	PrometheusAddress string
+	// DB is required when Type is postgres. Redis queues ignore it.
+	DB *sqlx.DB
 }
 
 type JobId struct {
