@@ -1257,6 +1257,34 @@ func TestPartitionEventsSearchTableAdoptsTheExistingTable(t *testing.T) {
 	require.Equal(t, original, adopted, "the adopted partition has a different relfilenode, so the table was rewritten, not attached")
 }
 
+// Copy-unpartition creates events_search_new with PRIMARY KEY, then renames the
+// table. RENAME TABLE keeps the constraint name, so the heap's PK is
+// events_search_new_pkey. Swap used to drop only events_search_pkey and then
+// failed with "multiple primary keys for table events_search_default".
+func TestPartitionEventsSearchTableDropsCopyUnpartitionPrimaryKey(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	var current string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT con.conname
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_search' AND con.contype = 'p'`).Scan(&current))
+
+	_, err := db.GetDB().ExecContext(ctx, `ALTER TABLE convoy.events_search RENAME CONSTRAINT `+current+` TO events_search_new_pkey`)
+	require.NoError(t, err)
+
+	require.NoError(t, service.PartitionEventsSearchTable(ctx))
+
+	var kind string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_search'`).Scan(&kind))
+	require.Equal(t, "p", kind, "attach after a copy-unpartition PK name should still convert")
+}
+
 func TestPartitionFunctions(t *testing.T) {
 	service, _ := setupTestDB(t)
 	ctx := context.Background()
