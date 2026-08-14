@@ -138,12 +138,6 @@ func noticeHandler(logger log.Logger, sink *noticeSink) pgconn.NoticeHandler {
 			return
 		}
 
-		if sink != nil {
-			if fn := sink.get(); fn != nil {
-				fn(n)
-			}
-		}
-
 		args := []any{"postgres notice", "severity", n.Severity, "code", n.Code, "message", n.Message}
 		if n.Detail != "" {
 			args = append(args, "detail", n.Detail)
@@ -154,11 +148,17 @@ func noticeHandler(logger log.Logger, sink *noticeSink) pgconn.NoticeHandler {
 
 		// SeverityUnlocalized, because Severity is translated by the server's
 		// lc_messages and would not match on a non-English instance. WARNING is
-		// the only severity routed here that reports a problem rather than
-		// progress.
+		// a problem signal. The sink feeds partition_runs.phase, so only
+		// NOTICE (the conversion's RAISE NOTICE progress) may go there.
 		if n.SeverityUnlocalized == "WARNING" {
 			logger.Warn(args...)
 			return
+		}
+
+		if sink != nil {
+			if fn := sink.get(); fn != nil {
+				fn(n)
+			}
 		}
 
 		logger.Info(args...)

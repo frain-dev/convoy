@@ -140,6 +140,28 @@ func TestNoticeSinkObservesNoticesWithoutTakingThemFromTheLog(t *testing.T) {
 	require.Len(t, logger.infos(), 1, "registering an observer stopped the notice reaching the log")
 }
 
+// WARNING is a problem, not a conversion phase. The sink writes partition_runs
+// phase and steps, so a pool WARNING must stay in the log and off that row.
+func TestNoticeSinkIgnoresWarnings(t *testing.T) {
+	logger := &captureLogger{}
+	sink := &noticeSink{}
+	handler := noticeHandler(logger, sink)
+
+	var seen []string
+	sink.set(func(n *pgconn.Notice) { seen = append(seen, n.Message) })
+
+	handler(nil, &pgconn.Notice{
+		Severity:            "WARNUNG",
+		SeverityUnlocalized: "WARNING",
+		Message:             "there is no transaction in progress",
+	})
+	handler(nil, &pgconn.Notice{SeverityUnlocalized: "NOTICE", Message: "Creating partitions..."})
+
+	require.Equal(t, []string{"Creating partitions..."}, seen)
+	require.Len(t, logger.warns(), 1)
+	require.Contains(t, logger.warns()[0], "there is no transaction in progress")
+}
+
 // The observer is cleared when a run ends. Notices from unrelated statements must
 // not keep landing on a finished run's progress row.
 func TestNoticeSinkStopsObservingWhenCleared(t *testing.T) {
