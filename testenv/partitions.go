@@ -44,10 +44,22 @@ func RequirePartitionsAddressableByRetention(t *testing.T, db database.Database,
 
 	wantPrefix := fmt.Sprintf("%s_%s_", parent, strings.ToUpper(strings.ReplaceAll(tenantID, "-", "")))
 
+	// The one child that is deliberately not a tenant-day partition. An
+	// attach-based conversion adopts the pre-conversion table as the parent's
+	// DEFAULT partition instead of copying it, and retention is built to leave
+	// that alone: gopartman filters is_default = false when selecting expired
+	// partitions, so history is reclaimed by dropping this one partition rather
+	// than day by day. Its name is still a contract, checked below, because the
+	// importer only adopts a default under the _default suffix.
+	defaultName := parent + "_default"
+
 	var found int
 	for rows.Next() {
 		var name string
 		require.NoError(t, rows.Scan(&name))
+		if name == defaultName {
+			continue
+		}
 		found++
 		require.True(t, strings.HasPrefix(name, wantPrefix),
 			"partition %q is not addressable by retention, want prefix %q", name, wantPrefix)

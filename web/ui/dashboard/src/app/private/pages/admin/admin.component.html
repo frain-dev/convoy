@@ -30,7 +30,7 @@
               [class]="activePage === menu.name ? 'bg-new.surface-muted text-new.text-primary font-medium' : 'text-new.text-secondary hover:bg-new.surface-subtle'"
               (click)="toggleActivePage(menu.name)"
               >
-              <svg width="16" height="16" class="transition-all shrink-0" [class]="activePage === menu.name ? menu.svg + '-new.primary-400' : menu.svg + '-neutral-11'">
+              <svg width="16" height="16" class="transition-all shrink-0" [class]="activePage === menu.name ? menu.svg + '-new.primary-400' : menu.svg + '-new.text-secondary'">
                 <use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
               </svg>
               <span class="capitalize">{{ menu.name }}</span>
@@ -55,6 +55,10 @@
 
       @if (activePage === 'queue monitoring') {
         <convoy-queue-monitoring></convoy-queue-monitoring>
+      }
+
+      @if (activePage === 'table partitions') {
+        <app-table-partitions></app-table-partitions>
       }
     </div>
   </div>

@@ -7,6 +7,7 @@ import { FeatureFlagsComponent } from './feature-flags/feature-flags.component';
 import { OrganisationOverridesComponent } from './organisation-overrides/organisation-overrides.component';
 import { CircuitBreakerConfigComponent } from './circuit-breaker-config/circuit-breaker-config.component';
 import { ResendEventsComponent } from './resend-events/resend-events.component';
+import { TablePartitionsComponent } from './table-partitions/table-partitions.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
@@ -14,6 +15,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { LoaderModule } from '../../components/loader/loader.module';
 import { LabelComponent, InputFieldDirective, InputErrorComponent, InputDirective } from 'src/app/components/input/input.component';
 import { CardComponent } from 'src/app/components/card/card.component';
+import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { QueueMonitoringComponent } from '../queue-monitoring/queue-monitoring.component';
 
 const routes: Routes = [{ path: '', component: AdminComponent }];
@@ -24,7 +26,8 @@ const routes: Routes = [{ path: '', component: AdminComponent }];
 		FeatureFlagsComponent,
 		OrganisationOverridesComponent,
 		CircuitBreakerConfigComponent,
-		ResendEventsComponent
+		ResendEventsComponent,
+		TablePartitionsComponent
 	],
 	imports: [
 		CommonModule,
@@ -35,6 +38,7 @@ const routes: Routes = [{ path: '', component: AdminComponent }];
 		SelectComponent,
 		ToggleComponent,
 		TagComponent,
+		StatusColorModule,
 		ButtonComponent,
 		LoaderModule,
 		LabelComponent,

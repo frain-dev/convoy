@@ -292,4 +292,47 @@ export class AdminService {
 			}
 		});
 	}
+
+	startPartitionRun(request: { table: string; operation: 'partition' | 'unpartition' }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/partitions`,
+					method: 'post',
+					body: request
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	listPartitionRuns(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/partitions`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	listPartitionTables(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/partitions/tables`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

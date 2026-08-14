@@ -369,5 +369,106 @@ func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 	// first reconcile tick (or stuck after a transient RegisterParent miss).
 	r.registerParents(ctx)
 	r.registerTenants(ctx)
-	return r.manager.Maintain(ctx)
+
+	if err := r.manager.Maintain(ctx); err != nil {
+		return err
+	}
+
+	r.dropExpiredAdoptedPartitions(ctx)
+	return nil
+}
+
+// dropExpiredAdoptedPartitions reclaims history that Maintain structurally
+// cannot.
+//
+// Converting a table adopts the pre-conversion heap as the parent's
+// DEFAULT partition rather than copying it into daily children. gopartman
+// selects expired partitions with is_default = false, deliberately, because a
+// default is normally a catch-all that must never be dropped on a schedule. The
+// consequence is that every row written before the conversion becomes exempt
+// from retention forever, which on a large instance is most of the table.
+//
+// Failures are logged rather than returned. Maintain has already done the work
+// the nightly job exists for, and this runs again tomorrow.
+func (r *PartitionRetentionPolicy) dropExpiredAdoptedPartitions(ctx context.Context) {
+	for _, table := range RetentionTables {
+		dropped, err := r.dropAdoptedPartition(ctx, table)
+		if err != nil {
+			r.logger.Error(fmt.Sprintf("failed to drop expired history partition for convoy.%s", table), "error", err)
+			continue
+		}
+		if dropped {
+			r.logger.Info(fmt.Sprintf("dropped expired history partition convoy.%s_default", table))
+		}
+	}
+}
+
+// dropAdoptedPartition drops <table>_default when every row in it is older than
+// the retention period.
+//
+// Two gates, both necessary. The partition must carry the bounds constraint the
+// attach conversion writes, which is what distinguishes an adopted table from
+// the empty catch-all gopartman provisions under the same name; dropping that
+// one would delete live rows that arrived while a day partition was missing. And
+// the newest row in it must already be expired, read from the data rather than
+// inferred from the constraint, so this cannot be wrong about what it is
+// deleting. The read is cheap despite the table's size: created_at is indexed,
+// so max() is a backwards index scan rather than a scan of the partition.
+func (r *PartitionRetentionPolicy) dropAdoptedPartition(ctx context.Context, table string) (bool, error) {
+	partition := table + "_default"
+
+	var adopted bool
+	err := r.db.GetConn().QueryRow(ctx, `
+        SELECT EXISTS (
+            SELECT 1
+            FROM pg_constraint con
+            JOIN pg_class c ON c.oid = con.conrelid
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = $1 AND c.relname = $2 AND con.conname = $3
+        )`, retentionSchema, partition, partition+"_bounds").Scan(&adopted)
+	if err != nil {
+		return false, fmt.Errorf("checking for an adopted history partition: %w", err)
+	}
+	if !adopted {
+		return false, nil
+	}
+
+	var newest *time.Time
+	err = r.db.GetConn().QueryRow(ctx,
+		fmt.Sprintf(`SELECT max(created_at) FROM %s.%s`, retentionSchema, partition)).Scan(&newest)
+	if err != nil {
+		return false, fmt.Errorf("reading the newest row in %s: %w", partition, err)
+	}
+
+	// An empty adopted partition is left alone. It still routes rows below the
+	// conversion's cutoff, and reclaiming nothing is not worth a destructive
+	// statement.
+	if newest == nil || newest.After(time.Now().Add(-r.retentionPeriod)) {
+		return false, nil
+	}
+
+	// Dropping the table leaves gopartman's row behind if the import adopted it,
+	// and that row would then block a later default from being registered. Both
+	// statements are in one transaction so the catalog and the metadata cannot
+	// disagree.
+	tx, err := r.db.GetConn().Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout = '3s'`); err != nil {
+		return false, err
+	}
+	if _, err = tx.Exec(ctx, fmt.Sprintf(`DROP TABLE %s.%s`, retentionSchema, partition)); err != nil {
+		return false, fmt.Errorf("dropping %s: %w", partition, err)
+	}
+	// gopartman stores the child's name schema qualified, so matching on the bare
+	// name deletes nothing and leaves the row this transaction exists to remove.
+	if _, err = tx.Exec(ctx, `DELETE FROM partman.partitions WHERE name = $1`,
+		retentionSchema+"."+partition); err != nil {
+		return false, fmt.Errorf("clearing partition metadata for %s: %w", partition, err)
+	}
+
+	return true, tx.Commit(ctx)
 }
