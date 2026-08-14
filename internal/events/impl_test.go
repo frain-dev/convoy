@@ -82,6 +82,13 @@ func setupTestDB(t *testing.T) (*Service, database.Database) {
 	return New(logger, db), db
 }
 
+func TestRequireEventEndpointIDs(t *testing.T) {
+	require.NoError(t, requireEventEndpointIDs(nil))
+	require.NoError(t, requireEventEndpointIDs([]string{"endpoint-id-1"}))
+	require.ErrorIs(t, requireEventEndpointIDs([]string{""}), datastore.ErrEventEndpointIDRequired)
+	require.ErrorIs(t, requireEventEndpointIDs([]string{"endpoint-id-1", "  "}), datastore.ErrEventEndpointIDRequired)
+}
+
 func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
 	t.Helper()
 
@@ -334,6 +341,13 @@ func TestCreateEvent(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, found.Endpoints, numEndpoints)
 	})
+
+	t.Run("CreateEvent_RejectsEmptyEndpointID", func(t *testing.T) {
+		event := createTestEvent(t, project.UID, []string{""}, source.UID)
+
+		err := service.CreateEvent(ctx, event)
+		require.ErrorIs(t, err, datastore.ErrEventEndpointIDRequired)
+	})
 }
 
 func TestFindEventByID(t *testing.T) {
@@ -546,6 +560,18 @@ func TestUpdateEventEndpoints(t *testing.T) {
 		require.NoError(t, err)
 		t.Logf("Event after update - EventID: %s, Endpoints: %v", found.UID, found.Endpoints)
 		require.Len(t, found.Endpoints, 2, "Expected 2 endpoints after update, got %d: %v", len(found.Endpoints), found.Endpoints)
+	})
+
+	t.Run("UpdateEventEndpoints_RejectsEmptyEndpointID", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+
+		event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		require.NoError(t, service.CreateEvent(ctx, event))
+
+		err := service.UpdateEventEndpoints(ctx, event, []string{""})
+		require.ErrorIs(t, err, datastore.ErrEventEndpointIDRequired)
 	})
 }
 

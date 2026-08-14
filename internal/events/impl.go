@@ -25,6 +25,15 @@ const (
 	PartitionSize = 30_000 // Batch size for event_endpoints inserts
 )
 
+func requireEventEndpointIDs(endpointIDs []string) error {
+	for _, id := range endpointIDs {
+		if util.IsStringEmpty(id) {
+			return datastore.ErrEventEndpointIDRequired
+		}
+	}
+	return nil
+}
+
 // Service implements datastore.EventRepository using sqlc-generated queries
 type Service struct {
 	logger log.Logger
@@ -53,6 +62,10 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 	var sourceID *string
 	if !util.IsStringEmpty(event.SourceID) {
 		sourceID = &event.SourceID
+	}
+
+	if err := requireEventEndpointIDs(event.Endpoints); err != nil {
+		return err
 	}
 
 	// Start transaction
@@ -220,6 +233,10 @@ func (s *Service) FindFirstEventWithIdempotencyKey(ctx context.Context, projectI
 
 // UpdateEventEndpoints updates event endpoints with batch processing
 func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Event, endpoints []string) error {
+	if err := requireEventEndpointIDs(endpoints); err != nil {
+		return err
+	}
+
 	// Start transaction
 	tx, err := s.db.Begin(ctx)
 	if err != nil {

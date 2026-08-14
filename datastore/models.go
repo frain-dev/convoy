@@ -805,6 +805,7 @@ var (
 	ErrUserNotFound                                  = errors.New("user not found")
 	ErrSourceNotFound                                = errors.New("source not found")
 	ErrEventNotFound                                 = errors.New("event not found")
+	ErrEventEndpointIDRequired                       = errors.New("endpoint_id is required")
 	ErrProjectNotFound                               = errors.New("project not found")
 	ErrEndpointNotFound                              = errors.New("endpoint not found")
 	ErrSubscriptionNotFound                          = errors.New("subscription not found")
