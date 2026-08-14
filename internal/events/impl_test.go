@@ -1345,6 +1345,81 @@ func TestUnPartitionEventsTableRemovesTheStandInTrigger(t *testing.T) {
 	require.NotZero(t, constraints, "dropping the trigger left no event-id enforcement at all")
 }
 
+func dropAdoptedBounds(t *testing.T, db database.Database, table string) {
+	t.Helper()
+	_, err := db.GetDB().ExecContext(context.Background(),
+		fmt.Sprintf(`ALTER TABLE convoy.%[1]s_default DROP CONSTRAINT %[1]s_default_bounds`, table))
+	require.NoError(t, err)
+}
+
+func relationKind(t *testing.T, db database.Database, table string) string {
+	t.Helper()
+	var kind string
+	require.NoError(t, db.GetDB().QueryRowContext(context.Background(), `
+        SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = $1`, table).Scan(&kind))
+	return kind
+}
+
+func countTrigger(t *testing.T, db database.Database, table, name string) int {
+	t.Helper()
+	var n int
+	require.NoError(t, db.GetDB().QueryRowContext(context.Background(), `
+        SELECT count(*)
+        FROM pg_catalog.pg_trigger t
+        JOIN pg_catalog.pg_class c ON c.oid = t.tgrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = $1 AND t.tgname = $2`,
+		table, name).Scan(&n))
+	return n
+}
+
+// Retention can drop the adopted _default while the parent stays partitioned.
+// Revert then copies. Copy used to ADD event_deliveries_event_id_fkey on the
+// deliveries parent, which Postgres rejects when that table is partitioned.
+func TestUnPartitionEventsTableCopyWhileDeliveriesArePartitioned(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, event_deliveries.New(log.New("convoy", log.LevelError), db).PartitionEventDeliveriesTable(ctx))
+	require.NoError(t, service.PartitionEventsTable(ctx))
+	dropAdoptedBounds(t, db, "events")
+
+	require.NoError(t, service.UnPartitionEventsTable(ctx))
+	require.Equal(t, "r", relationKind(t, db, "events"))
+	require.NotZero(t, countTrigger(t, db, "event_deliveries", "event_fk_check"),
+		"copy-unpartition dropped the stand-in while event_deliveries is still partitioned")
+	require.Zero(t, countNamedConstraint(t, db, "event_deliveries", "event_deliveries_event_id_fkey"),
+		"copy-unpartition installed a real event FK on a partitioned event_deliveries")
+}
+
+// Same copy path, but event_deliveries is still a heap. AfterDetach has to
+// put the real FK back; the copy SQL no longer does.
+func TestUnPartitionEventsTableCopyRestoresEventFK(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+	dropAdoptedBounds(t, db, "events")
+
+	require.NoError(t, service.UnPartitionEventsTable(ctx))
+	require.Equal(t, "r", relationKind(t, db, "events"))
+	require.Zero(t, countTrigger(t, db, "event_deliveries", "event_fk_check"),
+		"copy-unpartition left the stand-in after both tables are heaps")
+	require.NotZero(t, countNamedConstraint(t, db, "event_deliveries", "event_deliveries_event_id_fkey"),
+		"copy-unpartition left no event-id enforcement")
+}
+
 // Operators convert tables one at a time. After event_deliveries is attached,
 // event_deliveries_event_id_fkey lives on the adopted child. Dropping it only
 // from the parent name leaves a stale FK that still points at events_default

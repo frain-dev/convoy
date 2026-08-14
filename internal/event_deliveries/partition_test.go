@@ -273,6 +273,60 @@ func TestUnPartitionEventDeliveriesTableWhileAttemptsArePartitioned(t *testing.T
 	require.NoError(t, insertAttempt(t, db, project.UID, endpoint.UID, delivery.UID))
 }
 
+func dropAdoptedBounds(t *testing.T, db database.Database, table string) {
+	t.Helper()
+	_, err := db.GetDB().ExecContext(context.Background(),
+		fmt.Sprintf(`ALTER TABLE convoy.%[1]s_default DROP CONSTRAINT %[1]s_default_bounds`, table))
+	require.NoError(t, err)
+}
+
+// Retention can drop the adopted _default. Revert then copies. Copy used to
+// ADD delivery_attempts_event_delivery_id_fkey on the attempts parent, which
+// Postgres rejects when that table is partitioned.
+func TestUnPartitionEventDeliveriesTableCopyWhileAttemptsArePartitioned(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+
+	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
+	require.NoError(t, delivery_attempts.New(log.New("convoy", log.LevelError), db).PartitionDeliveryAttemptsTable(ctx))
+	dropAdoptedBounds(t, db, "event_deliveries")
+
+	require.NoError(t, service.UnPartitionEventDeliveriesTable(ctx))
+	require.Error(t, insertAttempt(t, db, project.UID, endpoint.UID, ulid.Make().String()),
+		"an attempt referencing a nonexistent delivery was accepted after copy-unpartitioning event_deliveries")
+	require.NoError(t, insertAttempt(t, db, project.UID, endpoint.UID, delivery.UID))
+}
+
+func TestUnPartitionDeliveryAttemptsTableCopyRestoresEnforcement(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subscription := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, subscription.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+
+	attempts := delivery_attempts.New(log.New("convoy", log.LevelError), db)
+	require.NoError(t, attempts.PartitionDeliveryAttemptsTable(ctx))
+	dropAdoptedBounds(t, db, "delivery_attempts")
+
+	require.NoError(t, attempts.UnPartitionDeliveryAttemptsTable(ctx))
+	require.Error(t, insertAttempt(t, db, project.UID, endpoint.UID, ulid.Make().String()),
+		"copy-unpartition of delivery_attempts left no event_delivery_id enforcement")
+	require.NoError(t, insertAttempt(t, db, project.UID, endpoint.UID, delivery.UID))
+}
+
 // Same one-at-a-time order as events-after-deliveries: attach keeps the real
 // FK on delivery_attempts_default, so Swap has to drop that child too.
 func TestPartitionEventDeliveriesTableDropsAdoptedAttemptFK(t *testing.T) {

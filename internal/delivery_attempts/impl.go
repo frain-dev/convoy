@@ -331,7 +331,7 @@ begin
 
 	RAISE NOTICE 'Successfully un-partitioned delivery_attempts table...';
 end $$ language plpgsql;
-select convoy.un_partition_delivery_attempts_table()
+select convoy.un_partition_delivery_attempts_table();
 `
 
 // Helper function to convert database row to datastore.DeliveryAttempt

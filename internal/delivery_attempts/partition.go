@@ -21,5 +21,5 @@ var attemptsSpec = attach.Spec{
 	SwapEnd:         []string{attach.AttemptFKSQL},
 	DuringDetach:    []string{attach.AttemptFKSQL},
 	AfterDetach:     []string{attach.RestoreAttemptFKSQL},
-	CopyUnpartition: unPartitionDeliveryAttemptsTableSQL,
+	CopyUnpartition: unPartitionDeliveryAttemptsTableSQL + attach.AttemptFKSQL,
 }

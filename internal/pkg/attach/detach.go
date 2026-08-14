@@ -16,8 +16,17 @@ func Revert(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
 		return err
 	}
 	if !adopted {
-		_, err = db.Exec(ctx, spec.CopyUnpartition)
-		return err
+		if _, err = db.Exec(ctx, spec.CopyUnpartition); err != nil {
+			return err
+		}
+		// Copy SQL drops inbound FKs and appends the stand-in so the
+		// rewrite cannot commit without enforcement. DuringDetach is
+		// the same SQL again (CREATE OR REPLACE). AfterDetach then
+		// upgrades to a real FK when both sides are heaps.
+		if err := installDuringDetach(ctx, db, spec); err != nil {
+			return err
+		}
+		return restoreAfterDetach(ctx, db, spec)
 	}
 	return detach(ctx, db, spec)
 }
@@ -70,13 +79,8 @@ func detach(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
 	// drain, when both names hold the full row set. Reinstall the stand-in
 	// on the live name now, or the drain window writes orphans and child
 	// lookups miss rows that still live only on _partitioned.
-	if len(spec.DuringDetach) > 0 {
-		notice(ctx, db, "Keeping enforcement during the drain...")
-		for _, stmt := range spec.DuringDetach {
-			if _, err := db.Exec(ctx, stmt); err != nil {
-				return fmt.Errorf("table is unpartitioned but enforcement was not restored: %w", err)
-			}
-		}
+	if err := installDuringDetach(ctx, db, spec); err != nil {
+		return err
 	}
 
 	notice(ctx, db, "Migrating rows written since the conversion...")
@@ -89,16 +93,37 @@ func detach(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
 		return err
 	}
 
-	if len(spec.AfterDetach) > 0 {
-		notice(ctx, db, "Restoring enforcement...")
-		for _, stmt := range spec.AfterDetach {
-			if _, err := db.Exec(ctx, stmt); err != nil {
-				return fmt.Errorf("table is unpartitioned but enforcement was not restored: %w", err)
-			}
-		}
+	if err := restoreAfterDetach(ctx, db, spec); err != nil {
+		return err
 	}
 
 	notice(ctx, db, "Successfully un-partitioned "+spec.Table+" table...")
+	return nil
+}
+
+func installDuringDetach(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
+	if len(spec.DuringDetach) == 0 {
+		return nil
+	}
+	notice(ctx, db, "Keeping enforcement...")
+	for _, stmt := range spec.DuringDetach {
+		if _, err := db.Exec(ctx, stmt); err != nil {
+			return fmt.Errorf("table is unpartitioned but enforcement was not restored: %w", err)
+		}
+	}
+	return nil
+}
+
+func restoreAfterDetach(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
+	if len(spec.AfterDetach) == 0 {
+		return nil
+	}
+	notice(ctx, db, "Restoring enforcement...")
+	for _, stmt := range spec.AfterDetach {
+		if _, err := db.Exec(ctx, stmt); err != nil {
+			return fmt.Errorf("table is unpartitioned but enforcement was not restored: %w", err)
+		}
+	}
 	return nil
 }
 
