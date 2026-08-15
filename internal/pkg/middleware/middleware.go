@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -147,27 +148,64 @@ type AuthorizedLogin struct {
 	ExpiryTime time.Time `json:"expiry_time"`
 }
 
-func RateLimiterHandler(rateLimiter limiter.RateLimiter, httpApiRateLimit int) func(next http.Handler) http.Handler {
+// Rate limit bucket keys. Every mount point of RateLimiterHandler passes its
+// own key so the knob behind it keeps its own bucket: CONVOY_API_RATE_LIMIT
+// governs the public API surface, CONVOY_INSTANCE_INGEST_RATE governs ingest.
+// The key is passed in rather than derived from the limit value, because keying
+// by value would re-merge two mounts that happen to be configured to the same
+// number.
+const (
+	RateLimitBucketAPI    = "http-api"
+	RateLimitBucketIngest = "instance-ingest"
+)
+
+// Failure policy: fail closed. A limiter backend failure (Redis unreachable,
+// timeout) is rejected with 429 exactly like an over-limit request, so an
+// outage of the limiter becomes an outage of every route it guards. That is
+// deliberate, not an oversight; changing it is a product decision. The two
+// cases are indistinguishable in the response, so they are logged apart.
+func RateLimiterHandler(rateLimiter limiter.RateLimiter, bucketKey string, httpApiRateLimit int, logger log.Logger) func(next http.Handler) http.Handler {
 	duration := 60
 	rateLimit := httpApiRateLimit * duration
-	rateLimitKey := "http-api"
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			err := rateLimiter.AllowWithDuration(r.Context(), rateLimitKey, rateLimit, duration)
+			err := rateLimiter.AllowWithDuration(r.Context(), bucketKey, rateLimit, duration)
 			if err == nil {
 				next.ServeHTTP(w, r)
 				return
 			}
 
+			if limiter.GetRawError(err) != limiter.ErrRateLimitExceeded {
+				logger.ErrorContext(r.Context(), "rate limiter backend failure, rejecting with 429",
+					"bucket", bucketKey, "limit", rateLimit, "method", r.Method, "path", r.URL.Path, "error", err.Error())
+			} else {
+				logger.DebugContext(r.Context(), "request rejected by rate limit",
+					"bucket", bucketKey, "limit", rateLimit, "method", r.Method, "path", r.URL.Path)
+			}
+
+			retryAfter := retryAfterSeconds(limiter.GetRetryAfter(err))
+
 			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", rateLimit))
 			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", 0))
-			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%f", limiter.GetRetryAfter(err).Seconds()))
-			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(limiter.GetRetryAfter(err)).Unix()))
+			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%d", retryAfter))
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", retryAfter))
 
 			_ = render.Render(w, r, util.NewErrorResponse("exceeded rate limit", http.StatusTooManyRequests))
 		})
 	}
+}
+
+// retryAfterSeconds converts a limiter delay into RFC 9110 delta-seconds. It
+// rounds up so a client never retries before the window reopens, and floors at
+// one second because a limiter that reports no delay (backend failure) must not
+// invite an immediate retry.
+func retryAfterSeconds(delay time.Duration) int {
+	if seconds := int(math.Ceil(delay.Seconds())); seconds > 1 {
+		return seconds
+	}
+
+	return 1
 }
 
 func InstrumentPath(l license.Licenser) func(http.Handler) http.Handler {

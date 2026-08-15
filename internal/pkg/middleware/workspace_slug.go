@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/go-chi/render"
 
@@ -45,7 +44,7 @@ func WorkspaceSlugProbeRateLimit(rateLimiter limiter.RateLimiter) func(next http
 
 			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", workspaceSlugProbeLimit))
 			w.Header().Set("X-RateLimit-Remaining", "0")
-			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(limiter.GetRetryAfter(err)).Unix()))
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", retryAfterSeconds(limiter.GetRetryAfter(err))))
 			_ = render.Render(w, r, util.NewErrorResponse("exceeded rate limit", http.StatusTooManyRequests))
 		})
 	}

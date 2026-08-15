@@ -316,7 +316,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, a.A.Logger))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -329,7 +329,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			r.Use(middleware.RequireAuth(handler.A.Logger))
 
 			r.Route("/projects", func(projectRouter chi.Router) {
-				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
+				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketAPI, a.cfg.ApiRateLimit, a.A.Logger))
 				projectRouter.Get("/", handler.GetProjects)
 				projectRouter.With(handler.RequireEnabledOrganisation()).Post("/", handler.CreateProject)
 
@@ -369,7 +369,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 								handler.RequireEnabledProject(),
 								handler.RequireEnabledOrganisation(),
 								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate),
+								middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, a.A.Logger),
 							)
 
 							r.Post("/", handler.CreateEndpointEvent)
@@ -961,7 +961,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 	// Ingestion API. Must use the same knob as the control plane's /ingest so
 	// CONVOY_INSTANCE_INGEST_RATE governs every ingest surface.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, a.A.Logger))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -974,7 +974,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			r.Use(middleware.RequireAuth(handler.A.Logger))
 
 			r.Route("/projects", func(projectRouter chi.Router) {
-				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
+				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketAPI, a.cfg.ApiRateLimit, a.A.Logger))
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
 						eventRouter.Group(func(r chi.Router) {
@@ -982,7 +982,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 								handler.RequireEnabledProject(),
 								handler.RequireEnabledOrganisation(),
 								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate),
+								middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, a.A.Logger),
 							)
 
 							r.Post("/", handler.CreateEndpointEvent)
