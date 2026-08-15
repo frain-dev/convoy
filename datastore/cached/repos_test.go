@@ -173,6 +173,92 @@ func TestCachedEndpointRepo_CreateEndpoint_InvalidatesOwner(t *testing.T) {
 	require.NoError(t, repo.CreateEndpoint(context.Background(), ep, "proj-1"))
 }
 
+// Deleting an endpoint cascade deletes its subscriptions in SQL, below this
+// repository, so the subscription list has to be evicted here or nothing evicts
+// it and the match path keeps routing to a deleted endpoint until the TTL.
+func TestCachedEndpointRepo_DeleteEndpoint_InvalidatesSubscriptionList(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEndpointRepository(ctrl)
+	mockCache := mocks.NewMockCache(ctrl)
+	logger := mocks.NewMockLogger(ctrl)
+	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+	ep := &datastore.Endpoint{UID: "ep-123", OwnerID: "owner-1"}
+	mockRepo.EXPECT().DeleteEndpoint(gomock.Any(), ep, "proj-1").Return(nil)
+	mockCache.EXPECT().Delete(gomock.Any(), "endpoints:proj-1:ep-123").Return(nil)
+	mockCache.EXPECT().Delete(gomock.Any(), "endpoints_by_owner:proj-1:owner-1").Return(nil)
+	mockCache.EXPECT().Delete(gomock.Any(), SubscriptionsByEndpointCacheKey("proj-1", "ep-123")).Return(nil)
+
+	repo := NewCachedEndpointRepository(mockRepo, mockCache, DefaultEndpointTTL, logger)
+	require.NoError(t, repo.DeleteEndpoint(context.Background(), ep, "proj-1"))
+}
+
+// Writers read the database, never the cache. UpdateEndpointService and the
+// pause and activate services read the endpoint through this repository and then
+// merge or toggle onto it, so a cached read here would let a stale record become
+// the base of the next write. The mock cache expects no calls at all.
+func TestInvalidatingEndpointRepo_ReadsBypassCache(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEndpointRepository(ctrl)
+	mockCache := mocks.NewMockCache(ctrl)
+	logger := mocks.NewMockLogger(ctrl)
+	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+	fresh := &datastore.Endpoint{UID: "ep-123", OwnerID: "owner-1"}
+	mockRepo.EXPECT().FindEndpointByID(gomock.Any(), "ep-123", "proj-1").Return(fresh, nil)
+	mockRepo.EXPECT().FindEndpointsByOwnerID(gomock.Any(), "proj-1", "owner-1").Return([]datastore.Endpoint{*fresh}, nil)
+
+	repo := NewInvalidatingEndpointRepository(mockRepo, mockCache, logger)
+
+	got, err := repo.FindEndpointByID(context.Background(), "ep-123", "proj-1")
+	require.NoError(t, err)
+	require.Equal(t, fresh, got)
+
+	owned, err := repo.FindEndpointsByOwnerID(context.Background(), "proj-1", "owner-1")
+	require.NoError(t, err)
+	require.Len(t, owned, 1)
+}
+
+// Writers still evict what the delivery path cached.
+func TestInvalidatingEndpointRepo_WritesStillInvalidate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEndpointRepository(ctrl)
+	mockCache := mocks.NewMockCache(ctrl)
+	logger := mocks.NewMockLogger(ctrl)
+	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+	ep := &datastore.Endpoint{UID: "ep-123", OwnerID: "owner-1"}
+	mockRepo.EXPECT().UpdateEndpoint(gomock.Any(), ep, "proj-1").Return(nil)
+	mockCache.EXPECT().Delete(gomock.Any(), "endpoints:proj-1:ep-123").Return(nil)
+	mockCache.EXPECT().Delete(gomock.Any(), "endpoints_by_owner:proj-1:owner-1").Return(nil)
+
+	repo := NewInvalidatingEndpointRepository(mockRepo, mockCache, logger)
+	require.NoError(t, repo.UpdateEndpoint(context.Background(), ep, "proj-1"))
+}
+
+// A failed delete must not evict anything; the rows are still there.
+func TestCachedEndpointRepo_DeleteEndpoint_NoInvalidationOnError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockEndpointRepository(ctrl)
+	mockCache := mocks.NewMockCache(ctrl)
+	logger := mocks.NewMockLogger(ctrl)
+	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+	ep := &datastore.Endpoint{UID: "ep-123", OwnerID: "owner-1"}
+	mockRepo.EXPECT().DeleteEndpoint(gomock.Any(), ep, "proj-1").Return(errors.New("delete failed"))
+
+	repo := NewCachedEndpointRepository(mockRepo, mockCache, DefaultEndpointTTL, logger)
+	require.Error(t, repo.DeleteEndpoint(context.Background(), ep, "proj-1"))
+}
+
 // ============================================================================
 // SubscriptionRepository Tests
 // ============================================================================
