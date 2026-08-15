@@ -132,7 +132,15 @@ func newRedis(cfg config.Configuration, _ *sqlx.DB, logger log.Logger) (*Depende
 	opts.RedisClient = rd
 	opts.RedisAddress = cfg.Redis.BuildDsn()
 	if cfg.Redis.IsSentinel() {
-		db, _ := strconv.Atoi(cfg.Redis.Database)
+		// An unset database means 0, the same reading BuildDsn takes. Only a
+		// non-empty value that will not parse is a misconfiguration.
+		var db int
+		if cfg.Redis.Database != "" {
+			db, err = strconv.Atoi(cfg.Redis.Database)
+			if err != nil {
+				return nil, fmt.Errorf("parse redis database %q: %w", cfg.Redis.Database, err)
+			}
+		}
 		opts.RedisFailoverOpt = &asynq.RedisFailoverClientOpt{
 			MasterName:       cfg.Redis.MasterName,
 			SentinelAddrs:    cfg.Redis.SentinelAddresses(),
