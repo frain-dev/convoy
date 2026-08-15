@@ -117,10 +117,10 @@ func TestCompleteRemovesProcessingRow(t *testing.T) {
 	require.Empty(t, jobs)
 }
 
-func TestCompletedCronJobIsIdempotentUntilCleanup(t *testing.T) {
+func TestCompletedCronJobIsIdempotent(t *testing.T) {
 	q := setupQueue(t)
 	ctx := context.Background()
-	id := "cron:snapshot-usage:123"
+	id := queue.CronJobID(convoy.SnapshotUsage, time.Now())
 	job := &queue.Job{ID: id}
 
 	require.NoError(t, q.Write(ctx, convoy.SnapshotUsage, convoy.EventQueue, job))
@@ -141,6 +141,55 @@ func TestCompletedCronJobIsIdempotentUntilCleanup(t *testing.T) {
 	counts, err := q.Counts(ctx)
 	require.NoError(t, err)
 	require.Empty(t, counts)
+}
+
+// The archived-jobs cleanup shares a cron minute with other scheduled tasks,
+// so it must not erase a tombstone a lagging replica is still deduplicating
+// against. Aged tombstones are dropped so the table does not grow forever.
+func TestDeleteArchivedKeepsRecentCronTombstones(t *testing.T) {
+	q := setupQueue(t)
+	ctx := context.Background()
+	id := queue.CronJobID(convoy.SnapshotUsage, time.Now())
+	job := &queue.Job{ID: id}
+
+	require.NoError(t, q.Write(ctx, convoy.SnapshotUsage, convoy.EventQueue, job))
+	jobs, err := q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+	require.NoError(t, q.Complete(ctx, id))
+
+	require.NoError(t, q.DeleteArchived(ctx))
+	var count int
+	require.NoError(t, q.db.GetContext(ctx, &count, `SELECT COUNT(*) FROM convoy.queue_jobs WHERE id = $1`, id))
+	require.Equal(t, 1, count)
+
+	// A replica whose clock lagged into the cleanup still cannot re-run the tick.
+	require.NoError(t, q.Write(ctx, convoy.SnapshotUsage, convoy.EventQueue, job))
+	jobs, err = q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Empty(t, jobs)
+
+	_, err = q.db.ExecContext(ctx, `
+		UPDATE convoy.queue_jobs
+		SET updated_at = NOW() - make_interval(secs => $2)
+		WHERE id = $1`, id, (cronTombstoneRetention + time.Hour).Seconds())
+	require.NoError(t, err)
+
+	require.NoError(t, q.DeleteArchived(ctx))
+	require.NoError(t, q.db.GetContext(ctx, &count, `SELECT COUNT(*) FROM convoy.queue_jobs WHERE id = $1`, id))
+	require.Zero(t, count)
+}
+
+func TestDeleteArchivedRemovesNonCronRows(t *testing.T) {
+	q := setupQueue(t)
+	ctx := context.Background()
+	id := ulid.Make().String()
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{ID: id, Payload: []byte("x")}))
+
+	jobs, err := q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+	require.NoError(t, q.Archive(ctx, id, "boom"))
 
 	require.NoError(t, q.DeleteArchived(ctx))
 	var count int

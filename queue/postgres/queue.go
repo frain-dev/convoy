@@ -47,7 +47,14 @@ const (
 	// workers so the queue does not stall; 30m matches asynq's default timeout.
 	DefaultStuckTimeout = 30 * time.Minute
 
-	cronJobPrefix = "cron:"
+	// cronJobPrefix is the marker the scheduler writes into cron job IDs.
+	cronJobPrefix = queue.CronJobIDPrefix
+
+	// cronTombstoneRetention keeps a finished cron row addressable long
+	// enough that the archived-jobs cleanup cannot erase the tick a replica
+	// with a lagging clock is still about to enqueue. Cron IDs carry an
+	// absolute minute, so retaining them never blocks a later tick.
+	cronTombstoneRetention = 24 * time.Hour
 )
 
 var (
@@ -494,9 +501,20 @@ func (q *PostgresQueue) ReclaimStuck(ctx context.Context) (int64, error) {
 	return res.RowsAffected()
 }
 
+// DeleteArchived drops finished rows. Cron tombstones are the memory that
+// keeps one scheduler tick from being enqueued twice, so they are only dropped
+// once they are older than any tick still in flight.
 func (q *PostgresQueue) DeleteArchived(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, `DELETE FROM convoy.queue_jobs WHERE status = ANY($1)`,
-		pq.Array([]string{statusArchived, statusCompleted}))
+	_, err := q.db.ExecContext(ctx, `
+		DELETE FROM convoy.queue_jobs
+		WHERE status = ANY($1)
+		  AND (
+			id NOT LIKE $2
+			OR updated_at < NOW() - make_interval(secs => $3)
+		  )`,
+		pq.Array([]string{statusArchived, statusCompleted}),
+		cronJobPrefix+"%",
+		cronTombstoneRetention.Seconds())
 	return err
 }
 

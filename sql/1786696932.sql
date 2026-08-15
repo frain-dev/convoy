@@ -4,10 +4,10 @@ SET statement_timeout = '30s';
 
 -- Broker rows for the Postgres queue.Queuer driver. One row is one asynq task:
 -- Write inserts it, workers claim with FOR UPDATE SKIP LOCKED, and a successful
--- handler deletes the row. Successful cron rows remain completed until daily
--- cleanup so same-tick replica enqueues stay idempotent. Duplicate non-cron
--- task IDs overwrite (same as asynq delete + re-enqueue). convoy.jobs is a
--- different table (backup/export jobs).
+-- handler deletes the row. Finished cron rows stay as tombstones past the
+-- daily cleanup so same-tick replica enqueues stay idempotent. Duplicate
+-- non-cron task IDs overwrite (same as asynq delete + re-enqueue).
+-- convoy.jobs is a different table (backup/export jobs).
 CREATE TABLE IF NOT EXISTS convoy.queue_jobs (
     id           TEXT PRIMARY KEY,
     task_name    TEXT NOT NULL,

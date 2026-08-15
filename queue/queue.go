@@ -151,3 +151,16 @@ func (j JobId) MatchSubsJobId() string {
 func (j JobId) OnboardJobId() string {
 	return fmt.Sprintf("onboard:%s:%s", j.ProjectID, j.ResourceID)
 }
+
+// CronJobIDPrefix marks a job as a scheduler firing. Drivers that deduplicate
+// cron ticks match on it, so the writer and the matcher share one constant.
+const CronJobIDPrefix = "cron:"
+
+// CronJobID is the deduplication key for one scheduler tick. Every replica
+// that fires the same tick derives the same ID, so a driver with a unique
+// job id enqueues the tick once no matter how many schedulers are running.
+// The bucket is the UTC minute of the firing, which is also the granularity
+// of a cron spec: a firing delayed past its own minute is a new tick.
+func CronJobID(taskName convoy.TaskName, at time.Time) string {
+	return fmt.Sprintf("%s%s:%d", CronJobIDPrefix, taskName, at.UTC().Truncate(time.Minute).Unix())
+}

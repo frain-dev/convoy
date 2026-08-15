@@ -50,7 +50,10 @@ func NewRedisScheduler(opts queue.QueueOptions, logger log.Logger) (Scheduler, e
 }
 
 func NewPostgresScheduler(q queue.Queuer, logger log.Logger) Scheduler {
-	return &postgresScheduler{log: logger, queue: q, cron: cron.New()}
+	// UTC matches the asynq scheduler default, so a cron spec means the same
+	// wall clock time under both providers regardless of the host timezone,
+	// and no tick is skipped or repeated across a DST transition.
+	return &postgresScheduler{log: logger, queue: q, cron: cron.New(cron.WithLocation(time.UTC))}
 }
 
 func (s *redisScheduler) Start() {
@@ -81,9 +84,11 @@ func (s *postgresScheduler) RegisterTask(cronSpec string, queueName convoy.Queue
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		// The minute-scoped ID makes cron enqueue idempotent across server
-		// replicas while allowing the next scheduled tick to run.
-		jobID := fmt.Sprintf("cron:%s:%d", taskName, time.Now().UTC().Truncate(time.Minute).Unix())
+		// The tick-scoped ID makes cron enqueue idempotent across server
+		// replicas while allowing the next scheduled tick to run. Failure
+		// policy: a tick missed while this process was down is not replayed,
+		// matching the asynq scheduler, which also has no catch-up.
+		jobID := queue.CronJobID(taskName, time.Now())
 		if err := s.queue.Write(ctx, taskName, queueName, &queue.Job{ID: jobID}); err != nil {
 			s.log.Error("postgres scheduler enqueue failed", "task", taskName, "error", err)
 		}
