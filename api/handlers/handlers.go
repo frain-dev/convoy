@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/cached"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/filters"
 	"github.com/frain-dev/convoy/internal/organisation_members"
@@ -89,6 +90,25 @@ func (h *Handler) filterWriteRepo() datastore.FilterRepository {
 		return repo
 	}
 	return cached.NewCachedFilterRepository(repo, h.A.Cache, cached.DefaultFilterTTL, h.A.Logger)
+}
+
+// endpointWriteRepo returns the endpoint repository endpoint mutations must go
+// through, so create, update, delete, secret expiry and pause or activate
+// invalidate "endpoints:<project>:<endpoint>" and
+// "endpoints_by_owner:<project>:<owner>", which the delivery path reads. Delete
+// also drops the endpoint's subscription list, since that cascade happens in SQL
+// below the repository.
+//
+// This repository never serves a cached read. UpdateEndpointService,
+// PauseEndpointService and ActivateEndpointService load the endpoint through it
+// and then merge or toggle onto that record, so a worker-populated entry up to
+// DefaultEndpointTTL old would become the base of the next write.
+func (h *Handler) endpointWriteRepo() datastore.EndpointRepository {
+	repo := endpoints.New(h.A.Logger, h.A.DB)
+	if h.A.Cache == nil {
+		return repo
+	}
+	return cached.NewInvalidatingEndpointRepository(repo, h.A.Cache, h.A.Logger)
 }
 
 // orgMemberRepo returns the injected organisation member repository, falling back to a

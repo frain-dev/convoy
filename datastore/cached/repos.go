@@ -85,24 +85,55 @@ func (r *CachedProjectRepository) FillProjectsStatistics(ctx context.Context, pr
 // EndpointRepository
 // ============================================================================
 
+// DefaultEndpointTTL is how long the delivery path may serve an endpoint it has
+// already read. Writers must go through CachedEndpointRepository so a changed
+// target URL, a rotated secret or a delete reaches the worker on the write
+// rather than when the entry expires.
+const DefaultEndpointTTL = 2 * time.Minute
+
 type CachedEndpointRepository struct {
 	inner  datastore.EndpointRepository
 	cache  cachedrepo.Cache
 	ttl    time.Duration
 	logger cachedrepo.Logger
+
+	// readThrough is false for writers. They share the invalidation below but
+	// must never be served a cached endpoint, because several of them read the
+	// record and merge or toggle onto it before writing. A read-through wrapper
+	// there would let an entry up to DefaultEndpointTTL old become the base of
+	// the next write and silently revert whatever changed in between.
+	readThrough bool
 }
 
+// NewCachedEndpointRepository serves the delivery path: reads are cached and
+// writes invalidate.
 func NewCachedEndpointRepository(inner datastore.EndpointRepository, c cachedrepo.Cache, ttl time.Duration, logger cachedrepo.Logger) *CachedEndpointRepository {
-	return &CachedEndpointRepository{inner: inner, cache: c, ttl: ttl, logger: logger}
+	return &CachedEndpointRepository{inner: inner, cache: c, ttl: ttl, logger: logger, readThrough: true}
 }
+
+// NewInvalidatingEndpointRepository serves writers: every read goes to the
+// database and writes invalidate what the delivery path cached.
+func NewInvalidatingEndpointRepository(inner datastore.EndpointRepository, c cachedrepo.Cache, logger cachedrepo.Logger) *CachedEndpointRepository {
+	return &CachedEndpointRepository{inner: inner, cache: c, logger: logger}
+}
+
+// ServesCachedReads reports whether reads may come from the cache. Writers must
+// get false; see readThrough.
+func (r *CachedEndpointRepository) ServesCachedReads() bool { return r.readThrough }
 
 func (r *CachedEndpointRepository) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
+	if !r.readThrough {
+		return r.inner.FindEndpointByID(ctx, id, projectID)
+	}
 	return cachedrepo.FetchOne(ctx, r.cache, r.logger, "endpoints:"+projectID+":"+id, r.ttl,
 		func(e *datastore.Endpoint) bool { return e.UID != "" },
 		func() (*datastore.Endpoint, error) { return r.inner.FindEndpointByID(ctx, id, projectID) })
 }
 
 func (r *CachedEndpointRepository) FindEndpointsByOwnerID(ctx context.Context, projectID, ownerID string) ([]datastore.Endpoint, error) {
+	if !r.readThrough {
+		return r.inner.FindEndpointsByOwnerID(ctx, projectID, ownerID)
+	}
 	return cachedrepo.FetchSlice(ctx, r.cache, r.logger, "endpoints_by_owner:"+projectID+":"+ownerID, r.ttl,
 		func() ([]datastore.Endpoint, error) { return r.inner.FindEndpointsByOwnerID(ctx, projectID, ownerID) })
 }
@@ -131,10 +162,17 @@ func (r *CachedEndpointRepository) UpdateEndpointStatus(ctx context.Context, pro
 	return err
 }
 
+// DeleteEndpoint also drops the endpoint's subscription list. Deleting an
+// endpoint cascade deletes its subscriptions in SQL, inside the same
+// transaction and below this repository, so nothing else evicts the list the
+// match path reads by endpoint id.
 func (r *CachedEndpointRepository) DeleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	err := r.inner.DeleteEndpoint(ctx, endpoint, projectID)
 	if err == nil {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "endpoints:"+projectID+":"+endpoint.UID, "endpoints_by_owner:"+projectID+":"+endpoint.OwnerID)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger,
+			"endpoints:"+projectID+":"+endpoint.UID,
+			"endpoints_by_owner:"+projectID+":"+endpoint.OwnerID,
+			SubscriptionsByEndpointCacheKey(projectID, endpoint.UID))
 	}
 	return err
 }
